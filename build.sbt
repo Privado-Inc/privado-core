@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
 ThisBuild/Compile/scalacOptions ++= Seq(
   "-feature",
   "-deprecation",
-  "-language:implicitConversions",
+  "-language:implicitConversions"
 )
 
 enablePlugins(JavaAppPackaging)

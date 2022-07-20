@@ -18,3 +18,7 @@ Steps to step up the project
 sbt stage
 ./privado-core -Dlog4j.configurationFile=log4j2.xml
 ```
+```
+If facing issues related to imports not working try
+- File -> invalidate caches - reimport
+```
