@@ -22,7 +22,7 @@ object Main {
         if (config.cmd.head == "scan") {
           println("Hello Joern")
           print("Creating CPG... ")
-          val directory = config.sourceFile.head
+          val directory = config.sourceLocation.head
           import io.joern.console.cpgcreation.guessLanguage
           val xtocpg = guessLanguage(directory) match {
             case Some(Languages.JAVASRC) =>

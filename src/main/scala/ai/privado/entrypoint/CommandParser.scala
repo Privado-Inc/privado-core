@@ -7,7 +7,7 @@ import scala.sys.exit
 
 case class Config(
   cmd: Set[String] = Set.empty,
-  sourceFile: Set[String] = Set.empty,
+  sourceLocation: Set[String] = Set.empty,
   internalRulesPath: Set[String] = Set.empty,
   externalRulePath: Set[String] = Set.empty,
   ignoreInternalRules: Boolean = false,
@@ -53,7 +53,7 @@ object CommandParser {
               .text("this option is hidden in the usage text"),
             arg[String]("<Source directory>")
               .required()
-              .action((x, c) => c.copy(sourceFile = c.sourceFile + x))
+              .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
               .text("Source code location"),
             checkConfig(c =>
               if (c.cmd.isEmpty) failure("")
