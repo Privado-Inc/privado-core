@@ -1,16 +1,47 @@
 name := "privado-core"
-ThisBuild / organization := "ai.privado"
-ThisBuild / version := "0.1.0-SNAPSHOT"
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild/organization := "ai.privado"
+ThisBuild/scalaVersion := "2.13.7"
 
-libraryDependencies ++=Seq(
+// parsed by project/Versions.scala, updated by updateDependencies.sh
+val cpgVersion = "1.3.537"
+val joernVersion = "1.1.873"
+val overflowdbVersion = "1.127"
+
+lazy val schema = Projects.schema
+lazy val domainClasses = Projects.domainClasses
+lazy val schemaExtender = Projects.schemaExtender
+
+dependsOn(domainClasses)
+
+libraryDependencies ++= Seq(
   "com.github.pathikrit" %% "better-files" % "3.9.1",
   "com.github.scopt" %% "scopt" % "3.7.1",
   "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.1" % Runtime,
-  "io.joern" %% "x2cpg" % "1.1.873",
-  "io.joern" %% "javasrc2cpg" % "1.1.873",
-  "io.joern" %% "joern-cli" % "1.1.873",
-  "io.joern" %% "semanticcpg" % "1.1.873",
-  "io.joern" %% "semanticcpg" % "1.1.873" % Test classifier "tests",
+  "io.joern" %% "x2cpg" % Versions.joern,
+  "io.joern" %% "javasrc2cpg" % Versions.joern,
+  "io.joern" %% "joern-cli" % Versions.joern,
+  "io.joern" %% "semanticcpg" % Versions.joern,
+  "io.joern" %% "semanticcpg" % Versions.joern % Test classifier "tests",
   "org.scalatest" %% "scalatest" % "3.1.1" % Test
 )
+
+
+ThisBuild/Compile/scalacOptions ++= Seq(
+  "-feature",
+  "-deprecation",
+  "-language:implicitConversions",
+)
+
+enablePlugins(JavaAppPackaging)
+
+ThisBuild/licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
+Global/onChangedBuildSource := ReloadOnSourceChanges
+
+ThisBuild/resolvers ++= Seq(
+  Resolver.mavenLocal,
+  "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public")
+
+
+sources in (Compile, doc) := Seq.empty
+publishArtifact in (Compile, packageDoc) := false
