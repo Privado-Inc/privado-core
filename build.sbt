@@ -29,7 +29,7 @@ libraryDependencies ++= Seq(
 ThisBuild/Compile/scalacOptions ++= Seq(
   "-feature",
   "-deprecation",
-  "-language:implicitConversions",
+  "-language:implicitConversions"
 )
 
 enablePlugins(JavaAppPackaging)
@@ -43,5 +43,5 @@ ThisBuild/resolvers ++= Seq(
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public")
 
 
-sources in (Compile, doc) := Seq.empty
-publishArtifact in (Compile, packageDoc) := false
+Compile / doc / sources := Seq.empty
+Compile / packageDoc / publishArtifact := false
