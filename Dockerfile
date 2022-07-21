@@ -10,15 +10,10 @@ ENV PATH ${PATH}:${SBT_HOME}/bin
 RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SBT_VERSION.tgz" | gunzip | tar -x -C /usr/local
 
 WORKDIR /home/privado-core
-
 COPY . .
-
 RUN sbt stage
 
 FROM openjdk:18-alpine
-
 WORKDIR /home
-
-RUN mkdir privado-core
-
-COPY --from=build /home/privado-core/target/universal/stage/bin/privado-core /home/privado-core/
+RUN apk add --no-cache bash
+COPY --from=build /home/privado-core/target/universal/stage/ /home/privado-core-build/
