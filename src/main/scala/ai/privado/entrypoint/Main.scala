@@ -1,15 +1,19 @@
 package ai.privado.entrypoint
 
 import ai.privado.joern.language._
+import ai.privado.model.{InternalTags, RuleInfo}
+import ai.privado.tagger.PrivadoTagger
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Languages}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewMynodetype}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewMynodetype, NewTag}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import scopt.OParser
+import better.files.{File => F}
 
+import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success}
 
 /** Example program that makes use of Joern as a library
@@ -39,14 +43,35 @@ object Main {
               applyDefaultOverlays(cpg)
               println("Printing all methods:")
               println("=====================")
-              cpg.method.name.foreach(println)
-              println("=====================")
-              println("Running a custom pass to add some custom nodes")
-              new MyPass(cpg).createAndApply()
-              new MyCredPass(cpg).createAndApply()
-              println("Running custom queries")
-              cpg.mynodetype.foreach(println)
-              cpg.mynodetype.myCustomStep.l
+
+              var rule = new RuleInfo("Data.Sensitive.Personal.Address", "Address", "Personal", ".*(?i)zipCode.*", HashMap("Pii" -> "Some info", "Law" -> "some other"))
+              val rules: List[RuleInfo] = List(rule)
+
+              val myTagger = new PrivadoTagger(cpg)
+              myTagger.runTagger(rules)
+              //println(myTagger.runTagger(rules).toJson)
+
+              //Utility to debug
+              for (tagName <- cpg.tag.name.dedup.l) {
+                val tags = cpg.tag(tagName).l
+                println(s"tag Name : ${tagName}, size : ${tags.size}")
+                println("Values : ")
+                for (tag <- tags) {
+                  print(s"${tag.value}, ")
+                }
+                println("\n----------------------------------------")
+              }
+
+
+
+            /*cpg.method.name.foreach(println)
+            println("=====================")
+            println("Running a custom pass to add some custom nodes")
+            new MyPass(cpg).createAndApply()
+            new MyCredPass(cpg).createAndApply()
+            println("Running custom queries")
+            cpg.mynodetype.foreach(println)
+            cpg.mynodetype.myCustomStep.l*/
             case Failure(exception) =>
               println("[FAILED]")
               println(exception)
@@ -63,8 +88,9 @@ object Main {
   */
 class MyPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val n = NewMynodetype().myproperty("foo")
-    builder.addNode(n)
+    //val n = NewMynodetype().myproperty("foo")
+    //builder.addNode(n)
+    cpg.literal.foreach(ident => builder.addEdge(ident, NewTag().name("Name").value("Sensitive"), EdgeTypes.TAGGED_BY))
   }
 }
 

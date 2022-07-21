@@ -1,0 +1,5 @@
+package ai.privado.model
+
+import scala.collection.immutable.HashMap
+
+case class RuleInfo(id: String, name: String, category: String, pattern: String, tags: HashMap[String, String])
