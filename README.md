@@ -49,7 +49,7 @@ sbt stage
 ```
 ```
 If facing issues related to imports not working try
-- File -> invalidate caches - reimport
+- File -> invalidate caches - Invalidate and restart
 ```
 
 
