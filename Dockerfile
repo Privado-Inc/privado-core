@@ -11,9 +11,13 @@ RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SB
 
 WORKDIR /home/privado-core
 COPY . .
-RUN sbt stage
+# universal zip
+RUN sbt universal:packageBin
 
 FROM openjdk:18-alpine
-WORKDIR /home
 RUN apk add --no-cache bash
-COPY --from=build /home/privado-core/target/universal/stage/ /home/privado-core-build/
+#The SHELL instruction allows the default shell used for the shell form of commands to be overridden
+SHELL [ "/bin/bash", "-c" ]
+WORKDIR /home
+COPY --from=build /home/privado-core/target/universal/privado-core*.zip /home/privado-core-build/
+
