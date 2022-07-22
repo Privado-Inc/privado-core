@@ -1,7 +1,8 @@
 package ai.privado.entrypoint
 
 import ai.privado.joern.language._
-import ai.privado.model.{InternalTags, RuleInfo}
+import ai.privado.model.{RuleInfo}
+import ai.privado.semantic.Language._
 import ai.privado.tagger.PrivadoTagger
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -11,7 +12,6 @@ import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import scopt.OParser
-import better.files.{File => F}
 
 import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success}
@@ -44,12 +44,11 @@ object Main {
               println("Printing all methods:")
               println("=====================")
 
-              var rule = new RuleInfo("Data.Sensitive.Personal.Address", "Address", "Personal", ".*(?i)zipCode.*", HashMap("Pii" -> "Some info", "Law" -> "some other"))
+              val rule = RuleInfo("Data.Sensitive.Personal.Address", "Address", "Personal", ".*(?i)zipCode.*", HashMap("Pii" -> "Some info", "Law" -> "some other"))
               val rules: List[RuleInfo] = List(rule)
 
-              val myTagger = new PrivadoTagger(cpg)
-              myTagger.runTagger(rules)
-              //println(myTagger.runTagger(rules).toJson)
+              //Run tagger
+              cpg.runTagger(rules)
 
               //Utility to debug
               for (tagName <- cpg.tag.name.dedup.l) {
