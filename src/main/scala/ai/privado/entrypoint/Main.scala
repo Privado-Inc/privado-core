@@ -47,7 +47,7 @@ object Main {
 
                 // Run tagger
                 cpg.runTagger(rules)
-
+                val dataflows = cpg.dataflow.l
                 // Utility to debug
                 for (tagName <- cpg.tag.name.dedup.l) {
                   val tags = cpg.tag(tagName).l
