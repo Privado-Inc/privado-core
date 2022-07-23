@@ -10,70 +10,63 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewMynode
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
-import scopt.OParser
 
 import scala.collection.immutable.HashMap
 import scala.util.{Failure, Success}
 
-/** Example program that makes use of Joern as a library
+/** Privado Core main entry point
   */
 object Main {
   def main(args: Array[String]): Unit = {
 
     CommandParser.parse(args) match {
       case Some(config) =>
-        if (config.cmd.head == "scan") {
-          println("Hello Joern")
-          print("Creating CPG... ")
-          val directory = config.sourceLocation.head
-          import io.joern.console.cpgcreation.guessLanguage
-          val xtocpg = guessLanguage(directory) match {
-            case Some(Languages.JAVASRC) =>
-              val config = Config(inputPaths = Set(directory))
-              JavaSrc2Cpg().createCpg(config)
+        config.cmd.head match {
+          case Commands(Commands.SCAN) =>
+            println("Hello Joern")
+            print("Creating CPG... ")
+            val directory = config.sourceLocation.head
+            import io.joern.console.cpgcreation.guessLanguage
+            val xtocpg = guessLanguage(directory) match {
+              case Some(Languages.JAVASRC) =>
+                val config = Config(inputPaths = Set(directory))
+                JavaSrc2Cpg().createCpg(config)
 
-            case _ =>
-              Failure(new RuntimeException("Language Not Detected"))
-          }
-          xtocpg match {
-            case Success(cpg) =>
-              println("[DONE]")
-              println("Applying default overlays")
-              applyDefaultOverlays(cpg)
-              println("Printing all methods:")
-              println("=====================")
+              case _ =>
+                Failure(new RuntimeException("Language Not Detected"))
+            }
+            xtocpg match {
+              case Success(cpg) =>
+                println("[DONE]")
+                println("Applying default overlays")
+                applyDefaultOverlays(cpg)
+                println("Printing all methods:")
+                println("=====================")
 
-              val rules: List[RuleInfo] = List(RuleFeeder.sourceRule, RuleFeeder.apiRule)
+                val rules: List[RuleInfo] = List(RuleFeeder.sourceRule, RuleFeeder.apiRule)
 
-              // Run tagger
-              cpg.runTagger(rules)
+                // Run tagger
+                cpg.runTagger(rules)
 
-              // Utility to debug
-              for (tagName <- cpg.tag.name.dedup.l) {
-                val tags = cpg.tag(tagName).l
-                println(s"tag Name : ${tagName}, size : ${tags.size}")
-                println("Values : ")
-                for (tag <- tags) {
-                  print(s"${tag.value}, ")
+                // Utility to debug
+                for (tagName <- cpg.tag.name.dedup.l) {
+                  val tags = cpg.tag(tagName).l
+                  println(s"tag Name : ${tagName}, size : ${tags.size}")
+                  println("Values : ")
+                  for (tag <- tags) {
+                    print(s"${tag.value}, ")
+                  }
+                  println("\n----------------------------------------")
                 }
-                println("\n----------------------------------------")
-              }
-
-            /*cpg.method.name.foreach(println)
-            println("=====================")
-            println("Running a custom pass to add some custom nodes")
-            new MyPass(cpg).createAndApply()
-            new MyCredPass(cpg).createAndApply()
-            println("Running custom queries")
-            cpg.mynodetype.foreach(println)
-            cpg.mynodetype.myCustomStep.l*/
-            case Failure(exception) =>
-              println("[FAILED]")
-              println(exception)
-          }
+              case Failure(exception) =>
+                println("[FAILED]")
+                println(exception)
+            }
+          case _ =>
+          // This situation will never happen as it will fail and show respective command help for invalid input commands
         }
       case _ =>
-      // arguments are bad, error message will have been displayed
+      // arguments are bad, error message should get displayed from inside CommandParser.parse
     }
 
   }
