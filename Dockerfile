@@ -11,7 +11,7 @@ RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SB
 
 WORKDIR /home/privado-core
 COPY . .
-# create universal zip
+# universal zip
 RUN sbt universal:packageBin
 
 FROM openjdk:18-alpine
