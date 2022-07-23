@@ -17,7 +17,7 @@ object InternalTags extends Enumeration {
 
 object NodeType extends Enumeration {
 
-  type NodeType = scala.Enumeration
+  type NodeType = Value
 
   val SOURCE = Value("Source")
 
