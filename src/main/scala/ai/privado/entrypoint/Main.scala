@@ -1,9 +1,8 @@
 package ai.privado.entrypoint
 
 import ai.privado.joern.language._
-import ai.privado.model.{RuleInfo}
+import ai.privado.model.{RuleInfo, NodeType}
 import ai.privado.semantic.Language._
-import ai.privado.tagger.PrivadoTagger
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Languages}
@@ -44,13 +43,12 @@ object Main {
               println("Printing all methods:")
               println("=====================")
 
-              val rule = RuleInfo("Data.Sensitive.Personal.Address", "Address", "Personal", ".*(?i)zipCode.*", HashMap("Pii" -> "Some info", "Law" -> "some other"))
-              val rules: List[RuleInfo] = List(rule)
+              val rules: List[RuleInfo] = List(RuleFeeder.sourceRule, RuleFeeder.apiRule)
 
-              //Run tagger
+              // Run tagger
               cpg.runTagger(rules)
 
-              //Utility to debug
+              // Utility to debug
               for (tagName <- cpg.tag.name.dedup.l) {
                 val tags = cpg.tag(tagName).l
                 println(s"tag Name : ${tagName}, size : ${tags.size}")
@@ -60,8 +58,6 @@ object Main {
                 }
                 println("\n----------------------------------------")
               }
-
-
 
             /*cpg.method.name.foreach(println)
             println("=====================")
@@ -87,8 +83,8 @@ object Main {
   */
 class MyPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    //val n = NewMynodetype().myproperty("foo")
-    //builder.addNode(n)
+    // val n = NewMynodetype().myproperty("foo")
+    // builder.addNode(n)
     cpg.literal.foreach(ident => builder.addEdge(ident, NewTag().name("Name").value("Sensitive"), EdgeTypes.TAGGED_BY))
   }
 }
@@ -101,4 +97,33 @@ class MyCredPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       builder.addEdge(literal, credential, EdgeTypes.IS_CREDENTIAL)
     }
   }
+}
+
+object RuleFeeder {
+  val sourceRule = RuleInfo(
+    "Data.Sensitive.Personal.Address",
+    "Address",
+    "Personal",
+    ".*(?i)zipCode.*",
+    HashMap("Pii" -> "Some info", "Law" -> "some other"),
+    NodeType.SOURCE.toString
+  )
+
+  val databaseRule = RuleInfo(
+    "Data.Sensitive.Personal.Address",
+    "Address",
+    "Personal",
+    ".*(?i)zipCode.*",
+    HashMap("Pii" -> "Some info", "Law" -> "some other"),
+    NodeType.DATABASE.toString
+  )
+
+  val apiRule = RuleInfo(
+    "Api.sensitive.urls",
+    "Url",
+    "API",
+    "(?i).*http[s]{0,1}:.*|.*localhost.*|.*[.](?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me)(?:\\/|\"|'|`|:|\\|).*|.*\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}.*",
+    HashMap(),
+    NodeType.API.toString
+  )
 }
