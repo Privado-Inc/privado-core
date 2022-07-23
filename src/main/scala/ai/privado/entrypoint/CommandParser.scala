@@ -1,6 +1,5 @@
 package ai.privado.entrypoint
 
-import better.files.File
 import scopt.OParser
 
 import scala.sys.exit
@@ -13,6 +12,21 @@ case class Config(
   ignoreInternalRules: Boolean = false,
   downladDependencies: Boolean = true
 )
+
+object Commands extends Enumeration {
+
+  val SCAN = Value("scan")
+
+  // enables matching against all Role.Values
+  def unapply(s: String): Option[Value] =
+    values.find(s == _.toString)
+
+  trait Matching {
+    // enables matching against a particular Role.Value
+    def unapply(s: String): Boolean =
+      (s == toString)
+  }
+}
 
 object CommandParser {
   def parse(args: Array[String]): Option[Config] = {
