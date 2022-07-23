@@ -4,11 +4,9 @@ import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.tagger.sink.{APITagger, DatabaseTagger, LeakageTagger, SDKTagger}
 import ai.privado.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.utility.Utilities._
-import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
 import io.joern.joerncli.CpgBasedTool.addDataFlowOverlayIfNonExistent
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
-import io.shiftleft.semanticcpg.Overlays
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 

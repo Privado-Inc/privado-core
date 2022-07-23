@@ -30,8 +30,7 @@ class APITagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
     apiFlows.foreach(flow => {
       val literalCode = flow.elements.head.code
       val apiNode     = flow.elements.last
-      if (apiNode.tag.name(ruleInfo.nodeType).l.isEmpty) // Check so that we are not tagging same node again as sink
-        addRuleTags(builder, apiNode, ruleInfo)
+      addRuleTags(builder, apiNode, ruleInfo)
       storeForTag(builder, apiNode)(InternalTags.API_URL.toString, literalCode)
     })
   }

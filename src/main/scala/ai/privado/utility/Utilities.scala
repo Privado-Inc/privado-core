@@ -1,6 +1,6 @@
 package ai.privado.utility
 
-import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.model.{KeyConstants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTag
@@ -24,10 +24,10 @@ object Utilities {
    */
   def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: NodeOrDetachedNode, ruleInfo: RuleInfo): Unit = {
     val storeForTagHelper = storeForTag(builder, node) _
-    storeForTagHelper("id", ruleInfo.id)
-    storeForTagHelper("name", ruleInfo.name)
-    storeForTagHelper("category", ruleInfo.category)
-    storeForTagHelper("nodeType", ruleInfo.nodeType)
+    storeForTagHelper(KeyConstants.id, ruleInfo.id)
+    storeForTagHelper(KeyConstants.name, ruleInfo.name)
+    storeForTagHelper(KeyConstants.category, ruleInfo.category)
+    storeForTagHelper(KeyConstants.nodeType, ruleInfo.nodeType)
     for ((key, value) <- ruleInfo.tags) {
       storeForTagHelper(key, value)
     }
