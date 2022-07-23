@@ -5,6 +5,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 
 object Language {
 
-  implicit def tagger(cpg: Cpg) : PrivadoTagger = new PrivadoTagger(cpg)
+  implicit def tagger(cpg: Cpg): PrivadoTagger = new PrivadoTagger(cpg)
 
 }
