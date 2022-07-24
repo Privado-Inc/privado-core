@@ -7,6 +7,7 @@ case class RuleInfo(
   name: String,
   category: String,
   pattern: String,
+  sensitivity: String,
   tags: HashMap[String, String],
   nodeType: String
 )

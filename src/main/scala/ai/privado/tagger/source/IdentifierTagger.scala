@@ -1,6 +1,6 @@
 package ai.privado.tagger.source
 
-import ai.privado.model.{InternalTags, NodeType, RuleInfo}
+import ai.privado.model.{InternalTags, Constants, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -37,8 +37,10 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
     typeDeclHavingMemberName.fullName.dedup.foreach(typeDeclVal => {
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
-        storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
-        addRuleTags(builder, impactedObject, ruleInfo)
+        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+          addRuleTags(builder, impactedObject, ruleInfo)
+        }
       })
 
       // To mark all the field access
@@ -47,8 +49,10 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
         .where(_.argument(2).code(memberName))
         .l
       impactedGetters.foreach(impactedGetter => {
-        storeForTag(builder, impactedGetter)(InternalTags.SENSITIVE_FIELD_ACCESS.toString)
-        addRuleTags(builder, impactedGetter, ruleInfo)
+        if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedGetter)(InternalTags.SENSITIVE_FIELD_ACCESS.toString)
+          addRuleTags(builder, impactedGetter, ruleInfo)
+        }
       })
     })
 
@@ -73,8 +77,10 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
     typeDeclHavingMemberType.fullName.dedup.foreach(typeDeclVal => {
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
-        storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
-        addRuleTags(builder, impactedObject, ruleInfo)
+        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
+          addRuleTags(builder, impactedObject, ruleInfo)
+        }
       })
     })
   }
@@ -93,8 +99,10 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
     typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
-        storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
-        addRuleTags(builder, impactedObject, ruleInfo)
+        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
+          addRuleTags(builder, impactedObject, ruleInfo)
+        }
       })
     })
   }

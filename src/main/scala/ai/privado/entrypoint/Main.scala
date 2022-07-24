@@ -1,7 +1,8 @@
 package ai.privado.entrypoint
 
+import ai.privado.exporter.JSONExporter
 import ai.privado.joern.language._
-import ai.privado.model.{RuleInfo, NodeType}
+import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.semantic.Language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -10,9 +11,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewMynode
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import overflowdb.traversal.Traversal
 import scopt.OParser
 
+import java.util.UUID
 import scala.collection.immutable.HashMap
+import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 /** Example program that makes use of Joern as a library
@@ -43,12 +47,20 @@ object Main {
               println("Printing all methods:")
               println("=====================")
 
-              val rules: List[RuleInfo] = List(RuleFeeder.sourceRule, RuleFeeder.apiRule)
+              val rules: List[RuleInfo] = List(RuleFeeder.sourceRule, RuleFeeder.sourceRule2, RuleFeeder.apiRule)
 
               // Run tagger
               cpg.runTagger(rules)
               val dataflows = cpg.dataflow.l
 
+              // Attach each dataflow with a unique id
+              val dataflowMap = dataflows.map(dataflow => (UUID.randomUUID().toString, dataflow)).toMap
+
+              // Exporting
+              val outputFileName = "privado"
+              JSONExporter.fileExport(cpg, outputFileName, directory, dataflowMap)
+
+            /*
               // Utility to debug
               for (tagName <- cpg.tag.name.dedup.l) {
                 val tags = cpg.tag(tagName).l
@@ -58,7 +70,7 @@ object Main {
                   print(s"${tag.value}, ")
                 }
                 println("\n----------------------------------------")
-              }
+              }*/
 
             /*cpg.method.name.foreach(println)
             println("=====================")
@@ -106,17 +118,19 @@ object RuleFeeder {
     "Address",
     "Personal",
     ".*(?i)zipCode.*",
+    "medium",
     HashMap("Pii" -> "Some info", "Law" -> "some other"),
     NodeType.SOURCE.toString
   )
 
-  val databaseRule = RuleInfo(
-    "Data.Sensitive.Personal.Address",
-    "Address",
-    "Personal",
-    ".*(?i)zipCode.*",
-    HashMap("Pii" -> "Some info", "Law" -> "some other"),
-    NodeType.DATABASE.toString
+  val sourceRule2 = RuleInfo(
+    "Data.Sensitive.Salesforce.url",
+    "salesforce",
+    "Salesforce",
+    ".*(?i)salesforce.*",
+    "high",
+    HashMap("line1" -> "Some info of line1"),
+    NodeType.SOURCE.toString
   )
 
   val apiRule = RuleInfo(
@@ -124,6 +138,7 @@ object RuleFeeder {
     "Url",
     "API",
     "(?i).*http[s]{0,1}:.*|.*localhost.*|.*[.](?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me)(?:\\/|\"|'|`|:|\\|).*|.*\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}.*",
+    "high",
     HashMap(),
     NodeType.API.toString
   )
