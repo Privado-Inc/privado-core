@@ -4,7 +4,7 @@ import scopt.OParser
 
 import scala.sys.exit
 
-case class Config(
+case class PrivadoInput(
   cmd: Set[String] = Set.empty,
   sourceLocation: Set[String] = Set.empty,
   internalRulesPath: Set[String] = Set.empty,
@@ -15,7 +15,9 @@ case class Config(
 
 object Commands extends Enumeration {
 
-  val SCAN = Value("scan")
+  val SCAN = CommandMapper("scan", ScanProcessor)
+
+  case class CommandMapper(cmd: String, processor: CommandProcessor) extends Val(cmd)
 
   // enables matching against all Role.Values
   def unapply(s: String): Option[Value] =
@@ -29,8 +31,8 @@ object Commands extends Enumeration {
 }
 
 object CommandParser {
-  def parse(args: Array[String]): Option[Config] = {
-    val builder = OParser.builder[Config]
+  def parse(args: Array[String]): Option[CommandProcessor] = {
+    val builder = OParser.builder[PrivadoInput]
 
     val parser = {
       import builder._
@@ -78,9 +80,12 @@ object CommandParser {
           )
       )
     }
-    val conf = OParser.parse(parser, args, Config())
+    val conf = OParser.parse(parser, args, PrivadoInput())
     conf match {
-      case Some(config) => Some(config)
+      case Some(config) =>
+        val cmdp: Commands.CommandMapper = Commands.withName(config.cmd.head).asInstanceOf[Commands.CommandMapper]
+        cmdp.processor.config = config
+        Some(cmdp.processor)
       case _ =>
         println(OParser.usage(parser))
         exit(1)
