@@ -2,6 +2,7 @@ package ai.privado.entrypoint
 
 import scopt.OParser
 
+import scala.collection.mutable
 import scala.sys.exit
 
 case class PrivadoInput(
@@ -13,24 +14,20 @@ case class PrivadoInput(
   downladDependencies: Boolean = true
 )
 
-object Commands extends Enumeration {
-
-  val SCAN = CommandMapper("scan", ScanProcessor)
-
-  case class CommandMapper(cmd: String, processor: CommandProcessor) extends Val(cmd)
-
-  // enables matching against all Role.Values
-  def unapply(s: String): Option[Value] =
-    values.find(s == _.toString)
-
-  trait Matching {
-    // enables matching against a particular Role.Value
-    def unapply(s: String): Boolean =
-      (s == toString)
-  }
+object CommandConstants {
+  val SCAN                      = "scan"
+  val INTERNAL_RULES            = "internal-rules"
+  val INTERNAL_RULES_ABBR       = "ir"
+  val EXTERNAL_RULES            = "external-rules"
+  val EXTERNAL_RULES_ABBR       = "er"
+  val IGNORE_DEFAULT_RULES      = "ignore-default-rules"
+  val IGNORE_DEFAULT_RULES_ABBR = "i"
+  val SKIP_DOWNLOAD_DEP         = "skip-download-dependencies"
+  val SKIP_DOWNLOAD_DEP_ABBR    = "sdd"
 }
 
 object CommandParser {
+  val commandMapper: Map[String, CommandProcessor] = Map(CommandConstants.SCAN -> ScanProcessor)
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
@@ -40,30 +37,30 @@ object CommandParser {
         programName("privado-core"),
         head("privado-core", "*** TODO: Add version details***"),
         help("help").text("prints this usage text"),
-        cmd("scan")
+        cmd(CommandConstants.SCAN)
           .required()
-          .action((_, c) => c.copy(cmd = c.cmd + "scan"))
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.SCAN))
           .text(
             "Scans the given source directory, identifies the privacy data elements, dataflows, collection points and generates compliance report."
           )
           .children(
-            opt[String]("internal-rules")
-              .abbr("ir")
+            opt[String](CommandConstants.INTERNAL_RULES)
+              .abbr(CommandConstants.INTERNAL_RULES_ABBR)
               .required()
               .action((x, c) => c.copy(internalRulesPath = c.internalRulesPath + x))
               .text("Internal rule files location"),
-            opt[String]("external-rules")
-              .abbr("er")
+            opt[String](CommandConstants.EXTERNAL_RULES)
+              .abbr(CommandConstants.EXTERNAL_RULES_ABBR)
               .optional()
               .action((x, c) => c.copy(externalRulePath = c.externalRulePath + x))
               .text("External rule files location"),
-            opt[Boolean]("ignore-default-rules")
-              .abbr("i")
+            opt[Boolean](CommandConstants.IGNORE_DEFAULT_RULES)
+              .abbr(CommandConstants.IGNORE_DEFAULT_RULES_ABBR)
               .optional()
               .action((_, c) => c.copy(ignoreInternalRules = true))
               .text("Ignore internal rules "),
-            opt[Boolean]("skip-download-dependencies")
-              .abbr("sdd")
+            opt[Boolean](CommandConstants.SKIP_DOWNLOAD_DEP)
+              .abbr(CommandConstants.SKIP_DOWNLOAD_DEP_ABBR)
               .optional()
               .action((_, c) => c.copy(downladDependencies = false))
               .text("this option is hidden in the usage text"),
@@ -83,9 +80,14 @@ object CommandParser {
     val conf = OParser.parse(parser, args, PrivadoInput())
     conf match {
       case Some(config) =>
-        val cmdp: Commands.CommandMapper = Commands.withName(config.cmd.head).asInstanceOf[Commands.CommandMapper]
-        cmdp.processor.config = config
-        Some(cmdp.processor)
+        val cmdp: CommandProcessor = commandMapper.get(config.cmd.head) match {
+          case Some(cmdp) => cmdp
+          case _ =>
+            println(OParser.usage(parser))
+            exit(1)
+        }
+        cmdp.config = config
+        Some(cmdp)
       case _ =>
         println(OParser.usage(parser))
         exit(1)
