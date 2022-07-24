@@ -2,7 +2,6 @@ package ai.privado.entrypoint
 
 import scopt.OParser
 
-import scala.collection.mutable
 import scala.sys.exit
 
 case class PrivadoInput(
