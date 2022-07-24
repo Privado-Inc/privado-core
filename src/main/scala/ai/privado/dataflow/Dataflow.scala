@@ -1,6 +1,6 @@
 package ai.privado.dataflow
 
-import ai.privado.model.{KeyConstants, NodeType}
+import ai.privado.model.{Constants, NodeType}
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -24,9 +24,9 @@ class Dataflow(cpg: Cpg) {
   }
 
   private def getSources = {
-    cpg.literal.where(_.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.SOURCE.toString)).l ++ cpg.identifier
-      .where(_.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.SOURCE.toString).l) ++ cpg.call
-      .where(_.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.SOURCE.toString))
+    cpg.literal.where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString)).l ++ cpg.identifier
+      .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString).l) ++ cpg.call
+      .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
       .l
 
   }
@@ -34,10 +34,10 @@ class Dataflow(cpg: Cpg) {
   private def getSinks = {
     cpg.call
       .or(
-        _.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.API.toString),
-        _.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.DATABASE.toString),
-        _.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.LEAKAGE.toString),
-        _.tag.nameExact(KeyConstants.nodeType).valueExact(NodeType.SDK.toString)
+        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString),
+        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.DATABASE.toString),
+        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.LEAKAGE.toString),
+        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.SDK.toString)
       )
       .l
   }

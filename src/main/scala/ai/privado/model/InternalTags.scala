@@ -13,6 +13,8 @@ object InternalTags extends Enumeration {
 
   val API_URL = Value("API_URL")
 
+  lazy val valuesAsString = InternalTags.values.map(value => value.toString())
+
 }
 
 object NodeType extends Enumeration {

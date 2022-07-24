@@ -1,11 +1,14 @@
 package ai.privado.utility
 
-import ai.privado.model.{KeyConstants, RuleInfo}
+import ai.privado.model.{Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTag
-import io.shiftleft.utils.ProjectRoot
+import io.shiftleft.utils.{IOUtils, ProjectRoot}
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
+
+import java.nio.file.Paths
+import scala.util.Try
 
 object Utilities {
 
@@ -24,10 +27,11 @@ object Utilities {
    */
   def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: NodeOrDetachedNode, ruleInfo: RuleInfo): Unit = {
     val storeForTagHelper = storeForTag(builder, node) _
-    storeForTagHelper(KeyConstants.id, ruleInfo.id)
-    storeForTagHelper(KeyConstants.name, ruleInfo.name)
-    storeForTagHelper(KeyConstants.category, ruleInfo.category)
-    storeForTagHelper(KeyConstants.nodeType, ruleInfo.nodeType)
+    storeForTagHelper(Constants.id, ruleInfo.id)
+    storeForTagHelper(Constants.name, ruleInfo.name)
+    storeForTagHelper(Constants.category, ruleInfo.category)
+    storeForTagHelper(Constants.sensitivity, ruleInfo.sensitivity)
+    storeForTagHelper(Constants.nodeType, ruleInfo.nodeType)
     for ((key, value) <- ruleInfo.tags) {
       storeForTagHelper(key, value)
     }
@@ -46,4 +50,39 @@ object Utilities {
    Utility to filter rules by node type
    */
   def getRulesByNodeType(rules: List[RuleInfo], nodeType: String) = rules.filter(rule => rule.nodeType.equals(nodeType))
+
+  /** For a given `filename`, `lineToHighlight`, return the corresponding code by reading it from the file. If
+    * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
+    * that line.
+    */
+  def dump(filename: String, lineToHighlight: Option[Integer]): String = {
+    val arrow: CharSequence = "/* <=== */ "
+    val lines = Try(IOUtils.readLinesInFile(Paths.get(filename))).getOrElse {
+      println("error reading from: " + filename);
+      List()
+    }
+    val startLine: Integer = {
+      if (lineToHighlight.isDefined)
+        Math.max(0, lineToHighlight.get - 5)
+      else
+        0
+    }
+    val endLine: Integer = {
+      if (lineToHighlight.isDefined)
+        Math.min(lines.length, lineToHighlight.get + 5)
+      else
+        0
+    }
+    lines
+      .slice(startLine - 1, endLine)
+      .zipWithIndex
+      .map { case (line, lineNo) =>
+        if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
+          line + " " + arrow
+        } else {
+          line
+        }
+      }
+      .mkString("\n")
+  }
 }
