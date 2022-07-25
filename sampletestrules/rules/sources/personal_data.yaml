@@ -1,0 +1,12 @@
+sources:
+  - id: Data.Sensitive.Personal.Address
+    name: Address
+    category: Personal
+    sensitivity: medium
+    isSensitive: true
+    patterns:
+      - ".*(?i)zipCode.*"
+    tags:
+      pii: "Some Info"
+      law: GDPR
+
