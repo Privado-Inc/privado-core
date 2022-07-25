@@ -51,7 +51,7 @@ object RuleFeeder {
     "Data.Sensitive.Personal.Address",
     "Address",
     "Personal",
-    ".*(?i)zipCode.*",
+    List[String](".*(?i)zipCode.*"),
     "medium",
     HashMap("Pii" -> "Some info", "Law" -> "some other"),
     NodeType.SOURCE.toString
@@ -61,7 +61,7 @@ object RuleFeeder {
     "Data.Sensitive.Salesforce.url",
     "salesforce",
     "Salesforce",
-    ".*(?i)salesforce.*",
+    List[String](".*(?i)salesforce.*"),
     "high",
     HashMap("line1" -> "Some info of line1"),
     NodeType.SOURCE.toString
@@ -71,7 +71,9 @@ object RuleFeeder {
     "Api.sensitive.urls",
     "Url",
     "API",
-    "(?i).*http[s]{0,1}:.*|.*localhost.*|.*[.](?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me)(?:\\/|\"|'|`|:|\\|).*|.*\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}.*",
+    List[String](
+      "(?i).*http[s]{0,1}:.*|.*localhost.*|.*[.](?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me)(?:\\/|\"|'|`|:|\\|).*|.*\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}.*"
+    ),
     "high",
     HashMap(),
     NodeType.API.toString

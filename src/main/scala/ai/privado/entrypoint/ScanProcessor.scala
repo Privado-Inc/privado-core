@@ -1,21 +1,49 @@
 package ai.privado.entrypoint
 
 import ai.privado.exporter.JSONExporter
-import ai.privado.model.RuleInfo
+import ai.privado.model.{RuleInfo, Rules}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import ai.privado.semantic.Language._
+import better.files.File
 import io.shiftleft.semanticcpg.language._
 
 import java.util.UUID
 import scala.util.{Failure, Success}
+import io.circe.yaml.parser
 
 object ScanProcessor extends CommandProcessor {
 
+  def processRules(): Unit = {
+    println(f"Internal rule path - ${config.internalRulesPath}")
+    println(f"External rule path - ${config.externalRulePath}")
+    val ir: File = File(config.internalRulesPath.head)
+    ir.listRecursively
+      .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
+      .foreach(file => {
+        parser.parse(file.contentAsString) match {
+          case Right(json) =>
+            import ai.privado.model.CirceEnDe._
+            json.as[Rules] match {
+              case Right(rules) =>
+                println(rules)
+              case _ =>
+                println("No rules found")
+            }
+          case _ =>
+            println("No rules found")
+        }
+      })
+  }
   override def process(): Unit = {
     println("Hello Joern")
-    print("Creating CPG... ")
+    println("Creating CPG... ")
+    processRules()
+    processCPG()
+  }
+
+  def processCPG(): Unit = {
     val directory = config.sourceLocation.head
     import io.joern.console.cpgcreation.guessLanguage
     val xtocpg = guessLanguage(directory) match {

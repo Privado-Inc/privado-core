@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 
 class SDKTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val sdks = cpg.call.methodFullName(ruleInfo.pattern + ".*")
+    val sdks = cpg.call.methodFullName(ruleInfo.patterns.head + ".*")
 
     sdks.foreach(sdk => addRuleTags(builder, sdk, ruleInfo))
   }
