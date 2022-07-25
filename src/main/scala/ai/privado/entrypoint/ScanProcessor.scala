@@ -19,22 +19,24 @@ object ScanProcessor extends CommandProcessor {
     println(f"Internal rule path - ${config.internalRulesPath}")
     println(f"External rule path - ${config.externalRulePath}")
     val ir: File = File(config.internalRulesPath.head)
-    ir.listRecursively
+    val internalRules = ir.listRecursively
       .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
-      .foreach(file => {
+      .map(file => {
         parser.parse(file.contentAsString) match {
           case Right(json) =>
             import ai.privado.model.CirceEnDe._
             json.as[Rules] match {
               case Right(rules) =>
-                println(rules)
+                rules
               case _ =>
-                println("No rules found")
+                Rules(List[RuleInfo](), List[RuleInfo]())
             }
           case _ =>
-            println("No rules found")
+            Rules(List[RuleInfo](), List[RuleInfo]())
         }
       })
+      .reduce((a, b) => a.copy(sources = a.sources ++ b.sources, sinks = a.sinks ++ b.sinks))
+    println(internalRules)
   }
   override def process(): Unit = {
     println("Hello Joern")
