@@ -7,6 +7,7 @@ object Constants {
   val category    = "category"
   val nodeType    = "nodeType"
   val sensitivity = "sensitivity"
+  val isSensitive = "isSensitive"
   val patterns    = "patterns"
 
   // Source/sink types

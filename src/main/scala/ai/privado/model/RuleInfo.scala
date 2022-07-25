@@ -10,6 +10,7 @@ case class RuleInfo(
   name: String,
   category: String,
   patterns: List[String],
+  isSensitive: Boolean,
   sensitivity: String,
   tags: Map[String, String],
   nodeType: String
@@ -31,15 +32,17 @@ object CirceEnDe {
       val name        = c.downField(Constants.name).as[String]
       val category    = c.downField(Constants.category).as[String]
       val patterns    = c.downField(Constants.patterns).as[List[String]]
+      val isSensitive = c.downField(Constants.isSensitive).as[Boolean]
       val sensitivity = c.downField(Constants.sensitivity).as[String]
       val tags        = c.downField(Constants.tags).as[Map[String, String]]
       Right(
         RuleInfo(
-          id.getOrElse(""),
-          name.getOrElse(""),
-          category.getOrElse(""),
+          id = id.getOrElse(""),
+          name = name.getOrElse(""),
+          category = category.getOrElse(""),
           patterns = patterns.getOrElse(List[String]()),
           sensitivity = sensitivity.getOrElse(""),
+          isSensitive = isSensitive.getOrElse(false),
           tags = tags.getOrElse(HashMap[String, String]()),
           nodeType = ""
         )

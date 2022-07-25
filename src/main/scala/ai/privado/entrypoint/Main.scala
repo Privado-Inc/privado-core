@@ -52,6 +52,7 @@ object RuleFeeder {
     "Address",
     "Personal",
     List[String](".*(?i)zipCode.*"),
+    true,
     "medium",
     HashMap("Pii" -> "Some info", "Law" -> "some other"),
     NodeType.SOURCE.toString
@@ -62,6 +63,7 @@ object RuleFeeder {
     "salesforce",
     "Salesforce",
     List[String](".*(?i)salesforce.*"),
+    false,
     "high",
     HashMap("line1" -> "Some info of line1"),
     NodeType.SOURCE.toString
@@ -74,6 +76,7 @@ object RuleFeeder {
     List[String](
       "(?i).*http[s]{0,1}:.*|.*localhost.*|.*[.](?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me)(?:\\/|\"|'|`|:|\\|).*|.*\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}[.]\\d{1,3}.*"
     ),
+    false,
     "high",
     HashMap(),
     NodeType.API.toString
