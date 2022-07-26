@@ -1,33 +1,51 @@
 package ai.privado.entrypoint
 
 import ai.privado.exporter.JSONExporter
-import ai.privado.model.{RuleInfo, Rules}
+import ai.privado.model.{NodeType, RuleInfo, Rules}
+import ai.privado.semantic.Language._
+import better.files.File
+import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
-import ai.privado.semantic.Language._
-import better.files.File
 import io.shiftleft.semanticcpg.language._
 
 import java.util.UUID
 import scala.util.{Failure, Success}
-import io.circe.yaml.parser
 
 object ScanProcessor extends CommandProcessor {
 
-  def processRules(): Unit = {
-    println(f"Internal rule path - ${config.internalRulesPath}")
-    println(f"External rule path - ${config.externalRulePath}")
+  def processRules(): Rules = {
     val ir: File = File(config.internalRulesPath.head)
     val internalRules = ir.listRecursively
       .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
       .map(file => {
+        val filePath            = file.pathAsString
+        val fileName            = file.nameWithoutExtension
+        val immediateParentName = file.parent.nameWithoutExtension
         parser.parse(file.contentAsString) match {
           case Right(json) =>
             import ai.privado.model.CirceEnDe._
             json.as[Rules] match {
               case Right(rules) =>
-                rules
+                rules.copy(
+                  sources = rules.sources.map(x =>
+                    x.copy(
+                      filePath = filePath,
+                      fileName = fileName,
+                      parentName = immediateParentName,
+                      nodeType = NodeType.SOURCE.toString
+                    )
+                  ),
+                  sinks = rules.sinks.map(x =>
+                    x.copy(
+                      filePath = filePath,
+                      fileName = fileName,
+                      parentName = immediateParentName,
+                      nodeType = NodeType.withNameWithDefault(immediateParentName).toString
+                    )
+                  )
+                )
               case _ =>
                 Rules(List[RuleInfo](), List[RuleInfo]())
             }
@@ -36,16 +54,17 @@ object ScanProcessor extends CommandProcessor {
         }
       })
       .reduce((a, b) => a.copy(sources = a.sources ++ b.sources, sinks = a.sinks ++ b.sinks))
+    // TODO: remove this println
     println(internalRules)
+    internalRules
   }
   override def process(): Unit = {
     println("Hello Joern")
     println("Creating CPG... ")
-    processRules()
-    processCPG()
+    processCPG(processRules())
   }
 
-  def processCPG(): Unit = {
+  def processCPG(processedRules: Rules): Unit = {
     val directory = config.sourceLocation.head
     import io.joern.console.cpgcreation.guessLanguage
     val xtocpg = guessLanguage(directory) match {
@@ -64,7 +83,7 @@ object ScanProcessor extends CommandProcessor {
         println("Printing all methods:")
         println("=====================")
 
-        val rules: List[RuleInfo] = List(RuleFeeder.sourceRule, RuleFeeder.apiRule)
+        val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks
 
         // Run tagger
         cpg.runTagger(rules)

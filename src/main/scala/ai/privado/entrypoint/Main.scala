@@ -55,7 +55,10 @@ object RuleFeeder {
     true,
     "medium",
     HashMap("Pii" -> "Some info", "Law" -> "some other"),
-    NodeType.SOURCE.toString
+    NodeType.SOURCE.toString,
+    "",
+    "",
+    ""
   )
 
   val sourceRule2 = RuleInfo(
@@ -66,7 +69,10 @@ object RuleFeeder {
     false,
     "high",
     HashMap("line1" -> "Some info of line1"),
-    NodeType.SOURCE.toString
+    NodeType.SOURCE.toString,
+    "",
+    "",
+    ""
   )
 
   val apiRule = RuleInfo(
@@ -79,6 +85,9 @@ object RuleFeeder {
     false,
     "high",
     HashMap(),
-    NodeType.API.toString
+    NodeType.API.toString,
+    "",
+    "",
+    ""
   )
 }

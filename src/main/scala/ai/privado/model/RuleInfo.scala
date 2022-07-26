@@ -13,7 +13,10 @@ case class RuleInfo(
   isSensitive: Boolean,
   sensitivity: String,
   tags: Map[String, String],
-  nodeType: String
+  nodeType: String,
+  filePath: String,
+  fileName: String,
+  parentName: String
 )
 case class Rules(sources: List[RuleInfo], sinks: List[RuleInfo])
 
@@ -44,7 +47,10 @@ object CirceEnDe {
           sensitivity = sensitivity.getOrElse(""),
           isSensitive = isSensitive.getOrElse(false),
           tags = tags.getOrElse(HashMap[String, String]()),
-          nodeType = ""
+          nodeType = "",
+          filePath = "",
+          fileName = "",
+          parentName = ""
         )
       )
     }
