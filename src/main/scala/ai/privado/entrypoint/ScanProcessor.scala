@@ -65,11 +65,11 @@ object ScanProcessor extends CommandProcessor {
   }
 
   def processCPG(processedRules: Rules): Unit = {
-    val directory = config.sourceLocation.head
+    val sourceRepoLocation = config.sourceLocation.head
     import io.joern.console.cpgcreation.guessLanguage
-    val xtocpg = guessLanguage(directory) match {
+    val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(Languages.JAVASRC) =>
-        val config = Config(inputPaths = Set(directory))
+        val config = Config(inputPaths = Set(sourceRepoLocation))
         JavaSrc2Cpg().createCpg(config)
 
       case _ =>
@@ -94,7 +94,7 @@ object ScanProcessor extends CommandProcessor {
 
         // Exporting
         val outputFileName = "privado"
-        JSONExporter.fileExport(cpg, outputFileName, directory, dataflowMap)
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
 
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {

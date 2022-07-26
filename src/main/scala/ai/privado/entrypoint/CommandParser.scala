@@ -79,14 +79,14 @@ object CommandParser {
     val conf = OParser.parse(parser, args, PrivadoInput())
     conf match {
       case Some(config) =>
-        val cmdp: CommandProcessor = commandMapper.get(config.cmd.head) match {
-          case Some(cmdp) => cmdp
+        val commandProcessor: CommandProcessor = commandMapper.get(config.cmd.head) match {
+          case Some(commandProcessor) => commandProcessor
           case _ =>
             println(OParser.usage(parser))
             exit(1)
         }
-        cmdp.config = config
-        Some(cmdp)
+        commandProcessor.config = config
+        Some(commandProcessor)
       case _ =>
         println(OParser.usage(parser))
         exit(1)
