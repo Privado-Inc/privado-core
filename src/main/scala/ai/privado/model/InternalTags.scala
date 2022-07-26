@@ -21,10 +21,18 @@ object NodeType extends Enumeration {
 
   type NodeType = Value
 
-  val SOURCE = Value("Source")
-
+  val SOURCE   = Value("Source")
   val DATABASE = Value("Database")
   val API      = Value("API")
   val LEAKAGE  = Value("Leakage")
   val SDK      = Value("SDK")
+  val UNKNOWN  = Value("Unknown")
+
+  def withNameWithDefault(name: String): Value = {
+    try {
+      withName(name)
+    } catch {
+      case _: Throwable => this.UNKNOWN
+    }
+  }
 }

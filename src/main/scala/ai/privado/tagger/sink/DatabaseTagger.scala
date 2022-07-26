@@ -9,7 +9,7 @@ import ai.privado.utility.Utilities._
 
 class DatabaseTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val databases = cpg.call.methodFullName(ruleInfo.pattern)
+    val databases = cpg.call.methodFullName(ruleInfo.patterns.head)
 
     databases.foreach(database => addRuleTags(builder, database, ruleInfo))
 

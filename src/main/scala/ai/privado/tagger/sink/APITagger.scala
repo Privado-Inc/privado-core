@@ -21,7 +21,7 @@ class APITagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
     "(?i).*(?:url|client|connection|request|execute|load|host|access|fetch|get|set|put|post|trace|patch|send|remove|delete|write|read|assignment|provider).*"
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code(ruleInfo.pattern).l
+    val apiInternalSinkPattern = cpg.literal.code(ruleInfo.patterns.head).l
     val apis                   = cpg.call.methodFullName(APISINKS_REGEX).l
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics())

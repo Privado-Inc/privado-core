@@ -11,7 +11,7 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
-    val regexMatchingIdentifiers = cpg.identifier(ruleInfo.pattern).l
+    val regexMatchingIdentifiers = cpg.identifier(ruleInfo.patterns.head).l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTags.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)

@@ -12,7 +12,7 @@ class LiteralTagger(cpg: Cpg, rule: RuleInfo) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.2
-    val literals = cpg.literal.code(rule.pattern).l
+    val literals = cpg.literal.code(rule.patterns.head).l
     literals.foreach(literal =>
       builder.addEdge(literal, NewTag().name(InternalTags.VARIABLE_REGEX_LITERAL.toString), EdgeTypes.TAGGED_BY)
     )

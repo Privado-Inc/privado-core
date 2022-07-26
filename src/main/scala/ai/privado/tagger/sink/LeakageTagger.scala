@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 
 class LeakageTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val leakages = cpg.call.methodFullName(ruleInfo.pattern)
+    val leakages = cpg.call.methodFullName(ruleInfo.patterns.head)
 
     leakages.foreach(leakage => addRuleTags(builder, leakage, ruleInfo))
 
