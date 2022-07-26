@@ -5,6 +5,8 @@
 ### MAC ###
 .DS_Store
 
+.privado
+
 ### Joern ###
 
 joern-inst/
