@@ -1,13 +1,10 @@
 package ai.privado.entrypoint
 
-import ai.privado.model.{NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
-
-import scala.collection.immutable.HashMap
 
 /** Privado Core main entry point
   */
