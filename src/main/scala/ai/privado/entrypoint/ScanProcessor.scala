@@ -86,8 +86,8 @@ object ScanProcessor extends CommandProcessor {
     }
     /*
      * NOTE: We want to override the external rules over internal in case of duplicates by id.
-     * While concatenating two lists (internal and external) elements from the first collection will be kept and
-     * elements from second collection will be discarded.
+     * While concatenating two lists (internal and external) and get the distinct list of elements.
+     * Elements from the first collection will be kept and elements from second collection will be discarded.
      *
      * e.g
      * val sources     = externalRules.sources ++ internalRules.sources
