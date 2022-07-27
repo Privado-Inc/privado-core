@@ -10,6 +10,7 @@ object InternalTags extends Enumeration {
   val OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE = Value("OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE")
   val OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE = Value("OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE")
   val SENSITIVE_FIELD_ACCESS                   = Value("SENSITIVE_FIELD_ACCESS")
+  val PRIVADO_DERIVED                          = Value("PRIVADO_DERIVED")
 
   val API_URL = Value("API_URL")
 
@@ -21,12 +22,13 @@ object NodeType extends Enumeration {
 
   type NodeType = Value
 
-  val SOURCE   = Value("Source")
-  val DATABASE = Value("Database")
-  val API      = Value("API")
-  val LEAKAGE  = Value("Leakage")
-  val SDK      = Value("SDK")
-  val UNKNOWN  = Value("Unknown")
+  val SOURCE         = Value("Source")
+  val DERIVED_SOURCE = Value("DerivedSource")
+  val DATABASE       = Value("Database")
+  val API            = Value("API")
+  val LEAKAGE        = Value("Leakage")
+  val SDK            = Value("SDK")
+  val UNKNOWN        = Value("Unknown")
 
   def withNameWithDefault(name: String): Value = {
     try {
