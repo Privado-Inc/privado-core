@@ -19,6 +19,7 @@ object JSONExporter {
     val output           = mutable.LinkedHashMap[String, Json]()
     output.addOne(Constants.version       -> "1.0.0".asJson)
     output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
+    output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
     output.addOne(Constants.localScanPath -> repoPath.asJson)
     output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
     output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
