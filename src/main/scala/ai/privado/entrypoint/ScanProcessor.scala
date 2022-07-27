@@ -1,13 +1,12 @@
 package ai.privado.entrypoint
 
 import ai.privado.exporter.JSONExporter
-import ai.privado.model.{NodeType, RuleInfo, Rules}
+import ai.privado.model._
 import ai.privado.semantic.Language._
 import better.files.File
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
@@ -20,7 +19,8 @@ object ScanProcessor extends CommandProcessor {
   val logger = LoggerFactory.getLogger(this.getClass)
 
   def parseRules(rulesPath: String): Rules = {
-    val ir: File =
+    val ir: File = {
+      // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
       catch {
         case ex: Throwable =>
@@ -28,14 +28,18 @@ object ScanProcessor extends CommandProcessor {
           logger.error(f"Rules path '${rulesPath}' is not accessible")
           exit(1)
       }
+    }
     val parsedRules =
       try
         ir.listRecursively
           .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
           .map(file => {
-            val filePath            = file.pathAsString
-            val fileName            = file.nameWithoutExtension
-            val immediateParentName = file.parent.nameWithoutExtension
+            // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
+
+            val fullPath = file.pathAsString
+            // e.g. relPath = rules/sources/accounts
+            val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
+            val pathTree = relPath.split("/")
             parser.parse(file.contentAsString) match {
               case Right(json) =>
                 import ai.privado.model.CirceEnDe._
@@ -44,18 +48,20 @@ object ScanProcessor extends CommandProcessor {
                     rules.copy(
                       sources = rules.sources.map(x =>
                         x.copy(
-                          filePath = filePath,
-                          fileName = fileName,
-                          parentName = immediateParentName,
-                          nodeType = NodeType.SOURCE
+                          file = fullPath,
+                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                          categoryTree = pathTree,
+                          nodeType = NodeType.REGULAR
                         )
                       ),
                       sinks = rules.sinks.map(x =>
                         x.copy(
-                          filePath = filePath,
-                          fileName = fileName,
-                          parentName = immediateParentName,
-                          nodeType = NodeType.withNameWithDefault(immediateParentName)
+                          file = fullPath,
+                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                          catLevelTwo = CatLevelTwo.withNameWithDefault(pathTree.apply(2)),
+                          categoryTree = pathTree,
+                          language = Language.withNameWithDefault(pathTree.last),
+                          nodeType = NodeType.withNameWithDefault(pathTree.apply(3)) // TODO: Need to change this
                         )
                       )
                     )
