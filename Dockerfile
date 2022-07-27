@@ -19,5 +19,4 @@ RUN apk add --no-cache bash
 #The SHELL instruction allows the default shell used for the shell form of commands to be overridden
 SHELL [ "/bin/bash", "-c" ]
 WORKDIR /home
-COPY --from=build /home/privado-core/target/universal/privado-core*.zip /home/privado-core-build/
-
+COPY --from=build /home/privado-core/target/universal/privado-core*.zip /home/privado-core-build/privado-core.zip
