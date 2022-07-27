@@ -1,5 +1,6 @@
 package ai.privado.utility
 
+import ai.privado.model.NodeType.NodeType
 import ai.privado.model.{Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -31,7 +32,7 @@ object Utilities {
     storeForTagHelper(Constants.name, ruleInfo.name)
     storeForTagHelper(Constants.category, ruleInfo.category)
     storeForTagHelper(Constants.sensitivity, ruleInfo.sensitivity)
-    storeForTagHelper(Constants.nodeType, ruleInfo.nodeType)
+    storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
     for ((key, value) <- ruleInfo.tags) {
       storeForTagHelper(key, value)
     }
@@ -49,7 +50,8 @@ object Utilities {
   /*
    Utility to filter rules by node type
    */
-  def getRulesByNodeType(rules: List[RuleInfo], nodeType: String) = rules.filter(rule => rule.nodeType.equals(nodeType))
+  def getRulesByNodeType(rules: List[RuleInfo], nodeType: NodeType) =
+    rules.filter(rule => rule.nodeType.equals(nodeType))
 
   /** For a given `filename`, `lineToHighlight`, return the corresponding code by reading it from the file. If
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before

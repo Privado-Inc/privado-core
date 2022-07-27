@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.model.{Constants, InternalTags}
+import ai.privado.model.{Constants, InternalTags, NodeType}
 import ai.privado.model.NodeType.NodeType
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -26,11 +26,18 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
     val dataflowsMapBySourceId = mutable.HashMap[String, ListBuffer[String]]()
     dataflowsMapByType.foreach(entrySet => {
-      val sourceId = entrySet._2.elements.head.tag.nameExact(Constants.id).value.head
-      if (dataflowsMapBySourceId.contains(sourceId))
-        dataflowsMapBySourceId(sourceId) += entrySet._1
-      else
-        dataflowsMapBySourceId.addOne(sourceId, ListBuffer(entrySet._1))
+      def addToMap(sourceId: String) = {
+        if (dataflowsMapBySourceId.contains(sourceId))
+          dataflowsMapBySourceId(sourceId) += entrySet._1
+        else
+          dataflowsMapBySourceId.addOne(sourceId, ListBuffer(entrySet._1))
+      }
+      val source = entrySet._2.elements.head
+      if (source.tag.nameExact(Constants.nodeType).value.head.equals(NodeType.SOURCE.toString)) {
+        addToMap(source.tag.nameExact(Constants.id).l.head.value)
+      } else {
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap(_))
+      }
     })
 
     val dataflowOutputList = ListBuffer[mutable.LinkedHashMap[String, Json]]()

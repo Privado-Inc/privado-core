@@ -13,7 +13,7 @@ case class RuleInfo(
   isSensitive: Boolean,
   sensitivity: String,
   tags: Map[String, String],
-  nodeType: String,
+  nodeType: NodeType.NodeType,
   filePath: String,
   fileName: String,
   parentName: String
@@ -47,7 +47,7 @@ object CirceEnDe {
           sensitivity = sensitivity.getOrElse(""),
           isSensitive = isSensitive.getOrElse(false),
           tags = tags.getOrElse(HashMap[String, String]()),
-          nodeType = "",
+          nodeType = NodeType.UNKNOWN,
           filePath = "",
           fileName = "",
           parentName = ""

@@ -6,6 +6,7 @@ import ai.privado.semantic.Language._
 import better.files.File
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.joerncli.DefaultOverlays
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
@@ -46,7 +47,7 @@ object ScanProcessor extends CommandProcessor {
                           filePath = filePath,
                           fileName = fileName,
                           parentName = immediateParentName,
-                          nodeType = NodeType.SOURCE.toString
+                          nodeType = NodeType.SOURCE
                         )
                       ),
                       sinks = rules.sinks.map(x =>
@@ -54,7 +55,7 @@ object ScanProcessor extends CommandProcessor {
                           filePath = filePath,
                           fileName = fileName,
                           parentName = immediateParentName,
-                          nodeType = NodeType.withNameWithDefault(immediateParentName).toString
+                          nodeType = NodeType.withNameWithDefault(immediateParentName)
                         )
                       )
                     )
@@ -120,14 +121,16 @@ object ScanProcessor extends CommandProcessor {
         Failure(new RuntimeException("Language Not Detected"))
     }
     xtocpg match {
-      case Success(cpg) =>
+      case Success(cpgWithoutDataflow) =>
         println("[DONE]")
         println("Applying default overlays")
-        applyDefaultOverlays(cpg)
+        cpgWithoutDataflow.close()
+        val cpg = DefaultOverlays.create("cpg.bin")
         println("Printing all methods:")
         println("=====================")
 
         val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks
+        println("Rules discovered")
 
         // Run tagger
         cpg.runTagger(rules)

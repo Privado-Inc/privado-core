@@ -2,13 +2,15 @@ package ai.privado.model
 
 object Constants {
 
-  val id          = "id"
-  val name        = "name"
-  val category    = "category"
-  val nodeType    = "nodeType"
-  val sensitivity = "sensitivity"
-  val isSensitive = "isSensitive"
-  val patterns    = "patterns"
+  val id             = "id"
+  val name           = "name"
+  val category       = "category"
+  val nodeType       = "nodeType"
+  val sensitivity    = "sensitivity"
+  val isSensitive    = "isSensitive"
+  val patterns       = "patterns"
+  val privadoDerived = "privadoDerived"
+  val underScore     = "_"
 
   // Source/sink types
   val dataElementSource = "DATA_ELEMENT"

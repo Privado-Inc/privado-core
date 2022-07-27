@@ -1,13 +1,20 @@
 package ai.privado.tagger.source
 
-import ai.privado.model.{InternalTags, Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTags, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import ai.privado.utility.Utilities._
 
+import java.util.UUID
+
 class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
+
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID().toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID().toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE     = UUID.randomUUID().toString
+
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
@@ -39,8 +46,17 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
-          addRuleTags(builder, impactedObject, ruleInfo)
+          storeForTag(builder, impactedObject)(
+            Constants.id,
+            InternalTags.PRIVADO_DERIVED.toString + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+          )
+          storeForTag(builder, impactedObject)(Constants.nodeType, NodeType.DERIVED_SOURCE.toString)
+          // addRuleTags(builder, impactedObject, ruleInfo)
         }
+        storeForTag(builder, impactedObject)(
+          Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+          ruleInfo.id
+        )
       })
 
       // To mark all the field access
@@ -79,8 +95,17 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
-          addRuleTags(builder, impactedObject, ruleInfo)
+          storeForTag(builder, impactedObject)(
+            Constants.id,
+            InternalTags.PRIVADO_DERIVED.toString + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
+          )
+          storeForTag(builder, impactedObject)(Constants.nodeType, NodeType.DERIVED_SOURCE.toString)
+          // addRuleTags(builder, impactedObject, ruleInfo)
         }
+        storeForTag(builder, impactedObject)(
+          Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE,
+          ruleInfo.id
+        )
       })
     })
   }
@@ -101,8 +126,17 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
-          addRuleTags(builder, impactedObject, ruleInfo)
+          storeForTag(builder, impactedObject)(
+            Constants.id,
+            InternalTags.PRIVADO_DERIVED.toString + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
+          )
+          storeForTag(builder, impactedObject)(Constants.nodeType, NodeType.DERIVED_SOURCE.toString)
+          // addRuleTags(builder, impactedObject, ruleInfo)
         }
+        storeForTag(builder, impactedObject)(
+          Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
+          ruleInfo.id
+        )
       })
     })
   }

@@ -1,14 +1,16 @@
 package ai.privado.exporter
 
-import ai.privado.model.{InternalTags, Constants, NodeType}
+import ai.privado.model.{Constants, InternalTags, NodeType}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
 import io.shiftleft.semanticcpg.language._
 import io.circe._
 import io.circe.syntax._
+
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, LinkedHashMap}
 import ExporterUtility._
+import overflowdb.traversal.Traversal
 
 class SourceExporter(cpg: Cpg) {
 
@@ -26,11 +28,17 @@ class SourceExporter(cpg: Cpg) {
   def getProcessing = {
     val processingMap = HashMap[String, List[CfgNode]]()
     sourcesList.foreach(source => {
-      val sourceId = source.tag.nameExact(Constants.id).l.head.value
-      if (processingMap.contains(sourceId)) {
-        processingMap(sourceId) = processingMap(sourceId).+:(source)
+      def addToMap(sourceId: String): Unit = {
+        if (processingMap.contains(sourceId)) {
+          processingMap(sourceId) = processingMap(sourceId).+:(source)
+        } else {
+          processingMap.addOne(sourceId -> List(source))
+        }
+      }
+      if (source.tag.nameExact(Constants.nodeType).value.head.equals(NodeType.SOURCE.toString)) {
+        addToMap(source.tag.nameExact(Constants.id).l.head.value)
       } else {
-        processingMap.addOne(sourceId -> List(source))
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap(_))
       }
     })
     processingMap.map(entrySet =>
@@ -67,13 +75,25 @@ class SourceExporter(cpg: Cpg) {
   private def getSourcesList: List[CfgNode] = {
     val sources =
       cpg.identifier
-        .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+        .where(
+          _.tag
+            .nameExact(Constants.nodeType)
+            .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+        )
         .l ++
         cpg.literal
-          .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+          .where(
+            _.tag
+              .nameExact(Constants.nodeType)
+              .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+          )
           .l ++
         cpg.call
-          .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+          .where(
+            _.tag
+              .nameExact(Constants.nodeType)
+              .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+          )
           .l
     sources
   }

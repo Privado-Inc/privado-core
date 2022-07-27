@@ -8,6 +8,7 @@ import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
 class Dataflow(cpg: Cpg) {
 
@@ -23,15 +24,30 @@ class Dataflow(cpg: Cpg) {
     sinks.reachableByFlows(sources)
   }
 
-  private def getSources = {
-    cpg.literal.where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString)).l ++ cpg.identifier
-      .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString).l) ++ cpg.call
-      .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+  private def getSources: List[CfgNode] = {
+    cpg.literal
+      .where(
+        _.tag
+          .nameExact(Constants.nodeType)
+          .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+      )
+      .l ++ cpg.identifier
+      .where(
+        _.tag
+          .nameExact(Constants.nodeType)
+          .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+      )
+      .l ++ cpg.call
+      .where(
+        _.tag
+          .nameExact(Constants.nodeType)
+          .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+      )
       .l
 
   }
 
-  private def getSinks = {
+  private def getSinks: List[Call] = {
     cpg.call
       .or(
         _.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString),
