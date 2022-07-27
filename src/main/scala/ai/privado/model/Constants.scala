@@ -41,6 +41,10 @@ object Constants {
   val paths        = "paths"
   val pathId       = "pathId"
   val path         = "path"
+  val gitMetadata  = "gitMetadata"
+  val branchName   = "branchName"
+  val commitId     = "commitId"
+  val remoteUrl    = "remoteUrl"
 
   val minusOne = "-1"
 
