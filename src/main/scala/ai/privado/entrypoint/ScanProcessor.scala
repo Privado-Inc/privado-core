@@ -112,8 +112,9 @@ object ScanProcessor extends CommandProcessor {
     import io.joern.console.cpgcreation.guessLanguage
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(Languages.JAVASRC) =>
-        val config = Config(inputPaths = Set(sourceRepoLocation))
-        JavaSrc2Cpg().createCpg(config)
+        val cpgconfig =
+          Config(inputPaths = Set(sourceRepoLocation), skipDependencyDownload = config.skipDownladDependencies)
+        JavaSrc2Cpg().createCpg(cpgconfig)
 
       case _ =>
         Failure(new RuntimeException("Language Not Detected"))

@@ -10,7 +10,7 @@ case class PrivadoInput(
   internalRulesPath: Set[String] = Set.empty,
   externalRulePath: Set[String] = Set.empty,
   ignoreInternalRules: Boolean = false,
-  downladDependencies: Boolean = true
+  skipDownladDependencies: Boolean = false
 )
 
 object CommandConstants {
@@ -53,15 +53,15 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(externalRulePath = c.externalRulePath + x))
               .text("External rule files location"),
-            opt[Boolean](CommandConstants.IGNORE_DEFAULT_RULES)
+            opt[Unit](CommandConstants.IGNORE_DEFAULT_RULES)
               .abbr(CommandConstants.IGNORE_DEFAULT_RULES_ABBR)
               .optional()
               .action((_, c) => c.copy(ignoreInternalRules = true))
               .text("Ignore internal rules "),
-            opt[Boolean](CommandConstants.SKIP_DOWNLOAD_DEP)
+            opt[Unit](CommandConstants.SKIP_DOWNLOAD_DEP)
               .abbr(CommandConstants.SKIP_DOWNLOAD_DEP_ABBR)
               .optional()
-              .action((_, c) => c.copy(downladDependencies = false))
+              .action((_, c) => c.copy(skipDownladDependencies = true))
               .text("this option is hidden in the usage text"),
             arg[String]("<Source directory>")
               .required()
