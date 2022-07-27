@@ -28,13 +28,3 @@ sources:
       - "(?i)phone|contact[^\\s/(;)#|,=!>]detail|(?:mobile|phone)[^\\s/(;)#|,=!>]{0,10}(?:number|no)|cellphone|(?:primary|secondary)[^\\s/(;)#|,=!>]{0,10}phone|landline|telephone"
     tags:
       law: GDPR
-  
-  - id: Data.Sensitive.ContactData.EmergencyContactDetails
-    name: Emergency Contact Details
-    category: Contact Data
-    isSensitive: False
-    sensitivity: low
-    patterns:
-      - "(?i)emergency[^\\s/(;)#|,=!>]{0,5}contact[^\\s/(;)#|,=!>]{0,5}(?:number|no|nbr|phone|mobile|mob|landline|email|details|detail|relation)"
-    tags:
-      law: GDPR
