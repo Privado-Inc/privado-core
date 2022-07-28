@@ -58,7 +58,7 @@ object ScanProcessor extends CommandProcessor {
                         x.copy(
                           file = fullPath,
                           catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
-                          catLevelTwo = CatLevelTwo.withNameWithDefault(pathTree.apply(2)),
+                          catLevelTwo = pathTree.apply(2),
                           categoryTree = pathTree,
                           language = Language.withNameWithDefault(pathTree.last),
                           nodeType = NodeType.withNameWithDefault(pathTree.apply(3)) // TODO: Need to change this

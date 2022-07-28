@@ -59,26 +59,6 @@ object CatLevelOne extends Enumeration {
   }
 }
 
-object CatLevelTwo extends Enumeration {
-  type CatLevelTwo = CatLevelTwoIn
-
-  case class CatLevelTwoIn(name: String, label: String) extends Val(name)
-
-  val STORAGES      = CatLevelTwoIn("storages", "Storages")
-  val INTERNAL_APIS = CatLevelTwoIn("internal_apis", "Internal APIs")
-  val LEAKAGES      = CatLevelTwoIn("leakages", "Leakages")
-  val THIRD_PARTIES = CatLevelTwoIn("third_parties", "Third Parties")
-  val UNKNOWN       = CatLevelTwoIn("unknown", "Unknown")
-
-  def withNameWithDefault(name: String): CatLevelTwoIn = {
-    try {
-      withName(name).asInstanceOf[CatLevelTwo.CatLevelTwoIn]
-    } catch {
-      case _: Throwable => this.UNKNOWN
-    }
-  }
-}
-
 object Language extends Enumeration {
   type Language = Value
 

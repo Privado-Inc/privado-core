@@ -16,7 +16,7 @@ case class RuleInfo(
   nodeType: NodeType.NodeType,
   file: String,
   catLevelOne: CatLevelOne.CatLevelOne,
-  catLevelTwo: CatLevelTwo.CatLevelTwo,
+  catLevelTwo: String,
   language: Language.Language,
   categoryTree: Array[String]
 )
@@ -52,7 +52,7 @@ object CirceEnDe {
           nodeType = NodeType.REGULAR,
           file = "",
           catLevelOne = CatLevelOne.UNKNOWN,
-          catLevelTwo = CatLevelTwo.UNKNOWN,
+          catLevelTwo = "",
           language = Language.UNKNOWN,
           categoryTree = Array[String]()
         )
