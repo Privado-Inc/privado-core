@@ -1,7 +1,7 @@
 package ai.privado.model
 
 object Constants {
-
+  // RuleInfo
   val id             = "id"
   val name           = "name"
   val category       = "category"
@@ -12,6 +12,15 @@ object Constants {
   val patterns       = "patterns"
   val privadoDerived = "privadoDerived"
   val underScore     = "_"
+
+  val collections = "collections"
+  val policies    = "policies"
+
+  // Policy
+  val description  = "description"
+  val action       = "action"
+  val dataFlow     = "dataFlow"
+  val repositories = "repositories"
 
   // Source/sink types
   val dataElementSource = "DATA_ELEMENT"

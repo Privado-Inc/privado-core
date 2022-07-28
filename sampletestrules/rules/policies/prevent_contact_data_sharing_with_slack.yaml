@@ -26,8 +26,8 @@ policies:   #  .* is a regular expression. Meaning the policy structure supports
 		- Order Manager
 		
 	  tags:
-		- policyPurpose: Security Audit
-		- team: Order Management team
+		policyPurpose: Security Audit
+		team: Order Management team
 
 
 	- id: Policy.Allow.Processing.FinancialData
@@ -39,7 +39,7 @@ policies:   #  .* is a regular expression. Meaning the policy structure supports
 	  repositories:
 		 - payments-.*
 	  tags:
-		- policyPurpose: Security Audit
+		policyPurpose: Security Audit
 
 	- id: Policy.Deny.Flow.FinancialData
 	  description: Policy to deny processing Financial Information only in payments services

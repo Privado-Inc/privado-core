@@ -71,20 +71,22 @@ object ScanProcessor extends CommandProcessor {
                           categoryTree = pathTree,
                           nodeType = NodeType.REGULAR
                         )
-                      )
+                      ),
+                      policies = rules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
                     )
                   case _ =>
-                    Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
+                    Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
                 }
               case _ =>
-                Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
+                Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
             }
           })
           .reduce((a, b) =>
             a.copy(
               sources = a.sources ++ b.sources,
               sinks = a.sinks ++ b.sinks,
-              collections = a.collections ++ b.collections
+              collections = a.collections ++ b.collections,
+              policies = a.policies ++ b.policies
             )
           )
       catch {
@@ -97,11 +99,11 @@ object ScanProcessor extends CommandProcessor {
   }
 
   def processRules(): Rules = {
-    var internalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
+    var internalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
     if (!config.ignoreInternalRules) {
       internalRules = parseRules(config.internalRulesPath.head)
     }
-    var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
+    var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
     if (!config.externalRulePath.isEmpty) {
       externalRules = parseRules(config.externalRulePath.head)
     }
@@ -119,7 +121,9 @@ object ScanProcessor extends CommandProcessor {
     val sources     = externalRules.sources ++ internalRules.sources
     val sinks       = externalRules.sinks ++ internalRules.sinks
     val collections = externalRules.collections ++ internalRules.collections
-    val mergedRules = Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id))
+    val policies    = externalRules.policies ++ internalRules.policies
+    val mergedRules =
+      Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
     logger.info(mergedRules.toString())
     mergedRules
   }

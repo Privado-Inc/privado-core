@@ -73,3 +73,22 @@ object Language extends Enumeration {
     }
   }
 }
+
+object PolicyAction extends Enumeration {
+  type PolicyAction = Value
+
+  val ALLOW = Value("allow")
+  val DENY  = Value("deny")
+
+  def withNameDefaultHandler(name: String): Value = {
+    if (name != null)
+      try {
+        withName(name.toLowerCase())
+      } catch {
+        case _: Throwable => null
+      }
+    else
+      null
+  }
+
+}
