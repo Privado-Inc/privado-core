@@ -14,19 +14,28 @@ case class RuleInfo(
   sensitivity: String,
   tags: Map[String, String],
   nodeType: NodeType.NodeType,
-  filePath: String,
-  fileName: String,
-  parentName: String
+  file: String,
+  catLevelOne: CatLevelOne.CatLevelOne,
+  catLevelTwo: String,
+  language: Language.Language,
+  categoryTree: Array[String]
 )
-case class Rules(sources: List[RuleInfo], sinks: List[RuleInfo])
+case class Rules(sources: List[RuleInfo], sinks: List[RuleInfo], collections: List[RuleInfo])
 
 object CirceEnDe {
 
   implicit val decodeRules: Decoder[Rules] = new Decoder[Rules] {
     override def apply(c: HCursor): Result[Rules] = {
-      val sources = c.downField("sources").as[List[RuleInfo]]
-      val sinks   = c.downField("sinks").as[List[RuleInfo]]
-      Right(Rules(sources = sources.getOrElse(List[RuleInfo]()), sinks = sinks.getOrElse(List[RuleInfo]())))
+      val sources     = c.downField("sources").as[List[RuleInfo]]
+      val sinks       = c.downField("sinks").as[List[RuleInfo]]
+      val collections = c.downField("collections").as[List[RuleInfo]]
+      Right(
+        Rules(
+          sources = sources.getOrElse(List[RuleInfo]()),
+          sinks = sinks.getOrElse(List[RuleInfo]()),
+          collections = collections.getOrElse(List[RuleInfo]())
+        )
+      )
     }
   }
   implicit val decodeRuleInfo: Decoder[RuleInfo] = new Decoder[RuleInfo] {
@@ -47,10 +56,12 @@ object CirceEnDe {
           sensitivity = sensitivity.getOrElse(""),
           isSensitive = isSensitive.getOrElse(false),
           tags = tags.getOrElse(HashMap[String, String]()),
-          nodeType = NodeType.UNKNOWN,
-          filePath = "",
-          fileName = "",
-          parentName = ""
+          nodeType = NodeType.REGULAR,
+          file = "",
+          catLevelOne = CatLevelOne.UNKNOWN,
+          catLevelTwo = "",
+          language = Language.UNKNOWN,
+          categoryTree = Array[String]()
         )
       )
     }
