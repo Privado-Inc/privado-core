@@ -53,6 +53,8 @@ object ExporterUtility {
         addToMap(ruleInfoOuput, Constants.id, rule.id)
         addToMap(ruleInfoOuput, Constants.name, rule.name)
         addToMap(ruleInfoOuput, Constants.category, rule.category)
+        if(rule.domains.nonEmpty)
+          ruleInfoOuput.addOne(Constants.domains -> rule.domains.asJson)
         addToMap(ruleInfoOuput, Constants.sensitivity, rule.sensitivity)
         addToMap(ruleInfoOuput, Constants.isSensitive, rule.isSensitive.toString)
         if (rule.tags.nonEmpty)
