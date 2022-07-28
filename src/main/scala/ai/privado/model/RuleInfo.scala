@@ -20,15 +20,22 @@ case class RuleInfo(
   language: Language.Language,
   categoryTree: Array[String]
 )
-case class Rules(sources: List[RuleInfo], sinks: List[RuleInfo])
+case class Rules(sources: List[RuleInfo], sinks: List[RuleInfo], collections: List[RuleInfo])
 
 object CirceEnDe {
 
   implicit val decodeRules: Decoder[Rules] = new Decoder[Rules] {
     override def apply(c: HCursor): Result[Rules] = {
-      val sources = c.downField("sources").as[List[RuleInfo]]
-      val sinks   = c.downField("sinks").as[List[RuleInfo]]
-      Right(Rules(sources = sources.getOrElse(List[RuleInfo]()), sinks = sinks.getOrElse(List[RuleInfo]())))
+      val sources     = c.downField("sources").as[List[RuleInfo]]
+      val sinks       = c.downField("sinks").as[List[RuleInfo]]
+      val collections = c.downField("collections").as[List[RuleInfo]]
+      Right(
+        Rules(
+          sources = sources.getOrElse(List[RuleInfo]()),
+          sinks = sinks.getOrElse(List[RuleInfo]()),
+          collections = collections.getOrElse(List[RuleInfo]())
+        )
+      )
     }
   }
   implicit val decodeRuleInfo: Decoder[RuleInfo] = new Decoder[RuleInfo] {

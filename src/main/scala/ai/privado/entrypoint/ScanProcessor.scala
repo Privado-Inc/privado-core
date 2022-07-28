@@ -61,18 +61,32 @@ object ScanProcessor extends CommandProcessor {
                           catLevelTwo = pathTree.apply(2),
                           categoryTree = pathTree,
                           language = Language.withNameWithDefault(pathTree.last),
-                          nodeType = NodeType.withNameWithDefault(pathTree.apply(3)) // TODO: Need to change this
+                          nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                        )
+                      ),
+                      collections = rules.collections.map(x =>
+                        x.copy(
+                          file = fullPath,
+                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                          categoryTree = pathTree,
+                          nodeType = NodeType.REGULAR
                         )
                       )
                     )
                   case _ =>
-                    Rules(List[RuleInfo](), List[RuleInfo]())
+                    Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
                 }
               case _ =>
-                Rules(List[RuleInfo](), List[RuleInfo]())
+                Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
             }
           })
-          .reduce((a, b) => a.copy(sources = a.sources ++ b.sources, sinks = a.sinks ++ b.sinks))
+          .reduce((a, b) =>
+            a.copy(
+              sources = a.sources ++ b.sources,
+              sinks = a.sinks ++ b.sinks,
+              collections = a.collections ++ b.collections
+            )
+          )
       catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
@@ -83,11 +97,11 @@ object ScanProcessor extends CommandProcessor {
   }
 
   def processRules(): Rules = {
-    var internalRules = Rules(List[RuleInfo](), List[RuleInfo]())
+    var internalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
     if (!config.ignoreInternalRules) {
       internalRules = parseRules(config.internalRulesPath.head)
     }
-    var externalRules = Rules(List[RuleInfo](), List[RuleInfo]())
+    var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
     if (!config.externalRulePath.isEmpty) {
       externalRules = parseRules(config.externalRulePath.head)
     }
@@ -104,7 +118,8 @@ object ScanProcessor extends CommandProcessor {
      */
     val sources     = externalRules.sources ++ internalRules.sources
     val sinks       = externalRules.sinks ++ internalRules.sinks
-    val mergedRules = Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id))
+    val collections = externalRules.collections ++ internalRules.collections
+    val mergedRules = Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id))
     logger.info(mergedRules.toString())
     mergedRules
   }
