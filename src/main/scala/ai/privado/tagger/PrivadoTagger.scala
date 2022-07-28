@@ -1,6 +1,7 @@
 package ai.privado.tagger
 
 import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.tagger.collection.CollectionTagger
 import ai.privado.tagger.sink.{APITagger, DatabaseTagger, LeakageTagger, SDKTagger}
 import ai.privado.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.utility.Utilities._
@@ -25,6 +26,10 @@ class PrivadoTagger(cpg: Cpg) {
     getRulesByNodeType(rules, NodeType.LEAKAGE).foreach(rule => new LeakageTagger(cpg, rule).createAndApply())
     getRulesByNodeType(rules, NodeType.SDK).foreach(rule => new SDKTagger(cpg, rule).createAndApply())
     getRulesByNodeType(rules, NodeType.API).foreach(rule => new APITagger(cpg, rule).createAndApply())
+
+    getRulesByNodeType(rules, NodeType.COLLECTIONS).foreach(rule =>
+      new CollectionTagger(cpg, rule, sourceRules).createAndApply()
+    )
 
     cpg.tag
   }

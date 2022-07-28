@@ -36,7 +36,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
       if (source.tag.nameExact(Constants.nodeType).value.head.equals(NodeType.SOURCE.toString)) {
         addToMap(source.tag.nameExact(Constants.id).l.head.value)
       } else {
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap(_))
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
       }
     })
 
@@ -53,7 +53,11 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     dataflowOutputList
   }
 
-  def convertSinksList(sinkFlows: List[String], dataflowsMapByType: Map[String, Path], dataflowSinkType: String) = {
+  private def convertSinksList(
+    sinkFlows: List[String],
+    dataflowsMapByType: Map[String, Path],
+    dataflowSinkType: String
+  ) = {
 
     def convertSink(sinkFlow: Path, sinkFlowId: String) = {
       val sinkMap = mutable.HashMap[String, Json]()
@@ -85,7 +89,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     sinkFlows.map(sinkFlowId => convertSink(dataflowsMapByType(sinkFlowId), sinkFlowId)).asJson
   }
 
-  def convertPathsList(sinkFlow: Path, pathId: String) = {
+  private def convertPathsList(sinkFlow: Path, pathId: String) = {
     val pathOutput = mutable.LinkedHashMap[String, Json]()
 
     pathOutput.addOne(Constants.pathId -> pathId.asJson)

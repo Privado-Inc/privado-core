@@ -28,6 +28,7 @@ object NodeType extends Enumeration {
   val API            = Value("API")
   val LEAKAGE        = Value("Leakage")
   val SDK            = Value("SDK")
+  val COLLECTIONS    = Value("Collections")
   val UNKNOWN        = Value("Unknown")
 
   def withNameWithDefault(name: String): Value = {

@@ -38,7 +38,7 @@ class SourceExporter(cpg: Cpg) {
       if (source.tag.nameExact(Constants.nodeType).value.head.equals(NodeType.SOURCE.toString)) {
         addToMap(source.tag.nameExact(Constants.id).l.head.value)
       } else {
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap(_))
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
       }
     })
     processingMap.map(entrySet =>
@@ -98,7 +98,7 @@ class SourceExporter(cpg: Cpg) {
     sources
   }
 
-  def convertSourcesList(sources: List[List[Tag]]) = {
+  private def convertSourcesList(sources: List[List[Tag]]) = {
     def convertToStandardFormat(nodeList: List[Tag]) = {
       val tagMap    = new HashMap[String, String]()
       val sourceMap = new HashMap[String, Json]()

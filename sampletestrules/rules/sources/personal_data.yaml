@@ -10,13 +10,23 @@ sources:
       pii: "Some Info"
       law: GDPR
 
-  - id: Data.Sensitive.Personal.AddressLine1
-    name: line1
-    category: Personal1
+  - id: Data.Sensitive.Personal.firstName
+    name: firstName
+    category: firstName
     sensitivity: medium
     isSensitive: true
     patterns:
-      - ".*(?i)address1.*"
+      - ".*(?i)firstName.*"
+    tags:
+      pii: Line1
+
+  - id: Data.Sensitive.Personal.password
+    name: password
+    category: password
+    sensitivity: medium
+    isSensitive: true
+    patterns:
+      - ".*(?i)password.*"
     tags:
       pii: Line1
 
