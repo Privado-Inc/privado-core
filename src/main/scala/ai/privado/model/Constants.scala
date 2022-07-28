@@ -5,6 +5,7 @@ object Constants {
   val id             = "id"
   val name           = "name"
   val category       = "category"
+  val domains        = "domains"
   val nodeType       = "nodeType"
   val sensitivity    = "sensitivity"
   val isSensitive    = "isSensitive"
