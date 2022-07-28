@@ -74,10 +74,14 @@ object ScanProcessor extends CommandProcessor {
                       ),
                       policies = rules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
                     )
-                  case _ =>
+                  case Left(error) =>
+                    logger.error("Error while parsing this file -> '" + fullPath)
+                    logger.error("ERROR : " + error)
                     Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
                 }
-              case _ =>
+              case Left(error) =>
+                logger.error("Error while parsing this file -> '" + fullPath)
+                logger.error("ERROR : " + error)
                 Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
             }
           })
