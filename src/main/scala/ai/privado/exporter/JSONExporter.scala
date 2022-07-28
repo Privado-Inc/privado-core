@@ -1,6 +1,7 @@
 package ai.privado.exporter
 
-import ai.privado.model.{Constants, NodeType}
+import ai.privado.cache.RuleCache
+import ai.privado.model.{CatLevelOne, Constants, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
@@ -24,12 +25,16 @@ object JSONExporter {
       output.addOne(Constants.localScanPath -> repoPath.asJson)
       output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
       output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
-      output.addOne(
-        Constants.storage -> dataflowExporter.getFlowByType(NodeType.DATABASE, Constants.storageSink).asJson
-      )
-      output.addOne(Constants.leakage -> dataflowExporter.getFlowByType(NodeType.LEAKAGE, Constants.leakageSink).asJson)
-      output.addOne(Constants.api     -> dataflowExporter.getFlowByType(NodeType.API, Constants.apiSink).asJson)
-      output.addOne(Constants.sharing -> dataflowExporter.getFlowByType(NodeType.SDK, Constants.sharingSink).asJson)
+
+      val sinkSubCategories = RuleCache
+        .getAllRules()
+        .filter(rule => rule.catLevelOne.equals(CatLevelOne.SINKS))
+        .map(sinkRule => sinkRule.catLevelTwo)
+        .toSet
+
+      sinkSubCategories.foreach(sinkSubType => {
+        output.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
+      })
 
       output.addOne("collections" -> collectionExporter.getCollections.asJson)
 

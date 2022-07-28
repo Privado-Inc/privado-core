@@ -1,13 +1,14 @@
 package ai.privado.exporter
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
 import ai.privado.utility.Utilities.dump
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder, toExtendedNode}
 
 import scala.collection.mutable
-import scala.collection.mutable.{HashMap, LinkedHashMap}
 
 object ExporterUtility {
 
@@ -41,16 +42,24 @@ object ExporterUtility {
     nodes.map(node => converter(node))
   }
 
-  /*
-  Add item from Map to ordered Map
-   */
-  def addElementFromMapToOrderedMap(
-    orderedInputMap: LinkedHashMap[String, Json],
-    inputMap: HashMap[String, Json],
-    key: String
-  ) = {
-    if (inputMap.contains(key))
-      orderedInputMap.addOne(key, inputMap.get(key).get)
+  def getRuleInfoForExporting(ruleId: String): mutable.Map[String, Json] = {
+    def addToMap(outputMap: mutable.LinkedHashMap[String, Json], name: String, value: String) = {
+      if (value.nonEmpty)
+        outputMap.addOne(name -> value.asJson)
+    }
+    val ruleInfoOuput = mutable.LinkedHashMap[String, Json]()
+    RuleCache.getRuleInfo(ruleId) match {
+      case Some(rule) =>
+        addToMap(ruleInfoOuput, Constants.id, rule.id)
+        addToMap(ruleInfoOuput, Constants.name, rule.name)
+        addToMap(ruleInfoOuput, Constants.category, rule.category)
+        addToMap(ruleInfoOuput, Constants.sensitivity, rule.sensitivity)
+        addToMap(ruleInfoOuput, Constants.isSensitive, rule.isSensitive.toString)
+        if (rule.tags.nonEmpty)
+          ruleInfoOuput.addOne(Constants.tags -> rule.tags.asJson)
+        ruleInfoOuput
+      case None => ruleInfoOuput
+    }
   }
 
 }

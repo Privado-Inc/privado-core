@@ -6,11 +6,15 @@ object Constants {
   val name           = "name"
   val category       = "category"
   val nodeType       = "nodeType"
+  val catLevelOne    = "catLevelOne"
+  val catLevelTwo    = "catLevelTwo"
   val sensitivity    = "sensitivity"
   val isSensitive    = "isSensitive"
+  val domains        = "domains"
   val patterns       = "patterns"
   val privadoDerived = "privadoDerived"
   val underScore     = "_"
+  val apiUrl         = "apiUrl"
 
   // Source/sink types
   val dataElementSource = "DATA_ELEMENT"

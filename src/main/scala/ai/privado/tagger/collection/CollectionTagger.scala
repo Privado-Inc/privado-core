@@ -1,19 +1,18 @@
 package ai.privado.tagger.collection
 
-import ai.privado.model.{Constants, InternalTags, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoSimplePass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.SimpleCpgPass
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
 import overflowdb.traversal.Traversal
 
-class CollectionTagger(cpg: Cpg, collectionRuleInfo: RuleInfo, sourceRuleInfos: List[RuleInfo])
-    extends SimpleCpgPass(cpg) {
+class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // A cached method so that we are not computing again
-    val collectionMethodsCache = cpg.annotation.name(collectionRuleInfo.patterns.head).method.l
+    val collectionMethodsCache = cpg.annotation.name(ruleInfo.patterns.head).method.l
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
@@ -21,7 +20,6 @@ class CollectionTagger(cpg: Cpg, collectionRuleInfo: RuleInfo, sourceRuleInfos: 
         if (parameters.isEmpty) {
           None
         } else {
-
           parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
           Some(collectionMethod)
         }
@@ -29,13 +27,13 @@ class CollectionTagger(cpg: Cpg, collectionRuleInfo: RuleInfo, sourceRuleInfos: 
     })
 
     collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, collectionRuleInfo)
+      addRuleTags(builder, collectionPoint, ruleInfo)
     })
 
     // Implementation to also mark the collection points which use derived type declaration as there parameters
-    val derivedTypeDecl = (getAllDerivedTypeDecl(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString) ++
-      getAllDerivedTypeDecl(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString) ++
-      getAllDerivedTypeDecl(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).distinct
+    val derivedTypeDecl = (getAllDerivedTypeDecl(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString) ++
+      getAllDerivedTypeDecl(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString) ++
+      getAllDerivedTypeDecl(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).distinct
 
     val collectionPointsFromDerivedTypeDecl = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       val parameters =
@@ -56,7 +54,7 @@ class CollectionTagger(cpg: Cpg, collectionRuleInfo: RuleInfo, sourceRuleInfos: 
     })
 
     collectionPointsFromDerivedTypeDecl.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, collectionRuleInfo)
+      addRuleTags(builder, collectionPoint, ruleInfo)
     })
 
   }

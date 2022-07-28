@@ -1,17 +1,20 @@
 package ai.privado.utility
 
-import ai.privado.model.NodeType.NodeType
+import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.{Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTag
 import io.shiftleft.utils.{IOUtils, ProjectRoot}
+import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import java.nio.file.Paths
 import scala.util.Try
 
 object Utilities {
+
+  val logger = LoggerFactory.getLogger(getClass)
 
   /*
    Utility to add a single tag to a object
@@ -29,10 +32,10 @@ object Utilities {
   def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: NodeOrDetachedNode, ruleInfo: RuleInfo): Unit = {
     val storeForTagHelper = storeForTag(builder, node) _
     storeForTagHelper(Constants.id, ruleInfo.id)
-    storeForTagHelper(Constants.name, ruleInfo.name)
-    storeForTagHelper(Constants.category, ruleInfo.category)
-    storeForTagHelper(Constants.sensitivity, ruleInfo.sensitivity)
     storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
+    storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
+    storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
+
     for ((key, value) <- ruleInfo.tags) {
       storeForTagHelper(key, value)
     }
@@ -43,15 +46,14 @@ object Utilities {
    */
   def getDefaultSemantics() = {
     val semanticsFilename = ProjectRoot.relativise("src/main/resources/default.semantics")
-    println(s"Using semantics from : $semanticsFilename")
     Semantics.fromList(new Parser().parseFile(semanticsFilename))
   }
 
   /*
-   Utility to filter rules by node type
+   Utility to filter rules by catLevelOne
    */
-  def getRulesByNodeType(rules: List[RuleInfo], nodeType: NodeType) =
-    rules.filter(rule => rule.nodeType.equals(nodeType))
+  def getRulesByCatLevelOne(rules: List[RuleInfo], catLevelOne: CatLevelOne) =
+    rules.filter(rule => rule.catLevelOne.equals(catLevelOne))
 
   /** For a given `filename`, `lineToHighlight`, return the corresponding code by reading it from the file. If
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
@@ -60,7 +62,7 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     val lines = Try(IOUtils.readLinesInFile(Paths.get(filename))).getOrElse {
-      println("error reading from: " + filename);
+      logger.error("Error reading from file : " + filename);
       List()
     }
     val startLine: Integer = {

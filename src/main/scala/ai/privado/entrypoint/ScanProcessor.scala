@@ -1,7 +1,8 @@
 package ai.privado.entrypoint
 
+import ai.privado.cache.RuleCache
 import ai.privado.exporter.JSONExporter
-import ai.privado.model.{NodeType, RuleInfo, Rules}
+import ai.privado.model._
 import ai.privado.semantic.Language._
 import better.files.File
 import io.circe.yaml.parser
@@ -19,7 +20,8 @@ object ScanProcessor extends CommandProcessor {
   val logger = LoggerFactory.getLogger(this.getClass)
 
   def parseRules(rulesPath: String): Rules = {
-    val ir: File =
+    val ir: File = {
+      // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
       catch {
         case ex: Throwable =>
@@ -27,14 +29,18 @@ object ScanProcessor extends CommandProcessor {
           logger.error(f"Rules path '${rulesPath}' is not accessible")
           exit(1)
       }
+    }
     val parsedRules =
       try
         ir.listRecursively
           .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
           .map(file => {
-            val filePath            = file.pathAsString
-            val fileName            = file.nameWithoutExtension
-            val immediateParentName = file.parent.nameWithoutExtension
+            // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
+
+            val fullPath = file.pathAsString
+            // e.g. relPath = rules/sources/accounts
+            val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
+            val pathTree = relPath.split("/")
             parser.parse(file.contentAsString) match {
               case Right(json) =>
                 import ai.privado.model.CirceEnDe._
@@ -43,29 +49,45 @@ object ScanProcessor extends CommandProcessor {
                     rules.copy(
                       sources = rules.sources.map(x =>
                         x.copy(
-                          filePath = filePath,
-                          fileName = fileName,
-                          parentName = immediateParentName,
-                          nodeType = NodeType.SOURCE
+                          file = fullPath,
+                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                          categoryTree = pathTree,
+                          nodeType = NodeType.REGULAR
                         )
                       ),
                       sinks = rules.sinks.map(x =>
                         x.copy(
-                          filePath = filePath,
-                          fileName = fileName,
-                          parentName = immediateParentName,
-                          nodeType = NodeType.withNameWithDefault(immediateParentName)
+                          file = fullPath,
+                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                          catLevelTwo = pathTree.apply(2),
+                          categoryTree = pathTree,
+                          language = Language.withNameWithDefault(pathTree.last),
+                          nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                        )
+                      ),
+                      collections = rules.collections.map(x =>
+                        x.copy(
+                          file = fullPath,
+                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                          categoryTree = pathTree,
+                          nodeType = NodeType.REGULAR
                         )
                       )
                     )
                   case _ =>
-                    Rules(List[RuleInfo](), List[RuleInfo]())
+                    Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
                 }
               case _ =>
-                Rules(List[RuleInfo](), List[RuleInfo]())
+                Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
             }
           })
-          .reduce((a, b) => a.copy(sources = a.sources ++ b.sources, sinks = a.sinks ++ b.sinks))
+          .reduce((a, b) =>
+            a.copy(
+              sources = a.sources ++ b.sources,
+              sinks = a.sinks ++ b.sinks,
+              collections = a.collections ++ b.collections
+            )
+          )
       catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
@@ -76,11 +98,11 @@ object ScanProcessor extends CommandProcessor {
   }
 
   def processRules(): Rules = {
-    var internalRules = Rules(List[RuleInfo](), List[RuleInfo]())
+    var internalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
     if (!config.ignoreInternalRules) {
       internalRules = parseRules(config.internalRulesPath.head)
     }
-    var externalRules = Rules(List[RuleInfo](), List[RuleInfo]())
+    var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo]())
     if (!config.externalRulePath.isEmpty) {
       externalRules = parseRules(config.externalRulePath.head)
     }
@@ -97,8 +119,9 @@ object ScanProcessor extends CommandProcessor {
      */
     val sources     = externalRules.sources ++ internalRules.sources
     val sinks       = externalRules.sinks ++ internalRules.sinks
-    val mergedRules = Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id))
-    logger.info(mergedRules.toString())
+    val collections = externalRules.collections ++ internalRules.collections
+    val mergedRules = Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id))
+    // logger.info(mergedRules.toString())
     mergedRules
   }
   override def process(): Unit = {
@@ -125,11 +148,12 @@ object ScanProcessor extends CommandProcessor {
         println("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
-        println("Printing all methods:")
         println("=====================")
 
-        val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks
-        println("Rules discovered")
+        val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks ++ processedRules.collections
+        logger.info("Rules discovered")
+        rules.foreach(RuleCache.setRuleInfo)
+        logger.info("Rules cached successfully")
 
         // Run tagger
         cpg.runTagger(rules)
@@ -142,6 +166,7 @@ object ScanProcessor extends CommandProcessor {
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
 
+      /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
@@ -152,6 +177,7 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }
+       */
       case Failure(exception) =>
         println("[FAILED]")
         println(exception)

@@ -1,30 +1,25 @@
 package ai.privado.exporter
 
-import ai.privado.model.{Constants, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language._
 
-import scala.collection.mutable
+import scala.collection.{immutable, mutable}
 import scala.collection.mutable.ListBuffer
-import scala.util.Success
 
 class CollectionExporter(cpg: Cpg) {
 
   /*
     Processes collection points and return final output
    */
-  def getCollections = {
+  def getCollections: immutable.Iterable[mutable.LinkedHashMap[String, Json]] = {
     val collectionMapByCollectionId = cpg.method
-      .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.COLLECTIONS.toString))
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
       .l
       .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
-
-    collectionMapByCollectionId.foreach(id => {
-      println(s"${id._1}, ${id._2.map(m => m.parameter.name.l)}")
-    })
 
     collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2))
   }
@@ -57,7 +52,9 @@ class CollectionExporter(cpg: Cpg) {
 
     val collectionOutput = mutable.LinkedHashMap[String, Json]()
     collectionOutput.addOne("collectionId" -> collectionId.asJson)
-
+    val ruleInfoForExporting = ExporterUtility.getRuleInfoForExporting(collectionId)
+    ruleInfoForExporting.remove(Constants.id)
+    collectionOutput.addAll(ruleInfoForExporting)
     collectionOutput.addOne(
       "collections" -> collectionParameterMapById
         .map(entrySet => processByParameterId(entrySet._1, entrySet._2.toList))
