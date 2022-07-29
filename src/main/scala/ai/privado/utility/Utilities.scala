@@ -1,5 +1,6 @@
 package ai.privado.utility
 
+import ai.privado.entrypoint.ScanProcessor.logger
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.{Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
@@ -10,6 +11,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import java.nio.file.Paths
+import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
 import scala.util.Try
 
@@ -63,7 +65,7 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     val lines = Try(IOUtils.readLinesInFile(Paths.get(filename))).getOrElse {
-      logger.error("Error reading from file : " + filename)
+      logger.trace("Error reading from file with filename : " + filename)
       List()
     }
     val startLine: Integer = {
@@ -89,5 +91,20 @@ object Utilities {
         }
       }
       .mkString("\n")
+  }
+
+  /*
+  To check if processed pattern is valid
+   */
+  def isValidRule(stringPattern: String, ruleId: String = "", fileName: String = ""): Boolean = {
+    try{
+      Pattern.compile(stringPattern)
+      true
+    }
+    catch {
+      case patternSyntaxException: PatternSyntaxException => logger.error(s"Error parsing rule, ruleId : $ruleId, fileName : $fileName, stringPattern : $stringPattern, error : ${patternSyntaxException.toString}")
+        false
+      case _: Throwable => false
+    }
   }
 }

@@ -12,13 +12,16 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 
 class Dataflow(cpg: Cpg) {
 
-  def dataflow: Traversal[Path] = {
+  def dataflow: Option[Traversal[Path]] = {
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     val sources                               = getSources
     val sinks                                 = getSinks
 
-    sinks.reachableByFlows(sources)
+    if(sources.isEmpty || sinks.isEmpty)
+      None
+    else
+      Some(sinks.reachableByFlows(sources))
   }
 
   private def getSources: List[CfgNode] = {
