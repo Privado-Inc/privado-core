@@ -1,14 +1,4 @@
 sources:
-  - id: Data.Sensitive.ContactData.Address
-    name: Address
-    category: Contact Data
-    isSensitive: False
-    sensitivity: medium
-    patterns:
-      - "(?i)(?:home|house|billing|mailing|shipping|delivery|office|person|policyholder|insurer|claimant)[^\\s/(;)#|,=!>]{0,10}(?:address|addr)|(?:pin|zip|postal|metro)[-_[<'. ]{0,2}code|(?:delivery|pickup)[^\\s/(;)#|,=!>]{0,10}(?:location|position)|house[^\\s/(;)#|,=!>]{0,2}(?:number|no)|address[-_.]{0,2}line"
-    tags:
-      law: GDPR
-  
   - id: Data.Sensitive.ContactData.EmailAddress
     name: Email Address
     category: Contact Data

@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.model.{Constants, InternalTags, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
 import io.shiftleft.semanticcpg.language._
@@ -10,7 +10,7 @@ import io.circe.syntax._
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, LinkedHashMap}
 import ExporterUtility._
-import overflowdb.traversal.Traversal
+import ai.privado.cache.RuleCache
 
 class SourceExporter(cpg: Cpg) {
 
@@ -35,10 +35,10 @@ class SourceExporter(cpg: Cpg) {
           processingMap.addOne(sourceId -> List(source))
         }
       }
-      if (source.tag.nameExact(Constants.nodeType).value.head.equals(NodeType.SOURCE.toString)) {
+      if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
         addToMap(source.tag.nameExact(Constants.id).l.head.value)
       } else {
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap(_))
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
       }
     })
     processingMap.map(entrySet =>
@@ -55,15 +55,15 @@ class SourceExporter(cpg: Cpg) {
   private def getSourcesTagList = {
     val sources =
       cpg.identifier
-        .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
         .map(item => item.tag.l)
         .l ++
         cpg.literal
-          .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
           .map(item => item.tag.l)
           .l ++
         cpg.call
-          .where(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.SOURCE.toString))
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
           .map(item => item.tag.l)
           .l
     sources
@@ -77,53 +77,44 @@ class SourceExporter(cpg: Cpg) {
       cpg.identifier
         .where(
           _.tag
-            .nameExact(Constants.nodeType)
-            .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+            .nameExact(Constants.catLevelOne)
+            .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
         )
         .l ++
         cpg.literal
           .where(
             _.tag
-              .nameExact(Constants.nodeType)
-              .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+              .nameExact(Constants.catLevelOne)
+              .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
           )
           .l ++
         cpg.call
           .where(
             _.tag
-              .nameExact(Constants.nodeType)
-              .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+              .nameExact(Constants.catLevelOne)
+              .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
           )
           .l
     sources
   }
 
-  def convertSourcesList(sources: List[List[Tag]]) = {
+  private def convertSourcesList(sources: List[List[Tag]]) = {
     def convertToStandardFormat(nodeList: List[Tag]) = {
-      val tagMap    = new HashMap[String, String]()
-      val sourceMap = new HashMap[String, Json]()
-      nodeList
-        .filterNot(node => InternalTags.valuesAsString.contains(node.name))
-        .foreach(node => {
-          node match {
-            case x
-                if x.name.equals(Constants.id) || x.name.equals(Constants.name) || x.name
-                  .equals(Constants.category)
-                  || x.name.equals(Constants.sensitivity) =>
-              sourceMap.addOne(node.name, node.value.asJson)
-            case x if x.name.equals(Constants.nodeType) =>
-              sourceMap.addOne(Constants.sourceType, Constants.dataElementSource.asJson)
-            case _ => tagMap.addOne(node.name, node.value)
+      val orderedSourceMap = new LinkedHashMap[String, Json]()
+      val node = nodeList
+        .filterNot(node => InternalTag.valuesAsString.contains(node.name))
+        .filter(node => node.name.equals(Constants.id))
+      if (node.nonEmpty) {
+        val ruleId = node.head.value
+        orderedSourceMap.addOne(Constants.sourceType -> {
+          RuleCache.getRuleInfo(ruleId) match {
+            case Some(rule) => rule.catLevelOne.label.asJson
+            case None       => "".asJson
           }
         })
-      val orderedSourceMap = new LinkedHashMap[String, Json]()
-      addElementFromMapToOrderedMap(orderedSourceMap, sourceMap, Constants.sourceType)
-      addElementFromMapToOrderedMap(orderedSourceMap, sourceMap, Constants.id)
-      addElementFromMapToOrderedMap(orderedSourceMap, sourceMap, Constants.name)
-      addElementFromMapToOrderedMap(orderedSourceMap, sourceMap, Constants.category)
-      addElementFromMapToOrderedMap(orderedSourceMap, sourceMap, Constants.sensitivity)
-      orderedSourceMap.addOne(Constants.tags, tagMap.asJson)
-      orderedSourceMap
+        orderedSourceMap ++ ExporterUtility.getRuleInfoForExporting(ruleId)
+      } else
+        orderedSourceMap
     }
     sources.map(source => convertToStandardFormat(source)).toSet
   }

@@ -1,5 +1,6 @@
 package ai.privado.entrypoint
 
+import ai.privado.cache.RuleCache
 import ai.privado.exporter.JSONExporter
 import ai.privado.model._
 import ai.privado.semantic.Language._
@@ -125,7 +126,8 @@ object ScanProcessor extends CommandProcessor {
     val sources     = externalRules.sources ++ internalRules.sources
     val sinks       = externalRules.sinks ++ internalRules.sinks
     val collections = externalRules.collections ++ internalRules.collections
-    val policies    = externalRules.policies ++ internalRules.policies
+
+    val policies = externalRules.policies ++ internalRules.policies
     val mergedRules =
       Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
     logger.info(mergedRules.toString())
@@ -155,11 +157,12 @@ object ScanProcessor extends CommandProcessor {
         println("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
-        println("Printing all methods:")
         println("=====================")
 
-        val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks
-        println("Rules discovered")
+        val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks ++ processedRules.collections
+        logger.info("Rules discovered")
+        rules.foreach(RuleCache.setRuleInfo)
+        logger.info("Rules cached successfully")
 
         // Run tagger
         cpg.runTagger(rules)
@@ -172,6 +175,7 @@ object ScanProcessor extends CommandProcessor {
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
 
+      /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
@@ -182,6 +186,7 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }
+       */
       case Failure(exception) =>
         println("[FAILED]")
         println(exception)

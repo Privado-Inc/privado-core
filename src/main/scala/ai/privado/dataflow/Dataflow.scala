@@ -1,6 +1,6 @@
 package ai.privado.dataflow
 
-import ai.privado.model.{Constants, NodeType}
+import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -14,13 +14,10 @@ class Dataflow(cpg: Cpg) {
 
   def dataflow: Traversal[Path] = {
 
-    val sources = getSources
-    val sinks   = getSinks
-
-    println(s"length of sources : ${sources.length}")
-    println(s"length of sinks : ${sinks.length}")
-
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics())
+    val sources                               = getSources
+    val sinks                                 = getSinks
+
     sinks.reachableByFlows(sources)
   }
 
@@ -28,33 +25,26 @@ class Dataflow(cpg: Cpg) {
     cpg.literal
       .where(
         _.tag
-          .nameExact(Constants.nodeType)
-          .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+          .nameExact(Constants.catLevelOne)
+          .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
       )
       .l ++ cpg.identifier
       .where(
         _.tag
-          .nameExact(Constants.nodeType)
-          .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+          .nameExact(Constants.catLevelOne)
+          .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
       )
       .l ++ cpg.call
       .where(
         _.tag
-          .nameExact(Constants.nodeType)
-          .or(_.valueExact(NodeType.SOURCE.toString), _.valueExact(NodeType.DERIVED_SOURCE.toString))
+          .nameExact(Constants.catLevelOne)
+          .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
       )
       .l
 
   }
 
   private def getSinks: List[Call] = {
-    cpg.call
-      .or(
-        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString),
-        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.DATABASE.toString),
-        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.LEAKAGE.toString),
-        _.tag.nameExact(Constants.nodeType).valueExact(NodeType.SDK.toString)
-      )
-      .l
+    cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
   }
 }

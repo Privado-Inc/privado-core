@@ -1,26 +1,26 @@
 package ai.privado.tagger.source
 
-import ai.privado.model.{Constants, InternalTags, NodeType, RuleInfo}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.SimpleCpgPass
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoSimplePass
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import ai.privado.utility.Utilities._
 
 import java.util.UUID
 
-class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
+class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
-  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID().toString
-  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID().toString
-  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE     = UUID.randomUUID().toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID.toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID.toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE     = UUID.randomUUID.toString
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
     val regexMatchingIdentifiers = cpg.identifier(ruleInfo.patterns.head).l
     regexMatchingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTags.VARIABLE_REGEX_IDENTIFIER.toString)
+      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
     })
 
@@ -39,19 +39,18 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
     builder: BatchedUpdate.DiffGraphBuilder,
     memberName: String,
     ruleInfo: RuleInfo
-  ) = {
+  ): Unit = {
     val typeDeclHavingMemberName = cpg.typeDecl.where(_.member.name(memberName)).l
     typeDeclHavingMemberName.fullName.dedup.foreach(typeDeclVal => {
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+          storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
           storeForTag(builder, impactedObject)(
             Constants.id,
-            InternalTags.PRIVADO_DERIVED.toString + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+            Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
           )
-          storeForTag(builder, impactedObject)(Constants.nodeType, NodeType.DERIVED_SOURCE.toString)
-          // addRuleTags(builder, impactedObject, ruleInfo)
+          storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
         }
         storeForTag(builder, impactedObject)(
           Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
@@ -60,13 +59,19 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
       })
 
       // To mark all the field access
-      val impactedGetters = cpg.fieldAccess
+      implicit val resolver: ICallResolver = NoResolve
+
+      val impactedGetters = cpg.method
+        .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+        .callIn
         .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
         .where(_.argument(2).code(memberName))
+        .where(_.inAst.isMethod.name("get.*"))
         .l
+
       impactedGetters.foreach(impactedGetter => {
         if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedGetter)(InternalTags.SENSITIVE_FIELD_ACCESS.toString)
+          storeForTag(builder, impactedGetter)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
           addRuleTags(builder, impactedGetter, ruleInfo)
         }
       })
@@ -88,18 +93,18 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
     builder: BatchedUpdate.DiffGraphBuilder,
     memberType: String,
     ruleInfo: RuleInfo
-  ) = {
+  ): Unit = {
     val typeDeclHavingMemberType = cpg.typeDecl.where(_.member.typeFullName(memberType))
     typeDeclHavingMemberType.fullName.dedup.foreach(typeDeclVal => {
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
+          storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
           storeForTag(builder, impactedObject)(
             Constants.id,
-            InternalTags.PRIVADO_DERIVED.toString + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
+            Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
           )
-          storeForTag(builder, impactedObject)(Constants.nodeType, NodeType.DERIVED_SOURCE.toString)
+          storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
           // addRuleTags(builder, impactedObject, ruleInfo)
         }
         storeForTag(builder, impactedObject)(
@@ -125,12 +130,12 @@ class IdentifierTagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) 
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject)(InternalTags.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
+          storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
           storeForTag(builder, impactedObject)(
             Constants.id,
-            InternalTags.PRIVADO_DERIVED.toString + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
+            Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
           )
-          storeForTag(builder, impactedObject)(Constants.nodeType, NodeType.DERIVED_SOURCE.toString)
+          storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
           // addRuleTags(builder, impactedObject, ruleInfo)
         }
         storeForTag(builder, impactedObject)(

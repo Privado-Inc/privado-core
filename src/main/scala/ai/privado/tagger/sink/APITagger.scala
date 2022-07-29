@@ -1,21 +1,16 @@
 package ai.privado.tagger.sink
 
-import ai.privado.model.{InternalTags, RuleInfo}
+import ai.privado.model.{Constants}
+import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.SimpleCpgPass
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.utils.ProjectRoot
 
-import java.nio.file.Paths
-
-class APITagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
+class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   lazy val APISINKS_REGEX =
     "(?i).*(?:url|client|connection|request|execute|load|host|access|fetch|get|set|put|post|trace|patch|send|remove|delete|write|read|assignment|provider).*"
@@ -31,7 +26,7 @@ class APITagger(cpg: Cpg, ruleInfo: RuleInfo) extends SimpleCpgPass(cpg) {
       val literalCode = flow.elements.head.code
       val apiNode     = flow.elements.last
       addRuleTags(builder, apiNode, ruleInfo)
-      storeForTag(builder, apiNode)(InternalTags.API_URL.toString, literalCode)
+      storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
     })
   }
 }

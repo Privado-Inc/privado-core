@@ -1,0 +1,8 @@
+collections:
+  - id: Collection.springboot.requestmapping
+    name: RequestMapping
+    category: RequestMapping
+    sensitivity: high
+    patterns:
+      - "(?i).*RequestMapping.*"
+    tags:

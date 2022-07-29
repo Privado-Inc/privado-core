@@ -1,8 +1,8 @@
 package ai.privado.model
 
-object InternalTags extends Enumeration {
+object InternalTag extends Enumeration {
 
-  type InternalTags = Value
+  type InternalTag = Value
 
   val VARIABLE_REGEX_LITERAL                   = Value("VARIABLE_REGEX_LITERAL")
   val VARIABLE_REGEX_IDENTIFIER                = Value("VARIABLE_REGEX_IDENTIFIER")
@@ -10,11 +10,8 @@ object InternalTags extends Enumeration {
   val OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE = Value("OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE")
   val OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE = Value("OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE")
   val SENSITIVE_FIELD_ACCESS                   = Value("SENSITIVE_FIELD_ACCESS")
-  val PRIVADO_DERIVED                          = Value("PRIVADO_DERIVED")
 
-  val API_URL = Value("API_URL")
-
-  lazy val valuesAsString = InternalTags.values.map(value => value.toString())
+  lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
 }
 
@@ -22,13 +19,9 @@ object NodeType extends Enumeration {
 
   type NodeType = Value
 
-  val SOURCE         = Value("Source")
-  val DERIVED_SOURCE = Value("DerivedSource")
-  val DATABASE       = Value("Database")
-  val API            = Value("api")
-  val LEAKAGE        = Value("Leakage")
-  val SDK            = Value("SDK")
-  val REGULAR        = Value("REGULAR")
+  val API     = Value("api")
+  val REGULAR = Value("REGULAR")
+  val UNKNOWN = Value("Unknown")
 
   def withNameWithDefault(name: String): Value = {
     try {
@@ -50,6 +43,9 @@ object CatLevelOne extends Enumeration {
   val POLICIES    = CatLevelOneIn("policies", "Policies")
   val UNKNOWN     = CatLevelOneIn("unknown", "Unknown")
 
+  // internal CatLevelOne
+  val DERIVED_SOURCES = CatLevelOneIn("DerivedSources", "Data Element")
+
   def withNameWithDefault(name: String): CatLevelOneIn = {
     try {
       withName(name).asInstanceOf[CatLevelOne.CatLevelOneIn]
@@ -64,7 +60,6 @@ object Language extends Enumeration {
 
   val JAVA    = Value("java")
   val UNKNOWN = Value("unknown")
-
   def withNameWithDefault(name: String): Value = {
     try {
       withName(name)
