@@ -6,10 +6,12 @@ import ai.privado.model._
 import ai.privado.semantic.Language._
 import better.files.File
 import io.circe.yaml.parser
+import io.joern.dataflowengineoss.language.Path
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
+import ai.privado.utility.Utilities.isValidRule
 
 import java.util.UUID
 import scala.sys.exit
@@ -46,7 +48,7 @@ object ScanProcessor extends CommandProcessor {
                 json.as[Rules] match {
                   case Right(rules) =>
                     rules.copy(
-                      sources = rules.sources.map(x =>
+                      sources = rules.sources.filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath)).map(x =>
                         x.copy(
                           file = fullPath,
                           catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
@@ -54,7 +56,7 @@ object ScanProcessor extends CommandProcessor {
                           nodeType = NodeType.REGULAR
                         )
                       ),
-                      sinks = rules.sinks.map(x =>
+                      sinks = rules.sinks.filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath)).map(x =>
                         x.copy(
                           file = fullPath,
                           catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
@@ -64,7 +66,7 @@ object ScanProcessor extends CommandProcessor {
                           nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
                         )
                       ),
-                      collections = rules.collections.map(x =>
+                      collections = rules.collections.filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath)).map(x =>
                         x.copy(
                           file = fullPath,
                           catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
@@ -162,10 +164,13 @@ object ScanProcessor extends CommandProcessor {
 
         // Run tagger
         cpg.runTagger(processedRules)
-        val dataflows = cpg.dataflow.l
+        val dataflows = cpg.dataflow
 
         // Attach each dataflow with a unique id
-        val dataflowMap = dataflows.map(dataflow => (UUID.randomUUID().toString, dataflow)).toMap
+        val dataflowMap = dataflows match {
+          case Some(flows) => flows.map(dataflow => (UUID.randomUUID().toString, dataflow)).toMap
+          case None => Map[String, Path]()
+        }
 
         // Exporting
         val outputFileName = "privado"
