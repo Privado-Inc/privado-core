@@ -5,11 +5,12 @@ import ai.privado.model.{Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewTag
-import io.shiftleft.utils.{IOUtils, ProjectRoot}
+import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import java.nio.file.Paths
+import scala.io.Source
 import scala.util.Try
 
 object Utilities {
@@ -45,8 +46,8 @@ object Utilities {
    Utility to get the default semantics for dataflow queries
    */
   def getDefaultSemantics() = {
-    val semanticsFilename = ProjectRoot.relativise("src/main/resources/default.semantics")
-    Semantics.fromList(new Parser().parseFile(semanticsFilename))
+    val semanticsFilename = Source.fromResource("default.semantics")
+    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
   }
 
   /*

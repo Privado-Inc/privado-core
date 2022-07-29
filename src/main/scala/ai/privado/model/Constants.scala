@@ -11,7 +11,6 @@ object Constants {
   val catLevelTwo    = "catLevelTwo"
   val sensitivity    = "sensitivity"
   val isSensitive    = "isSensitive"
-  val domains        = "domains"
   val patterns       = "patterns"
   val privadoDerived = "privadoDerived"
   val underScore     = "_"

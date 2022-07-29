@@ -14,7 +14,7 @@ import scala.collection.mutable.ListBuffer
 class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger                               = LoggerFactory.getLogger(getClass)
 
   def getFlowByType(sinkSubCategory: String): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
     def processNonEmptyFlows(
@@ -37,7 +37,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
             source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
           }
         } catch {
-          case e: Exception =>  logger.error("Exception while traversing dataflow path")
+          case e: Exception => logger.error("Exception while traversing dataflow path")
         }
       })
 

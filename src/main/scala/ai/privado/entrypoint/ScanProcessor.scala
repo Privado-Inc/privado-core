@@ -127,7 +127,7 @@ object ScanProcessor extends CommandProcessor {
     val sinks       = externalRules.sinks ++ internalRules.sinks
     val collections = externalRules.collections ++ internalRules.collections
 
-    val policies    = externalRules.policies ++ internalRules.policies
+    val policies = externalRules.policies ++ internalRules.policies
     val mergedRules =
       Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
     logger.info(mergedRules.toString())
