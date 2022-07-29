@@ -15,7 +15,7 @@ import scala.util.Try
 
 object Utilities {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /*
    Utility to add a single tag to a object
@@ -23,7 +23,7 @@ object Utilities {
   def storeForTag(
     builder: BatchedUpdate.DiffGraphBuilder,
     source: NodeOrDetachedNode
-  )(tagName: String, tagValue: String = "") = {
+  )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
     builder.addEdge(source, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
   }
 
@@ -45,7 +45,7 @@ object Utilities {
   /*
    Utility to get the default semantics for dataflow queries
    */
-  def getDefaultSemantics() = {
+  def getDefaultSemantics: Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
     Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
   }
@@ -53,7 +53,7 @@ object Utilities {
   /*
    Utility to filter rules by catLevelOne
    */
-  def getRulesByCatLevelOne(rules: List[RuleInfo], catLevelOne: CatLevelOne) =
+  def getRulesByCatLevelOne(rules: List[RuleInfo], catLevelOne: CatLevelOne): Seq[RuleInfo] =
     rules.filter(rule => rule.catLevelOne.equals(catLevelOne))
 
   /** For a given `filename`, `lineToHighlight`, return the corresponding code by reading it from the file. If
@@ -63,7 +63,7 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     val lines = Try(IOUtils.readLinesInFile(Paths.get(filename))).getOrElse {
-      logger.error("Error reading from file : " + filename);
+      logger.error("Error reading from file : " + filename)
       List()
     }
     val startLine: Integer = {

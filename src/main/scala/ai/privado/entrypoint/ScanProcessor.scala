@@ -9,7 +9,6 @@ import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import java.util.UUID
@@ -17,7 +16,7 @@ import scala.sys.exit
 import scala.util.{Failure, Success}
 
 object ScanProcessor extends CommandProcessor {
-  val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def parseRules(rulesPath: String): Rules = {
     val ir: File = {
@@ -26,7 +25,7 @@ object ScanProcessor extends CommandProcessor {
       catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
-          logger.error(f"Rules path '${rulesPath}' is not accessible")
+          logger.error(s"Rules path $rulesPath is not accessible")
           exit(1)
       }
     }
@@ -97,7 +96,7 @@ object ScanProcessor extends CommandProcessor {
       catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
-          logger.error(f"Rules path '${rulesPath}' is not accessible")
+          logger.error(s"Rules path $rulesPath is not accessible")
           exit(1)
       }
     parsedRules
@@ -109,7 +108,7 @@ object ScanProcessor extends CommandProcessor {
       internalRules = parseRules(config.internalRulesPath.head)
     }
     var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
-    if (!config.externalRulePath.isEmpty) {
+    if (config.externalRulePath.nonEmpty) {
       externalRules = parseRules(config.externalRulePath.head)
     }
     /*
@@ -130,7 +129,9 @@ object ScanProcessor extends CommandProcessor {
     val policies = externalRules.policies ++ internalRules.policies
     val mergedRules =
       Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
-    logger.info(mergedRules.toString())
+    logger.info(mergedRules.toString)
+    logger.info("Caching rules")
+    RuleCache.setRule(mergedRules)
     mergedRules
   }
   override def process(): Unit = {
@@ -159,13 +160,8 @@ object ScanProcessor extends CommandProcessor {
         val cpg = DefaultOverlays.create("cpg.bin")
         println("=====================")
 
-        val rules: List[RuleInfo] = processedRules.sources ++ processedRules.sinks ++ processedRules.collections
-        logger.info("Rules discovered")
-        rules.foreach(RuleCache.setRuleInfo)
-        logger.info("Rules cached successfully")
-
         // Run tagger
-        cpg.runTagger(rules)
+        cpg.runTagger(processedRules)
         val dataflows = cpg.dataflow.l
 
         // Attach each dataflow with a unique id
