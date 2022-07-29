@@ -14,7 +14,7 @@ class Dataflow(cpg: Cpg) {
 
   def dataflow: Traversal[Path] = {
 
-    implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics())
+    implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     val sources                               = getSources
     val sinks                                 = getSinks
 

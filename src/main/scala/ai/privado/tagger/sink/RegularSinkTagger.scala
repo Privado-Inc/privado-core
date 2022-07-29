@@ -7,8 +7,9 @@ import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
 
 class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+  lazy val cacheCall = cpg.call.or(_.nameNot("(<operator|<init).*")).l
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val sinks = cpg.call.methodFullName(ruleInfo.patterns.head)
+    val sinks = cacheCall.methodFullName(ruleInfo.patterns.head)
 
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
 
