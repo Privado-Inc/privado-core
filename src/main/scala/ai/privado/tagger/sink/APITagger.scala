@@ -19,7 +19,7 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val apiInternalSinkPattern = cpg.literal.code(ruleInfo.patterns.head).l
-    val apis                   = cacheCall.methodFullName(APISINKS_REGEX).l
+    val apis                   = cacheCall.name(APISINKS_REGEX).l
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     val apiFlows                              = apis.reachableByFlows(apiInternalSinkPattern).l

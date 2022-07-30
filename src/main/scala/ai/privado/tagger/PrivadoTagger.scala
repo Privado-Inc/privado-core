@@ -22,7 +22,6 @@ class PrivadoTagger(cpg: Cpg) {
     val regularSinkTagger = new RegularSinkTagger(cpg)
 
     val sourceRules = rules.sources
-    println(sourceRules)
     sourceRules.foreach(rule => {
       literalTagger.setRuleAndApply(rule)
       identifierTagger.setRuleAndApply(rule)

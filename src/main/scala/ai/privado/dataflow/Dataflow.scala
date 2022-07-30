@@ -9,12 +9,15 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
+import org.slf4j.LoggerFactory
 
 class Dataflow(cpg: Cpg) {
 
+  private val logger = LoggerFactory.getLogger(getClass)
   def dataflow: Option[Traversal[Path]] = {
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
+    logger.info("Generating dataflow")
     val sources                               = getSources
     val sinks                                 = getSinks
 

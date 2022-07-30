@@ -10,10 +10,14 @@ import io.joern.dataflowengineoss.language.Path
 import java.util.Calendar
 import scala.collection.mutable
 import better.files.File
+import org.slf4j.LoggerFactory
 
 object JSONExporter {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
+    logger.info("Initiated exporter engine")
     val sourceExporter     = new SourceExporter(cpg)
     val dataflowExporter   = new DataflowExporter(cpg, dataflows)
     val collectionExporter = new CollectionExporter(cpg)
@@ -25,18 +29,22 @@ object JSONExporter {
       output.addOne(Constants.localScanPath -> repoPath.asJson)
       output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
       output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
+      logger.info("Completed Source Exporting")
 
       val sinkSubCategories = RuleCache.getRule.sinks.map(sinkRule => sinkRule.catLevelTwo).toSet
 
       sinkSubCategories.foreach(sinkSubType => {
         output.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
       })
+      logger.info("Completed Sink Exporting")
 
       output.addOne("collections" -> collectionExporter.getCollections.asJson)
+      logger.info("Completed Collections Exporting")
 
       File(repoPath + "/.privado").createDirectoryIfNotExists()
       val f = File(repoPath + "/.privado/" + outputFileName + ".json")
       f.write(output.asJson.toString())
+      logger.info("Shutting down Exporter engine")
 
     } catch {
       case ex: Exception => println(ex.toString)

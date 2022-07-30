@@ -12,6 +12,7 @@ import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import ai.privado.utility.Utilities.isValidRule
+import io.shiftleft.semanticcpg.language._
 
 import java.util.UUID
 import scala.sys.exit
@@ -131,7 +132,7 @@ object ScanProcessor extends CommandProcessor {
     val policies = externalRules.policies ++ internalRules.policies
     val mergedRules =
       Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
-    logger.info(mergedRules.toString)
+    //logger.info(mergedRules.toString)
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
     mergedRules
@@ -176,7 +177,7 @@ object ScanProcessor extends CommandProcessor {
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
 
-      /*
+        /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
@@ -186,8 +187,8 @@ object ScanProcessor extends CommandProcessor {
             print(s"${tag.value}, ")
           }
           println("\n----------------------------------------")
-        }
-       */
+        }*/
+
       case Failure(exception) =>
         println("[FAILED]")
         println(exception)
