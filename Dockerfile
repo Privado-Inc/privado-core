@@ -1,7 +1,7 @@
-FROM openjdk:11-alpine as build
+FROM alpine:3.16 as build
 
 RUN apk update && apk upgrade 
-RUN apk add --no-cache python3 git curl gnupg bash nss ncurses
+RUN apk add --no-cache python3 git curl gnupg bash nss ncurses openjdk11-jre
 RUN ln -sf python3 /usr/bin/python
 
 ENV SBT_VERSION 1.7.1
