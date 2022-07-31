@@ -33,9 +33,11 @@ object JSONExporter {
 
       val sinkSubCategories = RuleCache.getRule.sinks.map(sinkRule => sinkRule.catLevelTwo).toSet
 
+      val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
       sinkSubCategories.foreach(sinkSubType => {
-        output.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
+        dataflowsOutput.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
       })
+      output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
       output.addOne("collections" -> collectionExporter.getCollections.asJson)
