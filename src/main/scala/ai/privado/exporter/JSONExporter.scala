@@ -16,6 +16,13 @@ object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  def getRepoScanPath(repoPath: String): String = {
+    sys.env.get("PRIVADO_HOST_SCAN_DIR") match {
+      case Some(path) => path
+      case _ => repoPath
+    }
+  }
+
   def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
     logger.info("Initiated exporter engine")
     val sourceExporter     = new SourceExporter(cpg)
@@ -26,7 +33,7 @@ object JSONExporter {
       output.addOne(Constants.version       -> "1.0.0".asJson)
       output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-      output.addOne(Constants.localScanPath -> repoPath.asJson)
+      output.addOne(Constants.localScanPath -> getRepoScanPath(repoPath).asJson)
       output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
       output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
       logger.info("Completed Source Exporting")
