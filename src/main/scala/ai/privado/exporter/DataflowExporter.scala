@@ -1,6 +1,7 @@
 package ai.privado.exporter
 
-import ai.privado.model.{CatLevelOne, Constants, InternalTag}
+import ai.privado.cache.RuleCache
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, NodeType}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
@@ -71,13 +72,23 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
     def convertSink(sinkFlow: Path, sinkFlowId: String) = {
       var sinkOutput = mutable.LinkedHashMap[String, Json]()
-      val sink = sinkFlow.elements.last.tag
+      val sinkIdTag = sinkFlow.elements.last.tag
         .filterNot(node => InternalTag.valuesAsString.contains(node.name))
         .filter(node => node.name.equals(Constants.id))
-      if (sink.nonEmpty) {
-        val ruleId = sink.head.value
+      if (sinkIdTag.nonEmpty) {
+        val ruleId = sinkIdTag.last.value
         sinkOutput.addOne(Constants.sinkType -> dataflowSinkType.asJson)
         sinkOutput = sinkOutput ++ ExporterUtility.getRuleInfoForExporting(ruleId)
+        //Special case for API type of nodes
+        RuleCache.getRuleInfo(ruleId) match {
+          case Some(rule) if rule.nodeType.equals(NodeType.API) =>
+            val sinkAPITag = sinkFlow.elements.last.tag
+            .filter(node => node.name.equals(Constants.apiUrl))
+            if (sinkAPITag.nonEmpty){
+              sinkOutput.addOne(Constants.apiUrl -> sinkAPITag.value.l.asJson)
+            }
+          case _ => //do nothing
+        }
         sinkOutput.addOne(Constants.paths -> convertPathsList(sinkFlow, sinkFlowId).asJson)
       } else
         sinkOutput
