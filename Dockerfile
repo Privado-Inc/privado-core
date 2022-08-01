@@ -1,4 +1,4 @@
-FROM openjdk:11-alpine as build
+FROM openjdk:18-alpine as build
 
 RUN apk update && apk upgrade 
 RUN apk add --no-cache python3 git curl gnupg bash nss ncurses
@@ -14,7 +14,7 @@ COPY . .
 # universal zip
 RUN sbt universal:packageBin
 
-FROM alpine:3.16
+FROM openjdk:18-alpine
 RUN apk add --no-cache bash
 #The SHELL instruction allows the default shell used for the shell form of commands to be overridden
 SHELL [ "/bin/bash", "-c" ]
