@@ -97,12 +97,14 @@ object Utilities {
   To check if processed pattern is valid
    */
   def isValidRule(stringPattern: String, ruleId: String = "", fileName: String = ""): Boolean = {
-    try{
+    try {
       Pattern.compile(stringPattern)
       true
-    }
-    catch {
-      case patternSyntaxException: PatternSyntaxException => logger.error(s"Error parsing rule, ruleId : $ruleId, fileName : $fileName, stringPattern : $stringPattern, error : ${patternSyntaxException.toString}")
+    } catch {
+      case patternSyntaxException: PatternSyntaxException =>
+        logger.error(
+          s"Error parsing rule, ruleId : $ruleId, fileName : $fileName, stringPattern : $stringPattern, error : ${patternSyntaxException.toString}"
+        )
         false
       case _: Throwable => false
     }

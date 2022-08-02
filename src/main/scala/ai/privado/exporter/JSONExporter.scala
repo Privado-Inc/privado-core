@@ -19,7 +19,7 @@ object JSONExporter {
   def getRepoScanPath(repoPath: String): String = {
     sys.env.get("PRIVADO_HOST_SCAN_DIR") match {
       case Some(path) => path
-      case _ => repoPath
+      case _          => repoPath
     }
   }
 
