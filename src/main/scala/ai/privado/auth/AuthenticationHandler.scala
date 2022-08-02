@@ -57,8 +57,8 @@ object AuthenticationHandler {
       true
     } catch {
       case e: Exception =>
-        logger.debug(s"Error while updating the config file")
-        logger.error(s"${e.toString}")
+        logger.error(s"Error while updating the config file")
+        logger.debug(s"File update error: ", e)
         false
     }
   }
@@ -84,8 +84,9 @@ object AuthenticationHandler {
       )
       val json = ujson.read(response.text())
       response.statusCode match {
-        case 200 => json("redirectUrl").toString()
-        case _   => json("message").toString()
+        case 200 => s"""Successfully synchronized results with Privado Cloud \n
+          Continue to view results on: ${json("redirectUrl").toString()}"""
+        case _ => json("message").toString()
       }
 
     } catch {
