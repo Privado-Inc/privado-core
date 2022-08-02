@@ -13,14 +13,14 @@ phases:
       - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
       - VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
       - |
-        if [[ $CODEBUILD_SOURCE_VERSION = "main" ]]
+        if [[ $AWS_REGION = "eu-west-1" ]]
         then
-            IS_RELEASE_BRANCH="true"
+            echo "defining tags for release branch"
             TAG_1="latest"
             TAG_2=$VERSION
             TAG_3="master-$VERSION"
         else
-            IS_RELEASE_BRANCH="false"
+            echo "defining tags for staging branch"
             TAG_1="stage"
             TAG_2="stage-$VERSION"
         fi
@@ -40,7 +40,8 @@ phases:
       - echo "$IMAGES_TO_DELETE"
       - aws ecr batch-delete-image --region $AWS_REGION --repository-name privado-core --image-ids "$IMAGES_TO_DELETE" || true
       - echo Pushing the Docker images...
-      - docker push $REPOSITORY_URI:$CUSTOME_IMAGE_TAG
+      - docker push $REPOSITORY_URI:$TAG_1
+      - docker push $REPOSITORY_URI:$TAG_2
       - |
         if [[ -z "$TAG_3" ]]
         then
