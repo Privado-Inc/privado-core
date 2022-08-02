@@ -28,7 +28,7 @@ object ScanProcessor extends CommandProcessor {
       catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
-          logger.error(s"Rules path $rulesPath is not accessible")
+          logger.error(s"Exception while processing rules on path $rulesPath")
           exit(1)
       }
     }
