@@ -14,8 +14,8 @@ phases:
       - VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
       - TAG_1=latest
       - TAG_2=$VERSION
-      - echo $CODEBUILD_SOURCE_VERSION
-      - TAG_3=${CODEBUILD_SOURCE_VERSION##*/}
+      - echo $CODEBUILD_WEBHOOK_HEAD_REF
+      - TAG_3=${CODEBUILD_WEBHOOK_HEAD_REF##*/}
 
   build:
     commands:
