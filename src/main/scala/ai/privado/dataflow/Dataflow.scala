@@ -18,10 +18,10 @@ class Dataflow(cpg: Cpg) {
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     logger.info("Generating dataflow")
-    val sources                               = getSources
-    val sinks                                 = getSinks
+    val sources = getSources
+    val sinks   = getSinks
 
-    if(sources.isEmpty || sinks.isEmpty)
+    if (sources.isEmpty || sinks.isEmpty)
       None
     else
       Some(sinks.reachableByFlows(sources))

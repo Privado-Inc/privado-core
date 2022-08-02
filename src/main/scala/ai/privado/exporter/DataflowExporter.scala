@@ -1,7 +1,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Constants, InternalTag, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, NodeType}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
@@ -65,36 +65,50 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
   }
 
   private def convertSinksList(
-    sinkFlows: List[String],
+    sinkPathIds: List[String],
     dataflowsMapByType: Map[String, Path],
     dataflowSinkType: String
   ) = {
 
-    def convertSink(sinkFlow: Path, sinkFlowId: String) = {
-      var sinkOutput = mutable.LinkedHashMap[String, Json]()
-      val sinkIdTag = sinkFlow.elements.last.tag
-        .filterNot(node => InternalTag.valuesAsString.contains(node.name))
-        .filter(node => node.name.equals(Constants.id))
-      if (sinkIdTag.nonEmpty) {
-        val ruleId = sinkIdTag.last.value
-        sinkOutput.addOne(Constants.sinkType -> dataflowSinkType.asJson)
-        sinkOutput = sinkOutput ++ ExporterUtility.getRuleInfoForExporting(ruleId)
-        //Special case for API type of nodes
-        RuleCache.getRuleInfo(ruleId) match {
-          case Some(rule) if rule.nodeType.equals(NodeType.API) =>
-            val sinkAPITag = sinkFlow.elements.last.tag
-            .filter(node => node.name.equals(Constants.apiUrl))
-            if (sinkAPITag.nonEmpty){
-              sinkOutput.addOne(Constants.apiUrl -> sinkAPITag.value.l.asJson)
-            }
-          case _ => //do nothing
-        }
-        sinkOutput.addOne(Constants.paths -> convertPathsList(sinkFlow, sinkFlowId).asJson)
-      } else
-        sinkOutput
+    def convertSink(sinkId: String, sinkPathIds: ListBuffer[String]) = {
+      var sinkOutput       = mutable.LinkedHashMap[String, Json]()
+      val sinkIdAfterSplit = sinkId.split("#_#")
+      sinkOutput.addOne(Constants.sinkType -> dataflowSinkType.asJson)
+      sinkOutput = sinkOutput ++ ExporterUtility.getRuleInfoForExporting(sinkIdAfterSplit(0))
+      // Special case for API type of nodes
+      RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
+        case Some(rule) if rule.nodeType.equals(NodeType.API) & sinkIdAfterSplit.size >= 2 =>
+          sinkOutput.addOne(Constants.apiUrl -> sinkIdAfterSplit(1).split(",").toList.asJson)
+        case _ => // do nothing
+      }
+      sinkOutput
+        .addOne(
+          Constants.paths -> sinkPathIds
+            .map(sinkPathId => convertPathsList(dataflowsMapByType(sinkPathId), sinkPathId))
+            .asJson
+        )
+        .asJson
+      sinkOutput
     }
 
-    sinkFlows.map(sinkFlowId => convertSink(dataflowsMapByType(sinkFlowId), sinkFlowId)).asJson
+    // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
+    val sinkMap = mutable.HashMap[String, ListBuffer[String]]()
+    sinkPathIds.foreach(sinkPathId => {
+      val sinkIdTag = dataflowsMapByType(sinkPathId).elements.last.tag
+        .filter(node => node.name.equals(Constants.id))
+      if (sinkIdTag.nonEmpty) {
+        var sinkId = sinkIdTag.last.value
+        val sinkAPITag = dataflowsMapByType(sinkPathId).elements.last.tag
+          .filter(node => node.name.equals(Constants.apiUrl))
+        if (sinkAPITag.nonEmpty) {
+          sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
+        }
+        if (!sinkMap.contains(sinkId))
+          sinkMap(sinkId) = ListBuffer()
+        sinkMap(sinkId).append(sinkPathId)
+      }
+    })
+    sinkMap.map(entrySet => convertSink(entrySet._1, entrySet._2)).asJson
   }
 
   private def convertPathsList(sinkFlow: Path, pathId: String) = {
@@ -103,6 +117,14 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     pathOutput.addOne(Constants.pathId -> pathId.asJson)
     pathOutput.addOne(Constants.path   -> ExporterUtility.convertPathElement(sinkFlow.elements).asJson)
     pathOutput
+  }
+
+  def helo: Int = {
+    println("lkdsjf")
+    return 3
+
+    println("lkdsjf")
+    return 4
   }
 
 }

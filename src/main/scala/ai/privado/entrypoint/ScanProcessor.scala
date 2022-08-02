@@ -28,7 +28,7 @@ object ScanProcessor extends CommandProcessor {
       catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
-          logger.error(s"Rules path $rulesPath is not accessible")
+          logger.error(s"Exception while processing rules on path $rulesPath")
           exit(1)
       }
     }
@@ -49,32 +49,38 @@ object ScanProcessor extends CommandProcessor {
                 json.as[Rules] match {
                   case Right(rules) =>
                     rules.copy(
-                      sources = rules.sources.filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath)).map(x =>
-                        x.copy(
-                          file = fullPath,
-                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
-                          categoryTree = pathTree,
-                          nodeType = NodeType.REGULAR
-                        )
-                      ),
-                      sinks = rules.sinks.filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath)).map(x =>
-                        x.copy(
-                          file = fullPath,
-                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
-                          catLevelTwo = pathTree.apply(2),
-                          categoryTree = pathTree,
-                          language = Language.withNameWithDefault(pathTree.last),
-                          nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
-                        )
-                      ),
-                      collections = rules.collections.filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath)).map(x =>
-                        x.copy(
-                          file = fullPath,
-                          catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
-                          categoryTree = pathTree,
-                          nodeType = NodeType.REGULAR
-                        )
-                      ),
+                      sources = rules.sources
+                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                            categoryTree = pathTree,
+                            nodeType = NodeType.REGULAR
+                          )
+                        ),
+                      sinks = rules.sinks
+                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                            catLevelTwo = pathTree.apply(2),
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                          )
+                        ),
+                      collections = rules.collections
+                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                            categoryTree = pathTree,
+                            nodeType = NodeType.REGULAR
+                          )
+                        ),
                       policies = rules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
                     )
                   case Left(error) =>
@@ -132,7 +138,7 @@ object ScanProcessor extends CommandProcessor {
     val policies = externalRules.policies ++ internalRules.policies
     val mergedRules =
       Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
-    //logger.info(mergedRules.toString)
+    // logger.info(mergedRules.toString)
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
     mergedRules
@@ -147,7 +153,7 @@ object ScanProcessor extends CommandProcessor {
     val sourceRepoLocation = config.sourceLocation.head
     import io.joern.console.cpgcreation.guessLanguage
     val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(Languages.JAVASRC) =>
+      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
         val cpgconfig =
           Config(inputPaths = Set(sourceRepoLocation), skipDependencyDownload = config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
@@ -170,14 +176,13 @@ object ScanProcessor extends CommandProcessor {
         // Attach each dataflow with a unique id
         val dataflowMap = dataflows match {
           case Some(flows) => flows.map(dataflow => (UUID.randomUUID().toString, dataflow)).toMap
-          case None => Map[String, Path]()
+          case None        => Map[String, Path]()
         }
 
         // Exporting
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
-
-        /*
+      /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
