@@ -12,18 +12,10 @@ phases:
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
       - VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
-      - |
-        if [[ $AWS_REGION = "eu-west-1" ]]
-        then
-            echo "defining tags for release branch"
-            TAG_1="latest"
-            TAG_2=$VERSION
-            TAG_3="master-$VERSION"
-        else
-            echo "defining tags for staging branch"
-            TAG_1="stage"
-            TAG_2="stage-$VERSION"
-        fi
+      - TAG_1=latest
+      - TAG_2=$VERSION
+      - echo $CODEBUILD_SOURCE_VERSION
+      - TAG_3=${CODEBUILD_SOURCE_VERSION##*/}
 
   build:
     commands:
@@ -42,12 +34,5 @@ phases:
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$TAG_1
       - docker push $REPOSITORY_URI:$TAG_2
-      - |
-        if [[ -z "$TAG_3" ]]
-        then
-              echo "\$TAG_3 is empty"
-        else
-              docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_3
-              docker push $REPOSITORY_URI:$TAG_3
-        fi
+      - docker push $REPOSITORY_URI:$TAG_3
       - echo completed pushing image to ecr
