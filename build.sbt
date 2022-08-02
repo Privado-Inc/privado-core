@@ -28,7 +28,9 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
   "io.circe" %% "circe-parser" % circeVersion,
-  "io.circe" %% "circe-yaml" % circeVersion
+  "io.circe" %% "circe-yaml" % circeVersion,
+  "com.lihaoyi" %% "upickle" % "2.0.0",
+  "com.lihaoyi" %% "requests" % "0.7.0"
 )
 
 
