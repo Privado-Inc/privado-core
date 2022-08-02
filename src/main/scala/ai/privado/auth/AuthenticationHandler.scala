@@ -10,9 +10,9 @@ object AuthenticationHandler {
    * To handle the cloud flow for scanned repositories. Assumes the flag for auth is enabled.
    * Asks for consent from the user and then decides the flow for Privado Cloud APIs.
    */
-  private val logger          = LoggerFactory.getLogger(this.getClass)
-  val userHash: String        = sys.env.getOrElse("PRIVADO_USER_HASH", null)
-  val dockerAccessKey: String = sys.env.getOrElse("PRIVADO_DOCKER_ACCESS_KEY", null)
+  private val logger                  = LoggerFactory.getLogger(this.getClass)
+  val userHash: Option[String]        = sys.env.get("PRIVADO_USER_HASH")
+  val dockerAccessKey: Option[String] = sys.env.get("PRIVADO_DOCKER_ACCESS_KEY")
   def syncToCloud: Boolean = {
     try {
       sys.env.getOrElse("PRIVADO_SYNC_TO_CLOUD", "False").toBoolean
@@ -23,8 +23,7 @@ object AuthenticationHandler {
 
   def authenticate(repoPath: String): Unit = {
     dockerAccessKey match {
-      case null => () // No auth flow happens if docker access key is not present
-      case _ =>
+      case Some(_) =>
         var syncPermission: Boolean = true
         if (!syncToCloud) {
           syncPermission = askForPermission() // Ask user for request permissions
@@ -34,6 +33,7 @@ object AuthenticationHandler {
         } else {
           ()
         }
+      case _ => ()
     }
   }
 
@@ -72,7 +72,7 @@ object AuthenticationHandler {
     val accessKey: String = {
       String.format(
         "%032x",
-        new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.getBytes("UTF-8")))
+        new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.get.getBytes("UTF-8")))
       )
     }
 
@@ -82,14 +82,18 @@ object AuthenticationHandler {
         data = requests.MultiPart(requests.MultiItem("scanfile", file, file.getName)),
         headers = Map("access-key" -> s"$accessKey")
       )
-      val json = ujson.read(response.text)
+      val json = ujson.read(response.text())
       response.statusCode match {
         case 200 => json("redirectUrl").toString()
         case _   => json("message").toString()
       }
 
     } catch {
-      case e: Exception => s"Error Occurred. ${e.toString}"
+      case e: Exception => {
+        logger.debug("Error occurred while uploading the file to the cloud.")
+        logger.error(s"${e.toString}")
+        s"Error Occurred. ${e.toString}"
+      }
     }
   }
 }
