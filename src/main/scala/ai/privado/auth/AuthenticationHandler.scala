@@ -1,17 +1,25 @@
 package ai.privado.auth
-import java.security.MessageDigest
+import org.slf4j.LoggerFactory
+
 import java.math.BigInteger
-import java.nio.file.{Path, Paths}
+import java.io.File
+import java.security.MessageDigest
 
 object AuthenticationHandler {
   /*
    * To handle the cloud flow for scanned repositories. Assumes the flag for auth is enabled.
    * Asks for consent from the user and then decides the flow for Privado Cloud APIs.
    */
-
+  private val logger          = LoggerFactory.getLogger(this.getClass)
   val userHash: String        = sys.env.getOrElse("PRIVADO_USER_HASH", null)
-  val syncToCloud: Boolean    = sys.env.getOrElse("PRIVADO_SYNC_TO_CLOUD", "False").toBoolean
   val dockerAccessKey: String = sys.env.getOrElse("PRIVADO_DOCKER_ACCESS_KEY", null)
+  def syncToCloud: Boolean = {
+    try {
+      sys.env.getOrElse("PRIVADO_SYNC_TO_CLOUD", "False").toBoolean
+    } catch {
+      case _: Exception => false
+    }
+  }
 
   def authenticate(repoPath: String): Unit = {
     dockerAccessKey match {
@@ -40,20 +48,26 @@ object AuthenticationHandler {
     }
   }
 
-  def updateConfigFile(property: String, value: String): Unit = {
-    val jsonString = os.read(os.Path("/app/config/config.json"))
-    val data       = ujson.read(jsonString)
-    data(property) = value
-    os.write.over(os.Path("/app/config/config.json"), data)
+  def updateConfigFile(property: String, value: String): Boolean = {
+    try {
+      val jsonString = os.read(os.Path("/app/config/config.json"))
+      val data       = ujson.read(jsonString)
+      data(property) = value
+      os.write.over(os.Path("/app/config/config.json"), data)
+      true
+    } catch {
+      case e: Exception =>
+        logger.debug(s"Error while updating the config file")
+        logger.error(s"${e.toString}")
+        false
+    }
   }
 
   def pushDataToCloud(repoPath: String): String = {
     // TODO change BASE_URL and upload url for prod
-    val BASE_URL = "https://t.api.code.privado.ai/test"
-    val file = os.Path {
-      s"$repoPath/.privado/privado.json"
-    }
-    val uploadURL: String = s"$BASE_URL/cli/api/$userHash/file"
+    val BASE_URL          = "https://t.api.code.privado.ai/test"
+    val file              = new File(s"$repoPath/.privado/privado.json")
+    val uploadURL: String = s"$BASE_URL/cli/api/file/$userHash"
 
     val accessKey: String = {
       String.format(
@@ -62,16 +76,20 @@ object AuthenticationHandler {
       )
     }
 
-    val response = requests.post(
-      uploadURL,
-      data = requests.MultiPart(requests.MultiItem("File2", data = Paths.get(file.toString()))),
-      headers = Map("access-key" -> s"$accessKey")
-    )
+    try {
+      val response = requests.post(
+        uploadURL,
+        data = requests.MultiPart(requests.MultiItem("scanfile", file, file.getName)),
+        headers = Map("access-key" -> s"$accessKey")
+      )
+      val json = ujson.read(response.text)
+      response.statusCode match {
+        case 200 => json("redirectUrl").toString()
+        case _   => json("message").toString()
+      }
 
-    // TODO confirm status code from team. Using 201 as a placeholder
-    response.statusCode match {
-      case 201 => response.data.toString()
-      case _   => s"Error Occurred. ${response.data.toString()}"
+    } catch {
+      case e: Exception => s"Error Occurred. ${e.toString}"
     }
   }
 }
