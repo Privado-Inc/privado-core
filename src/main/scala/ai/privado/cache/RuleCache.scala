@@ -29,4 +29,6 @@ object RuleCache {
   private def setPolicy(policy: Policy): Unit = policyMap.addOne(policy.id -> policy)
 
   def getPolicy(policyId: String): Option[Policy] = policyMap.get(policyId)
+
+  def getAllPolicy: Seq[Policy] = policyMap.values.toList
 }
