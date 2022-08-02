@@ -1,8 +1,9 @@
 package ai.privado.entrypoint
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.exporter.JSONExporter
 import ai.privado.model._
+import ai.privado.policyengine.PolicyExecutor
 import ai.privado.semantic.Language._
 import better.files.File
 import io.circe.yaml.parser
@@ -151,6 +152,8 @@ object ScanProcessor extends CommandProcessor {
 
   def processCPG(processedRules: Rules): Unit = {
     val sourceRepoLocation = config.sourceLocation.head
+    // Setting up the application cache
+    AppCache.init(sourceRepoLocation)
     import io.joern.console.cpgcreation.guessLanguage
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>

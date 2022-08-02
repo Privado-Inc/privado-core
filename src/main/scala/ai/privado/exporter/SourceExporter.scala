@@ -9,7 +9,6 @@ import io.circe.syntax._
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, LinkedHashMap}
-import ExporterUtility._
 import ai.privado.cache.RuleCache
 
 class SourceExporter(cpg: Cpg) {

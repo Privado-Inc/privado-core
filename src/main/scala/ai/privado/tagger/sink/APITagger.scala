@@ -22,11 +22,11 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val apis                   = cacheCall.name(APISINKS_REGEX).l
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
-    if(apis.nonEmpty && apiInternalSinkPattern.nonEmpty) {
+    if (apis.nonEmpty && apiInternalSinkPattern.nonEmpty) {
       val apiFlows = apis.reachableByFlows(apiInternalSinkPattern).l
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.code
-        val apiNode = flow.elements.last
+        val apiNode     = flow.elements.last
         addRuleTags(builder, apiNode, ruleInfo)
         storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
       })

@@ -42,11 +42,11 @@ object ExporterUtility {
     nodes.map(node => converter(node))
   }
 
+  private def addToMap(outputMap: mutable.LinkedHashMap[String, Json], name: String, value: String) = {
+    if (value.nonEmpty)
+      outputMap.addOne(name -> value.asJson)
+  }
   def getRuleInfoForExporting(ruleId: String): mutable.Map[String, Json] = {
-    def addToMap(outputMap: mutable.LinkedHashMap[String, Json], name: String, value: String) = {
-      if (value.nonEmpty)
-        outputMap.addOne(name -> value.asJson)
-    }
     val ruleInfoOuput = mutable.LinkedHashMap[String, Json]()
     RuleCache.getRuleInfo(ruleId) match {
       case Some(rule) =>
@@ -61,6 +61,20 @@ object ExporterUtility {
           ruleInfoOuput.addOne(Constants.tags -> rule.tags.asJson)
         ruleInfoOuput
       case None => ruleInfoOuput
+    }
+  }
+
+  def getPolicyInfoForExporting(policyId: String): mutable.Map[String, Json] = {
+    val policyOutput = mutable.LinkedHashMap[String, Json]()
+    RuleCache.getPolicy(policyId) match {
+      case Some(policy) =>
+        addToMap(policyOutput, Constants.description, policy.description)
+        addToMap(policyOutput, Constants.action, policy.action.toString)
+        if (policy.tags.nonEmpty) {
+          policyOutput.addOne(Constants.tags -> policy.tags.asJson)
+        }
+        policyOutput
+      case None => policyOutput
     }
   }
 
