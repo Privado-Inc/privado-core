@@ -34,5 +34,12 @@ phases:
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$TAG_1
       - docker push $REPOSITORY_URI:$TAG_2
-      - docker push $REPOSITORY_URI:$TAG_3
+      - |
+        if [[ -z "$TAG_3" ]]
+        then
+              echo "\$TAG_3 is empty"
+        else
+              docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_3
+              docker push $REPOSITORY_URI:$TAG_3
+        fi
       - echo completed pushing image to ecr
