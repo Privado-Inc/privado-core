@@ -84,8 +84,8 @@ object AuthenticationHandler {
       )
       val json = ujson.read(response.text())
       response.statusCode match {
-        case 200 => s"""Successfully synchronized results with Privado Cloud \n
-          Continue to view results on: ${json("redirectUrl").toString()}"""
+        case 200 => s"""\n> Successfully synchronized results with Privado Cloud \n
+          > Continue to view results on: ${json("redirectUrl").toString()}\n"""
         case _ => json("message").toString()
       }
 
