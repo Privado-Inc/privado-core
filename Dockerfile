@@ -1,7 +1,5 @@
-FROM openjdk:11-alpine as build
-
-RUN apk update && apk upgrade 
-RUN apk add --no-cache python3 git curl gnupg bash nss ncurses
+FROM adoptopenjdk/openjdk15:latest as build
+RUN apt update && apt install -y python3 git curl bash
 RUN ln -sf python3 /usr/bin/python
 
 ENV SBT_VERSION 1.7.1
