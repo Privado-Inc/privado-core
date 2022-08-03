@@ -12,9 +12,8 @@ import scala.collection.mutable.ListBuffer
 
 class CollectionExporter(cpg: Cpg) {
 
-  /*
-    Processes collection points and return final output
-   */
+  /** Processes collection points and return final output
+    */
   def getCollections: immutable.Iterable[mutable.LinkedHashMap[String, Json]] = {
     val collectionMapByCollectionId = cpg.method
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))

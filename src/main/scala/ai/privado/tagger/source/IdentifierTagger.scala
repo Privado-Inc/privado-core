@@ -31,10 +31,8 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   }
 
-  /*
-   Tag identifier of all the typeDeclaration who have a member as memberName in argument
-   Represent Step 2.1
-   */
+  /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
+    */
   private def tagObjectOfTypeDeclHavingMemberName(
     builder: BatchedUpdate.DiffGraphBuilder,
     memberName: String,
@@ -85,10 +83,8 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     })
   }
 
-  /*
-   Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument
-   Represent Step 2.2
-   */
+  /** Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
+    */
   private def tagObjectOfTypeDeclHavingMemberType(
     builder: BatchedUpdate.DiffGraphBuilder,
     memberType: String,
@@ -105,7 +101,6 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
             Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
           )
           storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-          // addRuleTags(builder, impactedObject, ruleInfo)
         }
         storeForTag(builder, impactedObject)(
           Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE,
@@ -115,10 +110,9 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     })
   }
 
-  /*
-   Tag identifier of all the typeDeclaration who inherits from the type -> typeDeclName in argument
-   Represent Step 2.3
-   */
+  /** Tag identifier of all the typeDeclaration who inherits from the type -> typeDeclName in argument Represent Step
+    * 2.3
+    */
   private def tagObjectOfTypeDeclExtendingType(
     builder: BatchedUpdate.DiffGraphBuilder,
     typeDeclName: String,
@@ -136,7 +130,6 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
             Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
           )
           storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-          // addRuleTags(builder, impactedObject, ruleInfo)
         }
         storeForTag(builder, impactedObject)(
           Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,

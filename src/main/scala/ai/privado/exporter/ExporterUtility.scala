@@ -6,18 +6,16 @@ import ai.privado.utility.Utilities.dump
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder, toExtendedNode}
-
+import io.shiftleft.semanticcpg.language.toExtendedNode
+import ai.privado.semantic.Language._
 import scala.collection.mutable
 
 object ExporterUtility {
 
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-
-  /**
-    Convert to path element schema object
-   */
+  /** Convert to path element schema object
+    */
   def convertPathElement(nodes: List[CfgNode]): Seq[mutable.LinkedHashMap[String, Json]] = {
+
     def converter(node: CfgNode) = {
       val occurrence   = mutable.LinkedHashMap[String, Json]()
       val nodeLocation = node.location

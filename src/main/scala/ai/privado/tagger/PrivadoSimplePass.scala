@@ -10,9 +10,8 @@ abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   var ruleInfo: RuleInfo = null
   val logger             = LoggerFactory.getLogger(getClass)
 
-  /*
-  Helper function to set the rule and apply the pass
-   */
+  /** Helper function to set the rule and apply the pass
+    */
   def setRuleAndApply(ruleInfo: RuleInfo) = {
     try {
       this.ruleInfo = ruleInfo

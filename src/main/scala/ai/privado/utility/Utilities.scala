@@ -1,44 +1,47 @@
 package ai.privado.utility
 
-import ai.privado.entrypoint.ScanProcessor.logger
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.semantic.Language._
 import ai.privado.model.{Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewTag
+import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
+import overflowdb.BatchedUpdate
+import scala.util.{Try, Success, Failure}
 
 import java.nio.file.Paths
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
-import scala.util.Try
+import io.shiftleft.semanticcpg.language._
 
 object Utilities {
 
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val EXCLUDED_FILE_REGEX = "(?i).*test.*"
+  private val logger              = LoggerFactory.getLogger(getClass)
 
   /** Utility to add a single tag to a object
     */
   def storeForTag(
     builder: BatchedUpdate.DiffGraphBuilder,
-    source: NodeOrDetachedNode
+    node: StoredNode
   )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
-    builder.addEdge(source, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
+    if (isFileProcessable(node.location.filename)) {
+      builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
+    }
+    builder
   }
 
   /** Utility to add Tag based on a rule Object
     */
-  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: NodeOrDetachedNode, ruleInfo: RuleInfo): Unit = {
-    val storeForTagHelper = storeForTag(builder, node) _
-    storeForTagHelper(Constants.id, ruleInfo.id)
-    storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
-    storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
-    storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
-
-    for ((key, value) <- ruleInfo.tags) {
-      storeForTagHelper(key, value)
+  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: StoredNode, ruleInfo: RuleInfo): Unit = {
+    if (isFileProcessable(node.location.filename)) {
+      val storeForTagHelper = storeForTag(builder, node) _
+      storeForTagHelper(Constants.id, ruleInfo.id)
+      storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
+      storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
+      storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
     }
   }
 
@@ -116,6 +119,20 @@ object Utilities {
     sys.env.get("PRIVADO_HOST_SCAN_DIR") match {
       case Some(path) => path
       case _          => repoPath
+    }
+  }
+
+  /** Checks if given filePath doesn't belong to the excluding file regex
+    *
+    * @param filePath
+    * @return
+    */
+  def isFileProcessable(filePath: String) = {
+    Try(!filePath.split("/").last.matches(EXCLUDED_FILE_REGEX)) match {
+      case Success(result) => result
+      case Failure(e) =>
+        println(e)
+        false
     }
   }
 }
