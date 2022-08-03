@@ -9,9 +9,10 @@ RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SB
 
 WORKDIR /home/privado-core
 COPY . .
-ARG ARG BUILD_NUMBER=1.0.0
+ARG VERSION=1.0.0
+RUN echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
-RUN export BUILD_NUMBER=$BUILD_NUMBER && sbt universal:packageBin
+RUN export BUILD_VERSION=$VERSION && sbt universal:packageBin
 
 FROM alpine:3.16
 RUN apk add --no-cache bash
