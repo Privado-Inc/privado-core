@@ -189,7 +189,7 @@ object ScanProcessor extends CommandProcessor {
         // Exporting
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
-        /*
+      /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
