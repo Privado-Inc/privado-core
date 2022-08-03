@@ -14,29 +14,29 @@ object ExporterUtility {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
-  /*
+  /**
     Convert to path element schema object
    */
-  def convertPathElement(nodes: List[CfgNode]) = {
+  def convertPathElement(nodes: List[CfgNode]): Seq[mutable.LinkedHashMap[String, Json]] = {
     def converter(node: CfgNode) = {
-      val occurrence   = mutable.LinkedHashMap[String, String]()
+      val occurrence   = mutable.LinkedHashMap[String, Json]()
       val nodeLocation = node.location
-      occurrence.addOne(Constants.sample -> nodeLocation.symbol)
+      occurrence.addOne(Constants.sample -> nodeLocation.symbol.asJson)
       occurrence.addOne(Constants.lineNumber -> {
         nodeLocation.lineNumber match {
-          case Some(n) => n.toString
-          case None    => Constants.minusOne
+          case Some(n) => n.asJson
+          case None    => Constants.minusOne.asJson
         }
       })
       occurrence.addOne(Constants.columnNumber -> {
         node.columnNumber match {
-          case Some(n) => n.toString
-          case None    => Constants.minusOne
+          case Some(n) => n.asJson
+          case None    => Constants.minusOne.asJson
         }
       })
-      occurrence.addOne(Constants.fileName -> nodeLocation.filename)
+      occurrence.addOne(Constants.fileName -> nodeLocation.filename.asJson)
 
-      occurrence.addOne(Constants.excerpt -> dump(nodeLocation.filename, node.lineNumber))
+      occurrence.addOne(Constants.excerpt -> dump(nodeLocation.filename, node.lineNumber).asJson)
       occurrence
     }
     nodes.map(node => converter(node))
@@ -56,7 +56,7 @@ object ExporterUtility {
         if (rule.domains.nonEmpty)
           ruleInfoOuput.addOne(Constants.domains -> rule.domains.asJson)
         addToMap(ruleInfoOuput, Constants.sensitivity, rule.sensitivity)
-        addToMap(ruleInfoOuput, Constants.isSensitive, rule.isSensitive.toString)
+        ruleInfoOuput.addOne(Constants.isSensitive -> rule.isSensitive.asJson)
         if (rule.tags.nonEmpty)
           ruleInfoOuput.addOne(Constants.tags -> rule.tags.asJson)
         ruleInfoOuput
