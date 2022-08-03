@@ -60,7 +60,7 @@ object DuplicateFlowProcessor {
               visitedFlows.addAll(pathSubIds)
           }
         case Failure(exception) =>
-          logger.debug(s"Exception : $exception")
+          logger.debug("Exception : ", exception)
           logger.error(s"Exception while calculating PathId in deduplication of dataflow")
       }
     })

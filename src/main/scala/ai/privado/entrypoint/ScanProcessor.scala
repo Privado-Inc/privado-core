@@ -180,7 +180,7 @@ object ScanProcessor extends CommandProcessor {
             DuplicateFlowProcessor.calculatePathId(dataflow) match {
               case Success(pathId) => Some(pathId, dataflow)
               case Failure(e) =>
-                logger.debug(s"Exception : $e")
+                logger.debug("Exception : ", e)
                 None
             }
           })
