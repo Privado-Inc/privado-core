@@ -92,7 +92,7 @@ object AuthenticationHandler {
     } catch {
       case e: Exception => {
         logger.error("Error occurred while uploading the file to the cloud.")
-        logger.debug(s"${e.toString}")
+        logger.debug("Error:", e)
         s"Error Occurred. ${e.toString}"
       }
     }
