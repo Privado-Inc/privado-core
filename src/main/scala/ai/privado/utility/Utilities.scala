@@ -61,7 +61,7 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     val lines = Try(IOUtils.readLinesInFile(Paths.get(filename))).getOrElse {
-      logger.trace("Error reading from file with filename : " + filename)
+      logger.debug("Error reading from file with filename : " + filename)
       List()
     }
     val startLine: Integer = {
