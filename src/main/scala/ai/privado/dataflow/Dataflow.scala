@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
-  def dataflow: Option[Traversal[Path]] = {
+  def dataflow: List[Path] = {
 
     implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     logger.info("Generating dataflow")
@@ -22,9 +22,9 @@ class Dataflow(cpg: Cpg) {
     val sinks   = getSinks
 
     if (sources.isEmpty || sinks.isEmpty)
-      None
+      List[Path]()
     else
-      Some(sinks.reachableByFlows(sources))
+      sinks.reachableByFlows(sources).l
   }
 
   private def getSources: List[CfgNode] = {

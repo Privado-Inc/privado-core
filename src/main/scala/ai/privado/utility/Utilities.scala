@@ -60,33 +60,36 @@ object Utilities {
     */
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
-    val lines = Try(IOUtils.readLinesInFile(Paths.get(filename))).getOrElse {
-      logger.trace("Error reading from file with filename : " + filename)
-      List()
-    }
-    val startLine: Integer = {
-      if (lineToHighlight.isDefined)
-        Math.max(0, lineToHighlight.get - 5)
-      else
-        0
-    }
-    val endLine: Integer = {
-      if (lineToHighlight.isDefined)
-        Math.min(lines.length, lineToHighlight.get + 5)
-      else
-        0
-    }
-    lines
-      .slice(startLine - 1, endLine)
-      .zipWithIndex
-      .map { case (line, lineNo) =>
-        if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-          line + " " + arrow
-        } else {
-          line
-        }
+    try {
+      val lines = IOUtils.readLinesInFile(Paths.get(filename))
+      val startLine: Integer = {
+        if (lineToHighlight.isDefined)
+          Math.max(0, lineToHighlight.get - 5)
+        else
+          0
       }
-      .mkString("\n")
+      val endLine: Integer = {
+        if (lineToHighlight.isDefined)
+          Math.min(lines.length, lineToHighlight.get + 5)
+        else
+          0
+      }
+      lines
+        .slice(startLine - 1, endLine)
+        .zipWithIndex
+        .map { case (line, lineNo) =>
+          if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
+            line + " " + arrow
+          } else {
+            line
+          }
+        }
+        .mkString("\n")
+    } catch {
+      case e: Exception =>
+        logger.debug("Error : ", e)
+        ""
+    }
   }
 
   /** To check if processed pattern is valid

@@ -1,13 +1,12 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.model._
-import ai.privado.policyengine.PolicyExecutor
 import ai.privado.semantic.Language._
 import better.files.File
 import io.circe.yaml.parser
-import io.joern.dataflowengineoss.language.Path
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -15,7 +14,6 @@ import org.slf4j.LoggerFactory
 import ai.privado.utility.Utilities.isValidRule
 import io.shiftleft.semanticcpg.language._
 
-import java.util.UUID
 import scala.sys.exit
 import scala.util.{Failure, Success}
 
@@ -174,13 +172,19 @@ object ScanProcessor extends CommandProcessor {
 
         // Run tagger
         cpg.runTagger(processedRules)
-        val dataflows = cpg.dataflow
+        val dataflows = DuplicateFlowProcessor.process(cpg.dataflow)
 
         // Attach each dataflow with a unique id
-        val dataflowMap = dataflows match {
-          case Some(flows) => flows.map(dataflow => (UUID.randomUUID().toString, dataflow)).toMap
-          case None        => Map[String, Path]()
-        }
+        val dataflowMap = dataflows
+          .flatMap(dataflow => {
+            DuplicateFlowProcessor.calculatePathId(dataflow) match {
+              case Success(pathId) => Some(pathId, dataflow)
+              case Failure(e) =>
+                logger.debug("Exception : ", e)
+                None
+            }
+          })
+          .toMap
 
         // Exporting
         val outputFileName = "privado"
