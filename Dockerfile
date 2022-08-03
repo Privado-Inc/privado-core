@@ -11,7 +11,7 @@ RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SB
 WORKDIR /home/privado-core
 COPY . .
 ARG VERSION
-RUN echo $VERSION >> src/main/resources/version.txt
+RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
 RUN export BUILD_VERSION=$VERSION && sbt universal:packageBin
 
