@@ -12,7 +12,7 @@ phases:
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
       - CODE_ARTIFACT_URL=https://privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com/maven/core/
-      - export CODEARTIFACT_AUTH_TOKEN='aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text'
+      - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
       - VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
       - TAG_1=latest
       - TAG_2=$VERSION
