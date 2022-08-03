@@ -1,6 +1,7 @@
 name := "privado-core"
 ThisBuild/organization := "ai.privado"
 ThisBuild/scalaVersion := "2.13.7"
+ThisBuild/version      := sys.env.getOrElse("BUILD_VERSION", "1.0-SNAPSHOT")
 
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 val cpgVersion = "1.3.537"
@@ -28,7 +29,9 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % circeVersion,
   "io.circe" %% "circe-generic" % circeVersion,
   "io.circe" %% "circe-parser" % circeVersion,
-  "io.circe" %% "circe-yaml" % circeVersion
+  "io.circe" %% "circe-yaml" % circeVersion,
+  "com.lihaoyi" %% "upickle" % "2.0.0",
+  "com.lihaoyi" %% "requests" % "0.7.0"
 )
 
 
