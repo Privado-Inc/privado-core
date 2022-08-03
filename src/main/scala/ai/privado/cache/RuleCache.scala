@@ -4,6 +4,8 @@ import ai.privado.model.{Policy, RuleInfo, Rules}
 
 import scala.collection.mutable
 
+/** Cache to store Rules specific things
+  */
 object RuleCache {
 
   private var rule: Rules = Rules(List(), List(), List(), List())
@@ -29,4 +31,6 @@ object RuleCache {
   private def setPolicy(policy: Policy): Unit = policyMap.addOne(policy.id -> policy)
 
   def getPolicy(policyId: String): Option[Policy] = policyMap.get(policyId)
+
+  def getAllPolicy: Seq[Policy] = policyMap.values.toList
 }

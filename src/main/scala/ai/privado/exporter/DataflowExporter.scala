@@ -119,12 +119,4 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     pathOutput
   }
 
-  def helo: Int = {
-    println("lkdsjf")
-    return 3
-
-    println("lkdsjf")
-    return 4
-  }
-
 }

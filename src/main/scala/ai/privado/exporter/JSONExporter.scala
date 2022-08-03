@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
@@ -16,24 +16,19 @@ object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def getRepoScanPath(repoPath: String): String = {
-    sys.env.get("PRIVADO_HOST_SCAN_DIR") match {
-      case Some(path) => path
-      case _          => repoPath
-    }
-  }
-
   def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
     logger.info("Initiated exporter engine")
     val sourceExporter     = new SourceExporter(cpg)
     val dataflowExporter   = new DataflowExporter(cpg, dataflows)
     val collectionExporter = new CollectionExporter(cpg)
+    val policyExporter     = new PolicyExporter(dataflows)
     val output             = mutable.LinkedHashMap[String, Json]()
     try {
       output.addOne(Constants.version       -> "1.0.0".asJson)
       output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
+      output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-      output.addOne(Constants.localScanPath -> getRepoScanPath(repoPath).asJson)
+      output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
       output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
       output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
       logger.info("Completed Source Exporting")
@@ -50,10 +45,14 @@ object JSONExporter {
       output.addOne("collections" -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
 
+      output.addOne("policyViolations" -> policyExporter.getViolations.asJson)
+
+      logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()
       val f = File(repoPath + "/.privado/" + outputFileName + ".json")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
+      logger.info("Scanning Completed...")
 
     } catch {
       case ex: Exception => println(ex.toString)

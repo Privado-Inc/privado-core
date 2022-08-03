@@ -19,9 +19,8 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  /*
-   Utility to add a single tag to a object
-   */
+  /** Utility to add a single tag to a object
+    */
   def storeForTag(
     builder: BatchedUpdate.DiffGraphBuilder,
     source: NodeOrDetachedNode
@@ -29,9 +28,8 @@ object Utilities {
     builder.addEdge(source, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
   }
 
-  /*
-   Utility to add Tag based on a rule Object
-   */
+  /** Utility to add Tag based on a rule Object
+    */
   def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: NodeOrDetachedNode, ruleInfo: RuleInfo): Unit = {
     val storeForTagHelper = storeForTag(builder, node) _
     storeForTagHelper(Constants.id, ruleInfo.id)
@@ -44,17 +42,15 @@ object Utilities {
     }
   }
 
-  /*
-   Utility to get the default semantics for dataflow queries
-   */
+  /** Utility to get the default semantics for dataflow queries
+    */
   def getDefaultSemantics: Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
     Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
   }
 
-  /*
-   Utility to filter rules by catLevelOne
-   */
+  /** Utility to filter rules by catLevelOne
+    */
   def getRulesByCatLevelOne(rules: List[RuleInfo], catLevelOne: CatLevelOne): Seq[RuleInfo] =
     rules.filter(rule => rule.catLevelOne.equals(catLevelOne))
 
@@ -93,9 +89,8 @@ object Utilities {
       .mkString("\n")
   }
 
-  /*
-  To check if processed pattern is valid
-   */
+  /** To check if processed pattern is valid
+    */
   def isValidRule(stringPattern: String, ruleId: String = "", fileName: String = ""): Boolean = {
     try {
       Pattern.compile(stringPattern)
@@ -107,6 +102,17 @@ object Utilities {
         )
         false
       case _: Throwable => false
+    }
+  }
+
+  /** If environment variable present will return that otherwise the repoPath
+    * @param repoPath
+    * @return
+    */
+  def getRepoScanPath(repoPath: String): String = {
+    sys.env.get("PRIVADO_HOST_SCAN_DIR") match {
+      case Some(path) => path
+      case _          => repoPath
     }
   }
 }
