@@ -1,5 +1,7 @@
 package ai.privado.entrypoint
 
+import ai.privado.auth.AuthenticationHandler
+import ai.privado.entrypoint.ScanProcessor.config
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.SimpleCpgPass
@@ -14,6 +16,8 @@ object Main {
     CommandParser.parse(args) match {
       case Some(processor) =>
         processor.process()
+        val sourceRepoLocation = config.sourceLocation.head
+        AuthenticationHandler.authenticate(sourceRepoLocation)
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }
