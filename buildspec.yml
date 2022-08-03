@@ -22,6 +22,9 @@ phases:
   build:
     commands:
       - echo Build started on `date`
+      - echo $CODE_ARTIFACT_URL
+      - echo $VERSION
+      - echo $CODEARTIFACT_AUTH_TOKEN
       - echo Building the Docker image...
       - docker build -t $REPOSITORY_URI:latest --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_1
