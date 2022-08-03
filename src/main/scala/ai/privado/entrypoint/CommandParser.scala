@@ -10,19 +10,22 @@ case class PrivadoInput(
   internalRulesPath: Set[String] = Set.empty,
   externalRulePath: Set[String] = Set.empty,
   ignoreInternalRules: Boolean = false,
-  skipDownladDependencies: Boolean = false
+  skipDownladDependencies: Boolean = false,
+  disableDeDuplication: Boolean = false
 )
 
 object CommandConstants {
-  val SCAN                      = "scan"
-  val INTERNAL_RULES            = "internal-rules"
-  val INTERNAL_RULES_ABBR       = "ir"
-  val EXTERNAL_RULES            = "external-rules"
-  val EXTERNAL_RULES_ABBR       = "er"
-  val IGNORE_DEFAULT_RULES      = "ignore-default-rules"
-  val IGNORE_DEFAULT_RULES_ABBR = "i"
-  val SKIP_DOWNLOAD_DEP         = "skip-download-dependencies"
-  val SKIP_DOWNLOAD_DEP_ABBR    = "sdd"
+  val SCAN                       = "scan"
+  val INTERNAL_RULES             = "internal-rules"
+  val INTERNAL_RULES_ABBR        = "ir"
+  val EXTERNAL_RULES             = "external-rules"
+  val EXTERNAL_RULES_ABBR        = "er"
+  val IGNORE_DEFAULT_RULES       = "ignore-default-rules"
+  val IGNORE_DEFAULT_RULES_ABBR  = "i"
+  val SKIP_DOWNLOAD_DEP          = "skip-download-dependencies"
+  val SKIP_DOWNLOAD_DEP_ABBR     = "sdd"
+  val DISABLE_DEDUPLICATION      = "disable-deduplication"
+  val DISABLE_DEDUPLICATION_ABBR = "dd"
 }
 
 object CommandParser {
@@ -63,6 +66,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(skipDownladDependencies = true))
               .text("this option is hidden in the usage text"),
+            opt[Unit](CommandConstants.DISABLE_DEDUPLICATION)
+              .abbr(CommandConstants.DISABLE_DEDUPLICATION_ABBR)
+              .optional()
+              .action((_, c) => c.copy(disableDeDuplication = true))
+              .text("Disable De-Duplication of dataflow"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
