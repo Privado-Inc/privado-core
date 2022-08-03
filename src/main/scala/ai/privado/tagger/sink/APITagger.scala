@@ -2,13 +2,12 @@ package ai.privado.tagger.sink
 
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities
+import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.EngineContext
 
 class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
@@ -21,7 +20,6 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val apiInternalSinkPattern = cpg.literal.code(ruleInfo.patterns.head).l
     val apis                   = cacheCall.name(APISINKS_REGEX).l
 
-    implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     if (apis.nonEmpty && apiInternalSinkPattern.nonEmpty) {
       val apiFlows = apis.reachableByFlows(apiInternalSinkPattern).l
       apiFlows.foreach(flow => {

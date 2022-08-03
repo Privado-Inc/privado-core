@@ -1,22 +1,20 @@
 package ai.privado.dataflow
 
 import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities
+import ai.privado.semantic.Language._
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, StoredNode}
 import org.slf4j.LoggerFactory
+import overflowdb.traversal.Traversal
 
 class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   def dataflow: List[Path] = {
 
-    implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
     logger.info("Generating dataflow")
     val sources = getSources
     val sinks   = getSinks
@@ -28,24 +26,17 @@ class Dataflow(cpg: Cpg) {
   }
 
   private def getSources: List[CfgNode] = {
+    def filterSources(traversal: Traversal[StoredNode]) = {
+      traversal.tag
+        .nameExact(Constants.catLevelOne)
+        .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
+    }
     cpg.literal
-      .where(
-        _.tag
-          .nameExact(Constants.catLevelOne)
-          .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-      )
+      .where(filterSources)
       .l ++ cpg.identifier
-      .where(
-        _.tag
-          .nameExact(Constants.catLevelOne)
-          .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-      )
+      .where(filterSources)
       .l ++ cpg.call
-      .where(
-        _.tag
-          .nameExact(Constants.catLevelOne)
-          .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-      )
+      .where(filterSources)
       .l
 
   }

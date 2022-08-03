@@ -2,7 +2,7 @@ package ai.privado.exporter
 
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode, Tag}
 import io.shiftleft.semanticcpg.language._
 import io.circe._
 import io.circe.syntax._
@@ -10,16 +10,15 @@ import io.circe.syntax._
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, LinkedHashMap}
 import ai.privado.cache.RuleCache
+import overflowdb.traversal.Traversal
 
 class SourceExporter(cpg: Cpg) {
 
   lazy val sourcesTagList = getSourcesTagList
   lazy val sourcesList    = getSourcesList
 
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-  /*
-    Fetch and Convert sources to desired output
-   */
+  /** Fetch and Convert sources to desired output
+    */
   def getSources = {
     convertSourcesList(sourcesTagList)
   }
@@ -48,51 +47,45 @@ class SourceExporter(cpg: Cpg) {
     )
   }
 
-  /*
-    Fetch all the sources tag
-   */
+  /** Fetch all the sources tag
+    */
   private def getSourcesTagList = {
+    def filterSource(traversal: Traversal[StoredNode]) = {
+      traversal.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name)
+    }
     val sources =
       cpg.identifier
-        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+        .where(filterSource)
         .map(item => item.tag.l)
         .l ++
         cpg.literal
-          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+          .where(filterSource)
           .map(item => item.tag.l)
           .l ++
         cpg.call
-          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+          .where(filterSource)
           .map(item => item.tag.l)
           .l
     sources
   }
 
-  /*
-    Fetch all the sources node
-   */
+  /** Fetch all the sources node
+    */
   private def getSourcesList: List[CfgNode] = {
+    def filterSource(traversal: Traversal[StoredNode]) = {
+      traversal.tag
+        .nameExact(Constants.catLevelOne)
+        .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
+    }
     val sources =
       cpg.identifier
-        .where(
-          _.tag
-            .nameExact(Constants.catLevelOne)
-            .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-        )
+        .where(filterSource)
         .l ++
         cpg.literal
-          .where(
-            _.tag
-              .nameExact(Constants.catLevelOne)
-              .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-          )
+          .where(filterSource)
           .l ++
         cpg.call
-          .where(
-            _.tag
-              .nameExact(Constants.catLevelOne)
-              .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-          )
+          .where(filterSource)
           .l
     sources
   }

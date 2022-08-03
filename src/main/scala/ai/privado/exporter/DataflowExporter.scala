@@ -14,8 +14,7 @@ import scala.collection.mutable.ListBuffer
 
 class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-  val logger                               = LoggerFactory.getLogger(getClass)
+  val logger = LoggerFactory.getLogger(getClass)
 
   def getFlowByType(sinkSubCategory: String): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
     def processNonEmptyFlows(

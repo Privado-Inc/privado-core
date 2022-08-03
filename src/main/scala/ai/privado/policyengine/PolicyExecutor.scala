@@ -20,9 +20,8 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
   // Map to contain sinkId -> List(pathIds)
   lazy val dataflowSinkIdMap = getDataflowBySinkIdMapping
 
-  /*
-    Processes Processing style of policy and returns affected SourceIds
-   */
+  /** Processes Processing style of policy and returns affected SourceIds
+    */
   def getProcessingViolations: Map[String, Set[String]] = {
     val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
     val processingResult = processingTypePolicy
@@ -31,9 +30,8 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
     processingResult
   }
 
-  /*
-    Processes Dataflow style of policy and returns affected SourceIds
-   */
+  /** Processes Dataflow style of policy and returns affected SourceIds
+    */
   def getDataflowViolations = {
 
     val dataflowResult = policies
@@ -58,9 +56,8 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
     dataflowResult
   }
 
-  /*
-  Filters outs based on Repository name
-   */
+  /** Filters outs based on Repository name
+    */
   private def filterByRepoName(policy: Policy, repoName: String): Boolean = {
     actionMap.get(policy.action) match {
       case Some(value) =>
