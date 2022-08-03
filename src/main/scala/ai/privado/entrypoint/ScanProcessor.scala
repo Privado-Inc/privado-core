@@ -172,7 +172,13 @@ object ScanProcessor extends CommandProcessor {
 
         // Run tagger
         cpg.runTagger(processedRules)
-        val dataflows = DuplicateFlowProcessor.process(cpg.dataflow)
+        val dataflows = {
+          val flows = cpg.dataflow
+          if (config.disableDeDuplication)
+            flows
+          else
+            DuplicateFlowProcessor.process(flows)
+        }
 
         // Attach each dataflow with a unique id
         val dataflowMap = dataflows
