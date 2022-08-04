@@ -64,7 +64,7 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     try {
-      if(!filename.equals("<empty>")) {
+      if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
         val startLine: Integer = {
           if (lineToHighlight.isDefined)
@@ -89,8 +89,7 @@ object Utilities {
             }
           }
           .mkString("\n")
-      }
-      else
+      } else
         ""
     } catch {
       case e: Exception =>
