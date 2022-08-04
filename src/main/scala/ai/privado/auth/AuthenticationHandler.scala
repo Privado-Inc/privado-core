@@ -52,8 +52,15 @@ object AuthenticationHandler {
     try {
       val jsonString = os.read(os.Path("/app/config/config.json"))
       val data       = ujson.read(jsonString)
-      data(property) = value
-      os.write.over(os.Path("/app/config/config.json"), data)
+
+      try {
+        data(property) = ujson.Value(value)
+      } catch {
+        case _: ujson.ParseException =>
+          data(property) = ujson.Str(value)
+      }
+      val outputStream = os.write.over.outputStream(os.Path("/app/config/config.json"))
+      ujson.writeToOutputStream(data, outputStream, indent = 4)
       true
     } catch {
       case e: Exception =>
@@ -65,10 +72,12 @@ object AuthenticationHandler {
 
   def pushDataToCloud(repoPath: String): String = {
     // TODO change BASE_URL and upload url for prod
-    val BASE_URL          = "https://t.api.code.privado.ai/test"
-    val file              = new File(s"$repoPath/.privado/privado.json")
-    val uploadURL: String = s"$BASE_URL/cli/api/file/$userHash"
-
+    val BASE_URL = "https://t.api.code.privado.ai/test"
+    val file     = new File(s"$repoPath/.privado/privado.json")
+    val uploadURL: String = userHash match {
+      case Some(value) => s"$BASE_URL/cli/api/file/$value"
+      case _           => s"$BASE_URL/cli/api/file"
+    }
     val accessKey: String = {
       String.format(
         "%032x",
@@ -84,17 +93,18 @@ object AuthenticationHandler {
       )
       val json = ujson.read(response.text())
       response.statusCode match {
-        case 200 => s"""\n> Successfully synchronized results with Privado Cloud \n
-          > Continue to view results on: ${json("redirectUrl").toString()}\n"""
+        case 200 =>
+          s"""\n> Successfully synchronized results with Privado Cloud \n> Continue to view results on: ${json(
+              "redirectUrl"
+            ).toString()}\n"""
         case _ => json("message").toString()
       }
 
     } catch {
-      case e: Exception => {
+      case e: Exception =>
         logger.error("Error occurred while uploading the file to the cloud.")
         logger.debug("Error:", e)
         s"Error Occurred. ${e.toString}"
-      }
     }
   }
 }
