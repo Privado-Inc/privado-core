@@ -1,6 +1,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
@@ -51,7 +52,7 @@ object JSONExporter {
       File(repoPath + "/.privado").createDirectoryIfNotExists()
       val f = File(repoPath + "/.privado/" + outputFileName + ".json")
       f.write(output.asJson.toString())
-      //TODO get file size
+      MetricHandler.metricsData("File Size") = f.size
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 
