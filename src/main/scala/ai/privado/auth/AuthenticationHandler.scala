@@ -85,7 +85,6 @@ object AuthenticationHandler {
         new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.get.getBytes("UTF-8")))
       )
     }
-    print(accessKey)
     try {
       val response = requests.post(
         uploadURL,
