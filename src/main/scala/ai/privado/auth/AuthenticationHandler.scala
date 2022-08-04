@@ -85,12 +85,12 @@ object AuthenticationHandler {
         new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.get.getBytes("UTF-8")))
       )
     }
-
+    print(accessKey)
     try {
       val response = requests.post(
         uploadURL,
         data = requests.MultiPart(requests.MultiItem("scanfile", file, file.getName)),
-        headers = Map("access-key" -> s"$accessKey")
+        headers = Map("Authentication" -> s"$accessKey")
       )
       val json = ujson.read(response.text())
       response.statusCode match {
