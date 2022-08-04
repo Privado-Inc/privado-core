@@ -67,7 +67,7 @@ object Utilities {
       val lines = IOUtils.readLinesInFile(Paths.get(filename))
       val startLine: Integer = {
         if (lineToHighlight.isDefined)
-          Math.max(0, lineToHighlight.get - 5)
+          Math.max(1, lineToHighlight.get - 5)
         else
           0
       }
