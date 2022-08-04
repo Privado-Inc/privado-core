@@ -64,30 +64,34 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     try {
-      val lines = IOUtils.readLinesInFile(Paths.get(filename))
-      val startLine: Integer = {
-        if (lineToHighlight.isDefined)
-          Math.max(1, lineToHighlight.get - 5)
-        else
-          0
-      }
-      val endLine: Integer = {
-        if (lineToHighlight.isDefined)
-          Math.min(lines.length, lineToHighlight.get + 5)
-        else
-          0
-      }
-      lines
-        .slice(startLine - 1, endLine)
-        .zipWithIndex
-        .map { case (line, lineNo) =>
-          if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-            line + " " + arrow
-          } else {
-            line
-          }
+      if(!filename.equals("<empty>")) {
+        val lines = IOUtils.readLinesInFile(Paths.get(filename))
+        val startLine: Integer = {
+          if (lineToHighlight.isDefined)
+            Math.max(1, lineToHighlight.get - 5)
+          else
+            0
         }
-        .mkString("\n")
+        val endLine: Integer = {
+          if (lineToHighlight.isDefined)
+            Math.min(lines.length, lineToHighlight.get + 5)
+          else
+            0
+        }
+        lines
+          .slice(startLine - 1, endLine)
+          .zipWithIndex
+          .map { case (line, lineNo) =>
+            if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
+              line + " " + arrow
+            } else {
+              line
+            }
+          }
+          .mkString("\n")
+      }
+      else
+        ""
     } catch {
       case e: Exception =>
         logger.debug("Error : ", e)
