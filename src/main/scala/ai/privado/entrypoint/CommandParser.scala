@@ -7,25 +7,28 @@ import scala.sys.exit
 case class PrivadoInput(
   cmd: Set[String] = Set.empty,
   sourceLocation: Set[String] = Set.empty,
-  internalRulesPath: Set[String] = Set.empty,
-  externalRulePath: Set[String] = Set.empty,
+  internalConfigPath: Set[String] = Set.empty,
+  externalConfigPath: Set[String] = Set.empty,
   ignoreInternalRules: Boolean = false,
   skipDownladDependencies: Boolean = false,
-  disableDeDuplication: Boolean = false
+  disableDeDuplication: Boolean = false,
+  ignoreExcludeRules: Boolean = false
 )
 
 object CommandConstants {
   val SCAN                       = "scan"
-  val INTERNAL_RULES             = "internal-rules"
-  val INTERNAL_RULES_ABBR        = "ir"
-  val EXTERNAL_RULES             = "external-rules"
-  val EXTERNAL_RULES_ABBR        = "er"
+  val INTERNAL_CONFIG            = "internal-config"
+  val INTERNAL_CONFIG_ABBR       = "ic"
+  val EXTERNAL_CONFIG            = "external-config"
+  val EXTERNAL_CONFIG_ABBR       = "ec"
   val IGNORE_DEFAULT_RULES       = "ignore-default-rules"
   val IGNORE_DEFAULT_RULES_ABBR  = "i"
   val SKIP_DOWNLOAD_DEP          = "skip-download-dependencies"
   val SKIP_DOWNLOAD_DEP_ABBR     = "sdd"
   val DISABLE_DEDUPLICATION      = "disable-deduplication"
   val DISABLE_DEDUPLICATION_ABBR = "dd"
+  val IGNORE_EXCLUDE_RULES       = "ignore-exclude-rules"
+  val IGNORE_EXCLUDE_RULES_ABBR  = "ier"
 }
 
 object CommandParser {
@@ -46,16 +49,16 @@ object CommandParser {
             "Scans the given source directory, identifies the privacy data elements, dataflows, collection points and generates compliance report."
           )
           .children(
-            opt[String](CommandConstants.INTERNAL_RULES)
-              .abbr(CommandConstants.INTERNAL_RULES_ABBR)
+            opt[String](CommandConstants.INTERNAL_CONFIG)
+              .abbr(CommandConstants.INTERNAL_CONFIG_ABBR)
               .required()
-              .action((x, c) => c.copy(internalRulesPath = c.internalRulesPath + x))
-              .text("Internal rule files location"),
-            opt[String](CommandConstants.EXTERNAL_RULES)
-              .abbr(CommandConstants.EXTERNAL_RULES_ABBR)
+              .action((x, c) => c.copy(internalConfigPath = c.internalConfigPath + x))
+              .text("Internal config and rule files location"),
+            opt[String](CommandConstants.EXTERNAL_CONFIG)
+              .abbr(CommandConstants.EXTERNAL_CONFIG_ABBR)
               .optional()
-              .action((x, c) => c.copy(externalRulePath = c.externalRulePath + x))
-              .text("External rule files location"),
+              .action((x, c) => c.copy(externalConfigPath = c.externalConfigPath + x))
+              .text("External config and rule files location"),
             opt[Unit](CommandConstants.IGNORE_DEFAULT_RULES)
               .abbr(CommandConstants.IGNORE_DEFAULT_RULES_ABBR)
               .optional()
@@ -71,13 +74,18 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(disableDeDuplication = true))
               .text("Disable De-Duplication of dataflow"),
+            opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
+              .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
+              .optional()
+              .action((_, c) => c.copy(ignoreExcludeRules = true))
+              .text("Ignore source exclude rules"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
               .text("Source code location"),
             checkConfig(c =>
               if (c.cmd.isEmpty) failure("")
-              else if (c.ignoreInternalRules && c.externalRulePath.isEmpty)
+              else if (c.ignoreInternalRules && c.externalConfigPath.isEmpty)
                 failure("external rule files location is required if you ignore the internal rules")
               else success
             )

@@ -20,7 +20,7 @@ import scala.util.{Failure, Success}
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def parseRules(rulesPath: String): Rules = {
+  def parseRules(rulesPath: String): ConfigAndRules = {
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
@@ -45,10 +45,17 @@ object ScanProcessor extends CommandProcessor {
             parser.parse(file.contentAsString) match {
               case Right(json) =>
                 import ai.privado.model.CirceEnDe._
-                json.as[Rules] match {
-                  case Right(rules) =>
-                    rules.copy(
-                      sources = rules.sources
+                json.as[ConfigAndRules] match {
+                  case Right(configAndRules) =>
+                    configAndRules.copy(
+                      exclusions = configAndRules.exclusions.map(x =>
+                        x.copy(
+                          file = fullPath,
+                          categoryTree = pathTree,
+                          language = Language.withNameWithDefault(pathTree.last)
+                        )
+                      ),
+                      sources = configAndRules.sources
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
                         .map(x =>
                           x.copy(
@@ -58,7 +65,7 @@ object ScanProcessor extends CommandProcessor {
                             nodeType = NodeType.REGULAR
                           )
                         ),
-                      sinks = rules.sinks
+                      sinks = configAndRules.sinks
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
                         .map(x =>
                           x.copy(
@@ -70,7 +77,7 @@ object ScanProcessor extends CommandProcessor {
                             nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
                           )
                         ),
-                      collections = rules.collections
+                      collections = configAndRules.collections
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
                         .map(x =>
                           x.copy(
@@ -80,17 +87,23 @@ object ScanProcessor extends CommandProcessor {
                             nodeType = NodeType.REGULAR
                           )
                         ),
-                      policies = rules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
+                      policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
                     logger.error("ERROR : " + error)
-                    Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
+                    ConfigAndRules(
+                      List[RuleInfo](),
+                      List[RuleInfo](),
+                      List[RuleInfo](),
+                      List[Policy](),
+                      List[RuleInfo]()
+                    )
                 }
               case Left(error) =>
                 logger.error("Error while parsing this file -> '" + fullPath)
                 logger.error("ERROR : " + error)
-                Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
+                ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
             }
           })
           .reduce((a, b) =>
@@ -98,7 +111,8 @@ object ScanProcessor extends CommandProcessor {
               sources = a.sources ++ b.sources,
               sinks = a.sinks ++ b.sinks,
               collections = a.collections ++ b.collections,
-              policies = a.policies ++ b.policies
+              policies = a.policies ++ b.policies,
+              exclusions = a.exclusions ++ a.exclusions
             )
           )
       catch {
@@ -110,15 +124,17 @@ object ScanProcessor extends CommandProcessor {
     parsedRules
   }
 
-  def processRules(): Rules = {
-    var internalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
+  def processRules(): ConfigAndRules = {
+    var internalConfigAndRules =
+      ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
     if (!config.ignoreInternalRules) {
-      internalRules = parseRules(config.internalRulesPath.head)
       // TODO -> cache the ids, RuleCache exists (create new object)
+      internalConfigAndRules = parseRules(config.internalConfigPath.head)
     }
-    var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
-    if (config.externalRulePath.nonEmpty) {
-      externalRules = parseRules(config.externalRulePath.head)
+    var externalConfigAndRules =
+      ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+    if (config.externalConfigPath.nonEmpty) {
+      externalConfigAndRules = parseRules(config.externalConfigPath.head)
     }
     /*
      * NOTE: We want to override the external rules over internal in case of duplicates by id.
@@ -131,31 +147,38 @@ object ScanProcessor extends CommandProcessor {
      * In case of duplicates it will keep the elements from "externalRules.sources".
      * We don't know the internal logic. We came to this conclusion based on testing few samples.
      */
-    val sources     = externalRules.sources ++ internalRules.sources
-    val sinks       = externalRules.sinks ++ internalRules.sinks
-    val collections = externalRules.collections ++ internalRules.collections
-
-    val policies = externalRules.policies ++ internalRules.policies
+    val exclusions  = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
+    val sources     = externalConfigAndRules.sources ++ internalConfigAndRules.sources
+    val sinks       = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
+    val collections = externalConfigAndRules.collections ++ internalConfigAndRules.collections
+    val policies    = externalConfigAndRules.policies ++ internalConfigAndRules.policies
     val mergedRules =
-      Rules(sources.distinctBy(_.id), sinks.distinctBy(_.id), collections.distinctBy(_.id), policies.distinctBy(_.id))
-    // logger.info(mergedRules.toString)
+      ConfigAndRules(
+        sources = sources.distinctBy(_.id),
+        sinks = sinks.distinctBy(_.id),
+        collections = collections.distinctBy(_.id),
+        policies = policies.distinctBy(_.id),
+        exclusions = exclusions.distinctBy(_.id)
+      )
+    logger.trace(mergedRules.toString)
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
+    println("Configuration parsed.")
     mergedRules
   }
   override def process(): Unit = {
-    println("Hello Joern")
-    println("Creating CPG... ")
     processCPG(processRules())
   }
 
-  def processCPG(processedRules: Rules): Unit = {
+  def processCPG(processedRules: ConfigAndRules): Unit = {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
     import io.joern.console.cpgcreation.guessLanguage
+    println("Guessing source code language.")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
+        MetricHandler.metricsData("language") = Languages.JAVA
         val cpgconfig =
           Config(inputPaths = Set(sourceRepoLocation), skipDependencyDownload = config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
@@ -165,20 +188,22 @@ object ScanProcessor extends CommandProcessor {
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
-        println("[DONE]")
-        println("Applying default overlays")
+        println("Parsing source code.")
+        logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
-        println("=====================")
+        logger.info("=====================")
 
         // Run tagger
+        println("Tagging data with source and sink rules.")
         cpg.runTagger(processedRules)
         val dataflows = {
           val flows = cpg.dataflow
           if (config.disableDeDuplication)
             flows
           else
-            DuplicateFlowProcessor.process(flows)
+            println("Deduplicating data flows.")
+          DuplicateFlowProcessor.process(flows)
         }
 
         // Attach each dataflow with a unique id
@@ -193,6 +218,7 @@ object ScanProcessor extends CommandProcessor {
           })
           .toMap
 
+        println(s"Exporting output inside '${this.config.sourceLocation.head}/.privado' folder")
         // Exporting
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
@@ -209,8 +235,8 @@ object ScanProcessor extends CommandProcessor {
         }*/
 
       case Failure(exception) =>
-        println("[FAILED]")
-        println(exception)
+        logger.error("Error while parsing the source code.")
+        logger.debug("Error : ", exception)
     }
   }
 
