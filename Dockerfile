@@ -15,7 +15,7 @@ ARG CODE_ARTIFACT_URL
 ARG CODEARTIFACT_AUTH_TOKEN
 RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
-RUN export BUILD_VERSION=$VERSION && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && sbt universal:packageBin codeArtifactPublish 
+RUN export BUILD_VERSION=$VERSION && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && sbt universal:packageBin
 
 FROM alpine:3.16
 RUN apk add --no-cache bash

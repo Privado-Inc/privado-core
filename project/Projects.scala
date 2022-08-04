@@ -1,5 +1,4 @@
 import sbt._
-import codeartifact.CodeArtifactKeys._
 
 object Projects {
   lazy val schema = project.in(file("schema"))
