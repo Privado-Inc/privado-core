@@ -11,6 +11,8 @@ phases:
       - ACCOUNT_ID=${CODEBUILD_BUILD_ARN} && IFS=':' && set -- $ACCOUNT_ID && ACCOUNT_ID=$5
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
+      - CODE_ARTIFACT_URL=https://privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com/maven/core/
+      - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
       - VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
       - TAG_1=latest
       - TAG_2=$VERSION
@@ -21,7 +23,7 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest --build-arg VERSION=$VERSION .
+      - docker build -t $REPOSITORY_URI:latest --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_1
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_2
   post_build:
