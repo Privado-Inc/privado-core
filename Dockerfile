@@ -19,7 +19,7 @@ RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.t
 
 RUN echo "ThisBuild/codeArtifactUrl := \"$CODE_ARTIFACT_URL\"" >> build.sbt 
 RUN echo "import codeartifact.CodeArtifactKeys._" | cat - project/Projects.scala > temp && mv temp project/Projects.scala 
-RUN echo "addSbtPlugin\(\"io.shiftleft\"   % \"sbt-overflowdb\"      % \"2.26\"\)" >> project/plugins.sbt 
+RUN echo "addSbtPlugin(\"io.shiftleft\"   % \"sbt-overflowdb\"      % \"2.26\")" >> project/plugins.sbt
 RUN export BUILD_VERSION=$VERSION && CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && sbt universal:packageBin codeArtifactPublish
 
 FROM alpine:3.16
