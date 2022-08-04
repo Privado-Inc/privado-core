@@ -6,8 +6,8 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Root level="DEBUG">
-            <AppenderRef ref="Console" />
+        <Root level="ERROR">
+            <AppenderRef ref="Console"/>
         </Root>
     </Loggers>
 </Configuration>

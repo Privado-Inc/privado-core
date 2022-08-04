@@ -158,14 +158,13 @@ object ScanProcessor extends CommandProcessor {
         policies = policies.distinctBy(_.id),
         exclusions = exclusions.distinctBy(_.id)
       )
-    // logger.info(mergedRules.toString)
+    logger.trace(mergedRules.toString)
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
+    println("Configuration parsed.")
     mergedRules
   }
   override def process(): Unit = {
-    println("Hello Joern")
-    println("Creating CPG... ")
     processCPG(processRules())
   }
 
@@ -174,6 +173,7 @@ object ScanProcessor extends CommandProcessor {
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
     import io.joern.console.cpgcreation.guessLanguage
+    println("Guessing source code language.")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
         val cpgconfig =
@@ -185,20 +185,22 @@ object ScanProcessor extends CommandProcessor {
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
-        println("[DONE]")
-        println("Applying default overlays")
+        println("Parsing source code.")
+        logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
-        println("=====================")
+        logger.info("=====================")
 
         // Run tagger
+        println("Tagging data with source and sink rules.")
         cpg.runTagger(processedRules)
         val dataflows = {
           val flows = cpg.dataflow
           if (config.disableDeDuplication)
             flows
           else
-            DuplicateFlowProcessor.process(flows)
+            println("Deduplicating data flows.")
+          DuplicateFlowProcessor.process(flows)
         }
 
         // Attach each dataflow with a unique id
@@ -213,6 +215,7 @@ object ScanProcessor extends CommandProcessor {
           })
           .toMap
 
+        println(s"Exporting output inside '${this.config.sourceLocation.head}/.privado' folder")
         // Exporting
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
@@ -229,8 +232,8 @@ object ScanProcessor extends CommandProcessor {
         }*/
 
       case Failure(exception) =>
-        println("[FAILED]")
-        println(exception)
+        logger.error("Error while parsing the source code.")
+        logger.debug("Error : ", exception)
     }
   }
 

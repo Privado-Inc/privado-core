@@ -24,14 +24,18 @@ object AuthenticationHandler {
   def authenticate(repoPath: String): Unit = {
     dockerAccessKey match {
       case Some(_) =>
-        var syncPermission: Boolean = true
-        if (!syncToCloud) {
-          syncPermission = askForPermission() // Ask user for request permissions
-        }
-        if (syncPermission) {
-          println(pushDataToCloud(repoPath))
-        } else {
-          ()
+        userHash match {
+          case Some(_) =>
+            var syncPermission: Boolean = true
+            if (!syncToCloud) {
+              syncPermission = askForPermission() // Ask user for request permissions
+            }
+            if (syncPermission) {
+              println(pushDataToCloud(repoPath))
+            } else {
+              ()
+            }
+          case _ => ()
         }
       case _ => ()
     }
@@ -52,8 +56,15 @@ object AuthenticationHandler {
     try {
       val jsonString = os.read(os.Path("/app/config/config.json"))
       val data       = ujson.read(jsonString)
-      data(property) = value
-      os.write.over(os.Path("/app/config/config.json"), data)
+
+      try {
+        data(property) = ujson.Value(value)
+      } catch {
+        case _: ujson.ParseException =>
+          data(property) = ujson.Str(value)
+      }
+      val outputStream = os.write.over.outputStream(os.Path("/app/config/config.json"))
+      ujson.writeToOutputStream(data, outputStream, indent = 4)
       true
     } catch {
       case e: Exception =>
@@ -65,36 +76,35 @@ object AuthenticationHandler {
 
   def pushDataToCloud(repoPath: String): String = {
     // TODO change BASE_URL and upload url for prod
-    val BASE_URL          = "https://t.api.code.privado.ai/test"
-    val file              = new File(s"$repoPath/.privado/privado.json")
-    val uploadURL: String = s"$BASE_URL/cli/api/file/$userHash"
-
+    val BASE_URL = "https://t.api.code.privado.ai/test"
+    val file     = new File(s"$repoPath/.privado/privado.json")
+    val uploadURL: String = s"$BASE_URL/cli/api/file/${userHash.get}"
     val accessKey: String = {
       String.format(
         "%032x",
         new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.get.getBytes("UTF-8")))
       )
     }
-
     try {
       val response = requests.post(
         uploadURL,
         data = requests.MultiPart(requests.MultiItem("scanfile", file, file.getName)),
-        headers = Map("access-key" -> s"$accessKey")
+        headers = Map("Authentication" -> s"$accessKey")
       )
       val json = ujson.read(response.text())
       response.statusCode match {
-        case 200 => s"""\n> Successfully synchronized results with Privado Cloud \n
-          > Continue to view results on: ${json("redirectUrl").toString()}\n"""
+        case 200 =>
+          s"""\n> Successfully synchronized results with Privado Cloud \n> Continue to view results on: ${json(
+              "redirectUrl"
+            ).toString()}\n"""
         case _ => json("message").toString()
       }
 
     } catch {
-      case e: Exception => {
+      case e: Exception =>
         logger.error("Error occurred while uploading the file to the cloud.")
         logger.debug("Error:", e)
         s"Error Occurred. ${e.toString}"
-      }
     }
   }
 }
