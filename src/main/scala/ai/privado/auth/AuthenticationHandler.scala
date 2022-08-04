@@ -24,14 +24,18 @@ object AuthenticationHandler {
   def authenticate(repoPath: String): Unit = {
     dockerAccessKey match {
       case Some(_) =>
-        var syncPermission: Boolean = true
-        if (!syncToCloud) {
-          syncPermission = askForPermission() // Ask user for request permissions
-        }
-        if (syncPermission) {
-          println(pushDataToCloud(repoPath))
-        } else {
-          ()
+        userHash match {
+          case Some(_) =>
+            var syncPermission: Boolean = true
+            if (!syncToCloud) {
+              syncPermission = askForPermission() // Ask user for request permissions
+            }
+            if (syncPermission) {
+              println(pushDataToCloud(repoPath))
+            } else {
+              ()
+            }
+          case _ => ()
         }
       case _ => ()
     }
@@ -74,10 +78,7 @@ object AuthenticationHandler {
     // TODO change BASE_URL and upload url for prod
     val BASE_URL = "https://t.api.code.privado.ai/test"
     val file     = new File(s"$repoPath/.privado/privado.json")
-    val uploadURL: String = userHash match {
-      case Some(value) => s"$BASE_URL/cli/api/file/$value"
-      case _           => s"$BASE_URL/cli/api/file"
-    }
+    val uploadURL: String = s"$BASE_URL/cli/api/file/${userHash.get}"
     val accessKey: String = {
       String.format(
         "%032x",
