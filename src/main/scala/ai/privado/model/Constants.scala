@@ -18,6 +18,7 @@ object Constants {
 
   val collections = "collections"
   val policies    = "policies"
+  val exclusions  = "exclusions"
 
   // Policy
   val policyId      = "policyId"

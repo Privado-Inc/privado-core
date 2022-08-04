@@ -21,7 +21,13 @@ case class RuleInfo(
   language: Language.Language,
   categoryTree: Array[String]
 )
-case class Rules(sources: List[RuleInfo], sinks: List[RuleInfo], collections: List[RuleInfo], policies: List[Policy])
+case class ConfigAndRules(
+  sources: List[RuleInfo],
+  sinks: List[RuleInfo],
+  collections: List[RuleInfo],
+  policies: List[Policy],
+  exclusions: List[RuleInfo]
+)
 
 case class DataFlow(sources: List[String], sinks: List[String])
 
@@ -69,18 +75,20 @@ object CirceEnDe {
     }
   }
 
-  implicit val decodeRules: Decoder[Rules] = new Decoder[Rules] {
-    override def apply(c: HCursor): Result[Rules] = {
+  implicit val decodeRules: Decoder[ConfigAndRules] = new Decoder[ConfigAndRules] {
+    override def apply(c: HCursor): Result[ConfigAndRules] = {
       val sources     = c.downField(Constants.sources).as[List[RuleInfo]]
       val sinks       = c.downField(Constants.sinks).as[List[RuleInfo]]
       val collections = c.downField(Constants.collections).as[List[RuleInfo]]
       val policies    = c.downField(Constants.policies).as[List[Policy]]
+      val exclusions  = c.downField(Constants.exclusions).as[List[RuleInfo]]
       Right(
-        Rules(
+        ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
           sinks = sinks.getOrElse(List[RuleInfo]()),
           collections = collections.getOrElse(List[RuleInfo]()),
-          policies = policies.getOrElse(List[Policy]())
+          policies = policies.getOrElse(List[Policy]()),
+          exclusions = exclusions.getOrElse(List[RuleInfo]())
         )
       )
     }
