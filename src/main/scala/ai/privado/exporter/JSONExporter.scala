@@ -51,6 +51,7 @@ object JSONExporter {
       File(repoPath + "/.privado").createDirectoryIfNotExists()
       val f = File(repoPath + "/.privado/" + outputFileName + ".json")
       f.write(output.asJson.toString())
+      //TODO get file size
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 

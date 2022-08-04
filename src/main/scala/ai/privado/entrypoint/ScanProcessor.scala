@@ -3,16 +3,16 @@ package ai.privado.entrypoint
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
+import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.semantic.Language._
+import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
-import ai.privado.utility.Utilities.isValidRule
-import io.shiftleft.semanticcpg.language._
 
 import scala.sys.exit
 import scala.util.{Failure, Success}
@@ -114,6 +114,7 @@ object ScanProcessor extends CommandProcessor {
     var internalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
     if (!config.ignoreInternalRules) {
       internalRules = parseRules(config.internalRulesPath.head)
+      // TODO -> cache the ids, RuleCache exists (create new object)
     }
     var externalRules = Rules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy]())
     if (config.externalRulePath.nonEmpty) {

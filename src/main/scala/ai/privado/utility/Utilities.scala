@@ -2,7 +2,7 @@ package ai.privado.utility
 
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
-import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, RuleInfo}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
