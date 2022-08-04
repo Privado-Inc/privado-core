@@ -2,7 +2,7 @@ name := "privado-core"
 ThisBuild/organization := "ai.privado"
 ThisBuild/scalaVersion := "2.13.7"
 ThisBuild/version      := sys.env.getOrElse("BUILD_VERSION", "1.0-SNAPSHOT")
-
+ThisBuild/codeArtifactUrl := sys.env.getOrElse("CODE_ARTIFACT_URL", "")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 val cpgVersion = "1.3.537"
 val joernVersion = "1.1.873"

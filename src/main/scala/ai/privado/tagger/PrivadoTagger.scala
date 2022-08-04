@@ -1,6 +1,6 @@
 package ai.privado.tagger
 
-import ai.privado.model.{NodeType, Rules}
+import ai.privado.model.{NodeType, ConfigAndRules}
 import ai.privado.tagger.collection.CollectionTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{IdentifierTagger, LiteralTagger}
@@ -13,7 +13,7 @@ import overflowdb.traversal.Traversal
 class PrivadoTagger(cpg: Cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def runTagger(rules: Rules): Traversal[Tag] = {
+  def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
     logger.info("Starting tagging")
     val literalTagger     = new LiteralTagger(cpg)
