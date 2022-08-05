@@ -163,7 +163,7 @@ object ScanProcessor extends CommandProcessor {
     logger.trace(mergedRules.toString)
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
-    println("Configuration parsed.")
+    println("Configuration parsed...")
     mergedRules
   }
   override def process(): Unit = {
@@ -175,10 +175,13 @@ object ScanProcessor extends CommandProcessor {
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
     import io.joern.console.cpgcreation.guessLanguage
-    println("Guessing source code language.")
+    println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
         MetricHandler.metricsData("language") = Languages.JAVA
+        println(s"Detected language $lang")
+        if (!config.skipDownladDependencies)
+          println("Downloading dependencies...")
         val cpgconfig =
           Config(inputPaths = Set(sourceRepoLocation), skipDependencyDownload = config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
@@ -188,22 +191,24 @@ object ScanProcessor extends CommandProcessor {
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
-        println("Parsing source code.")
+        println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
         logger.info("=====================")
 
         // Run tagger
-        println("Tagging data with source and sink rules.")
+        println("Tagging source code with rules...")
         cpg.runTagger(processedRules)
+        println("Finding source to sink flow of data...")
         val dataflows = {
           val flows = cpg.dataflow
           if (config.disableDeDuplication)
             flows
-          else
-            println("Deduplicating data flows.")
-          DuplicateFlowProcessor.process(flows)
+          else {
+            println("Deduplicating data flows...")
+            DuplicateFlowProcessor.process(flows)
+          }
         }
 
         // Attach each dataflow with a unique id
@@ -218,10 +223,11 @@ object ScanProcessor extends CommandProcessor {
           })
           .toMap
 
-        println(s"Exporting output inside '${this.config.sourceLocation.head}/.privado' folder")
+        println("Brewing result...")
         // Exporting
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
+        println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
       /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {

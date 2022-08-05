@@ -1,5 +1,6 @@
 package ai.privado.utility
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
 import ai.privado.model.{CatLevelOne, Constants, RuleInfo}
@@ -9,8 +10,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
-import scala.util.{Try, Success, Failure}
 
+import scala.util.{Failure, Success, Try}
 import java.nio.file.Paths
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
@@ -18,8 +19,7 @@ import io.shiftleft.semanticcpg.language._
 
 object Utilities {
 
-  private val EXCLUDED_FILE_REGEX = "(?i).*test.*"
-  private val logger              = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Utility to add a single tag to a object
     */
@@ -64,30 +64,34 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     try {
-      val lines = IOUtils.readLinesInFile(Paths.get(filename))
-      val startLine: Integer = {
-        if (lineToHighlight.isDefined)
-          Math.max(0, lineToHighlight.get - 5)
-        else
-          0
-      }
-      val endLine: Integer = {
-        if (lineToHighlight.isDefined)
-          Math.min(lines.length, lineToHighlight.get + 5)
-        else
-          0
-      }
-      lines
-        .slice(startLine - 1, endLine)
-        .zipWithIndex
-        .map { case (line, lineNo) =>
-          if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-            line + " " + arrow
-          } else {
-            line
-          }
+      if(!filename.equals("<empty>")) {
+        val lines = IOUtils.readLinesInFile(Paths.get(filename))
+        val startLine: Integer = {
+          if (lineToHighlight.isDefined)
+            Math.max(1, lineToHighlight.get - 5)
+          else
+            0
         }
-        .mkString("\n")
+        val endLine: Integer = {
+          if (lineToHighlight.isDefined)
+            Math.min(lines.length, lineToHighlight.get + 5)
+          else
+            0
+        }
+        lines
+          .slice(startLine - 1, endLine)
+          .zipWithIndex
+          .map { case (line, lineNo) =>
+            if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
+              line + " " + arrow
+            } else {
+              line
+            }
+          }
+          .mkString("\n")
+      }
+      else
+        ""
     } catch {
       case e: Exception =>
         logger.debug("Error : ", e)
@@ -128,11 +132,17 @@ object Utilities {
     * @return
     */
   def isFileProcessable(filePath: String) = {
-    Try(!filePath.split("/").last.matches(EXCLUDED_FILE_REGEX)) match {
-      case Success(result) => result
-      case Failure(e) =>
-        println(e)
-        false
-    }
+    RuleCache.getRule.exclusions
+      .flatMap(exclusionRule => {
+        exclusionRule.patterns.headOption match {
+          case Some(pattern) =>
+            Try(!filePath.matches(pattern)) match {
+              case Success(result) => Some(result)
+              case Failure(e)      => None
+            }
+          case None => None
+        }
+      })
+      .foldLeft(true)((a, b) => a && b)
   }
 }
