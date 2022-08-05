@@ -17,6 +17,9 @@ import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
 import io.shiftleft.semanticcpg.language._
 
+import java.math.BigInteger
+import java.security.MessageDigest
+
 object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -64,7 +67,7 @@ object Utilities {
   def dump(filename: String, lineToHighlight: Option[Integer]): String = {
     val arrow: CharSequence = "/* <=== */ "
     try {
-      if(!filename.equals("<empty>")) {
+      if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
         val startLine: Integer = {
           if (lineToHighlight.isDefined)
@@ -89,8 +92,7 @@ object Utilities {
             }
           }
           .mkString("\n")
-      }
-      else
+      } else
         ""
     } catch {
       case e: Exception =>
@@ -145,4 +147,13 @@ object Utilities {
       })
       .foldLeft(true)((a, b) => a && b)
   }
+
+  /** Returns the SHA256 hash for a given string.
+    * @param value
+    * @return
+    *   the SHA256 hash for the value
+    */
+  def getSHA256Hash(value: String) =
+    String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
+
 }

@@ -10,12 +10,14 @@ import io.circe.syntax._
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, LinkedHashMap}
 import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
 import overflowdb.traversal.Traversal
 
 class SourceExporter(cpg: Cpg) {
 
   lazy val sourcesTagList = getSourcesTagList
   lazy val sourcesList    = getSourcesList
+  MetricHandler.metricsData("No of Data Elements") = sourcesList.size
 
   /** Fetch and Convert sources to desired output
     */

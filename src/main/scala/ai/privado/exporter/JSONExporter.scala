@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
 import io.joern.dataflowengineoss.language.Path
+import org.apache.commons.io.FileUtils
 
 import java.util.Calendar
 import scala.collection.mutable
@@ -38,18 +39,21 @@ object JSONExporter {
 
       val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
       sinkSubCategories.foreach(sinkSubType => {
-        dataflowsOutput.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
+        dataflowsOutput.addOne(sinkSubType                -> dataflowExporter.getFlowByType(sinkSubType).asJson)
+        MetricHandler.flowCategoryData.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).size)
       })
+
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
       output.addOne("collections" -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
-
+      MetricHandler.metricsData("policyViolations") = policyExporter.getViolations.size
       output.addOne("policyViolations" -> policyExporter.getViolations.asJson)
 
       logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()
+      MetricHandler.metricsData("Repo Size") = FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath))
       val f = File(repoPath + "/.privado/" + outputFileName + ".json")
       f.write(output.asJson.toString())
       MetricHandler.metricsData("File Size") = f.size

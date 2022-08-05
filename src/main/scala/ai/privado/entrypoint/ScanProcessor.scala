@@ -128,8 +128,8 @@ object ScanProcessor extends CommandProcessor {
     var internalConfigAndRules =
       ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
     if (!config.ignoreInternalRules) {
-      // TODO -> cache the ids, RuleCache exists (create new object)
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
+      RuleCache.setInternalRules(internalConfigAndRules)
     }
     var externalConfigAndRules =
       ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
@@ -164,6 +164,15 @@ object ScanProcessor extends CommandProcessor {
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
+
+    MetricHandler.metricsData("Total Number of Rules Used") = {
+      mergedRules.sources.size +
+        mergedRules.sinks.size +
+        mergedRules.collections.size +
+        mergedRules.policies.size +
+        mergedRules.exclusions.size
+    }
+
     mergedRules
   }
   override def process(): Unit = {

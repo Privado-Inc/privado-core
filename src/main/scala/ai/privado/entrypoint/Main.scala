@@ -16,10 +16,9 @@ object Main {
 
     CommandParser.parse(args) match {
       case Some(processor) =>
-        processor.process()
         val sourceRepoLocation = config.sourceLocation.head
+        MetricHandler.timeMetric(processor.process(), "complete")
         AuthenticationHandler.authenticate(sourceRepoLocation)
-        MetricHandler.timeMetric(processor.process(), "TOTAL")
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }

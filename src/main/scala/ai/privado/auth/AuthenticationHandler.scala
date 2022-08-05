@@ -1,9 +1,9 @@
 package ai.privado.auth
+import ai.privado.metric.MetricHandler
+import ai.privado.utility.Utilities
 import org.slf4j.LoggerFactory
 
-import java.math.BigInteger
 import java.io.File
-import java.security.MessageDigest
 
 object AuthenticationHandler {
   /*
@@ -31,7 +31,7 @@ object AuthenticationHandler {
               syncPermission = askForPermission() // Ask user for request permissions
             }
             if (syncPermission) {
-              println(pushDataToCloud(repoPath))
+              println(MetricHandler.timeMetric(pushDataToCloud(repoPath), "upload file"))
             } else {
               ()
             }
@@ -44,12 +44,14 @@ object AuthenticationHandler {
   def askForPermission(): Boolean = {
     println("Do you want to visualize these results on our Privacy View Cloud Dashboard? (Y/n)")
     val userPermissionInput = scala.io.StdIn.readLine().toLowerCase
-    userPermissionInput match {
+    var cloudConsentPermission: Boolean = userPermissionInput match {
       case "n" | "no" | "0" => false
       case _ =>
         updateConfigFile("syncToPrivadoCloud", "true")
         true
     }
+    MetricHandler.metricsData("Cloud Consent Event") = cloudConsentPermission
+    cloudConsentPermission
   }
 
   def updateConfigFile(property: String, value: String): Boolean = {
@@ -79,12 +81,7 @@ object AuthenticationHandler {
     val BASE_URL          = "https://t.api.code.privado.ai/test"
     val file              = new File(s"$repoPath/.privado/privado.json")
     val uploadURL: String = s"$BASE_URL/cli/api/file/${userHash.get}"
-    val accessKey: String = {
-      String.format(
-        "%032x",
-        new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.get.getBytes("UTF-8")))
-      )
-    }
+    val accessKey: String = Utilities.getSHA256Hash(dockerAccessKey.get)
     try {
       val response = requests.post(
         uploadURL,
