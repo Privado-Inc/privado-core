@@ -180,7 +180,7 @@ object ScanProcessor extends CommandProcessor {
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
         val cpgconfig =
-          Config(inputPaths = Set(sourceRepoLocation), skipDependencyDownload = config.skipDownladDependencies)
+          Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
 
       case _ =>
