@@ -93,10 +93,10 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
     val sinkMap = mutable.HashMap[String, ListBuffer[String]]()
     sinkPathIds.foreach(sinkPathId => {
-      val sinkIdTag = dataflowsMapByType(sinkPathId).elements.last.tag
-        .filter(node => node.name.equals(Constants.id))
-      if (sinkIdTag.nonEmpty) {
-        var sinkId = sinkIdTag.last.value
+      val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
+        .filter(node => node.name.equals(dataflowSinkType))
+      if (sinkCatLevelTwoCustomTag.nonEmpty) {
+        var sinkId = sinkCatLevelTwoCustomTag.head.value
         val sinkAPITag = dataflowsMapByType(sinkPathId).elements.last.tag
           .filter(node => node.name.equals(Constants.apiUrl))
         if (sinkAPITag.nonEmpty) {
