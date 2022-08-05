@@ -226,7 +226,7 @@ object ScanProcessor extends CommandProcessor {
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
         println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
 
-        /*
+      /*
         import io.shiftleft.semanticcpg.language._
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
