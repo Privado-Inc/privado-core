@@ -42,6 +42,9 @@ object Utilities {
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
+
+      //storing by catLevelTwo to get id
+      storeForTagHelper(ruleInfo.catLevelTwo, ruleInfo.id)
     }
   }
 
