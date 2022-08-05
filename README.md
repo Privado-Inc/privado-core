@@ -25,6 +25,13 @@ Steps to step up the project
 - git checkout -b <new local feature branch that you are going to work on.> - This will create a new local feature branch
 - git push -u push origin <new remote feature branch keep the name same as local branch> - This will set up remote branch synced with your local branch.
 
+Steps to integrate the pre-commit hook on local machine. 
+1. Install the pre-commit app (https://pre-commit.com/#install)
+   For MacOS using Homebrew, please use 
+   - brew install pre-commit
+2. Run the install command to have the script in .git/hooks for pre-commit
+   - pre-commit install
+
 Steps to follow while your work is in progress over a local branch.
 
 - Whenever you are done with small logical units, commit the code to your local branch as well as push the changes to 

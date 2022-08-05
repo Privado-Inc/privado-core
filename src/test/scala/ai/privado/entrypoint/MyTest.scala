@@ -16,9 +16,10 @@ class MyTest extends AnyWordSpec with Matchers {
   "Foo" should {
 
     "description1" in {
-      val cpg = MockCpg().withMethod("foo")
+      val cpg = MockCpg()
+        .withMethod("foo")
         .withCallInMethod("foo", "bar")
-        .withCustom{ case (diffGraph, cpg) =>
+        .withCustom { case (diffGraph, cpg) =>
           val literal = NewLiteral().code("abc")
           diffGraph.addNode(literal)
           val block = cpg.method.block.head
@@ -29,7 +30,7 @@ class MyTest extends AnyWordSpec with Matchers {
     }
 
     "description2" in {
-      F.usingTemporaryFile("standalone"){ file =>
+      F.usingTemporaryFile("standalone") { file =>
         println(file)
       }
     }
@@ -39,13 +40,14 @@ class MyTest extends AnyWordSpec with Matchers {
         val cpg = MockCpg()
           .withMethod("abc")
           .withCallInMethod("abc", "foo")
-          .withLiteralArgument("foo", "password").cpg
+          .withLiteralArgument("foo", "password")
+          .cpg
 
         new MyPass(cpg).createAndApply()
         new MyCredPass(cpg).createAndApply()
         cpg.graph.V.foreach(println)
-        val List(x : Credentials) = cpg.graph.V.label("CREDENTIALS").cast[Credentials].l
-        val List(l : Literal) = x.in(EdgeTypes.IS_CREDENTIAL).toList
+        val List(x: Credentials) = cpg.graph.V.label("CREDENTIALS").cast[Credentials].l
+        val List(l: Literal)     = x.in(EdgeTypes.IS_CREDENTIAL).toList
         l.code shouldBe "password"
       }
     }
