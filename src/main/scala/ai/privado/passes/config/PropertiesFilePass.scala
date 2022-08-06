@@ -1,10 +1,13 @@
 package ai.privado.passes.config
 
 import better.files.File
+import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import io.shiftleft.passes.SimpleCpgPass
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+import scala.jdk.CollectionConverters._
 
 import java.util.Properties
 import scala.util.{Failure, Success, Try}
@@ -12,6 +15,9 @@ import scala.util.{Failure, Success, Try}
 /** This pass creates a graph layer for Java `.properties` files.
   */
 class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cpg) {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     propertiesFiles(projectRoot).foreach(addPropertiesFile(_, builder))
   }
@@ -22,10 +28,17 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
       parsePropertiesFile(file)
     } match {
       case Success(properties) =>
-        println(properties)
+        val keyValuePairs = properties
+          .propertyNames()
+          .asScala
+          .collect { case key: String =>
+            (key, properties.getProperty(key))
+          }
+          .toList
+
+        keyValuePairs.foreach(println)
       case Failure(exception) =>
-        // TODO introduce logger
-        println(exception.getMessage)
+        logger.warn(exception.getMessage)
     }
   }
 
@@ -38,7 +51,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
   }
 
   private def propertiesFiles(projectRoot: String): List[String] = {
-    io.joern.x2cpg.SourceFiles.determine(Set(projectRoot), Set(".properties"))
+    SourceFiles.determine(Set(projectRoot), Set(".properties"))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
