@@ -63,7 +63,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
 
   private def addPropertyNode(keyValuePair: (String, String), builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val (key, value) = keyValuePair
-    val propertyNode = NewJavaProperty().name(key)
+    val propertyNode = NewJavaProperty().name(key).value(value)
     builder.addNode(propertyNode)
   }
 

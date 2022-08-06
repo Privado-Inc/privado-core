@@ -40,7 +40,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val property = builder
     .addNodeType("JAVA_PROPERTY")
     .addProperty(name)
-
+    .addProperty(value)
 }
 
 object CpgExtSchema {
