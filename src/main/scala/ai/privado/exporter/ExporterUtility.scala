@@ -35,9 +35,12 @@ object ExporterUtility {
       occurrence.addOne(Constants.fileName -> nodeLocation.filename.asJson)
 
       occurrence.addOne(Constants.excerpt -> dump(nodeLocation.filename, node.lineNumber).asJson)
-      occurrence
+      if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
+        None
+      else
+        Some(occurrence)
     }
-    nodes.map(node => converter(node))
+    nodes.flatMap(node => converter(node))
   }
 
   private def addToMap(outputMap: mutable.LinkedHashMap[String, Json], name: String, value: String) = {

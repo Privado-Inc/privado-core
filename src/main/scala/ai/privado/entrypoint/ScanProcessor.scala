@@ -20,6 +20,7 @@ object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def parseRules(rulesPath: String): ConfigAndRules = {
+    logger.trace(s"parsing rules from -> '${rulesPath}'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
@@ -36,8 +37,8 @@ object ScanProcessor extends CommandProcessor {
           .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
           .map(file => {
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
-
             val fullPath = file.pathAsString
+            logger.trace(s"parsing -> '${fullPath}'")
             // e.g. relPath = rules/sources/accounts
             val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
             val pathTree = relPath.split("/")
@@ -111,7 +112,7 @@ object ScanProcessor extends CommandProcessor {
               sinks = a.sinks ++ b.sinks,
               collections = a.collections ++ b.collections,
               policies = a.policies ++ b.policies,
-              exclusions = a.exclusions ++ a.exclusions
+              exclusions = a.exclusions ++ b.exclusions
             )
           )
       catch {
@@ -225,7 +226,9 @@ object ScanProcessor extends CommandProcessor {
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
         println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+
       /*
+        import io.shiftleft.semanticcpg.language._
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
