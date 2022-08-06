@@ -7,15 +7,28 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import ai.privado.language._
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 
 class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg : Cpg = _
 
   private val configFileContents = """
-      |server.port=8080
-      |spring.application.name=accounts
-      |server.servlet.context-path=/accounts
+      |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
+      |internal.logger.api.base=https://logger.privado.ai/
+      |""".stripMargin
+
+  private val javaFileContents =
+    """
+      | import org.springframework.core.env.Environment;
+      |
+      |public class GeneralConfig {
+      |   public DataSource dataSource() {
+      |     DriverManagerDataSource dataSource = new DriverManagerDataSource();
+      |     dataSource.setUrl(env.getProperty("accounts.datasource.url"));
+      |     return dataSource;
+      |     }
+      |}
       |""".stripMargin
 
   "ConfigFilePass" should {
@@ -26,9 +39,8 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
 
     "create a `property` node for each property" in {
       val properties = cpg.property.map(x => (x.name, x.value)).toMap
-      properties.get("server.port").contains("8080") shouldBe true
-      properties.get("spring.application.name").contains("accounts") shouldBe true
-      properties.get("server.servlet.context-path").contains("/accounts")
+      properties.get("accounts.datasource.url").contains("jdbc:mariadb://localhost:3306/accounts?useSSL=false") shouldBe true
+      properties.get("internal.logger.api.base").contains("https://logger.privado.ai/")
     }
 
   }
@@ -38,8 +50,10 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     (inputDir / "test.properties").write(configFileContents)
+    (inputDir / "GeneralConfig.java").write(javaFileContents)
     (inputDir / "unrelated.file").write("foo")
-    cpg = Cpg.empty
+    val config = Config(inputPath = inputDir.toString())
+    cpg = new JavaSrc2Cpg().createCpg(config).get
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
     super.beforeAll()
   }
