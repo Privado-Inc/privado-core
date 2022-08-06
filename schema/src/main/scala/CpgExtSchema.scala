@@ -35,6 +35,12 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   literal.addOutEdge(edge = myEdge, inNode = myCredNodeType, cardinalityIn = Cardinality.ZeroOrOne)
 
+  // Node and edge types for `.properties` files
+
+  val property = builder
+    .addNodeType("JAVA_PROPERTY")
+    .addProperty(name)
+
 }
 
 object CpgExtSchema {

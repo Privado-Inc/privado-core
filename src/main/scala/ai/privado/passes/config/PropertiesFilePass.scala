@@ -9,9 +9,7 @@ import overflowdb.BatchedUpdate
   */
 class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    propertiesFiles(projectRoot).foreach { file =>
-      addFileNode(file, builder)
-    }
+    propertiesFiles(projectRoot).foreach(addFileNode(_, builder))
   }
 
   private def propertiesFiles(projectRoot: String): List[String] = {

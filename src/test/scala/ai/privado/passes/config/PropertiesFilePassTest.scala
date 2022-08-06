@@ -6,6 +6,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
+import ai.privado.language._
 
 class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
@@ -19,8 +20,14 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
-      cpg.file.size shouldBe 1
+      val List(name : String) = cpg.file.name.l
+      name.endsWith("/test.properties") shouldBe true
     }
+
+    "create a `property` node for each property" in {
+      cpg.property.size shouldBe 3
+    }
+
   }
 
   var inputDir : File = _
