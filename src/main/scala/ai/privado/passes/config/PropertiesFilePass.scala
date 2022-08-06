@@ -3,7 +3,7 @@ package ai.privado.passes.config
 import better.files.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewJavaProperty}
 import io.shiftleft.passes.SimpleCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -25,29 +25,31 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
   private def addPropertiesFile(file: String, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     addFileNode(file, builder)
     Try {
-      parsePropertiesFile(file)
+      obtainKeyValuePairs(file)
     } match {
-      case Success(properties) =>
-        val keyValuePairs = properties
-          .propertyNames()
-          .asScala
-          .collect { case key: String =>
-            (key, properties.getProperty(key))
-          }
-          .toList
-
-        keyValuePairs.foreach(println)
+      case Success(keyValuePairs) =>
+        keyValuePairs.foreach(addPropertyNode(_, builder))
       case Failure(exception) =>
         logger.warn(exception.getMessage)
     }
   }
 
-  private def parsePropertiesFile(file: String): Properties = {
+  private def obtainKeyValuePairs(file: String): List[(String, String)] = {
     val properties  = new Properties()
     val inputStream = File(file).newFileInputStream
     properties.load(inputStream)
     inputStream.close()
+    propertiesToKeyValuePairs(properties)
+  }
+
+  private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
     properties
+      .propertyNames()
+      .asScala
+      .collect { case key: String =>
+        (key, properties.getProperty(key))
+      }
+      .toList
   }
 
   private def propertiesFiles(projectRoot: String): List[String] = {
@@ -57,6 +59,12 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val fileNode = NewFile().name(name)
     builder.addNode(fileNode)
+  }
+
+  private def addPropertyNode(keyValuePair: (String, String), builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+    val (key, value) = keyValuePair
+    val propertyNode = NewJavaProperty().name(key)
+    builder.addNode(propertyNode)
   }
 
 }
