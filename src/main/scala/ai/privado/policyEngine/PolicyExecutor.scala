@@ -1,4 +1,4 @@
-package ai.privado.policyengine
+package ai.privado.policyEngine
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants, Policy, PolicyAction, PolicyViolationFlowModel}

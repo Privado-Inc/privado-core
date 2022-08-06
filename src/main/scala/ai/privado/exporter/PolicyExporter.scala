@@ -2,7 +2,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.AppCache
 import ai.privado.model.{Constants, PolicyViolationFlowModel}
-import ai.privado.policyengine.PolicyExecutor
+import ai.privado.policyEngine.PolicyExecutor
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
