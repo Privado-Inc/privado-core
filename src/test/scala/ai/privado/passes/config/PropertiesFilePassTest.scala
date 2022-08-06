@@ -7,7 +7,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 
-class ConfigFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg : Cpg = _
 
@@ -30,7 +30,7 @@ class ConfigFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     (inputDir / "test.properties").write(configFileContents)
     (inputDir / "unrelated.file").write("foo")
     cpg = Cpg.empty
-    new ConfigFilePass(cpg, inputDir.toString).createAndApply()
+    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
     super.beforeAll()
   }
 
