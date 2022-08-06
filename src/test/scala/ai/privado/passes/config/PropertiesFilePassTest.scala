@@ -25,7 +25,10 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
     }
 
     "create a `property` node for each property" in {
-      cpg.property.size shouldBe 3
+      val properties = cpg.property.map(x => (x.name, x.value)).toMap
+      properties.get("server.port").contains("8080") shouldBe true
+      properties.get("spring.application.name").contains("accounts") shouldBe true
+      properties.get("server.servlet.context-path").contains("/accounts")
     }
 
   }
