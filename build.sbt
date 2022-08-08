@@ -49,6 +49,7 @@ Global/onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild/resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots"))
 
 
