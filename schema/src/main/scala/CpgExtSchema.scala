@@ -41,6 +41,12 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addNodeType("JAVA_PROPERTY")
     .addProperty(name)
     .addProperty(value)
+
+  val isUsedAt = builder
+    .addEdgeType("IS_USED_AT")
+
+  property.addOutEdge(edge = isUsedAt, inNode = literal)
+
 }
 
 object CpgExtSchema {
