@@ -19,14 +19,17 @@ object Constants {
   val collections = "collections"
   val policies    = "policies"
   val exclusions  = "exclusions"
+  val threats     = "threats"
 
   // Policy
-  val policyId      = "policyId"
-  val policyDetails = "policyDetails"
-  val description   = "description"
-  val action        = "action"
-  val dataFlow      = "dataFlow"
-  val repositories  = "repositories"
+  val policyId           = "policyId"
+  val policyDetails      = "policyDetails"
+  val description        = "description"
+  val action             = "action"
+  val dataFlow           = "dataFlow"
+  val repositories       = "repositories"
+  val policyOrThreatType = "type"
+  val fix                = "fix"
 
   // Source/sink types
   val dataElementSource = "DATA_ELEMENT"
