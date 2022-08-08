@@ -7,10 +7,9 @@ import io.shiftleft.semanticcpg.language._
 import io.circe._
 import io.circe.syntax._
 
-import scala.collection.mutable
-import scala.collection.mutable.{HashMap, LinkedHashMap}
+import scala.collection.mutable.{HashMap, LinkedHashMap, Set}
 import ai.privado.cache.RuleCache
-import ai.privado.metric.MetricHandler
+import ai.privado.semantic.Language.finder
 import overflowdb.traversal.Traversal
 
 class SourceExporter(cpg: Cpg) {
@@ -26,13 +25,13 @@ class SourceExporter(cpg: Cpg) {
   }
 
   def getProcessing = {
-    val processingMap = HashMap[String, List[CfgNode]]()
+    val processingMap = HashMap[String, Set[CfgNode]]()
     sourcesList.foreach(source => {
       def addToMap(sourceId: String): Unit = {
         if (processingMap.contains(sourceId)) {
-          processingMap(sourceId) = processingMap(sourceId).+:(source)
+          processingMap(sourceId) = processingMap(sourceId).addOne(source)
         } else {
-          processingMap.addOne(sourceId -> List(source))
+          processingMap.addOne(sourceId -> Set(source))
         }
       }
       if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
@@ -42,9 +41,13 @@ class SourceExporter(cpg: Cpg) {
       }
     })
     processingMap.map(entrySet =>
-      mutable.LinkedHashMap[String, Json](
-        Constants.sourceId    -> entrySet._1.asJson,
-        Constants.occurrences -> ExporterUtility.convertPathElement(entrySet._2).asJson
+      LinkedHashMap[String, Json](
+        Constants.sourceId -> entrySet._1.asJson,
+        Constants.occurrences -> ExporterUtility
+          .convertPathElement(
+            entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
+          )
+          .asJson
       )
     )
   }
