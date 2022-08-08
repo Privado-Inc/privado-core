@@ -4,7 +4,9 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
 import ai.privado.model.{Constants, RuleInfo}
+import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
+import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
 import io.shiftleft.utils.IOUtils
@@ -146,5 +148,17 @@ object Utilities {
         }
       })
       .foldLeft(true)((a, b) => a && b)
+  }
+
+  /** Returns all files matching the given extensions
+    * @param folderPath
+    * @param extension
+    * @return
+    */
+  def getAllFilesRecursively(folderPath: String, extensions: Set[String]) = {
+    if (File(folderPath).isDirectory)
+      Some(SourceFiles.determine(Set(folderPath), extensions))
+    else
+      None
   }
 }
