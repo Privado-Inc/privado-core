@@ -1,38 +1,95 @@
 package ai.privado.metric
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.auth.AuthenticationHandler
+import ai.privado.cache.AppCache
 import ai.privado.exporter.GitMetaDataExporter
 import ai.privado.utility.Utilities
+import io.circe.Json
 import org.slf4j.LoggerFactory
 
+import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import io.circe.parser._
+import io.circe.syntax._
 
 object MetricHandler {
 
-  private val logger             = LoggerFactory.getLogger(this.getClass)
-  val metricsData                = mutable.HashMap[String, Any]()
-  val scanProcessErrors          = ArrayBuffer[String]()
-  var totalRulesMatched: Integer = 0
-  val flowCategoryData           = mutable.HashMap[String, Int]()
+  private val logger       = LoggerFactory.getLogger(this.getClass)
+  val metricsData          = mutable.HashMap[String, Json]()
+  val scanProcessErrors    = ArrayBuffer[String]()
+  val totalRulesMatched    = mutable.HashMap[String, Int]()
+  val internalRulesMatched = mutable.HashMap[String, Int]()
+  val flowCategoryData     = mutable.HashMap[String, Int]()
 
-  metricsData("Privado Version Core") = sys.env.get("PRIVADO_VERSION_CORE") match {
-    case Some(value) => value
-    case _           => None
+  metricsData("privadoCoreVersion") = sys.env.get("PRIVADO_VERSION_CORE") match {
+    case Some(value) => Json.fromString(value)
+    case _           => Json.Null
   }
-  metricsData("Privado Core Command") = None
+  metricsData("privadoCoreCommand") = Json.Null
   val gitMetaData = GitMetaDataExporter.getMetaData(AppCache.localScanPath)
-  metricsData("Hashed Repo Identifier") = Utilities.getSHA256Hash(gitMetaData.size match {
+  metricsData("hashedRepoIdentifier") = Json.fromString(Utilities.getSHA256Hash(gitMetaData.size match {
     case 0 => AppCache.repoName
     case _ => gitMetaData("remoteUrl")
-  })
+  }))
 
   def timeMetric[R](block: => R, call: String): R = {
     val startTime = System.nanoTime()
     val result    = block
     val endTime   = System.nanoTime()
-    // TODO remove debug statements
-    // TODO confirm time units
-    metricsData(s"time taken to $call") = (endTime - startTime) / 1000
+    metricsData(s"timeTakenTo$call") =
+      Json.fromLong(TimeUnit.SECONDS.convert((endTime - startTime), TimeUnit.NANOSECONDS))
     result
+  }
+
+  def compileAndSend() = {
+    metricsData("internalRuleIdsMatch") = Json.fromValues(internalRulesMatched.keys.map(key => Json.fromString(key)))
+    metricsData("scanProcessErrors") = scanProcessErrors.asJson
+    metricsData("flowCategoryData") = flowCategoryData.asJson
+    metricsData("noOfRulesMatch") = Json.fromInt(totalRulesMatched.size)
+    sendDataToServer()
+  }
+
+  def sendDataToServer() = {
+    // Check if metrics are disabled
+    var metricsEndPoint = "https://cli.privado.ai/api/event?version=2"
+    sys.env.get("PRIVADO_METRICS_ENABLED") match {
+      case Some(value) =>
+        if (value.toBoolean) {
+          sys.env.getOrElse("PRIVADO_DEV", 0) match {
+            case 1 =>
+              metricsEndPoint = "https://t.cli.privado.ai/api/event?version=2"
+            case _ => ()
+          }
+
+          AuthenticationHandler.dockerAccessKey match {
+            case Some(dockerKey) =>
+              val accessKey = Utilities.getSHA256Hash(dockerKey)
+              val requestData = parse(s""" {"event_type": "PRIVADO_CORE",
+                                         |  "event_message": ${metricsData.asJson.toString()},
+                                         |  "user_hash": "${AuthenticationHandler.userHash.get}",
+                                         |  "session_id": "${sys.env.get("PRIVADO_SESSION_ID").get}" }""".stripMargin)
+
+              requestData match {
+                case Right(data) =>
+                  try {
+                    requests.post(
+                      metricsEndPoint,
+                      data = data.toString(),
+                      headers = Map("Authentication" -> s"$accessKey", "Content-Type" -> "application/json")
+                    )
+                  } catch {
+                    case e: Exception =>
+                      logger.debug("error in uploading metrics to server")
+                      logger.debug("The error is ", e)
+                  }
+
+                case Left(_) => logger.debug("Error in parsing the metrics data")
+              }
+
+            case _ => ()
+          }
+        }
+      case _ => ()
+    }
   }
 }

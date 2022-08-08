@@ -16,7 +16,6 @@ class SourceExporter(cpg: Cpg) {
 
   lazy val sourcesTagList = getSourcesTagList
   lazy val sourcesList    = getSourcesList
-  MetricHandler.metricsData("No of Data Elements") = sourcesList.size
 
   /** Fetch and Convert sources to desired output
     */

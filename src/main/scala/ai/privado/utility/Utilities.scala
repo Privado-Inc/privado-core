@@ -1,6 +1,7 @@
 package ai.privado.utility
 
 import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
 import ai.privado.model.{CatLevelOne, Constants, RuleInfo}
@@ -46,6 +47,11 @@ object Utilities {
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
+      MetricHandler.totalRulesMatched(ruleInfo.id) = 1
+      RuleCache.internalRules.get(ruleInfo.id) match {
+        case Some(_) => MetricHandler.internalRulesMatched(ruleInfo.id) = 1
+        case _       => ()
+      }
       // storing by catLevelTwo to get id
       storeForTagHelper(ruleInfo.catLevelTwo, ruleInfo.id)
     }

@@ -1,6 +1,7 @@
 package ai.privado.auth
 import ai.privado.metric.MetricHandler
 import ai.privado.utility.Utilities
+import io.circe.Json
 import org.slf4j.LoggerFactory
 
 import java.io.File
@@ -31,7 +32,7 @@ object AuthenticationHandler {
               syncPermission = askForPermission() // Ask user for request permissions
             }
             if (syncPermission) {
-              println(MetricHandler.timeMetric(pushDataToCloud(repoPath), "upload file"))
+              println(MetricHandler.timeMetric(pushDataToCloud(repoPath), "UploadFile"))
             } else {
               ()
             }
@@ -50,7 +51,7 @@ object AuthenticationHandler {
         updateConfigFile("syncToPrivadoCloud", "true")
         true
     }
-    MetricHandler.metricsData("Cloud Consent Event") = cloudConsentPermission
+    MetricHandler.metricsData("cloudConsentEvent") = Json.fromBoolean(cloudConsentPermission)
     cloudConsentPermission
   }
 

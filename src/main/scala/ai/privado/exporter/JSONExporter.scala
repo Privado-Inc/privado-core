@@ -14,6 +14,8 @@ import scala.collection.mutable
 import better.files.File
 import org.slf4j.LoggerFactory
 
+import java.math.BigInteger
+
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -48,17 +50,20 @@ object JSONExporter {
 
       output.addOne("collections" -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
-      MetricHandler.metricsData("policyViolations") = policyExporter.getViolations.size
       output.addOne("policyViolations" -> policyExporter.getViolations.asJson)
 
       logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()
-      MetricHandler.metricsData("Repo Size") = FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath))
       val f = File(repoPath + "/.privado/" + outputFileName + ".json")
       f.write(output.asJson.toString())
-      MetricHandler.metricsData("File Size") = f.size
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
+
+      MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
+        FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
+      )
+      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyExporter.getViolations.size)
+      MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
 
     } catch {
       case ex: Exception => println(ex.toString)

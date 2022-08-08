@@ -8,6 +8,7 @@ import ai.privado.model._
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
+import io.circe.Json
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
@@ -166,12 +167,14 @@ object ScanProcessor extends CommandProcessor {
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
 
-    MetricHandler.metricsData("Total Number of Rules Used") = {
-      mergedRules.sources.size +
-        mergedRules.sinks.size +
-        mergedRules.collections.size +
-        mergedRules.policies.size +
-        mergedRules.exclusions.size
+    MetricHandler.metricsData("noOfRulesUsed") = {
+      Json.fromInt(
+        mergedRules.sources.size +
+          mergedRules.sinks.size +
+          mergedRules.collections.size +
+          mergedRules.policies.size +
+          mergedRules.exclusions.size
+      )
     }
 
     mergedRules
@@ -188,7 +191,7 @@ object ScanProcessor extends CommandProcessor {
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
-        MetricHandler.metricsData("language") = Languages.JAVA
+        MetricHandler.metricsData("language") = Json.fromString(Languages.JAVA)
         println(s"Detected language $lang")
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
