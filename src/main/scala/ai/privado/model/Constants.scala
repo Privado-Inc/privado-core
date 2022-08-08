@@ -66,6 +66,8 @@ object Constants {
   val branchName   = "branchName"
   val commitId     = "commitId"
   val remoteUrl    = "remoteUrl"
+  val endPoint     = "endPoint"
+  val collectionId = "collectionId"
 
   val minusOne = "-1"
 
