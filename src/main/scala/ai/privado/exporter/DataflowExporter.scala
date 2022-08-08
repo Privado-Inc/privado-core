@@ -114,7 +114,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     val pathOutput = mutable.LinkedHashMap[String, Json]()
 
     pathOutput.addOne(Constants.pathId -> pathId.asJson)
-    pathOutput.addOne(Constants.path   -> ExporterUtility.convertPathElement(sinkFlow.elements).asJson)
+    pathOutput.addOne(Constants.path   -> ExporterUtility.convertPathElements(sinkFlow.elements).asJson)
     pathOutput
   }
 
