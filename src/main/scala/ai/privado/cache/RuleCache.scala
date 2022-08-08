@@ -1,6 +1,6 @@
 package ai.privado.cache
 
-import ai.privado.model.{ConfigAndRules, Policy, RuleInfo}
+import ai.privado.model.{ConfigAndRules, PolicyOrThreat, RuleInfo}
 
 import scala.collection.mutable
 
@@ -8,7 +8,7 @@ import scala.collection.mutable
   */
 object RuleCache {
 
-  private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List())
+  private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List())
   private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
   private val policyMap            = mutable.HashMap[String, Policy]()
   val internalRules                = mutable.HashMap[String, Int]()
@@ -29,9 +29,9 @@ object RuleCache {
 
   def getAllRuleInfo: Seq[RuleInfo] = ruleInfoMap.values.toList
 
-  private def setPolicy(policy: Policy): Unit = policyMap.addOne(policy.id -> policy)
+  private def setPolicy(policy: PolicyOrThreat): Unit = policyMap.addOne(policy.id -> policy)
 
-  def getPolicy(policyId: String): Option[Policy] = policyMap.get(policyId)
+  def getPolicy(policyId: String): Option[PolicyOrThreat] = policyMap.get(policyId)
 
   def getAllPolicy: Seq[Policy] = policyMap.values.toList
 

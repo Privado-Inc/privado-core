@@ -25,15 +25,19 @@ case class ConfigAndRules(
   sources: List[RuleInfo],
   sinks: List[RuleInfo],
   collections: List[RuleInfo],
-  policies: List[Policy],
+  policies: List[PolicyOrThreat],
+  threats: List[PolicyOrThreat],
   exclusions: List[RuleInfo]
 )
 
 case class DataFlow(sources: List[String], sinks: List[String])
 
-case class Policy(
+case class PolicyOrThreat(
   id: String,
   description: String,
+  name: String,
+  fix: String,
+  policyOrThreatType: PolicyThreatType.PolicyThreatType,
   action: PolicyAction.PolicyAction,
   dataFlow: DataFlow,
   repositories: List[String],
@@ -44,17 +48,23 @@ case class Policy(
 
 object CirceEnDe {
 
-  implicit val decodePolicy: Decoder[Policy] = new Decoder[Policy] {
-    override def apply(c: HCursor): Result[Policy] = {
-      val id           = c.downField(Constants.id).as[String]
-      val description  = c.downField(Constants.description).as[String]
-      val action       = c.downField(Constants.action).as[String]
-      val dataFlow     = c.downField(Constants.dataFlow).as[DataFlow]
-      val repositories = c.downField(Constants.repositories).as[List[String]]
-      val tags         = c.downField(Constants.tags).as[Map[String, String]]
+  implicit val decodePolicy: Decoder[PolicyOrThreat] = new Decoder[PolicyOrThreat] {
+    override def apply(c: HCursor): Result[PolicyOrThreat] = {
+      val id                 = c.downField(Constants.id).as[String]
+      val name               = c.downField(Constants.name).as[String]
+      val fix                = c.downField(Constants.fix).as[String]
+      val policyOrThreatType = c.downField(Constants.policyOrThreatType).as[String]
+      val description        = c.downField(Constants.description).as[String]
+      val action             = c.downField(Constants.action).as[String]
+      val dataFlow           = c.downField(Constants.dataFlow).as[DataFlow]
+      val repositories       = c.downField(Constants.repositories).as[List[String]]
+      val tags               = c.downField(Constants.tags).as[Map[String, String]]
       Right(
-        Policy(
+        PolicyOrThreat(
           id = id.getOrElse(""),
+          name = name.getOrElse(""),
+          fix = fix.getOrElse(""),
+          policyOrThreatType = PolicyThreatType.withNameDefaultHandler(policyOrThreatType.getOrElse("")),
           description = description.getOrElse(""),
           action = PolicyAction.withNameDefaultHandler(action.getOrElse("")),
           dataFlow = dataFlow.getOrElse(DataFlow(List[String](), List[String]())),
@@ -80,15 +90,17 @@ object CirceEnDe {
       val sources     = c.downField(Constants.sources).as[List[RuleInfo]]
       val sinks       = c.downField(Constants.sinks).as[List[RuleInfo]]
       val collections = c.downField(Constants.collections).as[List[RuleInfo]]
-      val policies    = c.downField(Constants.policies).as[List[Policy]]
+      val policies    = c.downField(Constants.policies).as[List[PolicyOrThreat]]
       val exclusions  = c.downField(Constants.exclusions).as[List[RuleInfo]]
+      val threats     = c.downField(Constants.threats).as[List[PolicyOrThreat]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
           sinks = sinks.getOrElse(List[RuleInfo]()),
           collections = collections.getOrElse(List[RuleInfo]()),
-          policies = policies.getOrElse(List[Policy]()),
-          exclusions = exclusions.getOrElse(List[RuleInfo]())
+          policies = policies.getOrElse(List[PolicyOrThreat]()),
+          exclusions = exclusions.getOrElse(List[RuleInfo]()),
+          threats = threats.getOrElse(List[PolicyOrThreat]())
         )
       )
     }
