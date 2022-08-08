@@ -1,7 +1,7 @@
 package ai.privado.passes.config
 
 import better.files.File
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -42,6 +42,11 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
       val properties = cpg.property.map(x => (x.name, x.value)).toMap
       properties.get("accounts.datasource.url").contains("jdbc:mariadb://localhost:3306/accounts?useSSL=false") shouldBe true
       properties.get("internal.logger.api.base").contains("https://logger.privado.ai/")
+    }
+
+    "connect property nodes to file" in {
+      val List(filename: String) =  cpg.property.file.name.dedup.l
+      filename.endsWith("/test.properties") shouldBe true
     }
 
     "connect property node to literal via `IS_USED_AT` edge" in {

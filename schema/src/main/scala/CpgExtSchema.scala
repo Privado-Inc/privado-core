@@ -6,6 +6,7 @@ import overflowdb.schema.SchemaBuilder
 class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   import cpgSchema.ast._
   import cpgSchema.base._
+  import cpgSchema.fs._
 
   // Add node types, edge types, and properties here
 
@@ -45,6 +46,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val isUsedAt = builder
     .addEdgeType("IS_USED_AT")
 
+  property.addOutEdge(edge = sourceFile, inNode = file)
   property.addOutEdge(edge = isUsedAt, inNode = literal)
 
 }

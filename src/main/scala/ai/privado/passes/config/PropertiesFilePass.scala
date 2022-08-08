@@ -20,27 +20,31 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    propertiesFiles(projectRoot).foreach(addGraphForPropertiesFile(_, builder))
+    propertiesFiles(projectRoot).foreach { file =>
+      val fileNode      = addFileNode(file, builder)
+      val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
+      propertyNodes.foreach { propertyNode =>
+        builder.addEdge(propertyNode, fileNode, EdgeTypes.SOURCE_FILE)
+      }
+    }
   }
 
-  /** For the the properties file at `file`, add a corresponding CPG sub graph and connect it to the existing CPG.
-    */
-  private def addGraphForPropertiesFile(file: String, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    addFileNode(file, builder)
-    addPropertyNodesAndConnectToUsers(file, builder)
-  }
-
-  private def addPropertyNodesAndConnectToUsers(file: String, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  private def addPropertyNodesAndConnectToUsers(
+    file: String,
+    builder: BatchedUpdate.DiffGraphBuilder
+  ): List[NewJavaProperty] = {
     Try {
       obtainKeyValuePairs(file)
     } match {
       case Success(keyValuePairs) =>
-        keyValuePairs.foreach { keyValuePairs =>
+        keyValuePairs.map { keyValuePairs =>
           val propertyNode = addPropertyNode(keyValuePairs, builder)
           connectToUsers(propertyNode, builder)
+          propertyNode
         }
       case Failure(exception) =>
         logger.warn(exception.getMessage)
+        List()
     }
   }
 
