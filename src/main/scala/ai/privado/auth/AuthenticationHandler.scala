@@ -89,7 +89,8 @@ object AuthenticationHandler {
       val response = requests.post(
         uploadURL,
         data = requests.MultiPart(requests.MultiItem("scanfile", file, file.getName)),
-        headers = Map("Authentication" -> s"$accessKey", "accept-encoding" -> "gzip, deflate, br")
+        headers =
+          Map("Authentication" -> s"$accessKey", "accept-encoding" -> "gzip, deflate, br", "Content-Encoding" -> "gzip")
       )
       val json = ujson.read(response.text())
       response.statusCode match {
