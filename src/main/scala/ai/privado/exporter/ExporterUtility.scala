@@ -12,35 +12,39 @@ import scala.collection.mutable
 
 object ExporterUtility {
 
-  /** Convert to path element schema object
+  /** Convert List of path element schema object
     */
-  def convertPathElement(nodes: List[CfgNode]): Seq[mutable.LinkedHashMap[String, Json]] = {
+  def convertPathElements(nodes: List[CfgNode]): Seq[mutable.LinkedHashMap[String, Json]] = {
+    nodes.flatMap(node => convertIndividualPathElement(node))
+  }
 
-    def converter(node: CfgNode) = {
-      val occurrence   = mutable.LinkedHashMap[String, Json]()
-      val nodeLocation = node.location
-      occurrence.addOne(Constants.sample -> nodeLocation.symbol.asJson)
-      occurrence.addOne(Constants.lineNumber -> {
-        nodeLocation.lineNumber match {
-          case Some(n) => n.asJson
-          case None    => Constants.minusOne.asJson
-        }
-      })
-      occurrence.addOne(Constants.columnNumber -> {
-        node.columnNumber match {
-          case Some(n) => n.asJson
-          case None    => Constants.minusOne.asJson
-        }
-      })
-      occurrence.addOne(Constants.fileName -> nodeLocation.filename.asJson)
+  /** Convert Individual path element
+    * @param node
+    * @return
+    */
+  def convertIndividualPathElement(node: CfgNode) = {
+    val occurrence   = mutable.LinkedHashMap[String, Json]()
+    val nodeLocation = node.location
+    occurrence.addOne(Constants.sample -> nodeLocation.symbol.asJson)
+    occurrence.addOne(Constants.lineNumber -> {
+      nodeLocation.lineNumber match {
+        case Some(n) => n.asJson
+        case None    => Constants.minusOne.asJson
+      }
+    })
+    occurrence.addOne(Constants.columnNumber -> {
+      node.columnNumber match {
+        case Some(n) => n.asJson
+        case None    => Constants.minusOne.asJson
+      }
+    })
+    occurrence.addOne(Constants.fileName -> nodeLocation.filename.asJson)
 
-      occurrence.addOne(Constants.excerpt -> dump(nodeLocation.filename, node.lineNumber).asJson)
-      if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
-        None
-      else
-        Some(occurrence)
-    }
-    nodes.flatMap(node => converter(node))
+    occurrence.addOne(Constants.excerpt -> dump(nodeLocation.filename, node.lineNumber).asJson)
+    if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
+      None
+    else
+      Some(occurrence)
   }
 
   private def addToMap(outputMap: mutable.LinkedHashMap[String, Json], name: String, value: String) = {

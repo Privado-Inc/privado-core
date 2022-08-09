@@ -97,14 +97,22 @@ object ScanProcessor extends CommandProcessor {
                       List[RuleInfo](),
                       List[RuleInfo](),
                       List[RuleInfo](),
-                      List[Policy](),
+                      List[PolicyOrThreat](),
+                      List[PolicyOrThreat](),
                       List[RuleInfo]()
                     )
                 }
               case Left(error) =>
                 logger.error("Error while parsing this file -> '" + fullPath)
                 logger.error("ERROR : " + error)
-                ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+                ConfigAndRules(
+                  List[RuleInfo](),
+                  List[RuleInfo](),
+                  List[RuleInfo](),
+                  List[PolicyOrThreat](),
+                  List[PolicyOrThreat](),
+                  List[RuleInfo]()
+                )
             }
           })
           .reduce((a, b) =>
@@ -113,7 +121,8 @@ object ScanProcessor extends CommandProcessor {
               sinks = a.sinks ++ b.sinks,
               collections = a.collections ++ b.collections,
               policies = a.policies ++ b.policies,
-              exclusions = a.exclusions ++ b.exclusions
+              exclusions = a.exclusions ++ b.exclusions,
+              threats = a.threats ++ b.threats
             )
           )
       catch {
@@ -127,12 +136,26 @@ object ScanProcessor extends CommandProcessor {
 
   def processRules(): ConfigAndRules = {
     var internalConfigAndRules =
-      ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+      ConfigAndRules(
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[PolicyOrThreat](),
+        List[PolicyOrThreat](),
+        List[RuleInfo]()
+      )
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
     }
     var externalConfigAndRules =
-      ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+      ConfigAndRules(
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[PolicyOrThreat](),
+        List[PolicyOrThreat](),
+        List[RuleInfo]()
+      )
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head)
     }
@@ -152,13 +175,15 @@ object ScanProcessor extends CommandProcessor {
     val sinks       = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
     val collections = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies    = externalConfigAndRules.policies ++ internalConfigAndRules.policies
+    val threats     = externalConfigAndRules.threats ++ internalConfigAndRules.threats
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
         sinks = sinks.distinctBy(_.id),
         collections = collections.distinctBy(_.id),
         policies = policies.distinctBy(_.id),
-        exclusions = exclusions.distinctBy(_.id)
+        exclusions = exclusions.distinctBy(_.id),
+        threats = threats.distinctBy(_.id)
       )
     logger.trace(mergedRules.toString)
     logger.info("Caching rules")

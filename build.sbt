@@ -4,7 +4,7 @@ ThisBuild/scalaVersion := "2.13.7"
 ThisBuild/version      := sys.env.getOrElse("BUILD_VERSION", "1.0-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 val cpgVersion = "1.3.557"
-val joernVersion = "1.1.1022"
+val joernVersion = "1.1.1028"
 val overflowdbVersion = "1.143"
 
 //External dependency versions
@@ -50,6 +50,7 @@ Global/onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild/resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots"))
 
 

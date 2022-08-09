@@ -1,7 +1,7 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Constants, Policy, PolicyAction, PolicyViolationFlowModel}
+import ai.privado.model.{CatLevelOne, Constants, PolicyOrThreat, PolicyAction, PolicyViolationFlowModel}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.semanticcpg.language._
 
@@ -58,7 +58,7 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
 
   /** Filters outs based on Repository name
     */
-  private def filterByRepoName(policy: Policy, repoName: String): Boolean = {
+  private def filterByRepoName(policy: PolicyOrThreat, repoName: String): Boolean = {
     actionMap.get(policy.action) match {
       case Some(value) =>
         value == policy.repositories
@@ -102,7 +102,7 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
     dataflowSinkIdMap
   }
 
-  private def getSourcesMatchingRegex(policy: Policy): Set[String] = {
+  private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {
     policy.dataFlow.sources
       .flatMap(policySourceRegex => {
         if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
@@ -119,7 +119,7 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
       .toSet
   }
 
-  private def getSinksMatchingRegex(policy: Policy) = {
+  private def getSinksMatchingRegex(policy: PolicyOrThreat) = {
     policy.dataFlow.sinks
       .flatMap(policySinkRegex => {
         if (policySinkRegex.equals(ALL_MATCH_REGEX)) {

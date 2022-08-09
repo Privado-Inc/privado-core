@@ -42,7 +42,7 @@ object JSONExporter {
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
-      output.addOne("collections" -> collectionExporter.getCollections.asJson)
+      output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
 
       output.addOne("policyViolations" -> policyExporter.getViolations.asJson)

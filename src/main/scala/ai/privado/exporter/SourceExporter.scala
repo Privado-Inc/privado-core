@@ -44,7 +44,7 @@ class SourceExporter(cpg: Cpg) {
       LinkedHashMap[String, Json](
         Constants.sourceId -> entrySet._1.asJson,
         Constants.occurrences -> ExporterUtility
-          .convertPathElement(
+          .convertPathElements(
             entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
           )
           .asJson
