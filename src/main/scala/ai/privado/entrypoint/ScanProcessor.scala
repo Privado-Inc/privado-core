@@ -5,7 +5,6 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.model._
 import ai.privado.semantic.Language._
-import ai.privado.threatEngine.KeyboardCache
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.yaml.parser
@@ -215,7 +214,6 @@ object ScanProcessor extends CommandProcessor {
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
-        /*
         println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
@@ -266,10 +264,6 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }*/
-
-
-         */
-        println(KeyboardCache.getViolations(config.sourceLocation.head))
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)

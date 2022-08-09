@@ -18,11 +18,11 @@ object JSONExporter {
 
   def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
     logger.info("Initiated exporter engine")
-    val sourceExporter     = new SourceExporter(cpg)
-    val dataflowExporter   = new DataflowExporter(cpg, dataflows)
-    val collectionExporter = new CollectionExporter(cpg)
-    val policyExporter     = new PolicyExporter(dataflows)
-    val output             = mutable.LinkedHashMap[String, Json]()
+    val sourceExporter          = new SourceExporter(cpg)
+    val dataflowExporter        = new DataflowExporter(cpg, dataflows)
+    val collectionExporter      = new CollectionExporter(cpg)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
+    val output                  = mutable.LinkedHashMap[String, Json]()
     try {
       output.addOne(Constants.version       -> "1.0.0".asJson)
       output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
@@ -45,7 +45,7 @@ object JSONExporter {
       output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
 
-      output.addOne("policyViolations" -> policyExporter.getViolations.asJson)
+      output.addOne("violations" -> policyAndThreatExporter.getViolations(repoPath).asJson)
 
       logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()

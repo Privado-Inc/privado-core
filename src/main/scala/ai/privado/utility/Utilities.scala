@@ -158,7 +158,7 @@ object Utilities {
   def getAllFilesRecursively(folderPath: String, extensions: Set[String]) = {
     try {
       if (File(folderPath).isDirectory)
-        Some(SourceFiles.determine(Set(folderPath), extensions))
+        Some(SourceFiles.determine(Set(folderPath), extensions).filter(isFileProcessable))
       else
         None
     } catch {

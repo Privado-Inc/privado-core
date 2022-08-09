@@ -37,7 +37,7 @@ object KeyboardCache {
     * @param repoPath
     * @return
     */
-  def getViolations(repoPath: String) = {
+  def getViolations(repoPath: String) = Try {
 
     val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
     getAllFilesRecursively(repoPath, Set(".xml")) match {
