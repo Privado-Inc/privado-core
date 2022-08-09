@@ -1,5 +1,7 @@
 package ai.privado.tagger
 
+import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
 import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.SimpleCpgPass
@@ -17,7 +19,10 @@ abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       this.ruleInfo = ruleInfo
       this.createAndApply()
     } catch {
-      case ex: Exception => logger.error("Exception executing pass")
+      case ex: Exception => {
+        logger.error("Exception executing pass")
+        MetricHandler.scanProcessErrors.addOne(ex.toString)
+      }
     }
   }
 

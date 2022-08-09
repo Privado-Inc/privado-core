@@ -41,6 +41,7 @@ object CatLevelOne extends Enumeration {
   val SINKS       = CatLevelOneIn("sinks", "Sinks")
   val COLLECTIONS = CatLevelOneIn("collections", "Collections")
   val POLICIES    = CatLevelOneIn("policies", "Policies")
+  val THREATS     = CatLevelOneIn("threats", "Threats")
   val UNKNOWN     = CatLevelOneIn("unknown", "Unknown")
 
   // internal CatLevelOne
@@ -86,4 +87,21 @@ object PolicyAction extends Enumeration {
       null
   }
 
+}
+object PolicyThreatType extends Enumeration {
+  type PolicyThreatType = Value
+
+  val THREAT     = Value("threat")
+  val COMPLIANCE = Value("compliance")
+
+  def withNameDefaultHandler(name: String): Value = {
+    if (name != null)
+      try {
+        withName(name.toLowerCase())
+      } catch {
+        case _: Throwable => null
+      }
+    else
+      null
+  }
 }

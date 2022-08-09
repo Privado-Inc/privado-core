@@ -9,6 +9,7 @@ import io.circe.syntax._
 
 import scala.collection.mutable.{HashMap, LinkedHashMap, Set}
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.semantic.Language.finder
 import overflowdb.traversal.Traversal
 
@@ -44,9 +45,12 @@ class SourceExporter(cpg: Cpg) {
       LinkedHashMap[String, Json](
         Constants.sourceId -> entrySet._1.asJson,
         Constants.occurrences -> ExporterUtility
-          .convertPathElement(
-            entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
-          )
+          .convertPathElements({
+            if (ScanProcessor.config.disableDeDuplication)
+              entrySet._2.toList
+            else
+              entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
+          })
           .asJson
       )
     )
@@ -56,7 +60,9 @@ class SourceExporter(cpg: Cpg) {
     */
   private def getSourcesTagList = {
     def filterSource(traversal: Traversal[StoredNode]) = {
-      traversal.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name)
+      traversal.tag
+        .nameExact(Constants.catLevelOne)
+        .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
     }
     val sources =
       cpg.identifier
@@ -96,24 +102,32 @@ class SourceExporter(cpg: Cpg) {
   }
 
   private def convertSourcesList(sources: List[List[Tag]]) = {
-    def convertToStandardFormat(nodeList: List[Tag]) = {
+    def convertSource(sourceId: String) = {
       val orderedSourceMap = new LinkedHashMap[String, Json]()
+      RuleCache.getRuleInfo(sourceId) match {
+        case Some(rule) =>
+          orderedSourceMap.addOne(Constants.sourceType -> rule.catLevelOne.label.asJson)
+          Some(orderedSourceMap ++ ExporterUtility.getRuleInfoForExporting(sourceId))
+        case None => // not found anything, probably derived source
+          None
+      }
+    }
+
+    def getSources(nodeList: List[Tag]) = {
       val node = nodeList
         .filterNot(node => InternalTag.valuesAsString.contains(node.name))
-        .filter(node => node.name.equals(Constants.id))
+        .filter(node => node.name.equals(Constants.id) || node.name.startsWith(Constants.privadoDerived))
       if (node.nonEmpty) {
-        val ruleId = node.head.value
-        orderedSourceMap.addOne(Constants.sourceType -> {
-          RuleCache.getRuleInfo(ruleId) match {
-            case Some(rule) => rule.catLevelOne.label.asJson
-            case None       => "".asJson
-          }
-        })
-        orderedSourceMap ++ ExporterUtility.getRuleInfoForExporting(ruleId)
+        Some(node.value.toSet)
       } else
-        orderedSourceMap
+        None
     }
-    sources.map(source => convertToStandardFormat(source)).toSet
+    sources
+      .flatMap(source => getSources(source))
+      .flatten
+      .filter(_.nonEmpty)
+      .toSet
+      .flatMap(source => convertSource(source))
   }
 
 }

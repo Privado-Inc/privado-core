@@ -14,10 +14,10 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
   lazy val APISINKS_REGEX =
-    "(?i)(?:url|client|connection|request|execute|load|host|access|fetch|get|set|put|post|trace|patch|send|remove|delete|write|read|assignment|provider)"
+    "(?i).*(?:url|client|connection|request|execute|load|host|access|fetch|get|set|put|post|trace|patch|send|remove|delete|write|read|assignment|provider).*"
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code(ruleInfo.patterns.head).l
+    val apiInternalSinkPattern = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").l
     val apis                   = cacheCall.name(APISINKS_REGEX).l
 
     if (apis.nonEmpty && apiInternalSinkPattern.nonEmpty) {

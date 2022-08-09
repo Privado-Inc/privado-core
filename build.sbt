@@ -1,17 +1,17 @@
-name := "privado-core"
-ThisBuild/organization := "ai.privado"
-ThisBuild/scalaVersion := "2.13.7"
-ThisBuild/version      := sys.env.getOrElse("BUILD_VERSION", "1.0-SNAPSHOT")
+name                     := "privado-core"
+ThisBuild / organization := "ai.privado"
+ThisBuild / scalaVersion := "2.13.7"
+ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "1.0-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 val cpgVersion = "1.3.557"
-val joernVersion = "1.1.1022"
+val joernVersion = "1.1.1028"
 val overflowdbVersion = "1.143"
 
 //External dependency versions
 val circeVersion = "0.14.1"
 
-lazy val schema = Projects.schema
-lazy val domainClasses = Projects.domainClasses
+lazy val schema         = Projects.schema
+lazy val domainClasses  = Projects.domainClasses
 lazy val schemaExtender = Projects.schemaExtender
 
 dependsOn(domainClasses)
@@ -34,24 +34,20 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
 )
 
-
-ThisBuild/Compile/scalacOptions ++= Seq(
-  "-feature",
-  "-deprecation",
-  "-language:implicitConversions"
-)
+ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
 
 enablePlugins(JavaAppPackaging)
 
-ThisBuild/licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
-Global/onChangedBuildSource := ReloadOnSourceChanges
+Global / onChangedBuildSource := ReloadOnSourceChanges
 
-ThisBuild/resolvers ++= Seq(
+ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
+  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots"))
 
 
-Compile / doc / sources := Seq.empty
+Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false

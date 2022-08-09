@@ -1,6 +1,6 @@
 package ai.privado.cache
 
-import ai.privado.model.{ConfigAndRules, Policy, RuleInfo}
+import ai.privado.model.{ConfigAndRules, PolicyOrThreat, RuleInfo}
 
 import scala.collection.mutable
 
@@ -8,16 +8,17 @@ import scala.collection.mutable
   */
 object RuleCache {
 
-  private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List())
+  private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List())
   private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
-  private val policyMap            = mutable.HashMap[String, Policy]()
+  private val policyOrThreatMap    = mutable.HashMap[String, PolicyOrThreat]()
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
     rule.sources.foreach(this.setRuleInfo)
     rule.sinks.foreach(this.setRuleInfo)
     rule.collections.foreach(this.setRuleInfo)
-    rule.policies.foreach(this.setPolicy)
+    rule.policies.foreach(this.setPolicyOrThreat)
+    rule.threats.foreach(this.setPolicyOrThreat)
   }
 
   def getRule: ConfigAndRules = rule
@@ -28,9 +29,31 @@ object RuleCache {
 
   def getAllRuleInfo: Seq[RuleInfo] = ruleInfoMap.values.toList
 
-  private def setPolicy(policy: Policy): Unit = policyMap.addOne(policy.id -> policy)
+  private def setPolicyOrThreat(policy: PolicyOrThreat): Unit = policyOrThreatMap.addOne(policy.id -> policy)
 
-  def getPolicy(policyId: String): Option[Policy] = policyMap.get(policyId)
+  def getPolicyOrThreat(policyId: String): Option[PolicyOrThreat] = policyOrThreatMap.get(policyId)
 
-  def getAllPolicy: Seq[Policy] = policyMap.values.toList
+  def getAllPolicyOrThreat: Seq[PolicyOrThreat] = policyOrThreatMap.values.toList
+
+  def getAllPolicy = this.rule.policies
+
+  def getAllThreat = this.rule.threats
+
+  def setInternalRules(rules: ConfigAndRules) = {
+    for (rule <- rules.sinks) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.sources) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.collections) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.policies) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.exclusions) {
+      internalRules.addOne((rule.id, 0))
+    }
+  }
 }

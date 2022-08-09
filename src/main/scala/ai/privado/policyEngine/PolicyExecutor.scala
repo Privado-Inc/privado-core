@@ -1,14 +1,21 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Constants, Policy, PolicyAction, PolicyViolationFlowModel}
+import ai.privado.model.{CatLevelOne, Constants, PolicyAction, PolicyOrThreat, PolicyViolationFlowModel}
 import io.joern.dataflowengineoss.language.Path
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
+import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
-class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
+class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String) {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   val ALL_MATCH_REGEX = "**"
   val actionMap       = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
@@ -22,10 +29,10 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
 
   /** Processes Processing style of policy and returns affected SourceIds
     */
-  def getProcessingViolations: Map[String, Set[String]] = {
+  def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
     val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
     val processingResult = processingTypePolicy
-      .map(policy => (policy.id, getSourcesMatchingRegex(policy)))
+      .map(policy => (policy.id, getSourcesMatchingRegex(policy).toList.flatMap(sourceId => getSourceNode(sourceId))))
       .toMap
     processingResult
   }
@@ -58,7 +65,7 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
 
   /** Filters outs based on Repository name
     */
-  private def filterByRepoName(policy: Policy, repoName: String): Boolean = {
+  private def filterByRepoName(policy: PolicyOrThreat, repoName: String): Boolean = {
     actionMap.get(policy.action) match {
       case Some(value) =>
         value == policy.repositories
@@ -76,12 +83,17 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
           dataflowSourceIdMap(sourceId) = ListBuffer[String]()
         dataflowSourceIdMap(sourceId).append(entrySet._1)
       }
-      val source = entrySet._2.elements.head
-      if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-        addToMap(source.tag.nameExact(Constants.id).l.head.value)
-      } else {
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+      try {
+        val source = entrySet._2.elements.head
+        if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
+          addToMap(source.tag.nameExact(Constants.id).l.head.value)
+        } else {
+          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+        }
+      } catch {
+        case e: Exception => logger.debug("Exception : ", e)
       }
+
     })
     dataflowSourceIdMap
   }
@@ -102,7 +114,7 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
     dataflowSinkIdMap
   }
 
-  private def getSourcesMatchingRegex(policy: Policy): Set[String] = {
+  private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {
     policy.dataFlow.sources
       .flatMap(policySourceRegex => {
         if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
@@ -119,7 +131,7 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
       .toSet
   }
 
-  private def getSinksMatchingRegex(policy: Policy) = {
+  private def getSinksMatchingRegex(policy: PolicyOrThreat) = {
     policy.dataFlow.sinks
       .flatMap(policySinkRegex => {
         if (policySinkRegex.equals(ALL_MATCH_REGEX)) {
@@ -134,5 +146,23 @@ class PolicyExecutor(dataflowMap: Map[String, Path], repoName: String) {
         }
       })
       .toSet
+  }
+
+  private def getSourceNode(sourceId: String): Option[(String, CfgNode)] = {
+    def filterBySource(tag: Traversal[Tag]): Traversal[Tag] =
+      tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
+    Try(cpg.tag.where(filterBySource).identifier.head) match {
+      case Success(identifierNode) => Some(sourceId, identifierNode)
+      case Failure(e) =>
+        Try(cpg.tag.where(filterBySource).literal.head) match {
+          case Success(literalNode) => Some(sourceId, literalNode)
+          case Failure(e) =>
+            Try(cpg.tag.where(filterBySource).call.head) match {
+              case Success(callNode) => Some(sourceId, callNode)
+              case Failure(e)        => None
+            }
+        }
+    }
+
   }
 }

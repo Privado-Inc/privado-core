@@ -1,7 +1,9 @@
 package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.metric.MetricHandler
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.SimpleCpgPass
@@ -15,9 +17,10 @@ object Main {
 
     CommandParser.parse(args) match {
       case Some(processor) =>
-        processor.process()
         val sourceRepoLocation = config.sourceLocation.head
+        MetricHandler.timeMetric(processor.process(), "Complete")
         AuthenticationHandler.authenticate(sourceRepoLocation)
+        MetricHandler.compileAndSend()
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }

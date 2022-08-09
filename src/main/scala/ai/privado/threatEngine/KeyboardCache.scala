@@ -1,15 +1,26 @@
 package ai.privado.threatEngine
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{ConfigAndRules, RuleInfo}
+import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities._
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, MetaData, XML}
+import better.files.File
+import io.circe.Json
+import io.circe.syntax.EncoderOps
+
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks.{break, breakable}
 
 object KeyboardCache {
 
-  val THREAT_ID = "Threats.Collections.KeyboardCache"
+  private val ID         = "android:id"
+  private val INPUT_TYPE = "android:inputType"
+  private val logger     = LoggerFactory.getLogger(getClass)
 
   val sensitiveInputTypeList = List(
     "numberPassword",
@@ -22,32 +33,46 @@ object KeyboardCache {
     "textWebPassword"
   )
 
-  def getViolations(repoPath: String) = {
+  /** Fetch all the violations which violate Key-board cache threat
+    * @param repoPath
+    * @return
+    */
+  def getViolations(repoPath: String) = Try {
 
+    val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
     getAllFilesRecursively(repoPath, Set(".xml")) match {
       case Some(sourceFileNames) =>
-        val editTexts = sourceFileNames.map(sourceFile => {
+        sourceFileNames.foreach(sourceFile => {
           val xml: Elem = XML.loadFile(sourceFile)
-          xml \ "EditText"
-        })
-        editTexts
-          .filter(_.nonEmpty)
-          .foreach(editText => {
+          val editText  = xml \ "EditText"
+          if (editText.nonEmpty) {
             editText.foreach {
               case Elem(prefix, label, attributes, scope, child @ _*) =>
                 if (isSensitiveInputTypePresent(attributes) || isSensitiveId(attributes, RuleCache.getRule.sources)) {
-                  println("Found a sensitive item... ")
+                  if (!isTextNoSuggestionsInInputTypePresent(attributes)) {
+                    val idAttribute = attributes.filter(attribute => attribute.prefixedKey == ID).value.head
+                    val lineNumber  = getLineNumberOfMatchingEditText(sourceFile, ID + "=\"" + idAttribute.text + "\"")
+                    val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
+                    occurrenceOutput.addOne(Constants.sample       -> idAttribute.text.asJson)
+                    occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
+                    occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
+                    occurrenceOutput.addOne(Constants.fileName     -> sourceFile.asJson)
+                    occurrenceOutput.addOne(Constants.excerpt -> Utilities.dump(sourceFile, Some(lineNumber)).asJson)
+                    occurrenceList.append(occurrenceOutput)
+                  }
                 }
-              case _ => println("could not find node");
+              case _ => // Node not found
             }
-            // println(texts)
-          })
-      case None => // repoPath is not a directory
+          }
+        })
+      case None => // repo is not correct
     }
-
+    occurrenceList
+      .map(occurrence =>
+        mutable.Map[String, Json](Constants.sourceId -> "".asJson, Constants.occurrence -> occurrence.asJson).asJson
+      )
+      .toList
   }
-
-  private def isUsingTextNoSuggestions(attributes: MetaData) = {}
 
   /** Checks if the field id is sensitive
     * @param attributes
@@ -56,8 +81,15 @@ object KeyboardCache {
     */
   private def isSensitiveId(attributes: MetaData, sources: List[RuleInfo]): Boolean = {
     try {
-      val elementId = attributes.filter(attribute => attribute.prefixedKey == "android:id").head.value.head.text
-      sources.map(source => elementId.matches(source.patterns.head)).foldLeft(false)((a, b) => a || b)
+      val elementId = attributes.filter(attribute => attribute.prefixedKey == ID).head.value.head.text
+      sources
+        .map(source => {
+          var androidId = elementId
+          if (elementId.startsWith("@+id/"))
+            androidId = elementId.slice(5, elementId.size)
+          androidId.matches(source.patterns.head)
+        })
+        .foldLeft(false)((a, b) => a || b)
     } catch {
       case e: Exception => false
     }
@@ -69,15 +101,75 @@ object KeyboardCache {
     * @param attributes
     * @return
     */
-  private def isSensitiveInputTypePresent(attributes: MetaData): Boolean = {
+  private def isSensitiveInputTypePresent(attributes: MetaData, attributeType: String = INPUT_TYPE): Boolean = {
     Try(
       attributes.filter(attribute =>
-        attribute.prefixedKey == "android:inputType" && sensitiveInputTypeList.contains(attribute.value.head.text)
+        attribute.prefixedKey == attributeType && isAttributeValuePresentInSensitiveInputTypeList(
+          attribute.value.head.text
+        )
       )
     ) match {
       case Success(filteredAttributes) => filteredAttributes.nonEmpty
 
-      case Failure(exception) => false
+      case Failure(exception) =>
+        logger.debug("Exception : ", exception)
+        false
     }
+  }
+
+  /** Helper function to check if the attribute value contains any sensitive Type
+    * @param attributeValue
+    * @return
+    */
+  private def isAttributeValuePresentInSensitiveInputTypeList(attributeValue: String) = {
+    Try(
+      attributeValue.split("\\|").map(value => sensitiveInputTypeList.contains(value)).reduce((a, b) => a || b)
+    ) match {
+      case Success(result) => result
+      case Failure(e) =>
+        logger.debug("Exception : ", e)
+        false
+    }
+  }
+
+  private def isTextNoSuggestionsInInputTypePresent(attributes: MetaData): Boolean = {
+    Try(
+      attributes
+        .filter(attribute => attribute.prefixedKey == INPUT_TYPE)
+        .head
+        .value
+        .text
+        .split("\\|")
+        .contains("textNoSuggestions")
+    ) match {
+      case Success(value) => value
+      case Failure(e) =>
+        logger.debug("Exception : ", e)
+        false
+    }
+
+  }
+
+  /** Returns matching line number from the file
+    * @param fileName
+    * @param matchingText
+    * @return
+    */
+  private def getLineNumberOfMatchingEditText(fileName: String, matchingText: String) = {
+    var matchedLineNumber = -2
+    try {
+      val lines = File(fileName).lines.toList
+      breakable {
+        for (lineNumber <- 1 until lines.size) {
+          if (lines(lineNumber).contains(matchingText)) {
+            matchedLineNumber = lineNumber
+            break()
+          }
+        }
+      }
+    } catch {
+      case e: Exception => logger.debug("Exception", e)
+    }
+    matchedLineNumber + 1
   }
 }

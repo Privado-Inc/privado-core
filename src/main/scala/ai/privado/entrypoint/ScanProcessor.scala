@@ -3,16 +3,19 @@ package ai.privado.entrypoint
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
+import ai.privado.metric.MetricHandler
 import ai.privado.model._
+import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
-import ai.privado.threatEngine.KeyboardCache
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
+import io.circe.Json
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language._
 
 import scala.sys.exit
 import scala.util.{Failure, Success}
@@ -97,14 +100,22 @@ object ScanProcessor extends CommandProcessor {
                       List[RuleInfo](),
                       List[RuleInfo](),
                       List[RuleInfo](),
-                      List[Policy](),
+                      List[PolicyOrThreat](),
+                      List[PolicyOrThreat](),
                       List[RuleInfo]()
                     )
                 }
               case Left(error) =>
                 logger.error("Error while parsing this file -> '" + fullPath)
                 logger.error("ERROR : " + error)
-                ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+                ConfigAndRules(
+                  List[RuleInfo](),
+                  List[RuleInfo](),
+                  List[RuleInfo](),
+                  List[PolicyOrThreat](),
+                  List[PolicyOrThreat](),
+                  List[RuleInfo]()
+                )
             }
           })
           .reduce((a, b) =>
@@ -113,7 +124,8 @@ object ScanProcessor extends CommandProcessor {
               sinks = a.sinks ++ b.sinks,
               collections = a.collections ++ b.collections,
               policies = a.policies ++ b.policies,
-              exclusions = a.exclusions ++ b.exclusions
+              exclusions = a.exclusions ++ b.exclusions,
+              threats = a.threats ++ b.threats
             )
           )
       catch {
@@ -127,12 +139,27 @@ object ScanProcessor extends CommandProcessor {
 
   def processRules(): ConfigAndRules = {
     var internalConfigAndRules =
-      ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+      ConfigAndRules(
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[PolicyOrThreat](),
+        List[PolicyOrThreat](),
+        List[RuleInfo]()
+      )
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
+      RuleCache.setInternalRules(internalConfigAndRules)
     }
     var externalConfigAndRules =
-      ConfigAndRules(List[RuleInfo](), List[RuleInfo](), List[RuleInfo](), List[Policy](), List[RuleInfo]())
+      ConfigAndRules(
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[RuleInfo](),
+        List[PolicyOrThreat](),
+        List[PolicyOrThreat](),
+        List[RuleInfo]()
+      )
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head)
     }
@@ -152,18 +179,31 @@ object ScanProcessor extends CommandProcessor {
     val sinks       = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
     val collections = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies    = externalConfigAndRules.policies ++ internalConfigAndRules.policies
+    val threats     = externalConfigAndRules.threats ++ internalConfigAndRules.threats
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
         sinks = sinks.distinctBy(_.id),
         collections = collections.distinctBy(_.id),
         policies = policies.distinctBy(_.id),
-        exclusions = exclusions.distinctBy(_.id)
+        exclusions = exclusions.distinctBy(_.id),
+        threats = threats.distinctBy(_.id)
       )
     logger.trace(mergedRules.toString)
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
+
+    MetricHandler.metricsData("noOfRulesUsed") = {
+      Json.fromInt(
+        mergedRules.sources.size +
+          mergedRules.sinks.size +
+          mergedRules.collections.size +
+          mergedRules.policies.size +
+          mergedRules.exclusions.size
+      )
+    }
+
     mergedRules
   }
   override def process(): Unit = {
@@ -178,6 +218,7 @@ object ScanProcessor extends CommandProcessor {
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
+        MetricHandler.metricsData("language") = Json.fromString(lang)
         println(s"Detected language $lang")
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
@@ -190,7 +231,7 @@ object ScanProcessor extends CommandProcessor {
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
-        /*
+        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
         println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
@@ -229,8 +270,7 @@ object ScanProcessor extends CommandProcessor {
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
         println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
 
-      /*
-        import io.shiftleft.semanticcpg.language._
+        /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
@@ -241,10 +281,9 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }*/
-
-
-         */
-        KeyboardCache.getViolations(config.sourceLocation.head)
+        logger.debug(
+          s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+        )
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)
