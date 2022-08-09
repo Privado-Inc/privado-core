@@ -9,4 +9,5 @@ object Environment {
   val isProduction: Option[String]       = sys.env.get("IS_PRODUCTION")
   val sessionId: Option[String]          = sys.env.get("PRIVADO_SESSION_ID")
   val hostScanDirectory: Option[String]  = sys.env.get("PRIVADO_HOST_SCAN_DIR")
+  val privadoVersionCli: Option[String]  = sys.env.get("PRIVADO_VERSION_CLI")
 }

@@ -1,6 +1,6 @@
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, EnvironmentConstant, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
@@ -34,6 +34,14 @@ object ScanProcessor extends CommandProcessor {
           logger.error(s"Exception while processing rules on path $rulesPath")
           exit(1)
       }
+    }
+    try {
+      AppCache.privadoVersionMain = File((s"$rulesPath/version.txt")).contentAsString
+      println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
+    } catch {
+      case _: Exception =>
+        AppCache.privadoVersionMain = "Not Detected"
+        println("Privado Main Version: Not Detected!")
     }
     val parsedRules =
       try
