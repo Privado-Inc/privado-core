@@ -54,8 +54,8 @@ object MetricHandler {
     EnvironmentConstant.metricsEnabled match {
       case Some(value) =>
         if (value.toBoolean) {
-          EnvironmentConstant.privadoDev.getOrElse(0) match {
-            case 1 =>
+          EnvironmentConstant.isProduction.getOrElse(0) match {
+            case 0 =>
               metricsEndPoint = "https://t.cli.privado.ai/api/event?version=2"
             case _ => ()
           }

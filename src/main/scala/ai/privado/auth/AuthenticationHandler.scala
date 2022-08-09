@@ -78,8 +78,11 @@ object AuthenticationHandler {
   }
 
   def pushDataToCloud(repoPath: String): String = {
-    // TODO change BASE_URL and upload url for prod
-    val BASE_URL          = "https://t.api.code.privado.ai/test"
+    var BASE_URL = "https://api.code.privado.ai/prod/"
+    EnvironmentConstant.isProduction.getOrElse(0) match {
+      case 0 => BASE_URL = "https://t.api.code.privado.ai/test"
+      case _ => ()
+    }
     val file              = new File(s"$repoPath/.privado/privado.json")
     val uploadURL: String = s"$BASE_URL/cli/api/file/${EnvironmentConstant.userHash.get}"
     val accessKey: String = Utilities.getSHA256Hash(EnvironmentConstant.dockerAccessKey.get)
