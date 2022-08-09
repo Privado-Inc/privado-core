@@ -1,6 +1,5 @@
 package ai.privado.metric
-import ai.privado.auth.AuthenticationHandler
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, EnvironmentConstant}
 import ai.privado.exporter.GitMetaDataExporter
 import ai.privado.utility.Utilities
 import io.circe.Json
@@ -21,7 +20,7 @@ object MetricHandler {
   val internalRulesMatched = mutable.HashMap[String, Int]()
   val flowCategoryData     = mutable.HashMap[String, Int]()
 
-  metricsData("privadoCoreVersion") = sys.env.get("PRIVADO_VERSION_CORE") match {
+  metricsData("privadoCoreVersion") = EnvironmentConstant.privadoVersionCore match {
     case Some(value) => Json.fromString(value)
     case _           => Json.Null
   }
@@ -52,22 +51,22 @@ object MetricHandler {
   def sendDataToServer() = {
     // Check if metrics are disabled
     var metricsEndPoint = "https://cli.privado.ai/api/event?version=2"
-    sys.env.get("PRIVADO_METRICS_ENABLED") match {
+    EnvironmentConstant.metricsEnabled match {
       case Some(value) =>
         if (value.toBoolean) {
-          sys.env.getOrElse("PRIVADO_DEV", 0) match {
+          EnvironmentConstant.privadoDev.getOrElse(0) match {
             case 1 =>
               metricsEndPoint = "https://t.cli.privado.ai/api/event?version=2"
             case _ => ()
           }
 
-          AuthenticationHandler.dockerAccessKey match {
+          EnvironmentConstant.dockerAccessKey match {
             case Some(dockerKey) =>
               val accessKey = Utilities.getSHA256Hash(dockerKey)
               val requestData = parse(s""" {"event_type": "PRIVADO_CORE",
                                          |  "event_message": ${metricsData.asJson.toString()},
-                                         |  "user_hash": "${AuthenticationHandler.userHash.get}",
-                                         |  "session_id": "${sys.env.get("PRIVADO_SESSION_ID").get}" }""".stripMargin)
+                                         |  "user_hash": "${EnvironmentConstant.userHash.get}",
+                                         |  "session_id": "${EnvironmentConstant.sessionId.get}" }""".stripMargin)
 
               requestData match {
                 case Right(data) =>

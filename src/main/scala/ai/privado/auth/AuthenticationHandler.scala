@@ -1,4 +1,5 @@
 package ai.privado.auth
+import ai.privado.cache.EnvironmentConstant
 import ai.privado.metric.MetricHandler
 import ai.privado.utility.Utilities
 import io.circe.Json
@@ -11,21 +12,20 @@ object AuthenticationHandler {
    * To handle the cloud flow for scanned repositories. Assumes the flag for auth is enabled.
    * Asks for consent from the user and then decides the flow for Privado Cloud APIs.
    */
-  private val logger                  = LoggerFactory.getLogger(this.getClass)
-  val userHash: Option[String]        = sys.env.get("PRIVADO_USER_HASH")
-  val dockerAccessKey: Option[String] = sys.env.get("PRIVADO_DOCKER_ACCESS_KEY")
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   def syncToCloud: Boolean = {
     try {
-      sys.env.getOrElse("PRIVADO_SYNC_TO_CLOUD", "False").toBoolean
+      EnvironmentConstant.syncToCloud.getOrElse("False").toBoolean
     } catch {
       case _: Exception => false
     }
   }
 
   def authenticate(repoPath: String): Unit = {
-    dockerAccessKey match {
+    EnvironmentConstant.dockerAccessKey match {
       case Some(_) =>
-        userHash match {
+        EnvironmentConstant.userHash match {
           case Some(_) =>
             var syncPermission: Boolean = true
             if (!syncToCloud) {
@@ -81,8 +81,8 @@ object AuthenticationHandler {
     // TODO change BASE_URL and upload url for prod
     val BASE_URL          = "https://t.api.code.privado.ai/test"
     val file              = new File(s"$repoPath/.privado/privado.json")
-    val uploadURL: String = s"$BASE_URL/cli/api/file/${userHash.get}"
-    val accessKey: String = Utilities.getSHA256Hash(dockerAccessKey.get)
+    val uploadURL: String = s"$BASE_URL/cli/api/file/${EnvironmentConstant.userHash.get}"
+    val accessKey: String = Utilities.getSHA256Hash(EnvironmentConstant.dockerAccessKey.get)
     try {
       val response = requests.post(
         uploadURL,
