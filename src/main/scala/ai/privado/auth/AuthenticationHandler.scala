@@ -6,6 +6,8 @@ import io.circe.Json
 import org.slf4j.LoggerFactory
 
 import java.io.File
+import java.security.MessageDigest
+import java.nio.file.{Paths, Files}
 
 object AuthenticationHandler {
   /*
@@ -111,4 +113,9 @@ object AuthenticationHandler {
         s"Error Occurred. ${e.toString}"
     }
   }
+
+  def doesResultFileExist(repoPath: String): Boolean = {
+    Files.exists(Paths.get(repoPath, ".privado", "privado.json"))
+  }
+
 }
