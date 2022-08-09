@@ -156,9 +156,16 @@ object Utilities {
     * @return
     */
   def getAllFilesRecursively(folderPath: String, extensions: Set[String]) = {
-    if (File(folderPath).isDirectory)
-      Some(SourceFiles.determine(Set(folderPath), extensions))
-    else
-      None
+    try {
+      if (File(folderPath).isDirectory)
+        Some(SourceFiles.determine(Set(folderPath), extensions))
+      else
+        None
+    } catch {
+      case e: Exception =>
+        logger.debug("Exception ", e)
+        None
+    }
+
   }
 }

@@ -244,7 +244,7 @@ object ScanProcessor extends CommandProcessor {
 
 
          */
-        KeyboardCache.getViolations(config.sourceLocation.head)
+        println(KeyboardCache.getViolations(config.sourceLocation.head))
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)
