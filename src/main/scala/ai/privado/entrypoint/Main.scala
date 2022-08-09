@@ -7,17 +7,37 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import org.slf4j.LoggerFactory
+
+import scala.util.{Failure, Success}
 
 /** Privado Core main entry point
   */
 object Main {
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   def main(args: Array[String]): Unit = {
 
     CommandParser.parse(args) match {
       case Some(processor) =>
-        processor.process()
-        val sourceRepoLocation = config.sourceLocation.head
-        AuthenticationHandler.authenticate(sourceRepoLocation)
+        try
+          processor.process() match {
+            case Right(_) => {
+              logger.debug("Success from scan process! Proceeding to initiate auth flow")
+              val sourceRepoLocation = config.sourceLocation.head
+              AuthenticationHandler.authenticate(sourceRepoLocation)
+            }
+            // raise error in case of failure, and collect
+            // all handled & unhandled exceptions in catch
+            case Left(err) => new Exception(err)
+          }
+        catch {
+          case e: Exception => {
+            // any user-facing non-debug logging to be done internally
+            logger.debug("Failure from scan process:", e)
+            logger.debug("Skipping auth flow due to scan failure")
+          }
+        }
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }

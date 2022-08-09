@@ -190,11 +190,11 @@ object ScanProcessor extends CommandProcessor {
     println("Configuration parsed...")
     mergedRules
   }
-  override def process(): Unit = {
+  override def process(): Either[String, Unit] = {
     processCPG(processRules())
   }
 
-  def processCPG(processedRules: ConfigAndRules): Unit = {
+  def processCPG(processedRules: ConfigAndRules): Either[String, Unit] = {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
@@ -210,7 +210,8 @@ object ScanProcessor extends CommandProcessor {
         JavaSrc2Cpg().createCpg(cpgconfig)
 
       case _ =>
-        Failure(new RuntimeException("Language Not Detected"))
+        logger.error("Unable to detect language!")
+        Failure(new RuntimeException("Unable to detect language!"))
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
@@ -249,8 +250,13 @@ object ScanProcessor extends CommandProcessor {
         println("Brewing result...")
         // Exporting
         val outputFileName = "privado"
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
-        println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+          case Left(err) => Left(err)
+          case Right(_) => {
+            println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+            Right(())
+          }
+        }
 
       /*
         import io.shiftleft.semanticcpg.language._
@@ -268,6 +274,7 @@ object ScanProcessor extends CommandProcessor {
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)
+        Left("Error while parsing the source code: \n" + exception.toString)
     }
   }
 

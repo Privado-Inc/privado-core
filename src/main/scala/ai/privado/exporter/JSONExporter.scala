@@ -16,7 +16,12 @@ object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
+  def fileExport(
+    cpg: Cpg,
+    outputFileName: String,
+    repoPath: String,
+    dataflows: Map[String, Path]
+  ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter     = new SourceExporter(cpg)
     val dataflowExporter   = new DataflowExporter(cpg, dataflows)
@@ -53,9 +58,13 @@ object JSONExporter {
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
+      Right(())
 
     } catch {
-      case ex: Exception => println(ex.toString)
+      case ex: Exception => {
+        println(ex.toString)
+        Left(ex.toString)
+      }
     }
   }
 
