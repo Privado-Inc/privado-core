@@ -11,6 +11,7 @@ object RuleCache {
   private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List())
   private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
   private val policyOrThreatMap    = mutable.HashMap[String, PolicyOrThreat]()
+  val internalRules                = mutable.HashMap[String, Int]()
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
@@ -38,4 +39,22 @@ object RuleCache {
   def getAllPolicy = this.rule.policies
 
   def getAllThreat = this.rule.threats
+
+  def setInternalRules(rules: ConfigAndRules) = {
+    for (rule <- rules.sinks) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.sources) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.collections) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.policies) {
+      internalRules.addOne((rule.id, 0))
+    }
+    for (rule <- rules.exclusions) {
+      internalRules.addOne((rule.id, 0))
+    }
+  }
 }

@@ -1,7 +1,10 @@
 package ai.privado.auth
+import ai.privado.cache.Environment
+import ai.privado.metric.MetricHandler
+import ai.privado.utility.Utilities
+import io.circe.Json
 import org.slf4j.LoggerFactory
 
-import java.math.BigInteger
 import java.io.File
 import java.security.MessageDigest
 import java.nio.file.{Paths, Files}
@@ -11,12 +14,11 @@ object AuthenticationHandler {
    * To handle the cloud flow for scanned repositories. Assumes the flag for auth is enabled.
    * Asks for consent from the user and then decides the flow for Privado Cloud APIs.
    */
-  private val logger                  = LoggerFactory.getLogger(this.getClass)
-  val userHash: Option[String]        = sys.env.get("PRIVADO_USER_HASH")
-  val dockerAccessKey: Option[String] = sys.env.get("PRIVADO_DOCKER_ACCESS_KEY")
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   def syncToCloud: Boolean = {
     try {
-      sys.env.getOrElse("PRIVADO_SYNC_TO_CLOUD", "False").toBoolean
+      Environment.syncToCloud.getOrElse("False").toBoolean
     } catch {
       case _: Exception => false
     }
@@ -24,16 +26,16 @@ object AuthenticationHandler {
 
   def authenticate(repoPath: String): Unit = {
     if (doesResultFileExist(repoPath)) {
-      dockerAccessKey match {
+      Environment.dockerAccessKey match {
         case Some(_) =>
-          userHash match {
+          Environment.userHash match {
             case Some(_) =>
               var syncPermission: Boolean = true
               if (!syncToCloud) {
                 syncPermission = askForPermission() // Ask user for request permissions
               }
               if (syncPermission) {
-                println(pushDataToCloud(repoPath))
+                println(MetricHandler.timeMetric(pushDataToCloud(repoPath), "UploadFile"))
               } else {
                 ()
               }
@@ -50,12 +52,14 @@ object AuthenticationHandler {
   def askForPermission(): Boolean = {
     println("Do you want to visualize these results on our Privacy View Cloud Dashboard? (Y/n)")
     val userPermissionInput = scala.io.StdIn.readLine().toLowerCase
-    userPermissionInput match {
+    var cloudConsentPermission: Boolean = userPermissionInput match {
       case "n" | "no" | "0" => false
       case _ =>
         updateConfigFile("syncToPrivadoCloud", "true")
         true
     }
+    MetricHandler.metricsData("cloudConsentEvent") = Json.fromBoolean(cloudConsentPermission)
+    cloudConsentPermission
   }
 
   def updateConfigFile(property: String, value: String): Boolean = {
@@ -81,16 +85,17 @@ object AuthenticationHandler {
   }
 
   def pushDataToCloud(repoPath: String): String = {
-    // TODO change BASE_URL and upload url for prod
-    val BASE_URL          = "https://t.api.code.privado.ai/test"
-    val file              = new File(s"$repoPath/.privado/privado.json")
-    val uploadURL: String = s"$BASE_URL/cli/api/file/${userHash.get}"
-    val accessKey: String = {
-      String.format(
-        "%032x",
-        new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(dockerAccessKey.get.getBytes("UTF-8")))
-      )
+    var BASE_URL = "https://api.code.privado.ai/prod/"
+    Environment.isProduction match {
+      case Some(productionEnv) =>
+        if (!productionEnv.toBoolean) {
+          BASE_URL = "https://t.api.code.privado.ai/test"
+        }
+      case _ => ()
     }
+    val file              = new File(s"$repoPath/.privado/privado.json")
+    val uploadURL: String = s"$BASE_URL/cli/api/file/${Environment.userHash.get}"
+    val accessKey: String = Utilities.getSHA256Hash(Environment.dockerAccessKey.get)
     try {
       val response = requests.post(
         uploadURL,

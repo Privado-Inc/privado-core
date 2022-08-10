@@ -3,11 +3,13 @@ package ai.privado.entrypoint
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
+import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
+import io.circe.Json
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
@@ -147,6 +149,7 @@ object ScanProcessor extends CommandProcessor {
       )
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
+      RuleCache.setInternalRules(internalConfigAndRules)
     }
     var externalConfigAndRules =
       ConfigAndRules(
@@ -190,6 +193,17 @@ object ScanProcessor extends CommandProcessor {
     logger.info("Caching rules")
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
+
+    MetricHandler.metricsData("noOfRulesUsed") = {
+      Json.fromInt(
+        mergedRules.sources.size +
+          mergedRules.sinks.size +
+          mergedRules.collections.size +
+          mergedRules.policies.size +
+          mergedRules.exclusions.size
+      )
+    }
+
     mergedRules
   }
   override def process(): Either[String, Unit] = {
@@ -203,14 +217,14 @@ object ScanProcessor extends CommandProcessor {
     import io.joern.console.cpgcreation.guessLanguage
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA => {
+      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
+        MetricHandler.metricsData("language") = Json.fromString(lang)
         println(s"Detected language $lang")
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
         val cpgconfig =
           Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
-      }
       case _ => {
         logger.error("Unable to detect language! Is it supported yet?")
         Failure(new RuntimeException("Unable to detect language!"))

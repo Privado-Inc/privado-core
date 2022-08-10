@@ -1,16 +1,20 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
 import io.joern.dataflowengineoss.language.Path
+import org.apache.commons.io.FileUtils
 
 import java.util.Calendar
 import scala.collection.mutable
 import better.files.File
 import org.slf4j.LoggerFactory
+
+import java.math.BigInteger
 
 object JSONExporter {
 
@@ -44,6 +48,7 @@ object JSONExporter {
       sinkSubCategories.foreach(sinkSubType => {
         dataflowsOutput.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
       })
+
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
@@ -58,6 +63,17 @@ object JSONExporter {
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
+      try {
+        MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
+          FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
+        )
+      } catch {
+        case e: Exception =>
+          logger.error("Error fetching the size of repo")
+          logger.debug("Error in getting size of repo ", e)
+      }
+      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyAndThreatExporter.getViolations(repoPath).size)
+      MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
       Right(())
 
     } catch {
