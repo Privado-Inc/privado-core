@@ -5,6 +5,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
+import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
@@ -229,6 +230,7 @@ object ScanProcessor extends CommandProcessor {
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
+        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
         println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
@@ -279,7 +281,6 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }*/
-
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)

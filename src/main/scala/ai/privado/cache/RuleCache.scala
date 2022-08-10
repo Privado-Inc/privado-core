@@ -10,7 +10,7 @@ object RuleCache {
 
   private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List())
   private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
-  private val policyMap            = mutable.HashMap[String, PolicyOrThreat]()
+  private val policyOrThreatMap    = mutable.HashMap[String, PolicyOrThreat]()
   val internalRules                = mutable.HashMap[String, Int]()
 
   def setRule(rule: ConfigAndRules): Unit = {
@@ -18,7 +18,8 @@ object RuleCache {
     rule.sources.foreach(this.setRuleInfo)
     rule.sinks.foreach(this.setRuleInfo)
     rule.collections.foreach(this.setRuleInfo)
-    rule.policies.foreach(this.setPolicy)
+    rule.policies.foreach(this.setPolicyOrThreat)
+    rule.threats.foreach(this.setPolicyOrThreat)
   }
 
   def getRule: ConfigAndRules = rule
@@ -29,11 +30,15 @@ object RuleCache {
 
   def getAllRuleInfo: Seq[RuleInfo] = ruleInfoMap.values.toList
 
-  private def setPolicy(policy: PolicyOrThreat): Unit = policyMap.addOne(policy.id -> policy)
+  private def setPolicyOrThreat(policy: PolicyOrThreat): Unit = policyOrThreatMap.addOne(policy.id -> policy)
 
-  def getPolicy(policyId: String): Option[PolicyOrThreat] = policyMap.get(policyId)
+  def getPolicyOrThreat(policyId: String): Option[PolicyOrThreat] = policyOrThreatMap.get(policyId)
 
-  def getAllPolicy: Seq[PolicyOrThreat] = policyMap.values.toList
+  def getAllPolicyOrThreat: Seq[PolicyOrThreat] = policyOrThreatMap.values.toList
+
+  def getAllPolicy = this.rule.policies
+
+  def getAllThreat = this.rule.threats
 
   def setInternalRules(rules: ConfigAndRules) = {
     for (rule <- rules.sinks) {

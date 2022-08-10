@@ -24,6 +24,7 @@ class SourceExporter(cpg: Cpg) {
   }
 
   def getProcessing = {
+
     val processingMap = HashMap[String, Set[CfgNode]]()
     sourcesList.foreach(source => {
       def addToMap(sourceId: String): Unit = {

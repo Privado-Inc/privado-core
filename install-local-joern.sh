@@ -70,7 +70,6 @@ sbt clean stage
 
 echo "Installing jars into: ${JAR_INSTALL_DIR}"
 rm ${JAR_INSTALL_DIR}/io.shiftleft.codepropertygraph-domain-classes*
-cp target/universal/stage/lib/org.codeminers.standalone-* ${JAR_INSTALL_DIR}
-cp target/universal/stage/lib/org.codeminers.*domain* ${JAR_INSTALL_DIR}
+cp target/universal/stage/lib/ai.privado* ${JAR_INSTALL_DIR}
 
 echo "All done, you're ready to go in $JOERN_INSTALL"
