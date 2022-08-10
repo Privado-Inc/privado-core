@@ -6,6 +6,7 @@ import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
@@ -13,6 +14,8 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String) {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   val ALL_MATCH_REGEX = "**"
   val actionMap       = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
@@ -80,12 +83,17 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
           dataflowSourceIdMap(sourceId) = ListBuffer[String]()
         dataflowSourceIdMap(sourceId).append(entrySet._1)
       }
-      val source = entrySet._2.elements.head
-      if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-        addToMap(source.tag.nameExact(Constants.id).l.head.value)
-      } else {
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+      try {
+        val source = entrySet._2.elements.head
+        if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
+          addToMap(source.tag.nameExact(Constants.id).l.head.value)
+        } else {
+          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+        }
+      } catch {
+        case e: Exception => logger.debug("Exception : ", e)
       }
+
     })
     dataflowSourceIdMap
   }

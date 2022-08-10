@@ -29,15 +29,16 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
             dataflowsMapBySourceId.addOne(sourceId, ListBuffer(entrySet._1))
         }
 
+        val source = entrySet._2.elements.head
         try {
-          val source = entrySet._2.elements.head
+
           if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
             addToMap(source.tag.nameExact(Constants.id).l.head.value)
           } else {
             source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
           }
         } catch {
-          case e: Exception => logger.error("Exception while traversing dataflow path")
+          case e: Exception => logger.debug("Exception while traversing dataflow path : ", e)
         }
       })
 

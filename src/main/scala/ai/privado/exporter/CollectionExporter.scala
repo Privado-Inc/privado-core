@@ -93,8 +93,12 @@ class CollectionExporter(cpg: Cpg) {
     Try(Traversal(parameterIn).method.annotation.last.parameterAssign.order(1).astChildren.order(2).l.head) match {
       case Success(url) => url.code
       case Failure(e) =>
-        logger.debug("Exception : ", e)
-        ""
+        Try(Traversal(parameterIn).method.annotation.last.parameterAssign.order(1).head) match {
+          case Success(url) => url.code
+          case Failure(e) =>
+            logger.debug("Exception : ", e)
+            ""
+        }
     }
   }
 
