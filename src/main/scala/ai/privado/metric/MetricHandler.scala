@@ -53,14 +53,9 @@ object MetricHandler {
     Environment.metricsEnabled match {
       case Some(value) =>
         if (value.toBoolean) {
-          Environment.isProduction match {
-            case Some(productionEnv) =>
-              if (!productionEnv.toBoolean) {
-                metricsEndPoint = "https://t.cli.privado.ai/api/event?version=2"
-              }
-            case _ => ()
+          if (!Environment.isProduction.getOrElse("False").toBoolean) {
+            metricsEndPoint = "https://t.cli.privado.ai/api/event?version=2"
           }
-
           Environment.dockerAccessKey match {
             case Some(dockerKey) =>
               val accessKey = Utilities.getSHA256Hash(dockerKey)
@@ -76,7 +71,6 @@ object MetricHandler {
                 )
               } catch {
                 case e: Exception =>
-                  print(e)
                   logger.debug("error in uploading metrics to server")
                   logger.debug("The error is ", e)
               }
