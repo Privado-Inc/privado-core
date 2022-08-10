@@ -1,6 +1,6 @@
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, EnvironmentConstant, RuleCache}
+import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
@@ -215,6 +215,8 @@ object ScanProcessor extends CommandProcessor {
     mergedRules
   }
   override def process(): Either[String, Unit] = {
+    println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse("Not Detected!")}")
+    println(s"Privado Core Version: ${Environment.privadoVersionCore.getOrElse("Not Detected!")}")
     processCPG(processRules())
   }
 
@@ -279,10 +281,9 @@ object ScanProcessor extends CommandProcessor {
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
           case Left(err) => Left(err)
-          case Right(_) => {
+          case Right(_) =>
             println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
             Right(())
-          }
         }
       }
 

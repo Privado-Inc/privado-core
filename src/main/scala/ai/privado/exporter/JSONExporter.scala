@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, EnvironmentConstant, RuleCache}
+import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -33,8 +33,8 @@ object JSONExporter {
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
-      output.addOne(Constants.coreVersion   -> EnvironmentConstant.privadoVersionCore.getOrElse("Not Detected").asJson)
-      output.addOne(Constants.cliVersion    -> EnvironmentConstant.privadoVersionCli.getOrElse("Not Detected").asJson)
+      output.addOne(Constants.coreVersion   -> Environment.privadoVersionCore.getOrElse("Not Detected").asJson)
+      output.addOne(Constants.cliVersion    -> Environment.privadoVersionCli.getOrElse("Not Detected").asJson)
       output.addOne(Constants.mainVersion   -> AppCache.privadoVersionMain.asJson)
       output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
       output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
