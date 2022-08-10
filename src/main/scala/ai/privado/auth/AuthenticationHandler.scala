@@ -86,7 +86,7 @@ object AuthenticationHandler {
 
   def pushDataToCloud(repoPath: String): String = {
     var BASE_URL = "https://api.code.privado.ai/prod"
-    if (!Environment.isProduction.getOrElse("false").toBoolean) {
+    if (!Environment.isProduction.getOrElse("False").toBoolean) {
       BASE_URL = "https://t.api.code.privado.ai/test"
     }
     val file              = new File(s"$repoPath/.privado/privado.json")
