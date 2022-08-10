@@ -64,7 +64,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         .callIn
         .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
         .where(_.argument(2).code(memberName))
-        .where(_.inAst.isMethod.name("get.*"))
+        // .where(_.inAst.isMethod.name("get.*"))
         .l
 
       impactedGetters.foreach(impactedGetter => {

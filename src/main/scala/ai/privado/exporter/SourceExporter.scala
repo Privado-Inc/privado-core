@@ -9,6 +9,7 @@ import io.circe.syntax._
 
 import scala.collection.mutable.{HashMap, LinkedHashMap, Set}
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.semantic.Language.finder
 import overflowdb.traversal.Traversal
 
@@ -44,9 +45,12 @@ class SourceExporter(cpg: Cpg) {
       LinkedHashMap[String, Json](
         Constants.sourceId -> entrySet._1.asJson,
         Constants.occurrences -> ExporterUtility
-          .convertPathElements(
-            entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
-          )
+          .convertPathElements({
+            if (ScanProcessor.config.disableDeDuplication)
+              entrySet._2.toList
+            else
+              entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
+          })
           .asJson
       )
     )

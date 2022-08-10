@@ -252,7 +252,6 @@ object ScanProcessor extends CommandProcessor {
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
         println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
 
-      /*
         import io.shiftleft.semanticcpg.language._
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
@@ -263,7 +262,7 @@ object ScanProcessor extends CommandProcessor {
             print(s"${tag.value}, ")
           }
           println("\n----------------------------------------")
-        }*/
+        }
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)
