@@ -37,20 +37,27 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
-        propertyNodes.foreach(connectToUsers(_, builder))
+        propertyNodes.foreach(connectGetPropertyLiterals(_, builder))
+        connectAnnotatedParameters(propertyNodes, builder)
 
-        val paramsAndValues = annotatedParameters()
-        propertyNodes.foreach { propertyNode =>
-          paramsAndValues
-            .filter { case (_, value) => propertyNode.name == value }
-            .foreach { case (param, _) =>
-              builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
-            }
-        }
         propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
         List()
+    }
+  }
+
+  private def connectAnnotatedParameters(
+    propertyNodes: List[NewJavaProperty],
+    builder: BatchedUpdate.DiffGraphBuilder
+  ): Unit = {
+    val paramsAndValues = annotatedParameters()
+    propertyNodes.foreach { propertyNode =>
+      paramsAndValues
+        .filter { case (_, value) => propertyNode.name == value }
+        .foreach { case (param, _) =>
+          builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
+        }
     }
   }
 
@@ -69,7 +76,10 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
-  private def connectToUsers(propertyNode: NewJavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  private def connectGetPropertyLiterals(
+    propertyNode: NewJavaProperty,
+    builder: BatchedUpdate.DiffGraphBuilder
+  ): Unit = {
     matchingLiteralsInGetPropertyCalls(propertyNode.name).foreach { lit =>
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
     }
