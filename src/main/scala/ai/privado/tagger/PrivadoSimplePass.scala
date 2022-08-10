@@ -17,7 +17,7 @@ abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       this.ruleInfo = ruleInfo
       this.createAndApply()
     } catch {
-      case ex: Exception => logger.error("Exception executing pass")
+      case ex: Exception => logger.debug("Exception executing pass : ", ex)
     }
   }
 

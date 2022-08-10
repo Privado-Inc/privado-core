@@ -254,7 +254,6 @@ object ScanProcessor extends CommandProcessor {
         println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
 
         /*
-
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
