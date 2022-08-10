@@ -8,18 +8,66 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import ai.privado.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn}
 
-class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  var cpg: Cpg = _
+  var cpg : Cpg = _
+  val configFileContents : String
+  val javaFileContents : String
+  var inputDir: File = _
 
-  private val configFileContents = """
+  override def beforeAll(): Unit = {
+    inputDir = File.newTemporaryDirectory()
+    (inputDir / "test.properties").write(configFileContents)
+    (inputDir / "GeneralConfig.java").write(javaFileContents)
+    (inputDir / "unrelated.file").write("foo")
+    val config = Config(inputPath = inputDir.toString())
+    cpg = new JavaSrc2Cpg().createCpg(config).get
+    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
+    super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    inputDir.delete()
+    super.afterAll()
+  }
+
+}
+
+class AnnotationTests extends PropertiesFilePassTestBase {
+  override val configFileContents: String =
+    """
+      |internal.logger.api.base=https://logger.privado.ai/
+      |""".stripMargin
+  override val javaFileContents: String =
+    """
+      |class Foo {
+      |
+      |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
+      |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
+      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
+      |   }
+      |}
+      |""".stripMargin
+
+  "ConfigFilePass" should {
+    "connect annotated parameter to property" in {
+      val List(param: MethodParameterIn) = cpg.property.usedAt.l
+      param.name shouldBe "loggerBaseURL"
+    }
+  }
+
+}
+
+class GetPropertyTests extends PropertiesFilePassTestBase {
+
+  override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
       |internal.logger.api.base=https://logger.privado.ai/
       |""".stripMargin
 
-  private val javaFileContents =
+  override val javaFileContents =
     """
       | import org.springframework.core.env.Environment;
       |
@@ -57,23 +105,4 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
     }
 
   }
-
-  var inputDir: File = _
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / "test.properties").write(configFileContents)
-    (inputDir / "GeneralConfig.java").write(javaFileContents)
-    (inputDir / "unrelated.file").write("foo")
-    val config = Config(inputPath = inputDir.toString())
-    cpg = new JavaSrc2Cpg().createCpg(config).get
-    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    super.afterAll()
-  }
-
 }
