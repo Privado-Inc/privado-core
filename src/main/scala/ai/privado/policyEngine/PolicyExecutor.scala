@@ -28,7 +28,6 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
     */
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
     val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
-    println(s"Size of processing Type policy : ${processingTypePolicy.size}")
     val processingResult = processingTypePolicy
       .map(policy => (policy.id, getSourcesMatchingRegex(policy).toList.flatMap(sourceId => getSourceNode(sourceId))))
       .toMap

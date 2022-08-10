@@ -20,7 +20,12 @@ object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
+  def fileExport(
+    cpg: Cpg,
+    outputFileName: String,
+    repoPath: String,
+    dataflows: Map[String, Path]
+  ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg)
     val dataflowExporter        = new DataflowExporter(cpg, dataflows)
@@ -67,11 +72,16 @@ object JSONExporter {
           logger.error("Error fetching the size of repo")
           logger.debug("Error in getting size of repo ", e)
       }
-      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyExporter.getViolations.size)
+      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyAndThreatExporter.getViolations(repoPath).size)
       MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
+      Right(())
 
     } catch {
-      case ex: Exception => println(ex.toString)
+      case ex: Exception => {
+        println("Failed to export output")
+        logger.debug("Failed to export output", ex)
+        Left(ex.toString)
+      }
     }
   }
 
