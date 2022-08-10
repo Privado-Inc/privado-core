@@ -279,7 +279,6 @@ object ScanProcessor extends CommandProcessor {
           }
         }
         /*
-
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
