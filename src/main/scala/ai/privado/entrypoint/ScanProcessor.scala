@@ -225,10 +225,11 @@ object ScanProcessor extends CommandProcessor {
         val cpgconfig =
           Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
-
-      case _ =>
-        logger.error("Unable to detect language!")
+      }
+      case _ => {
+        logger.error("Unable to detect language! Is it supported yet?")
         Failure(new RuntimeException("Unable to detect language!"))
+      }
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) =>
@@ -275,6 +276,7 @@ object ScanProcessor extends CommandProcessor {
             Right(())
           }
         }
+      }
 
         /*
         // Utility to debug
@@ -293,7 +295,8 @@ object ScanProcessor extends CommandProcessor {
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)
-        Left("Error while parsing the source code: \n" + exception.toString)
+        Left("Error while parsing the source code: " + exception.toString)
+      }
     }
   }
 
