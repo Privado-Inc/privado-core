@@ -10,31 +10,6 @@ import ai.privado.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn}
 
-abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-
-  var cpg : Cpg = _
-  val configFileContents : String
-  val javaFileContents : String
-  var inputDir: File = _
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / "test.properties").write(configFileContents)
-    (inputDir / "GeneralConfig.java").write(javaFileContents)
-    (inputDir / "unrelated.file").write("foo")
-    val config = Config(inputPath = inputDir.toString())
-    cpg = new JavaSrc2Cpg().createCpg(config).get
-    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    super.afterAll()
-  }
-
-}
-
 class AnnotationTests extends PropertiesFilePassTestBase {
   override val configFileContents: String =
     """
@@ -60,16 +35,13 @@ class AnnotationTests extends PropertiesFilePassTestBase {
       param.name shouldBe "loggerBaseURL"
     }
   }
-
 }
 
 class GetPropertyTests extends PropertiesFilePassTestBase {
-
   override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
       |internal.logger.api.base=https://logger.privado.ai/
       |""".stripMargin
-
   override val javaFileContents =
     """
       | import org.springframework.core.env.Environment;
@@ -106,6 +78,28 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
       val List(lit: Literal) = cpg.property.usedAt.l
       lit.code shouldBe "\"accounts.datasource.url\""
     }
+  }
+}
 
+/**
+ * Base class for tests on properties files and Java code.
+ * */
+abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+
+  val configFileContents: String
+  val javaFileContents: String
+
+  var cpg : Cpg = _
+  var inputDir: File = _
+
+  override def beforeAll(): Unit = {
+    inputDir = File.newTemporaryDirectory()
+    (inputDir / "test.properties").write(configFileContents)
+    (inputDir / "GeneralConfig.java").write(javaFileContents)
+    (inputDir / "unrelated.file").write("foo")
+    val config = Config(inputPath = inputDir.toString())
+    cpg = new JavaSrc2Cpg().createCpg(config).get
+    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
+    super.beforeAll()
   }
 }

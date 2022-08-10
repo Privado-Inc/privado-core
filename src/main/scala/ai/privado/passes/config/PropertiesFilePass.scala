@@ -24,9 +24,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
     propertiesFiles(projectRoot).foreach { file =>
       val fileNode      = addFileNode(file, builder)
       val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
-      propertyNodes.foreach { propertyNode =>
-        builder.addEdge(propertyNode, fileNode, EdgeTypes.SOURCE_FILE)
-      }
+      propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
     }
   }
 
@@ -38,18 +36,9 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
       obtainKeyValuePairs(file)
     } match {
       case Success(keyValuePairs) =>
+        val paramsAndValues = annotatedParameters
         keyValuePairs.map { keyValuePairs =>
           val propertyNode = addPropertyNode(keyValuePairs, builder)
-          val paramsAndValues = cpg.annotation
-            .fullName("org.springframework.*Value")
-            .where(_.parameter)
-            .where(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\""))
-            .map { x =>
-              val literalName = x.parameterAssign.code.head
-              val value       = literalName.slice(3, literalName.length - 2)
-              (x.start.parameter.head, value)
-            }
-            .l
           connectToUsers(propertyNode, paramsAndValues, builder)
           propertyNode
         }
@@ -58,6 +47,19 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
         List()
     }
   }
+
+  /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
+    */
+  def annotatedParameters: List[(MethodParameterIn, String)] = cpg.annotation
+    .fullName("org.springframework.*Value")
+    .where(_.parameter)
+    .where(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\""))
+    .map { x =>
+      val literalName = x.parameterAssign.code.head
+      val value       = literalName.slice(3, literalName.length - 2)
+      (x.start.parameter.head, value)
+    }
+    .l
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
