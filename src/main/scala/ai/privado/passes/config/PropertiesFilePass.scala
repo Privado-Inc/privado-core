@@ -36,12 +36,18 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
       obtainKeyValuePairs(file)
     } match {
       case Success(keyValuePairs) =>
-        val paramsAndValues = annotatedParameters
-        keyValuePairs.map { keyValuePairs =>
-          val propertyNode = addPropertyNode(keyValuePairs, builder)
-          connectToUsers(propertyNode, paramsAndValues, builder)
-          propertyNode
+        val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
+        propertyNodes.foreach(connectToUsers(_, builder))
+
+        val paramsAndValues = annotatedParameters()
+        propertyNodes.foreach { propertyNode =>
+          paramsAndValues
+            .filter { case (_, value) => propertyNode.name == value }
+            .foreach { case (param, _) =>
+              builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
+            }
         }
+        propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
         List()
@@ -50,7 +56,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
-  def annotatedParameters: List[(MethodParameterIn, String)] = cpg.annotation
+  def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
     .fullName("org.springframework.*Value")
     .where(_.parameter)
     .where(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\""))
@@ -63,21 +69,10 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
-  private def connectToUsers(
-    propertyNode: NewJavaProperty,
-    paramsAndValues: List[(MethodParameterIn, String)],
-    builder: BatchedUpdate.DiffGraphBuilder
-  ): Unit = {
+  private def connectToUsers(propertyNode: NewJavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     matchingLiteralsInGetPropertyCalls(propertyNode.name).foreach { lit =>
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
     }
-
-    paramsAndValues
-      .filter { case (_, value) => propertyNode.name == value }
-      .foreach { case (param, _) =>
-        builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
-      }
-
   }
 
   private def matchingLiteralsInGetPropertyCalls(propertyName: String): List[Literal] = cpg.literal
