@@ -35,7 +35,7 @@ class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
         )
     } catch {
       case e: Exception =>
-        logger.error("Exception : ", e)
+        logger.debug("Exception : ", e)
         immutable.Iterable[mutable.LinkedHashMap[String, Json]]()
     }
   }
