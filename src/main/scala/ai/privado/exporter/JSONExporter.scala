@@ -62,7 +62,8 @@ object JSONExporter {
 
     } catch {
       case ex: Exception => {
-        println(ex.toString)
+        println("Failed to export output")
+        logger.debug("Failed to export output", ex)
         Left(ex.toString)
       }
     }
