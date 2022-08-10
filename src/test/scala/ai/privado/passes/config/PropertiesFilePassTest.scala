@@ -42,6 +42,9 @@ class AnnotationTests extends PropertiesFilePassTestBase {
       |""".stripMargin
   override val javaFileContents: String =
     """
+      |
+      |import org.springframework.beans.factory.annotation.Value;
+      |
       |class Foo {
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
