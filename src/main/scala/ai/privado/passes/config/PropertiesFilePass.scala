@@ -3,10 +3,11 @@ package ai.privado.passes.config
 import better.files.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewJavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
 import io.shiftleft.passes.SimpleCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+import overflowdb.traversal._
 
 import scala.jdk.CollectionConverters._
 import java.util.Properties
@@ -23,9 +24,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
     propertiesFiles(projectRoot).foreach { file =>
       val fileNode      = addFileNode(file, builder)
       val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
-      propertyNodes.foreach { propertyNode =>
-        builder.addEdge(propertyNode, fileNode, EdgeTypes.SOURCE_FILE)
-      }
+      propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
     }
   }
 
@@ -37,26 +36,59 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
       obtainKeyValuePairs(file)
     } match {
       case Success(keyValuePairs) =>
-        keyValuePairs.map { keyValuePairs =>
-          val propertyNode = addPropertyNode(keyValuePairs, builder)
-          connectToUsers(propertyNode, builder)
-          propertyNode
-        }
+        val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
+        propertyNodes.foreach(connectGetPropertyLiterals(_, builder))
+        connectAnnotatedParameters(propertyNodes, builder)
+
+        propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
         List()
     }
   }
 
-  private def connectToUsers(propertyNode: NewJavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val literals = cpg.literal
-      .codeExact("\"" + propertyNode.name + "\"")
-      .where(_.inCall.name(".*getProperty"))
-      .l
-    literals.foreach { lit =>
+  private def connectAnnotatedParameters(
+    propertyNodes: List[NewJavaProperty],
+    builder: BatchedUpdate.DiffGraphBuilder
+  ): Unit = {
+    val paramsAndValues = annotatedParameters()
+    propertyNodes.foreach { propertyNode =>
+      paramsAndValues
+        .filter { case (_, value) => propertyNode.name == value }
+        .foreach { case (param, _) =>
+          builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
+        }
+    }
+  }
+
+  /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
+    */
+  def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
+    .fullName("org.springframework.*Value")
+    .where(_.parameter)
+    .where(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\""))
+    .map { x =>
+      val literalName = x.parameterAssign.code.head
+      val value       = literalName.slice(3, literalName.length - 2)
+      (x.start.parameter.head, value)
+    }
+    .l
+
+  /** In this method, we attempt to identify users of properties and connect them to property nodes.
+    */
+  private def connectGetPropertyLiterals(
+    propertyNode: NewJavaProperty,
+    builder: BatchedUpdate.DiffGraphBuilder
+  ): Unit = {
+    matchingLiteralsInGetPropertyCalls(propertyNode.name).foreach { lit =>
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
     }
   }
+
+  private def matchingLiteralsInGetPropertyCalls(propertyName: String): List[Literal] = cpg.literal
+    .codeExact("\"" + propertyName + "\"")
+    .where(_.inCall.name(".*getProperty"))
+    .l
 
   private def obtainKeyValuePairs(file: String): List[(String, String)] = {
     val properties  = new Properties()

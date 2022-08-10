@@ -7,6 +7,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   import cpgSchema.ast._
   import cpgSchema.base._
   import cpgSchema.fs._
+  import cpgSchema.method._
 
   // Add node types, edge types, and properties here
 
@@ -48,6 +49,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   property.addOutEdge(edge = sourceFile, inNode = file)
   property.addOutEdge(edge = isUsedAt, inNode = literal)
+  property.addOutEdge(edge = isUsedAt, inNode = methodParameterIn)
 
 }
 
