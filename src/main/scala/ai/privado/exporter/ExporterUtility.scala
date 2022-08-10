@@ -8,6 +8,7 @@ import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.toExtendedNode
 import ai.privado.semantic.Language._
+
 import scala.collection.mutable
 
 object ExporterUtility {
@@ -69,14 +70,18 @@ object ExporterUtility {
     }
   }
 
-  def getPolicyInfoForExporting(policyId: String): mutable.Map[String, Json] = {
+  def getPolicyInfoForExporting(policyOrThreatId: String): mutable.Map[String, Json] = {
     val policyOutput = mutable.LinkedHashMap[String, Json]()
-    RuleCache.getPolicy(policyId) match {
-      case Some(policy) =>
-        addToMap(policyOutput, Constants.description, policy.description)
-        addToMap(policyOutput, Constants.action, policy.action.toString)
-        if (policy.tags.nonEmpty) {
-          policyOutput.addOne(Constants.tags -> policy.tags.asJson)
+    RuleCache.getPolicyOrThreat(policyOrThreatId) match {
+      case Some(policyOrThreat) =>
+        addToMap(policyOutput, Constants.name, policyOrThreat.name)
+        addToMap(policyOutput, Constants.policyOrThreatType, policyOrThreat.policyOrThreatType.toString)
+        addToMap(policyOutput, Constants.description, policyOrThreat.description)
+        addToMap(policyOutput, Constants.fix, policyOrThreat.fix)
+        if (policyOrThreat.action != null)
+          addToMap(policyOutput, Constants.action, policyOrThreat.action.toString)
+        if (policyOrThreat.tags.nonEmpty) {
+          policyOutput.addOne(Constants.tags -> policyOrThreat.tags.asJson)
         }
         policyOutput
       case None => policyOutput

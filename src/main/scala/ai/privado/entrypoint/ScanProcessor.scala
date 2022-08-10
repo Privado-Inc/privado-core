@@ -264,7 +264,6 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }*/
-
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
         logger.debug("Error : ", exception)
