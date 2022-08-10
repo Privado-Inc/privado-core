@@ -29,7 +29,7 @@ object Main {
             }
             // raise error in case of failure, and collect
             // all handled & unhandled exceptions in catch
-            case Left(err) => new Exception(err)
+            case Left(err) => throw new Exception(err)
           }
         catch {
           case e: Exception => {

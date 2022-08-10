@@ -201,20 +201,21 @@ object ScanProcessor extends CommandProcessor {
     import io.joern.console.cpgcreation.guessLanguage
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
+      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA => {
         println(s"Detected language $lang")
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
         val cpgconfig =
           Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
-
-      case _ =>
-        logger.error("Unable to detect language!")
+      }
+      case _ => {
+        logger.error("Unable to detect language! Is it supported yet?")
         Failure(new RuntimeException("Unable to detect language!"))
+      }
     }
     xtocpg match {
-      case Success(cpgWithoutDataflow) =>
+      case Success(cpgWithoutDataflow) => {
         println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
@@ -257,6 +258,7 @@ object ScanProcessor extends CommandProcessor {
             Right(())
           }
         }
+      }
 
       /*
         import io.shiftleft.semanticcpg.language._
@@ -271,10 +273,11 @@ object ScanProcessor extends CommandProcessor {
           println("\n----------------------------------------")
         }*/
 
-      case Failure(exception) =>
-        logger.error("Error while parsing the source code.")
+      case Failure(exception) => {
+        logger.error("Error while parsing the source code!")
         logger.debug("Error : ", exception)
-        Left("Error while parsing the source code: \n" + exception.toString)
+        Left("Error while parsing the source code: " + exception.toString)
+      }
     }
   }
 
