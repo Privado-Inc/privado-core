@@ -41,8 +41,7 @@ object JSONExporter {
 
       val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
       sinkSubCategories.foreach(sinkSubType => {
-        dataflowsOutput.addOne(sinkSubType                -> dataflowExporter.getFlowByType(sinkSubType).asJson)
-        MetricHandler.flowCategoryData.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).size)
+        dataflowsOutput.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
       })
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
@@ -58,10 +57,15 @@ object JSONExporter {
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
-
-      MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
-        FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
-      )
+      try {
+        MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
+          FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
+        )
+      } catch {
+        case e: Exception =>
+          logger.error("Error fetching the size of repo")
+          logger.debug("Error in getting size of repo ", e)
+      }
       MetricHandler.metricsData("policyViolations") = Json.fromInt(policyExporter.getViolations.size)
       MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
 

@@ -1,6 +1,6 @@
 package ai.privado.cache
 
-object EnvironmentConstant {
+object Environment {
   val privadoVersionCore: Option[String] = sys.env.get("PRIVADO_VERSION_CORE")
   val userHash: Option[String]           = sys.env.get("PRIVADO_USER_HASH")
   val dockerAccessKey: Option[String]    = sys.env.get("PRIVADO_DOCKER_ACCESS_KEY")

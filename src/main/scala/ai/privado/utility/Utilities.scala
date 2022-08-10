@@ -47,9 +47,9 @@ object Utilities {
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
-      MetricHandler.totalRulesMatched(ruleInfo.id) = 1
+      MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
       RuleCache.internalRules.get(ruleInfo.id) match {
-        case Some(_) => MetricHandler.internalRulesMatched(ruleInfo.id) = 1
+        case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
         case _       => ()
       }
       // storing by catLevelTwo to get id

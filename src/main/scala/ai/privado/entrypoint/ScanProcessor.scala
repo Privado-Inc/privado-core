@@ -216,7 +216,7 @@ object ScanProcessor extends CommandProcessor {
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
-        MetricHandler.metricsData("language") = Json.fromString(Languages.JAVA)
+        MetricHandler.metricsData("language") = Json.fromString(lang)
         println(s"Detected language $lang")
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
