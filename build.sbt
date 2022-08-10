@@ -30,7 +30,8 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-parser" % circeVersion,
   "io.circe" %% "circe-yaml" % circeVersion,
   "com.lihaoyi" %% "upickle" % "2.0.0",
-  "com.lihaoyi" %% "requests" % "0.7.0"
+  "com.lihaoyi" %% "requests" % "0.7.0",
+  "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
 )
 
 
