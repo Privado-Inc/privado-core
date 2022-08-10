@@ -1,23 +1,44 @@
 package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.metric.MetricHandler
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import org.slf4j.LoggerFactory
+
+import scala.util.{Failure, Success}
 
 /** Privado Core main entry point
   */
 object Main {
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
   def main(args: Array[String]): Unit = {
 
     CommandParser.parse(args) match {
       case Some(processor) =>
-        processor.process()
-        val sourceRepoLocation = config.sourceLocation.head
-        AuthenticationHandler.authenticate(sourceRepoLocation)
+        try {
+          MetricHandler.timeMetric(processor.process(), "Complete") match {
+            case Right(_) =>
+              logger.debug("Success from scan process! Proceeding to initiate auth flow")
+              val sourceRepoLocation = config.sourceLocation.head
+              AuthenticationHandler.authenticate(sourceRepoLocation)
+              MetricHandler.compileAndSend()
+            // raise error in case of failure, and collect
+            // all handled & unhandled exceptions in catch
+            case Left(err) => throw new Exception(err)
+          }
+        } catch {
+          case e: Exception =>
+            // any user-facing non-debug logging to be done internally
+            logger.debug("Failure from scan process:", e)
+            logger.debug("Skipping auth flow due to scan failure")
+        }
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }

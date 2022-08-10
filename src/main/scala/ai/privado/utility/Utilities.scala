@@ -1,9 +1,10 @@
 package ai.privado.utility
 
 import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
-import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, RuleInfo}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
@@ -18,6 +19,9 @@ import java.nio.file.Paths
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
 import io.shiftleft.semanticcpg.language._
+
+import java.math.BigInteger
+import java.security.MessageDigest
 
 object Utilities {
 
@@ -45,6 +49,11 @@ object Utilities {
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
+      MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
+      RuleCache.internalRules.get(ruleInfo.id) match {
+        case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
+        case _       => ()
+      }
       // storing by catLevelTwo to get id
       storeForTagHelper(ruleInfo.catLevelTwo, ruleInfo.id)
     }
@@ -168,4 +177,13 @@ object Utilities {
     }
 
   }
+
+  /** Returns the SHA256 hash for a given string.
+    * @param value
+    * @return
+    *   the SHA256 hash for the value
+    */
+  def getSHA256Hash(value: String) =
+    String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
+
 }

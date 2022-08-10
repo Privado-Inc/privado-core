@@ -1,6 +1,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, NodeType}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -58,6 +59,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
         .nonEmpty
     )
+    MetricHandler.flowCategoryData(sinkSubCategory) = dataflowsMapByType.size
     if (dataflowsMapByType.isEmpty)
       mutable.Seq[mutable.LinkedHashMap[String, Json]]()
     else

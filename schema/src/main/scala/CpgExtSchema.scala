@@ -6,6 +6,7 @@ import overflowdb.schema.SchemaBuilder
 class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   import cpgSchema.ast._
   import cpgSchema.base._
+  import cpgSchema.fs._
 
   // Add node types, edge types, and properties here
 
@@ -34,6 +35,19 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addProperty(code)
 
   literal.addOutEdge(edge = myEdge, inNode = myCredNodeType, cardinalityIn = Cardinality.ZeroOrOne)
+
+  // Node and edge types for `.properties` files
+
+  val property = builder
+    .addNodeType("JAVA_PROPERTY")
+    .addProperty(name)
+    .addProperty(value)
+
+  val isUsedAt = builder
+    .addEdgeType("IS_USED_AT")
+
+  property.addOutEdge(edge = sourceFile, inNode = file)
+  property.addOutEdge(edge = isUsedAt, inNode = literal)
 
 }
 
