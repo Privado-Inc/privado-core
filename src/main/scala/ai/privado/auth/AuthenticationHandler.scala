@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.io.File
 import java.security.MessageDigest
+import java.nio.file.{Paths, Files}
 
 object AuthenticationHandler {
   /*
@@ -22,22 +23,27 @@ object AuthenticationHandler {
   }
 
   def authenticate(repoPath: String): Unit = {
-    dockerAccessKey match {
-      case Some(_) =>
-        userHash match {
-          case Some(_) =>
-            var syncPermission: Boolean = true
-            if (!syncToCloud) {
-              syncPermission = askForPermission() // Ask user for request permissions
-            }
-            if (syncPermission) {
-              println(pushDataToCloud(repoPath))
-            } else {
-              ()
-            }
-          case _ => ()
-        }
-      case _ => ()
+    if (doesResultFileExist(repoPath)) {
+      dockerAccessKey match {
+        case Some(_) =>
+          userHash match {
+            case Some(_) =>
+              var syncPermission: Boolean = true
+              if (!syncToCloud) {
+                syncPermission = askForPermission() // Ask user for request permissions
+              }
+              if (syncPermission) {
+                println(pushDataToCloud(repoPath))
+              } else {
+                ()
+              }
+            case _ => ()
+          }
+        case _ => ()
+      }
+    } else {
+      logger.error("Could not locate the results file, skipping auth")
+      logger.debug("Results file does not exist. Skipping auth / synchronize flow")
     }
   }
 
@@ -107,4 +113,9 @@ object AuthenticationHandler {
         s"Error Occurred. ${e.toString}"
     }
   }
+
+  def doesResultFileExist(repoPath: String): Boolean = {
+    Files.exists(Paths.get(repoPath, ".privado", "privado.json"))
+  }
+
 }
