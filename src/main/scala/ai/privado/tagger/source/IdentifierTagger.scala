@@ -18,16 +18,20 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
-    val regexMatchingIdentifiers = cpg.identifier(ruleInfo.patterns.head).l
+    val rulePattern              = ruleInfo.patterns.head
+    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
     })
 
     // Step 2.1 --> contains step 2.2, 2.3
+    /*
     regexMatchingIdentifiers.name.dedup.foreach(identifier =>
       tagObjectOfTypeDeclHavingMemberName(builder, identifier, ruleInfo)
-    )
+    )*/
+
+    tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
 
   }
 
@@ -35,10 +39,10 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     */
   private def tagObjectOfTypeDeclHavingMemberName(
     builder: BatchedUpdate.DiffGraphBuilder,
-    memberName: String,
+    memberNameRegex: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclHavingMemberName = cpg.typeDecl.where(_.member.name(memberName)).l
+    val typeDeclHavingMemberName = cpg.typeDecl.where(_.member.name(memberNameRegex)).l
     typeDeclHavingMemberName.fullName.dedup.foreach(typeDeclVal => {
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
       impactedObjects.foreach(impactedObject => {
@@ -63,8 +67,8 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
         .callIn
         .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
-        .where(_.argument(2).code(memberName))
-        .where(_.inAst.isMethod.name("get.*"))
+        .where(_.argument(2).code(memberNameRegex))
+        // .where(_.inAst.isMethod.name("get.*"))
         .l
 
       impactedGetters.foreach(impactedGetter => {

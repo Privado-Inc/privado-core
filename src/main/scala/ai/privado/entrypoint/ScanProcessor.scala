@@ -13,6 +13,7 @@ import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language._
 
 import scala.sys.exit
 import scala.util.{Failure, Success}
@@ -257,13 +258,14 @@ object ScanProcessor extends CommandProcessor {
           case Left(err) => Left(err)
           case Right(_) => {
             println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+            logger.debug(
+              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+            )
             Right(())
           }
         }
-      }
+        /*
 
-      /*
-        import io.shiftleft.semanticcpg.language._
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
@@ -274,6 +276,7 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }*/
+      }
 
       case Failure(exception) => {
         logger.error("Error while parsing the source code!")
