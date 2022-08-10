@@ -20,13 +20,18 @@ object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def fileExport(cpg: Cpg, outputFileName: String, repoPath: String, dataflows: Map[String, Path]) = {
+  def fileExport(
+    cpg: Cpg,
+    outputFileName: String,
+    repoPath: String,
+    dataflows: Map[String, Path]
+  ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
-    val sourceExporter     = new SourceExporter(cpg)
-    val dataflowExporter   = new DataflowExporter(cpg, dataflows)
-    val collectionExporter = new CollectionExporter(cpg)
-    val policyExporter     = new PolicyExporter(dataflows)
-    val output             = mutable.LinkedHashMap[String, Json]()
+    val sourceExporter          = new SourceExporter(cpg)
+    val dataflowExporter        = new DataflowExporter(cpg, dataflows)
+    val collectionExporter      = new CollectionExporter(cpg)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
+    val output                  = mutable.LinkedHashMap[String, Json]()
     try {
       output.addOne(Constants.coreVersion   -> EnvironmentConstant.privadoVersionCore.getOrElse("Not Detected").asJson)
       output.addOne(Constants.cliVersion    -> EnvironmentConstant.privadoVersionCli.getOrElse("Not Detected").asJson)
@@ -43,8 +48,7 @@ object JSONExporter {
 
       val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
       sinkSubCategories.foreach(sinkSubType => {
-        dataflowsOutput.addOne(sinkSubType                -> dataflowExporter.getFlowByType(sinkSubType).asJson)
-        MetricHandler.flowCategoryData.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).size)
+        dataflowsOutput.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
       })
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
@@ -52,7 +56,8 @@ object JSONExporter {
 
       output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
-      output.addOne("policyViolations" -> policyExporter.getViolations.asJson)
+
+      output.addOne("violations" -> policyAndThreatExporter.getViolations(repoPath).asJson)
 
       logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()
@@ -60,15 +65,25 @@ object JSONExporter {
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
-
-      MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
-        FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
-      )
-      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyExporter.getViolations.size)
+      try {
+        MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
+          FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
+        )
+      } catch {
+        case e: Exception =>
+          logger.error("Error fetching the size of repo")
+          logger.debug("Error in getting size of repo ", e)
+      }
+      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyAndThreatExporter.getViolations(repoPath).size)
       MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
+      Right(())
 
     } catch {
-      case ex: Exception => println(ex.toString)
+      case ex: Exception => {
+        println("Failed to export output")
+        logger.debug("Failed to export output", ex)
+        Left(ex.toString)
+      }
     }
   }
 

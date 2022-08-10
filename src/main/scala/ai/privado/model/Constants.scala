@@ -57,6 +57,7 @@ object Constants {
   val sample       = "sample"
   val excerpt      = "excerpt"
   val sourceId     = "sourceId"
+  val occurrence   = "occurrence"
   val occurrences  = "occurrences"
   val paths        = "paths"
   val pathId       = "pathId"

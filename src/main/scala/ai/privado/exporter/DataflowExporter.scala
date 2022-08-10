@@ -1,6 +1,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, NodeType}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -29,15 +30,16 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
             dataflowsMapBySourceId.addOne(sourceId, ListBuffer(entrySet._1))
         }
 
+        val source = entrySet._2.elements.head
         try {
-          val source = entrySet._2.elements.head
+
           if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
             addToMap(source.tag.nameExact(Constants.id).l.head.value)
           } else {
             source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
           }
         } catch {
-          case e: Exception => logger.error("Exception while traversing dataflow path")
+          case e: Exception => logger.debug("Exception while traversing dataflow path : ", e)
         }
       })
 
@@ -57,6 +59,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
         .nonEmpty
     )
+    MetricHandler.flowCategoryData(sinkSubCategory) = dataflowsMapByType.size
     if (dataflowsMapByType.isEmpty)
       mutable.Seq[mutable.LinkedHashMap[String, Json]]()
     else

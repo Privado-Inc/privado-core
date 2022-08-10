@@ -5,6 +5,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
+import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
@@ -14,6 +15,7 @@ import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language._
 
 import scala.sys.exit
 import scala.util.{Failure, Success}
@@ -218,7 +220,7 @@ object ScanProcessor extends CommandProcessor {
     processCPG(processRules())
   }
 
-  def processCPG(processedRules: ConfigAndRules): Unit = {
+  def processCPG(processedRules: ConfigAndRules): Either[String, Unit] = {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
@@ -226,19 +228,21 @@ object ScanProcessor extends CommandProcessor {
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
-        MetricHandler.metricsData("language") = Json.fromString(Languages.JAVA)
+        MetricHandler.metricsData("language") = Json.fromString(lang)
         println(s"Detected language $lang")
         if (!config.skipDownladDependencies)
           println("Downloading dependencies...")
         val cpgconfig =
           Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
-
-      case _ =>
-        Failure(new RuntimeException("Language Not Detected"))
+      case _ => {
+        logger.error("Unable to detect language! Is it supported yet?")
+        Failure(new RuntimeException("Unable to detect language!"))
+      }
     }
     xtocpg match {
-      case Success(cpgWithoutDataflow) =>
+      case Success(cpgWithoutDataflow) => {
+        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
         println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
@@ -274,11 +278,18 @@ object ScanProcessor extends CommandProcessor {
         println("Brewing result...")
         // Exporting
         val outputFileName = "privado"
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap)
-        println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+          case Left(err) => Left(err)
+          case Right(_) => {
+            println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+            logger.debug(
+              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+            )
+            Right(())
+          }
+        }
+        /*
 
-      /*
-        import io.shiftleft.semanticcpg.language._
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
           val tags = cpg.tag(tagName).l
@@ -289,10 +300,13 @@ object ScanProcessor extends CommandProcessor {
           }
           println("\n----------------------------------------")
         }*/
+      }
 
-      case Failure(exception) =>
-        logger.error("Error while parsing the source code.")
+      case Failure(exception) => {
+        logger.error("Error while parsing the source code!")
         logger.debug("Error : ", exception)
+        Left("Error while parsing the source code: " + exception.toString)
+      }
     }
   }
 

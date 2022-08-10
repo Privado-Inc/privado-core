@@ -1,11 +1,13 @@
 package ai.privado.auth
-import ai.privado.cache.EnvironmentConstant
+import ai.privado.cache.Environment
 import ai.privado.metric.MetricHandler
 import ai.privado.utility.Utilities
 import io.circe.Json
 import org.slf4j.LoggerFactory
 
 import java.io.File
+import java.security.MessageDigest
+import java.nio.file.{Paths, Files}
 
 object AuthenticationHandler {
   /*
@@ -16,29 +18,34 @@ object AuthenticationHandler {
 
   def syncToCloud: Boolean = {
     try {
-      EnvironmentConstant.syncToCloud.getOrElse("False").toBoolean
+      Environment.syncToCloud.getOrElse("False").toBoolean
     } catch {
       case _: Exception => false
     }
   }
 
   def authenticate(repoPath: String): Unit = {
-    EnvironmentConstant.dockerAccessKey match {
-      case Some(_) =>
-        EnvironmentConstant.userHash match {
-          case Some(_) =>
-            var syncPermission: Boolean = true
-            if (!syncToCloud) {
-              syncPermission = askForPermission() // Ask user for request permissions
-            }
-            if (syncPermission) {
-              println(MetricHandler.timeMetric(pushDataToCloud(repoPath), "UploadFile"))
-            } else {
-              ()
-            }
-          case _ => ()
-        }
-      case _ => ()
+    if (doesResultFileExist(repoPath)) {
+      Environment.dockerAccessKey match {
+        case Some(_) =>
+          Environment.userHash match {
+            case Some(_) =>
+              var syncPermission: Boolean = true
+              if (!syncToCloud) {
+                syncPermission = askForPermission() // Ask user for request permissions
+              }
+              if (syncPermission) {
+                println(MetricHandler.timeMetric(pushDataToCloud(repoPath), "UploadFile"))
+              } else {
+                ()
+              }
+            case _ => ()
+          }
+        case _ => ()
+      }
+    } else {
+      logger.error("Could not locate the results file, skipping auth")
+      logger.debug("Results file does not exist. Skipping auth / synchronize flow")
     }
   }
 
@@ -78,11 +85,13 @@ object AuthenticationHandler {
   }
 
   def pushDataToCloud(repoPath: String): String = {
-    // TODO change BASE_URL and upload url for prod
-    val BASE_URL          = "https://t.api.code.privado.ai/test"
+    var BASE_URL = "https://api.code.privado.ai/prod"
+    if (!Environment.isProduction.getOrElse("False").toBoolean) {
+      BASE_URL = "https://t.api.code.privado.ai/test"
+    }
     val file              = new File(s"$repoPath/.privado/privado.json")
-    val uploadURL: String = s"$BASE_URL/cli/api/file/${EnvironmentConstant.userHash.get}"
-    val accessKey: String = Utilities.getSHA256Hash(EnvironmentConstant.dockerAccessKey.get)
+    val uploadURL: String = s"$BASE_URL/cli/api/file/${Environment.userHash.get}"
+    val accessKey: String = Utilities.getSHA256Hash(Environment.dockerAccessKey.get)
     try {
       val response = requests.post(
         uploadURL,
@@ -105,4 +114,9 @@ object AuthenticationHandler {
         s"Error Occurred. ${e.toString}"
     }
   }
+
+  def doesResultFileExist(repoPath: String): Boolean = {
+    Files.exists(Paths.get(repoPath, ".privado", "privado.json"))
+  }
+
 }
