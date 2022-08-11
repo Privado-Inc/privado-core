@@ -5,8 +5,9 @@ import ai.privado.utility.Utilities._
   */
 object AppCache {
 
-  var localScanPath: String = ""
-  var repoName: String      = ""
+  var localScanPath: String      = ""
+  var repoName: String           = ""
+  var privadoVersionMain: String = ""
 
   def init(scanPath: String) = {
     this.localScanPath = getRepoScanPath(scanPath)

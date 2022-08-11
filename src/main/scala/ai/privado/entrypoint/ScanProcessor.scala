@@ -1,6 +1,6 @@
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
@@ -150,6 +150,14 @@ object ScanProcessor extends CommandProcessor {
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
       RuleCache.setInternalRules(internalConfigAndRules)
+
+      try {
+        AppCache.privadoVersionMain = File((s"${config.internalConfigPath.head}/version.txt")).contentAsString
+      } catch {
+        case _: Exception =>
+          AppCache.privadoVersionMain = Constants.notDetected
+      }
+      println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
     }
     var externalConfigAndRules =
       ConfigAndRules(
@@ -207,6 +215,8 @@ object ScanProcessor extends CommandProcessor {
     mergedRules
   }
   override def process(): Either[String, Unit] = {
+    println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
+    println(s"Privado Core Version: ${Environment.privadoVersionCore}")
     processCPG(processRules())
   }
 
@@ -270,7 +280,7 @@ object ScanProcessor extends CommandProcessor {
         val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
           case Left(err) => Left(err)
-          case Right(_) => {
+          case Right(_) =>
             println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
@@ -287,7 +297,6 @@ object ScanProcessor extends CommandProcessor {
               println("\n----------------------------------------")
             }*/
             Right(())
-          }
         }
       }
 

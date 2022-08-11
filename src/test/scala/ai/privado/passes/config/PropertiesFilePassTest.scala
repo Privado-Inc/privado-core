@@ -8,18 +8,41 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import ai.privado.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.shiftleft.codepropertygraph.generated.nodes.Literal
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn}
 
-class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class AnnotationTests extends PropertiesFilePassTestBase {
+  override val configFileContents: String =
+    """
+      |internal.logger.api.base=https://logger.privado.ai/
+      |""".stripMargin
+  override val javaFileContents: String =
+    """
+      |
+      |import org.springframework.beans.factory.annotation.Value;
+      |
+      |class Foo {
+      |
+      |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
+      |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
+      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
+      |   }
+      |}
+      |""".stripMargin
 
-  var cpg: Cpg = _
+  "ConfigFilePass" should {
+    "connect annotated parameter to property" in {
+      val List(param: MethodParameterIn) = cpg.property.usedAt.l
+      param.name shouldBe "loggerBaseURL"
+    }
+  }
+}
 
-  private val configFileContents = """
+class GetPropertyTests extends PropertiesFilePassTestBase {
+  override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
       |internal.logger.api.base=https://logger.privado.ai/
       |""".stripMargin
-
-  private val javaFileContents =
+  override val javaFileContents =
     """
       | import org.springframework.core.env.Environment;
       |
@@ -55,9 +78,18 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
       val List(lit: Literal) = cpg.property.usedAt.l
       lit.code shouldBe "\"accounts.datasource.url\""
     }
-
   }
+}
 
+/**
+ * Base class for tests on properties files and Java code.
+ * */
+abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+
+  val configFileContents: String
+  val javaFileContents: String
+
+  var cpg : Cpg = _
   var inputDir: File = _
 
   override def beforeAll(): Unit = {
@@ -70,10 +102,4 @@ class PropertiesFilePassTest extends AnyWordSpec with Matchers with BeforeAndAft
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
     super.beforeAll()
   }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    super.afterAll()
-  }
-
 }
