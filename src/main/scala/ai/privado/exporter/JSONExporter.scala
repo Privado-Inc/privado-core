@@ -33,8 +33,8 @@ object JSONExporter {
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
-      output.addOne(Constants.coreVersion   -> Environment.privadoVersionCore.getOrElse("Not Detected").asJson)
-      output.addOne(Constants.cliVersion    -> Environment.privadoVersionCli.getOrElse("Not Detected").asJson)
+      output.addOne(Constants.coreVersion   -> Environment.privadoVersionCore.getOrElse(Constants.notDetected).asJson)
+      output.addOne(Constants.cliVersion    -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
       output.addOne(Constants.mainVersion   -> AppCache.privadoVersionMain.asJson)
       output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
       output.addOne(Constants.repoName      -> AppCache.repoName.asJson)

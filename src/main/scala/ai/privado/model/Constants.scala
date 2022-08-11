@@ -75,6 +75,7 @@ object Constants {
   val coreVersion   = "privadoCoreVersion"
   val cliVersion    = "privadoCLIVersion"
   val mainVersion   = "privadoMainVersion"
+  val notDetected   = "Not Detected"
   val createdAt     = "createdAt"
   val repoName      = "repoName"
   val gitMetaData   = "gitMetaData"
