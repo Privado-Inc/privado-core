@@ -285,19 +285,19 @@ object ScanProcessor extends CommandProcessor {
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
+            /*
+            // Utility to debug
+            for (tagName <- cpg.tag.name.dedup.l) {
+              val tags = cpg.tag(tagName).l
+              println(s"tag Name : ${tagName}, size : ${tags.size}")
+              println("Values : ")
+              for (tag <- tags) {
+                print(s"${tag.value}, ")
+              }
+              println("\n----------------------------------------")
+            }*/
             Right(())
         }
-        /*
-        // Utility to debug
-        for (tagName <- cpg.tag.name.dedup.l) {
-          val tags = cpg.tag(tagName).l
-          println(s"tag Name : ${tagName}, size : ${tags.size}")
-          println("Values : ")
-          for (tag <- tags) {
-            print(s"${tag.value}, ")
-          }
-          println("\n----------------------------------------")
-        }*/
       }
 
       case Failure(exception) => {
