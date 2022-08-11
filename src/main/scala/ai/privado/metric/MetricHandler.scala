@@ -19,10 +19,7 @@ object MetricHandler {
   val internalRulesMatched = mutable.Set[String]()
   val flowCategoryData     = mutable.HashMap[String, Int]()
 
-  metricsData("privadoCoreVersion") = Environment.privadoVersionCore match {
-    case Some(value) => Json.fromString(value)
-    case _           => Json.Null
-  }
+  metricsData("privadoCoreVersion") = Environment.privadoVersionCore.asJson
   metricsData("privadoCoreCommand") = Json.Null
   val gitMetaData = GitMetaDataExporter.getMetaData(AppCache.localScanPath)
   metricsData("hashedRepoIdentifier") = Json.fromString(Utilities.getSHA256Hash(gitMetaData.size match {
