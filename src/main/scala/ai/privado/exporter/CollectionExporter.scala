@@ -44,7 +44,7 @@ class CollectionExporter(cpg: Cpg) {
             }
             val parameterList = parameter.tag.nameExact(Constants.id).value.l
             if (parameterList.nonEmpty)
-              addToMap(parameterList.head)
+              parameterList.foreach(addToMap)
             else
               parameter.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
 

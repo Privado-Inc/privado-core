@@ -34,7 +34,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         try {
 
           if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-            addToMap(source.tag.nameExact(Constants.id).l.head.value)
+            source.tag.nameExact(Constants.id).value.foreach(addToMap)
           } else {
             source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
           }
