@@ -97,8 +97,6 @@ object CommandParser {
       case Some(config) =>
         val commandProcessor: CommandProcessor = commandMapper.get(config.cmd.head) match {
           case Some(commandProcessor) => {
-            print(commandProcessor)
-            print(config.cmd.head)
             commandProcessor
           }
           case _ =>

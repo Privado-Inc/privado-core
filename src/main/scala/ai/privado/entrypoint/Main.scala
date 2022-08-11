@@ -1,7 +1,6 @@
 package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
-import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.metric.MetricHandler
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCredentials, NewTag}
@@ -10,8 +9,6 @@ import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import org.slf4j.LoggerFactory
-
-import scala.util.{Failure, Success}
 
 /** Privado Core main entry point
   */
