@@ -35,14 +35,6 @@ object ScanProcessor extends CommandProcessor {
           exit(1)
       }
     }
-    try {
-      AppCache.privadoVersionMain = File((s"$rulesPath/version.txt")).contentAsString
-      println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
-    } catch {
-      case _: Exception =>
-        AppCache.privadoVersionMain = "Not Detected"
-        println("Privado Main Version: Not Detected!")
-    }
     val parsedRules =
       try
         ir.listRecursively
@@ -158,6 +150,14 @@ object ScanProcessor extends CommandProcessor {
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
       RuleCache.setInternalRules(internalConfigAndRules)
+
+      try {
+        AppCache.privadoVersionMain = File((s"${config.internalConfigPath.head}/version.txt")).contentAsString
+      } catch {
+        case _: Exception =>
+          AppCache.privadoVersionMain = Constants.notDetected
+      }
+      println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
     }
     var externalConfigAndRules =
       ConfigAndRules(
@@ -215,8 +215,8 @@ object ScanProcessor extends CommandProcessor {
     mergedRules
   }
   override def process(): Either[String, Unit] = {
-    println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse("Not Detected!")}")
-    println(s"Privado Core Version: ${Environment.privadoVersionCore.getOrElse("Not Detected!")}")
+    println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
+    println(s"Privado Core Version: ${Environment.privadoVersionCore.getOrElse(Constants.notDetected)}")
     processCPG(processRules())
   }
 
