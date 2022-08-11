@@ -283,10 +283,26 @@ object ScanProcessor extends CommandProcessor {
           case Left(err) => Left(err)
           case Right(_) =>
             println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+
+            logger.debug(
+              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+            )
+            /*
+            // Utility to debug
+            for (tagName <- cpg.tag.name.dedup.l) {
+              val tags = cpg.tag(tagName).l
+              println(s"tag Name : ${tagName}, size : ${tags.size}")
+              println("Values : ")
+              for (tag <- tags) {
+                print(s"${tag.value}, ")
+              }
+              println("\n----------------------------------------")
+            }*/
             Right(())
         }
       }
 
+<<<<<<< HEAD
         /*
         // Utility to debug
         for (tagName <- cpg.tag.name.dedup.l) {
@@ -303,6 +319,10 @@ object ScanProcessor extends CommandProcessor {
         )
       case Failure(exception) =>
         logger.error("Error while parsing the source code.")
+=======
+      case Failure(exception) => {
+        logger.error("Error while parsing the source code!")
+>>>>>>> 8b78900 (fix - element present in sources but absent in processing)
         logger.debug("Error : ", exception)
         Left("Error while parsing the source code: " + exception.toString)
       }
