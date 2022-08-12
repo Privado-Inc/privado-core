@@ -23,7 +23,7 @@ object RuleCache {
 
   def getRule: ConfigAndRules = rule
 
-  private def setRuleInfo(ruleInfo: RuleInfo): Unit = ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+  def setRuleInfo(ruleInfo: RuleInfo): Unit = ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
 
   def getRuleInfo(ruleId: String): Option[RuleInfo] = ruleInfoMap.get(ruleId)
 

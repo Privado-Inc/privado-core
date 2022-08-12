@@ -104,15 +104,14 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
   }
 }
 
-/**
- * Base class for tests on properties files and Java code.
- * */
+/** Base class for tests on properties files and Java code.
+  */
 abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val configFileContents: String
   val javaFileContents: String
 
-  var cpg : Cpg = _
+  var cpg: Cpg       = _
   var inputDir: File = _
 
   override def beforeAll(): Unit = {
