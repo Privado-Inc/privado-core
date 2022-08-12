@@ -8,12 +8,12 @@ object StorageInheritRule {
 
   val rules = List(
     RuleInfo(
-      "Sinks.Database.JPA",
+      "Sinks.Database.JPA.Read",
       "JPA Repository(Read)",
       "",
       Array[String]("springframework.org"),
       List[String](
-        "org.springframework.data.repository.CrudRepository|org.springframework.data.jpa.repository.support.SimpleJpaRepository|org.springframework.data.jpa.repository.JpaRepository",
+        "org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
         "(find|get).*"
       ),
       false,
@@ -27,12 +27,12 @@ object StorageInheritRule {
       Array[String]()
     ),
     RuleInfo(
-      "Sinks.Database.JPA",
+      "Sinks.Database.JPA.Write",
       "JPA Repository(Write)",
       "",
       Array[String]("springframework.org"),
       List[String](
-        "org.springframework.data.repository.CrudRepository|org.springframework.data.jpa.repository.support.SimpleJpaRepository|org.springframework.data.jpa.repository.JpaRepository",
+        "org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
         "(save|delete).*"
       ),
       false,
