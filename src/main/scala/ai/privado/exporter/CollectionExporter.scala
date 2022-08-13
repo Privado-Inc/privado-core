@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -90,16 +90,11 @@ class CollectionExporter(cpg: Cpg) {
     * @return
     */
   private def getCollectionUrl(parameterIn: MethodParameterIn) = {
-    Try(Traversal(parameterIn).method.annotation.last.parameterAssign.order(1).astChildren.order(2).l.head) match {
-      case Success(url) => url.code
+    Try(Traversal(parameterIn).method.tag.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).value.head) match {
+      case Success(url) => url
       case Failure(e) =>
-        Try(Traversal(parameterIn).method.annotation.last.parameterAssign.order(1).head) match {
-          case Success(url) => url.code
-          case Failure(e) =>
-            logger.debug("Exception : ", e)
-            ""
-        }
+        logger.debug("Exception : ", e)
+        ""
     }
   }
-
 }
