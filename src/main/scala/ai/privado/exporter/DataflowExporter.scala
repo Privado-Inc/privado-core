@@ -32,12 +32,8 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
         val source = entrySet._2.elements.head
         try {
-
-          if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-            source.tag.nameExact(Constants.id).value.foreach(addToMap)
-          } else {
-            source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-          }
+          source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
         } catch {
           case e: Exception => logger.debug("Exception while traversing dataflow path : ", e)
         }

@@ -42,11 +42,12 @@ class CollectionExporter(cpg: Cpg) {
                 collectionParameterMapById(parameterId) = ListBuffer()
               collectionParameterMapById(parameterId).append(parameter)
             }
-            val parameterList = parameter.tag.nameExact(Constants.id).value.l
-            if (parameterList.nonEmpty)
-              parameterList.foreach(addToMap)
-            else
-              parameter.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+            parameter.tag
+              .nameExact(Constants.id)
+              .value
+              .filter(!_.startsWith(Constants.privadoDerived))
+              .foreach(addToMap)
+            parameter.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
 
           } catch {
             case e: Exception => logger.debug("Exception : ", e)

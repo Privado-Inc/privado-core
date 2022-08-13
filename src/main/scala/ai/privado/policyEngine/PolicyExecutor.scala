@@ -85,11 +85,8 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
       }
       try {
         val source = entrySet._2.elements.head
-        if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-          addToMap(source.tag.nameExact(Constants.id).l.head.value)
-        } else {
-          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-        }
+        source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
       } catch {
         case e: Exception => logger.debug("Exception : ", e)
       }
