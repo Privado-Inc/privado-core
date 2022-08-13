@@ -35,11 +35,8 @@ class SourceExporter(cpg: Cpg) {
           processingMap.addOne(sourceId -> Set(source))
         }
       }
-      if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-        source.tag.nameExact(Constants.id).value.foreach(addToMap)
-      } else {
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-      }
+      source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+      source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
     })
     processingMap.map(entrySet =>
       LinkedHashMap[String, Json](

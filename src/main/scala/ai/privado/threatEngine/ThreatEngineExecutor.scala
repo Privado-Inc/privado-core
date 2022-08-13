@@ -26,6 +26,7 @@ class ThreatEngineExecutor(cpg: Cpg) {
 
   private def process(threat: PolicyOrThreat, repoPath: String) = {
     val threatId = threat.id
+
     // process android threats
     val occurrences = getAndroidManifestFile(repoPath) match {
       // if we get a manifest file, consider android app
@@ -65,7 +66,6 @@ class ThreatEngineExecutor(cpg: Cpg) {
         Some(outputMap)
       case _ => None
     }
-
   }
 
   private def getAndroidManifestFile(repoPath: String): Option[String] = {
