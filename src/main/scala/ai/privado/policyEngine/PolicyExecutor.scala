@@ -1,7 +1,7 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Constants, PolicyAction, PolicyOrThreat, PolicyViolationFlowModel}
+import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat, PolicyViolationFlowModel}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
@@ -85,11 +85,8 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
       }
       try {
         val source = entrySet._2.elements.head
-        if (source.tag.nameExact(Constants.catLevelOne).value.head.equals(CatLevelOne.SOURCES.name)) {
-          addToMap(source.tag.nameExact(Constants.id).l.head.value)
-        } else {
-          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-        }
+        source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
       } catch {
         case e: Exception => logger.debug("Exception : ", e)
       }
@@ -153,13 +150,13 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
       tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
     Try(cpg.tag.where(filterBySource).identifier.head) match {
       case Success(identifierNode) => Some(sourceId, identifierNode)
-      case Failure(e) =>
+      case Failure(_) =>
         Try(cpg.tag.where(filterBySource).literal.head) match {
           case Success(literalNode) => Some(sourceId, literalNode)
-          case Failure(e) =>
+          case Failure(_) =>
             Try(cpg.tag.where(filterBySource).call.head) match {
               case Success(callNode) => Some(sourceId, callNode)
-              case Failure(e)        => None
+              case Failure(_)        => None
             }
         }
     }

@@ -91,7 +91,7 @@ object KeyboardCache {
         })
         .foldLeft(false)((a, b) => a || b)
     } catch {
-      case e: Exception => false
+      case _: Exception => false
     }
 
   }

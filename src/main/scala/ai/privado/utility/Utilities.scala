@@ -4,7 +4,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
-import ai.privado.model.{CatLevelOne, Constants, RuleInfo}
+import ai.privado.model.{Constants, RuleInfo}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
@@ -151,7 +151,7 @@ object Utilities {
           case Some(pattern) =>
             Try(!filePath.matches(pattern)) match {
               case Success(result) => Some(result)
-              case Failure(e)      => None
+              case Failure(_)      => None
             }
           case None => None
         }
