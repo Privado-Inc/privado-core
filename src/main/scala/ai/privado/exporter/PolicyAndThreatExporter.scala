@@ -19,7 +19,7 @@ class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
   val logger = LoggerFactory.getLogger(getClass)
 
   val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName)
-  val threatExecutor = new ThreatEngineExecutor()
+  val threatExecutor = new ThreatEngineExecutor(cpg)
 
   def getViolations(repoPath: String): immutable.Iterable[mutable.LinkedHashMap[String, Json]] = {
     try {
