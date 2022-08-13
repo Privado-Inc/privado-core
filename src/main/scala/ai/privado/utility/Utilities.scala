@@ -151,7 +151,7 @@ object Utilities {
           case Some(pattern) =>
             Try(!filePath.matches(pattern)) match {
               case Success(result) => Some(result)
-              case Failure(e)      => None
+              case Failure(_)      => None
             }
           case None => None
         }

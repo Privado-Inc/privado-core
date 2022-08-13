@@ -47,16 +47,6 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
       .method
       .l
 
-    /*
-    cpg.annotation.name(ruleInfo.patterns.head).filter(_.method.nonEmpty).foreach(matchedAnnotation => {
-      //println(matchedAnnotation.code)
-      methodUrlMap.addOne(matchedAnnotation.method.head.id() -> getCollectionUrl(matchedAnnotation))
-    })
-
-    val collectionMethodsCache = cpg.annotation.name(ruleInfo.patterns.head).method.l
-
-     */
-
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
         val parameters = collectionMethod.parameter.where(_.name(sourceRule.patterns.head)).l
@@ -127,10 +117,10 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
   private def getCollectionUrl(annotation: Annotation) = {
     Try(annotation.parameterAssign.order(1).astChildren.order(2).l.head) match {
       case Success(url) => url.code
-      case Failure(e) =>
+      case Failure(_) =>
         Try(annotation.parameterAssign.order(1).head) match {
           case Success(url) => url.code
-          case Failure(e) =>
+          case Failure(_) =>
             Try(annotation) match {
               case Success(url) => url.code
               case Failure(e) =>

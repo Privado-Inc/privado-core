@@ -26,11 +26,6 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     })
 
     // Step 2.1 --> contains step 2.2, 2.3
-    /*
-    regexMatchingIdentifiers.name.dedup.foreach(identifier =>
-      tagObjectOfTypeDeclHavingMemberName(builder, identifier, ruleInfo)
-    )*/
-
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
 
   }
