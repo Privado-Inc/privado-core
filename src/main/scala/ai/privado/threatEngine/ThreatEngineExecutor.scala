@@ -25,7 +25,7 @@ class ThreatEngineExecutor {
       case "Threats.Collection.isKeyboardCacheUsed" =>
         KeyboardCache.getViolations(repoPath) match {
           case Success(occurrences) => Some(occurrences)
-          case Failure(e)           => None
+          case Failure(_)           => None
         }
       case _ => None
     }
