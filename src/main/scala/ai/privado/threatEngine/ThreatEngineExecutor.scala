@@ -5,12 +5,13 @@ import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.utility.Utilities._
 import io.circe.Json
 import io.circe.syntax.EncoderOps
+import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.util.{Failure, Success}
 
-class ThreatEngineExecutor {
+class ThreatEngineExecutor(cpg: Cpg) {
 
   private val logger     = LoggerFactory.getLogger(getClass)
 
@@ -25,12 +26,12 @@ class ThreatEngineExecutor {
 
   private def process(threat: PolicyOrThreat, repoPath: String) = {
     val threatId = threat.id
-    logger.debug(s"Processing threat: ${threatId}")
     // process android threats
     val occurrences = getAndroidManifestFile(repoPath) match {
       // if we get a manifest file, consider android app
       case Some(manifestFile) =>
         logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
+        logger.debug(s"Processing threat: ${threatId}")
         threatId match {
           case "Threats.Collection.isKeyboardCacheUsed" =>
             KeyboardCache.getViolations(repoPath) match {
@@ -39,18 +40,18 @@ class ThreatEngineExecutor {
             }
 
           case "Threats.Storage.isAppDataBackupAllowed" =>
-            SensitiveDataBackup.getViolations(repoPath, manifestFile) match {
+            SensitiveDataBackup.getViolations(cpg, manifestFile) match {
               case Success(occurrences) => Some(occurrences)
               case Failure(e)           => None
             }
 
 
           case _ =>
-            logger.debug(s"No processor matched for analyzing threat: ${threatId}")
+            logger.debug(s"No implementation detected for threat: ${threatId}")
             None
         }
       case _ =>
-        logger.debug("Did not found AndroidManifest.xml. Skipping android threats")
+        logger.debug("Did not find AndroidManifest.xml")
         None
     }
 
