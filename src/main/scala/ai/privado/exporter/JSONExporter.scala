@@ -57,7 +57,9 @@ object JSONExporter {
       output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
       logger.info("Completed Collections Exporting")
 
-      output.addOne("violations" -> policyAndThreatExporter.getViolations(repoPath).asJson)
+      val violations = policyAndThreatExporter.getViolations(repoPath)
+      output.addOne("violations" -> violations.asJson)
+      MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
 
       logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()
@@ -74,7 +76,6 @@ object JSONExporter {
           logger.error("Error fetching the size of repo")
           logger.debug("Error in getting size of repo ", e)
       }
-      MetricHandler.metricsData("policyViolations") = Json.fromInt(policyExporter.getViolations.size)
       MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
       Right(())
 
