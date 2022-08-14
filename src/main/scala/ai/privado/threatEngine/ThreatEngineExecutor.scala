@@ -13,7 +13,7 @@ import scala.util.{Failure, Success}
 
 class ThreatEngineExecutor(cpg: Cpg) {
 
-  private val logger     = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Process and return the violating threats
     * @param threats
@@ -37,19 +37,19 @@ class ThreatEngineExecutor(cpg: Cpg) {
           case "Threats.Collection.isKeyboardCacheUsed" =>
             KeyboardCache.getViolations(repoPath) match {
               case Success(res) => Some(res)
-              case Failure(e)           => None
+              case Failure(e)   => None
             }
 
           case "Threats.Storage.isAppDataBackupAllowed" =>
             SensitiveDataBackup.getViolations(cpg, manifestFile) match {
               case Success(res) => Some(res)
-              case Failure(e)           => None
+              case Failure(e)   => None
             }
 
           case "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled" =>
             BackgroundScreenshot.getViolations(cpg) match {
               case Success(res) => Some(res)
-              case Failure(e)           => None
+              case Failure(e)   => None
             }
 
           case _ =>
@@ -61,13 +61,12 @@ class ThreatEngineExecutor(cpg: Cpg) {
         None
     }
 
-
     violationResponse match {
       case Some((isThreat, occurrences)) if isThreat =>
         val outputMap = mutable.LinkedHashMap[String, Json]()
         outputMap.addOne(Constants.policyId      -> threatId.asJson)
         outputMap.addOne(Constants.policyDetails -> ExporterUtility.getPolicyInfoForExporting(threatId).asJson)
-        if(occurrences.nonEmpty) outputMap.addOne(Constants.processing    -> occurrences.asJson)
+        if (occurrences.nonEmpty) outputMap.addOne(Constants.processing -> occurrences.asJson)
         Some(outputMap)
       case _ => None
     }
