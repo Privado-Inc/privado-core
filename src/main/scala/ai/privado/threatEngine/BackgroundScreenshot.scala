@@ -17,20 +17,20 @@ import scala.xml.{Elem, MetaData, XML}
 
 object BackgroundScreenshot {
 
-  private val SET_FLAG_METHOD_PATTERN         = ".*(add|set)Flags.*"
-  private val SAFE_FLAG = "WindowManager.LayoutParams.FLAG_SECURE"
-  private val logger     = LoggerFactory.getLogger(getClass)
+  private val SET_FLAG_METHOD_PATTERN = ".*(add|set)Flags.*"
+  private val SAFE_FLAG               = "WindowManager.LayoutParams.FLAG_SECURE"
+  private val logger                  = LoggerFactory.getLogger(getClass)
 
   /** Fetch all the violations which violate Key-board cache threat
-    * @param cpg source filepath of manifest file
+    * @param cpg
+    *   source filepath of manifest file
     * @return
     */
   def getViolations(cpg: Cpg): Try[(Boolean, List[Json])] = Try {
     // implicit for callIn
     implicit val resolver: ICallResolver = NoResolve
 
-    val safeFlagCalls = cpg
-      .method
+    val safeFlagCalls = cpg.method
       .fullName(SET_FLAG_METHOD_PATTERN)
       .callIn
       .where(_.argument.code(s".*${SAFE_FLAG}.*"))

@@ -17,34 +17,36 @@ import scala.xml.{Elem, MetaData, XML}
 
 object SensitiveDataBackup {
 
-  private val KEY         = "application"
+  private val KEY              = "application"
   private val ALLOW_BACKUP_KEY = "android:allowBackup"
-  private val logger     = LoggerFactory.getLogger(getClass)
+  private val logger           = LoggerFactory.getLogger(getClass)
 
   /** Fetch all the violations which violate Key-board cache threat
-    * @param androidManifestFile source filepath of manifest file
+    * @param androidManifestFile
+    *   source filepath of manifest file
     * @return
     */
   def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[Json])] = Try {
-    val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
-    val xml: Elem = XML.loadFile(androidManifestFile)
+    val occurrenceList   = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+    val xml: Elem        = XML.loadFile(androidManifestFile)
     val applicationNodes = xml \\ KEY
 
-
-
-    if(hasDataElements(cpg) && applicationNodes.nonEmpty) {
+    if (hasDataElements(cpg) && applicationNodes.nonEmpty) {
       // we expect only one node, but a NodeSeq is returned
       applicationNodes.foreach {
-        case Elem(prefix, label, attributes, scope, child@_*) =>
+        case Elem(prefix, label, attributes, scope, child @ _*) =>
           if (getBackupAttribute(attributes)) {
             val backupAttribute = attributes.filter(attribute => attribute.prefixedKey == ALLOW_BACKUP_KEY).value.head
 
-            val lineNumber = getLineNumberOfMatchingEditText(androidManifestFile, ALLOW_BACKUP_KEY + "=\"" + backupAttribute.text + "\"")
+            val lineNumber = getLineNumberOfMatchingEditText(
+              androidManifestFile,
+              ALLOW_BACKUP_KEY + "=\"" + backupAttribute.text + "\""
+            )
             val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-            occurrenceOutput.addOne(Constants.sample -> s"${ALLOW_BACKUP_KEY}=\"${backupAttribute.text}\"".asJson)
-            occurrenceOutput.addOne(Constants.lineNumber -> lineNumber.asJson)
+            occurrenceOutput.addOne(Constants.sample       -> s"${ALLOW_BACKUP_KEY}=\"${backupAttribute.text}\"".asJson)
+            occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
             occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
-            occurrenceOutput.addOne(Constants.fileName -> androidManifestFile.asJson)
+            occurrenceOutput.addOne(Constants.fileName     -> androidManifestFile.asJson)
             occurrenceOutput.addOne(Constants.excerpt -> Utilities.dump(androidManifestFile, Some(lineNumber)).asJson)
             occurrenceList.append(occurrenceOutput)
           }
@@ -63,8 +65,10 @@ object SensitiveDataBackup {
   }
 
   /** Checks if the field id is sensitive
-    * @param attributes the attributes of xml node
-    * @return boolean value of backup attribute
+    * @param attributes
+    *   the attributes of xml node
+    * @return
+    *   boolean value of backup attribute
     */
   private def getBackupAttribute(attributes: MetaData): Boolean = {
     val backupValue = attributes.filter(attribute => attribute.prefixedKey == ALLOW_BACKUP_KEY).head.value.head.text
@@ -72,8 +76,10 @@ object SensitiveDataBackup {
   }
 
   /** Returns matching line number from the file
-    * @param fileName name of file
-    * @param matchingText match text
+    * @param fileName
+    *   name of file
+    * @param matchingText
+    *   match text
     * @return
     */
   private def getLineNumberOfMatchingEditText(fileName: String, matchingText: String) = {
@@ -95,7 +101,10 @@ object SensitiveDataBackup {
   }
 
   private def hasDataElements(cpg: Cpg): Boolean = {
-    val taggedSources = cpg.tag.nameExact(Constants.catLevelOne).or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name)).l
-    if(taggedSources.nonEmpty) true else false
+    val taggedSources = cpg.tag
+      .nameExact(Constants.catLevelOne)
+      .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
+      .l
+    if (taggedSources.nonEmpty) true else false
   }
 }
