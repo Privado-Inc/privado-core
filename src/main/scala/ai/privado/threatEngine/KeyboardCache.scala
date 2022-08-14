@@ -67,11 +67,14 @@ object KeyboardCache {
         })
       case None => // repo is not correct
     }
-    occurrenceList
-      .map(occurrence =>
+
+    val sanitizedOccurrenceList = occurrenceList.map(occurrence =>
         mutable.Map[String, Json](Constants.sourceId -> "".asJson, Constants.occurrence -> occurrence.asJson).asJson
       )
       .toList
+
+    // threat exists if occurrences are non-empty
+    (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
   }
 
   /** Checks if the field id is sensitive

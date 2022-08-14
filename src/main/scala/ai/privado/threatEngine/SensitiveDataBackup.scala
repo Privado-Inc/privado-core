@@ -25,7 +25,7 @@ object SensitiveDataBackup {
     * @param androidManifestFile source filepath of manifest file
     * @return
     */
-  def getViolations(cpg: Cpg, androidManifestFile: String): Try[List[Json]] = Try {
+  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[Json])] = Try {
     val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
     val xml: Elem = XML.loadFile(androidManifestFile)
     val applicationNodes = xml \\ KEY
@@ -52,11 +52,14 @@ object SensitiveDataBackup {
       }
     }
 
-    occurrenceList
+    val sanitizedOccurrenceList = occurrenceList
       .map(occurrence =>
         mutable.Map[String, Json](Constants.sourceId -> "".asJson, Constants.occurrence -> occurrence.asJson).asJson
       )
       .toList
+
+    // threat exists if occurrences are non-empty
+    (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
   }
 
   /** Checks if the field id is sensitive
