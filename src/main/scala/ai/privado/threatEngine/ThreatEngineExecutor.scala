@@ -27,24 +27,23 @@ class ThreatEngineExecutor(cpg: Cpg) {
   private def process(threat: PolicyOrThreat, repoPath: String) = {
     val threatId = threat.id
     // process android threats
-    val occurrences = getAndroidManifestFile(repoPath) match {
+    val violationResponse = getAndroidManifestFile(repoPath) match {
       // if we get a manifest file, consider android app
       case Some(manifestFile) =>
         logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
-        logger.debug(s"Processing threat: ${threatId}")
+        logger.info(s"Processing threat: ${threatId}")
         threatId match {
           case "Threats.Collection.isKeyboardCacheUsed" =>
             KeyboardCache.getViolations(repoPath) match {
-              case Success(occurrences) => Some(occurrences)
+              case Success(res) => Some(res)
               case Failure(e)           => None
             }
 
           case "Threats.Storage.isAppDataBackupAllowed" =>
             SensitiveDataBackup.getViolations(cpg, manifestFile) match {
-              case Success(occurrences) => Some(occurrences)
+              case Success(res) => Some(res)
               case Failure(e)           => None
             }
-
 
           case _ =>
             logger.debug(s"No implementation detected for threat: ${threatId}")
@@ -56,12 +55,12 @@ class ThreatEngineExecutor(cpg: Cpg) {
     }
 
 
-    occurrences match {
-      case Some(occurrences) if (occurrences.nonEmpty) =>
+    violationResponse match {
+      case Some((isThreat, occurrences)) if isThreat =>
         val outputMap = mutable.LinkedHashMap[String, Json]()
         outputMap.addOne(Constants.policyId      -> threatId.asJson)
         outputMap.addOne(Constants.policyDetails -> ExporterUtility.getPolicyInfoForExporting(threatId).asJson)
-        outputMap.addOne(Constants.processing    -> occurrences.asJson)
+        if(occurrences.nonEmpty) outputMap.addOne(Constants.processing    -> occurrences.asJson)
         Some(outputMap)
       case _ => None
     }
