@@ -46,6 +46,12 @@ class ThreatEngineExecutor(cpg: Cpg) {
               case Failure(e)           => None
             }
 
+          case "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled" =>
+            BackgroundScreenshot.getViolations(cpg) match {
+              case Success(res) => Some(res)
+              case Failure(e)           => None
+            }
+
           case _ =>
             logger.debug(s"No implementation detected for threat: ${threatId}")
             None
