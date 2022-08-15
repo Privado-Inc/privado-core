@@ -57,6 +57,12 @@ class ThreatEngineExecutor(cpg: Cpg) {
               case Failure(e)   => None
             }
 
+          case "Threats.Collection.isInputMasked" =>
+            SensitiveInputMask.getViolations(cpg, repoPath) match {
+              case Success(res) => Some(res)
+              case Failure(e)   => None
+            }
+
           case _ =>
             logger.debug(s"No implementation detected for threat: ${threatId}")
             None
