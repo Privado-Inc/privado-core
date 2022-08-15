@@ -4,6 +4,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities._
+import ai.privado.threatEngine.ThreatUtility._
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
@@ -37,8 +38,7 @@ object KeyboardCache {
     * @param repoPath
     * @return
     */
-  def getViolations(repoPath: String) = Try {
-
+  def getViolations(repoPath: String): Try[(Boolean, List[Json])] = Try {
     val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
     getAllFilesRecursively(repoPath, Set(".xml")) match {
       case Some(sourceFileNames) =>
@@ -68,11 +68,7 @@ object KeyboardCache {
       case None => // repo is not correct
     }
 
-    val sanitizedOccurrenceList = occurrenceList
-      .map(occurrence =>
-        mutable.Map[String, Json](Constants.sourceId -> "".asJson, Constants.occurrence -> occurrence.asJson).asJson
-      )
-      .toList
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
 
     // threat exists if occurrences are non-empty
     (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
@@ -152,28 +148,5 @@ object KeyboardCache {
         false
     }
 
-  }
-
-  /** Returns matching line number from the file
-    * @param fileName
-    * @param matchingText
-    * @return
-    */
-  private def getLineNumberOfMatchingEditText(fileName: String, matchingText: String) = {
-    var matchedLineNumber = -2
-    try {
-      val lines = File(fileName).lines.toList
-      breakable {
-        for (lineNumber <- 1 until lines.size) {
-          if (lines(lineNumber).contains(matchingText)) {
-            matchedLineNumber = lineNumber
-            break()
-          }
-        }
-      }
-    } catch {
-      case e: Exception => logger.debug("Exception", e)
-    }
-    matchedLineNumber + 1
   }
 }
