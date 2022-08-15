@@ -3,7 +3,9 @@ package ai.privado.threatEngine
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.semantic.Language._
+import ai.privado.threatEngine.DataSharingIPC.PROTECTION_LEVEL_ATTRIBUTE
 import ai.privado.threatEngine.SensitiveDataBackup.{getClass, logger}
+import ai.privado.utility.Utilities
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities.dump
 import better.files.File
@@ -45,6 +47,13 @@ object ThreatUtility {
     taggedSources.nonEmpty
   }
 
+  /** Returns matching line number from the file
+   * @param fileName
+   *   name of file
+   * @param matchingText
+   *   match text
+   * @return
+   */
   def getLineNumberOfMatchingEditText(fileName: String, matchingText: String): Int = {
     var matchedLineNumber = -2
     try {
@@ -63,9 +72,42 @@ object ThreatUtility {
     matchedLineNumber + 1
   }
 
+  /** Gets the value of a key from attributes
+   * @param attributes
+   *   the attributes of xml node
+   * @return
+   *   Option[string] value of attribute
+   */
   def getAttribute(attributes: MetaData, key: String): Option[String] = {
     val filteredAttrs = attributes.filter(_.key == key)
     if (filteredAttrs.nonEmpty) Some(filteredAttrs.head.value.head.text) else None
+  }
+
+  def getOccurrenceObject(matchingTextForLine: String, sample: String, filename: String, excerptPostfix: String = ""): mutable.LinkedHashMap[String, Json] = {
+    val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
+    val lineNumber = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
+
+    occurrenceOutput.addOne(Constants.sample       -> sample.asJson)
+    occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
+    occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
+    occurrenceOutput.addOne(Constants.fileName     -> filename.asJson)
+    val excerpt = Utilities.dump(filename, Some(lineNumber)) + "\n" + excerptPostfix + "\n"
+    occurrenceOutput.addOne(Constants.excerpt -> excerpt.asJson)
+
+    occurrenceOutput
+  }
+
+  def getOccurrenceObjectWithCustomExcerpt(excerpt: String, sample: String, filename: String, excerptPostfix: String = ""): mutable.LinkedHashMap[String, Json] = {
+    val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
+    val lineNumber = getLineNumberOfMatchingEditText(filename, sample)
+
+    occurrenceOutput.addOne(Constants.sample       -> sample.asJson)
+    occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
+    occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
+    occurrenceOutput.addOne(Constants.fileName     -> filename.asJson)
+    occurrenceOutput.addOne(Constants.excerpt -> (excerpt + "\n" + excerptPostfix + "\n").asJson)
+
+    occurrenceOutput
   }
 
 }
