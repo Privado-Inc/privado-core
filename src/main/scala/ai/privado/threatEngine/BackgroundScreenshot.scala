@@ -21,7 +21,7 @@ object BackgroundScreenshot {
   private val SAFE_FLAG               = "WindowManager.LayoutParams.FLAG_SECURE"
   private val logger                  = LoggerFactory.getLogger(getClass)
 
-  /** Fetch all the violations which violate Key-board cache threat
+  /** Check for violation for auto-generated background screenshot threat
     * @param cpg
     *   source filepath of manifest file
     * @return

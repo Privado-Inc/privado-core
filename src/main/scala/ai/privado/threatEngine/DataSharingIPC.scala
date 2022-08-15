@@ -33,7 +33,7 @@ object DataSharingIPC {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  /** Fetch all the violations which violate Key-board cache threat
+  /** Fetch all the violations which violate IPC data sharing policy
     * @param androidManifestFile
     *   source filepath of manifest file
     * @return
