@@ -120,7 +120,7 @@ object StorageInheritRule {
       "SQLite(Read)",
       "",
       Array[String]("android.com"),
-      List[String]("(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper", "(query|rawQuery).*"),
+      List[String]("(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper)", "(query|rawQuery).*"),
       false,
       "",
       HashMap[String, String](),
@@ -137,7 +137,7 @@ object StorageInheritRule {
       "",
       Array[String]("android.com"),
       List[String](
-        "(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper",
+        "(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper)",
         "(delete|update|replace|insert|execSQL|execPerConnectionSQL|compileStatement).*"
       ),
       false,
