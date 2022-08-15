@@ -2,6 +2,7 @@ package ai.privado.threatEngine
 
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.utility.Utilities
+import ai.privado.threatEngine.ThreatUtility._
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -13,7 +14,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 import scala.util.control.Breaks.{break, breakable}
-import scala.xml.{Elem, MetaData, XML}
+import scala.xml.{Elem, Group, MetaData, SpecialNode, XML}
 
 object DataSharingIPC {
 
@@ -22,6 +23,7 @@ object DataSharingIPC {
   private val PROVIDER_PERM_ATTRIBUTE   = "permission"
   private val PROVIDER_PERM_R_ATTRIBUTE = "readPermission"
   private val PROVIDER_PERM_W_ATTRIBUTE = "writePermission"
+  private val PATH_PERM_KEY = "path-permission"
 
   private val INTENT_FILTER_KEY    = "intent-filter"
   private val SDK_KEY              = "uses-sdk"
@@ -45,6 +47,8 @@ object DataSharingIPC {
     val providerNodes = xml \\ PROVIDER_KEY
 
     if (hasDataElements(cpg) && providerNodes.nonEmpty) {
+      var checkForGlobalPermissions = false
+
       providerNodes.foreach {
 //        Elem(prefix, label, attributes, scope, child @ _*)
         case provider: Elem =>
@@ -62,85 +66,91 @@ object DataSharingIPC {
           if (!isExport) {
             val intentFilter = provider \\ INTENT_FILTER_KEY
             // if intent-filter is defined, export is true, even when defined "false"
-            isExport = if (intentFilter.nonEmpty) true else false
+            isExport = intentFilter.nonEmpty
           }
 
-//          val providerExport = getAttribute(attributes, PROVIDER_EXPORT_ATTRIBUTE)
-//          if (providerExport == "") {
-//
-//          }
-//          println("GOT ALUE", providerExport)
-//          val processPermissions = if (providerExport == "true") true else false
+          // mark true if any export is enabled
+          checkForGlobalPermissions = checkForGlobalPermissions || isExport
 
-//          if (getBackupAttribute(attributes)) {
-//            val lineNumber = getLineNumberOfMatchingEditText(
-//              androidManifestFile,
-//              ALLOW_BACKUP_KEY + "=\"" + backupAttribute.text + "\""
-//            )
-//            val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-//            occurrenceOutput.addOne(Constants.sample       -> s"${ALLOW_BACKUP_KEY}=\"${backupAttribute.text}\"".asJson)
-//            occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
-//            occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
-//            occurrenceOutput.addOne(Constants.fileName     -> androidManifestFile.asJson)
-//            occurrenceOutput.addOne(Constants.excerpt -> Utilities.dump(androidManifestFile, Some(lineNumber)).asJson)
-//            occurrenceList.append(occurrenceOutput)
-//          }
+          // check for permissions
+          if(isExport) {
+            // check if permission attributes are set on provider
+            var hasPermAttribute = hasPermissionAttribute(provider.attributes)
+            if(!hasPermAttribute) {
+              // if no perm attribute, check if path-permission is set
+              var isPathPermSet = false
+              val pathPermissionNodes = provider \\ PATH_PERM_KEY
+              if (pathPermissionNodes.nonEmpty) {
+                pathPermissionNodes.foreach {
+                  case pathPermission: Elem =>
+                    if(hasPermissionAttribute(pathPermission.attributes)) isPathPermSet = true
+                  case _ =>
+                }
+              }
+
+              if (!isPathPermSet) {
+                // negative case: best case to show place expected
+                // we lose the formatting of exact string from xml
+//              // hence use with custom excerpt
+                val occurrenceOutput = getOccurrenceObjectWithCustomExcerpt(
+                  provider.toString,
+                  provider.attributes.toString,
+                  androidManifestFile,
+                  excerptPostfix = s"> Missing ${PROVIDER_PERM_ATTRIBUTE}/${PROVIDER_PERM_R_ATTRIBUTE}/${PROVIDER_PERM_W_ATTRIBUTE} for ${PROVIDER_KEY}>"
+                )
+                occurrenceList.append(occurrenceOutput)
+              }
+            }
+          }
         case _ => // Node not found
       }
-    }
 
-    val sanitizedOccurrenceList = occurrenceList
-      .map(occurrence =>
-        mutable.Map[String, Json](Constants.sourceId -> "".asJson, Constants.occurrence -> occurrence.asJson).asJson
-      )
-      .toList
+      if(checkForGlobalPermissions) {
+        val permissionNodes = xml \\ PERM_KEY
+        if (permissionNodes.nonEmpty) {
+          permissionNodes.foreach {
+            case permissionNode: Elem =>
+              getAttribute(permissionNode.attributes, PROTECTION_LEVEL_ATTRIBUTE) match {
+                case Some(protection) if protection == PROTECTION_LEVEL_ATTRIBUTE_VALUE =>
+                case Some(protection) =>
+                  // attribute does not has the correct value
+                  val occurrenceOutput = getOccurrenceObject(
+                    s"${PROTECTION_LEVEL_ATTRIBUTE}=",
+                    s"${PROTECTION_LEVEL_ATTRIBUTE}=\"${protection}\"",
+                    androidManifestFile,
+                  )
+                  occurrenceList.append(occurrenceOutput)
+                case _ =>
+                  // attribute is not set (default: "normal")
+                  // https://developer.android.com/guide/topics/manifest/permission-element#plevel
 
-    // threat exists if occurrences are non-empty
-    (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
-  }
-
-  /** Gets the value of a key from attributes
-    * @param attributes
-    *   the attributes of xml node
-    * @return
-    *   Option[string] value of attribute
-    */
-  private def getAttribute(attributes: MetaData, key: String): Option[String] = {
-    val filteredAttrs = attributes.filter(_.key == key)
-    if (filteredAttrs.nonEmpty) Some(filteredAttrs.head.value.head.text) else None
-  }
-
-  /** Returns matching line number from the file
-    * @param fileName
-    *   name of file
-    * @param matchingText
-    *   match text
-    * @return
-    */
-  private def getLineNumberOfMatchingEditText(fileName: String, matchingText: String) = {
-    var matchedLineNumber = -2
-    try {
-      val lines = File(fileName).lines.toList
-      breakable {
-        for (lineNumber <- 1 until lines.size) {
-          if (lines(lineNumber).contains(matchingText)) {
-            matchedLineNumber = lineNumber
-            break()
+                  // negative case: construct with custom excerpt
+                  val occurrenceOutput = getOccurrenceObjectWithCustomExcerpt(
+                    permissionNode.toString,
+                    s"${PROTECTION_LEVEL_ATTRIBUTE}=\"normal\"",
+                    androidManifestFile,
+                    excerptPostfix = s"> Missing: ${PROTECTION_LEVEL_ATTRIBUTE}=\"signature\" (default: \"normal\")"
+                  )
+                  occurrenceList.append(occurrenceOutput)
+              }
+            case _ =>
           }
+        } else {
+            // permission key not found. default value for protectionLevel is "normal"
+            val occurrenceOutput = getOccurrenceObject(
+              "<manifest ", // because permission key is child of manifest key
+              s"${PROTECTION_LEVEL_ATTRIBUTE}=\"normal\"",
+              androidManifestFile,
+              excerptPostfix = s"> Missing: ${PROTECTION_LEVEL_ATTRIBUTE}=\"signature\" (default: \"normal\")"
+            )
+            occurrenceList.append(occurrenceOutput)
         }
       }
-    } catch {
-      case e: Exception => logger.debug("Exception", e)
     }
-    matchedLineNumber + 1
-  }
 
-  private def hasDataElements(cpg: Cpg): Boolean = {
-    val taggedSources = cpg.tag
-      .nameExact(Constants.catLevelOne)
-      .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-      .l
-    if (taggedSources.nonEmpty) true else false
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
+    // threat exists if occurrences are non-empty
+    (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
   }
 
   private def getDefinedTargetSDKValue(xml: Elem): String = {
@@ -152,5 +162,19 @@ object DataSharingIPC {
         case _       => ""
       }
     } else ""
+  }
+
+  private def hasPermissionAttribute(attributes: MetaData): Boolean = {
+    // check for permission attributes and return first is found to be set
+    getAttribute(attributes, PROVIDER_PERM_ATTRIBUTE) match {
+      case Some(x) if x != "" => true
+      case _ => getAttribute(attributes, PROVIDER_PERM_W_ATTRIBUTE) match {
+        case Some(x) if x != "" => true
+        case _ => getAttribute(attributes, PROVIDER_PERM_R_ATTRIBUTE) match {
+          case Some(x) if x != "" => true
+          case _ => false
+        }
+      }
+    }
   }
 }
