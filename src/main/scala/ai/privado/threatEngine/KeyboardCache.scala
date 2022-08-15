@@ -51,13 +51,8 @@ object KeyboardCache {
                 if (isSensitiveInputTypePresent(attributes) || isSensitiveId(attributes, RuleCache.getRule.sources)) {
                   if (!isTextNoSuggestionsInInputTypePresent(attributes)) {
                     val idAttribute = attributes.filter(attribute => attribute.prefixedKey == ID).value.head
-                    val lineNumber  = getLineNumberOfMatchingEditText(sourceFile, ID + "=\"" + idAttribute.text + "\"")
-                    val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-                    occurrenceOutput.addOne(Constants.sample       -> idAttribute.text.asJson)
-                    occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
-                    occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
-                    occurrenceOutput.addOne(Constants.fileName     -> sourceFile.asJson)
-                    occurrenceOutput.addOne(Constants.excerpt -> Utilities.dump(sourceFile, Some(lineNumber)).asJson)
+                    val occurrenceOutput =
+                      getOccurrenceObject(ID + "=\"" + idAttribute.text + "\"", idAttribute.text, sourceFile)
                     occurrenceList.append(occurrenceOutput)
                   }
                 }

@@ -48,12 +48,12 @@ object ThreatUtility {
   }
 
   /** Returns matching line number from the file
-   * @param fileName
-   *   name of file
-   * @param matchingText
-   *   match text
-   * @return
-   */
+    * @param fileName
+    *   name of file
+    * @param matchingText
+    *   match text
+    * @return
+    */
   def getLineNumberOfMatchingEditText(fileName: String, matchingText: String): Int = {
     var matchedLineNumber = -2
     try {
@@ -73,19 +73,24 @@ object ThreatUtility {
   }
 
   /** Gets the value of a key from attributes
-   * @param attributes
-   *   the attributes of xml node
-   * @return
-   *   Option[string] value of attribute
-   */
+    * @param attributes
+    *   the attributes of xml node
+    * @return
+    *   Option[string] value of attribute
+    */
   def getAttribute(attributes: MetaData, key: String): Option[String] = {
     val filteredAttrs = attributes.filter(_.key == key)
     if (filteredAttrs.nonEmpty) Some(filteredAttrs.head.value.head.text) else None
   }
 
-  def getOccurrenceObject(matchingTextForLine: String, sample: String, filename: String, excerptPostfix: String = ""): mutable.LinkedHashMap[String, Json] = {
+  def getOccurrenceObject(
+    matchingTextForLine: String,
+    sample: String,
+    filename: String,
+    excerptPostfix: String = ""
+  ): mutable.LinkedHashMap[String, Json] = {
     val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-    val lineNumber = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
+    val lineNumber       = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
 
     occurrenceOutput.addOne(Constants.sample       -> sample.asJson)
     occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
@@ -97,15 +102,20 @@ object ThreatUtility {
     occurrenceOutput
   }
 
-  def getOccurrenceObjectWithCustomExcerpt(excerpt: String, sample: String, filename: String, excerptPostfix: String = ""): mutable.LinkedHashMap[String, Json] = {
+  def getOccurrenceObjectWithCustomExcerpt(
+    excerpt: String,
+    sample: String,
+    filename: String,
+    excerptPostfix: String = ""
+  ): mutable.LinkedHashMap[String, Json] = {
     val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-    val lineNumber = getLineNumberOfMatchingEditText(filename, sample)
+    val lineNumber       = getLineNumberOfMatchingEditText(filename, sample)
 
     occurrenceOutput.addOne(Constants.sample       -> sample.asJson)
     occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
     occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
     occurrenceOutput.addOne(Constants.fileName     -> filename.asJson)
-    occurrenceOutput.addOne(Constants.excerpt -> (excerpt + "\n" + excerptPostfix + "\n").asJson)
+    occurrenceOutput.addOne(Constants.excerpt      -> (excerpt + "\n" + excerptPostfix + "\n").asJson)
 
     occurrenceOutput
   }

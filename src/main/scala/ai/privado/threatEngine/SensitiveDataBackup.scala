@@ -43,12 +43,11 @@ object SensitiveDataBackup {
           if (backupAttribute == "true") {
             val lineNumber =
               getLineNumberOfMatchingEditText(androidManifestFile, ALLOW_BACKUP_KEY + "=\"" + backupAttribute + "\"")
-            val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-            occurrenceOutput.addOne(Constants.sample       -> s"${ALLOW_BACKUP_KEY}=\"${backupAttribute}\"".asJson)
-            occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
-            occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
-            occurrenceOutput.addOne(Constants.fileName     -> androidManifestFile.asJson)
-            occurrenceOutput.addOne(Constants.excerpt -> Utilities.dump(androidManifestFile, Some(lineNumber)).asJson)
+            val occurrenceOutput = getOccurrenceObject(
+              ALLOW_BACKUP_KEY + "=\"" + backupAttribute + "\"",
+              s"${ALLOW_BACKUP_KEY}=\"${backupAttribute}\"",
+              androidManifestFile
+            )
             occurrenceList.append(occurrenceOutput)
           }
         case _ => // Node not found

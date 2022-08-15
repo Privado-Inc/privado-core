@@ -23,7 +23,7 @@ object DataSharingIPC {
   private val PROVIDER_PERM_ATTRIBUTE   = "permission"
   private val PROVIDER_PERM_R_ATTRIBUTE = "readPermission"
   private val PROVIDER_PERM_W_ATTRIBUTE = "writePermission"
-  private val PATH_PERM_KEY = "path-permission"
+  private val PATH_PERM_KEY             = "path-permission"
 
   private val INTENT_FILTER_KEY    = "intent-filter"
   private val SDK_KEY              = "uses-sdk"
@@ -73,17 +73,17 @@ object DataSharingIPC {
           checkForGlobalPermissions = checkForGlobalPermissions || isExport
 
           // check for permissions
-          if(isExport) {
+          if (isExport) {
             // check if permission attributes are set on provider
             var hasPermAttribute = hasPermissionAttribute(provider.attributes)
-            if(!hasPermAttribute) {
+            if (!hasPermAttribute) {
               // if no perm attribute, check if path-permission is set
-              var isPathPermSet = false
+              var isPathPermSet       = false
               val pathPermissionNodes = provider \\ PATH_PERM_KEY
               if (pathPermissionNodes.nonEmpty) {
                 pathPermissionNodes.foreach {
                   case pathPermission: Elem =>
-                    if(hasPermissionAttribute(pathPermission.attributes)) isPathPermSet = true
+                    if (hasPermissionAttribute(pathPermission.attributes)) isPathPermSet = true
                   case _ =>
                 }
               }
@@ -96,7 +96,8 @@ object DataSharingIPC {
                   provider.toString,
                   provider.attributes.toString,
                   androidManifestFile,
-                  excerptPostfix = s"> Missing ${PROVIDER_PERM_ATTRIBUTE}/${PROVIDER_PERM_R_ATTRIBUTE}/${PROVIDER_PERM_W_ATTRIBUTE} for ${PROVIDER_KEY}>"
+                  excerptPostfix =
+                    s"> Missing ${PROVIDER_PERM_ATTRIBUTE}/${PROVIDER_PERM_R_ATTRIBUTE}/${PROVIDER_PERM_W_ATTRIBUTE} for ${PROVIDER_KEY}>"
                 )
                 occurrenceList.append(occurrenceOutput)
               }
@@ -105,19 +106,19 @@ object DataSharingIPC {
         case _ => // Node not found
       }
 
-      if(checkForGlobalPermissions) {
+      if (checkForGlobalPermissions) {
         val permissionNodes = xml \\ PERM_KEY
         if (permissionNodes.nonEmpty) {
           permissionNodes.foreach {
             case permissionNode: Elem =>
               getAttribute(permissionNode.attributes, PROTECTION_LEVEL_ATTRIBUTE) match {
                 case Some(protection) if protection == PROTECTION_LEVEL_ATTRIBUTE_VALUE =>
-                case Some(protection) =>
+                case Some(protection)                                                   =>
                   // attribute does not has the correct value
                   val occurrenceOutput = getOccurrenceObject(
                     s"${PROTECTION_LEVEL_ATTRIBUTE}=",
                     s"${PROTECTION_LEVEL_ATTRIBUTE}=\"${protection}\"",
-                    androidManifestFile,
+                    androidManifestFile
                   )
                   occurrenceList.append(occurrenceOutput)
                 case _ =>
@@ -136,14 +137,14 @@ object DataSharingIPC {
             case _ =>
           }
         } else {
-            // permission key not found. default value for protectionLevel is "normal"
-            val occurrenceOutput = getOccurrenceObject(
-              "<manifest ", // because permission key is child of manifest key
-              s"${PROTECTION_LEVEL_ATTRIBUTE}=\"normal\"",
-              androidManifestFile,
-              excerptPostfix = s"> Missing: ${PROTECTION_LEVEL_ATTRIBUTE}=\"signature\" (default: \"normal\")"
-            )
-            occurrenceList.append(occurrenceOutput)
+          // permission key not found. default value for protectionLevel is "normal"
+          val occurrenceOutput = getOccurrenceObject(
+            "<manifest ", // because permission key is child of manifest key
+            s"${PROTECTION_LEVEL_ATTRIBUTE}=\"normal\"",
+            androidManifestFile,
+            excerptPostfix = s"> Missing: ${PROTECTION_LEVEL_ATTRIBUTE}=\"signature\" (default: \"normal\")"
+          )
+          occurrenceList.append(occurrenceOutput)
         }
       }
     }
@@ -168,13 +169,15 @@ object DataSharingIPC {
     // check for permission attributes and return first is found to be set
     getAttribute(attributes, PROVIDER_PERM_ATTRIBUTE) match {
       case Some(x) if x != "" => true
-      case _ => getAttribute(attributes, PROVIDER_PERM_W_ATTRIBUTE) match {
-        case Some(x) if x != "" => true
-        case _ => getAttribute(attributes, PROVIDER_PERM_R_ATTRIBUTE) match {
+      case _ =>
+        getAttribute(attributes, PROVIDER_PERM_W_ATTRIBUTE) match {
           case Some(x) if x != "" => true
-          case _ => false
+          case _ =>
+            getAttribute(attributes, PROVIDER_PERM_R_ATTRIBUTE) match {
+              case Some(x) if x != "" => true
+              case _                  => false
+            }
         }
-      }
     }
   }
 }
