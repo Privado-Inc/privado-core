@@ -54,7 +54,7 @@ object Utilities {
         case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
         case _       => ()
       }
-      // storing by catLevelTwo to get id
+      // storing by catLevelTwo and nodeType to get id
       storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
     }
   }
