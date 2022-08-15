@@ -55,7 +55,7 @@ object Utilities {
         case _       => ()
       }
       // storing by catLevelTwo to get id
-      storeForTagHelper(ruleInfo.catLevelTwo, ruleInfo.id)
+      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
     }
   }
 
