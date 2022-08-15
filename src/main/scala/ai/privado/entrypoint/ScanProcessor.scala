@@ -13,12 +13,13 @@ import io.circe.Json
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
+import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
 import scala.sys.exit
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -236,6 +237,8 @@ object ScanProcessor extends CommandProcessor {
           Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
         JavaSrc2Cpg().createCpg(cpgconfig)
       }
+      case Some(lang) =>
+        createJavaCpg(sourceRepoLocation, lang)
       case _ => {
         logger.error("Unable to detect language! Is it supported yet?")
         Failure(new RuntimeException("Unable to detect language!"))
@@ -302,31 +305,28 @@ object ScanProcessor extends CommandProcessor {
         }
       }
 
-<<<<<<< HEAD
-        /*
-        // Utility to debug
-        for (tagName <- cpg.tag.name.dedup.l) {
-          val tags = cpg.tag(tagName).l
-          println(s"tag Name : ${tagName}, size : ${tags.size}")
-          println("Values : ")
-          for (tag <- tags) {
-            print(s"${tag.value}, ")
-          }
-          println("\n----------------------------------------")
-        }*/
-        logger.debug(
-          s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-        )
-      case Failure(exception) =>
-        logger.error("Error while parsing the source code.")
-=======
       case Failure(exception) => {
         logger.error("Error while parsing the source code!")
->>>>>>> 8b78900 (fix - element present in sources but absent in processing)
         logger.debug("Error : ", exception)
         Left("Error while parsing the source code: " + exception.toString)
       }
     }
+  }
+
+  /** Create cpg using Java Language
+    * @param sourceRepoLocation
+    * @param lang
+    * @return
+    */
+  private def createJavaCpg(sourceRepoLocation: String, lang: String): Try[codepropertygraph.Cpg] = {
+    MetricHandler.metricsData("language") = Json.fromString(lang)
+    println(s"Detected language $lang")
+    println(s"Processing source code using ${Languages.JAVASRC} engine")
+    if (!config.skipDownladDependencies)
+      println("Downloading dependencies...")
+    val cpgconfig =
+      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
+    JavaSrc2Cpg().createCpg(cpgconfig)
   }
 
   override var config: PrivadoInput = _
