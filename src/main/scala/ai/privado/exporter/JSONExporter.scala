@@ -44,11 +44,18 @@ object JSONExporter {
       output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
       logger.info("Completed Source Exporting")
 
-      val sinkSubCategories = RuleCache.getRule.sinks.map(sinkRule => sinkRule.catLevelTwo).toSet
+      val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
+      RuleCache.getRule.sinks.foreach(sinkRule => {
+        if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
+          sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
+        sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
+      })
 
       val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
-      sinkSubCategories.foreach(sinkSubType => {
-        dataflowsOutput.addOne(sinkSubType -> dataflowExporter.getFlowByType(sinkSubType).asJson)
+      sinkSubCategories.foreach(sinkSubTypeEntry => {
+        dataflowsOutput.addOne(
+          sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).asJson
+        )
       })
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)

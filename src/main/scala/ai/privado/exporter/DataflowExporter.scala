@@ -17,7 +17,10 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  def getFlowByType(sinkSubCategory: String): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
+  def getFlowByType(
+    sinkSubCategory: String,
+    sinkNodetypes: Set[String]
+  ): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
     def processNonEmptyFlows(
       dataflowsMapByType: Map[String, Path]
     ): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
@@ -44,7 +47,9 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
       dataflowsMapBySourceId.foreach(flow => {
         val dataflowOutput = mutable.LinkedHashMap[String, Json]()
         dataflowOutput.addOne(Constants.sourceId -> flow._1.asJson)
-        dataflowOutput.addOne(Constants.sinks -> convertSinksList(flow._2.toList, dataflowsMapByType, sinkSubCategory))
+        dataflowOutput.addOne(
+          Constants.sinks -> convertSinksList(flow._2.toList, dataflowsMapByType, sinkSubCategory, sinkNodetypes)
+        )
         dataflowOutputList += dataflowOutput
       })
       dataflowOutputList
@@ -65,7 +70,8 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
   private def convertSinksList(
     sinkPathIds: List[String],
     dataflowsMapByType: Map[String, Path],
-    dataflowSinkType: String
+    dataflowSinkType: String,
+    dataflowNodeTypes: Set[String]
   ) = {
 
     def convertSink(sinkId: String, sinkPathIds: ListBuffer[String]) = {
@@ -92,19 +98,21 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
     val sinkMap = mutable.HashMap[String, ListBuffer[String]]()
     sinkPathIds.foreach(sinkPathId => {
-      val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
-        .filter(node => node.name.equals(dataflowSinkType))
-      if (sinkCatLevelTwoCustomTag.nonEmpty) {
-        var sinkId = sinkCatLevelTwoCustomTag.head.value
-        val sinkAPITag = dataflowsMapByType(sinkPathId).elements.last.tag
-          .filter(node => node.name.equals(Constants.apiUrl))
-        if (sinkAPITag.nonEmpty) {
-          sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
+      dataflowNodeTypes.foreach(dataflowNodeType => {
+        val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
+          .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
+        if (sinkCatLevelTwoCustomTag.nonEmpty) {
+          var sinkId = sinkCatLevelTwoCustomTag.head.value
+          val sinkAPITag = dataflowsMapByType(sinkPathId).elements.last.tag
+            .filter(node => node.name.equals(Constants.apiUrl))
+          if (sinkAPITag.nonEmpty) {
+            sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
+          }
+          if (!sinkMap.contains(sinkId))
+            sinkMap(sinkId) = ListBuffer()
+          sinkMap(sinkId).append(sinkPathId)
         }
-        if (!sinkMap.contains(sinkId))
-          sinkMap(sinkId) = ListBuffer()
-        sinkMap(sinkId).append(sinkPathId)
-      }
+      })
     })
     sinkMap.map(entrySet => convertSink(entrySet._1, entrySet._2)).asJson
   }
