@@ -4,6 +4,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities._
+import ai.privado.threatEngine.ThreatUtility._
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
@@ -37,8 +38,7 @@ object KeyboardCache {
     * @param repoPath
     * @return
     */
-  def getViolations(repoPath: String) = Try {
-
+  def getViolations(repoPath: String): Try[(Boolean, List[Json])] = Try {
     val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
     getAllFilesRecursively(repoPath, Set(".xml")) match {
       case Some(sourceFileNames) =>
@@ -51,13 +51,8 @@ object KeyboardCache {
                 if (isSensitiveInputTypePresent(attributes) || isSensitiveId(attributes, RuleCache.getRule.sources)) {
                   if (!isTextNoSuggestionsInInputTypePresent(attributes)) {
                     val idAttribute = attributes.filter(attribute => attribute.prefixedKey == ID).value.head
-                    val lineNumber  = getLineNumberOfMatchingEditText(sourceFile, ID + "=\"" + idAttribute.text + "\"")
-                    val occurrenceOutput = mutable.LinkedHashMap[String, Json]()
-                    occurrenceOutput.addOne(Constants.sample       -> idAttribute.text.asJson)
-                    occurrenceOutput.addOne(Constants.lineNumber   -> lineNumber.asJson)
-                    occurrenceOutput.addOne(Constants.columnNumber -> (-1).asJson)
-                    occurrenceOutput.addOne(Constants.fileName     -> sourceFile.asJson)
-                    occurrenceOutput.addOne(Constants.excerpt -> Utilities.dump(sourceFile, Some(lineNumber)).asJson)
+                    val occurrenceOutput =
+                      getOccurrenceObject(ID + "=\"" + idAttribute.text + "\"", idAttribute.text, sourceFile)
                     occurrenceList.append(occurrenceOutput)
                   }
                 }
@@ -67,11 +62,11 @@ object KeyboardCache {
         })
       case None => // repo is not correct
     }
-    occurrenceList
-      .map(occurrence =>
-        mutable.Map[String, Json](Constants.sourceId -> "".asJson, Constants.occurrence -> occurrence.asJson).asJson
-      )
-      .toList
+
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
+
+    // threat exists if occurrences are non-empty
+    (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
   }
 
   /** Checks if the field id is sensitive
@@ -148,28 +143,5 @@ object KeyboardCache {
         false
     }
 
-  }
-
-  /** Returns matching line number from the file
-    * @param fileName
-    * @param matchingText
-    * @return
-    */
-  private def getLineNumberOfMatchingEditText(fileName: String, matchingText: String) = {
-    var matchedLineNumber = -2
-    try {
-      val lines = File(fileName).lines.toList
-      breakable {
-        for (lineNumber <- 1 until lines.size) {
-          if (lines(lineNumber).contains(matchingText)) {
-            matchedLineNumber = lineNumber
-            break()
-          }
-        }
-      }
-    } catch {
-      case e: Exception => logger.debug("Exception", e)
-    }
-    matchedLineNumber + 1
   }
 }
