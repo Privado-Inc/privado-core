@@ -41,8 +41,6 @@ object SensitiveDataBackup {
             case _       => ""
           }
           if (backupAttribute == "true") {
-            val lineNumber =
-              getLineNumberOfMatchingEditText(androidManifestFile, ALLOW_BACKUP_KEY + "=\"" + backupAttribute + "\"")
             val occurrenceOutput = getOccurrenceObject(
               ALLOW_BACKUP_KEY + "=\"" + backupAttribute + "\"",
               s"${ALLOW_BACKUP_KEY}=\"${backupAttribute}\"",
