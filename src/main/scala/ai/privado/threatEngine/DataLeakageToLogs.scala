@@ -1,6 +1,8 @@
 package ai.privado.threatEngine
 
+import ai.privado.cache.AppCache
 import io.circe.Json
+import ai.privado.policyEngine.PolicyExecutor
 import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.model.{Constants, PolicyOrThreat, PolicyViolationFlowModel}
 import io.shiftleft.semanticcpg.language._
@@ -10,10 +12,7 @@ import org.slf4j.LoggerFactory
 import scala.util.Try
 
 object DataLeakageToLogs {
-
-  private val SET_FLAG_METHOD_PATTERN = ".*(add|set)Flags.*"
-  private val SAFE_FLAG               = "WindowManager.LayoutParams.FLAG_SECURE"
-  private val logger                  = LoggerFactory.getLogger(getClass)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Check for violation for data leakage to logs threat - consumes already generated dataflows
     * @param threat
@@ -29,8 +28,14 @@ object DataLeakageToLogs {
     cpg: Cpg,
     dataflows: Map[String, Path]
   ): Try[(Boolean, List[PolicyViolationFlowModel])] = Try {
+    // use policy executor to directly process existing flows
+    // we already have this implementation as part of policy enforcement
+    // threat being type of suggestive policy
+    // might restructure this in future and have central utilities consumed by both
+    val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName)
+    val violatingFlows = policyExecutor.getViolatingFlowsForPolicy(threat)
 
     // violation if empty
-    (false, List())
+    (violatingFlows.nonEmpty, violatingFlows.toList)
   }
 }
