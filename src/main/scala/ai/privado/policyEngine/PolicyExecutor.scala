@@ -39,28 +39,26 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
 
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
-  def getDataflowViolations = {
+  def getDataflowViolations: Map[String, ListBuffer[PolicyViolationFlowModel]] = {
 
     val dataflowResult = policies
-      .map(policy =>
-        (
-          policy.id, {
-            val violatingFlowList = ListBuffer[PolicyViolationFlowModel]()
-            val sourceMatchingIds = getSourcesMatchingRegex(policy)
-            val sinksMatchingIds  = getSinksMatchingRegex(policy)
-            sourceMatchingIds.foreach(sourceId => {
-              sinksMatchingIds.foreach(sinkId => {
-                val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
-                if (intersectingPathIds.nonEmpty)
-                  violatingFlowList.append(PolicyViolationFlowModel(sourceId, sinkId, intersectingPathIds.toList))
-              })
-            })
-            violatingFlowList
-          }
-        )
-      )
+      .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
       .toMap
     dataflowResult
+  }
+
+  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): ListBuffer[PolicyViolationFlowModel] = {
+    val violatingFlowList = ListBuffer[PolicyViolationFlowModel]()
+    val sourceMatchingIds = getSourcesMatchingRegex(policy)
+    val sinksMatchingIds  = getSinksMatchingRegex(policy)
+    sourceMatchingIds.foreach(sourceId => {
+      sinksMatchingIds.foreach(sinkId => {
+        val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
+        if (intersectingPathIds.nonEmpty)
+          violatingFlowList.append(PolicyViolationFlowModel(sourceId, sinkId, intersectingPathIds.toList))
+      })
+    })
+    violatingFlowList
   }
 
   /** Filters outs based on Repository name
