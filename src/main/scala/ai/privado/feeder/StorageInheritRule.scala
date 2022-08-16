@@ -82,6 +82,73 @@ object StorageInheritRule {
       "storages",
       Language.JAVA,
       Array[String]()
+    ),
+    RuleInfo(
+      "Storages.MongoDB.Morphia.BasicDao.Read",
+      "MongoDB(Read)",
+      "",
+      Array[String]("mongodb.com"),
+      List[String]("(?i)(.*[.]morphia[.]dao[.]BasicDAO.*)", "(?i)(count|createQuery|exists|find|get).*"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.JAVA,
+      Array[String]()
+    ),
+    RuleInfo(
+      "Storages.MongoDB.Morphia.BasicDao.Write",
+      "MongoDB(Write)",
+      "",
+      Array[String]("mongodb.com"),
+      List[String]("(?i)(.*[.]morphia[.]dao[.]BasicDAO.*)", "(?i)(delete|save|update).*"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.JAVA,
+      Array[String]()
+    ),
+    RuleInfo(
+      "Storages.Android.SQLite.SQLiteOpenHelper.Read",
+      "SQLite(Read)",
+      "",
+      Array[String]("android.com"),
+      List[String]("(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper)", "(query|rawQuery).*"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.JAVA,
+      Array[String]()
+    ),
+    RuleInfo(
+      "Storages.Android.SQLite.SQLiteOpenHelper.Write",
+      "SQLite(Write)",
+      "",
+      Array[String]("android.com"),
+      List[String](
+        "(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper)",
+        "(delete|update|replace|insert|execSQL|execPerConnectionSQL|compileStatement).*"
+      ),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.JAVA,
+      Array[String]()
     )
   )
 }

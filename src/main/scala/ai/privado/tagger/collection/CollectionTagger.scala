@@ -79,17 +79,15 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
         None
       } else {
         parameters.foreach(parameter => {
-          val refIdentifierTags = Try(
-            parameter.referencingIdentifiers
-              .where(_.tag.name(Constants.privadoDerived + ".*"))
-              .head
-              .tag
-              .name(Constants.privadoDerived + ".*")
-          )
-          refIdentifierTags match {
-            case Success(refIdentifierTags) =>
-              refIdentifierTags.foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
-            case Failure(e) => logger.debug("Exception : ", e)
+          val derivedReferencingIdentifier = parameter.referencingIdentifiers
+            .where(_.tag.name(Constants.privadoDerived + ".*"))
+            .l
+          if (derivedReferencingIdentifier.nonEmpty) {
+            Try(derivedReferencingIdentifier.head.tag.name(Constants.privadoDerived + ".*")) match {
+              case Success(refIdentifierTags) =>
+                refIdentifierTags.foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
+              case Failure(e) => logger.debug("Exception when reading referencing identifier information : ", e)
+            }
           }
         })
         collectionMethod

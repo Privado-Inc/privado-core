@@ -13,12 +13,13 @@ import io.circe.Json
 import io.circe.yaml.parser
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
+import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
 import scala.sys.exit
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -227,14 +228,8 @@ object ScanProcessor extends CommandProcessor {
     import io.joern.console.cpgcreation.guessLanguage
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
-        MetricHandler.metricsData("language") = Json.fromString(lang)
-        println(s"Detected language $lang")
-        if (!config.skipDownladDependencies)
-          println("Downloading dependencies...")
-        val cpgconfig =
-          Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
-        JavaSrc2Cpg().createCpg(cpgconfig)
+      case Some(lang) =>
+        createJavaCpg(sourceRepoLocation, lang)
       case _ => {
         logger.error("Unable to detect language! Is it supported yet?")
         Failure(new RuntimeException("Unable to detect language!"))
@@ -306,6 +301,22 @@ object ScanProcessor extends CommandProcessor {
         Left("Error while parsing the source code: " + exception.toString)
       }
     }
+  }
+
+  /** Create cpg using Java Language
+    * @param sourceRepoLocation
+    * @param lang
+    * @return
+    */
+  private def createJavaCpg(sourceRepoLocation: String, lang: String): Try[codepropertygraph.Cpg] = {
+    MetricHandler.metricsData("language") = Json.fromString(lang)
+    println(s"Detected language $lang")
+    println(s"Processing source code using ${Languages.JAVASRC} engine")
+    if (!config.skipDownladDependencies)
+      println("Downloading dependencies...")
+    val cpgconfig =
+      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
+    JavaSrc2Cpg().createCpg(cpgconfig)
   }
 
   override var config: PrivadoInput = _
