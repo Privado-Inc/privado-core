@@ -15,8 +15,8 @@ import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
-import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
 
 import scala.sys.exit
 import scala.util.{Failure, Success, Try}
@@ -221,6 +221,19 @@ object ScanProcessor extends CommandProcessor {
     processCPG(processRules())
   }
 
+  private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {
+    logger.trace(s"parsing rules from -> '${sourcePath}'")
+    val sourceLocation: File = {
+      try File(sourcePath)
+      catch {
+        case ex: Throwable =>
+          logger.debug("File error: ", ex)
+          logger.error(s"Exception while reading source location '$sourcePath'")
+          exit(1)
+      }
+    }
+    sourceLocation.listRecursively.count(f => f.extension == Some(".java") || f.extension == Some(".JAVA")) > 0
+  }
   def processCPG(processedRules: ConfigAndRules): Either[String, Unit] = {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
@@ -229,6 +242,18 @@ object ScanProcessor extends CommandProcessor {
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
       case Some(lang) =>
+        if (!(lang == Languages.JAVASRC || lang == Languages.JAVA)) {
+          if (checkJavaSourceCodePresent(sourceRepoLocation)) {
+            println(s"We detected presence of 'Java' code base along with other major language code base '${lang}'.")
+            println(s"However we only support 'Java' code base scanning as of now.")
+          } else {
+            println(s"As of now we only support privacy code scanning for 'Java' code base.")
+            println(s"We detected this code base of '${lang}'.")
+            exit(1)
+          }
+        } else {
+          println(s"Detected language 'Java' ")
+        }
         createJavaCpg(sourceRepoLocation, lang)
       case _ => {
         logger.error("Unable to detect language! Is it supported yet?")
@@ -310,7 +335,6 @@ object ScanProcessor extends CommandProcessor {
     */
   private def createJavaCpg(sourceRepoLocation: String, lang: String): Try[codepropertygraph.Cpg] = {
     MetricHandler.metricsData("language") = Json.fromString(lang)
-    println(s"Detected language $lang")
     println(s"Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownladDependencies)
       println("Downloading dependencies...")
