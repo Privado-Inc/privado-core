@@ -16,19 +16,18 @@ import scala.collection.mutable.ListBuffer
 
 class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
 
-  val logger = LoggerFactory.getLogger(getClass)
-
-  val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName)
-  val threatExecutor = new ThreatEngineExecutor(cpg)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   def getViolations(repoPath: String): immutable.Iterable[mutable.LinkedHashMap[String, Json]] = {
-    try {
+    val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName)
+    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath)
 
-      threatExecutor.execute(RuleCache.getAllThreat, repoPath) ++ policyExecutor.getProcessingViolations
+    try {
+      threatExecutor.getProcessingViolations(RuleCache.getAllThreat) ++ policyExecutor.getProcessingViolations
         .filter(entrySet => entrySet._2.nonEmpty)
         .map(policyViolationEntrySet =>
           convertProcessingPolicyViolation(policyViolationEntrySet._1, policyViolationEntrySet._2)
-        ) ++ policyExecutor.getDataflowViolations
+        ) ++ threatExecutor.getDataflowViolations(RuleCache.getAllThreat) ++ policyExecutor.getDataflowViolations
         .filter(entrySet => entrySet._2.nonEmpty)
         .map(policyViolationEntrySet =>
           convertDataflowPolicyViolation(policyViolationEntrySet._1, policyViolationEntrySet._2)

@@ -58,7 +58,6 @@ object DataOnExternalStorage {
         val occurrences = ExporterUtility.convertPathElements(worldReadableCalls.toList)
         occurrenceList.addAll(occurrences)
       }
-
     }
 
     // threat exists if occurrences are non-empty
