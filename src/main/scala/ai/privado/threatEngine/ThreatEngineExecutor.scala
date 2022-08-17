@@ -115,6 +115,11 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
               case Success(res) => Some(res)
               case Failure(e)   => None
             }
+          case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" =>
+            DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
+              case Success(res) => Some(res)
+              case Failure(e)   => None
+            }
 
           case _ =>
             logger.debug(s"No implementation detected for threat: ${threatId}")
