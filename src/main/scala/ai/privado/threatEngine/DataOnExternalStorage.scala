@@ -44,7 +44,7 @@ object DataOnExternalStorage {
             nameAttribute == "android.permission.WRITE_EXTERNAL_STORAGE" || nameAttribute == "android.permission.MANAGE_EXTERNAL_STORAGE"
           ) {
             val occurrenceOutput =
-              getOccurrenceObject(s"${PERM_NAME_ATTRIBUTE}=\"nameAttribute\"", nameAttribute, androidManifestFile)
+              getOccurrenceObject(s"${PERM_NAME_ATTRIBUTE}=\"${nameAttribute}\"", nameAttribute, androidManifestFile)
             occurrenceList.append(occurrenceOutput)
           }
         case _ => // Node not found

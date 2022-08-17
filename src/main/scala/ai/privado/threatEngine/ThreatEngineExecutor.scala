@@ -61,7 +61,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
               case Failure(e)   => None
             }
 
-          case "Threats.Storage.isIpcDataSharingAllowed" =>
+          case "Threats.Sharing.isIpcDataSharingAllowed" =>
             DataSharingIPC.getViolations(cpg, manifestFile) match {
               case Success(res) => Some(res)
               case Failure(e)   => None
