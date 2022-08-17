@@ -8,6 +8,7 @@ import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+import ai.privado.threatEngine.ThreatUtility._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -29,13 +30,14 @@ object BackgroundScreenshot {
   def getViolations(cpg: Cpg): Try[(Boolean, List[Json])] = Try {
     // implicit for callIn
     implicit val resolver: ICallResolver = NoResolve
+    if (hasDataElements(cpg)) {
+      val safeFlagCalls = cpg.method
+        .fullName(SET_FLAG_METHOD_PATTERN)
+        .callIn
+        .where(_.argument.code(s".*${SAFE_FLAG}.*"))
 
-    val safeFlagCalls = cpg.method
-      .fullName(SET_FLAG_METHOD_PATTERN)
-      .callIn
-      .where(_.argument.code(s".*${SAFE_FLAG}.*"))
-
-    // violation if empty
-    (safeFlagCalls.isEmpty, List())
+      // violation if empty
+      (safeFlagCalls.isEmpty, List())
+    } else (false, List())
   }
 }
