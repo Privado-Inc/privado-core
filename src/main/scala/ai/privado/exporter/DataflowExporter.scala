@@ -3,6 +3,7 @@ package ai.privado.exporter
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType}
+import ai.privado.semantic.Language.finder
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
@@ -105,7 +106,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
     // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
     val sinkMap = mutable.HashMap[String, ListBuffer[String]]()
-    sinkPathIds.foreach(sinkPathId => {
+    distinctBySinkLineNumber(sinkPathIds, dataflowsMapByType).foreach(sinkPathId => {
       dataflowNodeTypes.foreach(dataflowNodeType => {
         // Check to filter if correct Source is consumed in Sink
         if (
@@ -240,6 +241,27 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     */
   private def isArgumentMatchingMemberName(sinkArgument: List[String], memberName: String): Boolean = {
     sinkArgument.map(argument => argument.matches("(?i).*" + memberName + ".*")).foldLeft(false)((a, b) => a || b)
+  }
+
+  /** Distinct by operation on sink -> fileName + lineNumber to return a unique path
+    * @param sinkPathIds
+    * @param dataflowsMapByType
+    * @return
+    */
+  def distinctBySinkLineNumber(sinkPathIds: List[String], dataflowsMapByType: Map[String, Path]): List[String] = {
+    val uniqueSinkMap = mutable.HashMap[String, String]() // Stores fileLineNo --> pathId
+    sinkPathIds.foreach(sinkPathId => {
+      val sinkNodeWithLocation = dataflowsMapByType(sinkPathId).elements.last.location
+      val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
+      val flowSize             = dataflowsMapByType(sinkPathId).elements.size
+
+      if (uniqueSinkMap.contains(fileLineNo)) {
+        if (flowSize > dataflowsMapByType(uniqueSinkMap(fileLineNo)).elements.size)
+          uniqueSinkMap(fileLineNo) = sinkPathId
+      } else
+        uniqueSinkMap(fileLineNo) = sinkPathId
+    })
+    uniqueSinkMap.values.toList
   }
 
 }
