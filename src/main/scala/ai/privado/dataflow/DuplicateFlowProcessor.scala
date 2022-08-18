@@ -1,12 +1,13 @@
 package ai.privado.dataflow
 
+import ai.privado.model.Constants
 import io.joern.dataflowengineoss.language.Path
 import org.slf4j.LoggerFactory
 
-import java.security.MessageDigest
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
+import io.shiftleft.semanticcpg.language._
 
 object DuplicateFlowProcessor {
 
@@ -16,7 +17,7 @@ object DuplicateFlowProcessor {
 
   /** Process the given dataflows and return only the distinct one
     *
-    * What do we have - 8 Flows
+    * What do we want - 8 Flows
     *
     * Source 1 to Sink 1, 2
     *
@@ -25,12 +26,6 @@ object DuplicateFlowProcessor {
     * Source 3 to Sink 1, 2
     *
     * Source 4 to Sink 1, 2
-    *
-    * What do we want? 2 Flows
-    *
-    * Source 1 to Sink 1
-    *
-    * Source 1 to Sink 2
     *
     * Algorithmic idea
     *
@@ -43,28 +38,45 @@ object DuplicateFlowProcessor {
     *
     * @param dataflows
     * @return
-    *   Unique dataflows
+    *   Unique dataflows with PathId
     */
-  def process(dataflows: List[Path]): List[Path] = {
-    val distinctDataflows = ListBuffer[Path]()
+  def process(dataflows: List[Path]): Map[String, Path] = {
+    // Stores pathId -> Path
+    val dataflowMap = dataflows.map(path => (calculatePathId(path).getOrElse(""), path)).toMap
+    // Stores sourceId -> Set(pathIds)
+    val dataflowMapBySourceId = mutable.HashMap[String, mutable.Set[String]]()
+    dataflowMap.foreach(dataflowEntry => {
+      def addToMap(sourceId: String) = {
+        if (!dataflowMapBySourceId.contains(sourceId))
+          dataflowMapBySourceId.addOne(sourceId -> mutable.Set())
+        dataflowMapBySourceId(sourceId).add(dataflowEntry._1)
+      }
+      val sourceNode = dataflowEntry._2.elements.head
+      sourceNode.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+      sourceNode.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+    })
+    dataflowMapBySourceId
+      .flatMap(dataflowMapBySourceIdEntrySet => pathIdsPerSourceIdAfterDedup(dataflowMapBySourceIdEntrySet._2))
+      .toSet
+      .map((pathId: String) => (pathId, dataflowMap(pathId)))
+      .toMap
+  }
 
-    val sortedDataflows = dataflows.sorted(Ordering.by((_: Path).elements.size).reverse)
-    val visitedFlows    = mutable.HashSet[String]()
-    sortedDataflows.foreach(flow => {
-      calculatePathId(flow) match {
-        case Success(pathId) =>
-          if (!visitedFlows.contains(pathId)) {
-            distinctDataflows.append(flow)
-            val pathSubIds = getSubPathIds(pathId)
-            if (pathSubIds.nonEmpty)
-              visitedFlows.addAll(pathSubIds)
-          }
-        case Failure(exception) =>
-          logger.debug("Exception : ", exception)
-          logger.error(s"Exception while calculating PathId in deduplication of dataflow")
+  /** Filter unique path ids which are super set of overlapping paths
+    *
+    * @param pathIds
+    * @return
+    */
+  private def pathIdsPerSourceIdAfterDedup(pathIds: mutable.Set[String]) = {
+    val visitedFlows = mutable.Set[String]()
+    pathIds.foreach(pathId => {
+      if (!visitedFlows.contains(pathId)) {
+        val pathSubIds = getSubPathIds(pathId)
+        if (pathSubIds.nonEmpty)
+          visitedFlows.addAll(pathSubIds)
       }
     })
-    distinctDataflows.toList
+    pathIds.diff(visitedFlows) // This will give us all the Path ids which are super set of overlapping paths
   }
 
   /** Generates a pathId for a given path, based on node Id
