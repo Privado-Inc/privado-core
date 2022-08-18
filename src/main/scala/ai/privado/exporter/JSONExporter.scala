@@ -68,8 +68,10 @@ object JSONExporter {
       output.addOne("violations" -> violations.asJson)
       MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
       violations.foreach(mapEntry => {
-        if (RuleCache.internalPolicies.contains(mapEntry("policyId").asString.get)) {
-          MetricHandler.internalPoliciesOrThreatsMatched.addOne(mapEntry("policyId").asString.get)
+        mapEntry("policyId").asString match {
+          case Some(value) =>
+            MetricHandler.internalPoliciesOrThreatsMatched.addOne(value)
+          case _ => ()
         }
       })
 
