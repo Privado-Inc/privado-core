@@ -41,15 +41,14 @@ object DuplicateFlowProcessor {
     *   Unique dataflows with PathId
     */
   def process(dataflows: List[Path]): Map[String, Path] = {
-    val sortedDataflows = dataflows.sorted(Ordering.by((_: Path).elements.size).reverse)
     // Stores pathId -> Path
-    val dataflowMap = sortedDataflows.map(path => (calculatePathId(path).getOrElse(""), path)).toMap
+    val dataflowMap = dataflows.map(path => (calculatePathId(path).getOrElse(""), path)).toMap
     // Stores sourceId -> Set(pathIds)
-    val dataflowMapBySourceId = mutable.HashMap[String, mutable.LinkedHashSet[String]]()
+    val dataflowMapBySourceId = mutable.HashMap[String, mutable.Set[String]]()
     dataflowMap.foreach(dataflowEntry => {
       def addToMap(sourceId: String) = {
         if (!dataflowMapBySourceId.contains(sourceId))
-          dataflowMapBySourceId.addOne(sourceId -> mutable.LinkedHashSet())
+          dataflowMapBySourceId.addOne(sourceId -> mutable.Set())
         dataflowMapBySourceId(sourceId).add(dataflowEntry._1)
       }
       val sourceNode = dataflowEntry._2.elements.head
@@ -63,8 +62,13 @@ object DuplicateFlowProcessor {
       .toMap
   }
 
-  private def pathIdsPerSourceIdAfterDedup(pathIds: mutable.LinkedHashSet[String]) = {
-    val visitedFlows = mutable.LinkedHashSet[String]()
+  /** Filter unique path ids which are super set of overlapping paths
+    *
+    * @param pathIds
+    * @return
+    */
+  private def pathIdsPerSourceIdAfterDedup(pathIds: mutable.Set[String]) = {
+    val visitedFlows = mutable.Set[String]()
     pathIds.foreach(pathId => {
       if (!visitedFlows.contains(pathId)) {
         val pathSubIds = getSubPathIds(pathId)
@@ -72,8 +76,7 @@ object DuplicateFlowProcessor {
           visitedFlows.addAll(pathSubIds)
       }
     })
-    val unique = pathIds.diff(visitedFlows)
-    unique
+    pathIds.diff(visitedFlows) // This will give us all the Path ids which are super set of overlapping paths
   }
 
   /** Generates a pathId for a given path, based on node Id
