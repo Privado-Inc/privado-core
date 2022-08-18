@@ -11,6 +11,8 @@ object RuleCache {
   private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List())
   private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
   private val policyOrThreatMap    = mutable.HashMap[String, PolicyOrThreat]()
+  val internalRules                = mutable.HashMap[String, Int]()
+  val internalPolicies             = mutable.Set[String]()
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
