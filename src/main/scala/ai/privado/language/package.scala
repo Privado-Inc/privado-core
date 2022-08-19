@@ -1,7 +1,7 @@
 package ai.privado
 
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, File, JavaProperty, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, File, JavaProperty, Literal, MethodParameterIn}
 import overflowdb.traversal._
 
 package object language {
@@ -18,4 +18,30 @@ package object language {
 
   }
 
+  implicit class NodeTravToProperty(val trav: Traversal[CfgNode]) {
+    def originalProperty: Traversal[JavaProperty] = trav.out(EdgeTypes.ORIGINAL_PROPERTY).cast[JavaProperty]
+  }
+
+  implicit class NodeToProperty(val node: CfgNode) {
+    def originalProperty: Option[JavaProperty] = {
+      val property = node.out(EdgeTypes.ORIGINAL_PROPERTY)
+      if (property != null && property.hasNext) {
+        val prop = property.next()
+        if (prop.isInstanceOf[JavaProperty]) {
+          return Some(prop.asInstanceOf[JavaProperty])
+        }
+      }
+      None
+    }
+    def originalPropertyValue: Option[String] = {
+      val property = node.out(EdgeTypes.ORIGINAL_PROPERTY)
+      if (property != null && property.hasNext) {
+        val prop = property.next()
+        if (prop.isInstanceOf[JavaProperty]) {
+          return Some(prop.asInstanceOf[JavaProperty].value)
+        }
+      }
+      None
+    }
+  }
 }

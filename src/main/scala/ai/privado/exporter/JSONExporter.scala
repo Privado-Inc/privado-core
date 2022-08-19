@@ -67,6 +67,13 @@ object JSONExporter {
       val violations = policyAndThreatExporter.getViolations(repoPath)
       output.addOne("violations" -> violations.asJson)
       MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
+      violations.foreach(mapEntry => {
+        mapEntry("policyId").asString match {
+          case Some(value) =>
+            MetricHandler.internalPoliciesOrThreatsMatched.addOne(value)
+          case _ => ()
+        }
+      })
 
       logger.info("Completed exporting policy violations")
       File(repoPath + "/.privado").createDirectoryIfNotExists()

@@ -7,6 +7,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
+import ai.privado.language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -203,6 +204,8 @@ object ScanProcessor extends CommandProcessor {
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
 
+    RuleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
+    RuleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
     MetricHandler.metricsData("noOfRulesUsed") = {
       Json.fromInt(
         mergedRules.sources.size +
@@ -263,7 +266,6 @@ object ScanProcessor extends CommandProcessor {
     xtocpg match {
       case Success(cpgWithoutDataflow) => {
         new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
-        println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
@@ -273,27 +275,24 @@ object ScanProcessor extends CommandProcessor {
         println("Tagging source code with rules...")
         cpg.runTagger(processedRules)
         println("Finding source to sink flow of data...")
-        val dataflows = {
+        val dataflowMap = {
           val flows = cpg.dataflow
-          if (config.disableDeDuplication)
+          if (config.disableDeDuplication) {
             flows
-          else {
+              .flatMap(dataflow => {
+                DuplicateFlowProcessor.calculatePathId(dataflow) match {
+                  case Success(pathId) => Some(pathId, dataflow)
+                  case Failure(e) =>
+                    logger.debug("Exception : ", e)
+                    None
+                }
+              })
+              .toMap
+          } else {
             println("Deduplicating data flows...")
             DuplicateFlowProcessor.process(flows)
           }
         }
-
-        // Attach each dataflow with a unique id
-        val dataflowMap = dataflows
-          .flatMap(dataflow => {
-            DuplicateFlowProcessor.calculatePathId(dataflow) match {
-              case Success(pathId) => Some(pathId, dataflow)
-              case Failure(e) =>
-                logger.debug("Exception : ", e)
-                None
-            }
-          })
-          .toMap
 
         println("Brewing result...")
         // Exporting
@@ -337,7 +336,9 @@ object ScanProcessor extends CommandProcessor {
     MetricHandler.metricsData("language") = Json.fromString(lang)
     println(s"Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownladDependencies)
-      println("Downloading dependencies...")
+      println("Downloading dependencies and Parsing source code...")
+    else
+      println("Parsing source code...")
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
     JavaSrc2Cpg().createCpg(cpgconfig)

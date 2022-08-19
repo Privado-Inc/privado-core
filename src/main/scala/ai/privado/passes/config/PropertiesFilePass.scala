@@ -57,6 +57,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
         .filter { case (_, value) => propertyNode.name == value }
         .foreach { case (param, _) =>
           builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
+          builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
         }
     }
   }
@@ -82,6 +83,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
   ): Unit = {
     matchingLiteralsInGetPropertyCalls(propertyNode.name).foreach { lit =>
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
+      builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     }
   }
 
