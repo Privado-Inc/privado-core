@@ -32,15 +32,8 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     if (apis.nonEmpty && apiInternalSinkPattern.nonEmpty) {
       val apiFlows = apis.reachableByFlows(apiInternalSinkPattern).l
       apiFlows.foreach(flow => {
-        var literalCode = flow.elements.head.code
-        val property    = flow.elements.head.out(EdgeTypes.ORIGINAL_PROPERTY)
-        if (property != null && property.hasNext) {
-          val next = property.next()
-          if (next.isInstanceOf[JavaProperty]) {
-            literalCode = next.asInstanceOf[JavaProperty].value
-          }
-        }
-        val apiNode = flow.elements.last
+        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
+        val apiNode     = flow.elements.last
         addRuleTags(builder, apiNode, ruleInfo)
         storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
       })
