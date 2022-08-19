@@ -7,6 +7,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
+import ai.privado.language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -263,7 +264,6 @@ object ScanProcessor extends CommandProcessor {
     xtocpg match {
       case Success(cpgWithoutDataflow) => {
         new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
-        println("Parsing source code...")
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
@@ -337,7 +337,9 @@ object ScanProcessor extends CommandProcessor {
     MetricHandler.metricsData("language") = Json.fromString(lang)
     println(s"Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownladDependencies)
-      println("Downloading dependencies...")
+      println("Downloading dependencies and Parsing source code...")
+    else
+      println("Parsing source code...")
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
     JavaSrc2Cpg().createCpg(cpgconfig)
