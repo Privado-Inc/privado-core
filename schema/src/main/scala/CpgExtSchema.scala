@@ -47,10 +47,14 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val isUsedAt = builder
     .addEdgeType("IS_USED_AT")
 
+  val originalProperty = builder
+    .addEdgeType("ORIGINAL_PROPERTY")
+
   property.addOutEdge(edge = sourceFile, inNode = file)
   property.addOutEdge(edge = isUsedAt, inNode = literal)
   property.addOutEdge(edge = isUsedAt, inNode = methodParameterIn)
-
+  literal.addOutEdge(edge = originalProperty, inNode = property)
+  methodParameterIn.addOutEdge(edge = originalProperty, inNode = property)
 }
 
 object CpgExtSchema {
