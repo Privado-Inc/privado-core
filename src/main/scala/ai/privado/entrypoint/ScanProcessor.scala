@@ -204,6 +204,8 @@ object ScanProcessor extends CommandProcessor {
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
 
+    RuleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
+    RuleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
     MetricHandler.metricsData("noOfRulesUsed") = {
       Json.fromInt(
         mergedRules.sources.size +
@@ -273,27 +275,24 @@ object ScanProcessor extends CommandProcessor {
         println("Tagging source code with rules...")
         cpg.runTagger(processedRules)
         println("Finding source to sink flow of data...")
-        val dataflows = {
+        val dataflowMap = {
           val flows = cpg.dataflow
-          if (config.disableDeDuplication)
+          if (config.disableDeDuplication) {
             flows
-          else {
+              .flatMap(dataflow => {
+                DuplicateFlowProcessor.calculatePathId(dataflow) match {
+                  case Success(pathId) => Some(pathId, dataflow)
+                  case Failure(e) =>
+                    logger.debug("Exception : ", e)
+                    None
+                }
+              })
+              .toMap
+          } else {
             println("Deduplicating data flows...")
             DuplicateFlowProcessor.process(flows)
           }
         }
-
-        // Attach each dataflow with a unique id
-        val dataflowMap = dataflows
-          .flatMap(dataflow => {
-            DuplicateFlowProcessor.calculatePathId(dataflow) match {
-              case Success(pathId) => Some(pathId, dataflow)
-              case Failure(e) =>
-                logger.debug("Exception : ", e)
-                None
-            }
-          })
-          .toMap
 
         println("Brewing result...")
         // Exporting
