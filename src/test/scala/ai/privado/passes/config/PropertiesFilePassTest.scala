@@ -63,7 +63,12 @@ class AnnotationTests extends PropertiesFilePassTestBase {
     "connect property to annotated parameter" in {
       val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
       javaP.value shouldBe "https://logger.privado.ai/"
+
+      val List(param: MethodParameterIn) = cpg.property.usedAt.l
+      param.originalProperty.head.value shouldBe "https://logger.privado.ai/"
+      param.originalPropertyValue.head shouldBe "https://logger.privado.ai/"
     }
+
   }
 }
 
@@ -109,6 +114,10 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
     "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
       val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
       javaP.value shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
+
+      val List(lit: Literal) = cpg.property.usedAt.l
+      lit.originalProperty.head.value shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
+      lit.originalPropertyValue.head shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
     }
   }
 }

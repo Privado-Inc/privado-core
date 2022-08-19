@@ -18,8 +18,30 @@ package object language {
 
   }
 
-  implicit class LiteralProperty(val trav: Traversal[CfgNode]) {
+  implicit class NodeTravToProperty(val trav: Traversal[CfgNode]) {
     def originalProperty: Traversal[JavaProperty] = trav.out(EdgeTypes.ORIGINAL_PROPERTY).cast[JavaProperty]
   }
 
+  implicit class NodeToProperty(val node: CfgNode) {
+    def originalProperty: Option[JavaProperty] = {
+      val property = node.out(EdgeTypes.ORIGINAL_PROPERTY)
+      if (property != null && property.hasNext) {
+        val prop = property.next()
+        if (prop.isInstanceOf[JavaProperty]) {
+          return Some(prop.asInstanceOf[JavaProperty])
+        }
+      }
+      None
+    }
+    def originalPropertyValue: Option[String] = {
+      val property = node.out(EdgeTypes.ORIGINAL_PROPERTY)
+      if (property != null && property.hasNext) {
+        val prop = property.next()
+        if (prop.isInstanceOf[JavaProperty]) {
+          return Some(prop.asInstanceOf[JavaProperty].value)
+        }
+      }
+      None
+    }
+  }
 }
