@@ -8,7 +8,9 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import ai.privado.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty, Literal, MethodParameterIn}
+
+import scala.collection.immutable.List
 
 class AnnotationTests extends PropertiesFilePassTestBase {
   override val configFileContents: String =
@@ -34,6 +36,16 @@ class AnnotationTests extends PropertiesFilePassTestBase {
       val List(param: MethodParameterIn) = cpg.property.usedAt.l
       param.name shouldBe "loggerBaseURL"
     }
+
+    "connect property to annotated parameter" in {
+      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
+      javaP.value shouldBe "https://logger.privado.ai/"
+
+      val List(param: MethodParameterIn) = cpg.property.usedAt.l
+      param.originalProperty.head.value shouldBe "https://logger.privado.ai/"
+      param.originalPropertyValue.head shouldBe "https://logger.privado.ai/"
+    }
+
   }
 }
 
@@ -77,6 +89,14 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
     "connect property node to literal via `IS_USED_AT` edge" in {
       val List(lit: Literal) = cpg.property.usedAt.l
       lit.code shouldBe "\"accounts.datasource.url\""
+    }
+    "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
+      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
+      javaP.value shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
+
+      val List(lit: Literal) = cpg.property.usedAt.l
+      lit.originalProperty.head.value shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
+      lit.originalPropertyValue.head shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
     }
   }
 }
