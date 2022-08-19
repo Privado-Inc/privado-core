@@ -203,6 +203,8 @@ object ScanProcessor extends CommandProcessor {
     RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
 
+    RuleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
+    RuleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
     MetricHandler.metricsData("noOfRulesUsed") = {
       Json.fromInt(
         mergedRules.sources.size +

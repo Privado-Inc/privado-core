@@ -12,12 +12,13 @@ import io.circe.syntax._
 
 object MetricHandler {
 
-  private val logger       = LoggerFactory.getLogger(this.getClass)
-  val metricsData          = mutable.HashMap[String, Json]()
-  val scanProcessErrors    = ArrayBuffer[String]()
-  val totalRulesMatched    = mutable.Set[String]()
-  val internalRulesMatched = mutable.Set[String]()
-  val flowCategoryData     = mutable.HashMap[String, Int]()
+  private val logger                   = LoggerFactory.getLogger(this.getClass)
+  val metricsData                      = mutable.HashMap[String, Json]()
+  val scanProcessErrors                = ArrayBuffer[String]()
+  val totalRulesMatched                = mutable.Set[String]()
+  val internalRulesMatched             = mutable.Set[String]()
+  val flowCategoryData                 = mutable.HashMap[String, Int]()
+  val internalPoliciesOrThreatsMatched = mutable.Set[String]()
 
   metricsData("privadoCoreVersion") = Environment.privadoVersionCore.asJson
   metricsData("privadoCoreCommand") = Json.Null
@@ -41,6 +42,8 @@ object MetricHandler {
     metricsData("scanProcessErrors") = scanProcessErrors.asJson
     metricsData("flowCategoryData") = flowCategoryData.asJson
     metricsData("noOfRulesMatch") = Json.fromInt(totalRulesMatched.size)
+    metricsData("internalPoliciesIdsMatch") =
+      Json.fromValues(internalPoliciesOrThreatsMatched.map(key => Json.fromString(key)))
     sendDataToServer()
   }
 
