@@ -16,22 +16,23 @@ lazy val schemaExtender = Projects.schemaExtender
 
 dependsOn(domainClasses)
 libraryDependencies ++= Seq(
-  "com.github.pathikrit" %% "better-files" % "3.9.1",
-  "com.github.scopt" %% "scopt" % "3.7.1",
-  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.1" % Runtime,
-  "io.joern" %% "x2cpg" % Versions.joern,
-  "io.joern" %% "javasrc2cpg" % Versions.joern,
-  "io.joern" %% "joern-cli" % Versions.joern,
-  "io.joern" %% "semanticcpg" % Versions.joern,
-  "io.joern" %% "semanticcpg" % Versions.joern % Test classifier "tests",
-  "org.scalatest" %% "scalatest" % "3.1.1" % Test,
-  "io.circe" %% "circe-core" % circeVersion,
-  "io.circe" %% "circe-generic" % circeVersion,
-  "io.circe" %% "circe-parser" % circeVersion,
-  "io.circe" %% "circe-yaml" % circeVersion,
-  "com.lihaoyi" %% "upickle" % "2.0.0",
-  "com.lihaoyi" %% "requests" % "0.7.0",
-  "org.scala-lang.modules" %% "scala-xml" % "2.1.0"
+  "com.github.pathikrit"    %% "better-files"     % "3.9.1",
+  "com.github.scopt"        %% "scopt"            % "3.7.1",
+  "org.apache.logging.log4j" % "log4j-slf4j-impl" % "2.17.1"       % Runtime,
+  "io.joern"                %% "x2cpg"            % Versions.joern,
+  "io.joern"                %% "javasrc2cpg"      % Versions.joern,
+  "io.joern"                %% "joern-cli"        % Versions.joern,
+  "io.joern"                %% "semanticcpg"      % Versions.joern,
+  "io.joern"                %% "semanticcpg"      % Versions.joern % Test classifier "tests",
+  "org.scalatest"           %% "scalatest"        % "3.1.1"        % Test,
+  "io.circe"                %% "circe-core"       % circeVersion,
+  "io.circe"                %% "circe-generic"    % circeVersion,
+  "io.circe"                %% "circe-parser"     % circeVersion,
+  "io.circe"                %% "circe-yaml"       % circeVersion,
+  "com.lihaoyi"             %% "upickle"          % "2.0.0",
+  "com.lihaoyi"             %% "requests"         % "0.7.0",
+  "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
+  "commons-io" % "commons-io" % "2.11.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

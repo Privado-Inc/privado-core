@@ -177,6 +177,7 @@ object Utilities {
     }
 
   }
+
   /** Returns the SHA256 hash for a given string.
     * @param value
     * @return

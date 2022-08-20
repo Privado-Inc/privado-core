@@ -244,15 +244,6 @@ object ScanProcessor extends CommandProcessor {
     import io.joern.console.cpgcreation.guessLanguage
     println("Guessing source code language...")
     val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(lang) if lang == Languages.JAVASRC || lang == Languages.JAVA =>
-        MetricHandler.metricsData("language") = Json.fromString(lang)
-        println(s"Detected language $lang")
-        if (!config.skipDownladDependencies)
-          println("Downloading dependencies...")
-        val cpgconfig =
-          Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
-        JavaSrc2Cpg().createCpg(cpgconfig)
-      }
       case Some(lang) =>
         if (!(lang == Languages.JAVASRC || lang == Languages.JAVA)) {
           if (checkJavaSourceCodePresent(sourceRepoLocation)) {
@@ -273,7 +264,7 @@ object ScanProcessor extends CommandProcessor {
       }
     }
     xtocpg match {
-      case Success(cpgWithoutDataflow) =>
+      case Success(cpgWithoutDataflow) => {
         new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
@@ -310,7 +301,6 @@ object ScanProcessor extends CommandProcessor {
           case Left(err) => Left(err)
           case Right(_) =>
             println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
-
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )

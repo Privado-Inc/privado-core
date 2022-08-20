@@ -11,7 +11,7 @@ import overflowdb.BatchedUpdate
 import org.slf4j.LoggerFactory
 
 /** Privado Core main entry point
- */
+  */
 object Main {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -44,7 +44,7 @@ object Main {
 }
 
 /** TODO: get rid of this class Example of a custom pass that creates and stores a node in the CPG.
- */
+  */
 class MyPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     // val n = NewMynodetype().myproperty("foo")
@@ -54,7 +54,7 @@ class MyPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 }
 
 /** TODO: get rid of this class Example of a custom pass that creates and stores a node in the CPG.
- */
+  */
 class MyCredPass(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     cpg.literal.code(".*password.*").foreach { literal =>

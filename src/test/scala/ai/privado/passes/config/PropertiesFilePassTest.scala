@@ -92,23 +92,25 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
-      val List(name : String) = cpg.file.name.l
+      val List(name: String) = cpg.file.name.l
       name.endsWith("/test.properties") shouldBe true
     }
 
     "create a `property` node for each property" in {
       val properties = cpg.property.map(x => (x.name, x.value)).toMap
-      properties.get("accounts.datasource.url").contains("jdbc:mariadb://localhost:3306/accounts?useSSL=false") shouldBe true
+      properties
+        .get("accounts.datasource.url")
+        .contains("jdbc:mariadb://localhost:3306/accounts?useSSL=false") shouldBe true
       properties.get("internal.logger.api.base").contains("https://logger.privado.ai/")
     }
 
     "connect property nodes to file" in {
-      val List(filename: String) =  cpg.property.file.name.dedup.l
+      val List(filename: String) = cpg.property.file.name.dedup.l
       filename.endsWith("/test.properties") shouldBe true
     }
 
     "connect property node to literal via `IS_USED_AT` edge" in {
-      val List(lit : Literal) = cpg.property.usedAt.l
+      val List(lit: Literal) = cpg.property.usedAt.l
       lit.code shouldBe "\"accounts.datasource.url\""
     }
     "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
