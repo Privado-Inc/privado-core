@@ -39,6 +39,13 @@ import scala.collection.mutable.ListBuffer
 
 class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
+  val falsePositiveSources = List[String](
+    "Data.Sensitive.OnlineIdentifiers.Cookies",
+    "Data.Sensitive.OnlineIdentifiers.IPAddress",
+    "Data.Sensitive.PersonalCharacteristics.Signature",
+    "Data.Sensitive.BiometricData.FingerprintScans"
+  )
+
   val logger = LoggerFactory.getLogger(getClass)
 
   def getFlowByType(
@@ -132,7 +139,13 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
       dataflowNodeTypes.foreach(dataflowNodeType => {
         // Check to filter if correct Source is consumed in Sink
         if (
-          isCorrectDataSourceConsumedInSink(pathSourceId, sinkPathId, dataflowsMapByType(sinkPathId), dataflowSinkType)
+          isCorrectDataSourceConsumedInSink(
+            pathSourceId,
+            sinkPathId,
+            dataflowsMapByType(sinkPathId),
+            dataflowSinkType,
+            dataflowNodeType
+          )
         ) {
           val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
             .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
@@ -171,8 +184,11 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     pathSourceId: String,
     pathId: String,
     path: Path,
-    dataflowSinkType: String
+    dataflowSinkType: String,
+    dataflowNodeType: String
   ): Boolean = {
+
+    var isCorrect = true // By default we set it to true, mark it false if matches some condition
 
     if (dataflowSinkType.equals("leakages")) {
       val sourceNode      = path.elements.head
@@ -214,7 +230,6 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
                 s"\npathId : $pathId " +
                 s"\nlogStatement : $sinkCode"
             )
-            true
           } else {
             logger.debug(
               s"Flow Removal : Flow marked incorrect due to presence of other " +
@@ -224,14 +239,16 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
                 s"\npathId : $pathId " +
                 s"\nlogStatement : $sinkCode"
             )
-            false
+            isCorrect = false
           }
-        } else // Flow is correct as argument doesn't match the exempted members
-          true
-      } else // Flow doesn't start with a derived Source
-        true
-    } else // other than Leakage flow
-      true
+        }
+      }
+    } else if (dataflowSinkType.equals("third_parties") || dataflowNodeType.equals(NodeType.API.toString)) {
+      // To explicity remove Sources which result in FP
+      if (falsePositiveSources.contains(pathSourceId))
+        isCorrect = false
+    }
+    isCorrect
   }
 
   /** Fetch the member name for the given soureNode
