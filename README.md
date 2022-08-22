@@ -1,14 +1,9 @@
 Privado Core
 =============================================
 
-A program that makes use of Joern to create a CPG and list all method
-names:
-
 Branch structure
 
 main - This branch will contain the released version of the code.
-
-stage - This branch will contain an intermediate version of the code before the release. More stable, and ready for wider testing purposes.
 
 dev - This branch will be used to merge all under-development features.
 
