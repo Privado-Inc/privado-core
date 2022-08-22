@@ -1,0 +1,4 @@
+[submodule "privado-cli"]
+	path = privado-cli
+	url = https://github.com/Privado-Inc/privado-cli.git
+	branch = main
