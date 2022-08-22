@@ -1,3 +1,25 @@
+/*
+ * This file is part of Privado OSS.
+ *
+ * Privado is an open source static code analysis tool to discover data flows in the code.
+ * Copyright (C) 2022 Privado, Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, contact support@privado.ai
+ */
+
 package ai.privado.entrypoint
 
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -16,9 +38,10 @@ class MyTest extends AnyWordSpec with Matchers {
   "Foo" should {
 
     "description1" in {
-      val cpg = MockCpg().withMethod("foo")
+      val cpg = MockCpg()
+        .withMethod("foo")
         .withCallInMethod("foo", "bar")
-        .withCustom{ case (diffGraph, cpg) =>
+        .withCustom { case (diffGraph, cpg) =>
           val literal = NewLiteral().code("abc")
           diffGraph.addNode(literal)
           val block = cpg.method.block.head
@@ -29,7 +52,7 @@ class MyTest extends AnyWordSpec with Matchers {
     }
 
     "description2" in {
-      F.usingTemporaryFile("standalone"){ file =>
+      F.usingTemporaryFile("standalone") { file =>
         println(file)
       }
     }
@@ -39,13 +62,14 @@ class MyTest extends AnyWordSpec with Matchers {
         val cpg = MockCpg()
           .withMethod("abc")
           .withCallInMethod("abc", "foo")
-          .withLiteralArgument("foo", "password").cpg
+          .withLiteralArgument("foo", "password")
+          .cpg
 
         new MyPass(cpg).createAndApply()
         new MyCredPass(cpg).createAndApply()
         cpg.graph.V.foreach(println)
-        val List(x : Credentials) = cpg.graph.V.label("CREDENTIALS").cast[Credentials].l
-        val List(l : Literal) = x.in(EdgeTypes.IS_CREDENTIAL).toList
+        val List(x: Credentials) = cpg.graph.V.label("CREDENTIALS").cast[Credentials].l
+        val List(l: Literal)     = x.in(EdgeTypes.IS_CREDENTIAL).toList
         l.code shouldBe "password"
       }
     }

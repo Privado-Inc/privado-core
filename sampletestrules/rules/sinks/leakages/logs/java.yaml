@@ -1,0 +1,30 @@
+sinks:
+  - id: Leakages.Log.Error
+    name: Log Error
+    patterns: 
+      - "(?i).*(?:error|wtf|fatal).*"
+    tags:
+  
+  - id: Leakages.Log.Warn
+    name: Log Warn
+    patterns: 
+      - "(?i).*(?:warn).*"
+    tags:
+  
+  - id: Leakages.Log.Debug
+    name: Log Debug
+    patterns: 
+      - "(?i).*(?:debug|verbose|trace).*"
+    tags:
+  
+  - id: Leakages.Log.Info
+    name: Log Info
+    patterns: 
+      - "(?i).*(?:info|out).*"
+    tags:
+
+  - id: Leakages.Log.Console
+    name: Log Console
+    patterns: 
+      - "(?i).*(?:print|println|write).*"
+    tags:

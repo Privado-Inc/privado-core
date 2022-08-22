@@ -5,10 +5,13 @@
 ### MAC ###
 .DS_Store
 
+.privado
+
 ### Joern ###
 
 joern-inst/
 cpg.bin
+workspace/
 
 ### Eclipse ###
 .metadata

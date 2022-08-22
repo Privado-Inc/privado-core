@@ -1,0 +1,55 @@
+policies:
+
+  #  .* is a regular expression. Meaning the policy structure supports regex(case-sensitive).
+  #
+  #  The tags field in each policy object are the tags for referencing the policy.
+  #  These are not to be associated with sources'/sinks' tags.
+  #
+  #  In case no sinks key is defined inside a policy:
+  #  The policy will evaluate to true for any processing instance of corresponding sources being found
+  #  Thus a missing sink implies any kind of processing is Allowed/NotAllowed for given source
+
+  - id: Policy.Deny.Sharing.ThirdParty
+    description: Policy to restrict Contact Information being shared with ThirdParty
+    action: Deny
+
+    dataFlow:
+
+      sources:
+        #  the below args follow following format => dir_structure_under_rules_folder:sourceId
+        - "Data.Sensitive.ContactData.*"
+
+      sinks:
+        - "ThirdParties.*"
+        - "Api.sensitive.*"
+
+    repositories:      # optional field default value : - .*
+      - "privado-messaging-app"
+      - "Order Manager"
+      - "accounts.*"
+
+    tags:
+      - policyPurpose: Security Audit
+      - team: Order Management team
+
+
+  #Example of processing type of policy
+  - id: Policy.Allow.Flow.PersonalData
+    description: Policy to allow processing Personal Information in account services
+    action: Allow
+    dataFlow:
+      sources:
+        - "Data.Sensitive.Personal.*"
+    repositories:
+      - "account.*"
+    tags:
+
+  - id: Policy.Deny.Flow.PersonalData
+    description: Policy to deny processing Personal Information in account services
+    action: Deny
+    dataFlow:
+      sources:
+        - "Data.Sensitive.Personal.*"
+    repositories:
+      - "account.*"
+    tags:

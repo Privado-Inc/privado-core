@@ -1,0 +1,20 @@
+sources:
+  - id: Data.Sensitive.ContactData.EmailAddress
+    name: Email Address
+    category: Contact Data
+    isSensitive: False
+    sensitivity: medium
+    patterns:
+      - "(?i)email|(?:business|personal|work|contact)[^\\s/(;)#|,=!>]{0,10}email|email[^\\s/(;)#|,=!>]{0,10}(?:address|id)"
+    tags:
+      law: GDPR
+  
+  - id: Data.Sensitive.ContactData.PhoneNumber
+    name: Phone Number
+    category: Contact Data
+    isSensitive: False
+    sensitivity: medium
+    patterns:
+      - "(?i)phone|contact[^\\s/(;)#|,=!>]detail|(?:mobile|phone)[^\\s/(;)#|,=!>]{0,10}(?:number|no)|cellphone|(?:primary|secondary)[^\\s/(;)#|,=!>]{0,10}phone|landline|telephone"
+    tags:
+      law: GDPR
