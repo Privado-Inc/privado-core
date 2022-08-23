@@ -32,31 +32,6 @@ import ai.privado.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty, Literal, MethodParameterIn}
 
-abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-
-  var cpg: Cpg = _
-  val configFileContents: String
-  val javaFileContents: String
-  var inputDir: File = _
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / "test.properties").write(configFileContents)
-    (inputDir / "GeneralConfig.java").write(javaFileContents)
-    (inputDir / "unrelated.file").write("foo")
-    val config = Config(inputPath = inputDir.toString())
-    cpg = new JavaSrc2Cpg().createCpg(config).get
-    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    super.afterAll()
-  }
-
-}
-
 class AnnotationTests extends PropertiesFilePassTestBase {
   override val configFileContents: String =
     """
@@ -150,10 +125,9 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
   */
 abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
+  var cpg: Cpg = _
   val configFileContents: String
   val javaFileContents: String
-
-  var cpg: Cpg       = _
   var inputDir: File = _
 
   override def beforeAll(): Unit = {
@@ -166,4 +140,10 @@ abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
     super.beforeAll()
   }
+
+  override def afterAll(): Unit = {
+    inputDir.delete()
+    super.afterAll()
+  }
+
 }
