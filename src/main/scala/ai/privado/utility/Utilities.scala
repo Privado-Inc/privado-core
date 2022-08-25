@@ -88,22 +88,29 @@ object Utilities {
     val semanticsFilename = Source.fromResource("default.semantics")
 
     val defaultSemantics = semanticsFilename.getLines().toList
-    val customLeakageSemantics = cpg.call.where(_.tag.nameExact(Constants.id).value("Leakages.*"))
-      .methodFullName.dedup.l.map(methodName => "\""+methodName+"\" 1->-1")
+    val customLeakageSemantics = cpg.call
+      .where(_.tag.nameExact(Constants.id).value("Leakages.*"))
+      .methodFullName
+      .dedup
+      .l
+      .map(methodName => "\"" + methodName + "\" 1->-1")
 
     /*
     val customExtraSemantics = List[String]("\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
       "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1")
 
      */
-    val customExtraSemantics = List[String]("\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
-      "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1")
+    val customExtraSemantics = List[String](
+      "\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
+      "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1"
+    )
 
     println("Custom Semantics")
     customLeakageSemantics.foreach(println)
     println("------------")
     customExtraSemantics.foreach(println)
-    val finalSemantics = defaultSemantics.mkString("") ++ (customLeakageSemantics ++ customExtraSemantics).mkString("\n")
+    val finalSemantics =
+      defaultSemantics.mkString("") ++ (customLeakageSemantics ++ customExtraSemantics).mkString("\n")
     Semantics.fromList(new Parser().parse(finalSemantics))
   }
 

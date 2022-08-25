@@ -37,7 +37,7 @@ import overflowdb.BatchedUpdate
 
 class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
-  lazy val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  lazy val cacheCall                        = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics(cpg))
 
   lazy val APISINKS_REGEX =

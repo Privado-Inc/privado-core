@@ -337,7 +337,7 @@ object ScanProcessor extends CommandProcessor {
               }
               println("\n----------------------------------------")
             }*/
-            //cpg.call.where(_.tag.nameExact(Constants.id).value("Leakages.*")).methodFullName.dedup.l.foreach(println)
+            // cpg.call.where(_.tag.nameExact(Constants.id).value("Leakages.*")).methodFullName.dedup.l.foreach(println)
             Right(())
         }
       }
