@@ -23,6 +23,7 @@
 package ai.privado.utility
 
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
@@ -30,7 +31,7 @@ import ai.privado.model.{Constants, RuleInfo}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -83,9 +84,27 @@ object Utilities {
 
   /** Utility to get the default semantics for dataflow queries
     */
-  def getDefaultSemantics: Semantics = {
+  def getDefaultSemantics(cpg: Cpg): Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
+
+    val defaultSemantics = semanticsFilename.getLines().toList
+    val customLeakageSemantics = cpg.call.where(_.tag.nameExact(Constants.id).value("Leakages.*"))
+      .methodFullName.dedup.l.map(methodName => "\""+methodName+"\" 1->-1")
+
+    /*
+    val customExtraSemantics = List[String]("\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
+      "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1")
+
+     */
+    val customExtraSemantics = List[String]("\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
+      "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1")
+
+    println("Custom Semantics")
+    customLeakageSemantics.foreach(println)
+    println("------------")
+    customExtraSemantics.foreach(println)
+    val finalSemantics = defaultSemantics.mkString("") ++ (customLeakageSemantics ++ customExtraSemantics).mkString("\n")
+    Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
   /** Utility to filter rules by catLevelOne

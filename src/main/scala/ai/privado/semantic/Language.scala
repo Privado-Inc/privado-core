@@ -35,6 +35,5 @@ object Language {
   implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
 
   implicit val finder: NodeExtensionFinder  = DefaultNodeExtensionFinder
-  implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
 
 }
