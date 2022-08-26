@@ -14,12 +14,16 @@ phases:
       - CODE_ARTIFACT_URL=https://privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com/maven/core/
       - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
       - |
+        git pull
+        LATEST_TAG="$(git describe --tags --abbrev=0)"
         if [[ $AWS_REGION = "eu-west-1" ]]
         then
-            VERSION="$(git describe --tags --abbrev=0)"
+            VERSION=${LATEST_TAG:1}
         else
+            VERSION_INITIAL=${LATEST_TAG:1}
             VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
         fi
+        echo $VERSION
       - TAG_1=latest
       - TAG_2=$VERSION
       - echo $CODEBUILD_WEBHOOK_HEAD_REF
