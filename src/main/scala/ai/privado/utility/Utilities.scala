@@ -23,7 +23,6 @@
 package ai.privado.utility
 
 import ai.privado.cache.RuleCache
-import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.semantic.Language._
@@ -83,8 +82,19 @@ object Utilities {
   }
 
   /** Utility to get the default semantics for dataflow queries
+    * @return
     */
-  def getDefaultSemantics(cpg: Cpg): Semantics = {
+  def getDefaultSemantics: Semantics = {
+    val semanticsFilename = Source.fromResource("default.semantics")
+    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
+  }
+
+  /** Utility to get the semantics (default + custom) using cpg for dataflow queries
+    * @param cpg
+    *   \- cpg for adding customSemantics
+    * @return
+    */
+  def getSemantics(cpg: Cpg): Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
 
     val defaultSemantics = semanticsFilename.getLines().toList
@@ -93,24 +103,12 @@ object Utilities {
       .methodFullName
       .dedup
       .l
-      .map(methodName => "\"" + methodName + "\" 1->-1")
+      .map(generateCustomLeakageSemantic)
 
-    /*
-    val customExtraSemantics = List[String]("\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
-      "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1")
-
-     */
-    val customExtraSemantics = List[String](
-      "\"java.io.PrintWriter.println:void(java.lang.String)\" 1->-1",
-      "\"java.io.PrintStream.println:void(java.lang.String)\" 1->-1"
-    )
-
-    println("Custom Semantics")
-    customLeakageSemantics.foreach(println)
-    println("------------")
-    customExtraSemantics.foreach(println)
+    logger.debug("Custom Semantics");
+    customLeakageSemantics.foreach(logger.debug)
     val finalSemantics =
-      defaultSemantics.mkString("") ++ (customLeakageSemantics ++ customExtraSemantics).mkString("\n")
+      defaultSemantics.mkString("") + "\n" + customLeakageSemantics.mkString("\n")
     Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
@@ -234,4 +232,17 @@ object Utilities {
   def getSHA256Hash(value: String) =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
+  /** Generate custom leakage semantics based on the number of parameter in method signature
+    * @param methodName
+    *   \- complete signature of method
+    * @return
+    *   \- semantic string
+    */
+  private def generateCustomLeakageSemantic(methodName: String) = {
+    val parameterNumber    = methodName.count(_.equals(','))
+    var parameterSemantics = ""
+    for (i <- 1 to (parameterNumber + 1))
+      parameterSemantics += s"$i->-1 "
+    "\"" + methodName + "\" " + parameterSemantics.trim
+  }
 }
