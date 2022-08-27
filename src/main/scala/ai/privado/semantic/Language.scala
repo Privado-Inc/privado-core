@@ -34,7 +34,6 @@ object Language {
   implicit def tagger(cpg: Cpg): PrivadoTagger     = new PrivadoTagger(cpg)
   implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
 
-  implicit val finder: NodeExtensionFinder  = DefaultNodeExtensionFinder
-  implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
+  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
 }

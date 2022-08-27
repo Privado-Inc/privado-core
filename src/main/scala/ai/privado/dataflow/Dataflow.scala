@@ -23,18 +23,20 @@
 package ai.privado.dataflow
 
 import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.semantic.Language._
+import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 class Dataflow(cpg: Cpg) {
 
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger                        = LoggerFactory.getLogger(getClass)
+  implicit val engineContext: EngineContext = EngineContext(Utilities.getSemantics(cpg))
   def dataflow: List[Path] = {
 
     logger.info("Generating dataflow")

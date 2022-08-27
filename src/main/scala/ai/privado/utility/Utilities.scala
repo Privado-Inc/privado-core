@@ -30,7 +30,7 @@ import ai.privado.model.{Constants, RuleInfo}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -82,10 +82,34 @@ object Utilities {
   }
 
   /** Utility to get the default semantics for dataflow queries
+    * @return
     */
   def getDefaultSemantics: Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
     Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
+  }
+
+  /** Utility to get the semantics (default + custom) using cpg for dataflow queries
+    * @param cpg
+    *   \- cpg for adding customSemantics
+    * @return
+    */
+  def getSemantics(cpg: Cpg): Semantics = {
+    val semanticsFilename = Source.fromResource("default.semantics")
+
+    val defaultSemantics = semanticsFilename.getLines().toList
+    val customLeakageSemantics = cpg.call
+      .where(_.tag.nameExact(Constants.id).value("Leakages.*"))
+      .methodFullName
+      .dedup
+      .l
+      .map(generateCustomLeakageSemantic)
+
+    logger.debug("Custom Semantics");
+    customLeakageSemantics.foreach(logger.debug)
+    val finalSemantics =
+      defaultSemantics.mkString("") + "\n" + customLeakageSemantics.mkString("\n")
+    Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
   /** Utility to filter rules by catLevelOne
@@ -208,4 +232,17 @@ object Utilities {
   def getSHA256Hash(value: String) =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
+  /** Generate custom leakage semantics based on the number of parameter in method signature
+    * @param methodName
+    *   \- complete signature of method
+    * @return
+    *   \- semantic string
+    */
+  private def generateCustomLeakageSemantic(methodName: String) = {
+    val parameterNumber    = methodName.count(_.equals(','))
+    var parameterSemantics = ""
+    for (i <- 1 to (parameterNumber + 1))
+      parameterSemantics += s"$i->-1 "
+    "\"" + methodName + "\" " + parameterSemantics.trim
+  }
 }
