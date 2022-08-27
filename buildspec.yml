@@ -14,12 +14,12 @@ phases:
       - CODE_ARTIFACT_URL=https://privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com/maven/core/
       - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
       - |
-        git pull
-        LATEST_TAG="$(git describe --tags --abbrev=0)"
         if [[ $AWS_REGION = "eu-west-1" ]]
         then
+            LATEST_TAG="$(git describe --tags --abbrev=0)"
             VERSION=${LATEST_TAG:1}
         else
+            LATEST_TAG=$(curl -i "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/Privado-Inc/privado-core/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
             VERSION_INITIAL=${LATEST_TAG:1}
             VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
         fi
