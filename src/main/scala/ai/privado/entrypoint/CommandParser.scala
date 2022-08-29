@@ -51,10 +51,12 @@ object CommandConstants {
   val DISABLE_DEDUPLICATION_ABBR = "dd"
   val IGNORE_EXCLUDE_RULES       = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR  = "ier"
+  val RETRY_SYNC                 = "retry-sync"
 }
 
 object CommandParser {
-  val commandMapper: Map[String, CommandProcessor] = Map(CommandConstants.SCAN -> ScanProcessor)
+  val commandMapper: Map[String, CommandProcessor] =
+    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.RETRY_SYNC -> SyncProcessor)
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
@@ -109,6 +111,19 @@ object CommandParser {
               if (c.cmd.isEmpty) failure("")
               else if (c.ignoreInternalRules && c.externalConfigPath.isEmpty)
                 failure("external rule files location is required if you ignore the internal rules")
+              else success
+            )
+          ),
+        cmd(CommandConstants.RETRY_SYNC)
+          .required()
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.RETRY_SYNC))
+          .children(
+            arg[String]("<Source directory>")
+              .required()
+              .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
+              .text("Source code location"),
+            checkConfig(c =>
+              if (c.cmd.isEmpty) failure("")
               else success
             )
           )
