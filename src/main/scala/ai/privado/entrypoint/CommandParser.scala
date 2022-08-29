@@ -117,6 +117,7 @@ object CommandParser {
         cmd(CommandConstants.RETRY_SYNC)
           .required()
           .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.RETRY_SYNC))
+          .text("Uploads the result file to Privado.ai UI dashboard.")
           .children(
             arg[String]("<Source directory>")
               .required()

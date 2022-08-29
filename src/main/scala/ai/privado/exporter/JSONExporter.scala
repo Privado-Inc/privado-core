@@ -25,6 +25,7 @@ package ai.privado.exporter
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
@@ -98,8 +99,8 @@ object JSONExporter {
       })
 
       logger.info("Completed exporting policy violations")
-      File(repoPath + "/.privado").createDirectoryIfNotExists()
-      val f = File(repoPath + "/.privado/" + outputFileName + ".json")
+      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName.json")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")

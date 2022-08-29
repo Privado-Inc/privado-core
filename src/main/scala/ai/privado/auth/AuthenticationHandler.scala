@@ -23,6 +23,7 @@
 package ai.privado.auth
 import ai.privado.cache.Environment
 import ai.privado.metric.MetricHandler
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.utility.Utilities
 import io.circe.Json
 import org.slf4j.LoggerFactory
@@ -120,8 +121,8 @@ object AuthenticationHandler {
       BASE_URL = "https://t.api.code.privado.ai/test"
     }
     try {
-      val file                         = new File(s"$repoPath/.privado/privado.json")
-      val md5hash                      = computeHash(s"$repoPath/.privado/privado.json")
+      val file                         = new File(s"$repoPath/$outputDirectoryName/$outputFileName.json")
+      val md5hash                      = computeHash(s"$repoPath/$outputDirectoryName/$outputFileName.json")
       val accessKey: String            = Utilities.getSHA256Hash(Environment.dockerAccessKey.get)
       val s3PresignGenEndpoint: String = s"$BASE_URL/cli/api/file/presigned/${Environment.userHash.get}/${md5hash}"
       val firstResp = requests.get(url = s3PresignGenEndpoint, headers = Map("Authentication" -> s"$accessKey"))

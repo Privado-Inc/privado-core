@@ -30,6 +30,7 @@ import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
 import ai.privado.language._
+import ai.privado.model.Constants.outputFileName
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -318,7 +319,6 @@ object ScanProcessor extends CommandProcessor {
 
         println("Brewing result...")
         // Exporting
-        val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
           case Left(err) => Left(err)
           case Right(_) =>
