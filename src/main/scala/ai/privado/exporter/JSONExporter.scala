@@ -100,7 +100,7 @@ object JSONExporter {
 
       logger.info("Completed exporting policy violations")
       File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
-      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName.json")
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")

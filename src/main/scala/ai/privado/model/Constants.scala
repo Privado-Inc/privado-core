@@ -104,7 +104,7 @@ object Constants {
   val sources             = "sources"
   val localScanPath       = "localScanPath"
   val processing          = "processing"
-  val outputFileName      = "privado"
+  val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
 
 }

@@ -121,8 +121,8 @@ object AuthenticationHandler {
       BASE_URL = "https://t.api.code.privado.ai/test"
     }
     try {
-      val file                         = new File(s"$repoPath/$outputDirectoryName/$outputFileName.json")
-      val md5hash                      = computeHash(s"$repoPath/$outputDirectoryName/$outputFileName.json")
+      val file                         = new File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      val md5hash                      = computeHash(s"$repoPath/$outputDirectoryName/$outputFileName")
       val accessKey: String            = Utilities.getSHA256Hash(Environment.dockerAccessKey.get)
       val s3PresignGenEndpoint: String = s"$BASE_URL/cli/api/file/presigned/${Environment.userHash.get}/${md5hash}"
       val firstResp = requests.get(url = s3PresignGenEndpoint, headers = Map("Authentication" -> s"$accessKey"))

@@ -12,7 +12,7 @@ object SyncProcessor extends CommandProcessor {
 
   def checkOutputFileExists(): Boolean = {
     val repoPath = config.sourceLocation.head
-    File(s"$repoPath/$outputDirectoryName/$outputFileName.json").exists
+    File(s"$repoPath/$outputDirectoryName/$outputFileName").exists
   }
 
   override def process(): Either[String, Unit] = {
