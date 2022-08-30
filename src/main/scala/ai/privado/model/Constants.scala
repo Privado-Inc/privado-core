@@ -94,15 +94,17 @@ object Constants {
 
   val minusOne = "-1"
 
-  val coreVersion   = "privadoCoreVersion"
-  val cliVersion    = "privadoCLIVersion"
-  val mainVersion   = "privadoMainVersion"
-  val notDetected   = "Not Detected"
-  val createdAt     = "createdAt"
-  val repoName      = "repoName"
-  val gitMetaData   = "gitMetaData"
-  val sources       = "sources"
-  val localScanPath = "localScanPath"
-  val processing    = "processing"
+  val coreVersion         = "privadoCoreVersion"
+  val cliVersion          = "privadoCLIVersion"
+  val mainVersion         = "privadoMainVersion"
+  val notDetected         = "Not Detected"
+  val createdAt           = "createdAt"
+  val repoName            = "repoName"
+  val gitMetaData         = "gitMetaData"
+  val sources             = "sources"
+  val localScanPath       = "localScanPath"
+  val processing          = "processing"
+  val outputFileName      = "privado.json"
+  val outputDirectoryName = ".privado"
 
 }
