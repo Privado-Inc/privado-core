@@ -115,7 +115,14 @@ object ScanProcessor extends CommandProcessor {
                             nodeType = NodeType.REGULAR
                           )
                         ),
-                      policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
+                      policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree)),
+                      semantics = configAndRules.semantics.map(x =>
+                        x.copy(
+                          file = fullPath,
+                          categoryTree = pathTree,
+                          language = Language.withNameWithDefault(pathTree.last)
+                        )
+                      )
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -126,7 +133,8 @@ object ScanProcessor extends CommandProcessor {
                       List[RuleInfo](),
                       List[PolicyOrThreat](),
                       List[PolicyOrThreat](),
-                      List[RuleInfo]()
+                      List[RuleInfo](),
+                      List[Semantic]()
                     )
                 }
               case Left(error) =>
@@ -138,7 +146,8 @@ object ScanProcessor extends CommandProcessor {
                   List[RuleInfo](),
                   List[PolicyOrThreat](),
                   List[PolicyOrThreat](),
-                  List[RuleInfo]()
+                  List[RuleInfo](),
+                  List[Semantic]()
                 )
             }
           })
@@ -149,7 +158,8 @@ object ScanProcessor extends CommandProcessor {
               collections = a.collections ++ b.collections,
               policies = a.policies ++ b.policies,
               exclusions = a.exclusions ++ b.exclusions,
-              threats = a.threats ++ b.threats
+              threats = a.threats ++ b.threats,
+              semantics = a.semantics ++ b.semantics
             )
           )
       catch {
@@ -169,7 +179,8 @@ object ScanProcessor extends CommandProcessor {
         List[RuleInfo](),
         List[PolicyOrThreat](),
         List[PolicyOrThreat](),
-        List[RuleInfo]()
+        List[RuleInfo](),
+        List[Semantic]()
       )
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
@@ -190,7 +201,8 @@ object ScanProcessor extends CommandProcessor {
         List[RuleInfo](),
         List[PolicyOrThreat](),
         List[PolicyOrThreat](),
-        List[RuleInfo]()
+        List[RuleInfo](),
+        List[Semantic]()
       )
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head)
@@ -212,6 +224,7 @@ object ScanProcessor extends CommandProcessor {
     val collections = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies    = externalConfigAndRules.policies ++ internalConfigAndRules.policies
     val threats     = externalConfigAndRules.threats ++ internalConfigAndRules.threats
+    val semantics   = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
@@ -219,7 +232,8 @@ object ScanProcessor extends CommandProcessor {
         collections = collections.distinctBy(_.id),
         policies = policies.distinctBy(_.id),
         exclusions = exclusions.distinctBy(_.id),
-        threats = threats.distinctBy(_.id)
+        threats = threats.distinctBy(_.id),
+        semantics = semantics.distinctBy(_.signature)
       )
     logger.trace(mergedRules.toString)
     logger.info("Caching rules")

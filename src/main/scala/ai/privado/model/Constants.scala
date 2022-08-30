@@ -38,10 +38,15 @@ object Constants {
   val underScore     = "_"
   val apiUrl         = "apiUrl"
 
+  // semantic
+  val signature = "signature"
+  val flow      = "flow"
+
   val collections = "collections"
   val policies    = "policies"
   val exclusions  = "exclusions"
   val threats     = "threats"
+  val semantics   = "semantics"
 
   // Policy
   val policyId           = "policyId"

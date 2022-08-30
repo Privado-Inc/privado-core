@@ -25,6 +25,7 @@ package ai.privado.utility
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.model.Semantic
 import ai.privado.semantic.Language._
 import ai.privado.model.{Constants, RuleInfo}
 import better.files.File
@@ -86,7 +87,7 @@ object Utilities {
     */
   def getDefaultSemantics: Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
+    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("\n")))
   }
 
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
@@ -104,11 +105,11 @@ object Utilities {
       .dedup
       .l
       .map(generateCustomLeakageSemantic)
-
-    logger.debug("Custom Semantics");
-    customLeakageSemantics.foreach(logger.debug)
+    val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
     val finalSemantics =
-      defaultSemantics.mkString("") + "\n" + customLeakageSemantics.mkString("\n")
+      (defaultSemantics ++ customLeakageSemantics ++ semanticFromConfig).mkString("\n")
+    logger.debug("Final Semantics");
+    finalSemantics.split("\n").foreach(logger.debug)
     Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
@@ -244,5 +245,18 @@ object Utilities {
     for (i <- 1 to (parameterNumber + 1))
       parameterSemantics += s"$i->-1 "
     "\"" + methodName + "\" " + parameterSemantics.trim
+  }
+
+  /** Generate Semantic string based on input Semantic
+    * @param semantic
+    *   \- semantic object containing semantic information
+    * @return
+    */
+  private def generateSemantic(semantic: Semantic) = {
+    if (semantic.signature.nonEmpty) {
+      val generatedSemantic = "\"" + semantic.signature.trim + "\" " + semantic.flow
+      Some(generatedSemantic.trim)
+    } else
+      None
   }
 }

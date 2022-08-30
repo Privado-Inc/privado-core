@@ -11,6 +11,7 @@ policies:
 
   - id: Policy.Deny.Sharing.ThirdParty
     description: Policy to restrict Contact Information being shared with ThirdParty
+    type: Compliance
     action: Deny
 
     dataFlow:
@@ -36,6 +37,7 @@ policies:
   #Example of processing type of policy
   - id: Policy.Allow.Flow.PersonalData
     description: Policy to allow processing Personal Information in account services
+    type: Compliance
     action: Allow
     dataFlow:
       sources:

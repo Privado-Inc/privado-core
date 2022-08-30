@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
 class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
@@ -200,10 +201,13 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         val isCorrectFlowFromExemptedMembers = derivedByIdTags
           .filter(derivedByTag => !derivedByTag._2.equals(pathSourceId))
           .map(derivedByTag => {
-            getMemberNameForForDerivedSourceNode(derivedByTag, sourceNode) match {
-              case Some(memberName) =>
+            getMemberNameForDerivedSourceNode(derivedByTag, sourceNode) match {
+              case Some((memberName, memberRuleId)) =>
                 disallowedMemberNameList.append(memberName)
-                !isArgumentMatchingMemberName(sinkArguments, memberName)
+                !(isArgumentMatchingMemberName(sinkArguments, memberName) || isArgumentMatchingMemberPattern(
+                  sinkArguments,
+                  memberRuleId
+                ))
               case None => true
             }
           })
@@ -214,10 +218,13 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
           val isCorrectFlowFromSourceMember = derivedByIdTags
             .filter(derivedByTag => derivedByTag._2.equals(pathSourceId))
             .map(derivedByIdTag => {
-              getMemberNameForForDerivedSourceNode(derivedByIdTag, sourceNode) match {
-                case Some(memberName) =>
+              getMemberNameForDerivedSourceNode(derivedByIdTag, sourceNode) match {
+                case Some((memberName, memberRuleId)) =>
                   allowedMemberName = memberName
-                  isArgumentMatchingMemberName(sinkArguments, memberName)
+                  isArgumentMatchingMemberName(sinkArguments, memberName) || isArgumentMatchingMemberPattern(
+                    sinkArguments,
+                    memberRuleId
+                  )
                 case None => false
               }
             })
@@ -258,10 +265,13 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     * @param sourceNode
     * @return
     */
-  private def getMemberNameForForDerivedSourceNode(derivedByTag: (String, String), sourceNode: CfgNode) = {
+  private def getMemberNameForDerivedSourceNode(derivedByTag: (String, String), sourceNode: CfgNode) = {
     val tagName  = derivedByTag._1
     val tagValue = derivedByTag._2
-    sourceNode.tag.nameExact(tagValue + Constants.underScore + tagName).value.l.headOption
+    sourceNode.tag.nameExact(tagValue + Constants.underScore + tagName).value.l.headOption match {
+      case Some(memberName) => Some((memberName, tagValue))
+      case None             => None
+    }
   }
 
   /** Apply regex to fetch the arguments in the given source code of a sink
@@ -270,6 +280,23 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     */
   private def getArgumentListByRegex(sinkCode: String): List[String] = {
     sinkCode.split("[(,+]").map(argument => argument.strip().replaceAll("\".*\"", "")).filter(_.nonEmpty).toList
+  }
+
+  /** Verify if pattern of matched Member, matches any of the argument name by regex
+    *
+    * @param sinkArgument
+    * @param memberRuleId
+    * @return
+    */
+  private def isArgumentMatchingMemberPattern(sinkArgument: List[String], memberRuleId: String): Boolean = {
+    Try(
+      sinkArgument
+        .map(argument => argument.matches(RuleCache.getRuleInfo(memberRuleId).get.patterns.head))
+        .foldLeft(false)((a, b) => a || b)
+    ) match {
+      case Success(result) => result
+      case Failure(_)      => false
+    }
   }
 
   /** Verify if Member name matches any of the argument name by regex

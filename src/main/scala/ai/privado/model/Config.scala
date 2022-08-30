@@ -49,7 +49,8 @@ case class ConfigAndRules(
   collections: List[RuleInfo],
   policies: List[PolicyOrThreat],
   threats: List[PolicyOrThreat],
-  exclusions: List[RuleInfo]
+  exclusions: List[RuleInfo],
+  semantics: List[Semantic]
 )
 
 case class DataFlow(sources: List[String], sinks: List[String])
@@ -65,6 +66,14 @@ case class PolicyOrThreat(
   repositories: List[String],
   tags: Map[String, String],
   file: String,
+  categoryTree: Array[String]
+)
+
+case class Semantic(
+  signature: String,
+  flow: String,
+  file: String,
+  language: Language.Language,
   categoryTree: Array[String]
 )
 
@@ -107,6 +116,22 @@ object CirceEnDe {
     }
   }
 
+  implicit val decodeSemantic: Decoder[Semantic] = new Decoder[Semantic] {
+    override def apply(c: HCursor): Result[Semantic] = {
+      val signature = c.downField(Constants.signature).as[String]
+      val flow      = c.downField(Constants.flow).as[String]
+      Right(
+        Semantic(
+          signature = signature.getOrElse(""),
+          flow = flow.getOrElse(""),
+          file = "",
+          categoryTree = Array[String](),
+          language = Language.UNKNOWN
+        )
+      )
+    }
+  }
+
   implicit val decodeRules: Decoder[ConfigAndRules] = new Decoder[ConfigAndRules] {
     override def apply(c: HCursor): Result[ConfigAndRules] = {
       val sources     = c.downField(Constants.sources).as[List[RuleInfo]]
@@ -115,6 +140,7 @@ object CirceEnDe {
       val policies    = c.downField(Constants.policies).as[List[PolicyOrThreat]]
       val exclusions  = c.downField(Constants.exclusions).as[List[RuleInfo]]
       val threats     = c.downField(Constants.threats).as[List[PolicyOrThreat]]
+      val semantics   = c.downField(Constants.semantics).as[List[Semantic]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -122,7 +148,8 @@ object CirceEnDe {
           collections = collections.getOrElse(List[RuleInfo]()),
           policies = policies.getOrElse(List[PolicyOrThreat]()),
           exclusions = exclusions.getOrElse(List[RuleInfo]()),
-          threats = threats.getOrElse(List[PolicyOrThreat]())
+          threats = threats.getOrElse(List[PolicyOrThreat]()),
+          semantics = semantics.getOrElse(List[Semantic]())
         )
       )
     }

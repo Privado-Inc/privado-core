@@ -30,7 +30,7 @@ import scala.collection.mutable
   */
 object RuleCache {
 
-  private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List())
+  private var rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List())
   private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
   private val policyOrThreatMap    = mutable.HashMap[String, PolicyOrThreat]()
   val internalRules                = mutable.HashMap[String, Int]()
