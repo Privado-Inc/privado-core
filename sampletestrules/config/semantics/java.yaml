@@ -1,0 +1,3 @@
+semantics:
+  - signature: "android.text.TextUtils.isEmpty:boolean(java.lang.String)"
+    flow: "1->-1"
