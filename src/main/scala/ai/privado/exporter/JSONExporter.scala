@@ -89,6 +89,8 @@ object JSONExporter {
       val violations = policyAndThreatExporter.getViolations(repoPath)
       output.addOne("violations" -> violations.asJson)
       MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
+      MetricHandler.metricsData("collections") = Json.fromInt(collectionExporter.getCollections.size)
+      MetricHandler.metricsData("sources") = Json.fromInt(sourceExporter.getSources.size)
       violations.foreach(mapEntry => {
         mapEntry("policyId").asString match {
           case Some(value) =>

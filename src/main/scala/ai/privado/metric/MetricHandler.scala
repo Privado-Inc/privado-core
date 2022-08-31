@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 import io.circe.syntax._
+import Console.{BLUE, BOLD, CYAN, GREEN, RED, RESET, YELLOW, WHITE, MAGENTA}
 
 object MetricHandler {
 
@@ -66,7 +67,29 @@ object MetricHandler {
     metricsData("noOfRulesMatch") = Json.fromInt(totalRulesMatched.size)
     metricsData("internalPoliciesIdsMatch") =
       Json.fromValues(internalPoliciesOrThreatsMatched.map(key => Json.fromString(key)))
+    printSummary()
     sendDataToServer()
+  }
+
+  def printSummary() = {
+    println(s"\n----------------------------------------------------------------------------------------------")
+    println(s"SUMMARY")
+    println(s"----------------------------------------------------------------------------------------------\n")
+    println(s"Privado discovers data elements that are being collected, processed, or shared in the code.\n")
+    Console.println(s"${RESET}${BLUE}${BOLD}DATA ELEMENTS${RESET}  |  ${metricsData("sources")}")
+    println(s"----------------------------------------------------------------------------------------------\n")
+    println(s"Sinks are the destinations where personal data is being sent in the code. They are further categorised into storages, leakages, third parties, and internal apis.\n")
+    Console.println(s"${RESET}${GREEN}Third Parties${RESET}  |  ${flowCategoryData("third_parties")}")
+    Console.println(s"${RESET}${CYAN}Storage${RESET}        |  ${flowCategoryData("storages")}")
+    Console.println(s"${RESET}${WHITE}Internal API${RESET}   |  ${flowCategoryData("internal_apis")}")
+    Console.println(s"${RESET}${MAGENTA}Data Leakages${RESET}  |  ${flowCategoryData("leakages")}")
+    println(s"----------------------------------------------------------------------------------------------\n")
+    println(s"Collections are the points in the code where personal data enters either via direct user input or via other API/service pushing it.\n")
+    Console.println(s"${RESET}${RED}Collection${RESET}     |  ${metricsData("collections")}")
+    println(s"----------------------------------------------------------------------------------------------\n")
+    println(s"Privado creates issues based on policy rules and CWE vulnerabilities. Issues can be used to monitor and govern the usage of personal data.\n")
+    Console.println(s"${RESET}${RED}Issues${RESET}         |  ${Json.fromInt(internalPoliciesOrThreatsMatched.size)}")
+    println(s"----------------------------------------------------------------------------------------------\n")
   }
 
   def sendDataToServer() = {
