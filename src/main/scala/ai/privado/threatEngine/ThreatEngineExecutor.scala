@@ -123,33 +123,37 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
   }
 
   private def processDataflowViolations(threat: PolicyOrThreat) = {
-    val threatId = threat.id
+    val threatId                                                             = threat.id
+    var violationResponse: Option[(Boolean, List[PolicyViolationFlowModel])] = None
 
-    // process android threats
-    val violationResponse = getAndroidManifestFile(repoPath) match {
-      // if we get a manifest file, consider android app
-      case Some(manifestFile) =>
-        logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
-        logger.info(s"Processing 'dataflow' threat: ${threatId}")
-        threatId match {
-          case "Threats.Leakage.isDataLeakingToLog" =>
-            DataLeakageToLogs.getViolations(threat, cpg, dataflows) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
-          case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" =>
-            DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
+    // Data leakage to logs is threat on non Android repos too
+    if (threatId == "Threats.Leakage.isDataLeakingToLog") {
+      violationResponse = DataLeakageToLogs.getViolations(threat, cpg, dataflows) match {
+        case Success(res) => Some(res)
+        case Failure(e)   => None
+      }
+    } else {
+      // process android threats
+      violationResponse = getAndroidManifestFile(repoPath) match {
+        // if we get a manifest file, consider android app
+        case Some(manifestFile) =>
+          logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
+          logger.info(s"Processing 'dataflow' threat: ${threatId}")
+          threatId match {
+            case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" =>
+              DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
+                case Success(res) => Some(res)
+                case Failure(e)   => None
+              }
 
-          case _ =>
-            logger.debug(s"No implementation detected for threat: ${threatId}")
-            None
-        }
-      case _ =>
-        logger.debug("Did not find AndroidManifest.xml")
-        None
+            case _ =>
+              logger.debug(s"No implementation detected for threat: ${threatId}")
+              None
+          }
+        case _ =>
+          logger.debug("Did not find AndroidManifest.xml")
+          None
+      }
     }
 
     violationResponse match {
