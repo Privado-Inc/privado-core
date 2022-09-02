@@ -129,13 +129,16 @@ abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with
   val configFileContents: String
   val javaFileContents: String
   var inputDir: File = _
+  var outputFile : File = _
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     (inputDir / "test.properties").write(configFileContents)
     (inputDir / "GeneralConfig.java").write(javaFileContents)
     (inputDir / "unrelated.file").write("foo")
-    val config = Config(inputPath = inputDir.toString())
+
+    outputFile = File.newTemporaryFile()
+    val config = Config(inputPath = inputDir.toString(), outputPath =  outputFile.toString())
     cpg = new JavaSrc2Cpg().createCpg(config).get
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
     super.beforeAll()
@@ -143,6 +146,8 @@ abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with
 
   override def afterAll(): Unit = {
     inputDir.delete()
+    cpg.close()
+    outputFile.delete()
     super.afterAll()
   }
 
