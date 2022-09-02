@@ -11,7 +11,7 @@ phases:
       - ACCOUNT_ID=${CODEBUILD_BUILD_ARN} && IFS=':' && set -- $ACCOUNT_ID && ACCOUNT_ID=$5
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
-      - CODE_ARTIFACT_URL=https://privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com/maven/core/
+      - CODE_ARTIFACT_URL=privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com
       - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
       - |
         if [[ $AWS_REGION = "eu-west-1" ]]

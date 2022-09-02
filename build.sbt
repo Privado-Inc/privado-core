@@ -1,12 +1,12 @@
+import sbt.{Credentials}
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
 ThisBuild / scalaVersion := "2.13.7"
-ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "1.0-SNAPSHOT")
+ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 val cpgVersion = "1.3.559"
 val joernVersion = "1.1.1050"
 val overflowdbVersion = "1.147"
-
 //External dependency versions
 val circeVersion = "0.14.1"
 
@@ -52,3 +52,10 @@ ThisBuild / resolvers ++= Seq(
 
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false
+
+
+val repoPass = sys.env.get("CODEARTIFACT_AUTH_TOKEN").getOrElse("")
+credentials += Credentials("privado/core", sys.env.get("CODE_ARTIFACT_URL").getOrElse(""), "aws", repoPass)
+publishMavenStyle := true
+resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
+ThisBuild / publishTo := Some("privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("")+ "/maven/core")
