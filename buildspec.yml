@@ -33,7 +33,13 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
+      - |
+        if [[ $AWS_REGION = "eu-west-1" ]]
+        then
+            docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION=$VERSION --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
+        else
+            docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION="dev-SNAPSHOT" --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
+        fi
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_1
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_2
   post_build:

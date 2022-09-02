@@ -11,13 +11,14 @@ RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SB
 WORKDIR /home/privado-core
 COPY . .
 ARG VERSION
+ARG JAR_VERSION
 ARG CODE_ARTIFACT_URL
 ARG CODEARTIFACT_AUTH_TOKEN
 
 RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
 
-RUN export BUILD_VERSION=$VERSION && export CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && sbt publish
+RUN export BUILD_VERSION=$JAR_VERSION && export CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && sbt publish
 
 FROM alpine:3.16
 RUN apk add --no-cache bash
