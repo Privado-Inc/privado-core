@@ -11,16 +11,14 @@ RUN curl -sL "https://github.com/sbt/sbt/releases/download/v$SBT_VERSION/sbt-$SB
 WORKDIR /home/privado-core
 COPY . .
 ARG VERSION
+ARG JAR_VERSION
 ARG CODE_ARTIFACT_URL
 ARG CODEARTIFACT_AUTH_TOKEN
 
 RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
 
-RUN echo "ThisBuild/codeArtifactUrl := \"$CODE_ARTIFACT_URL\"" >> build.sbt 
-RUN echo "import codeartifact.CodeArtifactKeys._" | cat - project/Projects.scala > temp && mv temp project/Projects.scala 
-RUN echo "addSbtPlugin(\"io.github.bbstilson\"   % \"sbt-codeartifact\"      % \"0.2.4\")" >> project/plugins.sbt
-RUN export BUILD_VERSION=$VERSION && CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && sbt universal:packageBin codeArtifactPublish
+RUN export BUILD_VERSION=$JAR_VERSION && export CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && sbt publish
 
 FROM alpine:3.16
 RUN apk add --no-cache bash
