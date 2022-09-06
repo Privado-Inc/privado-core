@@ -51,12 +51,12 @@ object CommandConstants {
   val DISABLE_DEDUPLICATION_ABBR = "dd"
   val IGNORE_EXCLUDE_RULES       = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR  = "ier"
-  val RETRY_UPLOAD_RESULT        = "retry-upload-result"
+  val UPLOAD                     = "upload"
 }
 
 object CommandParser {
   val commandMapper: Map[String, CommandProcessor] =
-    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.RETRY_UPLOAD_RESULT -> SyncProcessor)
+    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> SyncProcessor)
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
@@ -114,9 +114,9 @@ object CommandParser {
               else success
             )
           ),
-        cmd(CommandConstants.RETRY_UPLOAD_RESULT)
+        cmd(CommandConstants.UPLOAD)
           .required()
-          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.RETRY_UPLOAD_RESULT))
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.UPLOAD))
           .text("Uploads the result file to Privado.ai UI dashboard.")
           .children(
             arg[String]("<Source directory>")
