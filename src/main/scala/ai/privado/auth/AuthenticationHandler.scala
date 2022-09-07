@@ -71,7 +71,10 @@ object AuthenticationHandler {
     println("Do you want to visualize these results on our Privacy View Cloud Dashboard? (Y/n)")
     val userPermissionInput = scala.io.StdIn.readLine().toLowerCase
     var cloudConsentPermission: Boolean = userPermissionInput match {
-      case "n" | "no" | "0" => false
+      case "n" | "no" | "0" =>
+        println("To view these results on our Privacy View Cloud Dashboard, try using privado upload command")
+        println("Command Usage: privado upload <path>/<to>/<scanned>/<repo>")
+        false
       case _ =>
         updateConfigFile("syncToPrivadoCloud", "true")
         true
