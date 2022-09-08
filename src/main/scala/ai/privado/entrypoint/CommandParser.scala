@@ -56,7 +56,7 @@ object CommandConstants {
 
 object CommandParser {
   val commandMapper: Map[String, CommandProcessor] =
-    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> SyncProcessor)
+    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> UploadProcessor)
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
