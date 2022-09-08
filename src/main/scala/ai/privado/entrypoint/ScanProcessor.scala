@@ -28,6 +28,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -313,11 +314,10 @@ object ScanProcessor extends CommandProcessor {
 
         println("Brewing result...")
         // Exporting
-        val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
           case Left(err) => Left(err)
           case Right(_) =>
-            println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+            println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
