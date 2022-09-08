@@ -23,13 +23,11 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
-import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
-import ai.privado.language._
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -311,24 +309,7 @@ object ScanProcessor extends CommandProcessor {
         println("Tagging source code with rules...")
         cpg.runTagger(processedRules)
         println("Finding source to sink flow of data...")
-        val dataflowMap = {
-          val flows = cpg.dataflow
-          if (config.disableDeDuplication) {
-            flows
-              .flatMap(dataflow => {
-                DuplicateFlowProcessor.calculatePathId(dataflow) match {
-                  case Success(pathId) => Some(pathId, dataflow)
-                  case Failure(e) =>
-                    logger.debug("Exception : ", e)
-                    None
-                }
-              })
-              .toMap
-          } else {
-            println("Deduplicating data flows...")
-            DuplicateFlowProcessor.process(flows)
-          }
-        }
+        val dataflowMap = cpg.dataflow
 
         println("Brewing result...")
         // Exporting
@@ -340,17 +321,6 @@ object ScanProcessor extends CommandProcessor {
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
-            /*
-            // Utility to debug
-            for (tagName <- cpg.tag.name.dedup.l) {
-              val tags = cpg.tag(tagName).l
-              println(s"tag Name : ${tagName}, size : ${tags.size}")
-              println("Values : ")
-              for (tag <- tags) {
-                print(s"${tag.value}, ")
-              }
-              println("\n----------------------------------------")
-            }*/
             Right(())
         }
       }
