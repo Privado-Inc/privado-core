@@ -87,8 +87,6 @@ class Dataflow(cpg: Cpg) {
       filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
       // Need to return the filtered result
       val dataflowFromCache = DataFlowCache.getDataflow
-      // dataflowFromCache.foreach(println)
-      // dataflowMapByPathId.values.toList
       dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
     }
   }
