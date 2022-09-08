@@ -70,7 +70,7 @@ object AuthenticationHandler {
   def askForPermission(): Boolean = {
     println("Do you want to visualize these results on our Privacy View Cloud Dashboard? (Y/n)")
     val userPermissionInput = scala.io.StdIn.readLine().toLowerCase
-    var cloudConsentPermission: Boolean = userPermissionInput match {
+    val cloudConsentPermission: Boolean = userPermissionInput match {
       case "n" | "no" | "0" => false
       case _ =>
         updateConfigFile("syncToPrivadoCloud", "true")
@@ -124,48 +124,55 @@ object AuthenticationHandler {
       val file                         = new File(s"$repoPath/$outputDirectoryName/$outputFileName")
       val md5hash                      = computeHash(s"$repoPath/$outputDirectoryName/$outputFileName")
       val accessKey: String            = Utilities.getSHA256Hash(Environment.dockerAccessKey.get)
-      val s3PresignGenEndpoint: String = s"$BASE_URL/cli/api/file/presigned/${Environment.userHash.get}/${md5hash}"
-      val firstResp = requests.get(url = s3PresignGenEndpoint, headers = Map("Authentication" -> s"$accessKey"))
-      firstResp.statusCode match {
+      val s3PresignGenEndpoint: String = s"$BASE_URL/cli/api/file/presigned/${Environment.userHash.get}/$md5hash"
+      val preSignedUrlResponse =
+        requests.get(url = s3PresignGenEndpoint, headers = Map("Authentication" -> s"$accessKey"))
+
+      preSignedUrlResponse.statusCode match {
         case 200 =>
-          val fresp = ujson.read(firstResp.text())
-          val secResp = requests.post(
-            url = fresp("s3PreSignedUrl")("url").str,
+          val preSignedResponseData = ujson.read(preSignedUrlResponse.text())
+          val uploadResultFileResponse = requests.post(
+            url = preSignedResponseData("s3PreSignedUrl")("url").str,
             data = requests.MultiPart(
-              requests.MultiItem("key", fresp("s3PreSignedUrl")("fields")("key").str),
-              requests.MultiItem("x-amz-algorithm", fresp("s3PreSignedUrl")("fields")("x-amz-algorithm").str),
-              requests.MultiItem("x-amz-credential", fresp("s3PreSignedUrl")("fields")("x-amz-credential").str),
-              requests.MultiItem("x-amz-date", fresp("s3PreSignedUrl")("fields")("x-amz-date").str),
-              requests.MultiItem("policy", fresp("s3PreSignedUrl")("fields")("policy").str),
-              requests.MultiItem("x-amz-signature", fresp("s3PreSignedUrl")("fields")("x-amz-signature").str),
+              requests.MultiItem("key", preSignedResponseData("s3PreSignedUrl")("fields")("key").str),
+              requests
+                .MultiItem("x-amz-algorithm", preSignedResponseData("s3PreSignedUrl")("fields")("x-amz-algorithm").str),
+              requests.MultiItem(
+                "x-amz-credential",
+                preSignedResponseData("s3PreSignedUrl")("fields")("x-amz-credential").str
+              ),
+              requests.MultiItem("x-amz-date", preSignedResponseData("s3PreSignedUrl")("fields")("x-amz-date").str),
+              requests.MultiItem("policy", preSignedResponseData("s3PreSignedUrl")("fields")("policy").str),
+              requests
+                .MultiItem("x-amz-signature", preSignedResponseData("s3PreSignedUrl")("fields")("x-amz-signature").str),
               requests.MultiItem("file", file)
             )
           )
-          secResp.statusCode match {
+          uploadResultFileResponse.statusCode match {
             case 204 =>
-              val finalResp = requests.post(
+              val processFileResponse = requests.post(
                 url =
-                  s"$BASE_URL/cli/api/file/process/${Environment.userHash.get}?filePath=${fresp("s3PreSignedUrl")("fields")("key").str}",
+                  s"$BASE_URL/cli/api/file/process/${Environment.userHash.get}?filePath=${preSignedResponseData("s3PreSignedUrl")("fields")("key").str}",
                 headers = Map("Authentication" -> s"$accessKey")
               )
-              val json = ujson.read(finalResp.text())
-              finalResp.statusCode match {
+              val processFileResponseData = ujson.read(processFileResponse.text())
+              processFileResponse.statusCode match {
                 case 200 =>
-                  s"""\n> Successfully synchronized results with Privado Cloud \n> Continue to view results on: ${json(
+                  s"""\n> Successfully synchronized results with Privado Cloud \n> Continue to view results on: ${processFileResponseData(
                       "redirectUrl"
                     ).toString()}\n"""
                 case _ =>
-                  logger.debug("Error while upload file to server")
-                  "Error occurred while uploading the file to the cloud."
+                  logger.debug("Error in triggering the process flow for result file")
+                  "Error occurred during processing of file on cloud"
               }
             case _ =>
-              logger.debug("Error while upload file to server")
+              logger.debug("Error while uploading file to server")
               "Error occurred while uploading the file to the cloud."
           }
 
         case _ =>
-          logger.debug("Error while generating upload request")
-          "Error occurred while uploading the file to the cloud."
+          logger.debug("Error fetching the presigned URL from S3")
+          "Error occurred while getting the upload URL"
       }
 
     } catch {
