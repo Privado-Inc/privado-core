@@ -69,37 +69,37 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
       case "Threats.Collection.isKeyboardCacheUsed" if isAndroidRepo =>
         KeyboardCache.getViolations(repoPath) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
 
       case "Threats.Storage.isAppDataBackupAllowed" if isAndroidRepo =>
         SensitiveDataBackup.getViolations(cpg, manifestFile) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
 
       case "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled" if isAndroidRepo =>
         BackgroundScreenshot.getViolations(cpg) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
 
       case "Threats.Sharing.isIpcDataSharingAllowed" if isAndroidRepo =>
         DataSharingIPC.getViolations(cpg, manifestFile) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
 
       case "Threats.Collection.isInputMasked" if isAndroidRepo =>
         SensitiveInputMask.getViolations(cpg, repoPath) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
 
       case "Threats.Storage.isDataStoredOnExternalStorage" if isAndroidRepo =>
         DataOnExternalStorage.getViolations(cpg, manifestFile) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
 
       case _ =>
@@ -125,18 +125,18 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
     // if we get a manifest file, consider android app
     // and process android-specific threats
-    val (isAndroidRepo, manifestFile) = getAndroidManifestFile(repoPath)
+    val (isAndroidRepo, _) = getAndroidManifestFile(repoPath)
 
     val violationResponse = threatId match {
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
         DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
         DataLeakageToLogs.getViolations(threat, cpg, dataflows) match {
           case Success(res) => Some(res)
-          case Failure(e)   => None
+          case Failure(_)   => None
         }
       case _ =>
         logger.debug(s"No implementation detected for threat: ${threatId} (isAndroidRepo: ${isAndroidRepo})")

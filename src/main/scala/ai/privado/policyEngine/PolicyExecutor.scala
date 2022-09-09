@@ -22,7 +22,7 @@
 
 package ai.privado.policyEngine
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat, PolicyViolationFlowModel}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -31,7 +31,6 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -96,39 +95,11 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
   }
 
   private def getDataflowBySourceIdMapping = {
-    val dataflowSourceIdMap = mutable.HashMap[String, ListBuffer[String]]()
-    dataflowMap.foreach(entrySet => {
-      def addToMap(sourceId: String) = {
-        if (!dataflowSourceIdMap.contains(sourceId))
-          dataflowSourceIdMap(sourceId) = ListBuffer[String]()
-        dataflowSourceIdMap(sourceId).append(entrySet._1)
-      }
-      try {
-        val source = entrySet._2.elements.head
-        source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-      } catch {
-        case e: Exception => logger.debug("Exception : ", e)
-      }
-
-    })
-    dataflowSourceIdMap
+    DataFlowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getDataflowBySinkIdMapping = {
-    val dataflowSinkIdMap = mutable.HashMap[String, ListBuffer[String]]()
-    dataflowMap.foreach(entrySet => {
-      entrySet._2.elements.last.tag
-        .nameExact(Constants.id)
-        .value
-        .l
-        .foreach(sinkId => {
-          if (!dataflowSinkIdMap.contains(sinkId))
-            dataflowSinkIdMap(sinkId) = ListBuffer[String]()
-          dataflowSinkIdMap(sinkId).append(entrySet._1)
-        })
-    })
-    dataflowSinkIdMap
+    DataFlowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {

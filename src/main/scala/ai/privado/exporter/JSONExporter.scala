@@ -25,7 +25,7 @@ package ai.privado.exporter
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{outputDirectoryName}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._

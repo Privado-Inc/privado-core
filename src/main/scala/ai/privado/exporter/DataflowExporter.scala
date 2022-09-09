@@ -22,21 +22,17 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
-import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType}
-import ai.privado.semantic.Language.finder
+import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.model.{Constants, DataFlowPathModel, NodeType}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 
 class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
@@ -49,74 +45,34 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  def getFlowByType(
-    sinkSubCategory: String,
-    sinkNodetypes: Set[String]
-  ): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
-    def processNonEmptyFlows(
-      dataflowsMapByType: Map[String, Path]
-    ): mutable.Seq[mutable.LinkedHashMap[String, Json]] = {
-      val dataflowsMapBySourceId = mutable.HashMap[String, ListBuffer[String]]()
-      dataflowsMapByType.foreach(entrySet => {
-        def addToMap(sourceId: String) = {
-          if (dataflowsMapBySourceId.contains(sourceId))
-            dataflowsMapBySourceId(sourceId) += entrySet._1
-          else
-            dataflowsMapBySourceId.addOne(sourceId, ListBuffer(entrySet._1))
-        }
-
-        val source = entrySet._2.elements.head
-        try {
-          source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-        } catch {
-          case e: Exception => logger.debug("Exception while traversing dataflow path : ", e)
-        }
-      })
-
-      val dataflowOutputList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
-
-      dataflowsMapBySourceId.foreach(flow => {
+  def getFlowByType(sinkSubCategory: String, sinkNodeTypes: Set[String]) = {
+    sinkNodeTypes.flatMap(sinkNodeType => {
+      val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
+        dataflowModel.sinkSubCategory.equals(sinkSubCategory) && dataflowModel.sinkNodeType.equals(sinkNodeType)
+      )
+      val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)
+      val dataflowOutputList      = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+      dataflowModelBySourceId.foreach(dataflowBySourceEntrySet => {
         val dataflowOutput = mutable.LinkedHashMap[String, Json]()
-        dataflowOutput.addOne(Constants.sourceId -> flow._1.asJson)
+        dataflowOutput.addOne(Constants.sourceId -> dataflowBySourceEntrySet._1.asJson)
         dataflowOutput.addOne(
-          Constants.sinks -> convertSinksList(
-            flow._1,
-            flow._2.toList,
-            dataflowsMapByType,
-            sinkSubCategory,
-            sinkNodetypes
-          )
+          Constants.sinks -> convertSourceModelList(dataflowBySourceEntrySet._2, sinkSubCategory, sinkNodeType)
         )
         dataflowOutputList += dataflowOutput
       })
       dataflowOutputList
-    }
-
-    val dataflowsMapByType = dataflowsMap.filter(dataflowEntrySet =>
-      dataflowEntrySet._2.elements.last
-        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
-        .nonEmpty
-    )
-    MetricHandler.flowCategoryData(sinkSubCategory) = dataflowsMapByType.size
-    if (dataflowsMapByType.isEmpty)
-      mutable.Seq[mutable.LinkedHashMap[String, Json]]()
-    else
-      processNonEmptyFlows(dataflowsMapByType)
+    })
   }
 
-  private def convertSinksList(
-    pathSourceId: String,
-    sinkPathIds: List[String],
-    dataflowsMapByType: Map[String, Path],
-    dataflowSinkType: String,
-    dataflowNodeTypes: Set[String]
-  ) = {
-
+  def convertSourceModelList(
+    sourceModelList: List[DataFlowPathModel],
+    sinkSubCategory: String,
+    sinkNodeType: String
+  ): Json = {
     def convertSink(sinkId: String, sinkPathIds: ListBuffer[String]) = {
       var sinkOutput       = mutable.LinkedHashMap[String, Json]()
       val sinkIdAfterSplit = sinkId.split("#_#")
-      sinkOutput.addOne(Constants.sinkType -> dataflowSinkType.asJson)
+      sinkOutput.addOne(Constants.sinkType -> sinkSubCategory.asJson)
       sinkOutput = sinkOutput ++ ExporterUtility.getRuleInfoForExporting(sinkIdAfterSplit(0))
       // Special case for API type of nodes
       RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
@@ -127,7 +83,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
       sinkOutput
         .addOne(
           Constants.paths -> sinkPathIds
-            .map(sinkPathId => convertPathsList(dataflowsMapByType(sinkPathId), sinkPathId))
+            .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId))
             .asJson
         )
         .asJson
@@ -136,35 +92,19 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
     // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
     val sinkMap = mutable.HashMap[String, ListBuffer[String]]()
-    distinctBySinkLineNumber(sinkPathIds, dataflowsMapByType).foreach(sinkPathId => {
-      dataflowNodeTypes.foreach(dataflowNodeType => {
-        // Check to filter if correct Source is consumed in Sink
-        if (
-          isCorrectDataSourceConsumedInSink(
-            pathSourceId,
-            sinkPathId,
-            dataflowsMapByType(sinkPathId),
-            dataflowSinkType,
-            dataflowNodeType
-          )
-        ) {
-          val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
-            .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
-          if (sinkCatLevelTwoCustomTag.nonEmpty) {
-            var sinkId = sinkCatLevelTwoCustomTag.head.value
-            val sinkAPITag = dataflowsMapByType(sinkPathId).elements.last.tag
-              .filter(node => node.name.equals(Constants.apiUrl))
-            if (sinkAPITag.nonEmpty) {
-              sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
-            }
-            if (!sinkMap.contains(sinkId))
-              sinkMap(sinkId) = ListBuffer()
-            sinkMap(sinkId).append(sinkPathId)
-          }
-        }
-      })
+    sourceModelList.foreach(sourceModel => {
+      var sinkId = sourceModel.sinkId
+      val sinkAPITag = dataflowsMap(sourceModel.pathId).elements.last.tag
+        .filter(node => node.name.equals(Constants.apiUrl))
+      if (sinkAPITag.nonEmpty) {
+        sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
+      }
+      if (!sinkMap.contains(sinkId))
+        sinkMap(sinkId) = ListBuffer()
+      sinkMap(sinkId).append(sourceModel.pathId)
     })
     sinkMap.map(entrySet => convertSink(entrySet._1, entrySet._2)).asJson
+
   }
 
   private def convertPathsList(sinkFlow: Path, pathId: String) = {
@@ -173,161 +113,6 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     pathOutput.addOne(Constants.pathId -> pathId.asJson)
     pathOutput.addOne(Constants.path   -> ExporterUtility.convertPathElements(sinkFlow.elements).asJson)
     pathOutput
-  }
-
-  /** Check to classify if path Source Id is getting consumed in sink for derived sources
-    *
-    * @param pathSourceId
-    * @param path
-    * @return
-    */
-  def isCorrectDataSourceConsumedInSink(
-    pathSourceId: String,
-    pathId: String,
-    path: Path,
-    dataflowSinkType: String,
-    dataflowNodeType: String
-  ): Boolean = {
-
-    var isCorrect = true // By default we set it to true, mark it false if matches some condition
-
-    if (dataflowSinkType.equals("leakages")) {
-      val sourceNode      = path.elements.head
-      val derivedByIdTags = sourceNode.tag.name(Constants.privadoDerived + ".*").map(tg => (tg.name, tg.value)).l
-      if (derivedByIdTags.nonEmpty) {
-        val disallowedMemberNameList = ListBuffer[String]()
-        val sinkCode                 = path.elements.last.code
-        val sinkArguments            = getArgumentListByRegex(sinkCode)
-        val isCorrectFlowFromExemptedMembers = derivedByIdTags
-          .filter(derivedByTag => !derivedByTag._2.equals(pathSourceId))
-          .map(derivedByTag => {
-            getMemberNameForDerivedSourceNode(derivedByTag, sourceNode) match {
-              case Some((memberName, memberRuleId)) =>
-                disallowedMemberNameList.append(memberName)
-                !(isArgumentMatchingMemberName(sinkArguments, memberName) || isArgumentMatchingMemberPattern(
-                  sinkArguments,
-                  memberRuleId
-                ))
-              case None => true
-            }
-          })
-          .foldLeft(true)((a, b) => a && b)
-
-        if (!isCorrectFlowFromExemptedMembers) {
-          var allowedMemberName = ""
-          val isCorrectFlowFromSourceMember = derivedByIdTags
-            .filter(derivedByTag => derivedByTag._2.equals(pathSourceId))
-            .map(derivedByIdTag => {
-              getMemberNameForDerivedSourceNode(derivedByIdTag, sourceNode) match {
-                case Some((memberName, memberRuleId)) =>
-                  allowedMemberName = memberName
-                  isArgumentMatchingMemberName(sinkArguments, memberName) || isArgumentMatchingMemberPattern(
-                    sinkArguments,
-                    memberRuleId
-                  )
-                case None => false
-              }
-            })
-            .foldLeft(true)((a, b) => a && b)
-          if (isCorrectFlowFromSourceMember) {
-            logger.debug(
-              s"Flow Removal : Flow removal overturned by correct SourceMember presence " +
-                s"\nallowedMemberName : $allowedMemberName " +
-                s"\npathSourceId : $pathSourceId " +
-                s"\npathId : $pathId " +
-                s"\nlogStatement : $sinkCode"
-            )
-          } else {
-            logger.debug(
-              s"Flow Removal : Flow marked incorrect due to presence of other " +
-                s"\ndisallowedMembers : $disallowedMemberNameList" +
-                s"\nallowedMemberName : $allowedMemberName " +
-                s"\npathSourceId : $pathSourceId " +
-                s"\npathId : $pathId " +
-                s"\nlogStatement : $sinkCode"
-            )
-            isCorrect = false
-          }
-        }
-      }
-    } else if (dataflowSinkType.equals("third_parties") || dataflowNodeType.equals(NodeType.API.toString)) {
-      // To explicity remove Sources which result in FP
-      if (falsePositiveSources.contains(pathSourceId))
-        isCorrect = false
-    }
-    isCorrect
-  }
-
-  /** Fetch the member name for the given soureNode
-    *
-    * @param derivedByTag
-    *   tag (name, value) of privadoDerived tag for derived objects
-    * @param sourceNode
-    * @return
-    */
-  private def getMemberNameForDerivedSourceNode(derivedByTag: (String, String), sourceNode: CfgNode) = {
-    val tagName  = derivedByTag._1
-    val tagValue = derivedByTag._2
-    sourceNode.tag.nameExact(tagValue + Constants.underScore + tagName).value.l.headOption match {
-      case Some(memberName) => Some((memberName, tagValue))
-      case None             => None
-    }
-  }
-
-  /** Apply regex to fetch the arguments in the given source code of a sink
-    * @param sinkCode
-    * @return
-    */
-  private def getArgumentListByRegex(sinkCode: String): List[String] = {
-    sinkCode.split("[(,+]").map(argument => argument.strip().replaceAll("\".*\"", "")).filter(_.nonEmpty).toList
-  }
-
-  /** Verify if pattern of matched Member, matches any of the argument name by regex
-    *
-    * @param sinkArgument
-    * @param memberRuleId
-    * @return
-    */
-  private def isArgumentMatchingMemberPattern(sinkArgument: List[String], memberRuleId: String): Boolean = {
-    Try(
-      sinkArgument
-        .map(argument => argument.matches(RuleCache.getRuleInfo(memberRuleId).get.patterns.head))
-        .foldLeft(false)((a, b) => a || b)
-    ) match {
-      case Success(result) => result
-      case Failure(_)      => false
-    }
-  }
-
-  /** Verify if Member name matches any of the argument name by regex
-    *
-    * @param sinkArgument
-    * @param memberName
-    * @return
-    */
-  private def isArgumentMatchingMemberName(sinkArgument: List[String], memberName: String): Boolean = {
-    sinkArgument.map(argument => argument.matches("(?i).*" + memberName + ".*")).foldLeft(false)((a, b) => a || b)
-  }
-
-  /** Distinct by operation on sink -> fileName + lineNumber to return a unique path
-    * @param sinkPathIds
-    * @param dataflowsMapByType
-    * @return
-    */
-  def distinctBySinkLineNumber(sinkPathIds: List[String], dataflowsMapByType: Map[String, Path]): List[String] = {
-    val uniqueSinkMap = mutable.HashMap[String, String]() // Stores fileLineNo --> pathId
-    sinkPathIds.foreach(sinkPathId => {
-      val sinkNodeWithLocation = dataflowsMapByType(sinkPathId).elements.last.location
-      val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
-      val flowSize             = dataflowsMapByType(sinkPathId).elements.size
-
-      if (uniqueSinkMap.contains(fileLineNo)) {
-        if (flowSize > dataflowsMapByType(uniqueSinkMap(fileLineNo)).elements.size)
-          uniqueSinkMap(fileLineNo) = sinkPathId
-      } else
-        uniqueSinkMap(fileLineNo) = sinkPathId
-    })
-    uniqueSinkMap.values.toList
   }
 
 }

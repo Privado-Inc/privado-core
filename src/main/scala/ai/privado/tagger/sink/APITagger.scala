@@ -24,21 +24,20 @@ package ai.privado.tagger.sink
 
 import ai.privado.language._
 import ai.privado.model.Constants
-import ai.privado.semantic.Language._
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty}
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.shiftleft.codepropertygraph.generated.{Cpg}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   lazy val cacheCall                        = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics)
+  implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics, EngineConfig(4))
 
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider)"
