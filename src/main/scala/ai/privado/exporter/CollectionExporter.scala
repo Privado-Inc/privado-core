@@ -79,7 +79,7 @@ class CollectionExporter(cpg: Cpg) {
 
     val collectionOutput = mutable.LinkedHashMap[String, Json]()
     collectionOutput.addOne(Constants.collectionId -> collectionId.asJson)
-    val ruleInfoForExporting = ExporterUtility.getRuleInfoForExporting(collectionId)
+    val ruleInfoForExporting = ExporterUtility.getRuleInfoForExportingOld(collectionId)
     ruleInfoForExporting.remove(Constants.id)
     collectionOutput.addAll(ruleInfoForExporting)
     collectionOutput.addOne(

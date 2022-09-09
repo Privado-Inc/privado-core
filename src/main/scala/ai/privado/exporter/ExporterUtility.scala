@@ -24,6 +24,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
+import ai.privado.model.exporter.RuleInfo
 import ai.privado.utility.Utilities.dump
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -74,7 +75,31 @@ object ExporterUtility {
     if (value.nonEmpty)
       outputMap.addOne(name -> value.asJson)
   }
-  def getRuleInfoForExporting(ruleId: String): mutable.Map[String, Json] = {
+  def getRuleInfoForExporting(ruleId: String) = {
+
+    val ruleInfoOuput = mutable.LinkedHashMap[String, Json]()
+    RuleCache.getRuleInfo(ruleId) match {
+      case Some(rule) =>
+        /*
+        addToMap(ruleInfoOuput, Constants.id, rule.id)
+        addToMap(ruleInfoOuput, Constants.name, rule.name)
+        addToMap(ruleInfoOuput, Constants.category, rule.category)
+        if (rule.domains.nonEmpty)
+          ruleInfoOuput.addOne(Constants.domains -> rule.domains.asJson)
+        addToMap(ruleInfoOuput, Constants.sensitivity, rule.sensitivity)
+        ruleInfoOuput.addOne(Constants.isSensitive -> rule.isSensitive.asJson)
+        if (rule.tags.nonEmpty)
+          ruleInfoOuput.addOne(Constants.tags -> rule.tags.asJson)
+        ruleInfoOuput
+
+         */
+        RuleInfo(rule.id, rule.name, rule.category, rule.domains, rule.sensitivity, rule.isSensitive, rule.tags)
+      case None => RuleInfo("", "", "", Array[String](), "", false, Map[String, String]())
+    }
+  }
+
+  def getRuleInfoForExportingOld(ruleId: String) = {
+
     val ruleInfoOuput = mutable.LinkedHashMap[String, Json]()
     RuleCache.getRuleInfo(ruleId) match {
       case Some(rule) =>

@@ -126,7 +126,7 @@ class SourceExporter(cpg: Cpg) {
       RuleCache.getRuleInfo(sourceId) match {
         case Some(rule) =>
           orderedSourceMap.addOne(Constants.sourceType -> rule.catLevelOne.label.asJson)
-          Some(orderedSourceMap ++ ExporterUtility.getRuleInfoForExporting(sourceId))
+          Some(orderedSourceMap ++ ExporterUtility.getRuleInfoForExportingOld(sourceId))
         case None => // not found anything, probably derived source
           None
       }

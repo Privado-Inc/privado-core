@@ -23,6 +23,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.model.exporter.{DataFlowSubCategoryModel, DataFlowSubCategorySinkModel}
 import ai.privado.model.{Constants, DataFlowPathModel, NodeType}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -51,16 +52,12 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         dataflowModel.sinkSubCategory.equals(sinkSubCategory) && dataflowModel.sinkNodeType.equals(sinkNodeType)
       )
       val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)
-      val dataflowOutputList      = ListBuffer[mutable.LinkedHashMap[String, Json]]()
-      dataflowModelBySourceId.foreach(dataflowBySourceEntrySet => {
-        val dataflowOutput = mutable.LinkedHashMap[String, Json]()
-        dataflowOutput.addOne(Constants.sourceId -> dataflowBySourceEntrySet._1.asJson)
-        dataflowOutput.addOne(
-          Constants.sinks -> convertSourceModelList(dataflowBySourceEntrySet._2, sinkSubCategory, sinkNodeType)
+      dataflowModelBySourceId.map(dataflowBySourceEntrySet => {
+        DataFlowSubCategoryModel(
+          dataflowBySourceEntrySet._1,
+          convertSourceModelList(dataflowBySourceEntrySet._2, sinkSubCategory, sinkNodeType)
         )
-        dataflowOutputList += dataflowOutput
       })
-      dataflowOutputList
     })
   }
 
@@ -68,26 +65,31 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     sourceModelList: List[DataFlowPathModel],
     sinkSubCategory: String,
     sinkNodeType: String
-  ): Json = {
+  ) = {
     def convertSink(sinkId: String, sinkPathIds: ListBuffer[String]) = {
-      var sinkOutput       = mutable.LinkedHashMap[String, Json]()
       val sinkIdAfterSplit = sinkId.split("#_#")
-      sinkOutput.addOne(Constants.sinkType -> sinkSubCategory.asJson)
-      sinkOutput = sinkOutput ++ ExporterUtility.getRuleInfoForExporting(sinkIdAfterSplit(0))
+
       // Special case for API type of nodes
-      RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
+      val apiUrl = RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
         case Some(rule) if rule.nodeType.equals(NodeType.API) & sinkIdAfterSplit.size >= 2 =>
-          sinkOutput.addOne(Constants.apiUrl -> sinkIdAfterSplit(1).split(",").toList.asJson)
-        case _ => // do nothing
+          sinkIdAfterSplit(1).split(",").toList
+        case _ => List[String]()
       }
-      sinkOutput
-        .addOne(
-          Constants.paths -> sinkPathIds
-            .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId))
-            .asJson
-        )
-        .asJson
-      sinkOutput
+      val ruleInfo = ExporterUtility.getRuleInfoForExporting(sinkIdAfterSplit(0))
+      DataFlowSubCategorySinkModel(
+        sinkSubCategory,
+        ruleInfo.id,
+        ruleInfo.name,
+        ruleInfo.category,
+        ruleInfo.domains,
+        ruleInfo.sensitivity,
+        ruleInfo.isSensitive,
+        ruleInfo.tags,
+        apiUrl,
+        sinkPathIds
+          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId))
+          .asJson
+      )
     }
 
     // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
@@ -103,7 +105,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         sinkMap(sinkId) = ListBuffer()
       sinkMap(sinkId).append(sourceModel.pathId)
     })
-    sinkMap.map(entrySet => convertSink(entrySet._1, entrySet._2)).asJson
+    sinkMap.map(entrySet => convertSink(entrySet._1, entrySet._2)).toList
 
   }
 
