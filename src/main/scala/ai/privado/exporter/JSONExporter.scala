@@ -40,6 +40,8 @@ import better.files.File
 import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
+import java.net.URL
+import util.Try
 
 object JSONExporter {
 
@@ -82,6 +84,55 @@ object JSONExporter {
           sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).toList
         )
       })
+
+      val sourceNameIdMap = mutable.HashMap[String, String]()
+      sourceExporter.getSources.foreach(source => {
+        sourceNameIdMap.addOne(
+          source("id").toString -> source("name").toString
+        )
+      })
+      println(sourceNameIdMap)
+
+      // Parse the Dataflows
+      val leakageSourceMap = mutable.HashMap[String, Int]()
+      val storageSourceMap = mutable.HashMap[String, mutable.Set[String]]()
+      val thirdPartySourceMap = mutable.HashMap[String, mutable.Set[String]]()
+
+      dataflowsOutput("leakages").foreach(leakage => {
+        leakageSourceMap.addOne(leakage.sourceId -> leakage.sinks.size )
+      })
+
+      dataflowsOutput("storages").foreach(storage => {
+        val storages = mutable.Set[String]()
+        storage.sinks.foreach(sink => {
+          storages.addOne(sink.name)
+        })
+        storageSourceMap.addOne(storage.sourceId -> storages)
+      })
+
+      dataflowsOutput("third_parties").foreach(thirdParty => {
+        val thirdParties = mutable.Set[String]()
+        thirdParty.sinks.foreach(sink => {
+          if (sink.apiUrl.size > 0) {
+            sink.apiUrl.foreach(urlString => {
+//              println(urlString.replaceAll("https://", "").trim)
+              val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
+              println(url.getHost)
+              thirdParties.addOne(url.getHost)
+            })
+          } else {
+            println(sink.domains)
+            sink.domains.foreach(domain => {
+              thirdParties.addOne(domain)
+            })
+          }
+        })
+        thirdPartySourceMap.addOne(thirdParty.sourceId -> thirdParties)
+      })
+
+      println(leakageSourceMap)
+      println(storageSourceMap)
+      println(thirdPartySourceMap)
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
