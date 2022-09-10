@@ -1,5 +1,6 @@
 package ai.privado.exporter
 
+import ai.privado.model.Constants
 import ai.privado.model.exporter.{CollectionModel, DataFlowSubCategoryModel, SourceModel, SourceProcessingModel}
 
 import java.net.URL
@@ -16,7 +17,7 @@ object ConsoleExporter {
     violationSize: Int
   ): Unit = {
     // Parse the Dataflows
-    val sourceNameIdMap = mutable.HashMap[String, String]()
+    var sourceNameIdMap = Map[String, String]()
     val leakageSourceMap = mutable.HashMap[String, Int]()
     val processSourceMap = mutable.HashMap[String, Int]()
     val collectionsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
@@ -26,14 +27,10 @@ object ConsoleExporter {
     val uniqueThirdParties = mutable.Set[String]()
 
     // SourceId - Name Map
-    sources.foreach(source => {
-      sourceNameIdMap.addOne(
-        source.id.replaceAll("\"", "") -> source.name.replaceAll("\"", "")
-      )
-    })
+    sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
 
     // Leakage Number - SourceId Map
-    dataflowsOutput("leakages").foreach(leakage => {
+    dataflowsOutput(Constants.leakages).foreach(leakage => {
       leakageSourceMap.addOne(leakage.sourceId -> leakage.sinks.size)
     })
 
@@ -54,7 +51,7 @@ object ConsoleExporter {
     })
 
     // Storages - SourceId Map
-    dataflowsOutput("storages").foreach(storage => {
+    dataflowsOutput(Constants.storages).foreach(storage => {
       val storages = mutable.Set[String]()
       storage.sinks.foreach(sink => {
         storages.addOne(sink.name)
@@ -63,7 +60,7 @@ object ConsoleExporter {
     })
 
     // Third Parties - SourceId Map
-    dataflowsOutput("third_parties").foreach(thirdParty => {
+    dataflowsOutput(Constants.third_parties).foreach(thirdParty => {
       val thirdParties = mutable.Set[String]()
       thirdParty.sinks.foreach(sink => {
         if (sink.apiUrl.size > 0) {
@@ -81,7 +78,7 @@ object ConsoleExporter {
     })
 
     // Internal APIs - SourceId Map
-    dataflowsOutput("internal_apis").foreach(internalAPI => {
+    dataflowsOutput(Constants.internal_apis).foreach(internalAPI => {
       val internalAPIs = mutable.Set[String]()
       internalAPI.sinks.foreach(sink => {
         if (sink.apiUrl.size > 0) {
