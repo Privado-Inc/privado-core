@@ -22,21 +22,13 @@
 
 package ai.privado.threatEngine
 
-import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities
-import better.files.File
-import io.circe.Json
-import io.circe.syntax.EncoderOps
+import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import ai.privado.threatEngine.ThreatUtility._
 
-import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.util.Try
-import scala.util.control.Breaks.{break, breakable}
-import scala.xml.{Elem, MetaData, XML}
 
 object BackgroundScreenshot {
 
@@ -49,14 +41,14 @@ object BackgroundScreenshot {
     *   source filepath of manifest file
     * @return
     */
-  def getViolations(cpg: Cpg): Try[(Boolean, List[Json])] = Try {
+  def getViolations(cpg: Cpg): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     // implicit for callIn
     implicit val resolver: ICallResolver = NoResolve
     if (hasDataElements(cpg)) {
       val safeFlagCalls = cpg.method
         .fullName(SET_FLAG_METHOD_PATTERN)
         .callIn
-        .where(_.argument.code(s".*${SAFE_FLAG}.*"))
+        .where(_.argument.code(s".*$SAFE_FLAG.*"))
 
       // violation if empty
       (safeFlagCalls.isEmpty, List())

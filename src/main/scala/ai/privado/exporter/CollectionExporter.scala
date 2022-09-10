@@ -22,16 +22,15 @@
 
 package ai.privado.exporter
 
+import ai.privado.model.exporter.{CollectionOccurrenceDetailModel, CollectionOccurrenceModel, CollectionModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import scala.collection.{immutable, mutable}
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -41,13 +40,13 @@ class CollectionExporter(cpg: Cpg) {
 
   /** Processes collection points and return final output
     */
-  def getCollections: immutable.Iterable[mutable.LinkedHashMap[String, Json]] = {
+  def getCollections: List[CollectionModel] = {
     val collectionMapByCollectionId = cpg.method
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
       .l
       .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
 
-    collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2))
+    collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2)).toList
   }
 
   private def processByCollectionId(collectionId: String, collectionMethods: List[Method]) = {
@@ -77,39 +76,47 @@ class CollectionExporter(cpg: Cpg) {
         })
     })
 
-    val collectionOutput = mutable.LinkedHashMap[String, Json]()
-    collectionOutput.addOne(Constants.collectionId -> collectionId.asJson)
-    val ruleInfoForExporting = ExporterUtility.getRuleInfoForExportingOld(collectionId)
-    ruleInfoForExporting.remove(Constants.id)
-    collectionOutput.addAll(ruleInfoForExporting)
-    collectionOutput.addOne(
-      Constants.collections -> collectionParameterMapById
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(collectionId)
+    CollectionModel(
+      collectionId,
+      ruleInfo.name,
+      ruleInfo.isSensitive,
+      collectionParameterMapById
         .map(entrySet => processByParameterId(entrySet._1, entrySet._2.toList))
-        .asJson
+        .toList
     )
-
-    collectionOutput
   }
 
-  def processByParameterId(parameterId: String, methodParameterOccurrences: List[MethodParameterIn]) = {
+  def processByParameterId(
+    parameterId: String,
+    methodParameterOccurrences: List[MethodParameterIn]
+  ): CollectionOccurrenceDetailModel = {
 
-    val parameterCollectionOutput = mutable.LinkedHashMap[String, Json]()
-    parameterCollectionOutput.addOne(Constants.sourceId -> parameterId.asJson)
-    parameterCollectionOutput.addOne(
-      Constants.occurrences -> methodParameterOccurrences
-        .map(methodParameter => {
-          val parameterOccurrenceMap = mutable.LinkedHashMap[String, Json]()
-          parameterOccurrenceMap.addOne(Constants.endPoint -> getCollectionUrl(methodParameter).asJson)
-          parameterOccurrenceMap.addAll(ExporterUtility.convertIndividualPathElement(methodParameter).get)
-          parameterOccurrenceMap
+    CollectionOccurrenceDetailModel(
+      parameterId,
+      methodParameterOccurrences
+        .flatMap(methodParameter => {
+          ExporterUtility.convertIndividualPathElement(methodParameter) match {
+            case Some(pathElement) =>
+              Some(
+                CollectionOccurrenceModel(
+                  getCollectionUrl(methodParameter),
+                  pathElement.sample,
+                  pathElement.lineNumber,
+                  pathElement.columnNumber,
+                  pathElement.fileName,
+                  pathElement.excerpt
+                )
+              )
+            case None => None
+          }
         })
-        .asJson
     )
-    parameterCollectionOutput
   }
 
   /** Returns rest Url for this parameter's method
     * @param parameterIn
+    *   \- methodParameter
     * @return
     */
   private def getCollectionUrl(parameterIn: MethodParameterIn) = {

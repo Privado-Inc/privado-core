@@ -25,9 +25,12 @@ package ai.privado.exporter
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
-import ai.privado.model.Constants.{outputDirectoryName, sourceId}
+import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
-import ai.privado.model.exporter.DataFlowSubCategoryModel
+import ai.privado.model.exporter.ViolationEncoderDecoder._
+import ai.privado.model.exporter.CollectionEncoderDecoder._
+import ai.privado.model.exporter.{DataFlowSubCategoryModel, ViolationModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
@@ -94,7 +97,7 @@ object JSONExporter {
       // SourceId - Name Map
       sourceExporter.getSources.foreach(source => {
         sourceNameIdMap.addOne(
-          source("id").toString.replaceAll("\"", "") -> source("name").toString.replaceAll("\"", "")
+          source.id.replaceAll("\"", "") -> source.name.replaceAll("\"", "")
         )
       })
 
@@ -150,13 +153,9 @@ object JSONExporter {
 
       val violations = policyAndThreatExporter.getViolations(repoPath)
       output.addOne("violations" -> violations.asJson)
-      MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
-      violations.foreach(mapEntry => {
-        mapEntry("policyId").asString match {
-          case Some(value) =>
-            MetricHandler.internalPoliciesOrThreatsMatched.addOne(value)
-          case _ => ()
-        }
+      MetricHandler.metricsData("policyViolations") = violations.size.asJson
+      violations.foreach(violation => {
+        MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
       })
 
       logger.info("Completed exporting policy violations")
@@ -180,35 +179,38 @@ object JSONExporter {
       val sourceSummaryMap = mutable.HashMap[String, mutable.HashMap[String, Any]]()
       var count = 0;
       sourceNameIdMap.foreachEntry((sourceId, sourceName) => {
-        val dataflowSummary = mutable.HashMap[String, Any]()
         count = count + 1
-        println(s"\n${count}. ${sourceName}")
+        if (count <= 10) {
+          val dataflowSummary = mutable.HashMap[String, Any]()
+          println(s"\n${count}. ${sourceName}")
 
-        if (leakageSourceMap.contains(sourceId)) {
-          println(s"- Leakages -> ${leakageSourceMap(sourceId)}")
-          dataflowSummary.addOne("leakages" -> leakageSourceMap(sourceId))
+          if (leakageSourceMap.contains(sourceId)) {
+            println(s"- Leakages -> ${leakageSourceMap(sourceId)}")
+            dataflowSummary.addOne("leakages" -> leakageSourceMap(sourceId))
+          }
+          if (storageSourceMap.contains(sourceId)) {
+            println(s"- Storages -> ${storageSourceMap(sourceId).toList.toString()}")
+            dataflowSummary.addOne("storages" -> storageSourceMap(sourceId))
+          }
+          if (thirdPartySourceMap.contains(sourceId)) {
+            println(s"- Third Parties -> ${thirdPartySourceMap(sourceId).toList.toString()}")
+            dataflowSummary.addOne("third_parties" -> thirdPartySourceMap(sourceId))
+          }
+          if (internalAPIsSourceMap.contains(sourceId)) {
+            println(s"- APIs -> ${internalAPIsSourceMap(sourceId).toList.toString()}")
+            dataflowSummary.addOne("internal_apis" -> internalAPIsSourceMap(sourceId))
+          }
+          if (dataflowSummary.size == 0) {
+            println("- Processing")
+          }
+          sourceSummaryMap.addOne(sourceName -> dataflowSummary)
         }
-        if (storageSourceMap.contains(sourceId)) {
-          println(s"- Storages -> ${storageSourceMap(sourceId).toList.toString()}")
-          dataflowSummary.addOne("storages" -> storageSourceMap(sourceId))
-        }
-        if (thirdPartySourceMap.contains(sourceId)) {
-          println(s"- Third Parties -> ${thirdPartySourceMap(sourceId).toList.toString()}")
-          dataflowSummary.addOne("third_parties" -> thirdPartySourceMap(sourceId))
-        }
-        if (internalAPIsSourceMap.contains(sourceId)) {
-          println(s"- APIs -> ${internalAPIsSourceMap(sourceId).toList.toString()}")
-          dataflowSummary.addOne("internal_apis" -> internalAPIsSourceMap(sourceId))
-        }
-
-        if (dataflowSummary.size == 0) {
-          println("- Processing")
-        }
-
-        sourceSummaryMap.addOne(sourceName -> dataflowSummary)
       })
 
-      println("\n-----------------------more results-----------------------\n")
+      println("")
+      if (sourceNameIdMap.size > 10) {
+        println(s"-----------------------${sourceNameIdMap.size - 10} more results-----------------------\n")
+      }
 
       try {
         MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
@@ -223,11 +225,10 @@ object JSONExporter {
       Right(())
 
     } catch {
-      case ex: Exception => {
+      case ex: Exception =>
         println("Failed to export output")
         logger.debug("Failed to export output", ex)
         Left(ex.toString)
-      }
     }
   }
 

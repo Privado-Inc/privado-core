@@ -23,21 +23,16 @@
 package ai.privado.threatEngine
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, RuleInfo}
-import ai.privado.utility.Utilities
+import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
+import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities._
 import ai.privado.threatEngine.ThreatUtility._
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
 import scala.xml.{Elem, MetaData, XML}
-import better.files.File
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.control.Breaks.{break, breakable}
 
 object KeyboardCache {
 
@@ -45,7 +40,7 @@ object KeyboardCache {
   private val INPUT_TYPE = "android:inputType"
   private val logger     = LoggerFactory.getLogger(getClass)
 
-  val sensitiveInputTypeList = List(
+  val sensitiveInputTypeList: List[String] = List(
     "numberPassword",
     "phone",
     "textEmailAddress",
@@ -58,10 +53,11 @@ object KeyboardCache {
 
   /** Fetch all the violations which violate Key-board cache threat
     * @param repoPath
+    *   \- path of repo
     * @return
     */
-  def getViolations(repoPath: String): Try[(Boolean, List[Json])] = Try {
-    val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+  def getViolations(repoPath: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+    val occurrenceList = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
     getAllFilesRecursively(repoPath, Set(".xml")) match {
       case Some(sourceFileNames) =>
         sourceFileNames.foreach(sourceFile => {
@@ -85,7 +81,7 @@ object KeyboardCache {
       case None => // repo is not correct
     }
 
-    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList.toList)
 
     // threat exists if occurrences are non-empty
     (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)

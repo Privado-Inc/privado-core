@@ -23,15 +23,13 @@
 package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
-import ai.privado.model.{Constants, PolicyOrThreat, PolicyViolationFlowModel}
+import ai.privado.model.exporter.ViolationModel
+import ai.privado.model.PolicyOrThreat
 import ai.privado.utility.Utilities._
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: String) {
@@ -43,7 +41,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
     *   threats
     * @return
     */
-  def getProcessingViolations(threats: List[PolicyOrThreat]): List[mutable.LinkedHashMap[String, Json]] = {
+  def getProcessingViolations(threats: List[PolicyOrThreat]): List[ViolationModel] = {
     threats.flatMap(threat => processProcessingViolations(threat))
   }
 
@@ -52,7 +50,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
     *   threats
     * @return
     */
-  def getDataflowViolations(threats: List[PolicyOrThreat]): List[mutable.LinkedHashMap[String, Json]] = {
+  def getDataflowViolations(threats: List[PolicyOrThreat]): List[ViolationModel] = {
     threats.flatMap(threat => processDataflowViolations(threat))
   }
 
@@ -109,11 +107,15 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
     violationResponse match {
       case Some((isThreat, occurrences)) if isThreat =>
-        val outputMap = mutable.LinkedHashMap[String, Json]()
-        outputMap.addOne(Constants.policyId      -> threatId.asJson)
-        outputMap.addOne(Constants.policyDetails -> ExporterUtility.getPolicyInfoForExporting(threatId).asJson)
-        if (occurrences.nonEmpty) outputMap.addOne(Constants.processing -> occurrences.asJson)
-        Some(outputMap)
+        Some(
+          ViolationModel(
+            threatId,
+            ExporterUtility.getPolicyInfoForExporting(threatId),
+            None, {
+              if (occurrences.nonEmpty) Some(occurrences) else None
+            }
+          )
+        )
       case _ => None
     }
 
@@ -145,21 +147,9 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
     violationResponse match {
       case Some((isThreat, dataflows)) if isThreat =>
-        val outputMap = mutable.LinkedHashMap[String, Json]()
-        outputMap.addOne(Constants.policyId      -> threatId.asJson)
-        outputMap.addOne(Constants.policyDetails -> ExporterUtility.getPolicyInfoForExporting(threatId).asJson)
-        outputMap.addOne(Constants.dataFlow      -> dataflows.map(flow => convertViolatingFlow(flow)).asJson)
-        Some(outputMap)
+        Some(ViolationModel(threatId, ExporterUtility.getPolicyInfoForExporting(threatId), Some(dataflows), None))
       case _ => None
     }
-  }
-
-  private def convertViolatingFlow(flow: PolicyViolationFlowModel) = {
-    val flowOutput = mutable.LinkedHashMap[String, Json]()
-    flowOutput.addOne(Constants.sourceId -> flow.sourceId.asJson)
-    flowOutput.addOne(Constants.sinkId   -> flow.sinkId.asJson)
-    flowOutput.addOne(Constants.pathIds  -> flow.pathIds.asJson)
-    flowOutput
   }
 
   private def getAndroidManifestFile(repoPath: String): (Boolean, String) = {

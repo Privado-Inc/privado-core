@@ -7,10 +7,13 @@ trait RuleInfoTrait {
   val id: String
   val name: String
   val category: String
-  val domains: Array[String]
   val sensitivity: String
   val isSensitive: Boolean
   val tags: Map[String, String]
+}
+
+trait RuleInfoWithDomainTrait extends RuleInfoTrait {
+  val domains: Array[String]
 }
 
 case class RuleInfo(
@@ -21,7 +24,7 @@ case class RuleInfo(
   override val sensitivity: String,
   override val isSensitive: Boolean,
   override val tags: Map[String, String]
-) extends RuleInfoTrait
+) extends RuleInfoWithDomainTrait
 
 object RuleEncoderDecoder {
   implicit val ruleInfoDecoder: Decoder[RuleInfo] = deriveDecoder[RuleInfo]

@@ -24,15 +24,14 @@ package ai.privado.threatEngine
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.RuleInfo
+import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.threatEngine.ThreatUtility._
 import ai.privado.utility.Utilities._
-import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 import scala.xml.{Elem, MetaData, XML}
 
 object SensitiveInputMask {
@@ -77,8 +76,8 @@ object SensitiveInputMask {
     *   Path to repo
     * @return
     */
-  def getViolations(cpg: Cpg, repoPath: String): Try[(Boolean, List[Json])] = Try {
-    val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+  def getViolations(cpg: Cpg, repoPath: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+    val occurrenceList = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
     getAllFilesRecursively(repoPath, Set(".xml")) match {
       case Some(sourceFileNames) =>
         sourceFileNames.foreach(sourceFile => {
@@ -113,7 +112,7 @@ object SensitiveInputMask {
       case None => // repo is not correct
     }
 
-    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList.toList)
 
     // threat exists if occurrences are non-empty
     (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
