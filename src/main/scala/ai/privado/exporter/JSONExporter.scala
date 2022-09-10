@@ -43,8 +43,6 @@ import better.files.File
 import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
-import java.net.URL
-import Console.{BLUE, BOLD, CYAN, GREEN, RED, RESET, YELLOW, WHITE, MAGENTA}
 
 
 object JSONExporter {
@@ -71,8 +69,10 @@ object JSONExporter {
       output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
-      output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
-      output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
+      val sources = sourceExporter.getSources
+      output.addOne(Constants.sources       -> sources.asJson)
+      val processing = sourceExporter.getProcessing
+      output.addOne(Constants.processing    -> processing.asJson)
       logger.info("Completed Source Exporting")
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
@@ -89,71 +89,11 @@ object JSONExporter {
         )
       })
 
-      // Parse the Dataflows
-      val sourceNameIdMap = mutable.HashMap[String, String]()
-      val leakageSourceMap = mutable.HashMap[String, Int]()
-      val storageSourceMap = mutable.HashMap[String, mutable.Set[String]]()
-      val thirdPartySourceMap = mutable.HashMap[String, mutable.Set[String]]()
-      val internalAPIsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
-      var uniqueThirdParties = mutable.Set[String]()
-
-      // SourceId - Name Map
-      sourceExporter.getSources.foreach(source => {
-        sourceNameIdMap.addOne(
-          source.id.replaceAll("\"", "") -> source.name.replaceAll("\"", "")
-        )
-      })
-
-      // Leakage Number - SourceId Map
-      dataflowsOutput("leakages").foreach(leakage => {
-        leakageSourceMap.addOne(leakage.sourceId -> leakage.sinks.size )
-      })
-
-      // Storages - SourceId Map
-      dataflowsOutput("storages").foreach(storage => {
-        val storages = mutable.Set[String]()
-        storage.sinks.foreach(sink => {
-          storages.addOne(sink.name)
-        })
-        storageSourceMap.addOne(storage.sourceId -> storages)
-      })
-
-      // Third Parties - SourceId Map
-      dataflowsOutput("third_parties").foreach(thirdParty => {
-        val thirdParties = mutable.Set[String]()
-        thirdParty.sinks.foreach(sink => {
-          if (sink.apiUrl.size > 0) {
-            sink.apiUrl.foreach(urlString => {
-              val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
-              thirdParties.addOne(url.getHost.replaceAll("www.", ""))
-              uniqueThirdParties.addOne(url.getHost.replaceAll("www.", ""))
-            })
-          } else {
-            thirdParties.addOne(sink.name)
-            uniqueThirdParties.addOne((sink.name))
-          }
-        })
-        thirdPartySourceMap.addOne(thirdParty.sourceId -> thirdParties)
-      })
-
-      // Internal APIs - SourceId Map
-      dataflowsOutput("internal_apis").foreach(internalAPI => {
-        val internalAPIs = mutable.Set[String]()
-        internalAPI.sinks.foreach(sink => {
-          if (sink.apiUrl.size > 0) {
-            sink.apiUrl.foreach(urlString => {
-              val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
-              internalAPIs.addOne(url.getHost.replaceAll("www.", ""))
-            })
-          }
-        })
-        internalAPIsSourceMap.addOne(internalAPI.sourceId -> internalAPIs)
-      })
-
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
-      output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
+      val collections = collectionExporter.getCollections
+      output.addOne(Constants.collections -> collections.asJson)
       logger.info("Completed Collections Exporting")
 
       val violations = policyAndThreatExporter.getViolations(repoPath)
@@ -170,52 +110,13 @@ object JSONExporter {
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 
-      println("\n---------------------------------------------------------")
-      println("SUMMARY")
-      println("-----------------------------------------------------------")
-      println("\nPrivado discovers data elements that are being collected, processed, or shared in the code.\n")
-      println(s"DATA ELEMENTS  |  ${sourceNameIdMap.size} |")
-      println(s"THIRD PARTY    |  ${uniqueThirdParties.size} |")
-      println(s"ISSUES         |  ${violations.size} |")
-      println("\n---------------------------------------------------------")
-      println(s"${sourceNameIdMap.size} DATA ELEMENTS")
-      println("Privado discovers data elements that are being collected, processed, or shared in the code.")
-
-      val sourceSummaryMap = mutable.HashMap[String, mutable.HashMap[String, Any]]()
-      var count = 0;
-      sourceNameIdMap.foreachEntry((sourceId, sourceName) => {
-        count = count + 1
-        if (count <= 10) {
-          val dataflowSummary = mutable.HashMap[String, Any]()
-          Console.println(s"\n${RESET}${WHITE}${BOLD}${count}. ${sourceName.toUpperCase()}${RESET}")
-
-          if (thirdPartySourceMap.contains(sourceId)) {
-            Console.println(s"\t${RESET}${YELLOW}Third Parties${RESET}    ->  ${thirdPartySourceMap(sourceId).toList.mkString(", ")}")
-            dataflowSummary.addOne("third_parties" -> thirdPartySourceMap(sourceId))
-          }
-          if (storageSourceMap.contains(sourceId)) {
-            Console.println(s"\t${RESET}${BLUE}Storage${RESET}         ->  ${storageSourceMap(sourceId).toList.mkString(", ")}")
-            dataflowSummary.addOne("storages" -> storageSourceMap(sourceId))
-          }
-          if (internalAPIsSourceMap.contains(sourceId)) {
-            Console.println(s"\t${RESET}${CYAN}Internal APIs${RESET}      ->  ${internalAPIsSourceMap(sourceId).toList.mkString(", ")}")
-            dataflowSummary.addOne("internal_apis" -> internalAPIsSourceMap(sourceId))
-          }
-          if (leakageSourceMap.contains(sourceId)) {
-            Console.println(s"\t${RESET}${RED}Leakage${RESET}         ->  ${leakageSourceMap(sourceId)}")
-            dataflowSummary.addOne("leakages" -> leakageSourceMap(sourceId))
-          }
-          if (dataflowSummary.size == 0) {
-            Console.println(s"\t${RESET}${MAGENTA}Processing${RESET}")
-          }
-          sourceSummaryMap.addOne(sourceName -> dataflowSummary)
-        }
-      })
-
-      println("")
-      if (sourceNameIdMap.size > 10) {
-        println(s"--------- ${sourceNameIdMap.size - 10} more results ---------\n")
-      }
+      ConsoleExporter.exportConsoleSummary(
+        dataflowsOutput,
+        sources,
+        processing,
+        collections,
+        violations.size
+      )
 
       try {
         MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
