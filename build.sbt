@@ -4,8 +4,8 @@ ThisBuild / organization := "ai.privado"
 ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
-val cpgVersion = "1.3.560"
-val joernVersion = "1.1.1061"
+val cpgVersion = "1.3.561"
+val joernVersion = "1.1.1078"
 val overflowdbVersion = "1.147"
 //External dependency versions
 val circeVersion = "0.14.1"
@@ -32,7 +32,8 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"             %% "upickle"          % "2.0.0",
   "com.lihaoyi"             %% "requests"         % "0.7.0",
   "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
-  "commons-io" % "commons-io" % "2.11.0"
+  "commons-io" % "commons-io" % "2.11.0",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.4"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
