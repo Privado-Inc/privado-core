@@ -23,115 +23,71 @@
 package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.Constants
-import ai.privado.model.exporter.RuleInfo
+import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.utility.Utilities.dump
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.toExtendedNode
 import ai.privado.semantic.Language._
-
-import scala.collection.mutable
 
 object ExporterUtility {
 
   /** Convert List of path element schema object
     */
-  def convertPathElements(nodes: List[CfgNode]): Seq[mutable.LinkedHashMap[String, Json]] = {
+  def convertPathElements(nodes: List[CfgNode]): List[DataFlowSubCategoryPathExcerptModel] = {
     nodes.flatMap(node => convertIndividualPathElement(node))
   }
 
   /** Convert Individual path element
     * @param node
+    *   \- cfg node
     * @return
     */
-  def convertIndividualPathElement(node: CfgNode) = {
-    val occurrence   = mutable.LinkedHashMap[String, Json]()
+  def convertIndividualPathElement(node: CfgNode): Option[DataFlowSubCategoryPathExcerptModel] = {
     val nodeLocation = node.location
-    occurrence.addOne(Constants.sample -> nodeLocation.symbol.asJson)
-    occurrence.addOne(Constants.lineNumber -> {
+    val sample       = nodeLocation.symbol
+    val lineNumber: Int = {
       nodeLocation.lineNumber match {
-        case Some(n) => n.asJson
-        case None    => Constants.minusOne.asJson
+        case Some(n) => n
+        case None    => -1
       }
-    })
-    occurrence.addOne(Constants.columnNumber -> {
+    }
+    val columnNumber: Int = {
       node.columnNumber match {
-        case Some(n) => n.asJson
-        case None    => Constants.minusOne.asJson
+        case Some(n) => n
+        case None    => -1
       }
-    })
-    occurrence.addOne(Constants.fileName -> nodeLocation.filename.asJson)
+    }
+    val fileName = nodeLocation.filename
+    val excerpt  = dump(nodeLocation.filename, node.lineNumber)
 
-    occurrence.addOne(Constants.excerpt -> dump(nodeLocation.filename, node.lineNumber).asJson)
     if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
       None
     else
-      Some(occurrence)
+      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
   }
 
-  private def addToMap(outputMap: mutable.LinkedHashMap[String, Json], name: String, value: String) = {
-    if (value.nonEmpty)
-      outputMap.addOne(name -> value.asJson)
-  }
-  def getRuleInfoForExporting(ruleId: String) = {
-
-    val ruleInfoOuput = mutable.LinkedHashMap[String, Json]()
+  def getRuleInfoForExporting(ruleId: String): RuleInfo = {
     RuleCache.getRuleInfo(ruleId) match {
       case Some(rule) =>
-        /*
-        addToMap(ruleInfoOuput, Constants.id, rule.id)
-        addToMap(ruleInfoOuput, Constants.name, rule.name)
-        addToMap(ruleInfoOuput, Constants.category, rule.category)
-        if (rule.domains.nonEmpty)
-          ruleInfoOuput.addOne(Constants.domains -> rule.domains.asJson)
-        addToMap(ruleInfoOuput, Constants.sensitivity, rule.sensitivity)
-        ruleInfoOuput.addOne(Constants.isSensitive -> rule.isSensitive.asJson)
-        if (rule.tags.nonEmpty)
-          ruleInfoOuput.addOne(Constants.tags -> rule.tags.asJson)
-        ruleInfoOuput
-
-         */
         RuleInfo(rule.id, rule.name, rule.category, rule.domains, rule.sensitivity, rule.isSensitive, rule.tags)
-      case None => RuleInfo("", "", "", Array[String](), "", false, Map[String, String]())
+      case None => RuleInfo("", "", "", Array[String](), "", isSensitive = false, Map[String, String]())
     }
   }
 
-  def getRuleInfoForExportingOld(ruleId: String) = {
-
-    val ruleInfoOuput = mutable.LinkedHashMap[String, Json]()
-    RuleCache.getRuleInfo(ruleId) match {
-      case Some(rule) =>
-        addToMap(ruleInfoOuput, Constants.id, rule.id)
-        addToMap(ruleInfoOuput, Constants.name, rule.name)
-        addToMap(ruleInfoOuput, Constants.category, rule.category)
-        if (rule.domains.nonEmpty)
-          ruleInfoOuput.addOne(Constants.domains -> rule.domains.asJson)
-        addToMap(ruleInfoOuput, Constants.sensitivity, rule.sensitivity)
-        ruleInfoOuput.addOne(Constants.isSensitive -> rule.isSensitive.asJson)
-        if (rule.tags.nonEmpty)
-          ruleInfoOuput.addOne(Constants.tags -> rule.tags.asJson)
-        ruleInfoOuput
-      case None => ruleInfoOuput
-    }
-  }
-
-  def getPolicyInfoForExporting(policyOrThreatId: String): mutable.Map[String, Json] = {
-    val policyOutput = mutable.LinkedHashMap[String, Json]()
+  def getPolicyInfoForExporting(policyOrThreatId: String): Option[ViolationPolicyDetailsModel] = {
     RuleCache.getPolicyOrThreat(policyOrThreatId) match {
       case Some(policyOrThreat) =>
-        addToMap(policyOutput, Constants.name, policyOrThreat.name)
-        addToMap(policyOutput, Constants.policyOrThreatType, policyOrThreat.policyOrThreatType.toString)
-        addToMap(policyOutput, Constants.description, policyOrThreat.description)
-        addToMap(policyOutput, Constants.fix, policyOrThreat.fix)
-        if (policyOrThreat.action != null)
-          addToMap(policyOutput, Constants.action, policyOrThreat.action.toString)
-        if (policyOrThreat.tags.nonEmpty) {
-          policyOutput.addOne(Constants.tags -> policyOrThreat.tags.asJson)
-        }
-        policyOutput
-      case None => policyOutput
+        Some(
+          ViolationPolicyDetailsModel(
+            policyOrThreat.name,
+            policyOrThreat.policyOrThreatType.toString,
+            policyOrThreat.description,
+            policyOrThreat.fix,
+            { if (policyOrThreat.action != null) policyOrThreat.action.toString else "" },
+            policyOrThreat.tags
+          )
+        )
+      case None => None
     }
   }
 
