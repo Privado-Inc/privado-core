@@ -105,7 +105,7 @@ object JSONExporter {
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
       try {
-        MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
+        MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
           FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
         )
       } catch {
@@ -113,7 +113,7 @@ object JSONExporter {
           logger.error("Error fetching the size of repo")
           logger.debug("Error in getting size of repo ", e)
       }
-      MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
+      MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(f.size / 1024)
       Right(())
 
     } catch {

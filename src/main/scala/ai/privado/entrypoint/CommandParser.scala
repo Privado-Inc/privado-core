@@ -22,6 +22,8 @@
 
 package ai.privado.entrypoint
 
+import ai.privado.metric.MetricHandler
+import io.circe.syntax.EncoderOps
 import scopt.OParser
 
 import scala.sys.exit
@@ -135,6 +137,7 @@ object CommandParser {
       case Some(config) =>
         val commandProcessor: CommandProcessor = commandMapper.get(config.cmd.head) match {
           case Some(commandProcessor) => {
+            MetricHandler.metricsData("privadoCoreCommand") = config.cmd.head.asJson
             commandProcessor
           }
           case _ =>
