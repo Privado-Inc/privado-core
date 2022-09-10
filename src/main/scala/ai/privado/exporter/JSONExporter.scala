@@ -25,7 +25,7 @@ package ai.privado.exporter
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
-import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.Constants.{outputDirectoryName, sourceId}
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.DataFlowSubCategoryModel
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -41,7 +41,6 @@ import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
 import java.net.URL
-import util.Try
 
 object JSONExporter {
 
@@ -85,23 +84,26 @@ object JSONExporter {
         )
       })
 
-      val sourceNameIdMap = mutable.HashMap[String, String]()
-      sourceExporter.getSources.foreach(source => {
-        sourceNameIdMap.addOne(
-          source("id").toString -> source("name").toString
-        )
-      })
-      println(sourceNameIdMap)
-
       // Parse the Dataflows
+      val sourceNameIdMap = mutable.HashMap[String, String]()
       val leakageSourceMap = mutable.HashMap[String, Int]()
       val storageSourceMap = mutable.HashMap[String, mutable.Set[String]]()
       val thirdPartySourceMap = mutable.HashMap[String, mutable.Set[String]]()
+      val internalAPIsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
 
+      // SourceId - Name Map
+      sourceExporter.getSources.foreach(source => {
+        sourceNameIdMap.addOne(
+          source("id").toString.replaceAll("\"", "") -> source("name").toString.replaceAll("\"", "")
+        )
+      })
+
+      // Leakage Number - SourceId Map
       dataflowsOutput("leakages").foreach(leakage => {
         leakageSourceMap.addOne(leakage.sourceId -> leakage.sinks.size )
       })
 
+      // Storages - SourceId Map
       dataflowsOutput("storages").foreach(storage => {
         val storages = mutable.Set[String]()
         storage.sinks.foreach(sink => {
@@ -110,29 +112,35 @@ object JSONExporter {
         storageSourceMap.addOne(storage.sourceId -> storages)
       })
 
+      // Third Parties - SourceId Map
       dataflowsOutput("third_parties").foreach(thirdParty => {
         val thirdParties = mutable.Set[String]()
         thirdParty.sinks.foreach(sink => {
           if (sink.apiUrl.size > 0) {
             sink.apiUrl.foreach(urlString => {
-//              println(urlString.replaceAll("https://", "").trim)
               val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
-              println(url.getHost)
-              thirdParties.addOne(url.getHost)
+              thirdParties.addOne(url.getHost.replaceAll("www.", ""))
             })
           } else {
-            println(sink.domains)
-            sink.domains.foreach(domain => {
-              thirdParties.addOne(domain)
-            })
+            thirdParties.addOne(sink.name)
           }
         })
         thirdPartySourceMap.addOne(thirdParty.sourceId -> thirdParties)
       })
 
-      println(leakageSourceMap)
-      println(storageSourceMap)
-      println(thirdPartySourceMap)
+      // Internal APIs - SourceId Map
+      dataflowsOutput("internal_apis").foreach(internalAPI => {
+        val internalAPIs = mutable.Set[String]()
+        internalAPI.sinks.foreach(sink => {
+          if (sink.apiUrl.size > 0) {
+            sink.apiUrl.foreach(urlString => {
+              val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
+              internalAPIs.addOne(url.getHost.replaceAll("www.", ""))
+            })
+          }
+        })
+        internalAPIsSourceMap.addOne(internalAPI.sourceId -> internalAPIs)
+      })
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
@@ -157,6 +165,51 @@ object JSONExporter {
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
+
+      println("\n----------------------------------------------------------------------------------------------")
+      println("SUMMARY")
+      println("----------------------------------------------------------------------------------------------")
+      println("\nPrivado discovers data elements that are being collected, processed, or shared in the code.\n")
+      println(s"DATA ELEMENTS  |  ${sourceNameIdMap.size} |")
+      println(s"THIRD PARTY    |  ${thirdPartySourceMap.knownSize} |")
+      println(s"ISSUES         |  ${violations.size} |")
+      println("\n----------------------------------------------------------------------------------------------")
+      println(s"${sourceNameIdMap.size} DATA ELEMENTS")
+      println("Privado discovers data elements that are being collected, processed, or shared in the code.")
+
+      val sourceSummaryMap = mutable.HashMap[String, mutable.HashMap[String, Any]]()
+      var count = 0;
+      sourceNameIdMap.foreachEntry((sourceId, sourceName) => {
+        val dataflowSummary = mutable.HashMap[String, Any]()
+        count = count + 1
+        println(s"\n${count}. ${sourceName}")
+
+        if (leakageSourceMap.contains(sourceId)) {
+          println(s"- Leakages -> ${leakageSourceMap(sourceId)}")
+          dataflowSummary.addOne("leakages" -> leakageSourceMap(sourceId))
+        }
+        if (storageSourceMap.contains(sourceId)) {
+          println(s"- Storages -> ${storageSourceMap(sourceId).toList.toString()}")
+          dataflowSummary.addOne("storages" -> storageSourceMap(sourceId))
+        }
+        if (thirdPartySourceMap.contains(sourceId)) {
+          println(s"- Third Parties -> ${thirdPartySourceMap(sourceId).toList.toString()}")
+          dataflowSummary.addOne("third_parties" -> thirdPartySourceMap(sourceId))
+        }
+        if (internalAPIsSourceMap.contains(sourceId)) {
+          println(s"- APIs -> ${internalAPIsSourceMap(sourceId).toList.toString()}")
+          dataflowSummary.addOne("internal_apis" -> internalAPIsSourceMap(sourceId))
+        }
+
+        if (dataflowSummary.size == 0) {
+          println("- Processing")
+        }
+
+        sourceSummaryMap.addOne(sourceName -> dataflowSummary)
+      })
+
+      println("\n-----------------------more results-----------------------\n")
+
       try {
         MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
           FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
