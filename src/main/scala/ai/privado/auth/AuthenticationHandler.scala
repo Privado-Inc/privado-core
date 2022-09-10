@@ -166,16 +166,16 @@ object AuthenticationHandler {
                     ).toString()}\n"""
                 case _ =>
                   logger.debug("Error in triggering the process flow for result file")
-                  "Error occurred during processing of file on cloud"
+                  "Error occurred during processing of file on cloud. Retry using 'privado upload' command"
               }
             case _ =>
               logger.debug("Error while uploading file to server")
-              "Error occurred while uploading the file to the cloud."
+              "Error occurred while uploading the file to the cloud. \n Retry using 'privado upload' command."
           }
 
         case _ =>
           logger.debug("Error fetching the presigned URL from S3")
-          "Error occurred while getting the upload URL"
+          "Error occurred while getting the upload URL. Retry using 'privado upload' command"
       }
 
     } catch {
