@@ -44,6 +44,8 @@ import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
 import java.net.URL
+import Console.{BLUE, BOLD, CYAN, GREEN, RED, RESET, YELLOW, WHITE, MAGENTA}
+
 
 object JSONExporter {
 
@@ -93,6 +95,7 @@ object JSONExporter {
       val storageSourceMap = mutable.HashMap[String, mutable.Set[String]]()
       val thirdPartySourceMap = mutable.HashMap[String, mutable.Set[String]]()
       val internalAPIsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
+      var uniqueThirdParties = mutable.Set[String]()
 
       // SourceId - Name Map
       sourceExporter.getSources.foreach(source => {
@@ -123,9 +126,11 @@ object JSONExporter {
             sink.apiUrl.foreach(urlString => {
               val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
               thirdParties.addOne(url.getHost.replaceAll("www.", ""))
+              uniqueThirdParties.addOne(url.getHost.replaceAll("www.", ""))
             })
           } else {
             thirdParties.addOne(sink.name)
+            uniqueThirdParties.addOne((sink.name))
           }
         })
         thirdPartySourceMap.addOne(thirdParty.sourceId -> thirdParties)
@@ -165,14 +170,14 @@ object JSONExporter {
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 
-      println("\n----------------------------------------------------------------------------------------------")
+      println("\n---------------------------------------------------------")
       println("SUMMARY")
-      println("----------------------------------------------------------------------------------------------")
+      println("-----------------------------------------------------------")
       println("\nPrivado discovers data elements that are being collected, processed, or shared in the code.\n")
       println(s"DATA ELEMENTS  |  ${sourceNameIdMap.size} |")
-      println(s"THIRD PARTY    |  ${thirdPartySourceMap.knownSize} |")
+      println(s"THIRD PARTY    |  ${uniqueThirdParties.size} |")
       println(s"ISSUES         |  ${violations.size} |")
-      println("\n----------------------------------------------------------------------------------------------")
+      println("\n---------------------------------------------------------")
       println(s"${sourceNameIdMap.size} DATA ELEMENTS")
       println("Privado discovers data elements that are being collected, processed, or shared in the code.")
 
@@ -182,26 +187,26 @@ object JSONExporter {
         count = count + 1
         if (count <= 10) {
           val dataflowSummary = mutable.HashMap[String, Any]()
-          println(s"\n${count}. ${sourceName}")
+          Console.println(s"\n${RESET}${WHITE}${BOLD}${count}. ${sourceName.toUpperCase()}${RESET}")
 
-          if (leakageSourceMap.contains(sourceId)) {
-            println(s"- Leakages -> ${leakageSourceMap(sourceId)}")
-            dataflowSummary.addOne("leakages" -> leakageSourceMap(sourceId))
-          }
-          if (storageSourceMap.contains(sourceId)) {
-            println(s"- Storages -> ${storageSourceMap(sourceId).toList.toString()}")
-            dataflowSummary.addOne("storages" -> storageSourceMap(sourceId))
-          }
           if (thirdPartySourceMap.contains(sourceId)) {
-            println(s"- Third Parties -> ${thirdPartySourceMap(sourceId).toList.toString()}")
+            Console.println(s"\t${RESET}${YELLOW}Third Parties${RESET}    ->  ${thirdPartySourceMap(sourceId).toList.mkString(", ")}")
             dataflowSummary.addOne("third_parties" -> thirdPartySourceMap(sourceId))
           }
+          if (storageSourceMap.contains(sourceId)) {
+            Console.println(s"\t${RESET}${BLUE}Storage${RESET}         ->  ${storageSourceMap(sourceId).toList.mkString(", ")}")
+            dataflowSummary.addOne("storages" -> storageSourceMap(sourceId))
+          }
           if (internalAPIsSourceMap.contains(sourceId)) {
-            println(s"- APIs -> ${internalAPIsSourceMap(sourceId).toList.toString()}")
+            Console.println(s"\t${RESET}${CYAN}Internal APIs${RESET}      ->  ${internalAPIsSourceMap(sourceId).toList.mkString(", ")}")
             dataflowSummary.addOne("internal_apis" -> internalAPIsSourceMap(sourceId))
           }
+          if (leakageSourceMap.contains(sourceId)) {
+            Console.println(s"\t${RESET}${RED}Leakage${RESET}         ->  ${leakageSourceMap(sourceId)}")
+            dataflowSummary.addOne("leakages" -> leakageSourceMap(sourceId))
+          }
           if (dataflowSummary.size == 0) {
-            println("- Processing")
+            Console.println(s"\t${RESET}${MAGENTA}Processing${RESET}")
           }
           sourceSummaryMap.addOne(sourceName -> dataflowSummary)
         }
@@ -209,7 +214,7 @@ object JSONExporter {
 
       println("")
       if (sourceNameIdMap.size > 10) {
-        println(s"-----------------------${sourceNameIdMap.size - 10} more results-----------------------\n")
+        println(s"--------- ${sourceNameIdMap.size - 10} more results ---------\n")
       }
 
       try {
