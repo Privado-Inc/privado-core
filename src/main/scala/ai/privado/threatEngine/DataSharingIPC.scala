@@ -22,21 +22,14 @@
 
 package ai.privado.threatEngine
 
-import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities
+import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.threatEngine.ThreatUtility._
-import better.files.File
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
-import scala.util.control.Breaks.{break, breakable}
-import scala.xml.{Elem, Group, MetaData, SpecialNode, XML}
+import scala.xml.{Elem, MetaData, XML}
 
 object DataSharingIPC {
 
@@ -62,8 +55,8 @@ object DataSharingIPC {
     *   source filepath of manifest file
     * @return
     */
-  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[Json])] = Try {
-    val occurrenceList = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+    val occurrenceList = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
     val xml: Elem      = XML.loadFile(androidManifestFile)
 
     val providerNodes = xml \\ PROVIDER_KEY
@@ -97,7 +90,7 @@ object DataSharingIPC {
           // check for permissions
           if (isExport) {
             // check if permission attributes are set on provider
-            var hasPermAttribute = hasPermissionAttribute(provider.attributes)
+            val hasPermAttribute = hasPermissionAttribute(provider.attributes)
             if (!hasPermAttribute) {
               // if no perm attribute, check if path-permission is set
               var isPathPermSet       = false
@@ -171,7 +164,7 @@ object DataSharingIPC {
       }
     }
 
-    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList.toList)
     // threat exists if occurrences are non-empty
     (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
   }

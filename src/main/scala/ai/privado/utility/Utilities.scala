@@ -191,7 +191,7 @@ object Utilities {
     * @param filePath
     * @return
     */
-  def isFileProcessable(filePath: String) = {
+  def isFileProcessable(filePath: String): Boolean = {
     RuleCache.getRule.exclusions
       .flatMap(exclusionRule => {
         exclusionRule.patterns.headOption match {
@@ -211,7 +211,7 @@ object Utilities {
     * @param extension
     * @return
     */
-  def getAllFilesRecursively(folderPath: String, extensions: Set[String]) = {
+  def getAllFilesRecursively(folderPath: String, extensions: Set[String]): Option[List[String]] = {
     try {
       if (File(folderPath).isDirectory)
         Some(SourceFiles.determine(Set(folderPath), extensions).filter(isFileProcessable))
@@ -230,7 +230,7 @@ object Utilities {
     * @return
     *   the SHA256 hash for the value
     */
-  def getSHA256Hash(value: String) =
+  def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
   /** Generate custom leakage semantics based on the number of parameter in method signature

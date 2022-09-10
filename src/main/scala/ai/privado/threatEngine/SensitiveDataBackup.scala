@@ -22,21 +22,14 @@
 
 package ai.privado.threatEngine
 
-import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities
+import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.threatEngine.ThreatUtility._
-import better.files.File
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.control.Breaks.{break, breakable}
-import scala.util.{Failure, Success, Try}
-import scala.xml.{Elem, MetaData, XML}
+import scala.util.Try
+import scala.xml.{Elem, XML}
 
 object SensitiveDataBackup {
 
@@ -49,8 +42,8 @@ object SensitiveDataBackup {
     *   source filepath of manifest file
     * @return
     */
-  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[Json])] = Try {
-    val occurrenceList   = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+    val occurrenceList   = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
     val xml: Elem        = XML.loadFile(androidManifestFile)
     val applicationNodes = xml \\ KEY
 
@@ -74,7 +67,7 @@ object SensitiveDataBackup {
       }
     }
 
-    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList)
+    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList.toList)
     // threat exists if occurrences are non-empty
     (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
   }

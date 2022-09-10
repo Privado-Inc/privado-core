@@ -23,7 +23,8 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
-import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat, PolicyViolationFlowModel}
+import ai.privado.model.exporter.ViolationDataFlowModel
+import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
@@ -38,15 +39,15 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val ALL_MATCH_REGEX = "**"
-  val actionMap       = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
-  lazy val policies   = RuleCache.getAllPolicy.filter(policy => filterByRepoName(policy, repoName))
+  val ALL_MATCH_REGEX                             = "**"
+  val actionMap: Map[PolicyAction.Value, Boolean] = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
+  lazy val policies: List[PolicyOrThreat] = RuleCache.getAllPolicy.filter(policy => filterByRepoName(policy, repoName))
 
   // Map to contain sourceId -> List(pathIds)
-  lazy val dataflowSourceIdMap = getDataflowBySourceIdMapping
+  lazy val dataflowSourceIdMap: Map[String, List[String]] = getDataflowBySourceIdMapping
 
   // Map to contain sinkId -> List(pathIds)
-  lazy val dataflowSinkIdMap = getDataflowBySinkIdMapping
+  lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
   /** Processes Processing style of policy and returns affected SourceIds
     */
@@ -60,7 +61,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
 
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
-  def getDataflowViolations: Map[String, ListBuffer[PolicyViolationFlowModel]] = {
+  def getDataflowViolations: Map[String, ListBuffer[ViolationDataFlowModel]] = {
 
     val dataflowResult = policies
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
@@ -68,15 +69,15 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
     dataflowResult
   }
 
-  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): ListBuffer[PolicyViolationFlowModel] = {
-    val violatingFlowList = ListBuffer[PolicyViolationFlowModel]()
+  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): ListBuffer[ViolationDataFlowModel] = {
+    val violatingFlowList = ListBuffer[ViolationDataFlowModel]()
     val sourceMatchingIds = getSourcesMatchingRegex(policy)
     val sinksMatchingIds  = getSinksMatchingRegex(policy)
     sourceMatchingIds.foreach(sourceId => {
       sinksMatchingIds.foreach(sinkId => {
         val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
         if (intersectingPathIds.nonEmpty)
-          violatingFlowList.append(PolicyViolationFlowModel(sourceId, sinkId, intersectingPathIds.toList))
+          violatingFlowList.append(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
       })
     })
     violatingFlowList

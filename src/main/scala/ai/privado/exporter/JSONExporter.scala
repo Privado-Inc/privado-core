@@ -25,7 +25,12 @@ package ai.privado.exporter
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants
-import ai.privado.model.Constants.{outputDirectoryName}
+import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.exporter.SourceEncoderDecoder._
+import ai.privado.model.exporter.DataFlowEncoderDecoder._
+import ai.privado.model.exporter.ViolationEncoderDecoder._
+import ai.privado.model.exporter.CollectionEncoderDecoder._
+import ai.privado.model.exporter.{DataFlowSubCategoryModel, ViolationModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
@@ -74,10 +79,10 @@ object JSONExporter {
         sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
       })
 
-      val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
+      val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
       sinkSubCategories.foreach(sinkSubTypeEntry => {
         dataflowsOutput.addOne(
-          sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).asJson
+          sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).toList
         )
       })
 
@@ -89,13 +94,9 @@ object JSONExporter {
 
       val violations = policyAndThreatExporter.getViolations(repoPath)
       output.addOne("violations" -> violations.asJson)
-      MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
-      violations.foreach(mapEntry => {
-        mapEntry("policyId").asString match {
-          case Some(value) =>
-            MetricHandler.internalPoliciesOrThreatsMatched.addOne(value)
-          case _ => ()
-        }
+      MetricHandler.metricsData("policyViolations") = violations.size.asJson
+      violations.foreach(violation => {
+        MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
       })
 
       logger.info("Completed exporting policy violations")
@@ -117,11 +118,10 @@ object JSONExporter {
       Right(())
 
     } catch {
-      case ex: Exception => {
+      case ex: Exception =>
         println("Failed to export output")
         logger.debug("Failed to export output", ex)
         Left(ex.toString)
-      }
     }
   }
 
