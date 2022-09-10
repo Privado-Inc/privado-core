@@ -26,6 +26,9 @@ import ai.privado.exporter.GitMetaDataExporter
 import ai.privado.utility.Utilities
 import io.circe.Json
 import org.slf4j.LoggerFactory
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.databind.json.JsonMapper
 
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable
@@ -43,7 +46,6 @@ object MetricHandler {
   val internalPoliciesOrThreatsMatched = mutable.Set[String]()
 
   metricsData("privadoCoreVersion") = Environment.privadoVersionCore.asJson
-  metricsData("privadoCoreCommand") = Json.Null
   val gitMetaData = GitMetaDataExporter.getMetaData(AppCache.localScanPath)
   metricsData("hashedRepoIdentifier") = Json.fromString(Utilities.getSHA256Hash(gitMetaData.size match {
     case 0 => AppCache.repoName
@@ -82,7 +84,7 @@ object MetricHandler {
             case Some(dockerKey) =>
               val accessKey = Utilities.getSHA256Hash(dockerKey)
               val requestData = s""" {"event_type": "PRIVADO_CORE",
-                                         |  "event_message": ${metricsData.asJson.spaces4},
+                                         |  "event_message": ${stringifyJson()},
                                          |  "user_hash": "${Environment.userHash.get}",
                                          |  "session_id": "${Environment.sessionId.get}" }""".stripMargin
               try {
@@ -101,5 +103,11 @@ object MetricHandler {
         }
       case _ => ()
     }
+  }
+
+  def stringifyJson(): String = {
+    val mapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
+    val json   = mapper.writeValueAsString(metricsData.asJson.noSpaces)
+    json
   }
 }
