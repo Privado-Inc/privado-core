@@ -38,11 +38,13 @@ object ConsoleExporter {
     val collectionsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
     collections.foreach(collection => {
       collection.collections.foreach(collect => {
-        if (collectionsSourceMap.contains(collect.sourceId)) {
-          collectionsSourceMap(collect.sourceId).addOne(collection.name)
-        } else {
-          collectionsSourceMap.addOne(collect.sourceId -> mutable.Set[String](collection.name))
-        }
+        collect.occurrences.foreach(occur => {
+          if (collectionsSourceMap.contains(collect.sourceId)) {
+            collectionsSourceMap(collect.sourceId).addOne(occur.endPoint)
+          } else {
+            collectionsSourceMap.addOne(collect.sourceId -> mutable.Set[String](occur.endPoint))
+          }
+        })
       })
     })
 
@@ -50,6 +52,7 @@ object ConsoleExporter {
     val storageSourceMap = dataflowsOutput(Constants.storages).map(
       storage => (storage.sourceId, storage.sinks.map(sink => sink.name).toSet)
     ).toMap
+    val uniqueStorages = storageSourceMap.values.flatten.toSet
 
     // Third Parties - SourceId Map
     val thirdPartySourceMap = dataflowsOutput(Constants.third_parties).map(thirdParty => {
@@ -86,10 +89,13 @@ object ConsoleExporter {
     println("\nPrivado discovers data elements that are being collected, processed, or shared in the code.\n")
     println(s"DATA ELEMENTS  |  ${sourceNameIdMap.size} |")
     println(s"THIRD PARTY    |  ${uniqueThirdParties.size} |")
+    println(s"STORAGES       |  ${uniqueStorages.size} |")
     println(s"ISSUES         |  ${violationSize} |")
     println("\n---------------------------------------------------------")
-    println(s"${sourceNameIdMap.size} DATA ELEMENTS")
-    println("Here is a list of data elements discovered in the code along with details on data flows to third parties, databases and leakages to logs.")
+    if (sourceNameIdMap.size > 0) {
+      println(s"${sourceNameIdMap.size} DATA ELEMENTS")
+      println("Here is a list of data elements discovered in the code along with details on data flows to third parties, databases and leakages to logs.")
+    }
 
     var count = 0;
     sourceNameIdMap.foreachEntry((sourceId, sourceName) => {
