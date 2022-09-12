@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
 
+
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -68,8 +69,10 @@ object JSONExporter {
       output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
-      output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
-      output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
+      val sources = sourceExporter.getSources
+      output.addOne(Constants.sources       -> sources.asJson)
+      val processing = sourceExporter.getProcessing
+      output.addOne(Constants.processing    -> processing.asJson)
       logger.info("Completed Source Exporting")
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
@@ -89,7 +92,8 @@ object JSONExporter {
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
-      output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
+      val collections = collectionExporter.getCollections
+      output.addOne(Constants.collections -> collections.asJson)
       logger.info("Completed Collections Exporting")
 
       val violations = policyAndThreatExporter.getViolations(repoPath)
@@ -105,6 +109,15 @@ object JSONExporter {
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
+
+      ConsoleExporter.exportConsoleSummary(
+        dataflowsOutput,
+        sources,
+        processing,
+        collections,
+        violations.size
+      )
+
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
           FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
