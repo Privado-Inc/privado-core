@@ -9,6 +9,11 @@ import Console.{BLUE, BOLD, CYAN, GREEN, MAGENTA, RED, RESET, WHITE, YELLOW}
 
 object ConsoleExporter {
 
+  private def getDomainFromString(urlString: String): String = {
+    val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
+    url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+  }
+
   def exportConsoleSummary(
     dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]],
     sources: List[SourceModel],
@@ -16,30 +21,21 @@ object ConsoleExporter {
     collections: List[CollectionModel],
     violationSize: Int
   ): Unit = {
-    // Parse the Dataflows
-    var sourceNameIdMap = Map[String, String]()
-    val leakageSourceMap = mutable.HashMap[String, Int]()
-    val processSourceMap = mutable.HashMap[String, Int]()
-    val collectionsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
-    val storageSourceMap = mutable.HashMap[String, mutable.Set[String]]()
-    val thirdPartySourceMap = mutable.HashMap[String, mutable.Set[String]]()
-    val internalAPIsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
-    val uniqueThirdParties = mutable.Set[String]()
-
     // SourceId - Name Map
-    sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
+    val sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
 
     // Leakage Number - SourceId Map
-    dataflowsOutput(Constants.leakages).foreach(leakage => {
-      leakageSourceMap.addOne(leakage.sourceId -> leakage.sinks.size)
-    })
+    val leakageSourceMap = dataflowsOutput(Constants.leakages).map(
+      (leakage) => (leakage.sourceId, leakage.sinks.size)
+    ).toMap
 
     // Processing Number - SourceId Map
-    processing.foreach(process => {
-      processSourceMap.addOne(process.sourceId -> process.occurrences.size)
-    })
+    val processSourceMap = processing.map(
+      process => (process.sourceId -> process.occurrences.size)
+    ).toMap
 
     // Collections Names - SourceId Map
+    val collectionsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
     collections.foreach(collection => {
       collection.collections.foreach(collect => {
         if (collectionsSourceMap.contains(collect.sourceId)) {
@@ -51,45 +47,38 @@ object ConsoleExporter {
     })
 
     // Storages - SourceId Map
-    dataflowsOutput(Constants.storages).foreach(storage => {
-      val storages = mutable.Set[String]()
-      storage.sinks.foreach(sink => {
-        storages.addOne(sink.name)
-      })
-      storageSourceMap.addOne(storage.sourceId -> storages)
-    })
+    val storageSourceMap = dataflowsOutput(Constants.storages).map(
+      storage => (storage.sourceId, storage.sinks.map(sink => sink.name).toSet)
+    ).toMap
 
     // Third Parties - SourceId Map
-    dataflowsOutput(Constants.third_parties).foreach(thirdParty => {
+    val thirdPartySourceMap = dataflowsOutput(Constants.third_parties).map(thirdParty => {
       val thirdParties = mutable.Set[String]()
       thirdParty.sinks.foreach(sink => {
         if (sink.apiUrl.size > 0) {
           sink.apiUrl.foreach(urlString => {
-            val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
-            thirdParties.addOne(url.getHost.replaceAll("www.", ""))
-            uniqueThirdParties.addOne(url.getHost.replaceAll("www.", ""))
+            thirdParties.addOne(getDomainFromString(urlString))
           })
         } else {
           thirdParties.addOne(sink.name)
-          uniqueThirdParties.addOne((sink.name))
         }
       })
-      thirdPartySourceMap.addOne(thirdParty.sourceId -> thirdParties)
-    })
+      (thirdParty.sourceId, thirdParties)
+    }).toMap
+    val uniqueThirdParties = thirdPartySourceMap.values.flatten.toSet
 
     // Internal APIs - SourceId Map
-    dataflowsOutput(Constants.internal_apis).foreach(internalAPI => {
+    val internalAPIsSourceMap = dataflowsOutput(Constants.internal_apis).map(internalAPI => {
       val internalAPIs = mutable.Set[String]()
       internalAPI.sinks.foreach(sink => {
         if (sink.apiUrl.size > 0) {
           sink.apiUrl.foreach(urlString => {
-            val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
-            internalAPIs.addOne(url.getHost.replaceAll("www.", ""))
+            internalAPIs.addOne(getDomainFromString(urlString))
           })
         }
       })
-      internalAPIsSourceMap.addOne(internalAPI.sourceId -> internalAPIs)
-    })
+      (internalAPI.sourceId, internalAPIs)
+    }).toMap
 
     println("\n-----------------------------------------------------------")
     println("SUMMARY")
@@ -115,7 +104,7 @@ object ConsoleExporter {
         Console.println(s"\t${RESET}${BLUE}Storage${RESET}         ->  ${storageSourceMap(sourceId).toList.mkString(", ")}")
       }
       if (internalAPIsSourceMap.contains(sourceId)) {
-        Console.println(s"\t${RESET}${CYAN}Internal API${RESET}      ->  ${internalAPIsSourceMap(sourceId).toList.mkString(", ")}")
+        Console.println(s"\t${RESET}${CYAN}Internal API${RESET}    ->  ${internalAPIsSourceMap(sourceId).toList.mkString(", ")}")
       }
       if (leakageSourceMap.contains(sourceId)) {
         Console.println(s"\t${RESET}${RED}Leakage${RESET}         ->  ${leakageSourceMap(sourceId)}")
