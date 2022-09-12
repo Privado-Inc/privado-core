@@ -40,6 +40,7 @@ object MetricHandler {
   private val logger                   = LoggerFactory.getLogger(this.getClass)
   val metricsData                      = mutable.HashMap[String, Json]()
   val scanProcessErrors                = ArrayBuffer[String]()
+  val otherErrorsOrWarnings            = ArrayBuffer[String]()
   val totalRulesMatched                = mutable.Set[String]()
   val internalRulesMatched             = mutable.Set[String]()
   val flowCategoryData                 = mutable.HashMap[String, Int]()
@@ -64,6 +65,7 @@ object MetricHandler {
   def compileAndSend() = {
     metricsData("internalRuleIdsMatch") = Json.fromValues(internalRulesMatched.map(key => Json.fromString(key)))
     metricsData("scanProcessErrors") = scanProcessErrors.asJson
+    metricsData("otherErrorsOrWarnings") = otherErrorsOrWarnings.asJson
     metricsData("flowCategoryData") = flowCategoryData.asJson
     metricsData("noOfRulesMatch") = Json.fromInt(totalRulesMatched.size)
     metricsData("internalPoliciesIdsMatch") =
@@ -109,5 +111,13 @@ object MetricHandler {
     val mapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
     val json   = mapper.writeValueAsString(metricsData.asJson.noSpaces)
     json
+  }
+
+  def setScanStatus(status: Boolean): Unit = {
+    metricsData("scanStatus") = status.asJson
+  }
+
+  def setUploadStatus(status: Boolean) = {
+    metricsData("uploadStatus") = status.asJson
   }
 }
