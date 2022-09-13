@@ -144,7 +144,6 @@ object YamlFileValidator {
           f"File : ${ruleFile.pathAsString} :Adding new rules under the category '$catLevelOneKey'" +
             f" is not supported. Ignoring file ...."
         )
-        // if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
         Left(())
     }
   }
