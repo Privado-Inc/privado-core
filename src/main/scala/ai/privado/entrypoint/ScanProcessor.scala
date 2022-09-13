@@ -313,9 +313,12 @@ object ScanProcessor extends CommandProcessor {
         val dataflowMap = cpg.dataflow
 
         println("Brewing result...")
+        MetricHandler.setScanStatus(true)
         // Exporting
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-          case Left(err) => Left(err)
+          case Left(err) =>
+            MetricHandler.otherErrorsOrWarnings.addOne(err)
+            Left(err)
           case Right(_) =>
             println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
             logger.debug(
@@ -328,6 +331,7 @@ object ScanProcessor extends CommandProcessor {
       case Failure(exception) => {
         logger.error("Error while parsing the source code!")
         logger.debug("Error : ", exception)
+        MetricHandler.setScanStatus(false)
         Left("Error while parsing the source code: " + exception.toString)
       }
     }
