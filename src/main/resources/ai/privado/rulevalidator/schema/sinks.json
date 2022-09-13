@@ -1,0 +1,92 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/object1659700340.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "sinks"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "sinks": {
+      "$id": "#root/sinks",
+      "title": "Sinks",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/sinks/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/sinks/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Storages.AmazonS3.Read"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/sinks/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Amazon S3(Read)"
+            ],
+            "pattern": "^.*$"
+          },
+          "domains": {
+            "$id": "#root/sinks/items/domains",
+            "title": "Domains",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/sinks/items/domains/items",
+              "title": "Items",
+              "type": "string",
+              "default": "",
+              "examples": [
+                "aws.amazon.com"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "patterns": {
+            "$id": "#root/sinks/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/sinks/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                ".*(AmazonS3).*"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "tags": {
+            "$id": "#root/sinks/items/tags",
+            "title": "Tags",
+            "type": ["object", "null"],
+            "default": null
+          }
+        }
+      }
+
+    }
+  }
+}

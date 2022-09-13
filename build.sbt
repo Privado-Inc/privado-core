@@ -33,7 +33,9 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"             %% "requests"         % "0.7.0",
   "org.scala-lang.modules" %% "scala-xml" % "2.1.0",
   "commons-io" % "commons-io" % "2.11.0",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.4"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.4",
+  "com.networknt" % "json-schema-validator" % "1.0.72",
+  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % "2.13.4"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

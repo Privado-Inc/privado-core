@@ -54,11 +54,12 @@ object CommandConstants {
   val IGNORE_EXCLUDE_RULES       = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR  = "ier"
   val UPLOAD                     = "upload"
+  val VALIDATE                   = "validate"
 }
 
 object CommandParser {
   val commandMapper: Map[String, CommandProcessor] =
-    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> UploadProcessor)
+    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> UploadProcessor, CommandConstants.VALIDATE -> RuleValidator)
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
@@ -113,6 +114,22 @@ object CommandParser {
               if (c.cmd.isEmpty) failure("")
               else if (c.ignoreInternalRules && c.externalConfigPath.isEmpty)
                 failure("external rule files location is required if you ignore the internal rules")
+              else success
+            )
+          ),
+        cmd(CommandConstants.VALIDATE)
+          .required()
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.VALIDATE))
+          .text(
+            "Validates all rules included inside the given rules directory. Informs in case of invalid rules"
+          )
+          .children(
+            arg[String]("<config directory>")
+              .required()
+              .action((x, c) => c.copy(externalConfigPath = c.externalConfigPath + x))
+              .text("Config directory location"),
+            checkConfig(c =>
+              if (c.cmd.isEmpty) failure("")
               else success
             )
           ),

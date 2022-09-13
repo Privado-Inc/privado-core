@@ -1,0 +1,154 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/object1659702130.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "threats"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "threats": {
+      "$id": "#root/threats",
+      "title": "Threats",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/threats/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "type",
+          "description",
+          "fix",
+          "repositories"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/threats/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy.Deny.Sharing.ContactToSlack"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/threats/items/description",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": "^.*$"
+          },
+          "description": {
+            "$id": "#root/threats/items/description",
+            "title": "Description",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": ".*"
+          },
+          "dataFlow": {
+            "$id": "#root/threats/items/dataFlow",
+            "title": "Dataflow",
+            "type": "object",
+            "required": [
+              "sources"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "sources": {
+                "$id": "#root/threats/items/dataFlow/sources",
+                "title": "Sources",
+                "type": "array",
+                "default": [],
+                "items":{
+                  "$id": "#root/threats/items/dataFlow/sources/items",
+                  "title": "Items",
+                  "type": "string",
+                  "format": "regex",
+                  "default": "",
+                  "examples": [
+                    "Data.Sensitive.ContactData.*"
+                  ],
+                  "pattern": "^.*$"
+                }
+              },
+              "sinks": {
+                "$id": "#root/threats/items/dataFlow/sinks",
+                "title": "Sinks",
+                "type": "array",
+                "default": [],
+                "items":{
+                  "$id": "#root/threats/items/dataFlow/sinks/items",
+                  "title": "Items",
+                  "type": "string",
+                  "format": "regex",
+                  "default": "",
+                  "examples": [
+                    "Data.Sharing.Slack"
+                  ],
+                  "pattern": "^.*$"
+                }
+              }
+            }
+          },
+          "repositories": {
+            "$id": "#root/threats/items/repositories",
+            "title": "Repositories",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/threats/items/repositories/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                "privado-messaging-**"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "tags": {
+            "$id": "#root/collections/items/tags",
+            "title": "Tags",
+            "type": ["object", "null"],
+            "default": null
+          },
+          "type": {
+            "$id": "#root/threats/items/description",
+            "title": "Type",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": "^.*$"
+          },
+          "fix": {
+            "$id": "#root/threats/items/description",
+            "title": "Fix",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": "^.*$"
+          }
+        }
+      }
+
+    }
+  }
+}

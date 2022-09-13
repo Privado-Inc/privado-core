@@ -1,0 +1,76 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.com/object1659701478.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "collections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "collections": {
+      "$id": "#root/collections",
+      "title": "Collections",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/collections/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/collections/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Collections.Annotation.Spring"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/collections/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Spring Web Interface Annotation"
+            ],
+            "pattern": "^.*$"
+          },
+          "patterns": {
+            "$id": "#root/collections/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/collections/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                "Spring Web"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "tags": {
+            "$id": "#root/collections/items/tags",
+            "title": "Tags",
+            "type": ["object", "null"],
+            "default": null
+          }
+        }
+      }
+
+    }
+  }
+}

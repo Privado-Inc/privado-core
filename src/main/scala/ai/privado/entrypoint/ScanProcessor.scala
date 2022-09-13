@@ -29,6 +29,7 @@ import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -47,7 +48,7 @@ object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def parseRules(rulesPath: String): ConfigAndRules = {
-    logger.trace(s"parsing rules from -> '${rulesPath}'")
+    logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
@@ -61,11 +62,14 @@ object ScanProcessor extends CommandProcessor {
     val parsedRules =
       try
         ir.listRecursively
-          .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
+          .filter(
+            f => ((f.extension == Some(".yaml") || f.extension == Some(".YAML")) &&
+              YamlFileValidator.isValidRuleFile(f, ir))
+          )
           .map(file => {
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
             val fullPath = file.pathAsString
-            logger.trace(s"parsing -> '${fullPath}'")
+            logger.trace(s"parsing -> '$fullPath'")
             // e.g. relPath = rules/sources/accounts
             val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
             val pathTree = relPath.split("/")
