@@ -108,11 +108,20 @@ object YamlFileValidator {
     *   scala mutable Set of ValidationMessage in case of validation errors, None if no errors are found
     */
   def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[Unit, mutable.Set[ValidationMessage]] = {
-    val yamlAsJson = mapper.readTree(ruleFile.contentAsString())
-    matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
-      case Left(()) => Left(())
-      case Right(schemaFile: String) =>
-        Right(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
+    try {
+      val yamlAsJson = mapper.readTree(ruleFile.contentAsString())
+      matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
+        case Left(()) => Left(())
+        case Right(schemaFile: String) =>
+          Right(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
+      }
+    } catch {
+      case e: Exception =>
+        if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
+        println(
+          f"File : ${ruleFile.pathAsString}: Unable to parse file invalid syntax at [${e.toString.split(';').last} Ignoring file ..."
+        )
+        Left(())
     }
   }
 
@@ -141,8 +150,8 @@ object YamlFileValidator {
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
         println(
-          f"File : ${ruleFile.pathAsString} :Adding new rules under the category '$catLevelOneKey'" +
-            f" is not supported. Ignoring file ...."
+          f"File : ${ruleFile.pathAsString}: Adding new rules under the category '$catLevelOneKey'" +
+            f" is not supported. Ignoring file ..."
         )
         Left(())
     }
