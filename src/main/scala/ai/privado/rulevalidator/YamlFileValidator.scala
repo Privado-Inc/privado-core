@@ -9,7 +9,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.networknt.schema.{JsonSchema, JsonSchemaFactory, SpecVersion, ValidationMessage}
 import org.slf4j.LoggerFactory
 
-import java.util
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.io.Source
 
@@ -66,11 +66,11 @@ object YamlFileValidator {
       .flatMap(ruleFile => {
         validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {
           case Left(()) => None
-          case Right(validationMessages: util.Set[ValidationMessage]) =>
+          case Right(validationMessages: mutable.Set[ValidationMessage]) =>
             Some(ValidationFailure(validationMessages, ruleFile))
         }
       })
-      .filter(!_.validationMessages.isEmpty)
+      .filter(_.validationMessages.nonEmpty)
     validationErrors
   }
 
@@ -89,8 +89,8 @@ object YamlFileValidator {
     validateRuleFile(ruleFile) match {
       case Left(()) => false
       case Right(validationMessages) =>
-        if (validationMessages.asScala.nonEmpty) {
-          validationMessages.asScala.foreach(vm => {
+        if (validationMessages.nonEmpty) {
+          validationMessages.foreach(vm => {
             println(s"File ${ruleFile.pathAsString} has following problems, ignoring file ...")
             println(s"${vm.getMessage}")
           })
@@ -105,9 +105,9 @@ object YamlFileValidator {
     * @param callerCommand
     *   String value to govern pretty print of validation messages
     * @return
-    *   Java Set of ValidationMessage in case of validation errors, None if no errors are found
+    *   scala mutable Set of ValidationMessage in case of validation errors, None if no errors are found
     */
-  def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[Unit, util.Set[ValidationMessage]] = {
+  def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[Unit, mutable.Set[ValidationMessage]] = {
     val yamlAsJson = mapper.readTree(ruleFile.contentAsString())
     matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
       case Left(()) => Left(())
@@ -167,12 +167,12 @@ object YamlFileValidator {
       * @param jsonObj
       *   JsonNode object -> Yaml file converted to Json tree.
       * @return
-      *   a java set of com.networknt.schema.ValidationMessage
+      *   a scala mutable set of com.networknt.schema.ValidationMessage
       */
-    def validateJsonFile(schemaFile: String, jsonObj: JsonNode): util.Set[ValidationMessage] = {
+    def validateJsonFile(schemaFile: String, jsonObj: JsonNode): mutable.Set[ValidationMessage] = {
       file
         .loadSchema(schemaFile)
-        .validate(jsonObj)
+        .validate(jsonObj).asScala
     }
 
   }
@@ -183,14 +183,14 @@ object YamlFileValidator {
       * @param jsonFile
       *   com.fasterxml.jackson.databind.JsonNode JsonContent to validate
       * @return
-      *   a java set of com.networknt.schema.ValidationMessage
+      *   a scala mutable set of com.networknt.schema.ValidationMessage
       */
-    def validate(jsonFile: JsonNode): util.Set[ValidationMessage] = {
-      jsonSchema.validate(jsonFile)
+    def validate(jsonFile: JsonNode): mutable.Set[ValidationMessage] = {
+      jsonSchema.validate(jsonFile).asScala
     }
 
   }
 
 }
 
-case class ValidationFailure(validationMessages: util.Set[ValidationMessage], file: File)
+case class ValidationFailure(validationMessages: mutable.Set[ValidationMessage], file: File)

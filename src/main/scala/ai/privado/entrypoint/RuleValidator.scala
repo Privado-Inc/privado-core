@@ -39,7 +39,7 @@ object RuleValidator extends CommandProcessor {
             errorsFound += 1
             println(PRETTY_LINE_SEPARATOR)
             println(f"File: ${vf.file.pathAsString} has following errors:")
-            vf.validationMessages.forEach(msg => println(msg))
+            vf.validationMessages.foreach(msg => println(msg))
           })
           println(PRETTY_LINE_SEPARATOR)
           errorsFound match {
