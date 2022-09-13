@@ -22,6 +22,7 @@
 
 package ai.privado.auth
 import ai.privado.cache.Environment
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.utility.Utilities
@@ -53,7 +54,7 @@ object AuthenticationHandler {
         Environment.userHash match {
           case Some(_) =>
             var syncPermission: Boolean = true
-            if (!syncToCloud) {
+            if (!syncToCloud && !ScanProcessor.config.upload) {
               syncPermission = askForPermission() // Ask user for request permissions
             }
             if (syncPermission) {
@@ -69,6 +70,7 @@ object AuthenticationHandler {
 
   def askForPermission(): Boolean = {
     println("Do you want to visualize these results on our Privacy View Cloud Dashboard? (Y/n)")
+    println("Once consent is given you can use -su, or --skip-upload flag with 'scan' command to skip the upload")
     val userPermissionInput = scala.io.StdIn.readLine().toLowerCase
     var cloudConsentPermission: Boolean = userPermissionInput match {
       case "n" | "no" | "0" =>

@@ -25,14 +25,11 @@ object ConsoleExporter {
     val sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
 
     // Leakage Number - SourceId Map
-    val leakageSourceMap = dataflowsOutput(Constants.leakages).map(
-      (leakage) => (leakage.sourceId, leakage.sinks.size)
-    ).toMap
+    val leakageSourceMap =
+      dataflowsOutput(Constants.leakages).map((leakage) => (leakage.sourceId, leakage.sinks.size)).toMap
 
     // Processing Number - SourceId Map
-    val processSourceMap = processing.map(
-      process => (process.sourceId -> process.occurrences.size)
-    ).toMap
+    val processSourceMap = processing.map(process => (process.sourceId -> process.occurrences.size)).toMap
 
     // Collections Names - SourceId Map
     val collectionsSourceMap = mutable.HashMap[String, mutable.Set[String]]()
@@ -49,39 +46,43 @@ object ConsoleExporter {
     })
 
     // Storages - SourceId Map
-    val storageSourceMap = dataflowsOutput(Constants.storages).map(
-      storage => (storage.sourceId, storage.sinks.map(sink => sink.name).toSet)
-    ).toMap
+    val storageSourceMap = dataflowsOutput(Constants.storages)
+      .map(storage => (storage.sourceId, storage.sinks.map(sink => sink.name).toSet))
+      .toMap
     val uniqueStorages = storageSourceMap.values.flatten.toSet
 
     // Third Parties - SourceId Map
-    val thirdPartySourceMap = dataflowsOutput(Constants.third_parties).map(thirdParty => {
-      val thirdParties = mutable.Set[String]()
-      thirdParty.sinks.foreach(sink => {
-        if (sink.apiUrl.size > 0) {
-          sink.apiUrl.foreach(urlString => {
-            thirdParties.addOne(getDomainFromString(urlString))
-          })
-        } else {
-          thirdParties.addOne(sink.name)
-        }
+    val thirdPartySourceMap = dataflowsOutput(Constants.third_parties)
+      .map(thirdParty => {
+        val thirdParties = mutable.Set[String]()
+        thirdParty.sinks.foreach(sink => {
+          if (sink.apiUrl.size > 0) {
+            sink.apiUrl.foreach(urlString => {
+              thirdParties.addOne(getDomainFromString(urlString))
+            })
+          } else {
+            thirdParties.addOne(sink.name)
+          }
+        })
+        (thirdParty.sourceId, thirdParties)
       })
-      (thirdParty.sourceId, thirdParties)
-    }).toMap
+      .toMap
     val uniqueThirdParties = thirdPartySourceMap.values.flatten.toSet
 
     // Internal APIs - SourceId Map
-    val internalAPIsSourceMap = dataflowsOutput(Constants.internal_apis).map(internalAPI => {
-      val internalAPIs = mutable.Set[String]()
-      internalAPI.sinks.foreach(sink => {
-        if (sink.apiUrl.size > 0) {
-          sink.apiUrl.foreach(urlString => {
-            internalAPIs.addOne(getDomainFromString(urlString))
-          })
-        }
+    val internalAPIsSourceMap = dataflowsOutput(Constants.internal_apis)
+      .map(internalAPI => {
+        val internalAPIs = mutable.Set[String]()
+        internalAPI.sinks.foreach(sink => {
+          if (sink.apiUrl.size > 0) {
+            sink.apiUrl.foreach(urlString => {
+              internalAPIs.addOne(getDomainFromString(urlString))
+            })
+          }
+        })
+        (internalAPI.sourceId, internalAPIs)
       })
-      (internalAPI.sourceId, internalAPIs)
-    }).toMap
+      .toMap
 
     println("\n-----------------------------------------------------------")
     println("SUMMARY")
@@ -94,7 +95,9 @@ object ConsoleExporter {
     println("\n---------------------------------------------------------")
     if (sourceNameIdMap.size > 0) {
       println(s"${sourceNameIdMap.size} DATA ELEMENTS")
-      println("Here is a list of data elements discovered in the code along with details on data flows to third parties, databases and leakages to logs.")
+      println(
+        "Here is a list of data elements discovered in the code along with details on data flows to third parties, databases and leakages to logs."
+      )
     }
 
     var count = 0;
@@ -104,19 +107,27 @@ object ConsoleExporter {
       Console.println(s"\n${RESET}${WHITE}${BOLD}${count}. ${sourceName.toUpperCase()}${RESET}")
 
       if (thirdPartySourceMap.contains(sourceId)) {
-        Console.println(s"\t${RESET}${YELLOW}Sharing${RESET}         ->  ${thirdPartySourceMap(sourceId).toList.mkString(", ")}")
+        Console.println(
+          s"\t${RESET}${YELLOW}Sharing${RESET}         ->  ${thirdPartySourceMap(sourceId).toList.mkString(", ")}"
+        )
       }
       if (storageSourceMap.contains(sourceId)) {
-        Console.println(s"\t${RESET}${BLUE}Storage${RESET}         ->  ${storageSourceMap(sourceId).toList.mkString(", ")}")
+        Console.println(
+          s"\t${RESET}${BLUE}Storage${RESET}         ->  ${storageSourceMap(sourceId).toList.mkString(", ")}"
+        )
       }
       if (internalAPIsSourceMap.contains(sourceId)) {
-        Console.println(s"\t${RESET}${CYAN}Internal API${RESET}    ->  ${internalAPIsSourceMap(sourceId).toList.mkString(", ")}")
+        Console.println(
+          s"\t${RESET}${CYAN}Internal API${RESET}    ->  ${internalAPIsSourceMap(sourceId).toList.mkString(", ")}"
+        )
       }
       if (leakageSourceMap.contains(sourceId)) {
         Console.println(s"\t${RESET}${RED}Leakage${RESET}         ->  ${leakageSourceMap(sourceId)}")
       }
       if (collectionsSourceMap.contains(sourceId)) {
-        Console.println(s"\t${RESET}${GREEN}Collections${RESET}     ->  ${collectionsSourceMap(sourceId).toList.mkString(", ")}")
+        Console.println(
+          s"\t${RESET}${GREEN}Collections${RESET}     ->  ${collectionsSourceMap(sourceId).toList.mkString(", ")}"
+        )
       }
       if (processSourceMap.contains(sourceId)) {
         Console.println(s"\t${RESET}${MAGENTA}Processing${RESET}      ->  ${processSourceMap(sourceId)}")

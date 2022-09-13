@@ -42,16 +42,15 @@ object Constants {
   val signature = "signature"
   val flow      = "flow"
 
-
   val third_parties = "third_parties"
   val internal_apis = "internal_apis"
-  val collections = "collections"
-  val leakages    = "leakages"
-  val storages    = "storages"
-  val policies    = "policies"
-  val exclusions  = "exclusions"
-  val threats     = "threats"
-  val semantics   = "semantics"
+  val collections   = "collections"
+  val leakages      = "leakages"
+  val storages      = "storages"
+  val policies      = "policies"
+  val exclusions    = "exclusions"
+  val threats       = "threats"
+  val semantics     = "semantics"
 
   val tags               = "tags"
   val description        = "description"
