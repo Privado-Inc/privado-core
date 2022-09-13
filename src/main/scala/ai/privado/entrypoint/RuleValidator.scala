@@ -1,5 +1,6 @@
 package ai.privado.entrypoint
 
+import ai.privado.model.Constants.{PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
 import ai.privado.rulevalidator.YamlFileValidator
 import better.files.File
 import org.slf4j.LoggerFactory
@@ -7,8 +8,6 @@ import org.slf4j.LoggerFactory
 object RuleValidator extends CommandProcessor {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-
-  private val RULES_DIR_IN_CONFIG = "rules"
 
   override var config: PrivadoInput = _
 
@@ -20,8 +19,7 @@ object RuleValidator extends CommandProcessor {
   def getRulesPathFromConfig: Either[Unit, File] = {
     if (config.externalConfigPath.nonEmpty) {
       Right(File(s"${config.externalConfigPath.head}/$RULES_DIR_IN_CONFIG"))
-    }
-    else {
+    } else {
       logger.error("Error while reading config path")
       Left(())
     }
@@ -36,24 +34,23 @@ object RuleValidator extends CommandProcessor {
       case Right(yamlDirectory) =>
         try {
           val validationFailures = YamlFileValidator.validateDirectory(yamlDirectory)
-          var errorsFound = 0
-          validationFailures.toList.foreach(
-            vf => {
-              errorsFound += 1
-              println("---------------------------------------------------------------------------------------------------")
-              println(f"File: ${vf.file.pathAsString} has following errors:")
-              vf.validationMessages.forEach(msg => println(msg))
-            }
-          )
-          println("---------------------------------------------------------------------------------------------------")
+          var errorsFound        = 0
+          validationFailures.toList.foreach(vf => {
+            errorsFound += 1
+            println(PRETTY_LINE_SEPARATOR)
+            println(f"File: ${vf.file.pathAsString} has following errors:")
+            vf.validationMessages.forEach(msg => println(msg))
+          })
+          println(PRETTY_LINE_SEPARATOR)
           errorsFound match {
-            case 0 => println(s"Completed command: validate-rule-set for directory: $yamlDirectory, with no errors")
-            case 1 => println(
-              s"Completed command: validate-rule-set for directory: $yamlDirectory, with ${errorsFound.toString} error"
-            )
-            case _ => println(
-              s"Completed command: validate-rule-set for directory: $yamlDirectory, with ${errorsFound.toString} errors"
-            )
+            case 0 =>
+              println(s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with no errors")
+            case 1 =>
+              println(s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with 1 error")
+            case _ =>
+              println(
+                s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with ${errorsFound.toString} errors"
+              )
           }
           Right(())
         } catch {
@@ -66,4 +63,3 @@ object RuleValidator extends CommandProcessor {
     }
   }
 }
-

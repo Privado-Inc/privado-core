@@ -1,7 +1,7 @@
 {
   "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://example.com/object1659645420.json",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/sources.json",
   "title": "Root",
   "type": "object",
   "required": [
@@ -78,7 +78,7 @@
             "examples": [
               "medium"
             ],
-            "pattern": "\\b(high|medium|low)\\b"
+            "pattern": "^(high|medium|low)$"
           },
           "patterns": {
             "$id": "#root/sources/items/patterns",

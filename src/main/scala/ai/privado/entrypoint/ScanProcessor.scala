@@ -47,6 +47,17 @@ import scala.util.{Failure, Success, Try}
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  def getEmptyConfigAndRule: ConfigAndRules =
+    ConfigAndRules(
+      List[RuleInfo](),
+      List[RuleInfo](),
+      List[RuleInfo](),
+      List[PolicyOrThreat](),
+      List[PolicyOrThreat](),
+      List[RuleInfo](),
+      List[Semantic]()
+    )
+
   def parseRules(rulesPath: String): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
@@ -62,8 +73,9 @@ object ScanProcessor extends CommandProcessor {
     val parsedRules =
       try
         ir.listRecursively
-          .filter(
-            f => ((f.extension == Some(".yaml") || f.extension == Some(".YAML")) &&
+          .filter(f =>
+            ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
+              f.extension(toLowerCase = true).toString.contains(".yml")) &&
               YamlFileValidator.isValidRuleFile(f, ir))
           )
           .map(file => {
@@ -130,31 +142,15 @@ object ScanProcessor extends CommandProcessor {
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
                     logger.error("ERROR : " + error)
-                    ConfigAndRules(
-                      List[RuleInfo](),
-                      List[RuleInfo](),
-                      List[RuleInfo](),
-                      List[PolicyOrThreat](),
-                      List[PolicyOrThreat](),
-                      List[RuleInfo](),
-                      List[Semantic]()
-                    )
+                    getEmptyConfigAndRule
                 }
               case Left(error) =>
                 logger.error("Error while parsing this file -> '" + fullPath)
                 logger.error("ERROR : " + error)
-                ConfigAndRules(
-                  List[RuleInfo](),
-                  List[RuleInfo](),
-                  List[RuleInfo](),
-                  List[PolicyOrThreat](),
-                  List[PolicyOrThreat](),
-                  List[RuleInfo](),
-                  List[Semantic]()
-                )
+                getEmptyConfigAndRule
             }
           })
-          .reduce((a, b) =>
+          .foldLeft(getEmptyConfigAndRule)((a, b) =>
             a.copy(
               sources = a.sources ++ b.sources,
               sinks = a.sinks ++ b.sinks,
@@ -175,16 +171,7 @@ object ScanProcessor extends CommandProcessor {
   }
 
   def processRules(): ConfigAndRules = {
-    var internalConfigAndRules =
-      ConfigAndRules(
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[PolicyOrThreat](),
-        List[PolicyOrThreat](),
-        List[RuleInfo](),
-        List[Semantic]()
-      )
+    var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
       RuleCache.setInternalRules(internalConfigAndRules)
@@ -197,16 +184,7 @@ object ScanProcessor extends CommandProcessor {
       }
       println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
     }
-    var externalConfigAndRules =
-      ConfigAndRules(
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[PolicyOrThreat](),
-        List[PolicyOrThreat](),
-        List[RuleInfo](),
-        List[Semantic]()
-      )
+    var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head)
     }
@@ -274,7 +252,7 @@ object ScanProcessor extends CommandProcessor {
           exit(1)
       }
     }
-    sourceLocation.listRecursively.count(f => f.extension == Some(".java") || f.extension == Some(".JAVA")) > 0
+    sourceLocation.listRecursively.count(f => f.extension(toLowerCase = true).toString.contains(".java")) > 0
   }
   def processCPG(processedRules: ConfigAndRules): Either[String, Unit] = {
     val sourceRepoLocation = config.sourceLocation.head

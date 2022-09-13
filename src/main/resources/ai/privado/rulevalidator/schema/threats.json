@@ -1,7 +1,7 @@
 {
   "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://example.com/object1659702130.json",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/threats.json",
   "title": "Root",
   "type": "object",
   "required": [
@@ -34,17 +34,17 @@
             "type": "string",
             "default": "",
             "examples": [
-              "Policy.Deny.Sharing.ContactToSlack"
+              "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled"
             ],
             "pattern": "^.*$"
           },
           "name": {
-            "$id": "#root/threats/items/description",
+            "$id": "#root/threats/items/name",
             "title": "Name",
             "type": "string",
             "default": "",
             "examples": [
-              "Policy to restrict Contact Information being shared with Slack"
+              "Background screenshots not disabled"
             ],
             "pattern": "^.*$"
           },
@@ -54,7 +54,7 @@
             "type": "string",
             "default": "",
             "examples": [
-              "Policy to restrict Contact Information being shared with Slack"
+              "Finding Sensitive Information in Auto-Generated Screenshots"
             ],
             "pattern": ".*"
           },
@@ -96,7 +96,7 @@
                   "format": "regex",
                   "default": "",
                   "examples": [
-                    "Data.Sharing.Slack"
+                    "Miscellaneous.Threats.AndroidNotification"
                   ],
                   "pattern": "^.*$"
                 }
@@ -127,22 +127,22 @@
             "default": null
           },
           "type": {
-            "$id": "#root/threats/items/description",
+            "$id": "#root/threats/items/type",
             "title": "Type",
             "type": "string",
             "default": "",
             "examples": [
-              "Policy to restrict Contact Information being shared with Slack"
+              "Threat"
             ],
-            "pattern": "^.*$"
+            "pattern": "^Threat$"
           },
           "fix": {
-            "$id": "#root/threats/items/description",
+            "$id": "#root/threats/items/fix",
             "title": "Fix",
             "type": "string",
             "default": "",
             "examples": [
-              "Policy to restrict Contact Information being shared with Slack"
+              "Ensure that FLAG_SECURE option is set on the window."
             ],
             "pattern": "^.*$"
           }

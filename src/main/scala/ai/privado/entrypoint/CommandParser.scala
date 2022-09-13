@@ -59,7 +59,11 @@ object CommandConstants {
 
 object CommandParser {
   val commandMapper: Map[String, CommandProcessor] =
-    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> UploadProcessor, CommandConstants.VALIDATE -> RuleValidator)
+    Map(
+      CommandConstants.SCAN     -> ScanProcessor,
+      CommandConstants.UPLOAD   -> UploadProcessor,
+      CommandConstants.VALIDATE -> RuleValidator
+    )
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
@@ -120,9 +124,7 @@ object CommandParser {
         cmd(CommandConstants.VALIDATE)
           .required()
           .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.VALIDATE))
-          .text(
-            "Validates all rules included inside the given rules directory. Informs in case of invalid rules"
-          )
+          .text("Validates all rules included inside the given rules directory. Informs in case of invalid rules")
           .children(
             arg[String]("<config directory>")
               .required()
