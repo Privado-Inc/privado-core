@@ -25,8 +25,9 @@ object ConsoleExporter {
     val sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
 
     // Leakage Number - SourceId Map
-    val leakageSourceMap =
-      dataflowsOutput(Constants.leakages).map((leakage) => (leakage.sourceId, leakage.sinks.size)).toMap
+    val leakageSourceMap = dataflowsOutput(Constants.leakages)
+      .map((leakage) => (leakage.sourceId, leakage.sinks.map(_.paths.size).sum))
+      .toMap
 
     // Processing Number - SourceId Map
     val processSourceMap = processing.map(process => (process.sourceId -> process.occurrences.size)).toMap
