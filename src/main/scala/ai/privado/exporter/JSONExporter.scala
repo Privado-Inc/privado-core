@@ -44,7 +44,6 @@ import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
 
-
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -70,9 +69,9 @@ object JSONExporter {
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
       val sources = sourceExporter.getSources
-      output.addOne(Constants.sources       -> sources.asJson)
+      output.addOne(Constants.sources -> sources.asJson)
       val processing = sourceExporter.getProcessing
-      output.addOne(Constants.processing    -> processing.asJson)
+      output.addOne(Constants.processing -> processing.asJson)
       logger.info("Completed Source Exporting")
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
@@ -110,13 +109,7 @@ object JSONExporter {
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 
-      ConsoleExporter.exportConsoleSummary(
-        dataflowsOutput,
-        sources,
-        processing,
-        collections,
-        violations.size
-      )
+      ConsoleExporter.exportConsoleSummary(dataflowsOutput, sources, processing, collections, violations.size)
 
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
