@@ -161,25 +161,34 @@ object AuthenticationHandler {
               val processFileResponseData = ujson.read(processFileResponse.text())
               processFileResponse.statusCode match {
                 case 200 =>
+                  MetricHandler.setUploadStatus(true)
                   s"""\n> Successfully synchronized results with Privado Cloud \n> Continue to view results on: ${processFileResponseData(
                       "redirectUrl"
                     ).toString()}\n"""
                 case _ =>
+                  MetricHandler.setUploadStatus(false)
+                  MetricHandler.otherErrorsOrWarnings.addOne("Upload Error: File processing")
                   logger.debug("Error in triggering the process flow for result file")
                   "Error occurred during processing of file on cloud. Retry using 'privado upload' command"
               }
             case _ =>
+              MetricHandler.setUploadStatus(false)
+              MetricHandler.otherErrorsOrWarnings.addOne("Upload Error: File upload error")
               logger.debug("Error while uploading file to server")
               "Error occurred while uploading the file to the cloud. \n Retry using 'privado upload' command."
           }
 
         case _ =>
+          MetricHandler.setUploadStatus(false)
+          MetricHandler.otherErrorsOrWarnings.addOne("Upload Error: Failed to get presigned URL")
           logger.debug("Error fetching the presigned URL from S3")
           "Error occurred while getting the upload URL. Retry using 'privado upload' command"
       }
 
     } catch {
       case e: Exception =>
+        MetricHandler.setUploadStatus(false)
+        MetricHandler.otherErrorsOrWarnings.addOne(s"Upload Error: ${e.toString}")
         logger.error("Error occurred while uploading the file to the cloud.")
         logger.debug("Error:", e)
         s"Error Occurred. ${e.toString}"
