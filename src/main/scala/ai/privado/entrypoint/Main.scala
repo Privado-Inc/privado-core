@@ -42,7 +42,8 @@ object Main {
                 case ScanProcessor =>
                   logger.debug("Success from scan process! Proceeding to initiate auth flow")
                   val sourceRepoLocation = ScanProcessor.config.sourceLocation.head
-                  AuthenticationHandler.authenticate(sourceRepoLocation)
+                  if (!ScanProcessor.config.skipUpload)
+                    AuthenticationHandler.authenticate(sourceRepoLocation)
                 case _ => ()
               }
 
