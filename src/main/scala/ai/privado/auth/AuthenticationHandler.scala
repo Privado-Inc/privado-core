@@ -70,7 +70,6 @@ object AuthenticationHandler {
 
   def askForPermission(): Boolean = {
     println("Do you want to visualize these results on our Privacy View Cloud Dashboard? (Y/n)")
-    println("Once consent is given you can use -su, or --skip-upload flag with 'scan' command to skip the upload")
     val userPermissionInput = scala.io.StdIn.readLine().toLowerCase
     var cloudConsentPermission: Boolean = userPermissionInput match {
       case "n" | "no" | "0" =>
