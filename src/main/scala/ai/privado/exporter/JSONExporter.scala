@@ -24,13 +24,13 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants
+import ai.privado.model.{Constants, PolicyThreatType}
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
 import ai.privado.model.exporter.CollectionEncoderDecoder._
-import ai.privado.model.exporter.{DataFlowSubCategoryModel, ViolationModel}
+import ai.privado.model.exporter.DataFlowSubCategoryModel
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
@@ -109,7 +109,14 @@ object JSONExporter {
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 
-      ConsoleExporter.exportConsoleSummary(dataflowsOutput, sources, processing, collections, violations.size)
+      // Compliance Violations
+      val complianceViolations = violations.filter(violation =>
+        violation.policyDetails match {
+          case Some(policyDetail) => policyDetail.policyType.equals(PolicyThreatType.COMPLIANCE.toString)
+          case None               => false
+        }
+      )
+      ConsoleExporter.exportConsoleSummary(dataflowsOutput, sources, processing, collections, complianceViolations.size)
 
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
