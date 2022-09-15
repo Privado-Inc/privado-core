@@ -32,7 +32,8 @@ import Console.{BLUE, BOLD, CYAN, GREEN, MAGENTA, RED, RESET, WHITE, YELLOW}
 object ConsoleExporter {
 
   private def getDomainFromString(urlString: String): String = {
-    val url = new URL("https://" + urlString.replaceAll("https://", "").trim)
+    val prefixToReplace = if (urlString.contains("http://")) "http://" else "https://"
+    val url             = new URL("https://" + urlString.replaceAll(prefixToReplace, "").trim)
     url.getHost.replaceAll("www.", "").replaceAll("\"", "")
   }
 
