@@ -22,6 +22,8 @@
 
 package ai.privado.entrypoint
 
+import ai.privado.metric.MetricHandler
+import io.circe.syntax.EncoderOps
 import scopt.OParser
 
 import scala.sys.exit
@@ -32,9 +34,11 @@ case class PrivadoInput(
   internalConfigPath: Set[String] = Set.empty,
   externalConfigPath: Set[String] = Set.empty,
   ignoreInternalRules: Boolean = false,
-  skipDownladDependencies: Boolean = false,
+  skipDownloadDependencies: Boolean = false,
   disableDeDuplication: Boolean = false,
-  ignoreExcludeRules: Boolean = false
+  ignoreExcludeRules: Boolean = false,
+  skipUpload: Boolean = false,
+  upload: Boolean = false
 )
 
 object CommandConstants {
@@ -51,10 +55,15 @@ object CommandConstants {
   val DISABLE_DEDUPLICATION_ABBR = "dd"
   val IGNORE_EXCLUDE_RULES       = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR  = "ier"
+  val UPLOAD                     = "upload"
+  val UPLOAD_ABBR                = "u"
+  val SKIP_UPLOAD                = "skip-upload"
+  val SKIP_UPLOAD_ABBR           = "su"
 }
 
 object CommandParser {
-  val commandMapper: Map[String, CommandProcessor] = Map(CommandConstants.SCAN -> ScanProcessor)
+  val commandMapper: Map[String, CommandProcessor] =
+    Map(CommandConstants.SCAN -> ScanProcessor, CommandConstants.UPLOAD -> UploadProcessor)
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
@@ -89,7 +98,7 @@ object CommandParser {
             opt[Unit](CommandConstants.SKIP_DOWNLOAD_DEP)
               .abbr(CommandConstants.SKIP_DOWNLOAD_DEP_ABBR)
               .optional()
-              .action((_, c) => c.copy(skipDownladDependencies = true))
+              .action((_, c) => c.copy(skipDownloadDependencies = true))
               .text("this option is hidden in the usage text"),
             opt[Unit](CommandConstants.DISABLE_DEDUPLICATION)
               .abbr(CommandConstants.DISABLE_DEDUPLICATION_ABBR)
@@ -101,6 +110,20 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(ignoreExcludeRules = true))
               .text("Ignore source exclude rules"),
+            opt[Unit](CommandConstants.SKIP_UPLOAD)
+              .abbr(CommandConstants.SKIP_UPLOAD_ABBR)
+              .optional()
+              .action((_, c) => c.copy(skipUpload = true))
+              .text(
+                "Skip the output result getting uploaded to cloud without being prompted (if you have not given the consent for the same). You can skip the upload if you have already given such consent"
+              ),
+            opt[Unit](CommandConstants.UPLOAD)
+              .abbr(CommandConstants.UPLOAD_ABBR)
+              .optional()
+              .action((_, c) => c.copy(upload = true))
+              .text(
+                "Upload the output results to cloud without being prompted for the consent. If you have already given the consent this flag has no effect"
+              ),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
@@ -111,6 +134,20 @@ object CommandParser {
                 failure("external rule files location is required if you ignore the internal rules")
               else success
             )
+          ),
+        cmd(CommandConstants.UPLOAD)
+          .required()
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.UPLOAD))
+          .text("Uploads the result file to Privado.ai UI dashboard.")
+          .children(
+            arg[String]("<Source directory>")
+              .required()
+              .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
+              .text("Source code location"),
+            checkConfig(c =>
+              if (c.cmd.isEmpty) failure("")
+              else success
+            )
           )
       )
     }
@@ -119,6 +156,7 @@ object CommandParser {
       case Some(config) =>
         val commandProcessor: CommandProcessor = commandMapper.get(config.cmd.head) match {
           case Some(commandProcessor) => {
+            MetricHandler.metricsData("privadoCoreCommand") = config.cmd.head.asJson
             commandProcessor
           }
           case _ =>

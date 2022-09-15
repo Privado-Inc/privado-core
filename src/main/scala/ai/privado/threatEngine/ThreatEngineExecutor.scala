@@ -23,15 +23,13 @@
 package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
-import ai.privado.model.{Constants, PolicyOrThreat, PolicyViolationFlowModel}
+import ai.privado.model.exporter.ViolationModel
+import ai.privado.model.PolicyOrThreat
 import ai.privado.utility.Utilities._
-import io.circe.Json
-import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.util.{Failure, Success}
 
 class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: String) {
@@ -43,7 +41,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
     *   threats
     * @return
     */
-  def getProcessingViolations(threats: List[PolicyOrThreat]): List[mutable.LinkedHashMap[String, Json]] = {
+  def getProcessingViolations(threats: List[PolicyOrThreat]): List[ViolationModel] = {
     threats.flatMap(threat => processProcessingViolations(threat))
   }
 
@@ -52,71 +50,72 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
     *   threats
     * @return
     */
-  def getDataflowViolations(threats: List[PolicyOrThreat]): List[mutable.LinkedHashMap[String, Json]] = {
+  def getDataflowViolations(threats: List[PolicyOrThreat]): List[ViolationModel] = {
     threats.flatMap(threat => processDataflowViolations(threat))
   }
 
   private def processProcessingViolations(threat: PolicyOrThreat) = {
     val threatId = threat.id
+    logger.info(s"Processing 'processing' threat: ${threatId}")
     // process android threats
-    val violationResponse = getAndroidManifestFile(repoPath) match {
-      // if we get a manifest file, consider android app
-      case Some(manifestFile) =>
-        logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
-        logger.info(s"Processing 'processing' threat: ${threatId}")
-        threatId match {
-          case "Threats.Collection.isKeyboardCacheUsed" =>
-            KeyboardCache.getViolations(repoPath) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
 
-          case "Threats.Storage.isAppDataBackupAllowed" =>
-            SensitiveDataBackup.getViolations(cpg, manifestFile) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
+    // if we get a manifest file, consider android app
+    // and process android-specific threats
+    val (isAndroidRepo, manifestFile) = getAndroidManifestFile(repoPath)
 
-          case "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled" =>
-            BackgroundScreenshot.getViolations(cpg) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
-
-          case "Threats.Sharing.isIpcDataSharingAllowed" =>
-            DataSharingIPC.getViolations(cpg, manifestFile) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
-
-          case "Threats.Collection.isInputMasked" =>
-            SensitiveInputMask.getViolations(cpg, repoPath) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
-
-          case "Threats.Storage.isDataStoredOnExternalStorage" =>
-            DataOnExternalStorage.getViolations(cpg, manifestFile) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
-
-          case _ =>
-            logger.debug(s"No implementation detected for threat: ${threatId}")
-            None
+    val violationResponse = threatId match {
+      case "Threats.Collection.isKeyboardCacheUsed" if isAndroidRepo =>
+        KeyboardCache.getViolations(repoPath) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
         }
+
+      case "Threats.Storage.isAppDataBackupAllowed" if isAndroidRepo =>
+        SensitiveDataBackup.getViolations(cpg, manifestFile) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
+        }
+
+      case "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled" if isAndroidRepo =>
+        BackgroundScreenshot.getViolations(cpg) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
+        }
+
+      case "Threats.Sharing.isIpcDataSharingAllowed" if isAndroidRepo =>
+        DataSharingIPC.getViolations(cpg, manifestFile) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
+        }
+
+      case "Threats.Collection.isInputMasked" if isAndroidRepo =>
+        SensitiveInputMask.getViolations(cpg, repoPath) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
+        }
+
+      case "Threats.Storage.isDataStoredOnExternalStorage" if isAndroidRepo =>
+        DataOnExternalStorage.getViolations(cpg, manifestFile) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
+        }
+
       case _ =>
-        logger.debug("Did not find AndroidManifest.xml")
+        logger.debug(s"No implementation detected for threat: ${threatId} (isAndroidRepo: ${isAndroidRepo})")
         None
     }
 
     violationResponse match {
       case Some((isThreat, occurrences)) if isThreat =>
-        val outputMap = mutable.LinkedHashMap[String, Json]()
-        outputMap.addOne(Constants.policyId      -> threatId.asJson)
-        outputMap.addOne(Constants.policyDetails -> ExporterUtility.getPolicyInfoForExporting(threatId).asJson)
-        if (occurrences.nonEmpty) outputMap.addOne(Constants.processing -> occurrences.asJson)
-        Some(outputMap)
+        Some(
+          ViolationModel(
+            threatId,
+            ExporterUtility.getPolicyInfoForExporting(threatId),
+            None, {
+              if (occurrences.nonEmpty) Some(occurrences) else None
+            }
+          )
+        )
       case _ => None
     }
 
@@ -124,59 +123,50 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
   private def processDataflowViolations(threat: PolicyOrThreat) = {
     val threatId = threat.id
+    logger.info(s"Processing 'dataflow' threat: ${threatId}")
 
-    // process android threats
-    val violationResponse = getAndroidManifestFile(repoPath) match {
-      // if we get a manifest file, consider android app
-      case Some(manifestFile) =>
-        logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
-        logger.info(s"Processing 'dataflow' threat: ${threatId}")
-        threatId match {
-          case "Threats.Leakage.isDataLeakingToLog" =>
-            DataLeakageToLogs.getViolations(threat, cpg, dataflows) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
-          case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" =>
-            DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
-              case Success(res) => Some(res)
-              case Failure(e)   => None
-            }
+    // if we get a manifest file, consider android app
+    // and process android-specific threats
+    val (isAndroidRepo, _) = getAndroidManifestFile(repoPath)
 
-          case _ =>
-            logger.debug(s"No implementation detected for threat: ${threatId}")
-            None
+    val violationResponse = threatId match {
+      case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
+        DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
+        }
+      case "Threats.Leakage.isDataLeakingToLog" =>
+        DataLeakageToLogs.getViolations(threat, cpg, dataflows) match {
+          case Success(res) => Some(res)
+          case Failure(_)   => None
         }
       case _ =>
-        logger.debug("Did not find AndroidManifest.xml")
+        logger.debug(s"No implementation detected for threat: ${threatId} (isAndroidRepo: ${isAndroidRepo})")
         None
     }
 
     violationResponse match {
       case Some((isThreat, dataflows)) if isThreat =>
-        val outputMap = mutable.LinkedHashMap[String, Json]()
-        outputMap.addOne(Constants.policyId      -> threatId.asJson)
-        outputMap.addOne(Constants.policyDetails -> ExporterUtility.getPolicyInfoForExporting(threatId).asJson)
-        outputMap.addOne(Constants.dataFlow      -> dataflows.map(flow => convertViolatingFlow(flow)).asJson)
-        Some(outputMap)
+        Some(ViolationModel(threatId, ExporterUtility.getPolicyInfoForExporting(threatId), Some(dataflows), None))
       case _ => None
     }
   }
 
-  private def convertViolatingFlow(flow: PolicyViolationFlowModel) = {
-    val flowOutput = mutable.LinkedHashMap[String, Json]()
-    flowOutput.addOne(Constants.sourceId -> flow.sourceId.asJson)
-    flowOutput.addOne(Constants.sinkId   -> flow.sinkId.asJson)
-    flowOutput.addOne(Constants.pathIds  -> flow.pathIds.asJson)
-    flowOutput
-  }
-
-  private def getAndroidManifestFile(repoPath: String): Option[String] = {
-    getAllFilesRecursively(repoPath, Set(".xml")) match {
+  private def getAndroidManifestFile(repoPath: String): (Boolean, String) = {
+    val manifestFile = getAllFilesRecursively(repoPath, Set(".xml")) match {
       case Some(sourceFileNames) => {
         sourceFileNames.find(_.endsWith("AndroidManifest.xml"))
       }
       case None => None
+    }
+
+    manifestFile match {
+      case Some(manifestFile) =>
+        logger.debug(s"Found AndroidManifest.xml: ${manifestFile}")
+        (true, manifestFile)
+      case _ =>
+        logger.debug("Did not find AndroidManifest.xml")
+        (false, "")
     }
   }
 }

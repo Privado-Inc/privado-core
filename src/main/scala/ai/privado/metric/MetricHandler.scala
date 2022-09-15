@@ -26,6 +26,9 @@ import ai.privado.exporter.GitMetaDataExporter
 import ai.privado.utility.Utilities
 import io.circe.Json
 import org.slf4j.LoggerFactory
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.databind.json.JsonMapper
 
 import java.util.concurrent.TimeUnit
 import scala.collection.mutable
@@ -37,13 +40,13 @@ object MetricHandler {
   private val logger                   = LoggerFactory.getLogger(this.getClass)
   val metricsData                      = mutable.HashMap[String, Json]()
   val scanProcessErrors                = ArrayBuffer[String]()
+  val otherErrorsOrWarnings            = ArrayBuffer[String]()
   val totalRulesMatched                = mutable.Set[String]()
   val internalRulesMatched             = mutable.Set[String]()
   val flowCategoryData                 = mutable.HashMap[String, Int]()
   val internalPoliciesOrThreatsMatched = mutable.Set[String]()
 
   metricsData("privadoCoreVersion") = Environment.privadoVersionCore.asJson
-  metricsData("privadoCoreCommand") = Json.Null
   val gitMetaData = GitMetaDataExporter.getMetaData(AppCache.localScanPath)
   metricsData("hashedRepoIdentifier") = Json.fromString(Utilities.getSHA256Hash(gitMetaData.size match {
     case 0 => AppCache.repoName
@@ -62,6 +65,7 @@ object MetricHandler {
   def compileAndSend() = {
     metricsData("internalRuleIdsMatch") = Json.fromValues(internalRulesMatched.map(key => Json.fromString(key)))
     metricsData("scanProcessErrors") = scanProcessErrors.asJson
+    metricsData("otherErrorsOrWarnings") = otherErrorsOrWarnings.asJson
     metricsData("flowCategoryData") = flowCategoryData.asJson
     metricsData("noOfRulesMatch") = Json.fromInt(totalRulesMatched.size)
     metricsData("internalPoliciesIdsMatch") =
@@ -82,7 +86,7 @@ object MetricHandler {
             case Some(dockerKey) =>
               val accessKey = Utilities.getSHA256Hash(dockerKey)
               val requestData = s""" {"event_type": "PRIVADO_CORE",
-                                         |  "event_message": ${metricsData.asJson.spaces4},
+                                         |  "event_message": ${stringifyJson()},
                                          |  "user_hash": "${Environment.userHash.get}",
                                          |  "session_id": "${Environment.sessionId.get}" }""".stripMargin
               try {
@@ -101,5 +105,19 @@ object MetricHandler {
         }
       case _ => ()
     }
+  }
+
+  def stringifyJson(): String = {
+    val mapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
+    val json   = mapper.writeValueAsString(metricsData.asJson.noSpaces)
+    json
+  }
+
+  def setScanStatus(status: Boolean): Unit = {
+    metricsData("scanStatus") = status.asJson
+  }
+
+  def setUploadStatus(status: Boolean) = {
+    metricsData("uploadStatus") = status.asJson
   }
 }

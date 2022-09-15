@@ -20,6 +20,18 @@
  * For more information, contact support@privado.ai
  */
 
-package ai.privado.model
+package ai.privado.cache
 
-case class PolicyViolationFlowModel(sourceId: String, sinkId: String, pathIds: List[String])
+import ai.privado.model.DataFlowPathModel
+
+import scala.collection.mutable.ListBuffer
+
+object DataFlowCache {
+
+  private val dataflow = ListBuffer[DataFlowPathModel]()
+
+  def setDataflow(dataFlowPathModel: DataFlowPathModel): Unit = dataflow.append(dataFlowPathModel)
+
+  def getDataflow: List[DataFlowPathModel] = dataflow.toList
+
+}

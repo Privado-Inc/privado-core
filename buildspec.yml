@@ -11,15 +11,19 @@ phases:
       - ACCOUNT_ID=${CODEBUILD_BUILD_ARN} && IFS=':' && set -- $ACCOUNT_ID && ACCOUNT_ID=$5
       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
       - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
-      - CODE_ARTIFACT_URL=https://privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com/maven/core/
+      - CODE_ARTIFACT_URL=privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com
       - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
       - |
         if [[ $AWS_REGION = "eu-west-1" ]]
         then
-            VERSION="$(git describe --tags --abbrev=0)"
+            LATEST_TAG="$(git describe --tags --abbrev=0)"
+            VERSION=${LATEST_TAG:1}
         else
-            VERSION=$VERSION_INITIAL.$CODEBUILD_BUILD_NUMBER
+            LATEST_TAG=$(curl -i "Accept: application/vnd.github+json" -H "Authorization: token $GITHUB_TOKEN" https://api.github.com/repos/Privado-Inc/privado-core/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+            VERSION_INITIAL=${LATEST_TAG:1}
+            VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
         fi
+        echo $VERSION
       - TAG_1=latest
       - TAG_2=$VERSION
       - echo $CODEBUILD_WEBHOOK_HEAD_REF
@@ -29,7 +33,13 @@ phases:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
-      - docker build -t $REPOSITORY_URI:latest --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
+      - |
+        if [[ $AWS_REGION = "eu-west-1" ]]
+        then
+            docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION=$VERSION --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
+        else
+            docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION="dev-SNAPSHOT" --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
+        fi
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_1
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_2
   post_build:

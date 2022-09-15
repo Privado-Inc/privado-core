@@ -23,14 +23,12 @@
 package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
+import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.threatEngine.ThreatUtility._
-import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
-
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 import scala.xml.{Elem, XML}
@@ -49,8 +47,8 @@ object DataOnExternalStorage {
     *   source filepath of manifest file
     * @return
     */
-  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[Json])] = Try {
-    val occurrenceList  = ListBuffer[mutable.LinkedHashMap[String, Json]]()
+  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+    val occurrenceList  = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
     val xml: Elem       = XML.loadFile(androidManifestFile)
     val permissionNodes = xml \\ USE_PERM_KEY
 
@@ -66,7 +64,7 @@ object DataOnExternalStorage {
             nameAttribute == "android.permission.WRITE_EXTERNAL_STORAGE" || nameAttribute == "android.permission.MANAGE_EXTERNAL_STORAGE"
           ) {
             val occurrenceOutput =
-              getOccurrenceObject(s"${PERM_NAME_ATTRIBUTE}=\"${nameAttribute}\"", nameAttribute, androidManifestFile)
+              getOccurrenceObject(s"$PERM_NAME_ATTRIBUTE=\"$nameAttribute\"", nameAttribute, androidManifestFile)
             occurrenceList.append(occurrenceOutput)
           }
         case _ => // Node not found
@@ -83,6 +81,6 @@ object DataOnExternalStorage {
     }
 
     // threat exists if occurrences are non-empty
-    (occurrenceList.nonEmpty, transformOccurrenceList(occurrenceList))
+    (occurrenceList.nonEmpty, transformOccurrenceList(occurrenceList.toList))
   }
 }

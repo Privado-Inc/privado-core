@@ -23,13 +23,12 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
-import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.exporter.JSONExporter
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
-import ai.privado.language._
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -115,7 +114,14 @@ object ScanProcessor extends CommandProcessor {
                             nodeType = NodeType.REGULAR
                           )
                         ),
-                      policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree))
+                      policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree)),
+                      semantics = configAndRules.semantics.map(x =>
+                        x.copy(
+                          file = fullPath,
+                          categoryTree = pathTree,
+                          language = Language.withNameWithDefault(pathTree.last)
+                        )
+                      )
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -126,7 +132,8 @@ object ScanProcessor extends CommandProcessor {
                       List[RuleInfo](),
                       List[PolicyOrThreat](),
                       List[PolicyOrThreat](),
-                      List[RuleInfo]()
+                      List[RuleInfo](),
+                      List[Semantic]()
                     )
                 }
               case Left(error) =>
@@ -138,7 +145,8 @@ object ScanProcessor extends CommandProcessor {
                   List[RuleInfo](),
                   List[PolicyOrThreat](),
                   List[PolicyOrThreat](),
-                  List[RuleInfo]()
+                  List[RuleInfo](),
+                  List[Semantic]()
                 )
             }
           })
@@ -149,7 +157,8 @@ object ScanProcessor extends CommandProcessor {
               collections = a.collections ++ b.collections,
               policies = a.policies ++ b.policies,
               exclusions = a.exclusions ++ b.exclusions,
-              threats = a.threats ++ b.threats
+              threats = a.threats ++ b.threats,
+              semantics = a.semantics ++ b.semantics
             )
           )
       catch {
@@ -169,7 +178,8 @@ object ScanProcessor extends CommandProcessor {
         List[RuleInfo](),
         List[PolicyOrThreat](),
         List[PolicyOrThreat](),
-        List[RuleInfo]()
+        List[RuleInfo](),
+        List[Semantic]()
       )
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
@@ -190,7 +200,8 @@ object ScanProcessor extends CommandProcessor {
         List[RuleInfo](),
         List[PolicyOrThreat](),
         List[PolicyOrThreat](),
-        List[RuleInfo]()
+        List[RuleInfo](),
+        List[Semantic]()
       )
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head)
@@ -212,6 +223,7 @@ object ScanProcessor extends CommandProcessor {
     val collections = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies    = externalConfigAndRules.policies ++ internalConfigAndRules.policies
     val threats     = externalConfigAndRules.threats ++ internalConfigAndRules.threats
+    val semantics   = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
@@ -219,7 +231,8 @@ object ScanProcessor extends CommandProcessor {
         collections = collections.distinctBy(_.id),
         policies = policies.distinctBy(_.id),
         exclusions = exclusions.distinctBy(_.id),
-        threats = threats.distinctBy(_.id)
+        threats = threats.distinctBy(_.id),
+        semantics = semantics.distinctBy(_.signature)
       )
     logger.trace(mergedRules.toString)
     logger.info("Caching rules")
@@ -297,46 +310,20 @@ object ScanProcessor extends CommandProcessor {
         println("Tagging source code with rules...")
         cpg.runTagger(processedRules)
         println("Finding source to sink flow of data...")
-        val dataflowMap = {
-          val flows = cpg.dataflow
-          if (config.disableDeDuplication) {
-            flows
-              .flatMap(dataflow => {
-                DuplicateFlowProcessor.calculatePathId(dataflow) match {
-                  case Success(pathId) => Some(pathId, dataflow)
-                  case Failure(e) =>
-                    logger.debug("Exception : ", e)
-                    None
-                }
-              })
-              .toMap
-          } else {
-            println("Deduplicating data flows...")
-            DuplicateFlowProcessor.process(flows)
-          }
-        }
+        val dataflowMap = cpg.dataflow
 
         println("Brewing result...")
+        MetricHandler.setScanStatus(true)
         // Exporting
-        val outputFileName = "privado"
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-          case Left(err) => Left(err)
+          case Left(err) =>
+            MetricHandler.otherErrorsOrWarnings.addOne(err)
+            Left(err)
           case Right(_) =>
-            println(s"Successfully exported output to '${AppCache.localScanPath}/.privado' folder")
+            println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
-            /*
-            // Utility to debug
-            for (tagName <- cpg.tag.name.dedup.l) {
-              val tags = cpg.tag(tagName).l
-              println(s"tag Name : ${tagName}, size : ${tags.size}")
-              println("Values : ")
-              for (tag <- tags) {
-                print(s"${tag.value}, ")
-              }
-              println("\n----------------------------------------")
-            }*/
             Right(())
         }
       }
@@ -344,6 +331,7 @@ object ScanProcessor extends CommandProcessor {
       case Failure(exception) => {
         logger.error("Error while parsing the source code!")
         logger.debug("Error : ", exception)
+        MetricHandler.setScanStatus(false)
         Left("Error while parsing the source code: " + exception.toString)
       }
     }
@@ -357,12 +345,12 @@ object ScanProcessor extends CommandProcessor {
   private def createJavaCpg(sourceRepoLocation: String, lang: String): Try[codepropertygraph.Cpg] = {
     MetricHandler.metricsData("language") = Json.fromString(lang)
     println(s"Processing source code using ${Languages.JAVASRC} engine")
-    if (!config.skipDownladDependencies)
+    if (!config.skipDownloadDependencies)
       println("Downloading dependencies and Parsing source code...")
     else
       println("Parsing source code...")
     val cpgconfig =
-      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
+      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     JavaSrc2Cpg().createCpg(cpgconfig)
   }
 

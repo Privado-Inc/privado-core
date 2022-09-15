@@ -25,12 +25,13 @@ package ai.privado.utility
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.model.Semantic
 import ai.privado.semantic.Language._
 import ai.privado.model.{Constants, RuleInfo}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -82,10 +83,34 @@ object Utilities {
   }
 
   /** Utility to get the default semantics for dataflow queries
+    * @return
     */
   def getDefaultSemantics: Semantics = {
     val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("")))
+    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("\n")))
+  }
+
+  /** Utility to get the semantics (default + custom) using cpg for dataflow queries
+    * @param cpg
+    *   \- cpg for adding customSemantics
+    * @return
+    */
+  def getSemantics(cpg: Cpg): Semantics = {
+    val semanticsFilename = Source.fromResource("default.semantics")
+
+    val defaultSemantics = semanticsFilename.getLines().toList
+    val customLeakageSemantics = cpg.call
+      .where(_.tag.nameExact(Constants.id).value("Leakages.*"))
+      .methodFullName
+      .dedup
+      .l
+      .map(generateCustomLeakageSemantic)
+    val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
+    val finalSemantics =
+      (defaultSemantics ++ customLeakageSemantics ++ semanticFromConfig).mkString("\n")
+    logger.debug("Final Semantics");
+    finalSemantics.split("\n").foreach(logger.debug)
+    Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
   /** Utility to filter rules by catLevelOne
@@ -166,7 +191,7 @@ object Utilities {
     * @param filePath
     * @return
     */
-  def isFileProcessable(filePath: String) = {
+  def isFileProcessable(filePath: String): Boolean = {
     RuleCache.getRule.exclusions
       .flatMap(exclusionRule => {
         exclusionRule.patterns.headOption match {
@@ -186,7 +211,7 @@ object Utilities {
     * @param extension
     * @return
     */
-  def getAllFilesRecursively(folderPath: String, extensions: Set[String]) = {
+  def getAllFilesRecursively(folderPath: String, extensions: Set[String]): Option[List[String]] = {
     try {
       if (File(folderPath).isDirectory)
         Some(SourceFiles.determine(Set(folderPath), extensions).filter(isFileProcessable))
@@ -205,7 +230,33 @@ object Utilities {
     * @return
     *   the SHA256 hash for the value
     */
-  def getSHA256Hash(value: String) =
+  def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
+  /** Generate custom leakage semantics based on the number of parameter in method signature
+    * @param methodName
+    *   \- complete signature of method
+    * @return
+    *   \- semantic string
+    */
+  private def generateCustomLeakageSemantic(methodName: String) = {
+    val parameterNumber    = methodName.count(_.equals(','))
+    var parameterSemantics = ""
+    for (i <- 1 to (parameterNumber + 1))
+      parameterSemantics += s"$i->-1 "
+    "\"" + methodName + "\" " + parameterSemantics.trim
+  }
+
+  /** Generate Semantic string based on input Semantic
+    * @param semantic
+    *   \- semantic object containing semantic information
+    * @return
+    */
+  private def generateSemantic(semantic: Semantic) = {
+    if (semantic.signature.nonEmpty) {
+      val generatedSemantic = "\"" + semantic.signature.trim + "\" " + semantic.flow
+      Some(generatedSemantic.trim)
+    } else
+      None
+  }
 }

@@ -23,7 +23,8 @@
 package ai.privado.threatEngine
 
 import ai.privado.cache.AppCache
-import ai.privado.model.{PolicyOrThreat, PolicyViolationFlowModel}
+import ai.privado.model.exporter.ViolationDataFlowModel
+import ai.privado.model.PolicyOrThreat
 import ai.privado.policyEngine.PolicyExecutor
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -47,7 +48,7 @@ object DataLeakageToNotifications {
     threat: PolicyOrThreat,
     cpg: Cpg,
     dataflows: Map[String, Path]
-  ): Try[(Boolean, List[PolicyViolationFlowModel])] = Try {
+  ): Try[(Boolean, List[ViolationDataFlowModel])] = Try {
     // use policy executor to directly process existing flows (we have rule for notifications)
     // we already have this implementation as part of policy enforcement
     // threat being type of suggestive policy

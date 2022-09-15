@@ -24,7 +24,13 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants
+import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.exporter.SourceEncoderDecoder._
+import ai.privado.model.exporter.DataFlowEncoderDecoder._
+import ai.privado.model.exporter.ViolationEncoderDecoder._
+import ai.privado.model.exporter.CollectionEncoderDecoder._
+import ai.privado.model.exporter.DataFlowSubCategoryModel
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.circe._
 import io.circe.syntax._
@@ -62,8 +68,10 @@ object JSONExporter {
       output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
-      output.addOne(Constants.sources       -> sourceExporter.getSources.asJson)
-      output.addOne(Constants.processing    -> sourceExporter.getProcessing.asJson)
+      val sources = sourceExporter.getSources
+      output.addOne(Constants.sources -> sources.asJson)
+      val processing = sourceExporter.getProcessing
+      output.addOne(Constants.processing -> processing.asJson)
       logger.info("Completed Source Exporting")
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
@@ -73,38 +81,45 @@ object JSONExporter {
         sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
       })
 
-      val dataflowsOutput = mutable.LinkedHashMap[String, Json]()
+      val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
       sinkSubCategories.foreach(sinkSubTypeEntry => {
         dataflowsOutput.addOne(
-          sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).asJson
+          sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).toList
         )
       })
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
-      output.addOne(Constants.collections -> collectionExporter.getCollections.asJson)
+      val collections = collectionExporter.getCollections
+      output.addOne(Constants.collections -> collections.asJson)
       logger.info("Completed Collections Exporting")
 
       val violations = policyAndThreatExporter.getViolations(repoPath)
       output.addOne("violations" -> violations.asJson)
-      MetricHandler.metricsData("policyViolations") = Json.fromInt(violations.size)
-      violations.foreach(mapEntry => {
-        mapEntry("policyId").asString match {
-          case Some(value) =>
-            MetricHandler.internalPoliciesOrThreatsMatched.addOne(value)
-          case _ => ()
-        }
+      MetricHandler.metricsData("policyViolations") = violations.size.asJson
+      violations.foreach(violation => {
+        MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
       })
 
       logger.info("Completed exporting policy violations")
-      File(repoPath + "/.privado").createDirectoryIfNotExists()
-      val f = File(repoPath + "/.privado/" + outputFileName + ".json")
+      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
+
+      // Compliance Violations
+      val complianceViolations = violations.filter(violation =>
+        violation.policyDetails match {
+          case Some(policyDetail) => policyDetail.policyType.equals(PolicyThreatType.COMPLIANCE.toString)
+          case None               => false
+        }
+      )
+      ConsoleExporter.exportConsoleSummary(dataflowsOutput, sources, processing, collections, complianceViolations.size)
+
       try {
-        MetricHandler.metricsData("repoSize (in KB)") = Json.fromBigInt(
+        MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
           FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
         )
       } catch {
@@ -112,15 +127,14 @@ object JSONExporter {
           logger.error("Error fetching the size of repo")
           logger.debug("Error in getting size of repo ", e)
       }
-      MetricHandler.metricsData("fileSize (in KB)") = Json.fromLong(f.size / 1024)
+      MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(f.size / 1024)
       Right(())
 
     } catch {
-      case ex: Exception => {
+      case ex: Exception =>
         println("Failed to export output")
         logger.debug("Failed to export output", ex)
         Left(ex.toString)
-      }
     }
   }
 

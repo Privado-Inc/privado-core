@@ -22,8 +22,9 @@
 
 package ai.privado.policyEngine
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat, PolicyViolationFlowModel}
+import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.model.exporter.ViolationDataFlowModel
+import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
@@ -31,7 +32,6 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -39,15 +39,15 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val ALL_MATCH_REGEX = "**"
-  val actionMap       = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
-  lazy val policies   = RuleCache.getAllPolicy.filter(policy => filterByRepoName(policy, repoName))
+  val ALL_MATCH_REGEX                             = "**"
+  val actionMap: Map[PolicyAction.Value, Boolean] = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
+  lazy val policies: List[PolicyOrThreat] = RuleCache.getAllPolicy.filter(policy => filterByRepoName(policy, repoName))
 
   // Map to contain sourceId -> List(pathIds)
-  lazy val dataflowSourceIdMap = getDataflowBySourceIdMapping
+  lazy val dataflowSourceIdMap: Map[String, List[String]] = getDataflowBySourceIdMapping
 
   // Map to contain sinkId -> List(pathIds)
-  lazy val dataflowSinkIdMap = getDataflowBySinkIdMapping
+  lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
   /** Processes Processing style of policy and returns affected SourceIds
     */
@@ -61,7 +61,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
 
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
-  def getDataflowViolations: Map[String, ListBuffer[PolicyViolationFlowModel]] = {
+  def getDataflowViolations: Map[String, ListBuffer[ViolationDataFlowModel]] = {
 
     val dataflowResult = policies
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
@@ -69,15 +69,15 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
     dataflowResult
   }
 
-  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): ListBuffer[PolicyViolationFlowModel] = {
-    val violatingFlowList = ListBuffer[PolicyViolationFlowModel]()
+  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): ListBuffer[ViolationDataFlowModel] = {
+    val violatingFlowList = ListBuffer[ViolationDataFlowModel]()
     val sourceMatchingIds = getSourcesMatchingRegex(policy)
     val sinksMatchingIds  = getSinksMatchingRegex(policy)
     sourceMatchingIds.foreach(sourceId => {
       sinksMatchingIds.foreach(sinkId => {
         val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
         if (intersectingPathIds.nonEmpty)
-          violatingFlowList.append(PolicyViolationFlowModel(sourceId, sinkId, intersectingPathIds.toList))
+          violatingFlowList.append(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
       })
     })
     violatingFlowList
@@ -96,39 +96,11 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
   }
 
   private def getDataflowBySourceIdMapping = {
-    val dataflowSourceIdMap = mutable.HashMap[String, ListBuffer[String]]()
-    dataflowMap.foreach(entrySet => {
-      def addToMap(sourceId: String) = {
-        if (!dataflowSourceIdMap.contains(sourceId))
-          dataflowSourceIdMap(sourceId) = ListBuffer[String]()
-        dataflowSourceIdMap(sourceId).append(entrySet._1)
-      }
-      try {
-        val source = entrySet._2.elements.head
-        source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-      } catch {
-        case e: Exception => logger.debug("Exception : ", e)
-      }
-
-    })
-    dataflowSourceIdMap
+    DataFlowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getDataflowBySinkIdMapping = {
-    val dataflowSinkIdMap = mutable.HashMap[String, ListBuffer[String]]()
-    dataflowMap.foreach(entrySet => {
-      entrySet._2.elements.last.tag
-        .nameExact(Constants.id)
-        .value
-        .l
-        .foreach(sinkId => {
-          if (!dataflowSinkIdMap.contains(sinkId))
-            dataflowSinkIdMap(sinkId) = ListBuffer[String]()
-          dataflowSinkIdMap(sinkId).append(entrySet._1)
-        })
-    })
-    dataflowSinkIdMap
+    DataFlowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {

@@ -23,11 +23,10 @@
 package ai.privado.threatEngine
 
 import ai.privado.cache.AppCache
-import io.circe.Json
+import ai.privado.model.exporter.ViolationDataFlowModel
 import ai.privado.policyEngine.PolicyExecutor
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.model.{Constants, PolicyOrThreat, PolicyViolationFlowModel}
-import io.shiftleft.semanticcpg.language._
+import ai.privado.model.PolicyOrThreat
 import io.joern.dataflowengineoss.language.Path
 import org.slf4j.LoggerFactory
 
@@ -49,7 +48,7 @@ object DataLeakageToLogs {
     threat: PolicyOrThreat,
     cpg: Cpg,
     dataflows: Map[String, Path]
-  ): Try[(Boolean, List[PolicyViolationFlowModel])] = Try {
+  ): Try[(Boolean, List[ViolationDataFlowModel])] = Try {
     // use policy executor to directly process existing flows
     // we already have this implementation as part of policy enforcement
     // threat being type of suggestive policy

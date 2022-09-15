@@ -26,53 +26,54 @@ import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode, Tag}
 import io.shiftleft.semanticcpg.language._
-import io.circe._
-import io.circe.syntax._
 
-import scala.collection.mutable.{HashMap, LinkedHashMap, Set}
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.semantic.Language.finder
 import overflowdb.traversal.Traversal
 
+import scala.collection.mutable
+
 class SourceExporter(cpg: Cpg) {
 
-  lazy val sourcesTagList = getSourcesTagList
-  lazy val sourcesList    = getSourcesList
+  lazy val sourcesTagList: List[List[Tag]] = getSourcesTagList
+  lazy val sourcesList: List[CfgNode]      = getSourcesList
 
   /** Fetch and Convert sources to desired output
     */
-  def getSources = {
+  def getSources: List[SourceModel] = {
     convertSourcesList(sourcesTagList)
   }
 
-  def getProcessing = {
+  def getProcessing: List[SourceProcessingModel] = {
 
-    val processingMap = HashMap[String, Set[CfgNode]]()
+    val processingMap = mutable.HashMap[String, mutable.Set[CfgNode]]()
     sourcesList.foreach(source => {
       def addToMap(sourceId: String): Unit = {
         if (processingMap.contains(sourceId)) {
           processingMap(sourceId) = processingMap(sourceId).addOne(source)
         } else {
-          processingMap.addOne(sourceId -> Set(source))
+          processingMap.addOne(sourceId -> mutable.Set(source))
         }
       }
       source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
       source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
     })
-    processingMap.map(entrySet =>
-      LinkedHashMap[String, Json](
-        Constants.sourceId -> entrySet._1.asJson,
-        Constants.occurrences -> ExporterUtility
-          .convertPathElements({
-            if (ScanProcessor.config.disableDeDuplication)
-              entrySet._2.toList
-            else
-              entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
-          })
-          .asJson
+    processingMap
+      .map(entrySet =>
+        SourceProcessingModel(
+          entrySet._1,
+          ExporterUtility
+            .convertPathElements({
+              if (ScanProcessor.config.disableDeDuplication)
+                entrySet._2.toList
+              else
+                entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
+            })
+        )
       )
-    )
+      .toList
   }
 
   /** Fetch all the sources tag
@@ -122,11 +123,20 @@ class SourceExporter(cpg: Cpg) {
 
   private def convertSourcesList(sources: List[List[Tag]]) = {
     def convertSource(sourceId: String) = {
-      val orderedSourceMap = new LinkedHashMap[String, Json]()
       RuleCache.getRuleInfo(sourceId) match {
         case Some(rule) =>
-          orderedSourceMap.addOne(Constants.sourceType -> rule.catLevelOne.label.asJson)
-          Some(orderedSourceMap ++ ExporterUtility.getRuleInfoForExporting(sourceId))
+          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sourceId)
+          Some(
+            SourceModel(
+              rule.catLevelOne.label,
+              ruleInfoExporterModel.id,
+              ruleInfoExporterModel.name,
+              ruleInfoExporterModel.category,
+              ruleInfoExporterModel.sensitivity,
+              ruleInfoExporterModel.isSensitive,
+              ruleInfoExporterModel.tags
+            )
+          )
         case None => // not found anything, probably derived source
           None
       }
@@ -147,6 +157,7 @@ class SourceExporter(cpg: Cpg) {
       .filter(_.nonEmpty)
       .toSet
       .flatMap(source => convertSource(source))
+      .toList
   }
 
 }
