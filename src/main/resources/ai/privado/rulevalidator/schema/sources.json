@@ -1,0 +1,111 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/sources.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "sources"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "sources": {
+      "$id": "#root/sources",
+      "title": "Sources",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/sources/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "category",
+          "isSensitive",
+          "sensitivity",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "message": {
+          "additionalProperties": "Extra fields are not allowed"
+        },
+        "properties": {
+          "id": {
+            "$id": "#root/sources/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Data.Sensitive.AccountData.AccountID"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/sources/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Account ID"
+            ],
+            "pattern": "^.*$"
+          },
+          "category": {
+            "$id": "#root/sources/items/category",
+            "title": "Category",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Account Data"
+            ],
+            "pattern": "^.*$"
+          },
+          "isSensitive": {
+            "$id": "#root/sources/items/isSensitive",
+            "title": "IsSensitive",
+            "type": "boolean",
+            "examples": [
+              false
+            ],
+            "default": false
+          },
+          "sensitivity": {
+            "$id": "#root/sources/items/sensitivity",
+            "title": "Sensitivity",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "medium"
+            ],
+            "pattern": "^(high|medium|low)$"
+          },
+          "patterns": {
+            "$id": "#root/sources/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/sources/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                "(?i)(.*source_name.*)"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "tags": {
+            "$id": "#root/sources/items/tags",
+            "title": "Tags",
+            "type": ["object", "null"]
+          }
+
+        }
+      }
+
+    }
+  }
+}

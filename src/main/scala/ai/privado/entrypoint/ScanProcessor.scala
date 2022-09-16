@@ -29,6 +29,7 @@ import ai.privado.model._
 import ai.privado.passes.config.PropertiesFilePass
 import ai.privado.semantic.Language._
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -46,8 +47,19 @@ import scala.util.{Failure, Success, Try}
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  def getEmptyConfigAndRule: ConfigAndRules =
+    ConfigAndRules(
+      List[RuleInfo](),
+      List[RuleInfo](),
+      List[RuleInfo](),
+      List[PolicyOrThreat](),
+      List[PolicyOrThreat](),
+      List[RuleInfo](),
+      List[Semantic]()
+    )
+
   def parseRules(rulesPath: String): ConfigAndRules = {
-    logger.trace(s"parsing rules from -> '${rulesPath}'")
+    logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
@@ -61,11 +73,15 @@ object ScanProcessor extends CommandProcessor {
     val parsedRules =
       try
         ir.listRecursively
-          .filter(f => f.extension == Some(".yaml") || f.extension == Some(".YAML"))
+          .filter(f =>
+            ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
+              f.extension(toLowerCase = true).toString.contains(".yml")) &&
+              YamlFileValidator.isValidRuleFile(f, ir))
+          )
           .map(file => {
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
             val fullPath = file.pathAsString
-            logger.trace(s"parsing -> '${fullPath}'")
+            logger.trace(s"parsing -> '$fullPath'")
             // e.g. relPath = rules/sources/accounts
             val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
             val pathTree = relPath.split("/")
@@ -126,31 +142,15 @@ object ScanProcessor extends CommandProcessor {
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
                     logger.error("ERROR : " + error)
-                    ConfigAndRules(
-                      List[RuleInfo](),
-                      List[RuleInfo](),
-                      List[RuleInfo](),
-                      List[PolicyOrThreat](),
-                      List[PolicyOrThreat](),
-                      List[RuleInfo](),
-                      List[Semantic]()
-                    )
+                    getEmptyConfigAndRule
                 }
               case Left(error) =>
                 logger.error("Error while parsing this file -> '" + fullPath)
                 logger.error("ERROR : " + error)
-                ConfigAndRules(
-                  List[RuleInfo](),
-                  List[RuleInfo](),
-                  List[RuleInfo](),
-                  List[PolicyOrThreat](),
-                  List[PolicyOrThreat](),
-                  List[RuleInfo](),
-                  List[Semantic]()
-                )
+                getEmptyConfigAndRule
             }
           })
-          .reduce((a, b) =>
+          .foldLeft(getEmptyConfigAndRule)((a, b) =>
             a.copy(
               sources = a.sources ++ b.sources,
               sinks = a.sinks ++ b.sinks,
@@ -171,16 +171,7 @@ object ScanProcessor extends CommandProcessor {
   }
 
   def processRules(): ConfigAndRules = {
-    var internalConfigAndRules =
-      ConfigAndRules(
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[PolicyOrThreat](),
-        List[PolicyOrThreat](),
-        List[RuleInfo](),
-        List[Semantic]()
-      )
+    var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head)
       RuleCache.setInternalRules(internalConfigAndRules)
@@ -193,16 +184,7 @@ object ScanProcessor extends CommandProcessor {
       }
       println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
     }
-    var externalConfigAndRules =
-      ConfigAndRules(
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[RuleInfo](),
-        List[PolicyOrThreat](),
-        List[PolicyOrThreat](),
-        List[RuleInfo](),
-        List[Semantic]()
-      )
+    var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head)
     }
@@ -270,7 +252,7 @@ object ScanProcessor extends CommandProcessor {
           exit(1)
       }
     }
-    sourceLocation.listRecursively.count(f => f.extension == Some(".java") || f.extension == Some(".JAVA")) > 0
+    sourceLocation.listRecursively.count(f => f.extension(toLowerCase = true).toString.contains(".java")) > 0
   }
   def processCPG(processedRules: ConfigAndRules): Either[String, Unit] = {
     val sourceRepoLocation = config.sourceLocation.head

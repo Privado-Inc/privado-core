@@ -1,0 +1,163 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/policies.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "policies"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "policies": {
+      "$id": "#root/policies",
+      "title": "Policies",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/policies/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "action",
+          "dataFlow",
+          "repositories"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/policies/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy.Deny.Sharing.ContactToSlack"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/policies/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Restrict contact data sharing with Slack"
+            ],
+            "pattern": "^.*$"
+          },
+          "description": {
+            "$id": "#root/policies/items/description",
+            "title": "Description",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": "^.*$"
+          },
+          "action": {
+            "$id": "#root/policies/items/action",
+            "title": "Action",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Deny"
+            ],
+            "pattern": "^(Allow|Deny)$"
+          },
+          "dataFlow": {
+            "$id": "#root/policies/items/dataFlow",
+            "title": "Dataflow",
+            "type": "object",
+            "required": [
+              "sources"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "sources": {
+                "$id": "#root/policies/items/dataFlow/sources",
+                "title": "Sources",
+                "type": "array",
+                "default": [],
+                "items":{
+                  "$id": "#root/policies/items/dataFlow/sources/items",
+                  "title": "Items",
+                  "type": "string",
+                  "format": "regex",
+                  "default": "",
+                  "examples": [
+                    "Data.Sensitive.ContactData.*"
+                  ],
+                  "pattern": "^.*$"
+                }
+              },
+              "sinks": {
+                "$id": "#root/policies/items/dataFlow/sinks",
+                "title": "Sinks",
+                "type": "array",
+                "default": [],
+                "items":{
+                  "$id": "#root/policies/items/dataFlow/sinks/items",
+                  "title": "Items",
+                  "type": "string",
+                  "format": "regex",
+                  "default": "",
+                  "examples": [
+                    "Data.Sharing.Slack"
+                  ],
+                  "pattern": "^.*$"
+                }
+              }
+            }
+          },
+          "repositories": {
+            "$id": "#root/policies/items/repositories",
+            "title": "Repositories",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/policies/items/repositories/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                "privado-messaging-**"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "tags": {
+            "$id": "#root/collections/items/tags",
+            "title": "Tags",
+            "type": ["object", "null"],
+            "default": null
+          },
+          "type": {
+            "$id": "#root/policies/items/type",
+            "title": "Type",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": "^Compliance$"
+          },
+          "fix": {
+            "$id": "#root/policies/items/fix",
+            "title": "Fix",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Policy to restrict Contact Information being shared with Slack"
+            ],
+            "pattern": "^.*$"
+          }
+        }
+      }
+
+    }
+  }
+}

@@ -80,4 +80,8 @@ object Constants {
   val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
 
+  // Other commonly used constants
+  val RULES_DIR_IN_CONFIG           = "rules"
+  val PRETTY_LINE_SEPARATOR: String = "-" * 100
+
 }
