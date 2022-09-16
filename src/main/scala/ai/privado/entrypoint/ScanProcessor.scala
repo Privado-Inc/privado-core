@@ -327,12 +327,12 @@ object ScanProcessor extends CommandProcessor {
   private def createJavaCpg(sourceRepoLocation: String, lang: String): Try[codepropertygraph.Cpg] = {
     MetricHandler.metricsData("language") = Json.fromString(lang)
     println(s"Processing source code using ${Languages.JAVASRC} engine")
-    if (!config.skipDownladDependencies)
+    if (!config.skipDownloadDependencies)
       println("Downloading dependencies and Parsing source code...")
     else
       println("Parsing source code...")
     val cpgconfig =
-      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownladDependencies)
+      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     JavaSrc2Cpg().createCpg(cpgconfig)
   }
 
