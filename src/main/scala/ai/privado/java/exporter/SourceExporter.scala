@@ -33,7 +33,6 @@ import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import overflowdb.traversal.Traversal
 import ai.privado.semantic.Language.finder
 
-
 import scala.collection.mutable
 
 class SourceExporter(cpg: Cpg) {

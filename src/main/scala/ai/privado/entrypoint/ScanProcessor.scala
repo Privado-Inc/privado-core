@@ -210,8 +210,6 @@ object ScanProcessor extends CommandProcessor {
         semantics = semantics.distinctBy(_.signature)
       )
     logger.trace(mergedRules.toString)
-    logger.info("Caching rules")
-    RuleCache.setRule(mergedRules)
     println("Configuration parsed...")
 
     RuleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))

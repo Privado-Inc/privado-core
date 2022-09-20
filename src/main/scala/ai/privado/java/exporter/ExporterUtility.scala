@@ -29,7 +29,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.semanticcpg.language.toExtendedNode
 import ai.privado.semantic.Language.finder
 
-
 object ExporterUtility {
 
   /** Convert List of path element schema object

@@ -22,14 +22,15 @@
 
 package ai.privado.java.processor
 
-import ai.privado.cache.AppCache
-import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.ScanProcessor.{config, logger}
 import ai.privado.java.exporter.JSONExporter
 import ai.privado.java.passes.config.PropertiesFilePass
 import ai.privado.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.utility.Utilities.filterRuleByLanguage
 import io.circe.Json
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.joerncli.DefaultOverlays
@@ -44,7 +45,11 @@ object Processor {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private def processCPG(xtocpg: Try[codepropertygraph.Cpg], processedRules: ConfigAndRules, sourceRepoLocation: String): Either[String, Unit] = {
+  private def processCPG(
+    xtocpg: Try[codepropertygraph.Cpg],
+    processedRules: ConfigAndRules,
+    sourceRepoLocation: String
+  ): Either[String, Unit] = {
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
     println("Guessing source code language...")
@@ -88,11 +93,15 @@ object Processor {
   }
 
   /** Create cpg using Java Language
-   * @param sourceRepoLocation
-   * @param lang
-   * @return
-   */
+    *
+    * @param sourceRepoLocation
+    * @param lang
+    * @return
+    */
   def createJavaCpg(processedRules: ConfigAndRules, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+    logger.info("Caching rules")
+    val javaRules = filterRuleByLanguage(processedRules, Language.JAVA)
+    RuleCache.setRule(javaRules)
     MetricHandler.metricsData("language") = Json.fromString(lang)
     println(s"Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
@@ -102,8 +111,7 @@ object Processor {
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val xtocpg = JavaSrc2Cpg().createCpg(cpgconfig)
-    processCPG(xtocpg, processedRules, sourceRepoLocation)
+    processCPG(xtocpg, javaRules, sourceRepoLocation)
   }
-
 
 }
