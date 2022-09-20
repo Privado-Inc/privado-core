@@ -20,12 +20,15 @@
  * For more information, contact support@privado.ai
  */
 
-package ai.privado.semantic
+package ai.privado.java.semantic
 
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import ai.privado.java.dataflow.Dataflow
+import ai.privado.java.tagger.PrivadoTagger
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 object Language {
 
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
+  implicit def tagger(cpg: Cpg): PrivadoTagger     = new PrivadoTagger(cpg)
+  implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
 
 }

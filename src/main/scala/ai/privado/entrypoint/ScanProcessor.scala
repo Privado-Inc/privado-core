@@ -23,26 +23,19 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
-import ai.privado.exporter.JSONExporter
+import ai.privado.java.processor.Processor
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
-import ai.privado.passes.config.PropertiesFilePass
-import ai.privado.semantic.Language._
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
 import io.circe.yaml.parser
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.joerncli.DefaultOverlays
-import io.shiftleft.codepropertygraph
+import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.sys.exit
-import scala.util.{Failure, Success, Try}
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -238,7 +231,33 @@ object ScanProcessor extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
     println(s"Privado Core Version: ${Environment.privadoVersionCore}")
-    processCPG(processRules())
+    processCpg(processRules())
+  }
+
+  private def processCpg(processedRules: ConfigAndRules) = {
+    val sourceRepoLocation = config.sourceLocation.head
+    guessLanguage(sourceRepoLocation) match {
+      case Some(lang) =>
+        lang match {
+          case language if language == Languages.JAVASRC || language == Languages.JAVA =>
+            println(s"Detected language 'Java'")
+            Processor.createJavaCpg(processedRules, sourceRepoLocation, language)
+          case _ =>
+            if (checkJavaSourceCodePresent(sourceRepoLocation)) {
+              println(s"We detected presence of 'Java' code base along with other major language code base '${lang}'.")
+              println(s"However we only support 'Java' code base scanning as of now.")
+              Processor.createJavaCpg(processedRules, sourceRepoLocation, lang)
+            } else {
+              println(s"As of now we only support privacy code scanning for 'Java' code base.")
+              println(s"We detected this code base of '${lang}'.")
+              exit(1)
+            }
+        }
+      case _ =>
+        logger.error("Unable to detect language! Is it supported yet?")
+        Left("Unable to detect language!")
+    }
+
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {
@@ -253,87 +272,6 @@ object ScanProcessor extends CommandProcessor {
       }
     }
     sourceLocation.listRecursively.count(f => f.extension(toLowerCase = true).toString.contains(".java")) > 0
-  }
-  def processCPG(processedRules: ConfigAndRules): Either[String, Unit] = {
-    val sourceRepoLocation = config.sourceLocation.head
-    // Setting up the application cache
-    AppCache.init(sourceRepoLocation)
-    import io.joern.console.cpgcreation.guessLanguage
-    println("Guessing source code language...")
-    val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(lang) =>
-        if (!(lang == Languages.JAVASRC || lang == Languages.JAVA)) {
-          if (checkJavaSourceCodePresent(sourceRepoLocation)) {
-            println(s"We detected presence of 'Java' code base along with other major language code base '${lang}'.")
-            println(s"However we only support 'Java' code base scanning as of now.")
-          } else {
-            println(s"As of now we only support privacy code scanning for 'Java' code base.")
-            println(s"We detected this code base of '${lang}'.")
-            exit(1)
-          }
-        } else {
-          println(s"Detected language 'Java' ")
-        }
-        createJavaCpg(sourceRepoLocation, lang)
-      case _ => {
-        logger.error("Unable to detect language! Is it supported yet?")
-        Failure(new RuntimeException("Unable to detect language!"))
-      }
-    }
-    xtocpg match {
-      case Success(cpgWithoutDataflow) => {
-        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
-        logger.info("Applying default overlays")
-        cpgWithoutDataflow.close()
-        val cpg = DefaultOverlays.create("cpg.bin")
-        logger.info("=====================")
-
-        // Run tagger
-        println("Tagging source code with rules...")
-        cpg.runTagger(processedRules)
-        println("Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow
-
-        println("Brewing result...")
-        MetricHandler.setScanStatus(true)
-        // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-          case Left(err) =>
-            MetricHandler.otherErrorsOrWarnings.addOne(err)
-            Left(err)
-          case Right(_) =>
-            println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
-            logger.debug(
-              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-            )
-            Right(())
-        }
-      }
-
-      case Failure(exception) => {
-        logger.error("Error while parsing the source code!")
-        logger.debug("Error : ", exception)
-        MetricHandler.setScanStatus(false)
-        Left("Error while parsing the source code: " + exception.toString)
-      }
-    }
-  }
-
-  /** Create cpg using Java Language
-    * @param sourceRepoLocation
-    * @param lang
-    * @return
-    */
-  private def createJavaCpg(sourceRepoLocation: String, lang: String): Try[codepropertygraph.Cpg] = {
-    MetricHandler.metricsData("language") = Json.fromString(lang)
-    println(s"Processing source code using ${Languages.JAVASRC} engine")
-    if (!config.skipDownloadDependencies)
-      println("Downloading dependencies and Parsing source code...")
-    else
-      println("Parsing source code...")
-    val cpgconfig =
-      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
-    JavaSrc2Cpg().createCpg(cpgconfig)
   }
 
   override var config: PrivadoInput = _

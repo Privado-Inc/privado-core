@@ -22,13 +22,14 @@
 
 package ai.privado.passes.config
 
+import ai.privado.java.language._
+import ai.privado.java.passes.config.PropertiesFilePass
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
-import ai.privado.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty, Literal, MethodParameterIn}
 
