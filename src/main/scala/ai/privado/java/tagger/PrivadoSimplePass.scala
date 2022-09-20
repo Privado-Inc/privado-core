@@ -20,12 +20,32 @@
  * For more information, contact support@privado.ai
  */
 
-package ai.privado.semantic
+package ai.privado.java.tagger
 
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import ai.privado.cache.RuleCache
+import ai.privado.metric.MetricHandler
+import ai.privado.model.RuleInfo
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.SimpleCpgPass
+import org.slf4j.LoggerFactory
 
-object Language {
+abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
-  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
+  var ruleInfo: RuleInfo = null
+  val logger             = LoggerFactory.getLogger(getClass)
+
+  /** Helper function to set the rule and apply the pass
+    */
+  def setRuleAndApply(ruleInfo: RuleInfo) = {
+    try {
+      this.ruleInfo = ruleInfo
+      this.createAndApply()
+    } catch {
+      case ex: Exception => {
+        logger.error("Exception executing pass")
+        MetricHandler.scanProcessErrors.addOne(ex.toString)
+      }
+    }
+  }
 
 }

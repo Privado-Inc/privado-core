@@ -26,7 +26,6 @@ import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Semantic
-import ai.privado.semantic.Language._
 import ai.privado.model.{Constants, RuleInfo}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
@@ -42,6 +41,8 @@ import java.nio.file.Paths
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
 import io.shiftleft.semanticcpg.language._
+import ai.privado.semantic.Language.finder
+
 
 import java.math.BigInteger
 import java.security.MessageDigest
