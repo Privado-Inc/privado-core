@@ -87,6 +87,9 @@ object JavascriptProcessor {
             println(s"size of code : ${codelist.size}")
             codelist.foreach(println)
             println("Above we printed methodFullName")
+
+            cpg.tag.map(t => (t.name, t.value)).foreach(println)
+
             Right(())
         }
       }
