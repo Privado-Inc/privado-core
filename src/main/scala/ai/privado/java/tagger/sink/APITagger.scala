@@ -24,7 +24,7 @@ package ai.privado.java.tagger.sink
 
 import ai.privado.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.Constants
-import ai.privado.java.tagger.PrivadoSimplePass
+import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language._

@@ -20,14 +20,14 @@
  * For more information, contact support@privado.ai
  */
 
-package ai.privado.java.tagger.source
+package ai.privado.tagger.source
 
 import ai.privado.model.InternalTag
-import ai.privado.java.tagger.PrivadoSimplePass
+import ai.privado.tagger.PrivadoSimplePass
+import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
-import ai.privado.utility.Utilities._
 
 class LiteralTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
