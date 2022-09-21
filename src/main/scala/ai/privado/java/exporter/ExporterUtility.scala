@@ -65,8 +65,8 @@ object ExporterUtility {
       None
     else
      */
-    //TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
-      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
+    // TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
+    Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
   }
 
   def getRuleInfoForExporting(ruleId: String): RuleInfo = {

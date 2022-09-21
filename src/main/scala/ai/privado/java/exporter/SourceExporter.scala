@@ -70,8 +70,8 @@ class SourceExporter(cpg: Cpg) {
                 entrySet._2.toList
               else
                 entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber)
-                  //.distinctBy(_.location.filename)
-              //TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
+              // .distinctBy(_.location.filename)
+              // TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
             })
         )
       )
