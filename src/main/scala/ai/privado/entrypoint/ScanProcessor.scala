@@ -23,7 +23,9 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
-import ai.privado.java.processor.Processor
+import ai.privado.java.processor.JavaProcessor.logger
+import ai.privado.java.processor.JavaProcessor
+import ai.privado.javascript.processor.JavascriptProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.rulevalidator.YamlFileValidator
@@ -51,7 +53,7 @@ object ScanProcessor extends CommandProcessor {
       List[Semantic]()
     )
 
-  def parseRules(rulesPath: String): ConfigAndRules = {
+  def parseRules(rulesPath: String, lang: String): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
@@ -63,6 +65,15 @@ object ScanProcessor extends CommandProcessor {
           exit(1)
       }
     }
+    val langToFilter = lang match {
+      case Languages.JAVASRC => Language.JAVA
+      case Languages.JSSRC   => Language.JAVASCRIPT
+      case _                 => Language.JAVA
+    }
+    def filterByLang(rule: RuleInfo): Boolean =
+      rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+    def filterSemanticByLang(rule: Semantic): Boolean =
+      rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
         ir.listRecursively
@@ -93,6 +104,7 @@ object ScanProcessor extends CommandProcessor {
                       ),
                       sources = configAndRules.sources
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(filterByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -103,6 +115,7 @@ object ScanProcessor extends CommandProcessor {
                         ),
                       sinks = configAndRules.sinks
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(filterByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -115,6 +128,7 @@ object ScanProcessor extends CommandProcessor {
                         ),
                       collections = configAndRules.collections
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(filterByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -124,13 +138,15 @@ object ScanProcessor extends CommandProcessor {
                           )
                         ),
                       policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree)),
-                      semantics = configAndRules.semantics.map(x =>
-                        x.copy(
-                          file = fullPath,
-                          categoryTree = pathTree,
-                          language = Language.withNameWithDefault(pathTree.last)
+                      semantics = configAndRules.semantics
+                        .filter(filterSemanticByLang)
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last)
+                          )
                         )
-                      )
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -163,10 +179,10 @@ object ScanProcessor extends CommandProcessor {
     parsedRules
   }
 
-  def processRules(): ConfigAndRules = {
+  def processRules(lang: String): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
-      internalConfigAndRules = parseRules(config.internalConfigPath.head)
+      internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
       RuleCache.setInternalRules(internalConfigAndRules)
 
       try {
@@ -179,7 +195,7 @@ object ScanProcessor extends CommandProcessor {
     }
     var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
-      externalConfigAndRules = parseRules(config.externalConfigPath.head)
+      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang)
     }
     /*
      * NOTE: We want to override the external rules over internal in case of duplicates by id.
@@ -229,22 +245,32 @@ object ScanProcessor extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
     println(s"Privado Core Version: ${Environment.privadoVersionCore}")
-    processCpg(processRules())
+    processCpg()
   }
 
-  private def processCpg(processedRules: ConfigAndRules) = {
+  private def processCpg() = {
     val sourceRepoLocation = config.sourceLocation.head
+    // Setting up the application cache
+    AppCache.init(sourceRepoLocation)
+    println("Guessing source code language...")
     guessLanguage(sourceRepoLocation) match {
       case Some(lang) =>
+        MetricHandler.metricsData("language") = Json.fromString(lang)
+        val processedRules = processRules(lang)
+        logger.info("Caching rules")
+        RuleCache.setRule(processedRules)
         lang match {
           case language if language == Languages.JAVASRC || language == Languages.JAVA =>
             println(s"Detected language 'Java'")
-            Processor.createJavaCpg(processedRules, sourceRepoLocation, language)
+            JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
+          case language if language == Languages.JSSRC =>
+            println(s"Detected language 'JavaScript'")
+            JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
           case _ =>
             if (checkJavaSourceCodePresent(sourceRepoLocation)) {
               println(s"We detected presence of 'Java' code base along with other major language code base '${lang}'.")
               println(s"However we only support 'Java' code base scanning as of now.")
-              Processor.createJavaCpg(processedRules, sourceRepoLocation, lang)
+              JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, lang)
             } else {
               println(s"As of now we only support privacy code scanning for 'Java' code base.")
               println(s"We detected this code base of '${lang}'.")

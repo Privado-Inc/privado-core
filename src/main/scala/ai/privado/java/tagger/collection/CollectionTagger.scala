@@ -23,7 +23,7 @@
 package ai.privado.java.tagger.collection
 
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
-import ai.privado.java.tagger.PrivadoSimplePass
+import ai.privado.tagger.PrivadoSimplePass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._

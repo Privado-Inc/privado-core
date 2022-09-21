@@ -28,17 +28,19 @@ import ai.privado.java.feeder.StorageInheritRule
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.java.tagger.collection.CollectionTagger
 import ai.privado.java.tagger.sink.{APITagger, CustomInheritTagger, RegularSinkTagger}
-import ai.privado.java.tagger.source.{IdentifierTagger, LiteralTagger}
+import ai.privado.java.tagger.source.IdentifierTagger
+import ai.privado.tagger.PrivadoBaseTagger
+import ai.privado.tagger.source.LiteralTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-class PrivadoTagger(cpg: Cpg) {
+class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
+  override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
     logger.info("Starting tagging")
     val literalTagger       = new LiteralTagger(cpg)

@@ -20,9 +20,8 @@
  * For more information, contact support@privado.ai
  */
 
-package ai.privado.java.tagger
+package ai.privado.tagger
 
-import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg

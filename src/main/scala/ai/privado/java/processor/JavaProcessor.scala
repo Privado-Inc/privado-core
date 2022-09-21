@@ -41,7 +41,7 @@ import io.shiftleft.semanticcpg.language._
 
 import scala.util.{Failure, Success, Try}
 
-object Processor {
+object JavaProcessor {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -50,9 +50,6 @@ object Processor {
     processedRules: ConfigAndRules,
     sourceRepoLocation: String
   ): Either[String, Unit] = {
-    // Setting up the application cache
-    AppCache.init(sourceRepoLocation)
-    println("Guessing source code language...")
     xtocpg match {
       case Success(cpgWithoutDataflow) => {
         new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
@@ -99,10 +96,7 @@ object Processor {
     * @return
     */
   def createJavaCpg(processedRules: ConfigAndRules, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
-    logger.info("Caching rules")
-    val javaRules = filterRuleByLanguage(processedRules, Language.JAVA)
-    RuleCache.setRule(javaRules)
-    MetricHandler.metricsData("language") = Json.fromString(lang)
+
     println(s"Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
       println("Downloading dependencies and Parsing source code...")
@@ -111,7 +105,7 @@ object Processor {
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val xtocpg = JavaSrc2Cpg().createCpg(cpgconfig)
-    processCPG(xtocpg, javaRules, sourceRepoLocation)
+    processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
 }

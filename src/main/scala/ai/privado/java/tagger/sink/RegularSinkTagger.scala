@@ -22,7 +22,7 @@
 
 package ai.privado.java.tagger.sink
 
-import ai.privado.java.tagger.PrivadoSimplePass
+import ai.privado.tagger.PrivadoSimplePass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
