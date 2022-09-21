@@ -67,7 +67,7 @@ object ScanProcessor extends CommandProcessor {
     }
     val langToFilter = lang match {
       case Languages.JAVASRC => Language.JAVA
-      case Languages.JSSRC   => Language.JAVASCRIPT
+      case Languages.JSSRC  => Language.JAVASCRIPT
       case _                 => Language.JAVA
     }
     def filterByLang(rule: RuleInfo): Boolean =
@@ -101,21 +101,20 @@ object ScanProcessor extends CommandProcessor {
                           categoryTree = pathTree,
                           language = Language.withNameWithDefault(pathTree.last)
                         )
-                      ),
+                      ).filter(filterByLang),
                       sources = configAndRules.sources
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
-                        .filter(filterByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
                             categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
                             nodeType = NodeType.REGULAR
                           )
-                        ),
+                        ).filter(filterByLang),
                       sinks = configAndRules.sinks
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
-                        .filter(filterByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -125,10 +124,9 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last),
                             nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
                           )
-                        ),
+                        ).filter(filterByLang),
                       collections = configAndRules.collections
                         .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
-                        .filter(filterByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -136,17 +134,16 @@ object ScanProcessor extends CommandProcessor {
                             categoryTree = pathTree,
                             nodeType = NodeType.REGULAR
                           )
-                        ),
+                        ).filter(filterByLang),
                       policies = configAndRules.policies.map(x => x.copy(file = fullPath, categoryTree = pathTree)),
                       semantics = configAndRules.semantics
-                        .filter(filterSemanticByLang)
                         .map(x =>
                           x.copy(
                             file = fullPath,
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last)
                           )
-                        )
+                        ).filter(filterSemanticByLang)
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)

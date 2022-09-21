@@ -48,7 +48,7 @@ object ConsoleExporter {
     val sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
 
     // Leakage Number - SourceId Map
-    val leakageSourceMap = dataflowsOutput(Constants.leakages)
+    val leakageSourceMap = dataflowsOutput.getOrElse(Constants.leakages, List[DataFlowSubCategoryModel]())
       .map((leakage) => (leakage.sourceId, leakage.sinks.map(_.paths.size).sum))
       .toMap
 
@@ -70,13 +70,13 @@ object ConsoleExporter {
     })
 
     // Storages - SourceId Map
-    val storageSourceMap = dataflowsOutput(Constants.storages)
+    val storageSourceMap = dataflowsOutput.getOrElse(Constants.storages, List[DataFlowSubCategoryModel]())
       .map(storage => (storage.sourceId, storage.sinks.map(sink => sink.name).toSet))
       .toMap
     val uniqueStorages = storageSourceMap.values.flatten.toSet
 
     // Third Parties - SourceId Map
-    val thirdPartySourceMap = dataflowsOutput(Constants.third_parties)
+    val thirdPartySourceMap = dataflowsOutput.getOrElse(Constants.third_parties, List[DataFlowSubCategoryModel]())
       .map(thirdParty => {
         val thirdParties = mutable.Set[String]()
         thirdParty.sinks.foreach(sink => {
@@ -94,7 +94,7 @@ object ConsoleExporter {
     val uniqueThirdParties = thirdPartySourceMap.values.flatten.toSet
 
     // Internal APIs - SourceId Map
-    val internalAPIsSourceMap = dataflowsOutput(Constants.internal_apis)
+    val internalAPIsSourceMap = dataflowsOutput.getOrElse(Constants.internal_apis, List[DataFlowSubCategoryModel]())
       .map(internalAPI => {
         val internalAPIs = mutable.Set[String]()
         internalAPI.sinks.foreach(sink => {
