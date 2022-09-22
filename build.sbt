@@ -58,7 +58,29 @@ ThisBuild / resolvers ++= Seq(
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots")
 )
+lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
+astGenDlTask := {
+  val astGenDir = baseDirectory.value / "bin" / "astgen"
+  astGenDir.mkdirs()
 
+  Seq("astgen-linux", "astgen-macos", "astgen-win.exe").foreach { fileName =>
+    val dest = astGenDir / fileName
+    if (!dest.exists) {
+      val url = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
+      val downloadedFile = SimpleCache.downloadMaybe(url)
+      IO.copyFile(downloadedFile, dest)
+    }
+  }
+
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
+  distDir.mkdirs()
+  IO.copyDirectory(astGenDir, distDir)
+
+  // permissions are lost during the download; need to set them manually
+  astGenDir.listFiles().foreach(_.setExecutable(true, false))
+  distDir.listFiles().foreach(_.setExecutable(true, false))
+}
+Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false
 
