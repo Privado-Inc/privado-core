@@ -25,7 +25,7 @@ package ai.privado.javascript.tagger
 import ai.privado.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.LiteralTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -41,6 +41,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     logger.info("Starting tagging")
     val literalTagger     = new LiteralTagger(cpg)
     val identifierTagger  = new IdentifierTagger(cpg)
+    val apiTagger         = new APITagger(cpg)
     val regularSinkTagger = new RegularSinkTagger(cpg)
 
     val sourceRules = rules.sources
@@ -52,6 +53,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     rules.sinks
       .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
       .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.API))
+      .foreach(rule => apiTagger.setRuleAndApply(rule))
 
     logger.info("Done with tagging")
 
