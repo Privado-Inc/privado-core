@@ -18,9 +18,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.java.tagger.sink
+package ai.privado.tagger.sink
 
 import ai.privado.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.Constants
@@ -42,7 +43,7 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider)"
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").l
+    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.patterns.head + ")(?:\"|')").l
     val apis                   = cacheCall.name(APISINKS_REGEX).l
     sinkTagger(apiInternalSinkPattern, apis, builder)
     val propertySinks = cpg.property.filter(p => p.value matches (ruleInfo.patterns.head)).usedAt.l

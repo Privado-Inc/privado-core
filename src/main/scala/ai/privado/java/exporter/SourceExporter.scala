@@ -69,7 +69,9 @@ class SourceExporter(cpg: Cpg) {
               if (ScanProcessor.config.disableDeDuplication)
                 entrySet._2.toList
               else
-                entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
+                entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber)
+              // .distinctBy(_.location.filename)
+              // TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
             })
         )
       )
@@ -96,7 +98,7 @@ class SourceExporter(cpg: Cpg) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
-          .l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l
     sources
   }
 
@@ -117,7 +119,7 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l
     sources
   }
 

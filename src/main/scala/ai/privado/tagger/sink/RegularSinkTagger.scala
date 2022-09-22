@@ -18,15 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.java.tagger.sink
+package ai.privado.tagger.sink
 
 import ai.privado.tagger.PrivadoSimplePass
-import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.BatchedUpdate
-import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 
 class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val cacheCall = cpg.call.or(_.nameNot("(<operator|<init).*")).l

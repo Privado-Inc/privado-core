@@ -44,9 +44,9 @@ object ExporterUtility {
     */
   def convertIndividualPathElement(node: CfgNode): Option[DataFlowSubCategoryPathExcerptModel] = {
     val nodeLocation = node.location
-    val sample       = nodeLocation.symbol
+    val sample       = node.code
     val lineNumber: Int = {
-      nodeLocation.lineNumber match {
+      node.lineNumber match {
         case Some(n) => n
         case None    => -1
       }
@@ -58,12 +58,15 @@ object ExporterUtility {
       }
     }
     val fileName = nodeLocation.filename
-    val excerpt  = dump(nodeLocation.filename, node.lineNumber)
+    val excerpt  = dump(fileName, node.lineNumber)
 
+    /*
     if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
       None
     else
-      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
+     */
+    // TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
+    Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
   }
 
   def getRuleInfoForExporting(ruleId: String): RuleInfo = {
