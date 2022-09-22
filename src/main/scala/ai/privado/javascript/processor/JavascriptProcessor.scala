@@ -83,7 +83,7 @@ object JavascriptProcessor {
               .dedup
               .l
             logger.debug(s"size of code : ${codelist.size}")
-            codelist.foreach(println)
+            codelist.foreach(item => logger.debug(item._1, item._2))
             logger.debug("Above we printed methodFullName")
 
             // cpg.tag.map(t => (t.name, t.value)).foreach(println)
