@@ -24,7 +24,7 @@ package ai.privado.javascript.processor
 
 import ai.privado.cache.AppCache
 import ai.privado.java.exporter.JSONExporter
-import ai.privado.javascript.passes.methodfullname.MethodFullName
+import ai.privado.javascript.passes.methodfullname.{MethodFullName, MethodFullNameFromIdentifier}
 import ai.privado.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
@@ -57,6 +57,7 @@ object JavascriptProcessor {
         logger.info("Enhancing Javascript graph")
         logger.debug("Running custom passes")
         new MethodFullName(cpg).createAndApply()
+        new MethodFullNameFromIdentifier(cpg).createAndApply()
         logger.info("=====================")
 
         // Run tagger
