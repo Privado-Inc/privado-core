@@ -36,7 +36,9 @@ import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.shiftleft.codepropertygraph.generated.Operators
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
 object JavascriptProcessor {
@@ -53,7 +55,8 @@ object JavascriptProcessor {
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
-        logger.info("Running custom passes")
+        logger.info("Enhancing Javascript graph")
+        logger.debug("Running custom passes")
         new MethodFullName(cpg).createAndApply()
         logger.info("=====================")
 
@@ -77,18 +80,15 @@ object JavascriptProcessor {
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
             val codelist = cpg.call
-              .where(
-                _.methodFullName
-                  .filterNot(_.matches(".*operator.*"))
-              )
+              .whereNot(_.methodFullName(Operators.ALL.asScala.toSeq: _*))
               .map(item => (item.methodFullName, item.location.filename))
               .dedup
               .l
-            println(s"size of code : ${codelist.size}")
+            logger.debug(s"size of code : ${codelist.size}")
             codelist.foreach(println)
-            println("Above we printed methodFullName")
+            logger.debug("Above we printed methodFullName")
 
-            cpg.tag.map(t => (t.name, t.value)).foreach(println)
+            // cpg.tag.map(t => (t.name, t.value)).foreach(println)
 
             Right(())
         }

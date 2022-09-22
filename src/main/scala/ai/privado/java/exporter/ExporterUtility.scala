@@ -46,7 +46,7 @@ object ExporterUtility {
     val nodeLocation = node.location
     val sample       = node.code
     val lineNumber: Int = {
-      nodeLocation.lineNumber match {
+      node.lineNumber match {
         case Some(n) => n
         case None    => -1
       }
@@ -58,7 +58,7 @@ object ExporterUtility {
       }
     }
     val fileName = nodeLocation.filename
-    val excerpt  = dump(nodeLocation.filename, node.lineNumber)
+    val excerpt  = dump(fileName, node.lineNumber)
 
     /*
     if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")

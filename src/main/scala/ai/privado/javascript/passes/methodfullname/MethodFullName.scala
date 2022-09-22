@@ -23,18 +23,20 @@
 package ai.privado.javascript.passes.methodfullname
 
 import ai.privado.semantic.Language.finder
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
-class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, String)](cpg) {
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-  val cachedCall         = cpg.call.whereNot(_.name(".*operator.*")).l
-  val cachedOperatorCall = cpg.call("<operator>.assignment").l
-  override def generateParts(): Array[(String, String, String)] = {
+class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, String, String)](cpg) {
+
+  val cachedCall         = cpg.call.whereNot(_.name(Operators.ALL.asScala.toSeq: _*)).l
+  val cachedOperatorCall = cpg.call(Operators.assignment).l
+  override def generateParts(): Array[(String, String, String, String)] = {
 
     val requireStyleDependency = cpg.dependency.name
       .flatMap(dependencyName => {
@@ -45,39 +47,58 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
           )
           .argument(1)
           .isIdentifier
-          .map(item => (item.name, dependencyName, item.location.filename))
+          .map(item => (item.name, dependencyName, item.location.filename, "pkg."))
       })
       .toArray
 
     val importStyleDependency = cpg.staticImport
       .map(staticImport =>
-        (staticImport.importedAs.getOrElse(""), staticImport.importedEntity.getOrElse(""), staticImport.file.head.name)
+        (
+          staticImport.importedAs.getOrElse(""),
+          staticImport.importedEntity.getOrElse(""),
+          staticImport.file.head.name,
+          "pkg."
+        )
       )
       .toArray
-    importStyleDependency ++ requireStyleDependency
+
+    val consoleNodes = cpg.file.map(fileName => ("console", "console", fileName.name, "")).toArray
+
+    importStyleDependency ++ requireStyleDependency ++ consoleNodes
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, importedTuple: (String, String, String)): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, importedTuple: (String, String, String, String)): Unit = {
     val importedAs     = importedTuple._1
     val importedEntity = importedTuple._2
     val fileName       = importedTuple._3
+    val packageName    = importedTuple._4
 
     cachedCall
       .filter(_.name.equals(importedAs))
       .filter(_.location.filename.equals(fileName))
-      .foreach(callNode => updateCallNode(builder, callNode, importedAs, importedEntity))
+      .foreach(callNode => updateCallNode(builder, callNode, importedAs, importedEntity, packageName))
 
     cpg
       .identifier(importedAs)
       .filter(_.location.filename.equals(fileName))
       .astParent
       .isCall
-      .nameNot(".*operator.*")
-      .foreach(callNode => updateCallNode(builder, callNode, importedAs, importedEntity))
+      .nameNot(Operators.ALL.asScala.toSeq: _*)
+      .foreach(callNode => updateCallNode(builder, callNode, importedAs, importedEntity, packageName))
 
   }
 
-  private def updateCallNode(builder: DiffGraphBuilder, callNode: Call, importedAs: String, importedEntity: String) = {
-    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, "pkg." + importedEntity + "." + callNode.name)
+  private def updateCallNode(
+    builder: DiffGraphBuilder,
+    callNode: Call,
+    importedAs: String,
+    importedEntity: String,
+    defaultPackageName: String = ""
+  ) = {
+    builder.setNodeProperty(
+      callNode,
+      PropertyNames.MethodFullName,
+      defaultPackageName + importedEntity + "." + callNode.name
+    )
   }
 }
