@@ -8,6 +8,7 @@
 .privado
 
 ### Joern ###
+.local/
 
 joern-inst/
 cpg.bin
