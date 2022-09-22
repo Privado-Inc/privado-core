@@ -25,11 +25,10 @@ package ai.privado.javascript.processor
 import ai.privado.cache.AppCache
 import ai.privado.java.exporter.JSONExporter
 import ai.privado.javascript.passes.methodfullname.MethodFullName
-import ai.privado.javascript.semantic.Language.tagger
+import ai.privado.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
-import io.joern.dataflowengineoss.language.Path
 import io.joern.joerncli.DefaultOverlays
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -64,8 +63,7 @@ object JavascriptProcessor {
         println("Tagging source code with rules...")
         cpg.runTagger(processedRules)
         println("Finding source to sink flow of data...")
-        val dataflowMap = Map[String, Path]()
-        // cpg.dataflow
+        val dataflowMap = cpg.dataflow
 
         println("Brewing result...")
         MetricHandler.setScanStatus(true)

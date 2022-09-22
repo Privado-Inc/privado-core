@@ -32,10 +32,15 @@ import overflowdb.BatchedUpdate
 class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
-    val rulePattern = ruleInfo.patterns.head
-    // val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
-    val regexMatchingIdentifiers = cpg.argument.isFieldIdentifier.code(rulePattern).l
+    val rulePattern              = ruleInfo.patterns.head
+    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
     regexMatchingIdentifiers.foreach(identifier => {
+      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo)
+    })
+
+    val regexMatchingFieldIdentifiersIdentifiers = cpg.argument.isFieldIdentifier.code(rulePattern).l
+    regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
     })
