@@ -25,9 +25,18 @@ package ai.privado.java.exporter
 import ai.privado.cache.RuleCache
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.utility.Utilities.dump
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodParameterIn
+}
 import io.shiftleft.semanticcpg.language.toExtendedNode
 import ai.privado.semantic.Language.finder
+import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 object ExporterUtility {
 
@@ -57,8 +66,11 @@ object ExporterUtility {
         case None    => -1
       }
     }
-    val fileName = nodeLocation.filename
-    val excerpt  = dump(fileName, node.lineNumber)
+    val fileName = Traversal(node).head match {
+      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) => a.file.name.head
+      case a                                                                                      => a.location.filename
+    }
+    val excerpt = dump(fileName, node.lineNumber)
 
     /*
     if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
