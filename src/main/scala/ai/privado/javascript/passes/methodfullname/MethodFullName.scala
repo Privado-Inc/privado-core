@@ -36,8 +36,16 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
 
   val cachedCall         = cpg.call.whereNot(_.name(Operators.ALL.asScala.toSeq: _*)).l
   val cachedOperatorCall = cpg.call(Operators.assignment).l
+
+  /** Processes nodes and return metaInformation needed for tagging call nodes with methodFullName
+    * @return
+    *   \- (importedAs, importedEntity, fileName, packageName) importedAs - name/function which was imported from
+    *   dependency importedEntity - Actual dependency name filename - the file where the import happened packageName -
+    *   prefix name to be added in methodFullName
+    */
   override def generateParts(): Array[(String, String, String, String)] = {
 
+    // Captures `const bodyParser = require('body-parser')` style
     val requireStyleDependency = cpg.dependency.name
       .flatMap(dependencyName => {
         Traversal(cachedOperatorCall)
@@ -51,6 +59,7 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
       })
       .toArray
 
+    // Captures `import * as cors from 'cors'` style
     val importStyleDependency = cpg.staticImport
       .map(staticImport =>
         (
@@ -62,6 +71,7 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
       )
       .toArray
 
+    // Captures `console` node
     val consoleNodes = cpg.file.map(fileName => ("console", "console", fileName.name, "")).toArray
 
     importStyleDependency ++ requireStyleDependency ++ consoleNodes
@@ -73,25 +83,37 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
     val fileName       = importedTuple._3
     val packageName    = importedTuple._4
 
+    // dependency directly consumed as call node `cors()`
     cachedCall
       .filter(_.name.equals(importedAs))
       .filter(_.location.filename.equals(fileName))
-      .foreach(callNode => updateCallNode(builder, callNode, importedAs, importedEntity, packageName))
+      .foreach(callNode => updateCallNode(builder, callNode, importedEntity, packageName))
 
+    // dependency consumed via a identifier node `bodyParser.verifyJson()`
     cpg
       .identifier(importedAs)
       .filter(_.location.filename.equals(fileName))
       .astParent
       .isCall
       .nameNot(Operators.ALL.asScala.toSeq: _*)
-      .foreach(callNode => updateCallNode(builder, callNode, importedAs, importedEntity, packageName))
+      .foreach(callNode => updateCallNode(builder, callNode, importedEntity, packageName))
 
   }
 
+  /** Adds methodFullName to call nodes with the information passed
+    * @param builder
+    *   \- DiffGraphBuilder object
+    * @param callNode
+    *   \- node on which methodFullName needs to be updated
+    * @param importedEntity
+    *   \- library name
+    * @param defaultPackageName
+    *   \- prefix for methodFullName
+    * @return
+    */
   private def updateCallNode(
     builder: DiffGraphBuilder,
     callNode: Call,
-    importedAs: String,
     importedEntity: String,
     defaultPackageName: String = ""
   ) = {
