@@ -22,10 +22,11 @@
 
 package ai.privado.javascript.tagger
 
+import ai.privado.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
+import ai.privado.tagger.sink.APITagger
 import ai.privado.tagger.source.LiteralTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
