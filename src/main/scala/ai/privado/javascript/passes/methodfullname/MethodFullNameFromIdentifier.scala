@@ -90,6 +90,10 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
   }
 
   private def updateCallNode(builder: DiffGraphBuilder, callNode: Call, methodFullname: String) = {
-    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, methodFullname + "." + callNode.name)
+
+    // From pkg.log4js.getLogger we need to tag new call node as pkg.log4js.debug
+    val methodFullNameAfterSplit = methodFullname.split("\\.")
+    val newMethodFullName        = methodFullNameAfterSplit.slice(0, methodFullNameAfterSplit.length - 1).mkString(".")
+    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, newMethodFullName + "." + callNode.name)
   }
 }

@@ -71,7 +71,7 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
       .toArray
 
     // Captures `console` node
-    val consoleNodes = cpg.file.map(fileName => ("console", "console", fileName.name, "")).toArray
+    val consoleNodes = cpg.file.map(fileName => ("console", "console", fileName.name, "pkg.")).toArray
 
     importStyleDependency ++ requireStyleDependency ++ consoleNodes
   }

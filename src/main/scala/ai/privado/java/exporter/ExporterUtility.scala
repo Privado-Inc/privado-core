@@ -33,7 +33,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Literal,
   MethodParameterIn
 }
-import better.files.File
 import io.shiftleft.semanticcpg.language.toExtendedNode
 import ai.privado.semantic.Language.finder
 import overflowdb.traversal.Traversal
