@@ -49,7 +49,7 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
     *
     * We are looking to add methodFullName to `debug`
     *
-    * In this case the methodFullName will be pkg.log4js.getLogger.debug
+    * In this case the methodFullName will be pkg.log4js.debug
     *
     * @return
     *   \- (left hand side of Assignment, right hand side call node of assignment)
