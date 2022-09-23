@@ -21,22 +21,21 @@
  *
  */
 
-package ai.privado.tagger.sink
+package ai.privado.javascript.tagger.sink
 
 import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.addRuleTags
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg){
   lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq:_*)).l
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val sinks = cacheCall.methodFullName(ruleInfo.patterns.head).l
+    val sinks = cacheCall.methodFullName("pkg.(" + ruleInfo.patterns.head + ").*").l
 
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
-
   }
 }
