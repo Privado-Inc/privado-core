@@ -22,7 +22,6 @@
 
 package ai.privado.javascript.passes.methodfullname
 
-import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
@@ -55,7 +54,7 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
           )
           .argument(1)
           .isIdentifier
-          .map(item => (item.name, dependencyName, item.location.filename, "pkg."))
+          .map(item => (item.name, dependencyName, item.file.name.head, "pkg."))
       })
       .toArray
 
@@ -65,14 +64,14 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
         (
           staticImport.importedAs.getOrElse(""),
           staticImport.importedEntity.getOrElse(""),
-          staticImport.file.head.name,
+          staticImport.file.name.head,
           "pkg."
         )
       )
       .toArray
 
     // Captures `console` node
-    val consoleNodes = cpg.file.map(fileName => ("console", "console", fileName.name, "")).toArray
+    val consoleNodes = cpg.file.map(fileName => ("console", "console", fileName.name, "pkg.")).toArray
 
     importStyleDependency ++ requireStyleDependency ++ consoleNodes
   }
@@ -86,13 +85,13 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
     // dependency directly consumed as call node `cors()`
     cachedCall
       .filter(_.name.equals(importedAs))
-      .filter(_.location.filename.equals(fileName))
+      .filter(_.file.name.head.equals(fileName))
       .foreach(callNode => updateCallNode(builder, callNode, importedEntity, packageName))
 
     // dependency consumed via a identifier node `bodyParser.verifyJson()`
     cpg
       .identifier(importedAs)
-      .filter(_.location.filename.equals(fileName))
+      .filter(_.file.name.head.equals(fileName))
       .astParent
       .isCall
       .nameNot(Operators.ALL.asScala.toSeq: _*)

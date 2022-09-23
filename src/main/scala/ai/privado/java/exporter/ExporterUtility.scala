@@ -22,12 +22,21 @@
 
 package ai.privado.java.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.utility.Utilities.dump
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodParameterIn
+}
 import io.shiftleft.semanticcpg.language.toExtendedNode
 import ai.privado.semantic.Language.finder
+import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 object ExporterUtility {
 
@@ -43,8 +52,7 @@ object ExporterUtility {
     * @return
     */
   def convertIndividualPathElement(node: CfgNode): Option[DataFlowSubCategoryPathExcerptModel] = {
-    val nodeLocation = node.location
-    val sample       = node.code
+    val sample = node.code
     val lineNumber: Int = {
       node.lineNumber match {
         case Some(n) => n
@@ -57,16 +65,27 @@ object ExporterUtility {
         case None    => -1
       }
     }
-    val fileName = nodeLocation.filename
-    val excerpt  = dump(fileName, node.lineNumber)
+    val fileName = Traversal(node).head match {
+      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) => a.file.name.head
+      case a                                                                                      => a.location.filename
+    }
+    val absoluteFileName = {
+      if (fileName.contains(AppCache.repoName))
+        fileName
+      else {
+        if (AppCache.localScanPath.endsWith("/"))
+          AppCache.localScanPath + fileName
+        else
+          AppCache.localScanPath + "/" + fileName
+      }
+    }
 
-    /*
-    if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
+    if (fileName == "<empty>" || sample == "<empty>")
       None
-    else
-     */
-    // TODO remove this comment once fileName starts getting reflected in fieldIdentifierNode
-    Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
+    else {
+      val excerpt = dump(absoluteFileName, node.lineNumber)
+      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
+    }
   }
 
   def getRuleInfoForExporting(ruleId: String): RuleInfo = {
