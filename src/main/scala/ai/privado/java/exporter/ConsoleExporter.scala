@@ -23,7 +23,13 @@
 package ai.privado.java.exporter
 
 import ai.privado.model.Constants
-import ai.privado.model.exporter.{CollectionModel, DataFlowSubCategoryModel, SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{
+  CollectionModel,
+  DataFlowSubCategoryModel,
+  SinkModel,
+  SourceModel,
+  SourceProcessingModel
+}
 
 import java.net.URL
 import scala.collection.mutable
@@ -40,12 +46,14 @@ object ConsoleExporter {
   def exportConsoleSummary(
     dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]],
     sources: List[SourceModel],
+    sinks: List[SinkModel],
     processing: List[SourceProcessingModel],
     collections: List[CollectionModel],
     violationSize: Int
   ): Unit = {
     // SourceId - Name Map
     val sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
+    val sinkNameIdMap   = sinks.map((sink) => (sink.id, sink.name)).toMap
 
     // Leakage Number - SourceId Map
     val leakageSourceMap = dataflowsOutput
@@ -163,7 +171,16 @@ object ConsoleExporter {
     })
 
     println("")
-
+    if (sinkNameIdMap.nonEmpty) {
+      println(s"${sinkNameIdMap.size} SINKS")
+      println("Here is a list of sinks discovered in the code.")
+    }
+    count = 0
+    sinkNameIdMap.foreachEntry((sinkId, sinkName) => {
+      count = count + 1
+      Console.println(s"\n${RESET}${WHITE}${BOLD}${count}. ${sinkName.toUpperCase()}${RESET}")
+    })
+    println("")
   }
 
 }
