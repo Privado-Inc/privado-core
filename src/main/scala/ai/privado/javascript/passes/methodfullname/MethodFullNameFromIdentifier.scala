@@ -57,9 +57,23 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
   override def generateParts(): Array[(Expression, Expression)] = {
     cpg
       .call(Operators.assignment)
-      .whereNot(_.argument(2).isCall.methodFullName(ANY_VALUE))
       .where(_.argument(1).isIdentifier)
-      .map(assignmentCall => { (assignmentCall.argument(1), assignmentCall.argument(2)) })
+      .flatMap(assignmentCall => {
+        val argument2 = assignmentCall.argument(2)
+        // handles const webClient = WebClient();
+        if (argument2.isCall && Traversal(argument2).isCall.methodFullNameNot(ANY_VALUE).nonEmpty)
+          Some((assignmentCall.argument(1), assignmentCall.argument(2)))
+        // handles const webClient = new WebClient();
+        else if (argument2.isBlock && Traversal(argument2).isBlock.astChildren.isCall.name("<operator>.new").nonEmpty)
+          Some(
+            (
+              assignmentCall.argument(1),
+              assignmentCall.argument(2).astChildren.isCall.where(_.name("<operator>.new")).head
+            )
+          )
+        else
+          None
+      })
       .toArray
   }
 
@@ -81,9 +95,8 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
     cpg.identifier
       .nameExact(identifierName)
       .filter(_.file.name.head.equals(identifierFileName))
-      .astParent
-      .isCall
-      .nameNot(Operators.ALL.asScala.toSeq: _*)
+      .repeat(_.astParent)(_.until(_.isCall.nameNot(".*operator.*")))
+      .isCall // This will take care of field chaining ex - web.chat.postMessage()
       .or(_.filter(_.methodFullName.isEmpty), _.where(_.methodFullName(ANY_VALUE)))
       .foreach(callNode => updateCallNode(builder, callNode, callNodeMethodFullName))
 

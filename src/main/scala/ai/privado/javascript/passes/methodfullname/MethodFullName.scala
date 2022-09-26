@@ -54,7 +54,25 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
           )
           .argument(1)
           .isIdentifier
-          .map(item => (item.name, dependencyName, item.file.name.head, "pkg."))
+          .flatMap(item => {
+            // handles const {WebClient} = require('@slack/web-api')
+            if (item.name.matches("_tmp_.*")) {
+              cpg.identifier
+                .nameExact(item.name)
+                .where(_.file.nameExact(item.file.name.head))
+                .astParent
+                .astParent
+                .isCall
+                .argument(1)
+                .isIdentifier
+                .map(curlyItem => (curlyItem.name, dependencyName, curlyItem.file.name.head, "pkg."))
+                .l
+            }
+            // handles const WebClient = require('@slack/web-api')
+            else {
+              List((item.name, dependencyName, item.file.name.head, "pkg."))
+            }
+          })
       })
       .toArray
 

@@ -32,7 +32,7 @@ import overflowdb.BatchedUpdate
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
-  lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq:_*)).l
+  lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val sinks = cacheCall.methodFullName(ruleInfo.patterns.head).l
 
