@@ -82,6 +82,7 @@ object Constants {
 
   // Other commonly used constants
   val RULES_DIR_IN_CONFIG           = "rules"
+  val CONFIG_DIR_IN_CONFIG          = "config"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
 
 }

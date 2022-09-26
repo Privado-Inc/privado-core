@@ -1,0 +1,70 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/exclusions.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "exclusions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "exclusions": {
+      "$id": "#root/exclusions",
+      "title": "Exclusions",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/exclusions/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/exclusions/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Exclusions.Test"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/exclusions/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Exclude test source code"
+            ],
+            "pattern": "^.*$"
+          },
+          "patterns": {
+            "$id": "#root/exclusions/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/exclusions/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                ".*(AmazonS3).*"
+              ],
+              "pattern": "^.*$"
+            }
+          }
+        }
+      }
+
+    }
+  }
+}
