@@ -23,9 +23,9 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
-import ai.privado.java.processor.JavaProcessor.logger
-import ai.privado.java.processor.JavaProcessor
-import ai.privado.javascript.processor.JavascriptProcessor
+import ai.privado.languageEngine.java.processor.JavaProcessor
+import JavaProcessor.logger
+import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.rulevalidator.YamlFileValidator

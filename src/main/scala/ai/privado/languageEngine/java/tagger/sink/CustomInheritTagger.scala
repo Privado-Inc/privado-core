@@ -18,17 +18,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.semantic
+package ai.privado.languageEngine.java.tagger.sink
 
-import ai.privado.dataflow.Dataflow
+import ai.privado.tagger.PrivadoSimplePass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import overflowdb.BatchedUpdate
+import io.shiftleft.semanticcpg.language._
+import ai.privado.utility.Utilities._
 
-object Language {
+class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
-  implicit val finder: NodeExtensionFinder         = DefaultNodeExtensionFinder
-  implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
-
+    val typeDeclNode = cpg.typeDecl
+      .filter(
+        _.inheritsFromTypeFullName
+          .map(inheritsFrom => inheritsFrom.matches(ruleInfo.patterns.head))
+          .foldLeft(false)((a, b) => a || b)
+      )
+      .l
+    if (typeDeclNode.nonEmpty) {
+      typeDeclNode.fullName.dedup.foreach(typeDeclName => {
+        val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
+        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
+      })
+    }
+  }
 }
