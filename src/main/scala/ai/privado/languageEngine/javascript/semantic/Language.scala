@@ -18,17 +18,16 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.semantic
+package ai.privado.languageEngine.javascript.semantic
 
-import ai.privado.dataflow.Dataflow
+import ai.privado.languageEngine.javascript.tagger.PrivadoTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 
 object Language {
 
-  implicit val finder: NodeExtensionFinder         = DefaultNodeExtensionFinder
-  implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
+  implicit def tagger(cpg: Cpg): PrivadoTagger = new PrivadoTagger(cpg)
 
 }

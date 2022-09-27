@@ -18,17 +18,24 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.semantic
+package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.dataflow.Dataflow
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
+import ai.privado.tagger.PrivadoSimplePass
+import ai.privado.utility.Utilities.addRuleTags
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 
-object Language {
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-  implicit val finder: NodeExtensionFinder         = DefaultNodeExtensionFinder
-  implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
+class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+  lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+    val sinks = cacheCall.methodFullName("pkg.(" + ruleInfo.patterns.head + ").*").l
 
+    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
+  }
 }

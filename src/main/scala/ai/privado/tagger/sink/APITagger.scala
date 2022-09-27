@@ -23,7 +23,7 @@
 
 package ai.privado.tagger.sink
 
-import ai.privado.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities

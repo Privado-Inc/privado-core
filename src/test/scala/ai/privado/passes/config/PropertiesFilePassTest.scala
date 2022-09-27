@@ -23,7 +23,7 @@
 package ai.privado.passes.config
 
 import ai.privado.java.language._
-import ai.privado.java.passes.config.PropertiesFilePass
+import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
