@@ -106,7 +106,10 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
 
     // From pkg.log4js.getLogger we need to tag new call node as pkg.log4js.debug
     val methodFullNameAfterSplit = methodFullname.split("\\.")
-    val newMethodFullName        = methodFullNameAfterSplit.slice(0, methodFullNameAfterSplit.length - 1).mkString(".")
+    var newMethodFullName        = methodFullNameAfterSplit.slice(0, methodFullNameAfterSplit.length - 1).mkString(".")
+    // To handle pkg.@slack/web-api.<operator>.new case
+    if (newMethodFullName.endsWith("operator>"))
+      newMethodFullName = methodFullNameAfterSplit.slice(0, methodFullNameAfterSplit.length - 2).mkString(".")
     builder.setNodeProperty(callNode, PropertyNames.MethodFullName, newMethodFullName + "." + callNode.name)
   }
 }
