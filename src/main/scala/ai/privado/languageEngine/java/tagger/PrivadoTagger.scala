@@ -29,7 +29,7 @@ import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
-import ai.privado.model.{ConfigAndRules, NodeType}
+import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.LiteralTagger
@@ -45,34 +45,21 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
     logger.info("Starting tagging")
-    val literalTagger       = new LiteralTagger(cpg)
-    val identifierTagger    = new IdentifierTagger(cpg)
-    val apiTagger           = new APITagger(cpg)
-    val regularSinkTagger   = new RegularSinkTagger(cpg)
-    val customInheritTagger = new CustomInheritTagger(cpg)
 
-    val sourceRules = rules.sources
-    sourceRules.foreach(rule => {
-      literalTagger.setRuleAndApply(rule)
-      identifierTagger.setRuleAndApply(rule)
-    })
+    new LiteralTagger(cpg).createAndApply()
+    new IdentifierTagger(cpg).createAndApply()
 
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
-      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.API))
-      .foreach(rule => apiTagger.setRuleAndApply(rule))
+    new RegularSinkTagger(cpg).createAndApply()
+    new APITagger(cpg).createAndApply()
 
     // Custom Rule tagging
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
-      StorageInheritRule.rules.foreach(rule => customInheritTagger.setRuleAndApply(rule))
+      new CustomInheritTagger(cpg).createAndApply()
     }
 
-    val collectionTagger = new CollectionTagger(cpg, sourceRules)
-    rules.collections.foreach(rule => collectionTagger.setRuleAndApply(rule))
+    new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
 
     logger.info("Done with tagging")
 

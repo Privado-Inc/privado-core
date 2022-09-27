@@ -23,17 +23,18 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import ai.privado.utility.Utilities._
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import java.util.UUID
 import scala.collection.mutable
 
-class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+class IdentifierTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
 
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID.toString
@@ -41,7 +42,9 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   val typeDeclMemberNameCache = mutable.HashMap[String, mutable.HashMap[String, String]]()
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
+
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
     // Step 1.1
     val rulePattern              = ruleInfo.patterns.head
@@ -53,6 +56,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
     // Step 2.1 --> contains step 2.2, 2.3
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
+
   }
 
   /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
@@ -77,7 +81,6 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
             typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember.name)
             typeDeclMember.name
           case None =>
-            logger.debug("Exception when retreiving member name for derived class")
             "Member not found"
         }
         val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
