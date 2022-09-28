@@ -14,50 +14,50 @@ object RuleValidator extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println("Starting rule validations ...")
     validateRules() match {
-      case Left(_) =>
-        println("Error in parsing Rules")
-        Left("")
-      case Right(_) => validateConfig()
+      case Some(_) =>
+        println(validateConfig().get)
+        Right(())
+      case _ => Left("Error in parsing Rules")
     }
   }
 
-  def getRulesPathFromConfig: Either[Unit, File] = {
+  def getRulesPathFromConfig: Option[File] = {
     if (config.externalConfigPath.nonEmpty) {
-      Right(File(s"${config.externalConfigPath.head}/$RULES_DIR_IN_CONFIG"))
+      Some(File(s"${config.externalConfigPath.head}/$RULES_DIR_IN_CONFIG"))
     } else {
       logger.error("Error while reading config path")
-      Left(())
+      None
     }
   }
 
-  def validateRules(): Either[String, Unit] = {
+  def validateRules(): Option[String] = {
     getRulesPathFromConfig match {
-      case Left(()) =>
+      case Some(yamlDirectory) => Some(validateDirectory(yamlDirectory))
+      case _ =>
         logger.error("Failed to validate rules directory")
-        Left("")
-      case Right(yamlDirectory) => validateDirectory(yamlDirectory)
+        None
     }
   }
 
-  def validateConfig(): Either[String, Unit] = {
+  def validateConfig(): Option[String] = {
     getConfigPathFromConfig match {
-      case Left(_) =>
+      case Some(yamlDirectory) => Some(validateDirectory(yamlDirectory))
+      case _ =>
         logger.error("Failed to validate rules directory")
-        Left("")
-      case Right(yamlDirectory) => validateDirectory(yamlDirectory)
+        None
     }
   }
 
-  def getConfigPathFromConfig: Either[Unit, File] = {
+  def getConfigPathFromConfig: Option[File] = {
     if (config.externalConfigPath.nonEmpty) {
-      Right(File(s"${config.externalConfigPath.head}/$CONFIG_DIR_IN_CONFIG"))
+      Some(File(s"${config.externalConfigPath.head}/$CONFIG_DIR_IN_CONFIG"))
     } else {
       logger.error("Error while reading config path")
-      Left(())
+      None
     }
   }
 
-  def validateDirectory(yamlDirectory: File): Either[String, Unit] = {
+  def validateDirectory(yamlDirectory: File): String = {
     try {
       val validationFailures = YamlFileValidator.validateDirectory(yamlDirectory)
       var errorsFound        = 0
@@ -70,20 +70,16 @@ object RuleValidator extends CommandProcessor {
       println(PRETTY_LINE_SEPARATOR)
       errorsFound match {
         case 0 =>
-          println(s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with no errors")
+          s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with no errors"
         case 1 =>
-          println(s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with 1 error")
+          s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with 1 error"
         case _ =>
-          println(
-            s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with ${errorsFound.toString} errors"
-          )
+          s"Completed command: ${CommandConstants.VALIDATE} for directory: $yamlDirectory, with ${errorsFound.toString} errors"
       }
-      Right(())
     } catch {
       case ex: Exception =>
-        println("Failed to validate rules", ex)
         logger.debug("Failed to validate rules", ex)
-        Left(ex.toString)
+        s"Failed to validate rules ${ex.getMessage}"
     }
   }
 }
