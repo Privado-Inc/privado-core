@@ -23,21 +23,25 @@
 
 package ai.privado.languageEngine.java.tagger.collection
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Method}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
+import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends PrivadoSimplePass(cpg) {
+class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray
+
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
     val methodUrlMap = mutable.HashMap[Long, String]()
     val classUrlMap  = mutable.HashMap[Long, String]()
@@ -124,7 +128,6 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
         getFinalEndPoint(collectionPoint)
       )
     })
-
   }
 
   private def getAllDerivedTypeDecl(objectName: String) = {

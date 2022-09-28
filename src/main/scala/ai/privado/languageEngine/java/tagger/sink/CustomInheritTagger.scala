@@ -23,14 +23,17 @@
 
 package ai.privado.languageEngine.java.tagger.sink
 
-import ai.privado.tagger.PrivadoSimplePass
+import ai.privado.languageEngine.java.feeder.StorageInheritRule
+import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 
-class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+class CustomInheritTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+  override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
+
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
     val typeDeclNode = cpg.typeDecl
       .filter(

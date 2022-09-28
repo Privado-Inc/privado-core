@@ -23,16 +23,17 @@
 
 package ai.privado.languageEngine.javascript.tagger.source
 
-import ai.privado.model.InternalTag
-import ai.privado.tagger.PrivadoSimplePass
+import ai.privado.cache.RuleCache
+import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
-class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+class IdentifierTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
 
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern              = ruleInfo.patterns.head
     val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
     regexMatchingIdentifiers.foreach(identifier => {
