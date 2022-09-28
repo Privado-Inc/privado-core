@@ -21,11 +21,11 @@
  *
  */
 
-package ai.privado.languageEngine.javascript.passes.methodfullnameReview
+package ai.privado.languageEngine.javascript.passes.methodfullname.Review
 
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal

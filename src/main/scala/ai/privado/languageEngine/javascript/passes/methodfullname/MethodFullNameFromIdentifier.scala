@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.javascript.passes.methodfullnameReview
+package ai.privado.languageEngine.javascript.passes.methodfullname
 
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
