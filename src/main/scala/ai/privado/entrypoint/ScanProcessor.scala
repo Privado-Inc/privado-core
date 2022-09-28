@@ -260,7 +260,15 @@ object ScanProcessor extends CommandProcessor {
     AppCache.init(sourceRepoLocation)
     import io.joern.console.cpgcreation.guessLanguage
     println("Guessing source code language...")
-    val xtocpg = guessLanguage(sourceRepoLocation) match {
+    var languageDetected: Option[String] = None
+    try {
+      languageDetected = guessLanguage(sourceRepoLocation)
+    } catch {
+      case exc: Exception =>
+        println(s"Error Occurred: ${exc.toString}")
+        exit(1)
+    }
+    val xtocpg = languageDetected match {
       case Some(lang) =>
         if (!(lang == Languages.JAVASRC || lang == Languages.JAVA)) {
           if (checkJavaSourceCodePresent(sourceRepoLocation)) {
