@@ -285,7 +285,7 @@ object ScanProcessor extends CommandProcessor {
           }
         }
       case Failure(exc) =>
-        logger.debug(exc.toString)
+        logger.debug("Error while guessing language", exc)
         println(s"Error Occurred: ${exc.getMessage}")
         exit(1)
     }
