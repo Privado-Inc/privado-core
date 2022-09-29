@@ -15,8 +15,10 @@ object RuleValidator extends CommandProcessor {
     println("Starting rule validations ...")
     validateRules() match {
       case Some(_) =>
-        println(validateConfig().get)
-        Right(())
+        validateConfig() match {
+          case Some(value) => Right(println(value))
+          case _           => Left("Error in parsing Config rules")
+        }
       case _ => Left("Error in parsing Rules")
     }
   }
