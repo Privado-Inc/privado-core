@@ -28,6 +28,12 @@ import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeT
 import io.shiftleft.semanticcpg.language._
 
 class IdentiferTaggingTest extends JavaTaggingTestBase {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    new IdentifierTagger(cpg).createAndApply()
+  }
+
   override val javaFileContents =
     """
       |public class User {
@@ -44,7 +50,7 @@ class IdentiferTaggingTest extends JavaTaggingTestBase {
       "FirstName",
       "",
       Array(),
-      List("firstName"),
+      List("(?i).*firstName.*"),
       false,
       "",
       Map(),
@@ -64,5 +70,14 @@ class IdentiferTaggingTest extends JavaTaggingTestBase {
       identifierNodes.size shouldBe 1
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
     }
+
+    /*
+    "tag fieldAccess of firstName" in {
+      // Note - this test is Fails with the current query on cpg.method.callIn, but works fine on cpg.call
+      val identifierNodes = cpg.call.tag.nameExact(Constants.id).l
+      identifierNodes.size shouldBe 1
+      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+    }
+     */
   }
 }
