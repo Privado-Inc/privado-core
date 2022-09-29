@@ -41,7 +41,7 @@ class IdentifierTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) 
       addRuleTags(builder, identifier, ruleInfo)
     })
 
-    val regexMatchingFieldAccess = cpg.fieldAccess.where(_.argument.isFieldIdentifier.code(rulePattern)).isCall.l
+    val regexMatchingFieldAccess = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
     regexMatchingFieldAccess.foreach(fieldAccess => {
       storeForTag(builder, fieldAccess)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, fieldAccess, ruleInfo)
