@@ -27,7 +27,7 @@ import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
 import io.shiftleft.semanticcpg.language._
 
-class IdentiferTaggingTest extends JavaTaggingTestBase {
+class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
