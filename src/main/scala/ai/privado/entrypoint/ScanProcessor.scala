@@ -260,25 +260,34 @@ object ScanProcessor extends CommandProcessor {
     AppCache.init(sourceRepoLocation)
     import io.joern.console.cpgcreation.guessLanguage
     println("Guessing source code language...")
-    val xtocpg = guessLanguage(sourceRepoLocation) match {
-      case Some(lang) =>
-        if (!(lang == Languages.JAVASRC || lang == Languages.JAVA)) {
-          if (checkJavaSourceCodePresent(sourceRepoLocation)) {
-            println(s"We detected presence of 'Java' code base along with other major language code base '${lang}'.")
-            println(s"However we only support 'Java' code base scanning as of now.")
-          } else {
-            println(s"As of now we only support privacy code scanning for 'Java' code base.")
-            println(s"We detected this code base of '${lang}'.")
-            exit(1)
+    val xtocpg = Try(guessLanguage(sourceRepoLocation)) match {
+      case Success(languageDetected) =>
+        languageDetected match {
+          case Some(lang) =>
+            if (!(lang == Languages.JAVASRC || lang == Languages.JAVA)) {
+              if (checkJavaSourceCodePresent(sourceRepoLocation)) {
+                println(
+                  s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
+                )
+                println(s"However we only support 'Java' code base scanning as of now.")
+              } else {
+                println(s"As of now we only support privacy code scanning for 'Java' code base.")
+                println(s"We detected this code base of '${lang}'.")
+                exit(1)
+              }
+            } else {
+              println(s"Detected language 'Java' ")
+            }
+            createJavaCpg(sourceRepoLocation, lang)
+          case _ => {
+            logger.error("Unable to detect language! Is it supported yet?")
+            Failure(new RuntimeException("Unable to detect language!"))
           }
-        } else {
-          println(s"Detected language 'Java' ")
         }
-        createJavaCpg(sourceRepoLocation, lang)
-      case _ => {
-        logger.error("Unable to detect language! Is it supported yet?")
-        Failure(new RuntimeException("Unable to detect language!"))
-      }
+      case Failure(exc) =>
+        logger.debug("Error while guessing language", exc)
+        println(s"Error Occurred: ${exc.getMessage}")
+        exit(1)
     }
     xtocpg match {
       case Success(cpgWithoutDataflow) => {
