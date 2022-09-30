@@ -135,10 +135,14 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
     importedEntity: String,
     defaultPackageName: String = ""
   ) = {
-    builder.setNodeProperty(
-      callNode,
-      PropertyNames.MethodFullName,
-      defaultPackageName + importedEntity + "." + callNode.name
-    )
+
+    //To not update node if call name is --> then
+    if(!callNode.name.equals("then")){
+      builder.setNodeProperty(
+        callNode,
+        PropertyNames.MethodFullName,
+        defaultPackageName + importedEntity + "." + callNode.name
+      )
+    }
   }
 }
