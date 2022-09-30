@@ -37,7 +37,7 @@ object ConsoleExporter {
 
   private def getDomainFromString(urlString: String) = {
     try {
-      val cleanedUrlString = urlString.replaceAll("'", "")
+      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
       val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
       val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
       url.getHost.replaceAll("www.", "").replaceAll("\"", "")
