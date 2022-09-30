@@ -61,7 +61,7 @@ class JavascriptIdentifierTaggingTest extends JavascriptTaggingTestBase {
       "",
       CatLevelOne.SOURCES,
       "",
-      Language.JAVA,
+      Language.JAVASCRIPT,
       Array()
     )
   )
@@ -69,15 +69,16 @@ class JavascriptIdentifierTaggingTest extends JavascriptTaggingTestBase {
 
   "Identifier Tagger" should {
     "tag a firstName identifier" in {
-      val identifierNodes = cpg.identifier("firstName").tag.nameExact(Constants.id).l
+      val identifierNodes = cpg.identifier.tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 2
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
     }
 
-    "tag a firstName field identifier" in {
-      val identifierNodes = cpg.argument.isFieldIdentifier.code("firstName").tag.nameExact(Constants.id).l
+    "tag a firstName field access" in {
+      val identifierNodes = cpg.fieldAccess.tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 2
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
     }
   }
+  override val packageJsonFileContents: String = ""
 }

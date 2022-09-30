@@ -36,6 +36,7 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
 
   var cpg: Cpg = _
   val javascriptFileContents: String
+  val packageJsonFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
   val rule: ConfigAndRules
@@ -44,6 +45,7 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
     inputDir = File.newTemporaryDirectory()
     (inputDir / "generalFile.js").write(javascriptFileContents)
     (inputDir / "unrelated.file").write("foo")
+    (inputDir / "package.json").write(packageJsonFileContents)
     outputFile = File.newTemporaryFile()
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
     cpg = new JsSrc2Cpg().createCpg(config).get
