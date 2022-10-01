@@ -1,0 +1,52 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/semantics.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "semantics"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "semantics": {
+      "$id": "#root/semantics",
+      "title": "Semantics",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/semantics/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "signature",
+          "flow"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "signature": {
+            "$id": "#root/semantics/items/signature",
+            "title": "Signature",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "android.text.TextUtils.isEmpty:boolean(java.lang.String)"
+            ],
+            "pattern": "^.*$"
+          },
+          "flow": {
+            "$id": "#root/semantics/items/flow",
+            "title": "Flow",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "1->-1"
+            ],
+            "pattern": "^.*$"
+          }
+        }
+      }
+
+    }
+  }
+}
