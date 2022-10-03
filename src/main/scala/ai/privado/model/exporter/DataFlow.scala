@@ -1,5 +1,6 @@
 package ai.privado.model.exporter
 
+import ai.privado.model.DatabaseDetails
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
@@ -15,6 +16,7 @@ case class DataFlowSubCategorySinkModel(
   override val isSensitive: Boolean,
   override val tags: Map[String, String],
   apiUrl: List[String],
+  databaseDetails: DatabaseDetails,
   paths: List[DataFlowSubCategoryPathModel]
 ) extends RuleInfoWithDomainTrait
 
@@ -56,4 +58,9 @@ object DataFlowEncoderDecoder {
     deriveDecoder[DataFlowSubCategoryPathModel]
   implicit val dataFlowSubCategoryPathModelEncoder: Encoder[DataFlowSubCategoryPathModel] =
     deriveEncoder[DataFlowSubCategoryPathModel]
+
+  implicit val databaseDetailsDecoder: Decoder[DatabaseDetails] =
+    deriveDecoder[DatabaseDetails]
+  implicit val databaseDetailsEncoder: Encoder[DatabaseDetails] =
+    deriveEncoder[DatabaseDetails]
 }

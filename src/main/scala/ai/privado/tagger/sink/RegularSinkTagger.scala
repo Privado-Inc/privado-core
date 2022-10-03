@@ -27,13 +27,22 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
+import io.shiftleft.semanticcpg.language._
+import ai.privado.cache.DatabaseDetailsCache
 
 class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val cacheCall = cpg.call.or(_.nameNot("(<operator|<init).*")).l
+
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val sinks = cacheCall.methodFullName(ruleInfo.patterns.head).l
 
-    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
+    if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
+      val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
+      if (databaseDetails.isDefined) {
+        sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
+      }
+    }
 
+    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
   }
 }

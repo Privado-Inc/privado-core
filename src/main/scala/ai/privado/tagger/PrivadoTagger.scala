@@ -27,8 +27,10 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.feeder.StorageInheritRule
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.collection.CollectionTagger
+import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.{APITagger, CustomInheritTagger, RegularSinkTagger}
 import ai.privado.tagger.source.{IdentifierTagger, LiteralTagger}
+
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -44,6 +46,7 @@ class PrivadoTagger(cpg: Cpg) {
     val literalTagger       = new LiteralTagger(cpg)
     val identifierTagger    = new IdentifierTagger(cpg)
     val apiTagger           = new APITagger(cpg)
+    val dbConfigTagger      = new DBConfigTagger(cpg)
     val regularSinkTagger   = new RegularSinkTagger(cpg)
     val customInheritTagger = new CustomInheritTagger(cpg)
 
@@ -52,6 +55,8 @@ class PrivadoTagger(cpg: Cpg) {
       literalTagger.setRuleAndApply(rule)
       identifierTagger.setRuleAndApply(rule)
     })
+
+    dbConfigTagger.setRuleAndApply(null)
 
     rules.sinks
       .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
