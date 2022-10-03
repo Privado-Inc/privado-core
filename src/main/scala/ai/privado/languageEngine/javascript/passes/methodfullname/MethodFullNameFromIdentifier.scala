@@ -110,6 +110,10 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
     // To handle pkg.@slack/web-api.<operator>.new case
     if (newMethodFullName.endsWith("operator>"))
       newMethodFullName = methodFullNameAfterSplit.slice(0, methodFullNameAfterSplit.length - 2).mkString(".")
-    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, newMethodFullName + "." + callNode.name)
+
+    //To not update node if call name is --> then
+    if(!callNode.name.equals("then")) {
+      builder.setNodeProperty(callNode, PropertyNames.MethodFullName, newMethodFullName + "." + callNode.name)
+    }
   }
 }

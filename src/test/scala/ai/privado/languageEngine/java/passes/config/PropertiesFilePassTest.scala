@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.passes.config
+package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.languageEngine.java.language._
-import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
