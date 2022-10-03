@@ -27,7 +27,7 @@ import ai.privado.languageEngine.javascript.JavascriptTaggingTestBase
 import ai.privado.model.ConfigAndRules
 import io.shiftleft.semanticcpg.language._
 
-class JavascriptMethodFullNamePassTest extends JavascriptTaggingTestBase {
+class JavascriptMethodFullNamePassRequireStyleTest extends JavascriptTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -40,7 +40,7 @@ class JavascriptMethodFullNamePassTest extends JavascriptTaggingTestBase {
       |
       |const sgMail = require('@sendgrid/mail');
       |const {WebClient} = require('@slack/web-api');
-      |import * as cors from 'cors';
+      |const cors = require('cors');
       |
       |cors();
       |const web = new WebClient(token);
@@ -54,7 +54,7 @@ class JavascriptMethodFullNamePassTest extends JavascriptTaggingTestBase {
     """
       |{
       | "dependencies": {
-      |    "@sendgrid/mail": "^7.7.0,
+      |    "@sendgrid/mail": "^7.7.0",
       |    "@slack/web-api": "^6.7.2",
       |    "cors": "^2.8.5"
       |  }
@@ -82,5 +82,77 @@ class JavascriptMethodFullNamePassTest extends JavascriptTaggingTestBase {
       corsNode.size shouldBe 1
       corsNode.methodFullName.l shouldBe List("pkg.cors.cors")
     }
+
+    // Note - currently not handling internal imports as specifically, as it doesn't add any value.
+    // will take this up when needed
+    /*
+    "handle internal import" in {}
+     */
+
+  }
+}
+
+class JavascriptMethodFullNamePassImportStyleTest extends JavascriptTaggingTestBase {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    new MethodFullName(cpg).createAndApply()
+    new MethodFullNameFromIdentifier(cpg).createAndApply()
+  }
+
+  override val javascriptFileContents: String =
+    """
+      |
+      |import sgMail from '@sendgrid/mail';
+      |import {WebClient} from '@slack/web-api';
+      |import * as cors from 'cors';
+      |
+      |cors();
+      |const web = new WebClient(token);
+      |
+      |var msg = "some message";
+      |sgMail.send(msg);
+      |web.chat.postMessage(msg);
+      |
+      |""".stripMargin
+  override val packageJsonFileContents: String =
+    """
+      |{
+      | "dependencies": {
+      |    "@sendgrid/mail": "^7.7.0",
+      |    "@slack/web-api": "^6.7.2",
+      |    "cors": "^2.8.5"
+      |  }
+      |}
+      |""".stripMargin
+
+  override val rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List())
+
+  "Javascript MethodFullName pass" should {
+    "add methodFullName for called by identifier node" in {
+      val sendGridNode = cpg.call.methodFullName("pkg.@sendgrid/mail.send").l
+      sendGridNode.size shouldBe 1
+    }
+
+    "add methodFullName for called by identifier node chaining fieldIdentifier" in {
+      val slackNode = cpg.call.methodFullName("pkg.@slack/web-api.*").l
+
+      slackNode.size shouldBe 2
+      slackNode.methodFullName.l shouldBe List("pkg.@slack/web-api.<operator>.new", "pkg.@slack/web-api.postMessage")
+    }
+
+    "add methodFullName for directly call node" in {
+      val corsNode = cpg.call.methodFullName("pkg.cors.cors").l
+
+      corsNode.size shouldBe 1
+      corsNode.methodFullName.l shouldBe List("pkg.cors.cors")
+    }
+
+    // Note - currently not handling internal imports as specifically, as it doesn't add any value.
+    // will take this up when needed
+    /*
+    "handle internal import" in {}
+     */
+
   }
 }
