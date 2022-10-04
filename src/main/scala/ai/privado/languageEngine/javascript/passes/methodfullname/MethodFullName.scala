@@ -60,18 +60,18 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
             if (item.name.matches("_tmp_.*")) {
               cpg.identifier
                 .nameExact(item.name)
-                .where(_.file.nameExact(item.file.name.head))
+                .where(_.file.nameExact(item.file.name.headOption.getOrElse("")))
                 .astParent
                 .astParent
                 .isCall
                 .argument(1)
                 .isIdentifier
-                .map(curlyItem => (curlyItem.name, dependencyName, curlyItem.file.name.head, "pkg."))
+                .map(curlyItem => (curlyItem.name, dependencyName, curlyItem.file.name.headOption.getOrElse(""), "pkg."))
                 .l
             }
             // handles const WebClient = require('@slack/web-api')
             else {
-              List((item.name, dependencyName, item.file.name.head, "pkg."))
+              List((item.name, dependencyName, item.file.name.headOption.getOrElse(""), "pkg."))
             }
           })
       })
