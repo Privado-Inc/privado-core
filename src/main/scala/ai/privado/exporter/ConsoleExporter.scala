@@ -87,7 +87,22 @@ object ConsoleExporter {
     // Storages - SourceId Map
     val storageSourceMap = dataflowsOutput
       .getOrElse(Constants.storages, List[DataFlowSubCategoryModel]())
-      .map(storage => (storage.sourceId, storage.sinks.map(sink => sink.name).toSet))
+      .map(storage =>
+        (
+          storage.sourceId,
+          storage.sinks
+            .map(sink => {
+              if (sink.databaseDetails.dbName.isBlank)
+                sink.name
+              else {
+                sink.databaseDetails.dbVendor
+                  .toUpperCase() + " » " + sink.databaseDetails.dbName + " » " + sink.databaseDetails.dbOperation
+                  .toUpperCase()
+              }
+            })
+            .toSet
+        )
+      )
       .toMap
     val uniqueStorages = storageSourceMap.values.flatten.toSet
 

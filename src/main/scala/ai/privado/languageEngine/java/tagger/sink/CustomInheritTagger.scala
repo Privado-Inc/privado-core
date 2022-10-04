@@ -29,8 +29,11 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
 import io.shiftleft.passes.ConcurrentWriterCpgPass
+import ai.privado.cache.DatabaseDetailsCache
+import org.slf4j.LoggerFactory
 
 class CustomInheritTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+  private val logger                            = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
@@ -45,6 +48,15 @@ class CustomInheritTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cp
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
+
+        if (callNodes != null & ruleInfo.id.matches("Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*")) {
+          val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
+          logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")
+          if (databaseDetails.isDefined) {
+            logger.debug("adding database details")
+            callNodes.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
+          }
+        }
         callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
       })
     }

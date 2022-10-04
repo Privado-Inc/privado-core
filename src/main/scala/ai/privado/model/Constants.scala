@@ -81,8 +81,13 @@ object Constants {
   val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
 
+  // database details
+  val dbName      = "dbName"
+  val dbVendor    = "dbVendor"
+  val dbLocation  = "dbLocation"
+  val dbOperation = "dbOperation"
+
   // Other commonly used constants
   val RULES_DIR_IN_CONFIG           = "rules"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
-
 }

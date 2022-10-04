@@ -24,7 +24,6 @@ package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
-import JavaProcessor.logger
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
@@ -38,6 +37,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
 import scala.sys.exit
+import scala.util.{Failure, Success, Try}
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -256,35 +256,44 @@ object ScanProcessor extends CommandProcessor {
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
     println("Guessing source code language...")
-    guessLanguage(sourceRepoLocation) match {
-      case Some(lang) =>
-        MetricHandler.metricsData("language") = Json.fromString(lang)
-        val processedRules = processRules(lang)
-        logger.info("Caching rules")
-        RuleCache.setRule(processedRules)
-        lang match {
-          case language if language == Languages.JAVASRC || language == Languages.JAVA =>
-            println(s"Detected language 'Java'")
-            JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
-          case language if language == Languages.JSSRC =>
-            println(s"Detected language 'JavaScript'")
-            JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
-          case _ =>
-            if (checkJavaSourceCodePresent(sourceRepoLocation)) {
-              println(s"We detected presence of 'Java' code base along with other major language code base '${lang}'.")
-              println(s"However we only support 'Java' code base scanning as of now.")
-              JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, lang)
-            } else {
-              println(s"As of now we only support privacy code scanning for 'Java' code base.")
-              println(s"We detected this code base of '${lang}'.")
-              exit(1)
-            }
-        }
-      case _ =>
-        logger.error("Unable to detect language! Is it supported yet?")
-        Left("Unable to detect language!")
-    }
 
+    Try(guessLanguage(sourceRepoLocation)) match {
+      case Success(languageDetected) =>
+        languageDetected match {
+          case Some(lang) =>
+            MetricHandler.metricsData("language") = Json.fromString(lang)
+            val processedRules = processRules(lang)
+            logger.info("Caching rules")
+            RuleCache.setRule(processedRules)
+            lang match {
+              case language if language == Languages.JAVASRC || language == Languages.JAVA =>
+                println(s"Detected language 'Java'")
+                JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
+              case language if language == Languages.JSSRC =>
+                println(s"Detected language 'JavaScript'")
+                JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
+              case _ =>
+                if (checkJavaSourceCodePresent(sourceRepoLocation)) {
+                  println(
+                    s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
+                  )
+                  println(s"However we only support 'Java' code base scanning as of now.")
+                  JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, lang)
+                } else {
+                  println(s"As of now we only support privacy code scanning for 'Java' code base.")
+                  println(s"We detected this code base of '${lang}'.")
+                  exit(1)
+                }
+            }
+          case _ =>
+            logger.error("Unable to detect language! Is it supported yet?")
+            Left("Unable to detect language!")
+        }
+      case Failure(exc) =>
+        logger.debug("Error while guessing language", exc)
+        println(s"Error Occurred: ${exc.getMessage}")
+        exit(1)
+    }
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {

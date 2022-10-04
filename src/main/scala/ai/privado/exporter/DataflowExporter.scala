@@ -23,9 +23,9 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.cache.{DataFlowCache, DatabaseDetailsCache, RuleCache}
 import ai.privado.model.exporter.{DataFlowSubCategoryModel, DataFlowSubCategoryPathModel, DataFlowSubCategorySinkModel}
-import ai.privado.model.{Constants, DataFlowPathModel, NodeType}
+import ai.privado.model.{Constants, DataFlowPathModel, NodeType, DatabaseDetails}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -73,6 +73,16 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
           sinkIdAfterSplit(1).split(",").toList
         case _ => List[String]()
       }
+
+      val databaseDetails = RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
+        case Some(rule)
+            if rule.id.matches(
+              "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*"
+            ) =>
+          DatabaseDetailsCache.getDatabaseDetails(rule.id)
+        case _ => Option.empty[DatabaseDetails]
+      }
+
       val ruleInfo = ExporterUtility.getRuleInfoForExporting(sinkIdAfterSplit(0))
       DataFlowSubCategorySinkModel(
         sinkSubCategory,
@@ -84,6 +94,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         ruleInfo.isSensitive,
         ruleInfo.tags,
         apiUrl,
+        databaseDetails.getOrElse(DatabaseDetails("", "", "", "")),
         sinkPathIds
           .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId))
       )

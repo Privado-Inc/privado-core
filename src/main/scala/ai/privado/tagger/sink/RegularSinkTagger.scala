@@ -23,9 +23,10 @@
 
 package ai.privado.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.utility.Utilities._
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -33,7 +34,7 @@ import io.shiftleft.semanticcpg.language._
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class RegularSinkTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
-  lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+  lazy val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
   override def generateParts(): Array[RuleInfo] = {
     RuleCache.getRule.sinks
@@ -44,7 +45,12 @@ class RegularSinkTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg)
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
     val sinks = cacheCall.methodFullName(ruleInfo.patterns.head).l
+    if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
+      val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
+      if (databaseDetails.isDefined) {
+        sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
+      }
+    }
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
-
   }
 }
