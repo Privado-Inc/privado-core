@@ -111,8 +111,8 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
     if (newMethodFullName.endsWith("operator>"))
       newMethodFullName = methodFullNameAfterSplit.slice(0, methodFullNameAfterSplit.length - 2).mkString(".")
 
-    //To not update node if call name is --> then
-    if(!callNode.name.equals("then")) {
+    // To not update node if call name is --> then
+    if (!callNode.name.equals("then")) {
       builder.setNodeProperty(callNode, PropertyNames.MethodFullName, newMethodFullName + "." + callNode.name)
     }
   }

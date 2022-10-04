@@ -136,8 +136,8 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
     defaultPackageName: String = ""
   ) = {
 
-    //To not update node if call name is --> then
-    if(!callNode.name.equals("then")){
+    // To not update node if call name is --> then
+    if (!callNode.name.equals("then")) {
       builder.setNodeProperty(
         callNode,
         PropertyNames.MethodFullName,

@@ -33,6 +33,8 @@ import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.LiteralTagger
+import ai.privado.tagger.config.DBConfigTagger
+
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -48,7 +50,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new LiteralTagger(cpg).createAndApply()
     new IdentifierTagger(cpg).createAndApply()
-
+    new DBConfigTagger(cpg).createAndApply()
     new RegularSinkTagger(cpg).createAndApply()
     new APITagger(cpg).createAndApply()
 

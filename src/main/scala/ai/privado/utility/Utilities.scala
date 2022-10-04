@@ -26,6 +26,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.{ConfigAndRules, Constants, Language, RuleInfo, Semantic}
+import ai.privado.model.DatabaseDetails
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
@@ -37,8 +38,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Identifier,
   Literal,
   MethodParameterIn,
-  NewTag,
-  StoredNode
+  NewTag
 }
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -70,6 +70,20 @@ object Utilities {
       builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
     }
     builder
+  }
+
+  /** Utility to add database detail tags to sink
+    */
+  def addDatabaseDetailTags(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: CfgNode,
+    databaseDetails: DatabaseDetails
+  ): Unit = {
+    val storeForTagHelper = storeForTag(builder, node) _
+    storeForTagHelper(Constants.dbName, databaseDetails.dbName)
+    storeForTagHelper(Constants.dbVendor, databaseDetails.dbVendor)
+    storeForTagHelper(Constants.dbLocation, databaseDetails.dbLocation)
+    storeForTagHelper(Constants.dbOperation, databaseDetails.dbOperation)
   }
 
   /** Utility to add Tag based on a rule Object
