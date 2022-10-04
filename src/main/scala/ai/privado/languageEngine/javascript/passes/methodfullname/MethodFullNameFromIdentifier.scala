@@ -94,7 +94,7 @@ class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Ex
     // Query to tag all call node which match with identifier - `logger` in the same file
     cpg.identifier
       .nameExact(identifierName)
-      .filter(_.file.name.head.equals(identifierFileName))
+      .filter(_.file.name.headOption.getOrElse("").equals(identifierFileName))
       .repeat(_.astParent)(_.until(_.isCall.nameNot(".*operator.*")))
       .isCall // This will take care of field chaining ex - web.chat.postMessage()
       .or(_.filter(_.methodFullName.isEmpty), _.where(_.methodFullName(ANY_VALUE)))
