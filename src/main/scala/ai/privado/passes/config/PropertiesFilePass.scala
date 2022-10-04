@@ -117,7 +117,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
     .l
 
   private def obtainKeyValuePairs(file: String): List[(String, String)] = {
-    if (file.matches(""".*\.yml""")) {
+    if (file.matches(""".*\.(?:yml|yaml)""")) {
       loadAndConvertYMLtoProperties(file)
     } else {
       loadFromProperties(file)
@@ -159,7 +159,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cp
   }
 
   private def propertiesFiles(projectRoot: String): List[String] = {
-    SourceFiles.determine(Set(projectRoot), Set(".properties", ".yml"))
+    SourceFiles.determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {

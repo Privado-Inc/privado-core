@@ -36,49 +36,4 @@ object DatabaseDetailsCache {
     databaseDetailsMap.addOne(ruleId -> databaseDetails)
   def getDatabaseDetails(ruleId: String): Option[DatabaseDetails] = databaseDetailsMap.get(ruleId)
 
-  /*
-  def setRule(rule: ConfigAndRules): Unit = {
-    this.rule = rule
-    rule.sources.foreach(this.setRuleInfo)
-    rule.sinks.foreach(this.setRuleInfo)
-    rule.collections.foreach(this.setRuleInfo)
-    rule.policies.foreach(this.setPolicyOrThreat)
-    rule.threats.foreach(this.setPolicyOrThreat)
-  }
-
-  def getRule: ConfigAndRules = rule
-
-  def setRuleInfo(ruleInfo: RuleInfo): Unit = ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
-
-  def getRuleInfo(ruleId: String): Option[RuleInfo] = ruleInfoMap.get(ruleId)
-
-  def getAllRuleInfo: Seq[RuleInfo] = ruleInfoMap.values.toList
-
-  private def setPolicyOrThreat(policy: PolicyOrThreat): Unit = policyOrThreatMap.addOne(policy.id -> policy)
-
-  def getPolicyOrThreat(policyId: String): Option[PolicyOrThreat] = policyOrThreatMap.get(policyId)
-
-  def getAllPolicyOrThreat: Seq[PolicyOrThreat] = policyOrThreatMap.values.toList
-
-  def getAllPolicy = this.rule.policies
-
-  def getAllThreat = this.rule.threats
-
-  def setInternalRules(rules: ConfigAndRules) = {
-    for (rule <- rules.sinks) {
-      internalRules.addOne((rule.id, 0))
-    }
-    for (rule <- rules.sources) {
-      internalRules.addOne((rule.id, 0))
-    }
-    for (rule <- rules.collections) {
-      internalRules.addOne((rule.id, 0))
-    }
-    for (rule <- rules.policies) {
-      internalRules.addOne((rule.id, 0))
-    }
-    for (rule <- rules.exclusions) {
-      internalRules.addOne((rule.id, 0))
-    }
-  } */
 }

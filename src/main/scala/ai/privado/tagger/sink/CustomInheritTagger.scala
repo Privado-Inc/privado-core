@@ -28,7 +28,6 @@ import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
 import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.model.DatabaseDetails
 
 class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
@@ -46,9 +45,9 @@ class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
         if (callNodes != null & ruleInfo.id.matches("Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*")) {
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
-          println("Rule id: " + ruleInfo.id + "GOt DB details" + databaseDetails)
+          logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")
           if (databaseDetails.isDefined) {
-            println("adding database details")
+            logger.debug("adding database details")
             callNodes.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
           }
         }

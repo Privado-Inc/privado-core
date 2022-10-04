@@ -40,25 +40,17 @@ import com.sun.jndi.dns.DnsUrl
 class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    /* println("**********************hello**********************")
-    println("**********************hello**********************")
-    println("**********************hello**********************") */
 
     // Spring Data JDBC
     // We are seeing duplicate values. NEED TO INVESTIGATE
     // Let's deduplicate the properties for the time being
     // Databases:
     // val propertySinks = cpg.property.filter(p => p.value matches ("jdbc:.*://.*/.*|mongodb(\\+srv)?:.*")).l.groupBy(_.value).map(_._2.head)
-    val propertySinks = cpg.property.filter(p => p.value matches (".*")).l.groupBy(_.value).map(_._2.head)
-
-    /* println(propertySinks)
-    for (dbUrl <- propertySinks) {
-      println("property: " + dbUrl.name + " => " + dbUrl.value)
-    } */
+    // val propertySinks = cpg.property.filter(p => p.value matches (".*")).l.groupBy(_.value).map(_._2.head)
+    val propertySinks = cpg.property.dedup.l
 
     // Display the value of mylist using for loop
     for (dbUrl <- propertySinks) {
-      // println("property: " + dbUrl.name + " => " + dbUrl.value)
       if (dbUrl.value.contains("jdbc:h2")) {
         parsePropForSpringJdbcAndJpaH2(dbUrl)
       } else if (dbUrl.value.contains("jdbc:oracle")) {
