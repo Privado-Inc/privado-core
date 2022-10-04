@@ -40,7 +40,8 @@ libraryDependencies ++= Seq(
   "commons-io"                    % "commons-io"              % "2.11.0",
   "com.networknt" % "json-schema-validator" % "1.0.72",
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion,
-  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion
+  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
+   "com.github.wnameless.json" % "json-flattener" % "0.14.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

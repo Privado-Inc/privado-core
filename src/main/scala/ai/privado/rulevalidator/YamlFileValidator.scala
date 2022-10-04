@@ -180,7 +180,8 @@ object YamlFileValidator {
     def validateJsonFile(schemaFile: String, jsonObj: JsonNode): mutable.Set[ValidationMessage] = {
       file
         .loadSchema(schemaFile)
-        .validate(jsonObj).asScala
+        .validate(jsonObj)
+        .asScala
     }
 
   }

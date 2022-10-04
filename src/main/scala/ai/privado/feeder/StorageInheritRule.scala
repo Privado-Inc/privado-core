@@ -35,7 +35,7 @@ object StorageInheritRule {
       "",
       Array[String]("springframework.org"),
       List[String](
-        "org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
+        "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
         "(find|get).*"
       ),
       false,
@@ -54,7 +54,7 @@ object StorageInheritRule {
       "",
       Array[String]("springframework.org"),
       List[String](
-        "org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
+        "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
         "(save|delete).*"
       ),
       false,
