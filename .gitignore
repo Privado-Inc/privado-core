@@ -206,6 +206,8 @@ project/plugins/project/
 .history
 .cache
 .lib/
+.bin
+.local
 
 ### Scala ###
 
