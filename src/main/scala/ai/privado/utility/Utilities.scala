@@ -25,13 +25,22 @@ package ai.privado.utility
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
-import ai.privado.model.{Constants, DatabaseDetails, RuleInfo, Semantic}
-import ai.privado.semantic.Language._
+
+import ai.privado.model.{ConfigAndRules, Constants, Language, RuleInfo, Semantic}
+import ai.privado.model.DatabaseDetails
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewTag, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodParameterIn,
+  NewTag
+}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -41,6 +50,8 @@ import java.nio.file.Paths
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
 import io.shiftleft.semanticcpg.language._
+import ai.privado.semantic.Language.finder
+import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -53,9 +64,10 @@ object Utilities {
     */
   def storeForTag(
     builder: BatchedUpdate.DiffGraphBuilder,
-    node: StoredNode
+    node: CfgNode
   )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
-    if (isFileProcessable(node.location.filename)) {
+    val fileName = getFileNameForNode(node)
+    if (isFileProcessable(fileName)) {
       builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
     }
     builder
@@ -65,7 +77,7 @@ object Utilities {
     */
   def addDatabaseDetailTags(
     builder: BatchedUpdate.DiffGraphBuilder,
-    node: StoredNode,
+    node: CfgNode,
     databaseDetails: DatabaseDetails
   ): Unit = {
     val storeForTagHelper = storeForTag(builder, node) _
@@ -77,8 +89,9 @@ object Utilities {
 
   /** Utility to add Tag based on a rule Object
     */
-  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: StoredNode, ruleInfo: RuleInfo): Unit = {
-    if (isFileProcessable(node.location.filename)) {
+  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: CfgNode, ruleInfo: RuleInfo): Unit = {
+    val fileName = getFileNameForNode(node)
+    if (isFileProcessable(fileName)) {
       val storeForTagHelper = storeForTag(builder, node) _
       storeForTagHelper(Constants.id, ruleInfo.id)
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
@@ -271,5 +284,37 @@ object Utilities {
       Some(generatedSemantic.trim)
     } else
       None
+  }
+
+  /** Returns only rules which belong to the correponding passed language along with Default and Unknown
+    * @param rules
+    * @param lang
+    * @return
+    */
+  def filterRuleByLanguage(rules: ConfigAndRules, lang: Language.Value): ConfigAndRules = {
+    def getRuleByLang(rule: RuleInfo) =
+      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+    def getSemanticRuleByLang(rule: Semantic) =
+      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+
+    val sources     = rules.sources.filter(getRuleByLang)
+    val sinks       = rules.sinks.filter(getRuleByLang)
+    val collections = rules.collections.filter(getRuleByLang)
+    val exclusions  = rules.exclusions.filter(getRuleByLang)
+    val semantics   = rules.semantics.filter(getSemanticRuleByLang)
+
+    ConfigAndRules(sources, sinks, collections, rules.policies, rules.threats, exclusions, semantics)
+  }
+
+  /** Returns file name for a node
+    * @param node
+    * @return
+    */
+  def getFileNameForNode(node: CfgNode) = {
+    Traversal(node).head match {
+      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
+        a.file.name.headOption.getOrElse("")
+      case a => a.location.filename
+    }
   }
 }

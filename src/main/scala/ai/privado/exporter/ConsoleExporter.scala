@@ -18,12 +18,14 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
 import ai.privado.model.Constants
-import ai.privado.model.exporter.{CollectionModel, DataFlowSubCategoryModel, SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter._
+import org.slf4j.LoggerFactory
 
 import java.net.URL
 import scala.collection.mutable
@@ -31,24 +33,37 @@ import Console.{BLUE, BOLD, CYAN, GREEN, MAGENTA, RED, RESET, WHITE, YELLOW}
 
 object ConsoleExporter {
 
-  private def getDomainFromString(urlString: String): String = {
-    val prefixToReplace = if (urlString.contains("http://")) "http://" else "https://"
-    val url             = new URL("https://" + urlString.replaceAll(prefixToReplace, "").trim)
-    url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  private def getDomainFromString(urlString: String) = {
+    try {
+      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
+      val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
+      val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
+      url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+    } catch {
+      case e: Exception =>
+        logger.debug("Exception while getting domain from string : ", e)
+        "NA"
+    }
+
   }
 
   def exportConsoleSummary(
     dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]],
     sources: List[SourceModel],
+    sinks: List[SinkModel],
     processing: List[SourceProcessingModel],
     collections: List[CollectionModel],
     violationSize: Int
   ): Unit = {
     // SourceId - Name Map
     val sourceNameIdMap = sources.map((source) => (source.id, source.name)).toMap
+    val sinkNameIdMap   = sinks.map((sink) => (sink.id, sink.name)).toMap
 
     // Leakage Number - SourceId Map
-    val leakageSourceMap = dataflowsOutput(Constants.leakages)
+    val leakageSourceMap = dataflowsOutput
+      .getOrElse(Constants.leakages, List[DataFlowSubCategoryModel]())
       .map((leakage) => (leakage.sourceId, leakage.sinks.map(_.paths.size).sum))
       .toMap
 
@@ -70,7 +85,8 @@ object ConsoleExporter {
     })
 
     // Storages - SourceId Map
-    val storageSourceMap = dataflowsOutput(Constants.storages)
+    val storageSourceMap = dataflowsOutput
+      .getOrElse(Constants.storages, List[DataFlowSubCategoryModel]())
       .map(storage =>
         (
           storage.sourceId,
@@ -91,7 +107,8 @@ object ConsoleExporter {
     val uniqueStorages = storageSourceMap.values.flatten.toSet
 
     // Third Parties - SourceId Map
-    val thirdPartySourceMap = dataflowsOutput(Constants.third_parties)
+    val thirdPartySourceMap = dataflowsOutput
+      .getOrElse(Constants.third_parties, List[DataFlowSubCategoryModel]())
       .map(thirdParty => {
         val thirdParties = mutable.Set[String]()
         thirdParty.sinks.foreach(sink => {
@@ -109,7 +126,8 @@ object ConsoleExporter {
     val uniqueThirdParties = thirdPartySourceMap.values.flatten.toSet
 
     // Internal APIs - SourceId Map
-    val internalAPIsSourceMap = dataflowsOutput(Constants.internal_apis)
+    val internalAPIsSourceMap = dataflowsOutput
+      .getOrElse(Constants.internal_apis, List[DataFlowSubCategoryModel]())
       .map(internalAPI => {
         val internalAPIs = mutable.Set[String]()
         internalAPI.sinks.foreach(sink => {
@@ -174,7 +192,16 @@ object ConsoleExporter {
     })
 
     println("")
-
+    if (sinkNameIdMap.nonEmpty) {
+      println(s"${sinkNameIdMap.size} SINKS")
+      println("Here is a list of sinks discovered in the code.")
+    }
+    count = 0
+    sinkNameIdMap.foreachEntry((sinkId, sinkName) => {
+      count = count + 1
+      Console.println(s"\n${RESET}${WHITE}${BOLD}${count}. ${sinkName.toUpperCase()}${RESET}")
+    })
+    println("")
   }
 
 }

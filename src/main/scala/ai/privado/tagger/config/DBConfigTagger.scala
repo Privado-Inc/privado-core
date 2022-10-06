@@ -22,22 +22,18 @@
 
 package ai.privado.tagger.config
 
-import ai.privado.language._
-import ai.privado.model.Constants
-import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
-import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import overflowdb.BatchedUpdate
 import ai.privado.cache.DatabaseDetailsCache
+import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.DatabaseDetails
-import com.sun.jndi.dns.DnsUrl
+import io.shiftleft.passes.SimpleCpgPass
+import org.slf4j.LoggerFactory
 
-class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+class DBConfigTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
@@ -51,20 +47,23 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
     // Display the value of mylist using for loop
     for (dbUrl <- propertySinks) {
-      if (dbUrl.value.contains("jdbc:h2")) {
-        parsePropForSpringJdbcAndJpaH2(dbUrl)
-      } else if (dbUrl.value.contains("jdbc:oracle")) {
-        parsePropForSpringJdbcAndJpaOracle(dbUrl)
-      } else if (dbUrl.value.contains("jdbc:")) {
-        parsePropForSpringJDBCAndJPA(dbUrl)
-      } else if (dbUrl.value.contains("mongodb")) {
-        parsePropForSpringDataMongo(dbUrl)
+      try {
+        if (dbUrl.value.contains("jdbc:h2")) {
+          parsePropForSpringJdbcAndJpaH2(dbUrl)
+        } else if (dbUrl.value.contains("jdbc:oracle")) {
+          parsePropForSpringJdbcAndJpaOracle(dbUrl)
+        } else if (dbUrl.value.contains("jdbc:")) {
+          parsePropForSpringJDBCAndJPA(dbUrl)
+        } else if (dbUrl.value.contains("mongodb")) {
+          parsePropForSpringDataMongo(dbUrl)
+        }
+      } catch {
+        case e: Exception => logger.debug("Exception while processing db config: " + e)
       }
     }
   }
 
   private def parsePropForSpringJdbcAndJpaOracle(dbUrl: JavaProperty): Unit = {
-    // println("Inside parsePropForSpringJdbcAndJpaOracle..")
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1).toString
     var dbLocation = ""
@@ -77,9 +76,6 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
       dbLocation = tokens(3).split("@")(1).toString + ":" + tokens(4).split("/")(0)
       dbName = tokens(5)
     }
-    /* println("DB TYPE: " + dbVendor)
-    println("DB NAME: " + dbName)
-    println("DB LOCATION: " + dbLocation) */
 
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
@@ -104,30 +100,25 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   }
 
   private def parsePropForSpringJdbcAndJpaH2(dbUrl: JavaProperty): Unit = {
-    // println("Inside parsePropForSpringJdbcAndJpaH2..")
     val tokens     = dbUrl.value.split(":")
-    val dbVendor   = tokens(1).toString
+    val dbVendor   = tokens(1)
     var dbLocation = ""
     var dbName     = ""
 
     if (tokens.length == 3) {
-      dbLocation = tokens(2).toString
+      dbLocation = tokens(2)
       val slashTokens = dbUrl.value.split("/")
       dbName = slashTokens(slashTokens.length - 1).split("\\?")(0)
     } else {
-      if (tokens(2).toString == "mem") {
+      if (tokens(2) == "mem") {
         dbLocation = "In-memory"
-        dbName = tokens(3).toString
-      } else if (tokens(2).toString.matches("file|tcp")) {
-        dbLocation = tokens(2).toString + ":" + tokens(3).toString.split(";")(0)
+        dbName = tokens(3)
+      } else if (tokens(2).matches("file|tcp")) {
+        dbLocation = tokens(2) + ":" + tokens(3).split(";")(0)
         val slashTokens = dbUrl.value.split("/")
         dbName = slashTokens(slashTokens.length - 1).split("\\?")(0).split(";")(0)
       }
     }
-    /* println("DB TYPE: " + dbVendor)
-    println("DB NAME: " + dbName)
-    println("DB LOCATION: " + dbLocation) */
-
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
       "Storages.SpringFramework.Jdbc"
@@ -151,13 +142,10 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   }
 
   private def parsePropForSpringDataMongo(dbUrl: JavaProperty): Unit = {
-    // println("Inside parsePropForSpringDataMongo..")
+
     val dbVendor   = dbUrl.value.split(":")(0).split("\\+")(0)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
-    /* println("DB TYPE: " + dbVendor)
-    println("DB NAME: " + dbName)
-    println("DB LOCATION: " + dbLocation) */
 
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
@@ -174,9 +162,6 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val dbVendor   = tokens(1)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
-    /* println("DB TYPE: " + dbVendor)
-    println("DB NAME: " + dbName)
-    println("DB LOCATION: " + dbLocation) */
 
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),

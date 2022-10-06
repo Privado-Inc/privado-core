@@ -18,11 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
-import ai.privado.model.exporter.{CollectionOccurrenceDetailModel, CollectionOccurrenceModel, CollectionModel}
+import ai.privado.model.exporter.{CollectionModel, CollectionOccurrenceDetailModel, CollectionOccurrenceModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, MethodParameterIn}

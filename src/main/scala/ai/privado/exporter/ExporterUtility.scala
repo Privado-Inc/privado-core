@@ -18,16 +18,18 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
+import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities.dump
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.semanticcpg.language.toExtendedNode
-import ai.privado.semantic.Language._
+import io.shiftleft.codepropertygraph.generated.nodes._
+import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 object ExporterUtility {
 
@@ -43,10 +45,9 @@ object ExporterUtility {
     * @return
     */
   def convertIndividualPathElement(node: CfgNode): Option[DataFlowSubCategoryPathExcerptModel] = {
-    val nodeLocation = node.location
-    val sample       = nodeLocation.symbol
+    val sample = node.code
     val lineNumber: Int = {
-      nodeLocation.lineNumber match {
+      node.lineNumber match {
         case Some(n) => n
         case None    => -1
       }
@@ -57,13 +58,27 @@ object ExporterUtility {
         case None    => -1
       }
     }
-    val fileName = nodeLocation.filename
-    val excerpt  = dump(nodeLocation.filename, node.lineNumber)
+    val fileName = Traversal(node).head match {
+      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) => a.file.name.head
+      case a                                                                                      => a.location.filename
+    }
+    val absoluteFileName = {
+      if (fileName.contains(AppCache.repoName))
+        fileName
+      else {
+        if (AppCache.localScanPath.endsWith("/"))
+          AppCache.localScanPath + fileName
+        else
+          AppCache.localScanPath + "/" + fileName
+      }
+    }
 
-    if (nodeLocation.filename == "<empty>" || nodeLocation.symbol == "<empty>")
+    if (fileName == "<empty>" || sample == "<empty>")
       None
-    else
+    else {
+      val excerpt = dump(absoluteFileName, node.lineNumber)
       Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
+    }
   }
 
   def getRuleInfoForExporting(ruleId: String): RuleInfo = {

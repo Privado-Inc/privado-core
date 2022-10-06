@@ -18,31 +18,40 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.tagger.sink
 
-import ai.privado.tagger.PrivadoSimplePass
-import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.BatchedUpdate
-import io.shiftleft.semanticcpg.language._
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
+import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.utility.Utilities._
+
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
-import ai.privado.cache.DatabaseDetailsCache
 
-class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
-  lazy val cacheCall = cpg.call.or(_.nameNot("(<operator|<init).*")).l
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+class RegularSinkTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+  lazy val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+
+  override def generateParts(): Array[RuleInfo] = {
+    RuleCache.getRule.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .toArray
+  }
+
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+
     val sinks = cacheCall.methodFullName(ruleInfo.patterns.head).l
-
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
       if (databaseDetails.isDefined) {
         sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
       }
     }
-
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
   }
 }
