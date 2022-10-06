@@ -66,7 +66,9 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
                 .isCall
                 .argument(1)
                 .isIdentifier
-                .map(curlyItem => (curlyItem.name, dependencyName, curlyItem.file.name.headOption.getOrElse(""), "pkg."))
+                .map(curlyItem =>
+                  (curlyItem.name, dependencyName, curlyItem.file.name.headOption.getOrElse(""), "pkg.")
+                )
                 .l
             }
             // handles const WebClient = require('@slack/web-api')

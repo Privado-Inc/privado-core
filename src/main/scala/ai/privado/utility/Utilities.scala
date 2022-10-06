@@ -25,6 +25,7 @@ package ai.privado.utility
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+
 import ai.privado.model.{ConfigAndRules, Constants, Language, RuleInfo, Semantic}
 import ai.privado.model.DatabaseDetails
 import better.files.File

@@ -26,6 +26,7 @@ package ai.privado.tagger.sink
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.utility.Utilities._
+
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ConcurrentWriterCpgPass

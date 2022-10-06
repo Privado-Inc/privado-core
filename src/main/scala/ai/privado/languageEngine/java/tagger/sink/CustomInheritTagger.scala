@@ -28,6 +28,7 @@ import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
+
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import ai.privado.cache.DatabaseDetailsCache
 import org.slf4j.LoggerFactory
