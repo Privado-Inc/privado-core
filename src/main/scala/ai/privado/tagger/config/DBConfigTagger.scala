@@ -119,7 +119,6 @@ class DBConfigTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
         dbName = slashTokens(slashTokens.length - 1).split("\\?")(0).split(";")(0)
       }
     }
-
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
       "Storages.SpringFramework.Jdbc"
@@ -143,6 +142,7 @@ class DBConfigTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
   }
 
   private def parsePropForSpringDataMongo(dbUrl: JavaProperty): Unit = {
+
     val dbVendor   = dbUrl.value.split(":")(0).split("\\+")(0)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
