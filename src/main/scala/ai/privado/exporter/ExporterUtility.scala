@@ -66,10 +66,10 @@ object ExporterUtility {
       if (fileName.contains(AppCache.repoName))
         fileName
       else {
-        if (AppCache.localScanPath.endsWith("/"))
-          AppCache.localScanPath + fileName
+        if (AppCache.scanPath.endsWith("/"))
+          AppCache.scanPath + fileName
         else
-          AppCache.localScanPath + "/" + fileName
+          AppCache.scanPath + "/" + fileName
       }
     }
 

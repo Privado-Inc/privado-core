@@ -28,11 +28,13 @@ import ai.privado.utility.Utilities._
 object AppCache {
 
   var localScanPath: String      = ""
+  var scanPath: String           = ""
   var repoName: String           = ""
   var privadoVersionMain: String = ""
 
   def init(scanPath: String) = {
+    this.scanPath = scanPath
     this.localScanPath = getRepoScanPath(scanPath)
-    this.repoName = this.localScanPath.split("/").last
+    this.repoName = this.localScanPath.split("[/\\\\]").last
   }
 }
