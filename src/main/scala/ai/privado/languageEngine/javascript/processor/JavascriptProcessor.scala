@@ -52,10 +52,8 @@ object JavascriptProcessor {
     sourceRepoLocation: String
   ): Either[String, Unit] = {
     xtocpg match {
-      case Success(cpgWithoutDataflow) => {
+      case Success(cpg) =>
         logger.info("Applying default overlays")
-        cpgWithoutDataflow.close()
-        val cpg = DefaultOverlays.create("cpg.bin")
         logger.info("Enhancing Javascript graph")
         logger.debug("Running custom passes")
         new MethodFullName(cpg).createAndApply()
@@ -91,14 +89,12 @@ object JavascriptProcessor {
 
             Right(())
         }
-      }
 
-      case Failure(exception) => {
+      case Failure(exception) =>
         logger.error("Error while parsing the source code!")
         logger.debug("Error : ", exception)
         MetricHandler.setScanStatus(false)
         Left("Error while parsing the source code: " + exception.toString)
-      }
     }
   }
 
@@ -121,7 +117,7 @@ object JavascriptProcessor {
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation)
-    val xtocpg = new JsSrc2Cpg().createCpg(cpgconfig)
+    val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 

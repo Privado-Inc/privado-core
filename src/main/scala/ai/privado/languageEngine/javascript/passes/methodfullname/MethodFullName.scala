@@ -80,7 +80,7 @@ class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, 
       .toArray
 
     // Captures `import * as cors from 'cors'` style
-    val importStyleDependency = cpg.staticImport
+    val importStyleDependency = cpg.imports
       .map(staticImport =>
         (
           staticImport.importedAs.getOrElse(""),
