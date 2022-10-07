@@ -30,6 +30,7 @@ import ai.privado.utility.Utilities.dump
 import io.shiftleft.codepropertygraph.generated.nodes._
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language._
+import better.files.File
 
 object ExporterUtility {
 
@@ -63,13 +64,14 @@ object ExporterUtility {
       case a                                                                                      => a.location.filename
     }
     val absoluteFileName = {
-      if (fileName.contains(AppCache.repoName))
+      val file = File(fileName)
+      if (file.exists)
         fileName
       else {
-        if (AppCache.localScanPath.endsWith("/"))
-          AppCache.localScanPath + fileName
+        if (AppCache.scanPath.endsWith("/"))
+          AppCache.scanPath + fileName
         else
-          AppCache.localScanPath + "/" + fileName
+          AppCache.scanPath + "/" + fileName
       }
     }
 
