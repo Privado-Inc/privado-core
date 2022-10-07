@@ -58,6 +58,7 @@ object Main {
             // any user-facing non-debug logging to be done internally
             logger.debug("Failure from scan process:", e)
             logger.debug("Skipping auth flow due to scan failure")
+            logger.error("Error in scanning, skipping auth flow : " + e.getMessage)
         } finally {
           MetricHandler.compileAndSend()
         }
