@@ -44,7 +44,7 @@ object ConsoleExporter {
     } catch {
       case e: Exception =>
         logger.debug("Exception while getting domain from string : ", e)
-        "NA"
+        urlString
     }
 
   }
