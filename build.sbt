@@ -59,15 +59,18 @@ ThisBuild / resolvers ++= Seq(
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots")
 )
+lazy val astGenDlUrl       = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/"
+lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe")
+
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {
   val astGenDir = baseDirectory.value / "bin" / "astgen"
   astGenDir.mkdirs()
 
-  Seq("astgen-linux", "astgen-macos", "astgen-win.exe").foreach { fileName =>
+  astGenBinaryNames.foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url = s"https://github.com/max-leuthaeuser/astgen/releases/download/latest/$fileName"
+      val url            = s"$astGenDlUrl$fileName"
       val downloadedFile = SimpleCache.downloadMaybe(url)
       IO.copyFile(downloadedFile, dest)
     }
@@ -82,6 +85,14 @@ astGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+// Also remove astgen binaries with clean, e.g., to allow for updating them.
+// Sadly, we can't define the bin/ folders globally,
+// as .value can only be used within a task or setting macro
+cleanFiles ++= Seq(
+  baseDirectory.value / "bin" / "astgen",
+  (Universal / stagingDirectory).value / "bin" / "astgen"
+) ++ astGenBinaryNames.map(fileName => SimpleCache.encodeFile(s"$astGenDlUrl$fileName"))
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false
 
