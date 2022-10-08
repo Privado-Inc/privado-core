@@ -24,27 +24,29 @@
 package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.model.InternalTag
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 
-class IdentifierTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
+class IdentifierTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+    RuleCache.getRule.sources.foreach(ruleInfo => {
+      val rulePattern              = ruleInfo.patterns.head
+      val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
+      regexMatchingIdentifiers.foreach(identifier => {
+        storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+        addRuleTags(builder, identifier, ruleInfo)
+      })
 
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val rulePattern              = ruleInfo.patterns.head
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
-    regexMatchingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, identifier, ruleInfo)
-    })
-
-    val regexMatchingFieldAccess = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
-    regexMatchingFieldAccess.foreach(fieldAccess => {
-      storeForTag(builder, fieldAccess)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, fieldAccess, ruleInfo)
+      val regexMatchingFieldIdentifiersIdentifiers =
+        cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
+      regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
+        storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+        addRuleTags(builder, identifier, ruleInfo)
+      })
     })
   }
 }
