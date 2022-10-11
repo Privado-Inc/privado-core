@@ -94,14 +94,19 @@ class SinkExporter(cpg: Cpg) {
       .toList
   }
 
+  /** Helper function to filter sinks
+    * @param traversal
+    * @return
+    */
+  private def filterSink(traversal: Traversal[CfgNode]) = {
+    traversal
+      .where(_.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)))
+      .whereNot(_.tag.where(_.nameExact(Constants.catLevelTwo).valueExact(Constants.leakages)))
+  }
+
   /** Fetch all the sink tag
     */
   private def getSinkTagList = {
-    def filterSink(traversal: Traversal[StoredNode]) = {
-      traversal.tag
-        .nameExact(Constants.catLevelOne)
-        .or(_.valueExact(CatLevelOne.SINKS.name))
-    }
     val sinks =
       cpg.identifier
         .where(filterSink)
@@ -121,11 +126,6 @@ class SinkExporter(cpg: Cpg) {
   /** Fetch all the sink node
     */
   private def getSinkList: List[CfgNode] = {
-    def filterSink(traversal: Traversal[StoredNode]) = {
-      traversal.tag
-        .nameExact(Constants.catLevelOne)
-        .or(_.valueExact(CatLevelOne.SINKS.name))
-    }
     val sinks =
       cpg.identifier
         .where(filterSink)
