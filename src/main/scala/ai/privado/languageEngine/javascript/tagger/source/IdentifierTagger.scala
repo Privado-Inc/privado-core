@@ -27,10 +27,10 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class IdentifierTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
