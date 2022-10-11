@@ -26,10 +26,10 @@ package ai.privado.languageEngine.javascript.passes.methodfullname
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class MethodFullNameForEmptyNodes(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
+class MethodFullNameForEmptyNodes(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
   override def generateParts(): Array[Call] = {
     cpg.call.methodFullName("").toArray
   }

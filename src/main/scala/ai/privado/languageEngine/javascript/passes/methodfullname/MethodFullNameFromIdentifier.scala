@@ -26,13 +26,13 @@ package ai.privado.languageEngine.javascript.passes.methodfullname
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class MethodFullNameFromIdentifier(cpg: Cpg) extends ConcurrentWriterCpgPass[(Expression, Expression)](cpg) {
+class MethodFullNameFromIdentifier(cpg: Cpg) extends ForkJoinParallelCpgPass[(Expression, Expression)](cpg) {
 
   val ANY_VALUE = "ANY"
 

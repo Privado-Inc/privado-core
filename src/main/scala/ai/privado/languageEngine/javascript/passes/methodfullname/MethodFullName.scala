@@ -26,13 +26,13 @@ package ai.privado.languageEngine.javascript.passes.methodfullname
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class MethodFullName(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, String, String, String)](cpg) {
+class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(String, String, String, String)](cpg) {
 
   val cachedCall         = cpg.call.whereNot(_.name(Operators.ALL.asScala.toSeq: _*)).l
   val cachedOperatorCall = cpg.call(Operators.assignment).l
