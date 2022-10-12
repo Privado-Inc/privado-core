@@ -77,12 +77,18 @@ object Constants {
   val sources             = "sources"
   val localScanPath       = "localScanPath"
   val processing          = "processing"
+  val sinkProcessing      = "sinkProcessing"
   val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
+
+  // database details
+  val dbName      = "dbName"
+  val dbVendor    = "dbVendor"
+  val dbLocation  = "dbLocation"
+  val dbOperation = "dbOperation"
 
   // Other commonly used constants
   val RULES_DIR_IN_CONFIG           = "rules"
   val CONFIG_DIR_IN_CONFIG          = "config"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
-
 }

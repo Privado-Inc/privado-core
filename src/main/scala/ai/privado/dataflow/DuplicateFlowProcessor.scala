@@ -24,12 +24,12 @@ package ai.privado.dataflow
 
 import ai.privado.model.Constants
 import io.joern.dataflowengineoss.language.Path
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
-import io.shiftleft.semanticcpg.language._
 
 object DuplicateFlowProcessor {
 

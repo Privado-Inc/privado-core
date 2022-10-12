@@ -4,10 +4,11 @@
 
 ### MAC ###
 .DS_Store
-
+.bin
 .privado
 
 ### Joern ###
+.local/
 
 joern-inst/
 cpg.bin
@@ -206,6 +207,8 @@ project/plugins/project/
 .history
 .cache
 .lib/
+.bin
+.local
 
 ### Scala ###
 

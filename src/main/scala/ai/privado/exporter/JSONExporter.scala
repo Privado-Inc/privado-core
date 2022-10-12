@@ -18,31 +18,32 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, PolicyThreatType}
 import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.exporter.DataFlowSubCategoryModel
+import ai.privado.model.{Constants, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
 import ai.privado.model.exporter.CollectionEncoderDecoder._
-import ai.privado.model.exporter.DataFlowSubCategoryModel
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.circe._
-import io.circe.syntax._
-import io.joern.dataflowengineoss.language.Path
-import org.apache.commons.io.FileUtils
-
-import java.util.Calendar
-import scala.collection.mutable
+import ai.privado.model.exporter.SinkEncoderDecoder._
 import better.files.File
+import io.circe.Json
+import io.circe.syntax.EncoderOps
+import io.joern.dataflowengineoss.language.Path
+import io.shiftleft.codepropertygraph.generated.Cpg
+import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 
 import java.math.BigInteger
+import java.util.Calendar
+import scala.collection.mutable
 
 object JSONExporter {
 
@@ -56,6 +57,7 @@ object JSONExporter {
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg)
+    val sinkExporter            = new SinkExporter(cpg)
     val dataflowExporter        = new DataflowExporter(cpg, dataflows)
     val collectionExporter      = new CollectionExporter(cpg)
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
@@ -70,9 +72,14 @@ object JSONExporter {
       output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
       val sources = sourceExporter.getSources
       output.addOne(Constants.sources -> sources.asJson)
+      logger.info("Completed Source Exporting")
       val processing = sourceExporter.getProcessing
       output.addOne(Constants.processing -> processing.asJson)
-      logger.info("Completed Source Exporting")
+
+      val sinks = sinkExporter.getSinks
+      output.addOne(Constants.sinks -> sinks.asJson)
+      val processingSinks = sinkExporter.getProcessing
+      output.addOne(Constants.sinkProcessing -> processingSinks.asJson)
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       RuleCache.getRule.sinks.foreach(sinkRule => {
@@ -116,7 +123,14 @@ object JSONExporter {
           case None               => false
         }
       )
-      ConsoleExporter.exportConsoleSummary(dataflowsOutput, sources, processing, collections, complianceViolations.size)
+      ConsoleExporter.exportConsoleSummary(
+        dataflowsOutput,
+        sources,
+        sinks,
+        processing,
+        collections,
+        complianceViolations.size
+      )
 
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
