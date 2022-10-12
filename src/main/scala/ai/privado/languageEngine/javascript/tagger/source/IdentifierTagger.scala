@@ -34,17 +34,20 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val rulePattern              = ruleInfo.patterns.head
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
-    regexMatchingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, identifier, ruleInfo)
-    })
+    RuleCache.getRule.sources.foreach(ruleInfo => {
+      val rulePattern              = ruleInfo.patterns.head
+      val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
+      regexMatchingIdentifiers.foreach(identifier => {
+        storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+        addRuleTags(builder, identifier, ruleInfo)
+      })
 
-    val regexMatchingFieldAccess = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
-    regexMatchingFieldAccess.foreach(fieldAccess => {
-      storeForTag(builder, fieldAccess)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, fieldAccess, ruleInfo)
+      val regexMatchingFieldIdentifiersIdentifiers =
+        cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
+      regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
+        storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+        addRuleTags(builder, identifier, ruleInfo)
+      })
     })
   }
 }
