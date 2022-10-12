@@ -2,7 +2,7 @@ package ai.privado.rulevalidator
 
 import ai.privado.entrypoint.CommandConstants
 import ai.privado.model.{CatLevelOne, ConfigRuleType}
-import ai.privado.model.Constants.{PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
+import ai.privado.model.Constants.{CONFIG_DIR_IN_CONFIG, PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
 import better.files.File
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -86,7 +86,10 @@ object YamlFileValidator {
     *   Boolean stating whether the rule file is valid
     */
   def isValidRuleFile(ruleFile: File, configDirectory: File): Boolean = {
-    if (!ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG")) {
+    if (
+      !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
+        .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))
+    ) {
       return false
     }
     validateRuleFile(ruleFile) match {

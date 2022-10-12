@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass

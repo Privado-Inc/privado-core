@@ -19,8 +19,7 @@
         "title": "Items",
         "type": "object",
         "required": [
-          "signature",
-          "flow"
+          "signature"
         ],
         "additionalProperties": false,
         "properties": {
