@@ -1,8 +1,8 @@
 package ai.privado.rulevalidator
 
 import ai.privado.entrypoint.CommandConstants
-import ai.privado.model.CatLevelOne
-import ai.privado.model.Constants.{PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
+import ai.privado.model.{CatLevelOne, ConfigRuleType}
+import ai.privado.model.Constants.{CONFIG_DIR_IN_CONFIG, PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
 import better.files.File
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
@@ -27,7 +27,10 @@ object YamlFileValidator {
   private val THREATS = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}threats.json")).mkString
   private val COLLECTIONS =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}collections.json")).mkString
-
+  private val EXCLUSIONS =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}exclusions.json")).mkString
+  private val SEMANTICS =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}semantics.json")).mkString
   val mapper = new ObjectMapper(new YAMLFactory())
 
   val factory: JsonSchemaFactory = JsonSchemaFactory
@@ -83,7 +86,10 @@ object YamlFileValidator {
     *   Boolean stating whether the rule file is valid
     */
   def isValidRuleFile(ruleFile: File, configDirectory: File): Boolean = {
-    if (!ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG")) {
+    if (
+      !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
+        .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))
+    ) {
       return false
     }
     validateRuleFile(ruleFile) match {
@@ -148,11 +154,23 @@ object YamlFileValidator {
       case CatLevelOne.COLLECTIONS => Right(COLLECTIONS)
       case CatLevelOne.SINKS       => Right(SINKS)
       case _ =>
+        matchSchemaConfigFile(ruleFile, ruleJsonTree, callerCommand)
+    }
+  }
+
+  def matchSchemaConfigFile(
+    ruleFile: File,
+    ruleJsonTree: JsonNode,
+    callerCommand: String = ""
+  ): Either[Unit, String] = {
+    val configTypeKey =
+      if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
+    ConfigRuleType.withNameDefaultHandler(configTypeKey) match {
+      case ConfigRuleType.SEMANTICS  => Right(SEMANTICS)
+      case ConfigRuleType.EXCLUSIONS => Right(EXCLUSIONS)
+      case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
-        println(
-          f"File : ${ruleFile.pathAsString}: Adding new rules under the category '$catLevelOneKey'" +
-            f" is not supported. Ignoring file ..."
-        )
+        println(f"File : ${ruleFile.pathAsString}: Config Invalid. Correct the rules and try again.")
         Left(())
     }
   }
