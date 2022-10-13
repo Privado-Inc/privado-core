@@ -144,12 +144,26 @@ class SinkExporter(cpg: Cpg) {
       RuleCache.getRuleInfo(sinkId) match {
         case Some(rule) =>
           val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sinkId)
+          val apiUrl = {
+            if (rule.id.contains("API")) {
+              cpg.call
+                .where(_.tag.nameExact(Constants.id).value(rule.id))
+                .tag
+                .nameExact(Constants.apiUrl)
+                .value
+                .dedup
+                .l
+                .toArray
+            } else
+              Array[String]()
+          }
           Some(
             SinkModel(
               rule.catLevelOne.label,
               ruleInfoExporterModel.id,
               ruleInfoExporterModel.name,
-              ruleInfoExporterModel.domains
+              ruleInfoExporterModel.domains,
+              apiUrl
             )
           )
         case None => // not found anything, probably derived source
