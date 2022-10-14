@@ -50,6 +50,13 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
       addRuleTags(builder, identifier, ruleInfo)
     })
 
+    val regexMatchingFieldIdentifiersIdentifiers =
+      cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
+    regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
+      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo)
+    })
+
     // Step 2.1 --> contains step 2.2, 2.3
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
   }

@@ -12,6 +12,7 @@
 joern-inst/
 cpg.bin
 workspace/
+.local
 
 ### Eclipse ###
 .metadata
