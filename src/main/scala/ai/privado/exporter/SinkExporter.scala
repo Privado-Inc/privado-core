@@ -160,6 +160,7 @@ class SinkExporter(cpg: Cpg) {
           Some(
             SinkModel(
               rule.catLevelOne.label,
+              rule.catLevelTwo,
               ruleInfoExporterModel.id,
               ruleInfoExporterModel.name,
               ruleInfoExporterModel.domains,
