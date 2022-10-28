@@ -48,7 +48,8 @@ object JavaProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    lang: String
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpgWithoutDataflow) => {
@@ -67,7 +68,7 @@ object JavaProcessor {
         println("Brewing result...")
         MetricHandler.setScanStatus(true)
         // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, lang) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             Left(err)
@@ -105,7 +106,7 @@ object JavaProcessor {
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val xtocpg = JavaSrc2Cpg().createCpg(cpgconfig)
-    processCPG(xtocpg, processedRules, sourceRepoLocation)
+    processCPG(xtocpg, processedRules, sourceRepoLocation, lang)
   }
 
 }

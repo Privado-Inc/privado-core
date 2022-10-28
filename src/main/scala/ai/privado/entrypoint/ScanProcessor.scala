@@ -136,6 +136,7 @@ object ScanProcessor extends CommandProcessor {
                             file = fullPath,
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
                             categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
                             nodeType = NodeType.REGULAR
                           )
                         )

@@ -23,6 +23,8 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
+import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.ConfigAndRules
@@ -47,6 +49,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new RegularSinkTagger(cpg).createAndApply()
     new APITagger(cpg).createAndApply()
+    new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
 
     logger.info("Done with tagging")
 

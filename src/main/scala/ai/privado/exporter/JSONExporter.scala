@@ -53,7 +53,8 @@ object JSONExporter {
     cpg: Cpg,
     outputFileName: String,
     repoPath: String,
-    dataflows: Map[String, Path]
+    dataflows: Map[String, Path],
+    lang: String
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg)
@@ -98,7 +99,7 @@ object JSONExporter {
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
 
-      val collections = collectionExporter.getCollections
+      val collections = collectionExporter.getCollections(lang)
       output.addOne(Constants.collections -> collections.asJson)
       logger.info("Completed Collections Exporting")
 

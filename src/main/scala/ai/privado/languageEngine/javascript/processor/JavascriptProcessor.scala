@@ -35,7 +35,6 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
-import io.joern.joerncli.DefaultOverlays
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
@@ -53,7 +52,8 @@ object JavascriptProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    lang: String
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -74,7 +74,7 @@ object JavascriptProcessor {
         println("Brewing result...")
         MetricHandler.setScanStatus(true)
         // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, lang) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             Left(err)
@@ -118,12 +118,16 @@ object JavascriptProcessor {
     println(s"Processing source code using $lang engine")
     println("Parsing source code...")
 
+    val xtocpg = getCpg(sourceRepoLocation)
+    processCPG(xtocpg, processedRules, sourceRepoLocation, lang)
+  }
+
+  def getCpg(sourceRepoLocation: String) = {
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation)
-    val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, processedRules, sourceRepoLocation)
+    new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
   }
 
 }

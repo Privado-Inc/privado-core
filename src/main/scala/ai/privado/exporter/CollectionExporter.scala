@@ -25,7 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.model.exporter.{CollectionModel, CollectionOccurrenceDetailModel, CollectionOccurrenceModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.codepropertygraph.generated.nodes.{Method, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
@@ -41,13 +41,26 @@ class CollectionExporter(cpg: Cpg) {
 
   /** Processes collection points and return final output
     */
-  def getCollections: List[CollectionModel] = {
-    val collectionMapByCollectionId = cpg.method
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
-      .l
-      .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
+  def getCollections(lang: String): List[CollectionModel] = {
+    if (lang == Languages.JSSRC) {
+      val collectionMapByCollectionId = cpg.call
+        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+        .l
+        .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
 
-    collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2)).toList
+      val collectionExporter = new javascript.CollectionExporter(cpg)
+      collectionMapByCollectionId
+        .map(entrySet => collectionExporter.processByCollectionId(entrySet._1, entrySet._2))
+        .toList
+
+    } else {
+      val collectionMapByCollectionId = cpg.method
+        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+        .l
+        .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
+
+      collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2)).toList
+    }
   }
 
   private def processByCollectionId(collectionId: String, collectionMethods: List[Method]) = {
