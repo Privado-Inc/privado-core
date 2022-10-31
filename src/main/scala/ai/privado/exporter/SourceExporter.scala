@@ -18,19 +18,28 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
-import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode, Tag}
-import io.shiftleft.semanticcpg.language._
-
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.semantic.Language.finder
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodParameterIn,
+  StoredNode,
+  Tag
+}
+import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
@@ -69,7 +78,16 @@ class SourceExporter(cpg: Cpg) {
               if (ScanProcessor.config.disableDeDuplication)
                 entrySet._2.toList
               else
-                entrySet._2.toList.distinctBy(_.code).distinctBy(_.lineNumber).distinctBy(_.location.filename)
+                entrySet._2.toList
+                  .distinctBy(_.code)
+                  .distinctBy(_.lineNumber)
+                  .distinctBy(node => {
+                    Traversal(node).head match {
+                      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
+                        a.file.name.head
+                      case a => a.location.filename
+                    }
+                  })
             })
         )
       )
@@ -96,7 +114,7 @@ class SourceExporter(cpg: Cpg) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
-          .l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l
     sources
   }
 
@@ -117,7 +135,7 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l
     sources
   }
 

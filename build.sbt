@@ -8,7 +8,8 @@ val cpgVersion        = "1.3.576"
 val joernVersion      = "1.1.1217"
 val overflowdbVersion = "1.150"
 //External dependency versions
-val circeVersion   = "0.14.1"
+val circeVersion = "0.14.1"
+val jacksonVersion = "2.13.4"
 val mockitoVersion = "1.17.12"
 
 lazy val schema         = Projects.schema
@@ -17,27 +18,30 @@ lazy val schemaExtender = Projects.schemaExtender
 
 dependsOn(domainClasses)
 libraryDependencies ++= Seq(
-  "com.github.pathikrit"         %% "better-files"            % "3.9.1",
-  "com.github.scopt"             %% "scopt"                   % "3.7.1",
-  "org.apache.logging.log4j"      % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
-  "io.joern"                     %% "x2cpg"                   % Versions.joern,
-  "io.joern"                     %% "javasrc2cpg"             % Versions.joern,
-  "io.joern"                     %% "joern-cli"               % Versions.joern,
-  "io.joern"                     %% "semanticcpg"             % Versions.joern,
-  "io.joern"                     %% "semanticcpg"             % Versions.joern % Test classifier "tests",
-  "org.scalatest"                %% "scalatest"               % "3.1.1"        % Test,
-  "org.mockito"                  %% "mockito-scala"           % mockitoVersion % Test,
-  "org.mockito"                  %% "mockito-scala-scalatest" % mockitoVersion % Test,
-  "org.mockito"                  %% "mockito-scala-specs2"    % mockitoVersion % Test,
-  "io.circe"                     %% "circe-core"              % circeVersion,
-  "io.circe"                     %% "circe-generic"           % circeVersion,
-  "io.circe"                     %% "circe-parser"            % circeVersion,
-  "io.circe"                     %% "circe-yaml"              % circeVersion,
-  "com.lihaoyi"                  %% "upickle"                 % "2.0.0",
-  "com.lihaoyi"                  %% "requests"                % "0.7.0",
-  "org.scala-lang.modules"       %% "scala-xml"               % "2.1.0",
-  "commons-io"                    % "commons-io"              % "2.11.0",
-  "com.fasterxml.jackson.module" %% "jackson-module-scala"    % "2.13.4"
+  "com.github.pathikrit"            %% "better-files"            % "3.9.1",
+  "com.github.scopt"                %% "scopt"                   % "3.7.1",
+  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
+  "io.joern"                        %% "x2cpg"                   % Versions.joern,
+  "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
+  "io.joern"                        %% "joern-cli"               % Versions.joern,
+  "io.joern"                        %% "semanticcpg"             % Versions.joern,
+  "io.joern"                        %% "semanticcpg"             % Versions.joern % Test classifier "tests",
+  "org.scalatest"                   %% "scalatest"               % "3.1.1"        % Test,
+  "org.mockito"                     %% "mockito-scala"           % mockitoVersion % Test,
+  "org.mockito"                     %% "mockito-scala-scalatest" % mockitoVersion % Test,
+  "org.mockito"                     %% "mockito-scala-specs2"    % mockitoVersion % Test,
+  "io.circe"                        %% "circe-core"              % circeVersion,
+  "io.circe"                        %% "circe-generic"           % circeVersion,
+  "io.circe"                        %% "circe-parser"            % circeVersion,
+  "io.circe"                        %% "circe-yaml"              % circeVersion,
+  "com.lihaoyi"                     %% "upickle"                 % "2.0.0",
+  "com.lihaoyi"                     %% "requests"                % "0.7.0",
+  "org.scala-lang.modules"          %% "scala-xml"               % "2.1.0",
+  "commons-io"                       % "commons-io"              % "2.11.0",
+  "com.networknt"                    % "json-schema-validator"   % "1.0.72",
+  "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
+  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
+  "com.github.wnameless.json" % "json-flattener" % "0.14.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -54,7 +58,40 @@ ThisBuild / resolvers ++= Seq(
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots")
 )
+lazy val astGenDlUrl       = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/"
+lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe")
 
+lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
+astGenDlTask := {
+  val astGenDir = baseDirectory.value / "bin" / "astgen"
+  astGenDir.mkdirs()
+
+  astGenBinaryNames.foreach { fileName =>
+    val dest = astGenDir / fileName
+    if (!dest.exists) {
+      val url            = s"$astGenDlUrl$fileName"
+      val downloadedFile = SimpleCache.downloadMaybe(url)
+      IO.copyFile(downloadedFile, dest)
+    }
+  }
+
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
+  distDir.mkdirs()
+  IO.copyDirectory(astGenDir, distDir)
+
+  // permissions are lost during the download; need to set them manually
+  astGenDir.listFiles().foreach(_.setExecutable(true, false))
+  distDir.listFiles().foreach(_.setExecutable(true, false))
+}
+Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+// Also remove astgen binaries with clean, e.g., to allow for updating them.
+// Sadly, we can't define the bin/ folders globally,
+// as .value can only be used within a task or setting macro
+cleanFiles ++= Seq(
+  baseDirectory.value / "bin" / "astgen",
+  (Universal / stagingDirectory).value / "bin" / "astgen"
+) ++ astGenBinaryNames.map(fileName => SimpleCache.encodeFile(s"$astGenDlUrl$fileName"))
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false
 

@@ -82,8 +82,10 @@ object CatLevelOne extends Enumeration {
 object Language extends Enumeration {
   type Language = Value
 
-  val JAVA    = Value("java")
-  val UNKNOWN = Value("unknown")
+  val JAVA       = Value("java")
+  val JAVASCRIPT = Value("javascript")
+  val DEFAULT    = Value("default")
+  val UNKNOWN    = Value("unknown")
   def withNameWithDefault(name: String): Value = {
     try {
       withName(name)
@@ -116,6 +118,24 @@ object PolicyThreatType extends Enumeration {
 
   val THREAT     = Value("threat")
   val COMPLIANCE = Value("compliance")
+
+  def withNameDefaultHandler(name: String): Value = {
+    if (name != null)
+      try {
+        withName(name.toLowerCase())
+      } catch {
+        case _: Throwable => null
+      }
+    else
+      null
+  }
+}
+
+object ConfigRuleType extends Enumeration {
+  type ConfigRuleType = Value
+
+  val EXCLUSIONS = Value("exclusions")
+  val SEMANTICS  = Value("semantics")
 
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)

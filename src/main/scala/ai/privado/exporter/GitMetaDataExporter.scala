@@ -18,15 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
 import ai.privado.model.Constants
-
-import scala.collection.mutable
 import better.files.File
 
+import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Success, Try}
 

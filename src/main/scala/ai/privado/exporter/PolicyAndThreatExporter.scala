@@ -18,14 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.policyEngine.PolicyExecutor
-import ai.privado.threatEngine.ThreatEngineExecutor
+import ai.privado.languageEngine.java.threatEngine.ThreatEngineExecutor
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
+import ai.privado.policyEngine.PolicyExecutor
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode

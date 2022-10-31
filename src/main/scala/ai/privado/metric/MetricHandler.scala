@@ -26,7 +26,6 @@ import ai.privado.exporter.GitMetaDataExporter
 import ai.privado.utility.Utilities
 import io.circe.Json
 import org.slf4j.LoggerFactory
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
 import com.fasterxml.jackson.databind.json.JsonMapper
 
