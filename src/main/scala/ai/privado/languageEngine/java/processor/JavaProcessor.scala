@@ -52,7 +52,7 @@ object JavaProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpgWithoutDataflow) => {
-        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
+//        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
         logger.info("Applying default overlays")
         cpgWithoutDataflow.close()
         val cpg = DefaultOverlays.create("cpg.bin")
@@ -105,6 +105,7 @@ object JavaProcessor {
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val xtocpg = JavaSrc2Cpg().createCpg(cpgconfig)
+    println("Base CPG generation done")
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
