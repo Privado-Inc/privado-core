@@ -50,7 +50,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new LiteralTagger(cpg).createAndApply()
     new IdentifierTagger(cpg).createAndApply()
-    new DBConfigTagger(cpg).createAndApply()
+//    new DBConfigTagger(cpg).createAndApply()
     new RegularSinkTagger(cpg).createAndApply()
     new APITagger(cpg).createAndApply()
 
