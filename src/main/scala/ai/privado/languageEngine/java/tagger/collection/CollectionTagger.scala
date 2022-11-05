@@ -25,18 +25,18 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Method}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray

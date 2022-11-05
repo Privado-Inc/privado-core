@@ -28,7 +28,6 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
 import ai.privado.semantic.Language.finder
-import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.{Path, _}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -37,6 +36,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
+import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
@@ -44,7 +44,7 @@ import scala.util.{Failure, Success, Try}
 class Dataflow(cpg: Cpg) {
 
   private val logger                        = LoggerFactory.getLogger(getClass)
-  implicit val engineContext: EngineContext = EngineContext(Utilities.getSemantics(cpg), EngineConfig(4))
+  implicit val engineContext: EngineContext = EngineContext(config = EngineConfig(4))
 
   val falsePositiveSources = List[String](
     "Data.Sensitive.OnlineIdentifiers.Cookies",
@@ -81,7 +81,7 @@ class Dataflow(cpg: Cpg) {
           })
           .toMap
       } else {
-        println("Deduplicating data flows...")
+        println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
         dataflowMapByPathId = DuplicateFlowProcessor.process(dataflowPaths)
       }
       filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
