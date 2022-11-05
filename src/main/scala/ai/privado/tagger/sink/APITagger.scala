@@ -26,20 +26,21 @@ package ai.privado.tagger.sink
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
-class APITagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
-  lazy val cacheCall                        = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics, EngineConfig(4))
+  val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val apis      = cacheCall.name(APISINKS_REGEX).l
+
+  implicit val engineContext: EngineContext = EngineContext(config = EngineConfig(4))
 
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider)"
@@ -52,7 +53,7 @@ class APITagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.patterns.head + ")(?:\"|')").l
-    val apis                   = cacheCall.name(APISINKS_REGEX).l
+
     sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
     val propertySinks = cpg.property.filter(p => p.value matches (ruleInfo.patterns.head)).usedAt.l
     sinkTagger(propertySinks, apis, builder, ruleInfo)

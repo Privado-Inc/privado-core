@@ -23,22 +23,24 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.AppCache
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.joerncli.DefaultOverlays
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
-import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import org.slf4j.LoggerFactory
 
+import java.util.Calendar
 import scala.util.{Failure, Success, Try}
 
 object JavaProcessor {
@@ -51,20 +53,22 @@ object JavaProcessor {
     sourceRepoLocation: String
   ): Either[String, Unit] = {
     xtocpg match {
-      case Success(cpgWithoutDataflow) => {
-//        new PropertiesFilePass(cpgWithoutDataflow, sourceRepoLocation).createAndApply()
-        logger.info("Applying default overlays")
-        cpgWithoutDataflow.close()
-        val cpg = DefaultOverlays.create("cpg.bin")
+      case Success(cpg) => {
+        new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+
+        logger.info("Applying data flow overlay")
+        val context = new LayerCreatorContext(cpg)
+        val options = new OssDataFlowOptions()
+        new OssDataFlow(options).run(context)
         logger.info("=====================")
 
         // Run tagger
-        println("Tagging source code with rules...")
+        println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         cpg.runTagger(processedRules)
-        println("Finding source to sink flow of data...")
+        println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow
 
-        println("Brewing result...")
+        println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         // Exporting
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
@@ -72,7 +76,9 @@ object JavaProcessor {
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             Left(err)
           case Right(_) =>
-            println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
+            println(
+              s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            )
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
@@ -97,15 +103,15 @@ object JavaProcessor {
     */
   def createJavaCpg(processedRules: ConfigAndRules, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
 
-    println(s"Processing source code using ${Languages.JAVASRC} engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
-      println("Downloading dependencies and Parsing source code...")
+      println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
-      println("Parsing source code...")
+      println(s"${Calendar.getInstance().getTime} - Parsing source code...")
     val cpgconfig =
       Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
-    val xtocpg = JavaSrc2Cpg().createCpg(cpgconfig)
-    println("Base CPG generation done")
+    val xtocpg = JavaSrc2Cpg().createCpgWithOverlays(cpgconfig)
+    println(s"${Calendar.getInstance().getTime} - Base processing done...")
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
