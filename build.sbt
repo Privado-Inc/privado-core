@@ -4,9 +4,9 @@ ThisBuild / organization := "ai.privado"
 ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
-val cpgVersion        = "1.3.563"
-val joernVersion      = "1.1.1146"
-val overflowdbVersion = "1.148"
+val cpgVersion        = "1.3.579"
+val joernVersion      = "1.1.1243"
+val overflowdbVersion = "1.150"
 //External dependency versions
 val circeVersion = "0.14.1"
 val jacksonVersion = "2.13.4"

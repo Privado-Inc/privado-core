@@ -36,6 +36,7 @@ import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
+import java.util.Calendar
 import scala.sys.exit
 import scala.util.{Failure, Success, Try}
 
@@ -229,7 +230,7 @@ object ScanProcessor extends CommandProcessor {
         semantics = semantics.distinctBy(_.signature)
       )
     logger.trace(mergedRules.toString)
-    println("Configuration parsed...")
+    println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
 
     RuleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
     RuleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
@@ -255,7 +256,7 @@ object ScanProcessor extends CommandProcessor {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
-    println("Guessing source code language...")
+    println(s"${Calendar.getInstance().getTime} - Guessing source code language...")
 
     Try(guessLanguage(sourceRepoLocation)) match {
       case Success(languageDetected) =>
@@ -267,10 +268,10 @@ object ScanProcessor extends CommandProcessor {
             RuleCache.setRule(processedRules)
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
-                println(s"Detected language 'Java'")
+                println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
                 JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
               case language if language == Languages.JSSRC =>
-                println(s"Detected language 'JavaScript'")
+                println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {

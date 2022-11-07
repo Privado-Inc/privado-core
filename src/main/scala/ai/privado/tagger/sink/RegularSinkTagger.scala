@@ -26,16 +26,15 @@ package ai.privado.tagger.sink
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.utility.Utilities._
-
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
-  lazy val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+class RegularSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
   override def generateParts(): Array[RuleInfo] = {
     RuleCache.getRule.sinks

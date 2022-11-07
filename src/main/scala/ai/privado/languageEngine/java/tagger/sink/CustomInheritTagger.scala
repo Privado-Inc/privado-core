@@ -23,17 +23,16 @@
 
 package ai.privado.languageEngine.java.tagger.sink
 
+import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.model.RuleInfo
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities._
-
-import io.shiftleft.passes.ConcurrentWriterCpgPass
-import ai.privado.cache.DatabaseDetailsCache
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class CustomInheritTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger                            = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
 
