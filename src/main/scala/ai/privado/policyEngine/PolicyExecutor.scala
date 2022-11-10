@@ -127,7 +127,8 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
           dataflowSinkIdMap.keys
         } else {
           dataflowSinkIdMap.flatMap(sinkIdEntry => {
-            if (sinkIdEntry._1.matches(policySinkRegex) == actionMap.getOrElse(policy.action, true))
+            if (sinkIdEntry._1.matches(policySinkRegex))
+              // == actionMap.getOrElse(policy.action, true))
               Some(sinkIdEntry._1)
             else
               None
