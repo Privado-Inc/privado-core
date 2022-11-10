@@ -271,8 +271,8 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
                 JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
               case language if language == Languages.JSSRC && config.enableJS =>
-                  println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                  JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
+                println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
+                JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
