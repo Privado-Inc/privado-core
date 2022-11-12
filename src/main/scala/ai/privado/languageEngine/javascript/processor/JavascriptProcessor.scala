@@ -43,6 +43,7 @@ import io.shiftleft.semanticcpg.language._
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Operators
 
+import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -66,12 +67,12 @@ object JavascriptProcessor {
         logger.info("=====================")
 
         // Run tagger
-        println("Tagging source code with rules...")
+        println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         cpg.runTagger(processedRules)
-        println("Finding source to sink flow of data...")
+        println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow
 
-        println("Brewing result...")
+        println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         // Exporting
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
@@ -115,8 +116,8 @@ object JavascriptProcessor {
     lang: String
   ): Either[String, Unit] = {
 
-    println(s"Processing source code using $lang engine")
-    println("Parsing source code...")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
