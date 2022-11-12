@@ -35,6 +35,8 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
+import java.util.Calendar
+
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -42,10 +44,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
+    println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
     new LiteralTagger(cpg).createAndApply()
+    println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
     new IdentifierTagger(cpg).createAndApply()
-
+    println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
+    println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
     new APITagger(cpg).createAndApply()
 
     logger.info("Done with tagging")
