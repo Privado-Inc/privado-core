@@ -32,7 +32,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
 
@@ -78,7 +78,10 @@ class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
     }
   }
 
-  private def convertDataflowPolicyViolation(policyId: String, violatingFlows: ListBuffer[ViolationDataFlowModel]) = {
+  private def convertDataflowPolicyViolation(
+    policyId: String,
+    violatingFlows: mutable.HashSet[ViolationDataFlowModel]
+  ) = {
     ViolationModel(policyId, ExporterUtility.getPolicyInfoForExporting(policyId), Some(violatingFlows.toList), None)
   }
 

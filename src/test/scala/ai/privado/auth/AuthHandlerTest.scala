@@ -1,6 +1,5 @@
 package ai.privado.auth
 
-import org.mockito.Mockito.{spy, when}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

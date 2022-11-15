@@ -38,7 +38,8 @@ case class PrivadoInput(
   disableDeDuplication: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   skipUpload: Boolean = false,
-  upload: Boolean = false
+  upload: Boolean = false,
+  enableJS: Boolean = false
 )
 
 object CommandConstants {
@@ -60,6 +61,7 @@ object CommandConstants {
   val SKIP_UPLOAD                = "skip-upload"
   val SKIP_UPLOAD_ABBR           = "su"
   val VALIDATE                   = "validate"
+  val ENABLE_JS                  = "enablejs"
 }
 
 object CommandParser {
@@ -110,6 +112,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(disableDeDuplication = true))
               .text("Disable De-Duplication of dataflow"),
+            opt[Unit](CommandConstants.ENABLE_JS)
+              .abbr(CommandConstants.ENABLE_JS)
+              .optional()
+              .action((_, c) => c.copy(enableJS = true))
+              .text("enable javascript scan engine"),
             opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
               .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
               .optional()

@@ -32,7 +32,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String) {
@@ -61,7 +61,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
 
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
-  def getDataflowViolations: Map[String, ListBuffer[ViolationDataFlowModel]] = {
+  def getDataflowViolations: Map[String, mutable.HashSet[ViolationDataFlowModel]] = {
 
     val dataflowResult = policies
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
@@ -69,15 +69,16 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
     dataflowResult
   }
 
-  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): ListBuffer[ViolationDataFlowModel] = {
-    val violatingFlowList = ListBuffer[ViolationDataFlowModel]()
+  def getViolatingFlowsForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationDataFlowModel] = {
+    val violatingFlowList = mutable.HashSet[ViolationDataFlowModel]()
     val sourceMatchingIds = getSourcesMatchingRegex(policy)
     val sinksMatchingIds  = getSinksMatchingRegex(policy)
     sourceMatchingIds.foreach(sourceId => {
       sinksMatchingIds.foreach(sinkId => {
         val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
-        if (intersectingPathIds.nonEmpty)
-          violatingFlowList.append(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
+        if (intersectingPathIds.nonEmpty) {
+          violatingFlowList.add(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
+        }
       })
     })
     violatingFlowList
@@ -127,7 +128,8 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String)
           dataflowSinkIdMap.keys
         } else {
           dataflowSinkIdMap.flatMap(sinkIdEntry => {
-            if (sinkIdEntry._1.matches(policySinkRegex) == actionMap.getOrElse(policy.action, true))
+            if (sinkIdEntry._1.matches(policySinkRegex))
+              // == actionMap.getOrElse(policy.action, true))
               Some(sinkIdEntry._1)
             else
               None
