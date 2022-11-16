@@ -28,6 +28,7 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
 import ai.privado.semantic.Language.finder
+import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.{Path, _}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -43,8 +44,9 @@ import scala.util.{Failure, Success, Try}
 
 class Dataflow(cpg: Cpg) {
 
-  private val logger                        = LoggerFactory.getLogger(getClass)
-  implicit val engineContext: EngineContext = EngineContext(config = EngineConfig(4))
+  private val logger = LoggerFactory.getLogger(getClass)
+  implicit val engineContext: EngineContext =
+    EngineContext(semantics = Utilities.getSemantics(cpg), config = EngineConfig(4))
 
   val falsePositiveSources = List[String](
     "Data.Sensitive.OnlineIdentifiers.Cookies",

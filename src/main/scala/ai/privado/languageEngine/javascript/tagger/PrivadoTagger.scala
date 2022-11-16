@@ -50,11 +50,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
-    /*
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
     new APITagger(cpg).createAndApply()
-
-     */
 
     logger.info("Done with tagging")
 
