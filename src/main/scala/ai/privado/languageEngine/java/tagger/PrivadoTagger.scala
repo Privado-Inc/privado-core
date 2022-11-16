@@ -57,11 +57,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new DBConfigTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
-    /*
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
     new APITagger(cpg).createAndApply()
 
-     */
     // Custom Rule tagging
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
