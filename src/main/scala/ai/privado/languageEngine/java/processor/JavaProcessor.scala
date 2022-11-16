@@ -82,7 +82,6 @@ object JavaProcessor {
             logger.debug(
               s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
             )
-            cpg.call("getFirstName").foreach(item => println(item.methodFullName))
             Right(())
         }
       }
