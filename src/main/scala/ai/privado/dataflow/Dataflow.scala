@@ -147,10 +147,23 @@ class Dataflow(cpg: Cpg) {
     val dataflowsMapBySourceId = mutable.HashMap[String, ListBuffer[String]]()
     dataflowsMapByType.foreach(entrySet => {
       def addToMap(sourceId: String) = {
-        if (dataflowsMapBySourceId.contains(sourceId))
+        if (!dataflowsMapBySourceId.contains(sourceId))
+          dataflowsMapBySourceId.addOne(sourceId, ListBuffer())
+
+        // Logic to filter flows which are interfering with the current source item
+        // Ex - If traversing flow for email, discard flow which uses password
+        val res = entrySet._2.elements
+          .flatMap(pathItem => {
+            Some(pathItem.tag.where(_.name(Constants.id).valueNot(sourceId).value("Data.Sensitive.*")).nonEmpty)
+          })
+          .foldLeft(false)((a, b) => a || b)
+        if (res) {
+          // discard this flow
+          logger.debug(s"Discarding the flow for sourceId : $sourceId")
+          logger.debug(s"${entrySet._2.elements.code.mkString("|||")}")
+          logger.debug("----------------------------")
+        } else
           dataflowsMapBySourceId(sourceId) += entrySet._1
-        else
-          dataflowsMapBySourceId.addOne(sourceId, ListBuffer(entrySet._1))
       }
 
       val source = entrySet._2.elements.head
