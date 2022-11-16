@@ -23,10 +23,10 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
-import ai.privado.model.{CatLevelOne, Constants, InternalTag}
+import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag}
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -157,6 +157,7 @@ class SinkExporter(cpg: Cpg) {
             } else
               Array[String]()
           }
+          val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
           Some(
             SinkModel(
               rule.catLevelOne.label,
@@ -164,7 +165,8 @@ class SinkExporter(cpg: Cpg) {
               ruleInfoExporterModel.id,
               ruleInfoExporterModel.name,
               ruleInfoExporterModel.domains,
-              apiUrl
+              apiUrl,
+              databaseDetails.getOrElse(DatabaseDetails("", "", "", ""))
             )
           )
         case None => // not found anything, probably derived source
