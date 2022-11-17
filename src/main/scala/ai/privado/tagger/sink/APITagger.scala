@@ -38,12 +38,14 @@ import overflowdb.BatchedUpdate
 class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val apis      = cacheCall.name(APISINKS_REGEX).l
+  val apis      = cacheCall.name(APISINKS_REGEX).methodFullNameNot(APISINKSIGNORE_REGEX).l
 
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
 
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider)"
+
+  lazy val APISINKSIGNORE_REGEX = "^(java|com|org|net|ai)(json|map|[.]).*(put:|get:).*"
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getRule.sinks
