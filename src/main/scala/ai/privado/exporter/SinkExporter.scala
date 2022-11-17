@@ -29,16 +29,7 @@ import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag}
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  MethodParameterIn,
-  StoredNode,
-  Tag
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, FieldIdentifier, Identifier, Literal, MethodParameterIn, StoredNode, Tag}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -55,8 +46,66 @@ class SinkExporter(cpg: Cpg) {
     convertSinkList(sinkTagList)
   }
 
-  def getProcessing: List[SinkProcessingModel] = {
+  def getProbableSinks: List[String] = {
+    var blackListedGroupIds: List[String] = List(
+      "<operator>.",
+      "<operators>.",
+      "iterator",
+      "assert",
+      "void.",
+      "java.",
+      "javax.",
+      "ANY.",
+      "android.",
+      "androidx.",
+      "okhttp3.",
+      "io.grpc.",
+      "io.netty.",
+      "org.apache.http.",
+      "org.json",
+      "org.junit.",
+      "org.apache.commons.",
+      "org.apache.tomcat",
+      "org.springframework.",
+      "com.fasterxml.jackson.",
+      "org.apache.hadoop.",
+      "org.apache.giraph.",
+      "org.javatuples.",
+      "org.antlr.",
+      "junit.framework.",
+      "io.reactivex.",
+      "com.bumptech.glide",
+      "com.google.protobuf",
+      "com.google.testing",
+      "com.google.common",
+      "<unresolvedNamespace>."
+    )
+    /** Get all the Methods which are tagged as SINKs  */
+    val taggedSinkMethods = cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.l.map(i => i.methodFullName.split(":").head)
 
+    /** Get all the Methods which are external  */
+    val dependenciesTPs = cpg.method.external.l.map(i => i.fullName.split(":").head)
+
+    /** Actions:
+     * by excluding taggedSinkMethods
+     * using blackListedGroupIds
+     * transform method FullName close to groupIds
+     * remove duplicates
+     */
+    val filteredTPs = dependenciesTPs
+      .filter(str => !taggedSinkMethods.contains(str))
+      .filter((str) => {
+        val res = blackListedGroupIds.filter(blackListGroup => str.startsWith(blackListGroup))
+        (res.length == 0)
+      })
+      .filter((str) => !str.endsWith(".println"))
+      .map((str) => str.split("\\.").take(3).mkString("."))
+      .distinct
+
+    filteredTPs
+  }
+
+  def getProcessing: List[SinkProcessingModel] = {
     val processingMap = mutable.HashMap[String, mutable.Set[CfgNode]]()
     sinkList.foreach(source => {
       def addToMap(sourceId: String): Unit = {

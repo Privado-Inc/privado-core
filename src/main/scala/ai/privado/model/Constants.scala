@@ -78,6 +78,7 @@ object Constants {
   val localScanPath       = "localScanPath"
   val processing          = "processing"
   val sinkProcessing      = "sinkProcessing"
+  val probableSinks       = "probableSinks"
   val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
 
