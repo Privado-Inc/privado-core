@@ -24,10 +24,7 @@ phases:
             VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
         fi
         echo $VERSION
-      - TAG_1=latest
-      - TAG_2=$VERSION
-      - echo $CODEBUILD_WEBHOOK_HEAD_REF
-      - TAG_3=${CODEBUILD_WEBHOOK_HEAD_REF##*/}
+      - TAG_1=fp-fixes
 
   build:
     commands:
@@ -41,7 +38,6 @@ phases:
             docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION="dev-SNAPSHOT" --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
         fi
       - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_1
-      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_2
   post_build:
     commands:
       - echo Build completed on `date`
@@ -51,13 +47,4 @@ phases:
       - aws ecr batch-delete-image --region $AWS_REGION --repository-name privado-core --image-ids "$IMAGES_TO_DELETE" || true
       - echo Pushing the Docker images...
       - docker push $REPOSITORY_URI:$TAG_1
-      - docker push $REPOSITORY_URI:$TAG_2
-      - |
-        if [[ -z "$TAG_3" ]]
-        then
-              echo "\$TAG_3 is empty"
-        else
-              docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_3
-              docker push $REPOSITORY_URI:$TAG_3
-        fi
       - echo completed pushing image to ecr
