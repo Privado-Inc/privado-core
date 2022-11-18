@@ -40,9 +40,10 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   implicit val engineContext: EngineContext = EngineContext(Utilities.getDefaultSemantics, EngineConfig(4))
 
   lazy val APISINKS_REGEX =
-    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider)"
+    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
+      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
 
-  lazy val APISINKSIGNORE_REGEX = "(?i)(^com|json|map).*(put:|get:).*"
+  lazy val APISINKSIGNORE_REGEX = "(?i)^(java|com|org|ai)(json|map|[.]).*(?<!http)[.](put:|get:).*"
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").l
