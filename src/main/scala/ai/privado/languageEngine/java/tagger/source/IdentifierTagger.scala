@@ -73,8 +73,10 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     memberNameRegex: String,
     ruleInfo: RuleInfo
   ): Unit = {
+    val blackListedDerivedSources = "(?i).*PropertyUtil.*";
     val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
       .where(_.member.name(memberNameRegex))
+      .whereNot(_.fullName(blackListedDerivedSources))
       .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(memberNameRegex).l))
       .l
     typeDeclWithMemberNameHavingMemberName
