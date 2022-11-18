@@ -43,9 +43,10 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
 
   lazy val APISINKS_REGEX =
-    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider)"
+    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
+      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
 
-  lazy val APISINKSIGNORE_REGEX = "^(java|com|org|net|ai)(json|map|[.]).*(put:|get:).*"
+  lazy val APISINKSIGNORE_REGEX = "(?i)^(java|com|org|ai)(json|map|[.]).*(?<!http)[.](put:|get:).*"
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getRule.sinks
