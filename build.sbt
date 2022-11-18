@@ -9,7 +9,7 @@ val joernVersion      = "1.1.1278"
 val overflowdbVersion = "1.152"
 //External dependency versions
 val circeVersion = "0.14.1"
-val jacksonVersion = "2.13.4"
+val jacksonVersion = "2.14.0"
 val mockitoVersion = "1.17.12"
 
 lazy val schema         = Projects.schema
