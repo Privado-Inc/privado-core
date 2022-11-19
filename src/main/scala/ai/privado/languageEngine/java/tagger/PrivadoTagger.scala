@@ -60,7 +60,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
     new APITagger(cpg).createAndApply()
 
-
     // Custom Rule tagging
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
