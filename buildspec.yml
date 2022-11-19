@@ -24,7 +24,7 @@ phases:
             VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
         fi
         echo $VERSION
-      - TAG_1=fp-fixes
+      - TAG_1=fp-fixes-dev
 
   build:
     commands:
