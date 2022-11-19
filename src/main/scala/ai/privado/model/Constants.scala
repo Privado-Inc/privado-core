@@ -51,6 +51,7 @@ object Constants {
   val exclusions    = "exclusions"
   val threats       = "threats"
   val semantics     = "semantics"
+  val sinkSkipList  = "sinkSkipList"
 
   val tags               = "tags"
   val description        = "description"

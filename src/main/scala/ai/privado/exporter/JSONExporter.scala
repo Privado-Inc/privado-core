@@ -126,6 +126,9 @@ object JSONExporter {
         }
       )
 
+      logger.debug("------------ Sink Skip List ---------------")
+      val skipRules = RuleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.patterns.head)
+      logger.debug(s"$skipRules")
       logger.debug("------------ Probable Sink Dependencies ---------------")
       logger.debug(s"$probableSinks")
 

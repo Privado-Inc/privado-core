@@ -31,6 +31,8 @@ object YamlFileValidator {
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}exclusions.json")).mkString
   private val SEMANTICS =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}semantics.json")).mkString
+  private val SINK_SKIP_LIST =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinkSkipList.json")).mkString
   val mapper = new ObjectMapper(new YAMLFactory())
 
   val factory: JsonSchemaFactory = JsonSchemaFactory
@@ -168,6 +170,7 @@ object YamlFileValidator {
     ConfigRuleType.withNameDefaultHandler(configTypeKey) match {
       case ConfigRuleType.SEMANTICS  => Right(SEMANTICS)
       case ConfigRuleType.EXCLUSIONS => Right(EXCLUSIONS)
+      case ConfigRuleType.SINK_SKIP_LIST => Right(SINK_SKIP_LIST)
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
         println(f"File : ${ruleFile.pathAsString}: Config Invalid. Correct the rules and try again.")

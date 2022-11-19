@@ -136,11 +136,13 @@ object ConfigRuleType extends Enumeration {
 
   val EXCLUSIONS = Value("exclusions")
   val SEMANTICS  = Value("semantics")
+  val SINK_SKIP_LIST = Value("sinkSkipList")
 
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)
       try {
-        withName(name.toLowerCase())
+        println(s"Name is : $name")
+        withName(name)
       } catch {
         case _: Throwable => null
       }
