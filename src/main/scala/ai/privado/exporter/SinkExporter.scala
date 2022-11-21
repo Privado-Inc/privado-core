@@ -49,10 +49,13 @@ class SinkExporter(cpg: Cpg) {
 
   def getProbableSinks: List[String] = {
     /** Get all the Methods which are tagged as SINKs  */
-    val taggedSinkMethods = cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.l.map(i => i.methodFullName.split(":").head)
+    val taggedSinkMethods = cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .call.l
+      .map(i => i.methodFullName.split(":").headOption.getOrElse(""))
+      .distinct
 
     /** Get all the Methods which are external  */
-    val dependenciesTPs = cpg.method.external.l.map(i => i.fullName.split(":").head)
+    val dependenciesTPs = cpg.method.external.l.map(i => i.fullName.split(":").headOption.getOrElse(""))
     /** Actions:
      * by excluding taggedSinkMethods
      * check isPrivacySink
@@ -63,7 +66,13 @@ class SinkExporter(cpg: Cpg) {
       .filter(str => !taggedSinkMethods.contains(str))
       .filter((str) => isPrivacySink(str))
       .filter((str) => !str.endsWith(".println"))
-      .map((str) => str.split("\\.").take(3).mkString("."))
+      .map((str) => {
+        try {
+          str.split("\\.").take(3).mkString(".")
+        } catch {
+          case _: Exception => str
+        }
+      })
       .distinct
 
     filteredTPs
