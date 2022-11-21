@@ -141,7 +141,6 @@ object ConfigRuleType extends Enumeration {
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)
       try {
-        println(s"Name is : $name")
         withName(name)
       } catch {
         case _: Throwable => null
