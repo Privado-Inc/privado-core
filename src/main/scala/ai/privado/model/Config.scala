@@ -52,7 +52,8 @@ case class ConfigAndRules(
   policies: List[PolicyOrThreat],
   threats: List[PolicyOrThreat],
   exclusions: List[RuleInfo],
-  semantics: List[Semantic]
+  semantics: List[Semantic],
+  sinkSkipList: List[RuleInfo]
 )
 
 case class DataFlow(sources: List[String], sinks: List[String])
@@ -136,13 +137,14 @@ object CirceEnDe {
 
   implicit val decodeRules: Decoder[ConfigAndRules] = new Decoder[ConfigAndRules] {
     override def apply(c: HCursor): Result[ConfigAndRules] = {
-      val sources     = c.downField(Constants.sources).as[List[RuleInfo]]
-      val sinks       = c.downField(Constants.sinks).as[List[RuleInfo]]
-      val collections = c.downField(Constants.collections).as[List[RuleInfo]]
-      val policies    = c.downField(Constants.policies).as[List[PolicyOrThreat]]
-      val exclusions  = c.downField(Constants.exclusions).as[List[RuleInfo]]
-      val threats     = c.downField(Constants.threats).as[List[PolicyOrThreat]]
-      val semantics   = c.downField(Constants.semantics).as[List[Semantic]]
+      val sources      = c.downField(Constants.sources).as[List[RuleInfo]]
+      val sinks        = c.downField(Constants.sinks).as[List[RuleInfo]]
+      val collections  = c.downField(Constants.collections).as[List[RuleInfo]]
+      val policies     = c.downField(Constants.policies).as[List[PolicyOrThreat]]
+      val exclusions   = c.downField(Constants.exclusions).as[List[RuleInfo]]
+      val threats      = c.downField(Constants.threats).as[List[PolicyOrThreat]]
+      val semantics    = c.downField(Constants.semantics).as[List[Semantic]]
+      val sinkSkipList = c.downField(Constants.sinkSkipList).as[List[RuleInfo]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -151,7 +153,8 @@ object CirceEnDe {
           policies = policies.getOrElse(List[PolicyOrThreat]()),
           exclusions = exclusions.getOrElse(List[RuleInfo]()),
           threats = threats.getOrElse(List[PolicyOrThreat]()),
-          semantics = semantics.getOrElse(List[Semantic]())
+          semantics = semantics.getOrElse(List[Semantic]()),
+          sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]())
         )
       )
     }

@@ -80,6 +80,8 @@ object JSONExporter {
       output.addOne(Constants.sinks -> sinks.asJson)
       val processingSinks = sinkExporter.getProcessing
       output.addOne(Constants.sinkProcessing -> processingSinks.asJson)
+      val probableSinks = sinkExporter.getProbableSinks
+      output.addOne(Constants.probableSinks -> probableSinks.asJson)
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       RuleCache.getRule.sinks.foreach(sinkRule => {
@@ -116,6 +118,13 @@ object JSONExporter {
           case None               => false
         }
       )
+
+      logger.debug("------------ Sink Skip List ---------------")
+      val skipRules = RuleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.patterns.head)
+      logger.debug(s"$skipRules")
+      logger.debug("------------ Probable Sink Dependencies ---------------")
+      logger.debug(s"$probableSinks")
+
       ConsoleExporter.exportConsoleSummary(
         dataflowsOutput,
         sources,

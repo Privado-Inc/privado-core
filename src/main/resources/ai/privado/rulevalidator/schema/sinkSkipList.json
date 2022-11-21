@@ -1,0 +1,70 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/sinkSkipList.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "sinkSkipList"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "sinkSkipList": {
+      "$id": "#root/sinkSkipList",
+      "title": "SinkSkipList",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/sinkSkipList/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/sinkSkipList/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "SinkSkipList.ThirdParties"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/sinkSkipList/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Skip Third Party Sinks"
+            ],
+            "pattern": "^.*$"
+          },
+          "patterns": {
+            "$id": "#root/sinkSkipList/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/sinkSkipList/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                ".*(AmazonS3).*"
+              ],
+              "pattern": "^.*$"
+            }
+          }
+        }
+      }
+
+    }
+  }
+}

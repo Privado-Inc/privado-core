@@ -51,6 +51,7 @@ object Constants {
   val exclusions    = "exclusions"
   val threats       = "threats"
   val semantics     = "semantics"
+  val sinkSkipList  = "sinkSkipList"
 
   val tags               = "tags"
   val description        = "description"
@@ -78,6 +79,7 @@ object Constants {
   val localScanPath       = "localScanPath"
   val processing          = "processing"
   val sinkProcessing      = "sinkProcessing"
+  val probableSinks       = "probableSinks"
   val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
 

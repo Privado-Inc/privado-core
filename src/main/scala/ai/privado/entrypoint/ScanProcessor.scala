@@ -51,7 +51,8 @@ object ScanProcessor extends CommandProcessor {
       List[PolicyOrThreat](),
       List[PolicyOrThreat](),
       List[RuleInfo](),
-      List[Semantic]()
+      List[Semantic](),
+      List[RuleInfo]()
     )
 
   def parseRules(rulesPath: String, lang: String): ConfigAndRules = {
@@ -150,7 +151,16 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last)
                           )
                         )
-                        .filter(filterSemanticByLang)
+                        .filter(filterSemanticByLang),
+                      sinkSkipList = configAndRules.sinkSkipList
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last)
+                          )
+                        )
+                        .filter(filterByLang)
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -171,7 +181,8 @@ object ScanProcessor extends CommandProcessor {
               policies = a.policies ++ b.policies,
               exclusions = a.exclusions ++ b.exclusions,
               threats = a.threats ++ b.threats,
-              semantics = a.semantics ++ b.semantics
+              semantics = a.semantics ++ b.semantics,
+              sinkSkipList = a.sinkSkipList ++ b.sinkSkipList
             )
           )
       catch {
@@ -212,13 +223,14 @@ object ScanProcessor extends CommandProcessor {
      * In case of duplicates it will keep the elements from "externalRules.sources".
      * We don't know the internal logic. We came to this conclusion based on testing few samples.
      */
-    val exclusions  = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
-    val sources     = externalConfigAndRules.sources ++ internalConfigAndRules.sources
-    val sinks       = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
-    val collections = externalConfigAndRules.collections ++ internalConfigAndRules.collections
-    val policies    = externalConfigAndRules.policies ++ internalConfigAndRules.policies
-    val threats     = externalConfigAndRules.threats ++ internalConfigAndRules.threats
-    val semantics   = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
+    val exclusions   = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
+    val sources      = externalConfigAndRules.sources ++ internalConfigAndRules.sources
+    val sinks        = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
+    val collections  = externalConfigAndRules.collections ++ internalConfigAndRules.collections
+    val policies     = externalConfigAndRules.policies ++ internalConfigAndRules.policies
+    val threats      = externalConfigAndRules.threats ++ internalConfigAndRules.threats
+    val semantics    = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
+    val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
@@ -227,7 +239,8 @@ object ScanProcessor extends CommandProcessor {
         policies = policies.distinctBy(_.id),
         exclusions = exclusions.distinctBy(_.id),
         threats = threats.distinctBy(_.id),
-        semantics = semantics.distinctBy(_.signature)
+        semantics = semantics.distinctBy(_.signature),
+        sinkSkipList = sinkSkipList.distinctBy(_.id)
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
