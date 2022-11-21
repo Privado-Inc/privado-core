@@ -28,38 +28,36 @@ import overflowdb.BatchedUpdate
 import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.DatabaseDetails
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
 import org.slf4j.LoggerFactory
 
-class DBConfigTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
+class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-
+  override def generateParts(): Array[JavaProperty] = {
     // Spring Data JDBC
     // We are seeing duplicate values. NEED TO INVESTIGATE
     // Let's deduplicate the properties for the time being
     // Databases:
     // val propertySinks = cpg.property.filter(p => p.value matches ("jdbc:.*://.*/.*|mongodb(\\+srv)?:.*")).l.groupBy(_.value).map(_._2.head)
     // val propertySinks = cpg.property.filter(p => p.value matches (".*")).l.groupBy(_.value).map(_._2.head)
-    val propertySinks = cpg.property.dedup.l
+    cpg.property.dedup.toArray
+  }
 
-    // Display the value of mylist using for loop
-    for (dbUrl <- propertySinks) {
-      try {
-        if (dbUrl.value.contains("jdbc:h2")) {
-          parsePropForSpringJdbcAndJpaH2(dbUrl)
-        } else if (dbUrl.value.contains("jdbc:oracle")) {
-          parsePropForSpringJdbcAndJpaOracle(dbUrl)
-        } else if (dbUrl.value.contains("jdbc:")) {
-          parsePropForSpringJDBCAndJPA(dbUrl)
-        } else if (dbUrl.value.contains("mongodb")) {
-          parsePropForSpringDataMongo(dbUrl)
-        }
-      } catch {
-        case e: Exception => logger.debug("Exception while processing db config: " + e)
+  override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
+    try {
+      if (dbUrl.value.contains("jdbc:h2")) {
+        parsePropForSpringJdbcAndJpaH2(dbUrl)
+      } else if (dbUrl.value.contains("jdbc:oracle")) {
+        parsePropForSpringJdbcAndJpaOracle(dbUrl)
+      } else if (dbUrl.value.contains("jdbc:")) {
+        parsePropForSpringJDBCAndJPA(dbUrl)
+      } else if (dbUrl.value.contains("mongodb")) {
+        parsePropForSpringDataMongo(dbUrl)
       }
+    } catch {
+      case e: Exception => logger.debug("Exception while processing db config: " + e)
     }
   }
 

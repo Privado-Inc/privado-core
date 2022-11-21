@@ -23,10 +23,11 @@
 
 package ai.privado.languageEngine.java.passes.config
 
+import ai.privado.model.RuleInfo
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
@@ -36,21 +37,22 @@ import java.util.Properties
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import io.circe.yaml.parser
-
 import com.github.wnameless.json.flattener.JsonFlattener
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
-class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends SimpleCpgPass(cpg) {
+class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    propertiesFiles(projectRoot).foreach { file =>
-      val fileNode      = addFileNode(file, builder)
-      val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
-      propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
-    }
+  override def generateParts(): Array[String] = {
+    propertiesFiles(projectRoot).toArray
+  }
+
+  override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
+    val fileNode      = addFileNode(file, builder)
+    val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
+    propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
   }
 
   private def addPropertyNodesAndConnectToUsers(

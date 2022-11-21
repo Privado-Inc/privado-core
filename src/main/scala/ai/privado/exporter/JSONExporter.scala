@@ -109,13 +109,6 @@ object JSONExporter {
         MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
       })
 
-      logger.info("Completed exporting policy violations")
-      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
-      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
-      f.write(output.asJson.toString())
-      logger.info("Shutting down Exporter engine")
-      logger.info("Scanning Completed...")
-
       // Compliance Violations
       val complianceViolations = violations.filter(violation =>
         violation.policyDetails match {
@@ -131,6 +124,13 @@ object JSONExporter {
         collections,
         complianceViolations.size
       )
+
+      logger.info("Completed exporting policy violations")
+      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Exporter engine")
+      logger.info("Scanning Completed...")
 
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
