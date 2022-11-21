@@ -153,14 +153,21 @@ class Dataflow(cpg: Cpg) {
 
         // Logic to filter flows which are interfering with the current source item
         // Ex - If traversing flow for email, discard flow which uses password
+        val otherMatchedRules = new mutable.HashSet[String]()
         val res = entrySet._2.elements
           .flatMap(pathItem => {
-            Some(pathItem.tag.where(_.name(Constants.id).valueNot(sourceId).value("Data.Sensitive.*")).nonEmpty)
+            val matchRes = pathItem.tag.where(_.name(Constants.id).valueNot(sourceId).value("Data.Sensitive.*")).value
+            if (matchRes.nonEmpty){
+              otherMatchedRules.add(matchRes.head)
+              Some(true)
+            }
+            else
+              Some(false)
           })
           .foldLeft(false)((a, b) => a || b)
         if (res) {
           // discard this flow
-          logger.debug(s"Discarding the flow for sourceId : $sourceId")
+          logger.debug(s"Discarding the flow for sourceId : $sourceId, other matched Data Elements : ${otherMatchedRules.mkString(" || ")}")
           logger.debug(s"${entrySet._2.elements.code.mkString("|||")}")
           logger.debug("----------------------------")
           AppCache.fpByOverlappingDE += 1

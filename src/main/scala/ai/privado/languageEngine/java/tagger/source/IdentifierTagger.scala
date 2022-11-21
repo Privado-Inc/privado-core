@@ -130,6 +130,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         })
       })
 
+
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
@@ -139,6 +140,8 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         // Step 2.3
         tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
       })
+
+
   }
 
   /** Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
