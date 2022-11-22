@@ -23,7 +23,8 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.cache
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
@@ -162,8 +163,10 @@ class Dataflow(cpg: Cpg) {
           logger.debug(s"Discarding the flow for sourceId : $sourceId")
           logger.debug(s"${entrySet._2.elements.code.mkString("|||")}")
           logger.debug("----------------------------")
+          AppCache.fpByOverlappingDE += 1
         } else
           dataflowsMapBySourceId(sourceId) += entrySet._1
+        AppCache.totalFlows += 1
       }
 
       val source = entrySet._2.elements.head
@@ -245,6 +248,7 @@ class Dataflow(cpg: Cpg) {
       } else
         uniqueSinkMap(fileLineNo) = sinkPathId
     })
+    AppCache.groupingByLineNumber += sinkPathIds.size - uniqueSinkMap.values.size
     uniqueSinkMap.values.toList
   }
 

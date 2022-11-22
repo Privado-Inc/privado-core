@@ -31,6 +31,9 @@ object AppCache {
   var scanPath: String           = ""
   var repoName: String           = ""
   var privadoVersionMain: String = ""
+  var fpByOverlappingDE = 0
+  var groupingByLineNumber = 0
+  var totalFlows = 0
 
   def init(scanPath: String) = {
     this.scanPath = scanPath
