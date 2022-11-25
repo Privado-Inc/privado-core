@@ -23,25 +23,24 @@
 
 package ai.privado.languageEngine.java.tagger.collection
 
-import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Method}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+import overflowdb.BatchedUpdate
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends PrivadoSimplePass(cpg) {
 
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray
+  override val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     val methodUrlMap = mutable.HashMap[Long, String]()
     val classUrlMap  = mutable.HashMap[Long, String]()

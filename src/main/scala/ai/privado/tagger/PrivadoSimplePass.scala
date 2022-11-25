@@ -20,25 +20,30 @@
  * For more information, contact support@privado.ai
  */
 
-package ai.privado.tagger.source
+package ai.privado.tagger
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities._
+import ai.privado.metric.MetricHandler
+import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
+import io.shiftleft.passes.SimpleCpgPass
+import org.slf4j.LoggerFactory
 
-class LiteralTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    // Step 1.2
-    val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").l
-    literals.foreach(literal => {
-      storeForTag(builder, literal)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-      addRuleTags(builder, literal, ruleInfo)
-    })
+  var ruleInfo: RuleInfo = null
+  val logger             = LoggerFactory.getLogger(getClass)
+
+  /** Helper function to set the rule and apply the pass
+    */
+  def setRuleAndApply(ruleInfo: RuleInfo) = {
+    try {
+      this.ruleInfo = ruleInfo
+      this.createAndApply()
+    } catch {
+      case ex: Exception => {
+        logger.error("Exception executing pass")
+        MetricHandler.scanProcessErrors.addOne(ex.toString)
+      }
+    }
   }
 }
