@@ -134,8 +134,8 @@ object PolicyThreatType extends Enumeration {
 object ConfigRuleType extends Enumeration {
   type ConfigRuleType = Value
 
-  val EXCLUSIONS = Value("exclusions")
-  val SEMANTICS  = Value("semantics")
+  val EXCLUSIONS     = Value("exclusions")
+  val SEMANTICS      = Value("semantics")
   val SINK_SKIP_LIST = Value("sinkSkipList")
 
   def withNameDefaultHandler(name: String): Value = {

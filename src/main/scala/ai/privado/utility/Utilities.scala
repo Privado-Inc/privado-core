@@ -233,10 +233,10 @@ object Utilities {
   }
 
   /** Checks if given sinkName doesn't belong to the sink skip rule file regex
-   *
-   * @param sinkName
-   * @return
-   */
+    *
+    * @param sinkName
+    * @return
+    */
   def isPrivacySink(sinkName: String): Boolean = {
     RuleCache.getRule.sinkSkipList
       .flatMap(sinkSkipRule => {
@@ -244,15 +244,13 @@ object Utilities {
           case Some(pattern) =>
             Try(!sinkName.matches(pattern)) match {
               case Success(result) => Some(result)
-              case Failure(_) => None
+              case Failure(_)      => None
             }
           case None => None
         }
       })
       .foldLeft(true)((a, b) => a && b)
   }
-
-
 
   /** Returns all files matching the given extensions
     * @param folderPath
@@ -319,12 +317,12 @@ object Utilities {
     def getSemanticRuleByLang(rule: Semantic) =
       rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
 
-    val sources         = rules.sources.filter(getRuleByLang)
-    val sinks           = rules.sinks.filter(getRuleByLang)
-    val collections     = rules.collections.filter(getRuleByLang)
-    val exclusions      = rules.exclusions.filter(getRuleByLang)
-    val semantics       = rules.semantics.filter(getSemanticRuleByLang)
-    val sinkSkipList    =  rules.sinkSkipList.filter(getRuleByLang)
+    val sources      = rules.sources.filter(getRuleByLang)
+    val sinks        = rules.sinks.filter(getRuleByLang)
+    val collections  = rules.collections.filter(getRuleByLang)
+    val exclusions   = rules.exclusions.filter(getRuleByLang)
+    val semantics    = rules.semantics.filter(getSemanticRuleByLang)
+    val sinkSkipList = rules.sinkSkipList.filter(getRuleByLang)
 
     ConfigAndRules(sources, sinks, collections, rules.policies, rules.threats, exclusions, semantics, sinkSkipList)
   }

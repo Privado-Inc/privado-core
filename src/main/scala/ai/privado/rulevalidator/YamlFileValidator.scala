@@ -168,8 +168,8 @@ object YamlFileValidator {
     val configTypeKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
     ConfigRuleType.withNameDefaultHandler(configTypeKey) match {
-      case ConfigRuleType.SEMANTICS  => Right(SEMANTICS)
-      case ConfigRuleType.EXCLUSIONS => Right(EXCLUSIONS)
+      case ConfigRuleType.SEMANTICS      => Right(SEMANTICS)
+      case ConfigRuleType.EXCLUSIONS     => Right(EXCLUSIONS)
       case ConfigRuleType.SINK_SKIP_LIST => Right(SINK_SKIP_LIST)
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)

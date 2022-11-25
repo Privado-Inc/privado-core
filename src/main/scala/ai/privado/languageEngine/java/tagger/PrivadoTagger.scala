@@ -29,7 +29,7 @@ import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
@@ -48,28 +48,44 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
     logger.info("Starting tagging")
+    val literalTagger       = new LiteralTagger(cpg)
+    val identifierTagger    = new IdentifierTagger(cpg)
+    val apiTagger           = new APITagger(cpg)
+    val regularSinkTagger   = new RegularSinkTagger(cpg)
+    val customInheritTagger = new CustomInheritTagger(cpg)
+
+    val sourceRules = rules.sources
 
     println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-    new LiteralTagger(cpg).createAndApply()
+    sourceRules.foreach(rule => {
+      literalTagger.setRuleAndApply(rule)
+    })
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
-    new IdentifierTagger(cpg).createAndApply()
+    sourceRules.foreach(rule => {
+      identifierTagger.setRuleAndApply(rule)
+    })
     println(s"${Calendar.getInstance().getTime} - DBConfigTagger invoked...")
     new DBConfigTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
-    new RegularSinkTagger(cpg).createAndApply()
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    new APITagger(cpg).createAndApply()
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.API))
+      .foreach(rule => apiTagger.setRuleAndApply(rule))
 
     // Custom Rule tagging
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
       println(s"${Calendar.getInstance().getTime} - CustomInheritTagger invoked...")
-      new CustomInheritTagger(cpg).createAndApply()
+      StorageInheritRule.rules.foreach(rule => customInheritTagger.setRuleAndApply(rule))
     }
 
     println(s"${Calendar.getInstance().getTime} - CollectionTagger invoked...")
-    new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
+    val collectionTagger = new CollectionTagger(cpg, sourceRules)
+    rules.collections.foreach(rule => collectionTagger.setRuleAndApply(rule))
     logger.info("Done with tagging")
 
     cpg.tag

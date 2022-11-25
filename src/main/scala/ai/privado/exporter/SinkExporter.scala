@@ -30,7 +30,16 @@ import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities.isPrivacySink
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, FieldIdentifier, Identifier, Literal, MethodParameterIn, StoredNode, Tag}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodParameterIn,
+  StoredNode,
+  Tag
+}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -48,20 +57,21 @@ class SinkExporter(cpg: Cpg) {
   }
 
   def getProbableSinks: List[String] = {
-    /** Get all the Methods which are tagged as SINKs  */
-    val taggedSinkMethods = cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-      .call.l
+
+    /** Get all the Methods which are tagged as SINKs */
+    val taggedSinkMethods = cpg.tag
+      .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .call
+      .l
       .map(i => i.methodFullName.split(":").headOption.getOrElse(""))
       .distinct
 
-    /** Get all the Methods which are external  */
+    /** Get all the Methods which are external */
     val dependenciesTPs = cpg.method.external.l.map(i => i.fullName.split(":").headOption.getOrElse(""))
-    /** Actions:
-     * by excluding taggedSinkMethods
-     * check isPrivacySink
-     * transform method FullName close to groupIds
-     * remove duplicates
-     */
+
+    /** Actions: by excluding taggedSinkMethods check isPrivacySink transform method FullName close to groupIds remove
+      * duplicates
+      */
     val filteredTPs = dependenciesTPs
       .filter(str => !taggedSinkMethods.contains(str))
       .filter((str) => isPrivacySink(str))
