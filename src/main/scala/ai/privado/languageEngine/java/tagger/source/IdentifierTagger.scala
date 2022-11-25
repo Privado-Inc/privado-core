@@ -117,7 +117,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         val impactedGetters = cpg.method
           .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
           .callIn
-          .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
+            .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
           .where(_.argument(2).code(memberNameRegex))
           // .where(_.inAst.isMethod.name("get.*"))
           .l

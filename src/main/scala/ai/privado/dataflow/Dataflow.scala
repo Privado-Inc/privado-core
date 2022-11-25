@@ -41,6 +41,7 @@ import overflowdb.traversal.Traversal
 import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
 
 class Dataflow(cpg: Cpg) {
@@ -150,29 +151,7 @@ class Dataflow(cpg: Cpg) {
       def addToMap(sourceId: String) = {
         if (!dataflowsMapBySourceId.contains(sourceId))
           dataflowsMapBySourceId.addOne(sourceId, ListBuffer())
-
-        // Logic to filter flows which are interfering with the current source item
-        // Ex - If traversing flow for email, discard flow which uses password
-        val otherMatchedRules = new mutable.HashSet[String]()
-        val res = entrySet._2.elements
-          .flatMap(pathItem => {
-            val matchRes = pathItem.tag.where(_.name(Constants.id).valueNot(sourceId).value("Data.Sensitive.*")).value
-            if (matchRes.nonEmpty){
-              otherMatchedRules.add(matchRes.head)
-              Some(true)
-            }
-            else
-              Some(false)
-          })
-          .foldLeft(false)((a, b) => a || b)
-        if (res) {
-          // discard this flow
-          logger.debug(s"Discarding the flow for sourceId : $sourceId, other matched Data Elements : ${otherMatchedRules.mkString(" || ")}")
-          logger.debug(s"${entrySet._2.elements.code.mkString("|||")}")
-          logger.debug("----------------------------")
-          AppCache.fpByOverlappingDE += 1
-        } else
-          dataflowsMapBySourceId(sourceId) += entrySet._1
+        dataflowsMapBySourceId(sourceId) += entrySet._1
         AppCache.totalFlows += 1
       }
 
@@ -229,8 +208,83 @@ class Dataflow(cpg: Cpg) {
               dataflowNodeType
             )
           ) {
-            // Add this to Cache
-            addToCache(sinkPathId, dataflowNodeType)
+            def approach1() = {
+              // Logic to filter flows which are interfering with the current source item
+              // Ex - If traversing flow for email, discard flow which uses password
+              var isSourceDEPresent = false
+              val otherMatchedRules = new mutable.HashSet[String]()
+              val res = dataflowsMapByType(sinkPathId).elements
+                .flatMap(pathItem => {
+                  val matchRes = pathItem.tag.where(_.name(Constants.id).value("Data.Sensitive.*")).value.l
+                  if (matchRes.nonEmpty){
+                    if(matchRes.head.equals(pathSourceId)) {
+                      isSourceDEPresent = true
+                      Some(false)
+                    } else {
+                      otherMatchedRules.add(matchRes.head)
+                      Some(true)
+                    }
+                  }
+                  else
+                    Some(false)
+                })
+                .foldLeft(false)((a, b) => a || b)
+
+              val dataElementBlackList = List("Data.Sensitive.AccountData.AccountID",
+                "Data.Sensitive.PurchaseData.OrderDetails",
+                "Data.Sensitive.AccountData.LanguagePreferences")
+
+              val blackListElementPresence = otherMatchedRules.map(item => dataElementBlackList.contains(item))
+                .foldLeft(false)((a,b) => a||b)
+              if (res && !isSourceDEPresent && !(blackListElementPresence && dataflowSinkType.equals("storages"))) {
+                // discard this flow
+                logger.debug(s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${otherMatchedRules.mkString(" || ")}, Sink type : ${dataflowSinkType}")
+                logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
+                logger.debug("----------------------------")
+                AppCache.fpByOverlappingDE += 1
+              }
+              else // Add this to Cache
+                addToCache(sinkPathId, dataflowNodeType)
+            }
+            def approach2() = {
+              // Logic to filter flows which are interfering with the current source item
+              // Ex - If traversing flow for email, discard flow which uses password
+
+              val matchedDataElement = mutable.HashSet[String]()
+              breakable {
+                dataflowsMapByType(sinkPathId).elements.reverse
+                  .foreach(pathItem => {
+                    val matchRes = pathItem.tag.where(_.name(Constants.id).value("Data.Sensitive.*")).value.l
+                    if (matchRes.nonEmpty) {
+                      matchedDataElement.addAll(matchRes)
+                      break()
+                    }
+                  })
+              }
+
+              if (matchedDataElement.nonEmpty && !matchedDataElement.contains(pathSourceId) && !dataflowSinkType.equals("storages")) {
+              //if(false){// discard this flow
+                val sinkNode = dataflowsMapByType(sinkPathId).elements.isCall.last
+                val arguments = sinkNode.argument.filter(_.argumentIndex > 0).l
+                logger.debug(s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${matchedDataElement.mkString(" || ")}, Sink type : ${dataflowSinkType}")
+                logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
+                logger.debug(arguments.tag.where(_.nameExact(Constants.id)).value.mkString("*****"))
+                val identifierArguments = arguments.isIdentifier.l
+                val callArguments = arguments.isCall.l
+                logger.debug("Identifier Node and tags : ")
+                identifierArguments.foreach(idenArg => logger.debug(s"${idenArg.name} --> " +
+                    s"${idenArg.tag.where(_.nameExact(Constants.id)).value.mkString("*****")}"))
+                logger.debug("Call Node and tags : ")
+                callArguments.foreach(callArg => logger.debug(s"${callArg.name} --> " +
+                    s"${callArg.tag.where(_.nameExact(Constants.id)).value.mkString("*****")}"))
+                logger.debug("----------------------------")
+                AppCache.fpByOverlappingDE += 1
+              }
+              else // Add this to Cache
+                addToCache(sinkPathId, dataflowNodeType)
+            }
+            //approach1()
+            approach2()
           }
         })
       })
