@@ -18,20 +18,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.policyEngine.PolicyExecutor
-import ai.privado.threatEngine.ThreatEngineExecutor
+import ai.privado.languageEngine.java.threatEngine.ThreatEngineExecutor
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
+import ai.privado.policyEngine.PolicyExecutor
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import org.slf4j.LoggerFactory
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable
 
 class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
 
@@ -77,7 +78,10 @@ class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
     }
   }
 
-  private def convertDataflowPolicyViolation(policyId: String, violatingFlows: ListBuffer[ViolationDataFlowModel]) = {
+  private def convertDataflowPolicyViolation(
+    policyId: String,
+    violatingFlows: mutable.HashSet[ViolationDataFlowModel]
+  ) = {
     ViolationModel(policyId, ExporterUtility.getPolicyInfoForExporting(policyId), Some(violatingFlows.toList), None)
   }
 

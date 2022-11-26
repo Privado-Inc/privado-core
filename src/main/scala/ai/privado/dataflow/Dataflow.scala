@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.dataflow
@@ -28,23 +29,24 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
-import io.joern.dataflowengineoss.language.Path
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.{Path, _}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
+import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 class Dataflow(cpg: Cpg) {
 
-  private val logger                        = LoggerFactory.getLogger(getClass)
-  implicit val engineContext: EngineContext = EngineContext(Utilities.getSemantics(cpg), EngineConfig(4))
+  private val logger = LoggerFactory.getLogger(getClass)
+  implicit val engineContext: EngineContext =
+    EngineContext(semantics = Utilities.getSemantics(cpg), config = EngineConfig(4))
 
   val falsePositiveSources = List[String](
     "Data.Sensitive.OnlineIdentifiers.Cookies",
@@ -81,7 +83,7 @@ class Dataflow(cpg: Cpg) {
           })
           .toMap
       } else {
-        println("Deduplicating data flows...")
+        println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
         dataflowMapByPathId = DuplicateFlowProcessor.process(dataflowPaths)
       }
       filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
@@ -103,7 +105,7 @@ class Dataflow(cpg: Cpg) {
       .where(filterSources)
       .l ++ cpg.call
       .where(filterSources)
-      .l
+      .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l
 
   }
 

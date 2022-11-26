@@ -22,7 +22,6 @@
 
 package ai.privado.tagger
 
-import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -47,5 +46,4 @@ abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
       }
     }
   }
-
 }

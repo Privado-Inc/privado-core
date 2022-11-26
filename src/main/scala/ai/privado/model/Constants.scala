@@ -51,6 +51,7 @@ object Constants {
   val exclusions    = "exclusions"
   val threats       = "threats"
   val semantics     = "semantics"
+  val sinkSkipList  = "sinkSkipList"
 
   val tags               = "tags"
   val description        = "description"
@@ -77,7 +78,19 @@ object Constants {
   val sources             = "sources"
   val localScanPath       = "localScanPath"
   val processing          = "processing"
+  val sinkProcessing      = "sinkProcessing"
+  val probableSinks       = "probableSinks"
   val outputFileName      = "privado.json"
   val outputDirectoryName = ".privado"
 
+  // database details
+  val dbName      = "dbName"
+  val dbVendor    = "dbVendor"
+  val dbLocation  = "dbLocation"
+  val dbOperation = "dbOperation"
+
+  // Other commonly used constants
+  val RULES_DIR_IN_CONFIG           = "rules"
+  val CONFIG_DIR_IN_CONFIG          = "config"
+  val PRETTY_LINE_SEPARATOR: String = "-" * 100
 }
