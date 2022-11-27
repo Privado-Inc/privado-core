@@ -135,13 +135,14 @@ object PolicyThreatType extends Enumeration {
 object ConfigRuleType extends Enumeration {
   type ConfigRuleType = Value
 
-  val EXCLUSIONS = Value("exclusions")
-  val SEMANTICS  = Value("semantics")
+  val EXCLUSIONS     = Value("exclusions")
+  val SEMANTICS      = Value("semantics")
+  val SINK_SKIP_LIST = Value("sinkSkipList")
 
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)
       try {
-        withName(name.toLowerCase())
+        withName(name)
       } catch {
         case _: Throwable => null
       }

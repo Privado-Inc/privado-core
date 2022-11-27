@@ -80,6 +80,8 @@ object JSONExporter {
       output.addOne(Constants.sinks -> sinks.asJson)
       val processingSinks = sinkExporter.getProcessing
       output.addOne(Constants.sinkProcessing -> processingSinks.asJson)
+      val probableSinks = sinkExporter.getProbableSinks
+      output.addOne(Constants.probableSinks -> probableSinks.asJson)
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       RuleCache.getRule.sinks.foreach(sinkRule => {
@@ -109,13 +111,6 @@ object JSONExporter {
         MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
       })
 
-      logger.info("Completed exporting policy violations")
-      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
-      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
-      f.write(output.asJson.toString())
-      logger.info("Shutting down Exporter engine")
-      logger.info("Scanning Completed...")
-
       // Compliance Violations
       val complianceViolations = violations.filter(violation =>
         violation.policyDetails match {
@@ -123,6 +118,13 @@ object JSONExporter {
           case None               => false
         }
       )
+
+      logger.debug("------------ Sink Skip List ---------------")
+      val skipRules = RuleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.patterns.head)
+      logger.debug(s"$skipRules")
+      logger.debug("------------ Probable Sink Dependencies ---------------")
+      logger.debug(s"$probableSinks")
+
       ConsoleExporter.exportConsoleSummary(
         dataflowsOutput,
         sources,
@@ -140,6 +142,13 @@ object JSONExporter {
           s"Total flows before FP : ${AppCache.totalFlows}\n",
         s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
       )
+
+      logger.info("Completed exporting policy violations")
+      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Exporter engine")
+      logger.info("Scanning Completed...")
 
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(

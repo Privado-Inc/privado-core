@@ -37,6 +37,7 @@ case class PrivadoInput(
   skipDownloadDependencies: Boolean = false,
   disableDeDuplication: Boolean = false,
   ignoreExcludeRules: Boolean = false,
+  ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
   upload: Boolean = false,
   enableJS: Boolean = false
