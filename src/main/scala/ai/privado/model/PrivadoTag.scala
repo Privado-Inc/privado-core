@@ -33,6 +33,7 @@ object InternalTag extends Enumeration {
   val OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE = Value("OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE")
   val SENSITIVE_FIELD_ACCESS                   = Value("SENSITIVE_FIELD_ACCESS")
   val COLLECTION_METHOD_ENDPOINT               = Value("COLLECTION_METHOD_ENDPOINT")
+  val SENSITIVE_METHOD_RETURN                  = Value("SENSITIVE_METHOD_RETURN")
 
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 

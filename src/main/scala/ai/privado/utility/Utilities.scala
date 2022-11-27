@@ -30,7 +30,15 @@ import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, FieldIdentifier, Identifier, Literal, MethodParameterIn, NewTag}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  CfgNode,
+  FieldIdentifier,
+  Identifier,
+  Literal,
+  MethodParameterIn,
+  NewTag
+}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -83,18 +91,18 @@ object Utilities {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName)) {
       val storeForTagHelper = storeForTag(builder, node) _
-        storeForTagHelper(Constants.id, ruleInfo.id)
-        storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
-        storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
-        storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
+      storeForTagHelper(Constants.id, ruleInfo.id)
+      storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
+      storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
+      storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
-        MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
-        RuleCache.internalRules.get(ruleInfo.id) match {
-          case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
-          case _       => ()
-        }
-        // storing by catLevelTwo and nodeType to get id
-        storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
+      MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
+      RuleCache.internalRules.get(ruleInfo.id) match {
+        case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
+        case _       => ()
+      }
+      // storing by catLevelTwo and nodeType to get id
+      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
     }
   }
 

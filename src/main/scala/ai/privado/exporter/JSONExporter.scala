@@ -27,7 +27,7 @@ import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.exporter.DataFlowSubCategoryModel
-import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
@@ -132,11 +132,14 @@ object JSONExporter {
         complianceViolations.size
       )
 
-      println(s"Total False positive flows removed : \n" +
-        s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
-        s"Grouping by Data element : ${AppCache.groupingByLineNumber}\n" +
-        s"Total flows before FP : ${AppCache.totalFlows}\n",
-        s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}")
+      println(
+        s"Total False positive flows removed : \n" +
+          s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
+          s"FP by derived source Data element : ${AppCache.fpByDerivedSourcePresence}\n" +
+          s"Grouping by Data element : ${AppCache.groupingByLineNumber}\n" +
+          s"Total flows before FP : ${AppCache.totalFlows}\n",
+        s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
+      )
 
       try {
         MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(

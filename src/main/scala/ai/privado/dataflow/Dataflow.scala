@@ -27,13 +27,13 @@ import ai.privado.cache
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, NodeType}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.{Path, _}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, StoredNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -216,34 +216,38 @@ class Dataflow(cpg: Cpg) {
               val res = dataflowsMapByType(sinkPathId).elements
                 .flatMap(pathItem => {
                   val matchRes = pathItem.tag.where(_.name(Constants.id).value("Data.Sensitive.*")).value.l
-                  if (matchRes.nonEmpty){
-                    if(matchRes.head.equals(pathSourceId)) {
+                  if (matchRes.nonEmpty) {
+                    if (matchRes.head.equals(pathSourceId)) {
                       isSourceDEPresent = true
                       Some(false)
                     } else {
                       otherMatchedRules.add(matchRes.head)
                       Some(true)
                     }
-                  }
-                  else
+                  } else
                     Some(false)
                 })
                 .foldLeft(false)((a, b) => a || b)
 
-              val dataElementBlackList = List("Data.Sensitive.AccountData.AccountID",
+              val dataElementBlackList = List(
+                "Data.Sensitive.AccountData.AccountID",
                 "Data.Sensitive.PurchaseData.OrderDetails",
-                "Data.Sensitive.AccountData.LanguagePreferences")
+                "Data.Sensitive.AccountData.LanguagePreferences"
+              )
 
-              val blackListElementPresence = otherMatchedRules.map(item => dataElementBlackList.contains(item))
-                .foldLeft(false)((a,b) => a||b)
+              val blackListElementPresence = otherMatchedRules
+                .map(item => dataElementBlackList.contains(item))
+                .foldLeft(false)((a, b) => a || b)
               if (res && !isSourceDEPresent && !(blackListElementPresence && dataflowSinkType.equals("storages"))) {
                 // discard this flow
-                logger.debug(s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${otherMatchedRules.mkString(" || ")}, Sink type : ${dataflowSinkType}")
+                logger.debug(
+                  s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${otherMatchedRules
+                      .mkString(" || ")}, Sink type : ${dataflowSinkType}"
+                )
                 logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
                 logger.debug("----------------------------")
                 AppCache.fpByOverlappingDE += 1
-              }
-              else // Add this to Cache
+              } else // Add this to Cache
                 addToCache(sinkPathId, dataflowNodeType)
             }
             def approach2() = {
@@ -254,7 +258,13 @@ class Dataflow(cpg: Cpg) {
               breakable {
                 dataflowsMapByType(sinkPathId).elements.reverse
                   .foreach(pathItem => {
-                    val matchRes = pathItem.tag.where(_.name(Constants.id).value("Data.Sensitive.*")).value.l
+                    val matchRes = pathItem.tag
+                      .or(
+                        _.nameExact(Constants.id).value("Data.Sensitive.*"),
+                        _.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString)
+                      )
+                      .value
+                      .l
                     if (matchRes.nonEmpty) {
                       matchedDataElement.addAll(matchRes)
                       break()
@@ -262,28 +272,70 @@ class Dataflow(cpg: Cpg) {
                   })
               }
 
-              if (matchedDataElement.nonEmpty && !matchedDataElement.contains(pathSourceId) && !dataflowSinkType.equals("storages")) {
-              //if(false){// discard this flow
-                val sinkNode = dataflowsMapByType(sinkPathId).elements.isCall.last
-                val arguments = sinkNode.argument.filter(_.argumentIndex > 0).l
-                logger.debug(s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${matchedDataElement.mkString(" || ")}, Sink type : ${dataflowSinkType}")
+              if (
+                matchedDataElement.nonEmpty && !matchedDataElement.contains(pathSourceId) && !dataflowSinkType
+                  .equals("storages")
+              ) {
+                // if(false){
+                logger.debug(
+                  s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${matchedDataElement
+                      .mkString(" || ")}, Sink type : ${dataflowSinkType}"
+                )
                 logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
-                logger.debug(arguments.tag.where(_.nameExact(Constants.id)).value.mkString("*****"))
-                val identifierArguments = arguments.isIdentifier.l
-                val callArguments = arguments.isCall.l
-                logger.debug("Identifier Node and tags : ")
-                identifierArguments.foreach(idenArg => logger.debug(s"${idenArg.name} --> " +
-                    s"${idenArg.tag.where(_.nameExact(Constants.id)).value.mkString("*****")}"))
-                logger.debug("Call Node and tags : ")
-                callArguments.foreach(callArg => logger.debug(s"${callArg.name} --> " +
-                    s"${callArg.tag.where(_.nameExact(Constants.id)).value.mkString("*****")}"))
                 logger.debug("----------------------------")
                 AppCache.fpByOverlappingDE += 1
+              } else { // Add this to Cache
+                val sinkNode  = dataflowsMapByType(sinkPathId).elements.isCall.last
+                val arguments = sinkNode.argument.filter(_.argumentIndex > 0).l
+
+                val identifierArguments       = arguments.isIdentifier.l
+                var callArguments             = arguments.isCall.l
+                val identifierInCallArguments = mutable.HashSet[Identifier]()
+                var recCnt                    = 0
+                var callArgumentForIdentifier = arguments.isCall.l
+                while (callArgumentForIdentifier.argument.isIdentifier.nonEmpty && recCnt < 3) {
+                  identifierInCallArguments.addAll(callArgumentForIdentifier.argument.isIdentifier.toSet)
+                  callArgumentForIdentifier = callArgumentForIdentifier.argument.isCall.l
+                  recCnt += 1
+                }
+                val isDerivedSourcePresent = (identifierInCallArguments ++ identifierArguments.toSet).tag
+                  .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name))
+                  .nonEmpty
+
+                val identifierMatchedDataElement =
+                  identifierArguments.tag.where(_.value("Data.Sensitive.*")).value.toSet
+
+                val callMatchedDataElement = mutable.HashSet[String]()
+                recCnt = 0
+                while (callArguments.nonEmpty && recCnt < 3) {
+                  callMatchedDataElement.addAll(callArguments.tag.where(_.value("Data.Sensitive.*")).value.l)
+                  callArguments = callArguments.argument.isCall.l
+                  recCnt += 1
+                }
+                val finalMatchedDataElement = identifierMatchedDataElement ++ callMatchedDataElement
+                if (
+                  !isDerivedSourcePresent || finalMatchedDataElement.isEmpty || finalMatchedDataElement
+                    .contains(pathSourceId) || dataflowSinkType.equals("storages")
+                ) {
+                  // if(true) { //discard this flow
+                  addToCache(sinkPathId, dataflowNodeType)
+                } else {
+                  // Do some computation for derived node
+                  logger.debug(
+                    s"Discarding the flow for sourceId : $pathSourceId, identifier matched Data Elements :" +
+                      s" ${identifierMatchedDataElement.mkString(" || ")}, call matched Data Elements : ${callMatchedDataElement} Sink type : ${dataflowSinkType}"
+                  )
+                  logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
+                  println(s"Derived source was present : ${isDerivedSourcePresent}")
+                  println(
+                    s"Derived sources are : ${(identifierInCallArguments ++ identifierArguments.toSet).code.mkString("|||")}"
+                  )
+                  logger.debug("----------------------------")
+                  AppCache.fpByDerivedSourcePresence += 1
+                }
               }
-              else // Add this to Cache
-                addToCache(sinkPathId, dataflowNodeType)
             }
-            //approach1()
+            // approach1()
             approach2()
           }
         })

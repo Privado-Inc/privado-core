@@ -117,7 +117,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         val impactedGetters = cpg.method
           .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
           .callIn
-            .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
+          .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
           .where(_.argument(2).code(memberNameRegex))
           // .where(_.inAst.isMethod.name("get.*"))
           .l
@@ -128,8 +128,23 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
             addRuleTags(builder, impactedGetter, ruleInfo)
           }
         })
-      })
 
+        val impactedReturnMethods = cpg.typeDecl
+          .where(_.fullName(typeDeclVal))
+          .method
+          .block
+          .astChildren
+          .isReturn
+          .code(".*" + typeDeclMemberNameCache(typeDeclVal).getOrElse(ruleInfo.id, "Member Not Found") + ".*")
+          .method
+          .callIn
+          .l
+
+        impactedReturnMethods.foreach(impactedReturnCall => {
+          storeForTag(builder, impactedReturnCall)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id)
+        })
+
+      })
 
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
@@ -140,7 +155,6 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         // Step 2.3
         tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
       })
-
 
   }
 
