@@ -36,10 +36,28 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
+import scala.collection.mutable.HashMap
+
 class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
-  val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val apis      = cacheCall.name(APISINKS_REGEX).l
+  val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  val topMatch           = HashMap[String, Integer]()
+
+  internalMethodCall.foreach((method) => {
+    val key     = method.split('.').take(2).mkString(".")
+    val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
+    topMatch(key) = (currVal + 1)
+  })
+  var APISINKS_IGNORE_REGEX = "^("
+  topMatch.foreach((mapEntry) => {
+    if (mapEntry == topMatch.last) {
+      APISINKS_IGNORE_REGEX += mapEntry._1 + ")"
+    } else {
+      APISINKS_IGNORE_REGEX += mapEntry._1 + "|"
+    }
+  })
+  val apis = cacheCall.name(APISINKS_REGEX).methodFullNameNot(APISINKS_IGNORE_REGEX).l
 
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
 
