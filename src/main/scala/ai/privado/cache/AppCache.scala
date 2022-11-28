@@ -23,6 +23,8 @@
 package ai.privado.cache
 import ai.privado.utility.Utilities._
 
+import scala.collection.mutable
+
 /** Cache Used to store Application/Scan specific information
   */
 object AppCache {
@@ -35,6 +37,8 @@ object AppCache {
   var fpByDerivedSourcePresence  = 0
   var groupingByLineNumber       = 0
   var totalFlows                 = 0
+  val fpMap                      = mutable.HashMap[String, Int]()
+  val totalMap                   = mutable.HashMap[String, Int]()
 
   def init(scanPath: String) = {
     this.scanPath = scanPath

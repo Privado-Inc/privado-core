@@ -143,6 +143,8 @@ object JSONExporter {
         s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
       )
 
+      println(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")
+
       logger.info("Completed exporting policy violations")
       File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
