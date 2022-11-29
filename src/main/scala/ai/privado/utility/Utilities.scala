@@ -25,9 +25,7 @@ package ai.privado.utility
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
-
-import ai.privado.model.{ConfigAndRules, Constants, Language, RuleInfo, Semantic}
-import ai.privado.model.DatabaseDetails
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, DatabaseDetails, Language, RuleInfo, Semantic}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles

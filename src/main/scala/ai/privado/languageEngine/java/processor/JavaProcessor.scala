@@ -54,35 +54,39 @@ object JavaProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
-        new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+        try {
+          new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
 
-        logger.info("Applying data flow overlay")
-        val context = new LayerCreatorContext(cpg)
-        val options = new OssDataFlowOptions()
-        new OssDataFlow(options).run(context)
-        logger.info("=====================")
+          logger.info("Applying data flow overlay")
+          val context = new LayerCreatorContext(cpg)
+          val options = new OssDataFlowOptions()
+          new OssDataFlow(options).run(context)
+          logger.info("=====================")
 
-        // Run tagger
-        println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(processedRules)
-        println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow
+          // Run tagger
+          println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
+          cpg.runTagger(processedRules)
+          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
+          val dataflowMap = cpg.dataflow
 
-        println(s"${Calendar.getInstance().getTime} - Brewing result...")
-        MetricHandler.setScanStatus(true)
-        // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-          case Left(err) =>
-            MetricHandler.otherErrorsOrWarnings.addOne(err)
-            Left(err)
-          case Right(_) =>
-            println(
-              s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
-            )
-            logger.debug(
-              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-            )
-            Right(())
+          println(s"${Calendar.getInstance().getTime} - Brewing result...")
+          MetricHandler.setScanStatus(true)
+          // Exporting
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              Left(err)
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+              )
+              logger.debug(
+                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+              )
+              Right(())
+          }
+        } finally {
+          cpg.close()
         }
       }
 
