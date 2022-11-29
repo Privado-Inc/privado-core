@@ -23,23 +23,44 @@
 
 package ai.privado.tagger.sink
 
-import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
+import scala.collection.mutable.HashMap
+
 class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
-  val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val apis      = cacheCall.name(APISINKS_REGEX).methodFullNameNot(APISINKSIGNORE_REGEX).l
+  val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  val topMatch                   = HashMap[String, Integer]()
+  val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
+
+  internalMethodCall.foreach((method) => {
+    val key     = method.split('.').take(2).mkString(".")
+    val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
+    topMatch(key) = (currVal + 1)
+  })
+  var APISINKS_IGNORE_REGEX = "^("
+  topMatch.foreach((mapEntry) => {
+    if (mapEntry == topMatch.last) {
+      APISINKS_IGNORE_REGEX += mapEntry._1 + ").*"
+    } else {
+      APISINKS_IGNORE_REGEX += mapEntry._1 + "|"
+    }
+  })
+  val apis = cacheCall
+    .name(APISINKS_REGEX)
+    .methodFullNameNot(APISINKS_IGNORE_REGEX)
+    .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
+    .l
 
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
 
