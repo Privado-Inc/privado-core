@@ -359,7 +359,7 @@ class Dataflow(cpg: Cpg) {
       val flowSize             = dataflowsMapByType(sinkPathId).elements.size
 
       if (uniqueSinkMap.contains(fileLineNo)) {
-        if (flowSize > dataflowsMapByType(uniqueSinkMap(fileLineNo)).elements.size)
+        if (flowSize < dataflowsMapByType(uniqueSinkMap(fileLineNo)).elements.size)
           uniqueSinkMap(fileLineNo) = sinkPathId
       } else
         uniqueSinkMap(fileLineNo) = sinkPathId
