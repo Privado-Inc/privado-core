@@ -90,25 +90,27 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
             "Member not found"
         }
         val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
-        impactedObjects.foreach(impactedObject => {
-          if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-            storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+        impactedObjects
+          .whereNot(_.code("this"))
+          .foreach(impactedObject => {
+            if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+              storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+              storeForTag(builder, impactedObject)(
+                Constants.id,
+                Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+              )
+              storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+            }
             storeForTag(builder, impactedObject)(
-              Constants.id,
-              Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+              Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+              ruleInfo.id
             )
-            storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-          }
-          storeForTag(builder, impactedObject)(
-            Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-            ruleInfo.id
-          )
-          // Tag for storing memberName in derived Objects -> user --> (email, password)
-          storeForTag(builder, impactedObject)(
-            ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-            typeDeclMemberName
-          )
-        })
+            // Tag for storing memberName in derived Objects -> user --> (email, password)
+            storeForTag(builder, impactedObject)(
+              ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+              typeDeclMemberName
+            )
+          })
 
         // To mark all the field access
         implicit val resolver: ICallResolver = NoResolve
@@ -166,7 +168,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   ): Unit = {
     val typeDeclHavingMemberType = cpg.typeDecl.where(_.member.typeFullName(memberType))
     typeDeclHavingMemberType.fullName.dedup.foreach(typeDeclVal => {
-      val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
+      val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
@@ -195,7 +197,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclName))
 
     typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
-      val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
+      val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)

@@ -75,7 +75,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
-        val parameters = collectionMethod.parameter.where(_.name(sourceRule.patterns.head)).l
+        val parameters = collectionMethod.parameter.where(_.name(sourceRule.patterns.head)).whereNot(_.code("this")).l
         if (parameters.isEmpty) {
           None
         } else {
@@ -106,6 +106,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
       } else {
         parameters.foreach(parameter => {
           val derivedReferencingIdentifier = parameter.referencingIdentifiers
+            .whereNot(_.code("this"))
             .where(_.tag.name(Constants.privadoDerived + ".*"))
             .l
           if (derivedReferencingIdentifier.nonEmpty) {
