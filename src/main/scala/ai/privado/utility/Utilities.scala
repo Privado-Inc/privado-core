@@ -128,19 +128,35 @@ object Utilities {
       .methodFullName
       .dedup
       .l
-      .map(generateSinkSemantic)
+      .map(generateSemanticForReturnTaint)
     implicit val resolver: ICallResolver = NoResolve
-    val voidMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:void\\(.*").l
+    val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
 
-    val customVoidSemanticsDefault =
-      voidMethods.fullNameNot(".*\\.(add|put|<init>|set|get|append|store).*").fullName.l
-        .map(generateVoidSemantic)
+    val customNonTaintDefaultSemantics =
+      nonTaintingMethods
+        .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
+        .fullName
+        .l
+        .map(generateNonTaintSemantic)
 
-    val specialVoidSemantics =
-      voidMethods.fullName(".*\\.(add|put|set|get|append|store).*").fullName.l.map(generateVoidSpecialSemantic)
+    val specialNonTaintDefaultSemantics =
+      nonTaintingMethods
+        .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
+        .fullName
+        .l
+        .map(generateNonTaintSpecialSemantic)
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
+    val customStringSemantics = cpg.method
+      .filter(_.isExternal)
+      .where(_.callIn)
+      .fullName(".*:java.lang.String\\(.*")
+      .fullNameNot(".*\\.set[A-Za-z_]*:.*")
+      .fullName
+      .dedup
+      .l
+      .map(generateSemanticForReturnTaint)
     val finalSemantics =
-      (defaultSemantics ++ customVoidSemanticsDefault ++ specialVoidSemantics ++ customSinkSemantics ++ semanticFromConfig)
+      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customSinkSemantics ++ semanticFromConfig)
         .mkString("\n")
     logger.debug("Final Semantics");
     finalSemantics.split("\n").foreach(logger.debug)
@@ -287,13 +303,27 @@ object Utilities {
   def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
-  /** Generate Sink semantics based on the number of parameter in method signature
+  /** Generate semantics for tainting return based on the number of parameter in method signature
     * @param methodName
     *   \- complete signature of method
     * @return
     *   \- semantic string
     */
-  private def generateSinkSemantic(methodName: String) = {
+  private def generateSemanticForReturnTaint(methodName: String) = {
+    val parameterNumber    = methodName.count(_.equals(','))
+    var parameterSemantics = ""
+    for (i <- 0 to (parameterNumber + 1))
+      parameterSemantics += s"$i->-1 "
+    "\"" + methodName + "\" " + parameterSemantics.trim
+  }
+
+  /** Generate semantics for functions which return 'String' based on the number of parameter in method signature
+    * @param methodName
+    *   \- complete signature of method
+    * @return
+    *   \- semantic string
+    */
+  private def generateSemanticForNoTaint(methodName: String) = {
     val parameterNumber    = methodName.count(_.equals(','))
     var parameterSemantics = ""
     for (i <- 0 to (parameterNumber + 1))
@@ -353,7 +383,7 @@ object Utilities {
     * @return
     *   String
     */
-  private def generateVoidSemantic(methodFullName: String): String = {
+  private def generateNonTaintSemantic(methodFullName: String): String = {
     "\"" + methodFullName + "\" "
   }
 
@@ -363,7 +393,7 @@ object Utilities {
     * @return
     *   String
     */
-  private def generateVoidSpecialSemantic(methodFullName: String): String = {
+  private def generateNonTaintSpecialSemantic(methodFullName: String): String = {
     val parameterNumber    = methodFullName.count(_.equals(','))
     var parameterSemantics = ""
     for (i <- 0 to (parameterNumber + 1))
