@@ -124,7 +124,7 @@ object Utilities {
 
     val defaultSemantics = semanticsFilename.getLines().toList
     val customLeakageSemantics = cpg.call
-      .where(_.tag.nameExact(Constants.id).value("Leakages.*"))
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
       .dedup
       .l
@@ -286,7 +286,7 @@ object Utilities {
   private def generateCustomLeakageSemantic(methodName: String) = {
     val parameterNumber    = methodName.count(_.equals(','))
     var parameterSemantics = ""
-    for (i <- 1 to (parameterNumber + 1))
+    for (i <- 0 to (parameterNumber + 1))
       parameterSemantics += s"$i->-1 "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
