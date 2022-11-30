@@ -1,0 +1,114 @@
+name: Monitoring Stability and Comparing Results
+
+# Triggers when a pull_request or a push action is configured on master branch
+on:
+  push:
+    branches: ["main", "dev", "comparison-result-generation"]
+  pull_request:
+    branches: ["main", "dev", "comparison-result-generation"]
+
+jobs:
+  scan_repositories:
+    strategy:
+      matrix:
+        owner: ["Privado-Demo"]
+        repo_name: ["privado-analytics", "privado-accounts-api", "shift-privacy-left-app"]
+
+    continue-on-error: false
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Folder to store reports
+        run: mkdir ${GITHUB_WORKSPACE}/reports && echo ${GITHUB_WORKSPACE} && echo ${GITHUB_REPOSITORY_OWNER}
+
+
+      - name: Download CPU and Memory usage capture tool
+        run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
+
+      - name: Start monitoring cpu and memory usage
+        run: bash ${GITHUB_WORKSPACE}/tools/capture_usage.sh &
+
+      # Setup python 3.8 in the pipeline
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+
+      # Setup privado environment in the pipeline
+      - name: Setup Privado Env
+        run: curl -o- https://raw.githubusercontent.com/Privado-Inc/privado-cli/main/install.sh | bash
+
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          owner: ${{matrix.owner}}
+          repository: ${{matrix.owner}}/${{matrix.repo_name}}
+          path: ./repos/${{matrix.repo_name}}
+
+      - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
+        run: ~/.privado/bin/privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}
+
+      - name: Store ${{matrix.repo_name}}.json (stable)
+        run: mkdir ${GITHUB_WORKSPACE}/stable_results && cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
+
+      - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
+        run: cd ~/.privado/bin && PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}
+
+      - name: Store ${{matrix.repo_name}}.json (dev)
+        run: mkdir ${GITHUB_WORKSPACE}/dev_results && cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
+
+      - name: Pass JSON (stable) to the next job
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_stable
+          path: /home/runner/work/privado-core/privado-core/stable_results/${{matrix.repo_name}}.json
+
+      - name: Pass JSON (dev) to the next job
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_dev
+          path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
+
+      - name: Upload CPU and memory usage file
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}
+          path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
+
+  compare_and_send_reports:
+    needs: scan_repositories
+    runs-on: ubuntu-latest
+
+
+    steps:
+      - uses: actions/download-artifact@master
+        with:
+          path: ./results
+      
+      - name: Download the comparison tool
+        run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
+
+      - name: Check contents of folder
+        run: cd ./results/privado-analytics_stable/ && ls -lha
+      - name: Compare the two results (privado-analytics)
+        run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics/results_1.txt
+      
+
+      
+      - name: Compare the two results (privado-accounts-api)
+        run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api/results_1.txt
+
+      - name: Compare the two results (shift-privacy-left-app)
+        run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app/results_1.txt
+
+
+      - name: Post results to slack
+        uses: MeilCli/slack-upload-file@v3
+        with:
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
+          file_path: '/home/runner/work/privado-core/privado-core/comparison_report.csv'
+          initial_comment: 'Comparison Results generated.'
+          file_type: 'csv'
