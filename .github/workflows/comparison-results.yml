@@ -3,12 +3,12 @@ name: Monitoring Stability and Comparing Results
 # Triggers when a pull_request or a push action is configured on master branch
 on:
   push:
-    branches: ["master"]
+    branches: ["main", "dev", "comparison-result-generation"]
   pull_request:
-    branches: ["master"]
+    branches: ["main", "dev", "comparison-result-generation"]
 
 jobs:
-  scan_repositories:
+  generate_json_repos:
     strategy:
       matrix:
         owner: ["Privado-Demo"]
@@ -71,10 +71,10 @@ jobs:
           name: ${{matrix.repo_name}}_dev
           path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
 
-
-  generate_report:
+  check_files:
     needs: generate_json_repos
     runs-on: ubuntu-latest
+
 
     steps:
       - uses: actions/download-artifact@master
@@ -95,8 +95,6 @@ jobs:
       - name: Compare the two results (shift-privacy-left-app)
         run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json
 
-      - name: Check contents of folder
-        run : cd /home/runner/work/privado-analytics/privado-analytics/ && ls -lha
 
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
