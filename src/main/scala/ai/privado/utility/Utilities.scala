@@ -128,10 +128,20 @@ object Utilities {
       .methodFullName
       .dedup
       .l
-      .map(generateSinkSemantic)
+      .map(generateSemanticForReturnTaint)
+    implicit val resolver: ICallResolver = NoResolve
+    val customStringSemantics = cpg.method
+      .filter(_.isExternal)
+      .where(_.callIn)
+      .fullName(".*:java.lang.String\\(.*")
+      .fullNameNot(".*\\.set[A-Za-z_]*:.*")
+      .fullName
+      .dedup
+      .l
+      .map(generateSemanticForReturnTaint)
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
     val finalSemantics =
-      (defaultSemantics ++ customSinkSemantics ++ semanticFromConfig).mkString("\n")
+      (defaultSemantics ++ customStringSemantics ++ customSinkSemantics ++ semanticFromConfig).mkString("\n")
     logger.debug("Final Semantics");
     finalSemantics.split("\n").foreach(logger.debug)
     Semantics.fromList(new Parser().parse(finalSemantics))
@@ -277,13 +287,27 @@ object Utilities {
   def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
-  /** Generate Sink semantics based on the number of parameter in method signature
+  /** Generate semantics for tainting return based on the number of parameter in method signature
     * @param methodName
     *   \- complete signature of method
     * @return
     *   \- semantic string
     */
-  private def generateSinkSemantic(methodName: String) = {
+  private def generateSemanticForReturnTaint(methodName: String) = {
+    val parameterNumber    = methodName.count(_.equals(','))
+    var parameterSemantics = ""
+    for (i <- 0 to (parameterNumber + 1))
+      parameterSemantics += s"$i->-1 "
+    "\"" + methodName + "\" " + parameterSemantics.trim
+  }
+
+  /** Generate semantics for functions which return 'String' based on the number of parameter in method signature
+    * @param methodName
+    *   \- complete signature of method
+    * @return
+    *   \- semantic string
+    */
+  private def generateSemanticForNoTaint(methodName: String) = {
     val parameterNumber    = methodName.count(_.equals(','))
     var parameterSemantics = ""
     for (i <- 0 to (parameterNumber + 1))
