@@ -69,6 +69,12 @@ jobs:
           name: ${{matrix.repo_name}}_dev
           path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
 
+      - name: Upload CPU and memory usage file
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}
+          path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
+          
   compare_and_send_reports:
     needs: scan_repositories
     runs-on: ubuntu-latest
