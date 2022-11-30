@@ -70,7 +70,7 @@ jobs:
           path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
 
   compare_and_send_reports:
-    needs: generate_json_repos
+    needs: scan_repositories
     runs-on: ubuntu-latest
 
 
