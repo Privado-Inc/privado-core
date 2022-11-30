@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Folder to store reports
-        run: mkdir ${GITHUB_WORKSPACE}/reports && echo ${GITHUB_WORKSPACE}
+        run: mkdir ${GITHUB_WORKSPACE}/reports
 
       - name: Download CPU and Memory usage capture tool
         run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
@@ -48,19 +48,19 @@ jobs:
 
       # cannot simulate restarting the terminal behavior in the pipeline, so navigated to the installation path to run the tool
       - name: Scan karan-batavia/privado-analytics (stable) using privado scan
-        run: cd ~/.privado/bin && ./privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/privado-analytics
+        run: ~/.privado/bin/privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/privado-analytics
 
       - name: Store privado-analytics.json (stable)
-        run: cd ${GITHUB_WORKSPACE} && mkdir stable_results && cat ${GITHUB_WORKSPACE}/repos/privado-analytics/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/privado-analytics.json
+        run: mkdir ${GITHUB_WORKSPACE}/stable_results && cat ${GITHUB_WORKSPACE}/repos/privado-analytics/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/privado-analytics.json
 
       - name: Scan karan-batavia/privado-analytics (dev) using privado scan
         run: cd ~/.privado/bin && PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/privado-analytics
 
       - name: Store privado-analytics.json (dev)
-        run: cd ${GITHUB_WORKSPACE} && mkdir dev_results && cat ${GITHUB_WORKSPACE}/repos/privado-analytics/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json
+        run: mkdir ${GITHUB_WORKSPACE}/dev_results && cat ${GITHUB_WORKSPACE}/repos/privado-analytics/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json
 
       - name: Compare the two results
-        run: cd ${GITHUB_WORKSPACE}/tools && python ./compare.py ${GITHUB_WORKSPACE}/stable_results/privado-analytics.json ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json && ls -lha && cat ./privado-analytics.csv
+        run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/privado-analytics.json ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json
 
       # For Privado-Demo/privado-accounts-api
       - name: Cloning Privado-Demo/privado-accounts-api
@@ -71,20 +71,20 @@ jobs:
           path: ./repos/privado-accounts-api
 
       - name: Scan Privado-Demo/privado-accounts-api (stable) using privado scan
-        run: cd ~/.privado/bin && ./privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/privado-accounts-api
+        run: ~/.privado/bin/privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/privado-accounts-api
 
       - name: Store privado-accounts-api.json (stable)
-        run: cd ${GITHUB_WORKSPACE} && cat ${GITHUB_WORKSPACE}/repos/privado-accounts-api/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/privado-accounts-api.json
+        run: cat ${GITHUB_WORKSPACE}/repos/privado-accounts-api/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/privado-accounts-api.json
 
       - name: Scan Privado-Demo/privado-accounts-api (dev) using privado scan
         run: cd ~/.privado/bin && PRIVADO=DEV=1 ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/privado-accounts-api
 
       - name: Store privado-accounts-api.json (dev)
-        run: cd ${GITHUB_WORKSPACE} && cat ${GITHUB_WORKSPACE}/repos/privado-accounts-api/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/privado-accounts-api.json
+        run: cat ${GITHUB_WORKSPACE}/repos/privado-accounts-api/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/privado-accounts-api.json
 
 
       - name: Compare the two results
-        run: cd ${GITHUB_WORKSPACE}/tools && python ./compare.py ${GITHUB_WORKSPACE}/stable_results/privado-accounts-api.json ${GITHUB_WORKSPACE}/dev_results/privado-accounts-api.json && ls -lha && cat ./privado-accounts-api.csv
+        run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/privado-accounts-api.json ${GITHUB_WORKSPACE}/dev_results/privado-accounts-api.json
 
       # For Privado-Demo/shift-privacy-left-app
       - name: Cloning Privado-Demo/shift-privacy-left-app
@@ -95,22 +95,22 @@ jobs:
           path: ./repos/shift-privacy-left-app
 
       - name: Scan Privado-Demo/shift-privacy-left-app (stable) using privado scan
-        run: cd ~/.privado/bin && ./privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app
+        run: ~/.privado/bin/privado scan --skip-upload ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app
 
       - name: Store shift-privacy-left-app.json (stable)
-        run: cd ${GITHUB_WORKSPACE} && cat ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json
+        run: cat ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json
 
       - name: Scan Privado-Demo/shift-privacy-left-app (dev) using privado scan
         run: cd ~/.privado/bin && PRIVADO=DEV=1 ./privado scan  --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app
 
       - name: Store shift-privacy-left-app.json (dev)
-        run: cd ${GITHUB_WORKSPACE} && cat ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json
+        run: cat ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json
 
       - name: Compare the two results
-        run: cd ${GITHUB_WORKSPACE}/tools && python ./compare.py ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json && ls -lha && cat ./shift-privacy-left-app.csv
+        run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json 
 
       - name: Check if reports are generated
-        run: cd ${GITHUB_WORKSPACE}/tools && ls -lha
+        run: cd ${GITHUB_WORKSPACE}/tools
 
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
