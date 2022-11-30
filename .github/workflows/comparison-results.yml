@@ -117,8 +117,8 @@ jobs:
         with:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-          file_path: '/home/runner/work/privado-core/privado-core/tools/privado-analytics.csv'
-          initial_comment: 'Comparison Results generated for privado-analytics'
+          file_path: '/home/runner/work/privado-core/privado-core/tools/comparison_report.csv'
+          initial_comment: 'Comparison Results generated.'
           file_type: 'csv'
 
       # Alovoa/alovoa takes too much time >45 mins
