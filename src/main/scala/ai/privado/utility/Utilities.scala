@@ -123,15 +123,15 @@ object Utilities {
     val semanticsFilename = Source.fromResource("default.semantics")
 
     val defaultSemantics = semanticsFilename.getLines().toList
-    val customLeakageSemantics = cpg.call
+    val customSinkSemantics = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
       .dedup
       .l
-      .map(generateCustomLeakageSemantic)
+      .map(generateSinkSemantic)
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
     val finalSemantics =
-      (defaultSemantics ++ customLeakageSemantics ++ semanticFromConfig).mkString("\n")
+      (defaultSemantics ++ customSinkSemantics ++ semanticFromConfig).mkString("\n")
     logger.debug("Final Semantics");
     finalSemantics.split("\n").foreach(logger.debug)
     Semantics.fromList(new Parser().parse(finalSemantics))
@@ -277,13 +277,13 @@ object Utilities {
   def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
-  /** Generate custom leakage semantics based on the number of parameter in method signature
+  /** Generate Sink semantics based on the number of parameter in method signature
     * @param methodName
     *   \- complete signature of method
     * @return
     *   \- semantic string
     */
-  private def generateCustomLeakageSemantic(methodName: String) = {
+  private def generateSinkSemantic(methodName: String) = {
     val parameterNumber    = methodName.count(_.equals(','))
     var parameterSemantics = ""
     for (i <- 0 to (parameterNumber + 1))
