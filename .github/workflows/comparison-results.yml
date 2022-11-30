@@ -110,7 +110,7 @@ jobs:
         run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json 
 
       - name: Check if reports are generated
-        run: cd ${GITHUB_WORKSPACE}/tools
+        run: cd ${GITHUB_WORKSPACE}/tools && ls -lha
 
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
