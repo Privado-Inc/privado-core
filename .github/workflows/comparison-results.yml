@@ -4,11 +4,9 @@ name: Monitoring Stability and Comparing Results
 on:
   push:
     branches: ["main", "dev", "comparison-result-generation"]
-  pull_request:
-    branches: ["main", "dev", "comparison-result-generation"]
 
 jobs:
-  generate_json_repos:
+  scan_repositories:
     strategy:
       matrix:
         owner: ["Privado-Demo"]
@@ -71,7 +69,7 @@ jobs:
           name: ${{matrix.repo_name}}_dev
           path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
 
-  check_files:
+  compare_and_send_reports:
     needs: generate_json_repos
     runs-on: ubuntu-latest
 
