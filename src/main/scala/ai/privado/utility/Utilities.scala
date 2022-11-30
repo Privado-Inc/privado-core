@@ -129,9 +129,19 @@ object Utilities {
       .dedup
       .l
       .map(generateSinkSemantic)
+    implicit val resolver: ICallResolver = NoResolve
+    val voidMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:void\\(.*").l
+
+    val customVoidSemanticsDefault =
+      voidMethods.fullNameNot(".*\\.(add|put|<init>|set|get|append|store).*").fullName.l
+        .map(generateVoidSemantic)
+
+    val specialVoidSemantics =
+      voidMethods.fullName(".*\\.(add|put|set|get|append|store).*").fullName.l.map(generateVoidSpecialSemantic)
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
     val finalSemantics =
-      (defaultSemantics ++ customSinkSemantics ++ semanticFromConfig).mkString("\n")
+      (defaultSemantics ++ customVoidSemanticsDefault ++ specialVoidSemantics ++ customSinkSemantics ++ semanticFromConfig)
+        .mkString("\n")
     logger.debug("Final Semantics");
     finalSemantics.split("\n").foreach(logger.debug)
     Semantics.fromList(new Parser().parse(finalSemantics))
@@ -335,5 +345,29 @@ object Utilities {
         a.file.name.headOption.getOrElse("")
       case a => a.location.filename
     }
+  }
+
+  /** Returns the Semantics for functions with void return type Default behavior is not propagating the taint
+    * @param String
+    *   methodFullName
+    * @return
+    *   String
+    */
+  private def generateVoidSemantic(methodFullName: String): String = {
+    "\"" + methodFullName + "\" "
+  }
+
+  /** Returns the Semantics for some functions with void return type which has to be handled separately.
+    * @param String
+    *   methodFullName
+    * @return
+    *   String
+    */
+  private def generateVoidSpecialSemantic(methodFullName: String): String = {
+    val parameterNumber    = methodFullName.count(_.equals(','))
+    var parameterSemantics = ""
+    for (i <- 0 to (parameterNumber + 1))
+      parameterSemantics += s"$i->-1 "
+    "\"" + methodFullName + "\" " + parameterSemantics.trim
   }
 }
