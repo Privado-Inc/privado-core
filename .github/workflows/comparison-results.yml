@@ -60,7 +60,7 @@ jobs:
         run: mkdir ${GITHUB_WORKSPACE}/dev_results && cat ${GITHUB_WORKSPACE}/repos/privado-analytics/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json
 
       - name: Compare the two results
-        run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/privado-analytics.json ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json
+        run: cd ${GITHUB_WORKSPACE}/tools && python ./compare.py ${GITHUB_WORKSPACE}/stable_results/privado-analytics.json ${GITHUB_WORKSPACE}/dev_results/privado-analytics.json
 
       # For Privado-Demo/privado-accounts-api
       - name: Cloning Privado-Demo/privado-accounts-api
@@ -84,7 +84,7 @@ jobs:
 
 
       - name: Compare the two results
-        run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/privado-accounts-api.json ${GITHUB_WORKSPACE}/dev_results/privado-accounts-api.json
+        run: cd ${GITHUB_WORKSPACE}/tools && python ./compare.py ${GITHUB_WORKSPACE}/stable_results/privado-accounts-api.json ${GITHUB_WORKSPACE}/dev_results/privado-accounts-api.json
 
       # For Privado-Demo/shift-privacy-left-app
       - name: Cloning Privado-Demo/shift-privacy-left-app
@@ -107,7 +107,7 @@ jobs:
         run: cat ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json
 
       - name: Compare the two results
-        run: python ${GITHUB_WORKSPACE}/tools/compare.py ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json 
+        run: cd ${GITHUB_WORKSPACE}/tools && python ./compare.py ${GITHUB_WORKSPACE}/stable_results/shift-privacy-left-app.json ${GITHUB_WORKSPACE}/dev_results/shift-privacy-left-app.json 
 
       - name: Check if reports are generated
         run: cd ${GITHUB_WORKSPACE}/tools && ls -lha
