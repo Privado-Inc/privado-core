@@ -116,11 +116,11 @@ jobs:
       - name: Compare the two results (shift-privacy-left-app)
         run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app_cpu/results_1.txt ./results/shift-privacy-left-app_trigger/trigger_metadata.json ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_stable.txt ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_dev.txt
 
-      # - name: Post results to slack
-      #   uses: MeilCli/slack-upload-file@v3
-      #   with:
-      #     slack_token: ${{ secrets.SLACK_TOKEN }}
-      #     channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-      #     file_path: '/home/runner/work/privado-core/privado-core/comparison_report.csv'
-      #     initial_comment: 'Comparison Results generated.'
-      #     file_type: 'csv'
+      - name: Post results to slack
+        uses: MeilCli/slack-upload-file@v3
+        with:
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
+          file_path: '/home/runner/work/privado-core/privado-core/comparison_report.csv'
+          initial_comment: 'Comparison Results generated.'
+          file_type: 'csv'
