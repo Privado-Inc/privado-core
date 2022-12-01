@@ -50,7 +50,7 @@ jobs:
 
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-        run: cd ~/.privado/bin && {time ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}; } 2>${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}_time_usage.txt"
+        run: cd ~/.privado/bin && {time ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}; } 2>${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}_time_usage.txt
 
       - name: Store ${{matrix.repo_name}}.json (stable)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
