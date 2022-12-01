@@ -144,7 +144,7 @@ object Utilities {
         .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
         .fullName
         .l
-        .map(generateNonTaintSpecialSemantic)
+        .map(generateSemanticToTaintCallingObject)
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
     val customStringSemantics = cpg.method
       .filter(_.isExternal)
@@ -317,20 +317,6 @@ object Utilities {
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
-  /** Generate semantics for functions which return 'String' based on the number of parameter in method signature
-    * @param methodName
-    *   \- complete signature of method
-    * @return
-    *   \- semantic string
-    */
-  private def generateSemanticForNoTaint(methodName: String) = {
-    val parameterNumber    = methodName.count(_.equals(','))
-    var parameterSemantics = ""
-    for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->-1 "
-    "\"" + methodName + "\" " + parameterSemantics.trim
-  }
-
   /** Generate Semantic string based on input Semantic
     * @param semantic
     *   \- semantic object containing semantic information
@@ -387,17 +373,17 @@ object Utilities {
     "\"" + methodFullName + "\" "
   }
 
-  /** Returns the Semantics for some functions with void return type which has to be handled separately.
+  /** Returns the Semantics for to taint Calling object
     * @param String
     *   methodFullName
     * @return
     *   String
     */
-  private def generateNonTaintSpecialSemantic(methodFullName: String): String = {
+  private def generateSemanticToTaintCallingObject(methodFullName: String): String = {
     val parameterNumber    = methodFullName.count(_.equals(','))
     var parameterSemantics = ""
     for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->-1 "
+      parameterSemantics += s"$i->0 "
     "\"" + methodFullName + "\" " + parameterSemantics.trim
   }
 }
