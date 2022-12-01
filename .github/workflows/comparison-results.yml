@@ -4,6 +4,8 @@ name: Monitoring Stability and Comparing Results
 on:
   push:
     branches: ["main", "dev", "comparison-result-generation"]
+  pull_request:
+    branches: ["main", "dev", "comparison-result-generation"]
 
 jobs:
   scan_repositories:
