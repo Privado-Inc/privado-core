@@ -50,13 +50,13 @@ jobs:
 
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-        run: cd ~/.privado/bin && {time ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2>${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}_time_usage.txt
+        run: cd ~/.privado/bin && {time ./privado scan --overwrite --skip-upload "/home/runner/work/privado-core/privado-core/repos/${{matrix.repo_name}}"; } 2> /home/runner/work/privado-core/privado-core/stable_results/${{matrix.repo_name}}_time_usage.txt
 
       - name: Store ${{matrix.repo_name}}.json (stable)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
-        run: cd ~/.privado/bin && {time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}_time_usage.txt 
+        run: cd ~/.privado/bin && {time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload "/home/runner/work/privado-core/privado-core/repos/${{matrix.repo_name}}"; } 2> "/home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}_time_usage.txt" 
 
       - name: Store ${{matrix.repo_name}}.json (dev)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
