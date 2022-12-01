@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Folder to store reports
-        run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results
+        run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
 
       - name: Trigger metadata
         run: echo " {\"pr_branch\":\"${{github.head_ref}}\", \"push_branch\":\"${{github.ref_name}}\", \"prNumber\":\"${{github.event.number}}\", \"commitID\":\"${GITHUB_SHA}\"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
