@@ -50,13 +50,13 @@ jobs:
 
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-        run: time ~/.privado/bin/privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} | grep real > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}_time_usage.txt 
+        run: time ~/.privado/bin/privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} |& grep real > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}_time_usage.txt 
 
       - name: Store ${{matrix.repo_name}}.json (stable)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
-        run: cd ~/.privado/bin && time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} | grep real > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}_time_usage.txt && cat ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}_time_usage.txt 
+        run: cd ~/.privado/bin && time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} |& grep real > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}_time_usage.txt && cat ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}_time_usage.txt 
 
       - name: Store ${{matrix.repo_name}}.json (dev)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
