@@ -20,9 +20,9 @@ jobs:
 
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && echo ${GITHUB_WORKSPACE} && echo ${GITHUB_REPOSITORY_OWNER}
-
+# "{apps:[{name:\"${appname}\",script:\"./cms/bin/www\",watch:false}]}"
       - name: Trigger metadata
-        run: echo "{"pr_branch":"${{github.head_ref}}", "push_branch":"${{github.ref_name}}", "prNumber":"${{github.event.number}}", "commitID":"${GITHUB_SHA}"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
+        run: echo "{\"pr_branch\":\"${{github.head_ref}}\", \"push_branch\":\"${{github.ref_name}}\", \"prNumber":\"${{github.event.number}}\", \"commitID\":\"${GITHUB_SHA}\"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
 
       - name: Download CPU and Memory usage capture tool
         run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
