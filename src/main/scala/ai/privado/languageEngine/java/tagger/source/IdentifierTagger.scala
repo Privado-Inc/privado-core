@@ -23,12 +23,11 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.TaggerCache
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
@@ -40,8 +39,6 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE     = UUID.randomUUID.toString
-
-  val typeDeclMemberNameCache = mutable.HashMap[String, mutable.HashMap[String, String]]()
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
@@ -82,9 +79,9 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         val typeDeclVal = typeDeclValEntry._1.fullName
         val typeDeclMemberName = typeDeclValEntry._2.headOption match {
           case Some(typeDeclMember) => // updating cache
-            if (!typeDeclMemberNameCache.contains(typeDeclVal))
-              typeDeclMemberNameCache.addOne(typeDeclVal -> mutable.HashMap[String, String]())
-            typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember.name)
+            if (!TaggerCache.typeDeclMemberNameCache.contains(typeDeclVal))
+              TaggerCache.typeDeclMemberNameCache.addOne(typeDeclVal -> mutable.HashMap[String, String]())
+            TaggerCache.typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember.name)
             typeDeclMember.name
           case None =>
             "Member not found"
@@ -136,7 +133,11 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
           .block
           .astChildren
           .isReturn
-          .code(".*" + typeDeclMemberNameCache(typeDeclVal).getOrElse(ruleInfo.id, "Member Not Found") + ".*")
+          .code(
+            "(?i).*" + TaggerCache
+              .typeDeclMemberNameCache(typeDeclVal)
+              .getOrElse(ruleInfo.id, "Member Not Found") + ".*"
+          )
           .method
           .callIn
           .l
@@ -147,6 +148,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
       })
 
+    /*
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
@@ -156,6 +158,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         // Step 2.3
         tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
       })
+     */
 
   }
 
@@ -214,7 +217,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         // Tag for storing memberName in derived Objects -> patient (patient extends user) --> (email, password)
         storeForTag(builder, impactedObject)(
           ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
-          typeDeclMemberNameCache(typeDeclName).getOrElse(ruleInfo.id, "Member Not Found")
+          TaggerCache.typeDeclMemberNameCache(typeDeclName).getOrElse(ruleInfo.id, "Member Not Found")
         )
       })
     })

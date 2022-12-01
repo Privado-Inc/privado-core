@@ -22,10 +22,19 @@
 
 package ai.privado.utility
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, DatabaseDetails, Language, RuleInfo, Semantic}
+import ai.privado.model.{
+  CatLevelOne,
+  ConfigAndRules,
+  Constants,
+  DatabaseDetails,
+  InternalTag,
+  Language,
+  RuleInfo,
+  Semantic
+}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
@@ -53,8 +62,11 @@ import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
 import java.security.MessageDigest
+import scala.collection.mutable.ListBuffer
 
 object Utilities {
+
+  implicit val resolver: ICallResolver = NoResolve
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -115,6 +127,7 @@ object Utilities {
   }
 
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
+    *
     * @param cpg
     *   \- cpg for adding customSemantics
     * @return
@@ -129,7 +142,7 @@ object Utilities {
       .dedup
       .l
       .map(generateSemanticForReturnTaint)
-    implicit val resolver: ICallResolver = NoResolve
+
     val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
 
     val customNonTaintDefaultSemantics =
@@ -155,8 +168,13 @@ object Utilities {
       .dedup
       .l
       .map(generateSemanticForReturnTaint)
+
+    val customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
+
     val finalSemantics =
-      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customSinkSemantics ++ semanticFromConfig)
+      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
+        ++ customStringSemantics ++ customNonPersonalMemberSemantics
+        ++ customSinkSemantics ++ semanticFromConfig)
         .mkString("\n")
     logger.debug("Final Semantics");
     finalSemantics.split("\n").foreach(logger.debug)
@@ -385,5 +403,37 @@ object Utilities {
     for (i <- 0 to (parameterNumber + 1))
       parameterSemantics += s"$i->0 "
     "\"" + methodFullName + "\" " + parameterSemantics.trim
+  }
+
+  /** Generates Semantics for non Personal member
+    * @param cpg
+    * @return
+    *   non-tainting semantic rule
+    */
+  def generateNonPersonalMemberSemantics(cpg: Cpg): List[String] = {
+
+    val semanticList = ListBuffer[String]()
+
+    TaggerCache.typeDeclMemberNameCache.keys.foreach(typeDeclValue => {
+      val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
+      val allMembers         = typeDeclNode.member.name.toSet
+      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
+      val nonPersonalMembers = allMembers.diff(personalMembers)
+
+      val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
+      if (nonPersonalMembersRegex.nonEmpty) {
+        typeDeclNode.method.block.astChildren.isReturn
+          .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+          .method
+          .callIn
+          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
+          .methodFullName
+          .dedup
+          .foreach(methodName => {
+            semanticList.addOne(generateNonTaintSemantic(methodName))
+          })
+      }
+    })
+    semanticList.toList
   }
 }
