@@ -105,14 +105,14 @@ jobs:
       - name: Check contents of folder
         run: cd ./results/privado-analytics_stable/ && ls -lha
       - name: Compare the two results (privado-analytics)
-        run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json
+        run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-analytics_time/privado-analytics_time_dev.txt
       
 
       - name: Compare the two results (privado-accounts-api)
-        run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api_cpu/results_1.txt ./results/privado-accounts-api_trigger/trigger_metadata.json
+        run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api_cpu/results_1.txt ./results/privado-accounts-api_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
 
       - name: Compare the two results (shift-privacy-left-app)
-        run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app_cpu/results_1.txt ./results/shift-privacy-left-app_trigger/trigger_metadata.json 
+        run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app_cpu/results_1.txt ./results/shift-privacy-left-app_trigger/trigger_metadata.json ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_stable.txt ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_dev.txt
 
       # - name: Post results to slack
       #   uses: MeilCli/slack-upload-file@v3
