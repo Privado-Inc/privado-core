@@ -21,6 +21,8 @@ jobs:
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && echo ${GITHUB_WORKSPACE} && echo ${GITHUB_REPOSITORY_OWNER}
 
+      - name: Trigger metadata
+        run: echo "{pr_branch:${{github.head_ref}}, push_branch:${{github.ref_name}}, prNumber:${{github.event.number}}, commitID:${{GITHUB_SHA}}}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
 
       - name: Download CPU and Memory usage capture tool
         run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
@@ -74,12 +76,17 @@ jobs:
         with:
           name: ${{matrix.repo_name}}
           path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
+      
+      
+      - name: Upload Trigger metadata
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}
+          path: /home/runner/work/privado-core/privado-core/reports/trigger_metadata.json
 
   compare_and_send_reports:
     needs: scan_repositories
     runs-on: ubuntu-latest
-
-
     steps:
       - uses: actions/download-artifact@master
         with:
