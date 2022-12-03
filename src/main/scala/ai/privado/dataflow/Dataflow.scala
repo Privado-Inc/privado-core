@@ -71,7 +71,9 @@ class Dataflow(cpg: Cpg) {
       Map[String, Path]()
     else {
       val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
-      val dataflowPaths           = dataflowPathsUnfiltered.filter(filterFlowsByContext)
+      AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
+      val dataflowPaths = dataflowPathsUnfiltered.filter(filterFlowsByContext).filter(flowNotTaintedByThis)
+      AppCache.totalFlowAfterThisFiltering = dataflowPaths.size
       // Stores key -> PathID, value -> Path
       var dataflowMapByPathId = Map[String, Path]()
       if (ScanProcessor.config.disableDeDuplication) {
@@ -546,5 +548,14 @@ class Dataflow(cpg: Cpg) {
     }
 
     isFlowCorrect
+  }
+
+  /** Filter flows which doesn't lead to sink via 'this'
+    * @param flow
+    * @return
+    */
+  def flowNotTaintedByThis(flow: Path) = {
+    val flowSize = flow.elements.size
+    !flow.elements(flowSize - 2).code.equals("this")
   }
 }
