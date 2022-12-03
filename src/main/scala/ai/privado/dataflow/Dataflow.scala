@@ -32,8 +32,8 @@ import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.{Path, _}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, StoredNode}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier, StoredNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -42,7 +42,7 @@ import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.control.Breaks.{break, breakable}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 class Dataflow(cpg: Cpg) {
 
@@ -70,7 +70,8 @@ class Dataflow(cpg: Cpg) {
     if (sources.isEmpty || sinks.isEmpty)
       Map[String, Path]()
     else {
-      val dataflowPaths = sinks.reachableByFlows(sources).l
+      val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+      val dataflowPaths           = dataflowPathsUnfiltered.filter(filterFlowsByContext)
       // Stores key -> PathID, value -> Path
       var dataflowMapByPathId = Map[String, Path]()
       if (ScanProcessor.config.disableDeDuplication) {
@@ -500,5 +501,50 @@ class Dataflow(cpg: Cpg) {
     */
   private def isArgumentMatchingMemberName(sinkArgument: List[String], memberName: String): Boolean = {
     sinkArgument.map(argument => argument.matches("(?i).*" + memberName + ".*")).foldLeft(false)((a, b) => a || b)
+  }
+
+  /** Filters the flow where 'this' is overtainting
+    *
+    * @param flow:
+    *   incoming flow that needs to be checked
+    * @return
+    *   bool: if the flow should be removed or not
+    */
+  private def filterFlowsByContext(flow: Path) = {
+    val reversedPath                 = flow.elements.reverse
+    var prevThisTypeFullName: String = ""
+    var prevThisCode: String         = ""
+    var isFlowCorrect                = true
+    breakable {
+      for (i <- 0 to reversedPath.length - 1) {
+        val node = reversedPath(i)
+        if (node.isCall) {
+          val traversalNode = Traversal(node).isCall.l
+          var thisNode      = List[Expression]()
+
+          if (traversalNode.name.headOption.getOrElse("") == Operators.fieldAccess)
+            thisNode = traversalNode.argument.where(_.argumentIndex(1)).code("this").l
+          else
+            thisNode = traversalNode.argument.where(_.argumentIndex(0)).code("this").l
+
+          if (thisNode.nonEmpty) {
+            val currentThisTypeFullName = thisNode.isIdentifier.typeFullName.headOption.getOrElse("")
+            val currentThisCode         = traversalNode.code.headOption.getOrElse("")
+            if (prevThisTypeFullName.isEmpty) {
+              prevThisTypeFullName = currentThisTypeFullName
+              prevThisCode = currentThisCode
+            } else {
+              if (prevThisTypeFullName == currentThisTypeFullName && prevThisCode != currentThisCode) {
+                logger.debug(s"Removed Flow due to 'this' tainting: ${flow.elements.code.mkString("||")}")
+                isFlowCorrect = false
+                break()
+              }
+            }
+          }
+        }
+      }
+    }
+
+    isFlowCorrect
   }
 }
