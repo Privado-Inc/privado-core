@@ -44,7 +44,7 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
 
   internalMethodCall.foreach((method) => {
-    val key     = method.split('.').take(2).mkString(".")
+    val key     = method.split("[.:]").take(2).mkString(".")
     val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
     topMatch(key) = (currVal + 1)
   })
