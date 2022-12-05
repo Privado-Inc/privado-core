@@ -28,7 +28,7 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.{IdentifierNonMemberTagger, IdentifierTagger}
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
@@ -64,6 +64,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     sourceRules.foreach(rule => {
       identifierTagger.setRuleAndApply(rule)
     })
+    println(s"${Calendar.getInstance().getTime} - IdentifierTagger Non Member tagger invoked...")
+    new IdentifierNonMemberTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - DBConfigTagger invoked...")
     new DBConfigTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")

@@ -140,6 +140,8 @@ object JSONExporter {
           s"FP by derived source Data element : ${AppCache.fpByDerivedSourcePresence}\n" +
           s"Grouping by Data element : ${AppCache.groupingByLineNumber}\n" +
           s"Total flows before FP : ${AppCache.totalFlows}\n",
+        s"Total flows from Reachable By: ${AppCache.totalFlowFromReachableBy}\n",
+        s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n",
         s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
       )
 
