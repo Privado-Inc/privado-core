@@ -511,10 +511,9 @@ class Dataflow(cpg: Cpg) {
     *   bool: if the flow should be removed or not
     */
   private def filterFlowsByContext(flow: Path) = {
-    val reversedPath                 = flow.elements.reverse
-    var prevThisTypeFullName: String = ""
-    var prevThisCode: String         = ""
-    var isFlowCorrect                = true
+    val reversedPath                          = flow.elements.reverse
+    var observedThisTypeFullNameAndIdentifier = mutable.HashMap[String, String]()
+    var isFlowCorrect                         = true
     breakable {
       for (i <- 0 to reversedPath.length - 1) {
         val node = reversedPath(i)
@@ -530,21 +529,20 @@ class Dataflow(cpg: Cpg) {
           if (thisNode.nonEmpty) {
             val currentThisTypeFullName = thisNode.isIdentifier.typeFullName.headOption.getOrElse("")
             val currentThisCode         = traversalNode.code.headOption.getOrElse("")
-            if (prevThisTypeFullName.isEmpty) {
-              prevThisTypeFullName = currentThisTypeFullName
-              prevThisCode = currentThisCode
-            } else {
-              if (prevThisTypeFullName == currentThisTypeFullName && prevThisCode != currentThisCode) {
-                logger.debug(s"Removed Flow due to 'this' tainting: ${flow.elements.code.mkString("||")}")
-                isFlowCorrect = false
-                break()
+            observedThisTypeFullNameAndIdentifier.get(currentThisTypeFullName) match {
+              case Some(prevThisCode) => {
+                if (prevThisCode != currentThisCode) {
+                  logger.debug(s"Removed Flow due to 'this' tainting: ${flow.elements.code.mkString("||")}")
+                  isFlowCorrect = false
+                  break()
+                }
               }
+              case _ => observedThisTypeFullNameAndIdentifier(currentThisTypeFullName) = currentThisCode
             }
           }
         }
       }
     }
-
     isFlowCorrect
   }
 }
