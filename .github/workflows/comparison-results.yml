@@ -4,13 +4,15 @@ name: Monitoring Stability and Comparing Results
 on:
   push:
     branches: ["main", "dev", "comparison-result-generation"]
+  pull_request:
+    branches: ["main", "dev", "comparison-result-generation"]
 
 jobs:
   scan_repositories:
     strategy:
       matrix:
         owner: ["Privado-Demo"]
-        repo_name: ["privado-analytics", "privado-accounts-api", "shift-privacy-left-app"]
+        repo_name: ["privado-analytics", "privado-accounts-api", "shift-privacy-left-app", "privado-analytics", "privado-accounts-api", "shift-privacy-left-app", "privado-analytics", "privado-accounts-api", "shift-privacy-left-app", "privado-analytics", "privado-accounts-api", "shift-privacy-left-app", "privado-analytics", "privado-accounts-api", "shift-privacy-left-app", "privado-analytics", "privado-accounts-api", "shift-privacy-left-app", "privado-analytics", "privado-accounts-api", "shift-privacy-left-app"]
 
     continue-on-error: false
     runs-on: ubuntu-latest
