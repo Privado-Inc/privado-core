@@ -265,6 +265,18 @@ object ScanProcessor extends CommandProcessor {
     processCpg()
   }
 
+  /** Helper function to process rule for a language and cache the result in ruleCache
+    * @param lang
+    * @return
+    *   rule
+    */
+  def processAndCacheRule(lang: String): ConfigAndRules = {
+    val processedRules = processRules(lang)
+    logger.info("Caching rules")
+    RuleCache.setRule(processedRules)
+    processedRules
+  }
+
   private def processCpg() = {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
@@ -276,23 +288,20 @@ object ScanProcessor extends CommandProcessor {
         languageDetected match {
           case Some(lang) =>
             MetricHandler.metricsData("language") = Json.fromString(lang)
-            val processedRules = processRules(lang)
-            logger.info("Caching rules")
-            RuleCache.setRule(processedRules)
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
+                JavaProcessor.createJavaCpg(processAndCacheRule(lang), sourceRepoLocation, language)
               case language if language == Languages.JSSRC && config.enableJS =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
+                JavascriptProcessor.createJavaScriptCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
                     s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
-                  JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, lang)
+                  JavaProcessor.createJavaCpg(processAndCacheRule(Languages.JAVASRC), sourceRepoLocation, lang)
                 } else {
                   println(s"As of now we only support privacy code scanning for 'Java' code base.")
                   println(s"We detected this code base of '${lang}'.")
