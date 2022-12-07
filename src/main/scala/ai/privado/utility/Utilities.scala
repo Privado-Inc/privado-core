@@ -141,7 +141,7 @@ object Utilities {
       .methodFullName
       .dedup
       .l
-      .map(generateSemanticForReturnTaint)
+      .map(generateSemanticForTaint(_, -1))
 
     val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
 
@@ -157,7 +157,7 @@ object Utilities {
         .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
         .fullName
         .l
-        .map(generateSemanticToTaintCallingObject)
+        .map(generateSemanticForTaint(_, 0))
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
     val customStringSemantics = cpg.method
       .filter(_.isExternal)
@@ -167,7 +167,7 @@ object Utilities {
       .fullName
       .dedup
       .l
-      .map(generateSemanticForReturnTaint)
+      .map(generateSemanticForTaint(_, -1))
 
     val customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
 
@@ -321,17 +321,22 @@ object Utilities {
   def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
-  /** Generate semantics for tainting return based on the number of parameter in method signature
+  /** Generate semantics for tainting passed argument based on the number of parameter in method signature
     * @param methodName
     *   \- complete signature of method
     * @return
     *   \- semantic string
     */
-  private def generateSemanticForReturnTaint(methodName: String) = {
-    val parameterNumber    = methodName.count(_.equals(','))
+  private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
     var parameterSemantics = ""
+    var parameterNumber    = 2
+    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
+      parameterNumber = 7
+    } else {
+      parameterNumber = methodName.count(_.equals(','))
+    }
     for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->-1 "
+      parameterSemantics += s"$i->$toTaint "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
@@ -389,20 +394,6 @@ object Utilities {
     */
   private def generateNonTaintSemantic(methodFullName: String): String = {
     "\"" + methodFullName + "\" "
-  }
-
-  /** Returns the Semantics for to taint Calling object
-    * @param String
-    *   methodFullName
-    * @return
-    *   String
-    */
-  private def generateSemanticToTaintCallingObject(methodFullName: String): String = {
-    val parameterNumber    = methodFullName.count(_.equals(','))
-    var parameterSemantics = ""
-    for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->0 "
-    "\"" + methodFullName + "\" " + parameterSemantics.trim
   }
 
   /** Generates Semantics for non Personal member
