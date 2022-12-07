@@ -10,13 +10,42 @@ jobs:
     strategy:
       matrix:
         owner: ["Privado-Demo"]
-        repo_name: ["privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app","privado-analytics", "privado-accounts-api", "shift-privacy-left-app"]
+        repo_name:
+          [
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+          ]
 
     continue-on-error: true
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Check payload contents
+        run: echo ${{github.event.client_payload.test}}
 
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
@@ -47,8 +76,6 @@ jobs:
           repository: ${{matrix.owner}}/${{matrix.repo_name}}
           path: ./repos/${{matrix.repo_name}}
 
-
-
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
         run: cd ~/.privado/bin && { time ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
@@ -56,7 +83,7 @@ jobs:
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
-        run: cd ~/.privado/bin && { time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> "${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt" 
+        run: cd ~/.privado/bin && { time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> "${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt"
 
       - name: Store ${{matrix.repo_name}}.json (dev)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
@@ -78,10 +105,10 @@ jobs:
         with:
           name: ${{matrix.repo_name}}_cpu
           path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
-      
+
       - name: Upload time stats for repos
         uses: actions/upload-artifact@master
-        with: 
+        with:
           name: ${{matrix.repo_name}}_time
           path: /home/runner/work/privado-core/privado-core/time_results
 
@@ -98,17 +125,15 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           path: ./results
-      
+
       - name: Download the comparison tool
         run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
 
       - name: Check contents of folder
         run: cd ./results/privado-analytics_time/ && ls -lha
 
-
       - name: Compare the two results (privado-analytics)
         run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-analytics_time/privado-analytics_time_dev.txt
-      
 
       - name: Compare the two results (privado-accounts-api)
         run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api_cpu/results_1.txt ./results/privado-accounts-api_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
@@ -121,6 +146,6 @@ jobs:
         with:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-          file_path: '/home/runner/work/privado-core/privado-core/comparison_report.csv'
-          initial_comment: 'Comparison Results generated.'
-          file_type: 'csv'
+          file_path: "/home/runner/work/privado-core/privado-core/comparison_report.csv"
+          initial_comment: "Comparison Results generated."
+          file_type: "csv"
