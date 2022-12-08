@@ -60,10 +60,10 @@ jobs:
       - name: Download privado-core and privado 
         uses: actions/download-artifact@master
         with:
-          path: ./tools
+          path: ./
 
       - name: Check contents
-        run: ls ./tools/privado-core_and_rules
+        run: ls ./privado-core_and_rules
         
       - name: Check payload contents
         run: echo ${{github.event.client_payload.test}}
@@ -98,13 +98,13 @@ jobs:
           path: ./repos/${{matrix.repo_name}}
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-        run: cd ~/.privado/bin && { time ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
+        run: cd ~/.privado/bin && { time ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}}/privado-core scan --overwrite --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core_and_rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
       - name: Store ${{matrix.repo_name}}.json (stable)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
-        run: cd ~/.privado/bin && { time PRIVADO_DEV=1 ./privado scan --overwrite --skip-upload "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> "${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt"
+        run: cd ~/.privado/bin && { time ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}}/privado-core scan --overwrite --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core_and_rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> "${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt"
 
       - name: Store ${{matrix.repo_name}}.json (dev)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
