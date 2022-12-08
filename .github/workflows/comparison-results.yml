@@ -75,7 +75,7 @@ jobs:
         run: echo " {\"pr_branch\":\"${{github.head_ref}}\", \"push_branch\":\"${{github.ref_name}}\", \"prNumber\":\"${{github.event.number}}\", \"commitID\":\"${GITHUB_SHA}\"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
 
       - name: Download CPU and Memory usage capture tool
-        run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
+        run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
 
       - name: Start monitoring cpu and memory usage
         run: bash ${GITHUB_WORKSPACE}/tools/capture_usage.sh &
