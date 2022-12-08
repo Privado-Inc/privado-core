@@ -1,7 +1,6 @@
 name: Monitoring Stability and Comparing Results
 ## Heyy, comparison-result-generation branch identity
 
-
 # Triggers when a pull_request or a push action is configured on master branch
 on:
   pull_request:
@@ -24,10 +23,15 @@ jobs:
           repository: ${{matrix.owner}}/privado-core
           path: ./${{matrix.ref}}
           ref: ${{matrix.ref}}
-      
+
       - name: Check if ref cloned is correct
         run: cat ./${{matrix.ref}}/.github/workflows/comparison-results.yml
 
+      - name: Build Docker Image for privado-core/${{matrix.ref}}
+        run: docker build -t ${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.ap-south-1.amazonaws.com/privado-core:ankit --build-arg JAR_VERSION=0.0.1 --build-arg VERSION=0.1 --build-arg CODE_ARTIFACT_URL=privado-${{secrets.AWS_ACCOUNT_ID}}.d.codeartifact.ap-south-1.amazonaws.com ./${{matrix.ref}}/
+
+      - name: Check if image is created
+        run: docker image ls
 
   scan_repositories:
     needs: build_privado
@@ -38,7 +42,7 @@ jobs:
           [
             "privado-analytics",
             "privado-accounts-api",
-            "shift-privacy-left-app"
+            "shift-privacy-left-app",
           ]
 
     continue-on-error: true
@@ -46,8 +50,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-
-
 
       - name: Check payload contents
         run: echo ${{github.event.client_payload.test}}
