@@ -12,26 +12,31 @@ jobs:
       matrix:
         owner: ["karan-batavia"]
         ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
+          
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
+      - name: Clone Privado-Inc/privado
+        uses: actions/checkout@v2
+        with:
+          owner: "Privado-Inc"
+          repository: "Privado-Inc/privado"
+          path: ./temp/privado
+  
       - name: Clone privado-core/${{matrix.ref}}
         uses: actions/checkout@v2
         with:
           owner: ${{matrix.owner}}
           repository: ${{matrix.owner}}/privado-core
-          path: ./${{matrix.ref}}
-          ref: ${{matrix.ref}}
+          path: ./temp/${{matrix.ref}}
+          ref: ${{matrix.ref}} 
 
-      - name: Check if ref cloned is correct
-        run: cat ./${{matrix.ref}}/.github/workflows/comparison-results.yml
-
-      - name: Build Docker Image for privado-core/${{matrix.ref}}
-        run: docker build -t ${{secrets.AWS_ACCOUNT_ID}}.dkr.ecr.ap-south-1.amazonaws.com/privado-core:ankit --build-arg JAR_VERSION=0.0.1 --build-arg VERSION=0.1 --build-arg CODE_ARTIFACT_URL=privado-${{secrets.AWS_ACCOUNT_ID}}.d.codeartifact.ap-south-1.amazonaws.com ./${{matrix.ref}}/
-
-      - name: Check if image is created
-        run: docker image ls
+      - name: Upload repositories and rules
+        uses: actions/upload-artifact@master
+        with:
+          name: privado-core_and_rules
+          path: /home/runner/work/privado-core/privado-core/temp/
 
   scan_repositories:
     needs: build_privado
@@ -51,6 +56,15 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+
+      - name: Download privado-core and privado 
+        uses: actions/download-artifact@master
+        with:
+          path: ./tools
+
+      - name: Check contents
+        run: ls ./tools
+        
       - name: Check payload contents
         run: echo ${{github.event.client_payload.test}}
 
@@ -127,6 +141,7 @@ jobs:
 
   compare_and_send_reports:
     needs: scan_repositories
+    
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@master
