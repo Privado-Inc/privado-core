@@ -11,7 +11,7 @@ jobs:
   build_privado:
     strategy:
       matrix:
-        owner: ["Privado-Inc"]
+        owner: ["karan-batavia"]
         ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
     runs-on: ubuntu-latest
     steps:
