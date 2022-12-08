@@ -6,6 +6,11 @@ on:
     types: [test_suite]
 
 jobs:
+  # clone_privado:
+  #   strategy:
+  #     matrix:
+  #       owner: ["Privado-Inc"]
+  #       ref: [${{github..}}]
   scan_repositories:
     strategy:
       matrix:
@@ -43,6 +48,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Check branch name
+        run: echo ${{github.base_ref}} && echo ${{github.head_ref}} 
 
       - name: Check payload contents
         run: echo ${{github.event.client_payload.test}}
