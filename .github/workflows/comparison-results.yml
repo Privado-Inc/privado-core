@@ -1,4 +1,6 @@
 name: Monitoring Stability and Comparing Results
+## Heyy, comparison-result-generation branch identity
+
 
 # Triggers when a pull_request or a push action is configured on master branch
 on:
@@ -6,12 +8,29 @@ on:
     branches: ["main", "comparison-result-generation"]
 
 jobs:
-  # clone_privado:
-  #   strategy:
-  #     matrix:
-  #       owner: ["Privado-Inc"]
-  #       ref: [${{github..}}]
+  build_privado:
+    strategy:
+      matrix:
+        owner: ["Privado-Inc"]
+        ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Clone privado-core/${{matrix.ref}}
+        uses: actions/checkout@v2
+        with:
+          owner: ${{matrix.owner}}
+          repository: ${{matrix.owner}}/privado-core
+          path: ./${{matrix.ref}}
+          ref: ${{matrix.ref}}
+      
+      - name: Check if ref cloned is correct
+        run: cat ./${{matrix.ref}}/.github/workflows/comparison-results.yml
+
+
   scan_repositories:
+    needs: build_privado
     strategy:
       matrix:
         owner: ["Privado-Demo"]
@@ -19,28 +38,7 @@ jobs:
           [
             "privado-analytics",
             "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
-            "privado-analytics",
-            "privado-accounts-api",
-            "shift-privacy-left-app",
+            "shift-privacy-left-app"
           ]
 
     continue-on-error: true
@@ -49,8 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Check branch name
-        run: echo ${{github.base_ref}} && echo ${{github.head_ref}} 
+
 
       - name: Check payload contents
         run: echo ${{github.event.client_payload.test}}
