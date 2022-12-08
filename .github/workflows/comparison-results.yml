@@ -2,8 +2,8 @@ name: Monitoring Stability and Comparing Results
 
 # Triggers when a pull_request or a push action is configured on master branch
 on:
-  repository_dispatch:
-    types: [test_suite]
+  pull_request:
+    branches: ["main", "comparison-result-generation"]
 
 jobs:
   # clone_privado:
