@@ -64,15 +64,21 @@ jobs:
 
       - name: Install sbt
         uses: olafurpg/setup-scala@v11
+        with:
+          java-version: openjdk@1.18
         
-      - name: Check jdk and sbt
-        run: java -version && sbt compile
-
+    
       - name: Download privado-core and privado 
         uses: actions/download-artifact@master
         with:
           path: ./
 
+      - name: Build binary (base ref)
+        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}} && sbt clean && sbt stage 
+
+      
+      - name: Build binary (head ref)
+        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}} && sbt clean && sbt stage 
 
       - name: Check contents
         run: ls ./privado-core_and_rules
