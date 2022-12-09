@@ -23,6 +23,7 @@
 package ai.privado.utility
 
 import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.{
@@ -145,39 +146,57 @@ object Utilities {
 
     val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
 
-    val customNonTaintDefaultSemantics =
-      nonTaintingMethods
+    var customNonTaintDefaultSemantics   = List[String]()
+    var specialNonTaintDefaultSemantics  = List[String]()
+    var customStringSemantics            = List[String]()
+    var customNonPersonalMemberSemantics = List[String]()
+
+    if (!ScanProcessor.config.disableRunTimeSemantics) {
+      customNonTaintDefaultSemantics = nonTaintingMethods
         .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
         .fullName
         .l
         .map(generateNonTaintSemantic)
 
-    val specialNonTaintDefaultSemantics =
-      nonTaintingMethods
+      specialNonTaintDefaultSemantics = nonTaintingMethods
         .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
         .fullName
         .l
         .map(generateSemanticForTaint(_, 0))
-    val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
-    val customStringSemantics = cpg.method
-      .filter(_.isExternal)
-      .where(_.callIn)
-      .fullName(".*:java.lang.String\\(.*")
-      .fullNameNot(".*\\.set[A-Za-z_]*:.*")
-      .fullName
-      .dedup
-      .l
-      .map(generateSemanticForTaint(_, -1))
 
-    val customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
+      customStringSemantics = cpg.method
+        .filter(_.isExternal)
+        .where(_.callIn)
+        .fullName(".*:java.lang.String\\(.*")
+        .fullNameNot(".*\\.set[A-Za-z_]*:.*")
+        .fullName
+        .dedup
+        .l
+        .map(generateSemanticForTaint(_, -1))
+
+      customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
+    }
+    val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
+
+    logger.debug("\nCustom Non taint default semantics")
+    customNonTaintDefaultSemantics.foreach(logger.debug)
+    logger.debug("\nCustom specialNonTaintDefaultSemantics semantics")
+    specialNonTaintDefaultSemantics.foreach(logger.debug)
+    logger.debug("\nCustom customStringSemantics semantics")
+    customStringSemantics.foreach(logger.debug)
+    logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
+    customNonPersonalMemberSemantics.foreach(logger.debug)
+    logger.debug("\nCustom customSinkSemantics semantics")
+    customSinkSemantics.foreach(logger.debug)
+    logger.debug("\nCustom semanticFromConfig semantics")
+    semanticFromConfig.foreach(logger.debug)
 
     val finalSemantics =
       (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
         ++ customStringSemantics ++ customNonPersonalMemberSemantics
         ++ customSinkSemantics ++ semanticFromConfig)
         .mkString("\n")
-    logger.debug("Final Semantics");
-    finalSemantics.split("\n").foreach(logger.debug)
+
     Semantics.fromList(new Parser().parse(finalSemantics))
   }
 

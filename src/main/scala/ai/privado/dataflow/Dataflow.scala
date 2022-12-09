@@ -72,7 +72,12 @@ class Dataflow(cpg: Cpg) {
     else {
       val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
-      val dataflowPaths = dataflowPathsUnfiltered.filter(filterFlowsByContext).filter(flowNotTaintedByThis)
+      val dataflowPaths = {
+        if (ScanProcessor.config.disableThisFiltering)
+          dataflowPathsUnfiltered
+        else
+          dataflowPathsUnfiltered.filter(filterFlowsByContext).filter(flowNotTaintedByThis)
+      }
       AppCache.totalFlowAfterThisFiltering = dataflowPaths.size
       // Stores key -> PathID, value -> Path
       var dataflowMapByPathId = Map[String, Path]()
@@ -185,52 +190,7 @@ class Dataflow(cpg: Cpg) {
         .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
       if (sinkCatLevelTwoCustomTag.nonEmpty) {
         val sinkId = sinkCatLevelTwoCustomTag.head.value
-
-        def approach1() = {
-          // Logic to filter flows which are interfering with the current source item
-          // Ex - If traversing flow for email, discard flow which uses password
-          var isSourceDEPresent = false
-          val otherMatchedRules = new mutable.HashSet[String]()
-          val res = dataflowsMapByType(sinkPathId).elements
-            .flatMap(pathItem => {
-              val matchRes = pathItem.tag.where(_.name(Constants.id).value("Data.Sensitive.*")).value.l
-              if (matchRes.nonEmpty) {
-                if (matchRes.head.equals(pathSourceId)) {
-                  isSourceDEPresent = true
-                  Some(false)
-                } else {
-                  otherMatchedRules.add(matchRes.head)
-                  Some(true)
-                }
-              } else
-                Some(false)
-            })
-            .foldLeft(false)((a, b) => a || b)
-
-          val dataElementBlackList = List(
-            "Data.Sensitive.AccountData.AccountID",
-            "Data.Sensitive.PurchaseData.OrderDetails",
-            "Data.Sensitive.AccountData.LanguagePreferences"
-          )
-
-          val blackListElementPresence = otherMatchedRules
-            .map(item => dataElementBlackList.contains(item))
-            .foldLeft(false)((a, b) => a || b)
-          if (res && !isSourceDEPresent && !(blackListElementPresence && dataflowSinkType.equals("storages"))) {
-            // discard this flow
-            logger.debug(
-              s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${otherMatchedRules
-                  .mkString(" || ")}, Sink type : ${dataflowSinkType}"
-            )
-            logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
-            logger.debug("----------------------------")
-            AppCache.fpByOverlappingDE += 1
-          } else // Add this to Cache
-            DataFlowCache.setDataflow(
-              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-            )
-        }
-        def approach2() = {
+        def filterFlowsOverlappingWithOtherDataElement() = {
           // Logic to filter flows which are interfering with the current source item
           // Ex - If traversing flow for email, discard flow which uses password
 
@@ -299,8 +259,8 @@ class Dataflow(cpg: Cpg) {
                 s" ${identifierMatchedDataElement.mkString(" || ")}, call matched Data Elements : ${callMatchedDataElement} Sink type : ${dataflowSinkType}"
             )
             logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
-            println(s"Derived source was present : ${isDerivedSourcePresent}")
-            println(
+            logger.debug(s"Derived source was present : ${isDerivedSourcePresent}")
+            logger.debug(
               s"Derived sources are : ${(identifierInCallArguments ++ identifierArguments.toSet).code.mkString("|||")}"
             )
             logger.debug("----------------------------")
@@ -314,8 +274,12 @@ class Dataflow(cpg: Cpg) {
             )
           }
         }
-        // approach1()
-        approach2()
+        if (ScanProcessor.config.disableFlowSeparationByDataElement)
+          DataFlowCache.setDataflow(
+            DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
+          )
+        else
+          filterFlowsOverlappingWithOtherDataElement()
         AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
       }
     }

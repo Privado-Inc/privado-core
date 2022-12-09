@@ -24,6 +24,7 @@
 package ai.privado.languageEngine.java.tagger.source
 
 import ai.privado.cache.TaggerCache
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
@@ -148,18 +149,17 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
       })
 
-    /*
-    typeDeclWithMemberNameHavingMemberName
-      .distinctBy(_._1.fullName)
-      .foreach(typeDeclValEntry => {
-        val typeDeclName = typeDeclValEntry._1.fullName
-        // Step 2.2
-        tagObjectOfTypeDeclHavingMemberType(builder, typeDeclName, ruleInfo)
-        // Step 2.3
-        tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
-      })
-     */
-
+    if (ScanProcessor.config.disable2ndLevelClosure) {
+      typeDeclWithMemberNameHavingMemberName
+        .distinctBy(_._1.fullName)
+        .foreach(typeDeclValEntry => {
+          val typeDeclName = typeDeclValEntry._1.fullName
+          // Step 2.2
+          tagObjectOfTypeDeclHavingMemberType(builder, typeDeclName, ruleInfo)
+          // Step 2.3
+          tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
+        })
+    }
   }
 
   /** Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
