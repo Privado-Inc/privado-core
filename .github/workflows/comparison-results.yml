@@ -67,7 +67,9 @@ jobs:
         with:
           java-version: openjdk@1.17.0
         
-    
+      - name: Check if apt is installed
+        run: apt install sbt
+
       - name: Download privado-core and privado 
         uses: actions/download-artifact@master
         with:
@@ -76,7 +78,6 @@ jobs:
       - name: Build binary (base ref)
         run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}} && sbt clean && sbt stage 
 
-      
       - name: Build binary (head ref)
         run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}} && sbt clean && sbt stage 
 
