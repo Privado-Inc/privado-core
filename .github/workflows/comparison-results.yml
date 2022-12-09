@@ -64,12 +64,9 @@ jobs:
 
       - name: Install sbt
         uses: olafurpg/setup-scala@v11
-        with:
-          java-version: openjdk@1.17.0
+        # with:
+        #   java-version: openjdk@1.17.0
         
-      - name: Check if apt is installed
-        run: apt install sbt
-
       - name: Download privado-core and privado 
         uses: actions/download-artifact@master
         with:
