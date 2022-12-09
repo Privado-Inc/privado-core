@@ -63,7 +63,7 @@ jobs:
           java-version: '18'
 
       - name: Install sbt
-        run: curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
+        run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
       - name: Java path
         run: echo $JAVA_HOME
@@ -74,10 +74,10 @@ jobs:
           path: ./
 
       - name: Build binary (base ref)
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}} && sbt -java-home=$JAVA_HOME clean && sbt -java-home=$JAVA_HOME stage 
+        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}} && ~/bin/sbt -java-home=$JAVA_HOME clean && ~/bin/sbt -java-home=$JAVA_HOME stage 
 
       - name: Build binary (head ref)
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}} && sbt -java-home=$JAVA_HOME clean && sbt -java-home=$JAVA_HOME stage 
+        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}} && ~/bin/sbt -java-home=$JAVA_HOME clean && ~/bin/sbt -java-home=$JAVA_HOME stage 
 
       - name: Check contents
         run: ls ./privado-core_and_rules
