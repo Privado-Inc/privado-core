@@ -44,15 +44,23 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
-    val rulePattern              = ruleInfo.patterns.head
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
+    val rulePattern = ruleInfo.patterns.head
+    val regexMatchingIdentifiers =
+      cpg.identifier(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase))
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
     })
 
     val regexMatchingFieldIdentifiersIdentifiers =
-      cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
+      cpg.fieldAccess
+        .where(
+          _.fieldIdentifier
+            .canonicalName(rulePattern)
+            .filterNot(item => item.canonicalName.equals(item.canonicalName.toUpperCase))
+        )
+        .isCall
+        .l
     regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
@@ -71,7 +79,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     ruleInfo: RuleInfo
   ): Unit = {
     val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
-      .where(_.member.name(memberNameRegex))
+      .where(_.member.name(memberNameRegex).filterNot(item => item.name.equals(item.name.toUpperCase)))
       .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(memberNameRegex).l))
       .l
     typeDeclWithMemberNameHavingMemberName
@@ -117,7 +125,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
           .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
           .callIn
           .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
-          .where(_.argument(2).code(memberNameRegex))
+          .where(_.argument(2).code(memberNameRegex).filterNot(item => item.code.equals(item.code.toUpperCase)))
           // .where(_.inAst.isMethod.name("get.*"))
           .l
 
