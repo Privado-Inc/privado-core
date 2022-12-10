@@ -24,9 +24,9 @@
 package ai.privado.languageEngine.java.tagger.source
 
 import ai.privado.cache.TaggerCache
-import ai.privado.model.InternalTag
+import ai.privado.model.{Constants, InternalTag}
 import ai.privado.utility.Utilities.storeForTag
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.SimpleCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
@@ -52,10 +52,26 @@ class IdentifierNonMemberTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
         impactedMethods.foreach(impactedReturnCall => {
           storeForTag(builder, impactedReturnCall)(
             InternalTag.NON_SENSITIVE_METHOD_RETURN.toString,
-            "Data.Sensitive.NonPersonal"
+            "Data.Sensitive.NonPersonal.Method"
           )
         })
       }
+
+      val impactedGetters = cpg.method
+        .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+        .callIn
+        .where(_.argument(1).isIdentifier.typeFullName(typeDeclValue))
+        .where(_.argument(2).code("(?i).*(" + nonPersonalMembersRegex + ").*"))
+        .l
+
+      impactedGetters.foreach(impactedGetter => {
+        if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedGetter)(
+            InternalTag.NON_SENSITIVE_FIELD_ACCESS.toString,
+            "Data.Sensitive.NonPersonal.MemberAccess"
+          )
+        }
+      })
     })
   }
 }
