@@ -56,7 +56,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
     }
 
     // A cached method so that we are not computing again
-    val combinedRulePatterns = ruleInfo.patterns.mkString("(", "|", ")")
+    val combinedRulePatterns = ruleInfo.combinedRulePattern
     cpg.annotation
       .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
@@ -75,7 +75,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
-        val parameters = collectionMethod.parameter.where(_.name(sourceRule.patterns.mkString("(", "|", ")"))).l
+        val parameters = collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).l
         if (parameters.isEmpty) {
           None
         } else {

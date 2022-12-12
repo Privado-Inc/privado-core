@@ -131,7 +131,7 @@ object SensitiveInputMask {
       case Some(id) =>
         id.stripPrefix("@+id/")
         val matchedSources =
-          sources.filter(source => sensitiveDataElementsForMasking(source.id) && id.matches(source.patterns.head))
+          sources.filter(source => sensitiveDataElementsForMasking(source.id) && id.matches(source.combinedRulePattern))
         matchedSources.nonEmpty
       case _ => false
     }

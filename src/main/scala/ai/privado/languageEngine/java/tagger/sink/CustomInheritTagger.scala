@@ -24,14 +24,10 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.languageEngine.java.feeder.StorageInheritRule
-import ai.privado.model.RuleInfo
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
@@ -40,7 +36,7 @@ class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val typeDeclNode = cpg.typeDecl
       .filter(
         _.inheritsFromTypeFullName
-          .map(inheritsFrom => inheritsFrom.matches(ruleInfo.patterns.head))
+          .map(inheritsFrom => inheritsFrom.matches(ruleInfo.combinedRulePattern))
           .foldLeft(false)((a, b) => a || b)
       )
       .l

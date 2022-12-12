@@ -44,7 +44,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
-    val rulePattern              = ruleInfo.patterns.mkString("(", "|", ")")
+    val rulePattern              = ruleInfo.combinedRulePattern
     val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)

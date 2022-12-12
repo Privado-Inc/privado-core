@@ -351,7 +351,7 @@ class Dataflow(cpg: Cpg) {
   private def isArgumentMatchingMemberPattern(sinkArgument: List[String], memberRuleId: String): Boolean = {
     Try(
       sinkArgument
-        .map(argument => argument.matches(RuleCache.getRuleInfo(memberRuleId).get.patterns.head))
+        .map(argument => argument.matches(RuleCache.getRuleInfo(memberRuleId).get.combinedRulePattern))
         .foldLeft(false)((a, b) => a || b)
     ) match {
       case Success(result) => result
