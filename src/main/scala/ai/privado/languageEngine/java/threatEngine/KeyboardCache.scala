@@ -101,7 +101,7 @@ object KeyboardCache {
           var androidId = elementId
           if (elementId.startsWith("@+id/"))
             androidId = elementId.slice(5, elementId.size)
-          androidId.matches(source.patterns.head)
+          androidId.matches(source.combinedRulePattern)
         })
         .foldLeft(false)((a, b) => a || b)
     } catch {

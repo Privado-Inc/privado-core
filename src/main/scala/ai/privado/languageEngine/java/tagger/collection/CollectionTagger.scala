@@ -56,15 +56,15 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
     }
 
     // A cached method so that we are not computing again
-
+    val combinedRulePatterns = ruleInfo.combinedRulePattern
     cpg.annotation
-      .name(ruleInfo.patterns.head)
+      .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
       .foreach(classAnnotation => {
         classUrlMap.addOne(classAnnotation.typeDecl.head.id() -> getCollectionUrl(classAnnotation))
       })
     val collectionMethodsCache = cpg.annotation
-      .name(ruleInfo.patterns.head)
+      .name(combinedRulePatterns)
       .filter(_.method.nonEmpty)
       .map(matchedAnnotation => {
         methodUrlMap.addOne(matchedAnnotation.method.head.id() -> getCollectionUrl(matchedAnnotation))
@@ -75,7 +75,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Privad
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
-        val parameters = collectionMethod.parameter.where(_.name(sourceRule.patterns.head)).l
+        val parameters = collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).l
         if (parameters.isEmpty) {
           None
         } else {

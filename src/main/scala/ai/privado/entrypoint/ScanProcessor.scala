@@ -107,7 +107,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       sources = configAndRules.sources
-                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -119,7 +119,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       sinks = configAndRules.sinks
-                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -132,7 +132,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       collections = configAndRules.collections
-                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,

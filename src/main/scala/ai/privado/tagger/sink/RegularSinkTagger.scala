@@ -38,7 +38,7 @@ class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
-    val sinks = cacheCall.methodFullName(ruleInfo.patterns.head).l
+    val sinks = cacheCall.methodFullName(ruleInfo.combinedRulePattern).l
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
       if (databaseDetails.isDefined) {

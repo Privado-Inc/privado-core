@@ -43,7 +43,7 @@ class RegularSinkTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg)
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
-    val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.patterns.head + ").*").l
+    val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
 
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
 
