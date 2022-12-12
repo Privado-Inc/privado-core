@@ -23,12 +23,10 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
@@ -46,7 +44,7 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     // Step 1.1
-    val rulePattern              = ruleInfo.patterns.head
+    val rulePattern              = ruleInfo.patterns.mkString("(", "|", ")")
     val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
