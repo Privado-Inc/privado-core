@@ -36,7 +36,7 @@ class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val typeDeclNode = cpg.typeDecl
       .filter(
         _.inheritsFromTypeFullName
-          .map(inheritsFrom => inheritsFrom.matches(ruleInfo.combinedRulePattern))
+          .map(inheritsFrom => inheritsFrom.matches(ruleInfo.patterns.head))
           .foldLeft(false)((a, b) => a || b)
       )
       .l
