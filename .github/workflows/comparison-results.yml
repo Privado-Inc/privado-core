@@ -44,11 +44,8 @@ jobs:
       - name: Check file contents
         run: ls -l ${GITHUB_WORKSPACE}/temp/
 
-      - name: Build binary (base ref)
+      - name: Build binary 
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
-
-      - name: Build binary (head ref)
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
       - name: Upload repositories and rules
         uses: actions/upload-artifact@master
