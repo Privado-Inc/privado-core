@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.ref}}-binary
-          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
+          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage/bin
 
   scan_repositories:
     needs: build_privado
