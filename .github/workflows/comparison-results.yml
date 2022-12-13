@@ -41,6 +41,9 @@ jobs:
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
       
+      - name: Check file contents
+        run: ls -l ${GITHUB_WORKSPACE}/temp/
+
       - name: Build binary (base ref)
         run: cd ${GITHUB_WORKSPACE}/temp/${{github.base_ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
