@@ -23,6 +23,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
+  "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
   "io.joern"                        %% "joern-cli"               % Versions.joern,
   "io.joern"                        %% "semanticcpg"             % Versions.joern,
   "io.joern"                        %% "semanticcpg"             % Versions.joern % Test classifier "tests",

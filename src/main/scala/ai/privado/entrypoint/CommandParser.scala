@@ -40,7 +40,8 @@ case class PrivadoInput(
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
   upload: Boolean = false,
-  enableJS: Boolean = false
+  enableJS: Boolean = false,
+  enablePython: Boolean = false
 )
 
 object CommandConstants {
@@ -63,6 +64,7 @@ object CommandConstants {
   val SKIP_UPLOAD_ABBR           = "su"
   val VALIDATE                   = "validate"
   val ENABLE_JS                  = "enablejs"
+  val ENABLE_PYTHON              = "enable-python"
 }
 
 object CommandParser {
@@ -118,6 +120,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableJS = true))
               .text("enable javascript scan engine"),
+            opt[Unit](CommandConstants.ENABLE_PYTHON)
+              .abbr(CommandConstants.ENABLE_PYTHON)
+              .optional()
+              .action((_, c) => c.copy(enablePython = true))
+              .text("enable python scan engine"),
             opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
               .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
               .optional()
