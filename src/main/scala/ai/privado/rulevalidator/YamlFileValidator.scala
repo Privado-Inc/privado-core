@@ -1,17 +1,19 @@
 package ai.privado.rulevalidator
 
 import ai.privado.entrypoint.CommandConstants
-import ai.privado.model.{CatLevelOne, ConfigRuleType}
 import ai.privado.model.Constants.{CONFIG_DIR_IN_CONFIG, PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
+import ai.privado.model.{CatLevelOne, ConfigRuleType}
 import better.files.File
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.networknt.schema.{JsonSchema, JsonSchemaFactory, SpecVersion, ValidationMessage}
 import org.slf4j.LoggerFactory
 
+import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.SetHasAsScala
 import scala.io.Source
+import scala.jdk.CollectionConverters.SetHasAsScala
+
 
 object YamlFileValidator {
 
@@ -19,7 +21,7 @@ object YamlFileValidator {
 
   private val SCHEMA_DIR_PATH     = "/ai/privado/rulevalidator/schema/"
   private val JSON_SCHEMA_VERSION = SpecVersion.VersionFlag.V7
-
+  private val NON_PATTERN_RULES = Set[String](CatLevelOne.THREATS.name, CatLevelOne.POLICIES.name, ConfigRuleType.SEMANTICS.toString)
   private val SOURCES = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sources.json")).mkString
   private val SINKS   = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinks.json")).mkString
   private val POLICIES =
@@ -70,8 +72,8 @@ object YamlFileValidator {
       )
       .flatMap(ruleFile => {
         validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {
-          case Left(()) => None
-          case Right(validationMessages: mutable.Set[ValidationMessage]) =>
+          case Right(()) => None
+          case Left(validationMessages: mutable.Set[String]) =>
             Some(ValidationFailure(validationMessages, ruleFile))
         }
       })
@@ -95,12 +97,12 @@ object YamlFileValidator {
       return false
     }
     validateRuleFile(ruleFile) match {
-      case Left(()) => false
-      case Right(validationMessages) =>
+      case Right(()) => true
+      case Left(validationMessages) =>
         if (validationMessages.nonEmpty) {
           validationMessages.foreach(vm => {
             println(s"File ${ruleFile.pathAsString} has following problems, ignoring file ...")
-            println(s"${vm.getMessage}")
+            println(s"${vm}")
           })
           false
         } else true
@@ -115,21 +117,28 @@ object YamlFileValidator {
     * @return
     *   scala mutable Set of ValidationMessage in case of validation errors, None if no errors are found
     */
-  def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[Unit, mutable.Set[ValidationMessage]] = {
+  def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[mutable.Set[String], Unit] = {
     try {
       val yamlAsJson = mapper.readTree(ruleFile.contentAsString())
       matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
-        case Left(()) => Left(())
-        case Right(schemaFile: String) =>
-          Right(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
+        case Left(()) => Right(())
+        case Right((typeOfRule: String, schemaFile: String)) =>
+          if (NON_PATTERN_RULES.contains(typeOfRule)){
+            Left(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
+          } else {
+            validateRegexPattern(yamlAsJson, typeOfRule) match {
+              case Right(_) => Left(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
+              case Left(value) => Left(value)
+            }
+          }
       }
     } catch {
       case e: Exception =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
         println(
-          f"File : ${ruleFile.pathAsString}: Unable to parse file invalid syntax at [${e.toString.split(';').last} Ignoring file ..."
+          f"File : ${ruleFile.pathAsString}: Unable to parse file invalid syntax at [${e.toString.split(';').last}] Ignoring file ..."
         )
-        Left(())
+        Right(())
     }
   }
 
@@ -141,20 +150,20 @@ object YamlFileValidator {
     * @param callerCommand
     *   String value to govern pretty print of validation messages
     * @return
-    *   Unit in case of no matching schema is found, else String content of matched schema file
+    *   Unit in case of no matching schema is found, else tuple of (RuleType: String, SchemaFilePath: String) for matching type
     */
-  def matchSchemaFile(ruleFile: File, ruleJsonTree: JsonNode, callerCommand: String = ""): Either[Unit, String] = {
+  def matchSchemaFile(ruleFile: File, ruleJsonTree: JsonNode, callerCommand: String = ""): Either[Unit, (String, String)] = {
 
     val catLevelOneKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
     logger.debug(s"Found CatLevelOne key '$catLevelOneKey' in file : ${ruleFile.pathAsString}")
     CatLevelOne
       .withNameWithDefault(catLevelOneKey) match {
-      case CatLevelOne.SOURCES     => Right(SOURCES)
-      case CatLevelOne.POLICIES    => Right(POLICIES)
-      case CatLevelOne.THREATS     => Right(THREATS)
-      case CatLevelOne.COLLECTIONS => Right(COLLECTIONS)
-      case CatLevelOne.SINKS       => Right(SINKS)
+      case CatLevelOne.SOURCES     => Right(CatLevelOne.SOURCES.name, SOURCES)
+      case CatLevelOne.POLICIES    => Right(CatLevelOne.POLICIES.name, POLICIES)
+      case CatLevelOne.THREATS     => Right(CatLevelOne.THREATS.name, THREATS)
+      case CatLevelOne.COLLECTIONS => Right(CatLevelOne.COLLECTIONS.name, COLLECTIONS)
+      case CatLevelOne.SINKS       => Right(CatLevelOne.SINKS.name, SINKS)
       case _ =>
         matchSchemaConfigFile(ruleFile, ruleJsonTree, callerCommand)
     }
@@ -164,17 +173,37 @@ object YamlFileValidator {
     ruleFile: File,
     ruleJsonTree: JsonNode,
     callerCommand: String = ""
-  ): Either[Unit, String] = {
+  ): Either[Unit, (String, String)] = {
     val configTypeKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
     ConfigRuleType.withNameDefaultHandler(configTypeKey) match {
-      case ConfigRuleType.SEMANTICS      => Right(SEMANTICS)
-      case ConfigRuleType.EXCLUSIONS     => Right(EXCLUSIONS)
-      case ConfigRuleType.SINK_SKIP_LIST => Right(SINK_SKIP_LIST)
+      case ConfigRuleType.SEMANTICS      => Right(ConfigRuleType.SEMANTICS.toString, SEMANTICS)
+      case ConfigRuleType.EXCLUSIONS     => Right(ConfigRuleType.EXCLUSIONS.toString, EXCLUSIONS)
+      case ConfigRuleType.SINK_SKIP_LIST => Right(ConfigRuleType.SINK_SKIP_LIST.toString, SINK_SKIP_LIST)
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
         println(f"File : ${ruleFile.pathAsString}: Config Invalid. Correct the rules and try again.")
         Left(())
+    }
+  }
+
+  def validateRegexPattern(content: JsonNode, typeOfRule: String): Either[mutable.Set[String], Unit] = {
+    val contentJson = ujson.read(content.toString)(typeOfRule).arr.toList
+    val errors = mutable.Set[String]()
+    contentJson.foreach(value => {
+      logger.debug(value("patterns").arr.toList.toString())
+      value("patterns").arr.toList.foreach(pattern => {
+        try {
+          Pattern.compile(pattern.toString())
+        } catch {
+          case e: PatternSyntaxException =>
+            errors.addOne(e.toString)
+        }
+      })
+    })
+    errors.size match {
+      case 0 => Right(())
+      case _ => Left(errors)
     }
   }
 
@@ -196,15 +225,16 @@ object YamlFileValidator {
       * @param jsonObj
       *   JsonNode object -> Yaml file converted to Json tree.
       * @return
-      *   a scala mutable set of com.networknt.schema.ValidationMessage
+      *   a scala mutable set of String
       */
-    def validateJsonFile(schemaFile: String, jsonObj: JsonNode): mutable.Set[ValidationMessage] = {
+    def validateJsonFile(schemaFile: String, jsonObj: JsonNode): mutable.Set[String] = {
+      val errors = mutable.Set[String]()
       file
         .loadSchema(schemaFile)
         .validate(jsonObj)
-        .asScala
+        .asScala.foreach(error => errors.addOne(error.toString))
+      errors
     }
-
   }
 
   class JsonSchemaExtension(jsonSchema: JsonSchema) {
@@ -223,4 +253,4 @@ object YamlFileValidator {
 
 }
 
-case class ValidationFailure(validationMessages: mutable.Set[ValidationMessage], file: File)
+case class ValidationFailure(validationMessages: mutable.Set[String], file: File)
