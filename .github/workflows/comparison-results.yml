@@ -93,8 +93,12 @@ jobs:
           name: ${{github.head_ref}}-binary
           path: ./privado-core-and-rules/${{github.head_ref}}
 
-      - name: Check contents
-        run: ls ./privado-core-and-rules
+      - name: Check contents (base)
+        run: ls ./privado-core-and-rules/${{github.base_ref}} && ls -l
+      
+      
+      - name: Check contents (head)
+        run: ls ./privado-core-and-rules/${{github.head_ref}} && ls -l
 
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
@@ -125,9 +129,6 @@ jobs:
           repository: ${{matrix.owner}}/${{matrix.repo_name}}
           path: ./repos/${{matrix.repo_name}}
 
-      - name: Check files
-        run: cd ${GITHUB_WORKSPACE} && ls -l
-      
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} && { time ./privado-core scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core_and_rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
