@@ -16,6 +16,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Install JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '18'
+
+      - name: Install sbt
+        run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
       - name: Clone Privado-Inc/privado
         uses: actions/checkout@v2
@@ -31,12 +40,24 @@ jobs:
           repository: ${{matrix.owner}}/privado-core
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
+      
+      - name: Build binary (base ref)
+        run: cd ${GITHUB_WORKSPACE}/temp/${{github.base_ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
+
+      - name: Build binary (head ref)
+        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
       - name: Upload repositories and rules
         uses: actions/upload-artifact@master
         with:
-          name: privado-core_and_rules
-          path: /home/runner/work/privado-core/privado-core/temp/
+          name: privado-rules
+          path: /home/runner/work/privado-core/privado-core/temp/privado
+
+      - name: Upload binary
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.ref}}-binary
+          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
 
   scan_repositories:
     needs: build_privado
@@ -56,28 +77,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Install JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'zulu'
-          java-version: '18'
-
-      - name: Install sbt
-        run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
-
       - name: Java path
         run: echo $JAVA_HOME
 
-      - name: Download privado-core and privado 
+      - name: Download privado 
         uses: actions/download-artifact@master
         with:
+          name: privado-rules
           path: ./
 
-      - name: Build binary (base ref)
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
-      - name: Build binary (head ref)
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
+      - name: Download base binary 
+        uses: actions/download-artifact@master
+        with:
+          name: ${{github.base_ref}}-binary
+          path: ./
+
+      - name: Download head binary 
+        uses: actions/download-artifact@master
+        with:
+          name: ${{github.head_ref}}-binary
+          path: ./
 
       - name: Check contents
         run: ls ./privado-core_and_rules
@@ -115,14 +135,8 @@ jobs:
           path: ./repos/${{matrix.repo_name}}
 
       - name: Check files
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}}/target/universal/stage/bin && ls -l
+        run: cd ${GITHUB_WORKSPACE} && ls -l
       
-      - name: Check files
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.head_ref}}/target/universal/stage/bin && ls -l
-      
-      - name: Check files
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/privado && ls -l
-
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}}/target/universal/stage/bin && { time ./privado-core scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core_and_rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
