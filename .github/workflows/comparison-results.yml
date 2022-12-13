@@ -26,13 +26,6 @@ jobs:
       - name: Install sbt
         run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
-      - name: Clone Privado-Inc/privado
-        uses: actions/checkout@v2
-        with:
-          owner: "Privado-Inc"
-          repository: "Privado-Inc/privado"
-          path: ./temp/privado
-  
       - name: Clone privado-core/${{matrix.ref}}
         uses: actions/checkout@v2
         with:
@@ -80,30 +73,28 @@ jobs:
       - name: Java path
         run: echo $JAVA_HOME
 
-      - name: Download privado 
-        uses: actions/download-artifact@master
+      - name: Clone Privado-Inc/privado
+        uses: actions/checkout@v2
         with:
-          name: privado-rules
-          path: ./
+          owner: "Privado-Inc"
+          repository: "Privado-Inc/privado"
+          path: ./privado-core-and-rules
 
 
       - name: Download base binary 
         uses: actions/download-artifact@master
         with:
           name: ${{github.base_ref}}-binary
-          path: ./
+          path: ./privado-core-and-rules
 
       - name: Download head binary 
         uses: actions/download-artifact@master
         with:
           name: ${{github.head_ref}}-binary
-          path: ./
+          path: ./privado-core-and-rules
 
       - name: Check contents
-        run: ls ./privado-core_and_rules
-        
-      - name: Check payload contents
-        run: echo ${{github.event.client_payload.test}}
+        run: ls ./privado-core-and-rules
 
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
@@ -138,7 +129,7 @@ jobs:
         run: cd ${GITHUB_WORKSPACE} && ls -l
       
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-        run: cd ${GITHUB_WORKSPACE}/privado-core_and_rules/${{github.base_ref}}/target/universal/stage/bin && { time ./privado-core scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core_and_rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/ && { time ./privado-core scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core_and_rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
       - name: Store ${{matrix.repo_name}}.json (stable)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
