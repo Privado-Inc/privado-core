@@ -71,10 +71,10 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val APISINKSIGNORE_REGEX = "(?i)(json|map).*(put:|get:)"
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.patterns.head + ")(?:\"|')").l
+    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
 
     sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-    val propertySinks = cpg.property.filter(p => p.value matches (ruleInfo.patterns.head)).usedAt.l
+    val propertySinks = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     sinkTagger(propertySinks, apis, builder, ruleInfo)
   }
 

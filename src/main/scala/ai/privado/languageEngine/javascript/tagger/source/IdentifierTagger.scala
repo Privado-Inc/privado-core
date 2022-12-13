@@ -35,7 +35,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     RuleCache.getRule.sources.foreach(ruleInfo => {
-      val rulePattern              = ruleInfo.patterns.head
+      val rulePattern              = ruleInfo.combinedRulePattern
       val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
       regexMatchingIdentifiers.foreach(identifier => {
         storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)

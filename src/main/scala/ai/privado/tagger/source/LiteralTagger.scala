@@ -22,12 +22,10 @@
 
 package ai.privado.tagger.source
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
@@ -41,7 +39,7 @@ class LiteralTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
       .argument
       .where(_.argumentIndex(1))
       .isLiteral
-      .code("\"(" + ruleInfo.patterns.head + ")\"")
+      .code("\"(" + ruleInfo.combinedRulePattern + ")\"")
       .whereNot(_.code(".*\\s.*"))
       .l
     literals.foreach(literal => {
