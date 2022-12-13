@@ -191,7 +191,6 @@ object YamlFileValidator {
     val contentJson = ujson.read(content.toString)(typeOfRule).arr.toList
     val errors = mutable.Set[String]()
     contentJson.foreach(value => {
-      logger.debug(value("patterns").arr.toList.toString())
       value("patterns").arr.toList.foreach(pattern => {
         try {
           Pattern.compile(pattern.toString())
