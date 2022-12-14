@@ -135,11 +135,11 @@ jobs:
           repository: ${{matrix.owner}}/${{matrix.repo_name}}
           path: ./repos/${{matrix.repo_name}}
 
-      # - name: change permission
-      #   run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core
+      - name: change permission
+        run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core
 
-      - name: change git permission
-        run: git update-index --chmod=+x ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core
+      # - name: change git permission
+      #   run: git update-index --chmod=+x ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core
 
       - name: check file
         run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} -lha 
