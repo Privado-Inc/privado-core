@@ -135,24 +135,27 @@ object JSONExporter {
       )
 
       logger.info("Completed exporting policy violations")
-      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
-      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
-      f.write(output.asJson.toString())
-      logger.info("Shutting down Exporter engine")
-      logger.info("Scanning Completed...")
+      if (File(s"$repoPath").isWritable){
+        File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+        val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+        f.write(output.asJson.toString())
+        logger.info("Shutting down Exporter engine")
+        logger.info("Scanning Completed...")
 
-      try {
-        MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
-          FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
-        )
-      } catch {
-        case e: Exception =>
-          logger.error("Error fetching the size of repo")
-          logger.debug("Error in getting size of repo ", e)
+        try {
+          MetricHandler.metricsData("repoSizeInKB") = Json.fromBigInt(
+            FileUtils.sizeOfDirectoryAsBigInteger(new java.io.File(repoPath)).divide(BigInteger.valueOf(1024))
+          )
+        } catch {
+          case e: Exception =>
+            logger.error("Error fetching the size of repo")
+            logger.debug("Error in getting size of repo ", e)
+        }
+        MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(f.size / 1024)
+        Right(())
+      } else {
+        Left(s"Error. Can't write to the given repo path - ${repoPath}")
       }
-      MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(f.size / 1024)
-      Right(())
-
     } catch {
       case ex: Exception =>
         println("Failed to export output")
