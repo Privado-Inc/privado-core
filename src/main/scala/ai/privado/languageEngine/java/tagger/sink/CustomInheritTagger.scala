@@ -48,7 +48,10 @@ class CustomInheritTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
 
-        if (callNodes != null & ruleInfo.id.matches("Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*")) {
+        if (
+          callNodes != null & ruleInfo.id
+            .matches("Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*")
+        ) {
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
           logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")
           if (databaseDetails.isDefined) {
