@@ -267,35 +267,8 @@ class Dataflow(cpg: Cpg) {
             AppCache.fpByDerivedSourcePresence += 1
             AppCache.fpByOverlappingDE += 1
             AppCache.fpMap.put(dataflowSinkType, AppCache.fpMap.getOrElse(dataflowSinkType, 0) + 1)
-          } else { // Add this to Cache
-
-            DataFlowCache.setDataflow(
-              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-            )
-          }
-        }
-        if (ScanProcessor.config.disableFlowSeparationByDataElement)
-          DataFlowCache.setDataflow(
-            DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-          )
-        else
-          filterFlowsOverlappingWithOtherDataElement()
-        AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
-      }
-    }
-
-    if (ScanProcessor.config.disableDeDuplication) {
-      sinkPathIds.foreach(sinkPathId => {
-        dataflowNodeTypes.foreach(dataflowNodeType => {
-          // Add this to Cache
-          addToCache(sinkPathId, dataflowNodeType)
-        })
-      })
-    } else {
-      distinctBySinkLineNumber(sinkPathIds, dataflowsMapByType).foreach(sinkPathId => {
-        dataflowNodeTypes.foreach(dataflowNodeType => {
-          // Check to filter if correct Source is consumed in Sink
-          /*if (
+          } // Add this to Cache
+          else if (
             isCorrectDataSourceConsumedInSink(
               pathSourceId,
               sinkPathId,
@@ -303,14 +276,34 @@ class Dataflow(cpg: Cpg) {
               dataflowSinkType,
               dataflowNodeType
             )
-          ) {
-
-           */
-          addToCache(sinkPathId, dataflowNodeType)
-          // }
-        })
-      })
+          )
+            DataFlowCache.setDataflow(
+              DataFlowPathModel(
+                pathSourceId,
+                sinkId,
+                dataflowSinkType,
+                dataflowNodeType,
+                sinkPathId,
+                dataflowsMapByType
+              )
+            )
+        }
+        if (ScanProcessor.config.disableFlowSeparationByDataElement)
+          DataFlowCache.setDataflow(
+            DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId, dataflowsMapByType)
+          )
+        else
+          filterFlowsOverlappingWithOtherDataElement()
+        AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+      }
     }
+
+    sinkPathIds.foreach(sinkPathId => {
+      dataflowNodeTypes.foreach(dataflowNodeType => {
+        // Add this to Cache
+        addToCache(sinkPathId, dataflowNodeType)
+      })
+    })
   }
 
   /** Distinct by operation on sink -> fileName + lineNumber to return a unique path

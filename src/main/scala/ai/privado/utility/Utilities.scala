@@ -281,10 +281,10 @@ object Utilities {
   def isFileProcessable(filePath: String): Boolean = {
     RuleCache.getRule.exclusions
       .flatMap(exclusionRule => {
-          Try(!filePath.matches(exclusionRule.combinedRulePattern)) match {
-            case Success(result) => Some(result)
-            case Failure(_)      => None
-          }
+        Try(!filePath.matches(exclusionRule.combinedRulePattern)) match {
+          case Success(result) => Some(result)
+          case Failure(_)      => None
+        }
       })
       .foldLeft(true)((a, b) => a && b)
   }
@@ -297,10 +297,10 @@ object Utilities {
   def isPrivacySink(sinkName: String): Boolean = {
     RuleCache.getRule.sinkSkipList
       .flatMap(sinkSkipRule => {
-            Try(!sinkName.matches(sinkSkipRule.combinedRulePattern)) match {
-              case Success(result) => Some(result)
-              case Failure(_)      => None
-            }
+        Try(!sinkName.matches(sinkSkipRule.combinedRulePattern)) match {
+          case Success(result) => Some(result)
+          case Failure(_)      => None
+        }
       })
       .foldLeft(true)((a, b) => a && b)
   }
