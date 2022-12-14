@@ -40,6 +40,9 @@ jobs:
       - name: Build binary 
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
+      - name: change permission
+        run: chmod +x /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
+
       - name: Upload repositories and rules
         uses: actions/upload-artifact@master
         with:
