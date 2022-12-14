@@ -24,7 +24,7 @@ jobs:
           java-version: '18'
 
       - name: ex
-        run: export PATH=$PATH:$JAVA_HOME/bin
+        run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
 
       - name: check java version
         run: java -version
@@ -86,10 +86,10 @@ jobs:
           java-version: '18'
 
       - name: ex
-        run: export PATH=$PATH:$JAVA_HOME/bin
+        run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
 
       - name: Java path
-        run: echo $JAVA_HOME
+        run: echo $JAVA_HOMEz
 
       - name: check java version
         run: java -version
