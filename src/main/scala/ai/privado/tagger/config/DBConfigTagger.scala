@@ -181,6 +181,10 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
       "Sinks.Database.JPA.Write"
     )
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
+      "Storages.SpringFramework.Jooq"
+    )
   }
 
 }
