@@ -85,6 +85,9 @@ jobs:
           distribution: 'temurin'
           java-version: '18'
 
+      - name: ex
+        run: export PATH=$PATH:$JAVA_HOME/bin
+
       - name: Java path
         run: echo $JAVA_HOME
 
