@@ -23,6 +23,12 @@ jobs:
           distribution: 'zulu'
           java-version: '18'
 
+      - name: check java version
+        run: java -version
+
+      - name: check javac version 
+        run: javac -version
+
       - name: Install sbt
         run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
@@ -78,6 +84,12 @@ jobs:
 
       - name: Java path
         run: echo $JAVA_HOME
+
+      - name: check java version
+        run: java -version
+
+      - name: check javac version 
+        run: javac -version
 
       - name: Clone Privado-Inc/privado
         uses: actions/checkout@v2
