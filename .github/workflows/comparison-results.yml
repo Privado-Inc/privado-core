@@ -133,7 +133,7 @@ jobs:
         run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}
 
       - name: simple scan using
-        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} && sudo ./privado-core.bat scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} --internal-config ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} --internal-config ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} && { time ./privado-core.bat scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
