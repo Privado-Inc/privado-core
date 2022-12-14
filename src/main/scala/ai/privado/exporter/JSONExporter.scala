@@ -149,7 +149,7 @@ object JSONExporter {
       logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")
 
       logger.info("Completed exporting policy violations")
-      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
