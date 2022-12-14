@@ -91,6 +91,7 @@ object PythonProcessor {
     // TODO Discover ignoreVenvDir and set it later below
     val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, None)
     val xtocpg = Try(Py2CpgOnFileSystem.buildCpg(cpgconfig))
+    // TODO Doesn't seem to be valid for now
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 

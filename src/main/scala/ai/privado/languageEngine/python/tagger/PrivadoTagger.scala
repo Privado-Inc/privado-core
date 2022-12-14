@@ -19,10 +19,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-//    println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-//    new LiteralTagger(cpg).createAndApply()
-//    println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-//    new APITagger(cpg).createAndApply()
+    println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
+    new LiteralTagger(cpg).createAndApply()
+    println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
+    new APITagger(cpg).createAndApply()
 
     logger.info("Done with tagging")
 
