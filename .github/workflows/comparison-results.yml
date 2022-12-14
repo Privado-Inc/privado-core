@@ -144,16 +144,16 @@ jobs:
         run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} -lha
 
       - name: check file 2
-        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/target -lha
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target -lha
 
       - name: check file 3
-        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/target/universal -lha
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal -lha
 
       - name: check file 1
-        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/target/universal/stage -lha
-        
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage -lha
+
       - name: check file
-        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/target/universal/stage/bin -lha 
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin -lha 
 
       - name: check file
         run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/privado -lha
