@@ -36,10 +36,7 @@ jobs:
         run: mkdir -p ~/bin && curl -Ls https://github.com/sbt/sbt/releases/download/v1.7.1/sbt-1.7.1.tgz > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
       - name: SBT Home
-        run: echo SBT_HOMEß
-
-      - name: check sbt Version
-        run: sbt --version
+        run: echo $SBT_HOME
 
       - name: Clone privado-core/${{matrix.ref}}
         uses: actions/checkout@v2
