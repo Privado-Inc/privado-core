@@ -45,19 +45,19 @@ jobs:
           repository: ${{matrix.owner}}/privado-core
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
+
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          owner: Privado-Demo
+          repository: Privado-Demo/privado-analytics
+          path: ./repos/privado-analytics
       
       - name: Check file contents
         run: ls -l ${GITHUB_WORKSPACE}/temp/
 
       - name: Build binary 
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
-
-      - name: Clone repository
-          uses: actions/checkout@v2
-          with:
-            owner: Privado-Demo
-            repository: Privado-Demo/privado-analytics
-            path: ./repos/privado-analytics
 
       - name: change permission
           run: chmod 777 /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
