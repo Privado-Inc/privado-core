@@ -20,8 +20,8 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '15.0.9'
+          distribution: 'temurin'
+          java-version: '18'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
@@ -33,10 +33,10 @@ jobs:
         run: javac -version
 
       - name: Install sbt
-        run: mkdir -p ~/bin && curl -Ls https://github.com/sbt/sbt/releases/download/v1.7.1/sbt-1.7.1.tgz > ~/bin/sbt && chmod 0755 ~/bin/sbt
+        run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
-      - name: SBT Home
-        run: echo $SBT_HOME
+      - name: sbt version 
+        run: sbt --version
 
       - name: Clone privado-core/${{matrix.ref}}
         uses: actions/checkout@v2
@@ -85,8 +85,8 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'zulu'
-          java-version: '15.0.9'
+          distribution: 'temurin'
+          java-version: '18'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
