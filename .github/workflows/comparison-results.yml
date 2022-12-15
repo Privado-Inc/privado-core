@@ -20,8 +20,8 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '18'
+          distribution: 'zulu'
+          java-version: '19'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
@@ -85,8 +85,8 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '18'
+          distribution: 'zulu'
+          java-version: '19'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
