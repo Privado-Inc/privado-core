@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '18'
+          java-version: '15'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
@@ -83,7 +83,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '18'
+          java-version: '15'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
