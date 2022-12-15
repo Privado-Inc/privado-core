@@ -10,7 +10,7 @@ jobs:
   build_privado:
     strategy:
       matrix:
-        owner: ["ankit-privado"]
+        owner: ["karan-batavia"]
         ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
           
     runs-on: ubuntu-latest
