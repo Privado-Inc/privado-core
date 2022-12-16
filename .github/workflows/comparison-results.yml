@@ -16,10 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
-      - name: change permission
-        run: chmod 777 /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
-      
+            
       - name: check java version
         run: sudo java -version
 
