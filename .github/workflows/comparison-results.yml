@@ -21,7 +21,7 @@ jobs:
         uses: oracle-actions/setup-java@v1
         with:
           website: oracle.com
-          release: 15
+          release: 17
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
