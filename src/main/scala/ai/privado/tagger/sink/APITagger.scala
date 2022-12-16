@@ -41,7 +41,7 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch                   = HashMap[String, Integer]()
-  val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays|unresolved).*(put:|get:).*"
+  val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
 
   internalMethodCall.foreach((method) => {
     val key     = method.split("[.:]").take(2).mkString(".")
