@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
-          java-version: '11'
+          java-version: '15'
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
