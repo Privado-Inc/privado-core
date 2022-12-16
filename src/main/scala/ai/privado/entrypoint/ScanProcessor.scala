@@ -107,7 +107,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       sources = configAndRules.sources
-                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -119,7 +119,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       sinks = configAndRules.sinks
-                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -132,7 +132,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       collections = configAndRules.collections
-                        .filter(rule => isValidRule(rule.patterns.head, rule.id, fullPath))
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -262,7 +262,22 @@ object ScanProcessor extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
     println(s"Privado Core Version: ${Environment.privadoVersionCore}")
+    if (!File(config.sourceLocation.head).isWritable){
+      println(s"Warning: Privado doesn't have write permission on give repo location - ${config.sourceLocation.head}")
+    }
     processCpg()
+  }
+
+  /** Helper function to process rule for a language and cache the result in ruleCache
+    * @param lang
+    * @return
+    *   rule
+    */
+  def processAndCacheRule(lang: String): ConfigAndRules = {
+    val processedRules = processRules(lang)
+    logger.info("Caching rules")
+    RuleCache.setRule(processedRules)
+    processedRules
   }
 
   private def processCpg() = {
@@ -276,23 +291,20 @@ object ScanProcessor extends CommandProcessor {
         languageDetected match {
           case Some(lang) =>
             MetricHandler.metricsData("language") = Json.fromString(lang)
-            val processedRules = processRules(lang)
-            logger.info("Caching rules")
-            RuleCache.setRule(processedRules)
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, language)
+                JavaProcessor.createJavaCpg(processAndCacheRule(lang), sourceRepoLocation, language)
               case language if language == Languages.JSSRC && config.enableJS =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(processedRules, sourceRepoLocation, lang)
+                JavascriptProcessor.createJavaScriptCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
                     s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
-                  JavaProcessor.createJavaCpg(processedRules, sourceRepoLocation, lang)
+                  JavaProcessor.createJavaCpg(processAndCacheRule(Languages.JAVASRC), sourceRepoLocation, lang)
                 } else {
                   println(s"As of now we only support privacy code scanning for 'Java' code base.")
                   println(s"We detected this code base of '${lang}'.")

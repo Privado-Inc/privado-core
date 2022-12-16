@@ -43,8 +43,12 @@ case class RuleInfo(
   catLevelOne: CatLevelOne.CatLevelOne,
   catLevelTwo: String,
   language: Language.Language,
-  categoryTree: Array[String]
-)
+  categoryTree: Array[String],
+){
+  def combinedRulePattern: String = {
+    patterns.mkString("(", "|", ")")
+  }
+}
 case class ConfigAndRules(
   sources: List[RuleInfo],
   sinks: List[RuleInfo],

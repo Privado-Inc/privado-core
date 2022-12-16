@@ -14,7 +14,8 @@ object RuleValidator extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println("Starting rule validations ...")
     validateRules() match {
-      case Some(_) =>
+      case Some(returnVal) =>
+        println(returnVal)
         validateConfig() match {
           case Some(value) => Right(println(value))
           case _           => Left("Error in parsing Config rules")

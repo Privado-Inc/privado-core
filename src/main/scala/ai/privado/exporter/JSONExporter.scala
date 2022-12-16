@@ -120,7 +120,7 @@ object JSONExporter {
       )
 
       logger.debug("------------ Sink Skip List ---------------")
-      val skipRules = RuleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.patterns.head)
+      val skipRules = RuleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.combinedRulePattern)
       logger.debug(s"$skipRules")
       logger.debug("------------ Probable Sink Dependencies ---------------")
       logger.debug(s"$probableSinks")
@@ -135,7 +135,7 @@ object JSONExporter {
       )
 
       logger.info("Completed exporting policy violations")
-      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
