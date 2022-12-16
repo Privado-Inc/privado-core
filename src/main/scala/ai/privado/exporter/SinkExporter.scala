@@ -78,7 +78,7 @@ class SinkExporter(cpg: Cpg) {
       .filter((str) => !str.endsWith(".println"))
       .map((str) => {
         try {
-          str.split("\\.").take(5).mkString(".")
+          str.split("\\.").take(6).mkString(".")
         } catch {
           case _: Exception => str
         }
