@@ -94,11 +94,11 @@ jobs:
           path: ./privado-core-and-rules/${{github.head_ref}}
 
       - name: Check contents (base)
-        run: ls ./privado-core-and-rules/${{github.base_ref}} && ls -l
+        run: ls ./privado-core-and-rules/${{github.base_ref}}/privado-core-and-rules/ && ls
       
       
       - name: Check contents (head)
-        run: ls ./privado-core-and-rules/${{github.head_ref}} && ls -l
+        run: ls ./privado-core-and-rules/${{github.head_ref}}/privado-core-and-rules/ && ls 
 
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
