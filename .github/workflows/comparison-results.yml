@@ -243,5 +243,5 @@ jobs:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
           file_path: "/home/runner/work/privado-core/privado-core/comparison_report.csv"
-          initial_comment: "Comparison Results generated."
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
           file_type: "csv"
