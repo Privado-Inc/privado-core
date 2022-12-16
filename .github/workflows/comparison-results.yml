@@ -222,6 +222,12 @@ jobs:
       - name: Check contents of folder
         run: cd ./results/privado-analytics_time/ && ls -lha
 
+      - name: stable content
+        run: cat ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt
+
+      - name: dev content
+        run: cat ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
+
       - name: Compare the two results (privado-analytics)
         run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-analytics_time/privado-analytics_time_dev.txt
 
