@@ -50,7 +50,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.ref}}-binary
-          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage/bin
+          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
 
   scan_repositories:
     needs: build_privado
@@ -94,11 +94,11 @@ jobs:
           path: ./privado-core-and-rules/${{github.head_ref}}
 
       - name: Check contents (base)
-        run: ls ./privado-core-and-rules/${{github.base_ref}}/privado-core-and-rules/ && ls
+        run: ls ./privado-core-and-rules/${{github.base_ref}}/ && ls
       
       
       - name: Check contents (head)
-        run: ls ./privado-core-and-rules/${{github.head_ref}}/privado-core-and-rules/ && ls 
+        run: ls ./privado-core-and-rules/${{github.head_ref}} && ls 
 
       - name: Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
