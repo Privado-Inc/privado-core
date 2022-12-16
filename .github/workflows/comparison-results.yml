@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: check java version
+        run: java -version
+
       - name: Install JDK
         uses: oracle-actions/setup-java@v1
         with:
