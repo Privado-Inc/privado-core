@@ -51,7 +51,7 @@ jobs:
         with:
           owner: Privado-Demo
           repository: Privado-Demo/shift-privacy-left-app
-          path: ./repos/privado-analytics
+          path: ./repos/shift-privacy-left-app
       
       - name: Check file contents
         run: ls -l ${GITHUB_WORKSPACE}/temp/
