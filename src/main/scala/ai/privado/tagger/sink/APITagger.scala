@@ -26,7 +26,13 @@ package ai.privado.tagger.sink
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDefaultSemantics,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -84,8 +90,9 @@ class APITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo
   ): Unit = {
-    if (apis.nonEmpty && apiInternalSinkPattern.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(apiInternalSinkPattern).l
+    val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
+    if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
+      val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
         val apiNode     = flow.elements.last
