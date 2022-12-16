@@ -20,8 +20,8 @@ jobs:
       - name: Install JDK
         uses: oracle-actions/setup-java@v1
         with:
-          website: oracle.com
-          release: 17
+          website: jdk.java.net
+          release: 15
 
       - name: ex
         run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
