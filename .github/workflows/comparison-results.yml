@@ -16,33 +16,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-            
-      - name: check java version
-        run: java -version
-
+          
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin' # See 'Supported distributions' for available options
+          distribution: 'temurin'
           java-version: '18'
 
-      - name: Check JAVA_HOME
-        run: echo $JAVA_HOME
-
-      - name: ex
+      - name: Export Java Home Path
         run: export PATH=$JAVA_HOME/bin:$PATH
-
-      - name: check java version
-        run: java -version
-
-      - name: check javac version 
-        run: javac -version
 
       - name: Install sbt
         run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
-
-      - name: sbt version 
-        run: sbt --version
 
       - name: Clone privado-core/${{matrix.ref}}
         uses: actions/checkout@v2
@@ -52,12 +37,12 @@ jobs:
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
 
-      - name: Clone repository
-        uses: actions/checkout@v2
-        with:
-          owner: Privado-Demo
-          repository: Privado-Demo/shift-privacy-left-app
-          path: ./repos/shift-privacy-left-app
+      # - name: Clone repository
+      #   uses: actions/checkout@v2
+      #   with:
+      #     owner: Privado-Demo
+      #     repository: Privado-Demo/shift-privacy-left-app
+      #     path: ./repos/shift-privacy-left-app
       
       - name: Check file contents
         run: ls -l ${GITHUB_WORKSPACE}/temp/
@@ -65,8 +50,8 @@ jobs:
       - name: Build binary 
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
-      - name: simple scan using
-        run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
+      # - name: simple scan using
+      #   run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
 
       # - name: Upload repositories and rules
       #   uses: actions/upload-artifact@master
@@ -74,201 +59,201 @@ jobs:
       #     name: privado-rules
       #     path: /home/runner/work/privado-core/privado-core/temp/privado
 
-      # - name: Upload binary
-      #   uses: actions/upload-artifact@master
-      #   with:
-      #     name: ${{matrix.ref}}-binary
-      #     path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}
+      - name: Upload binary
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.ref}}-binary
+          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}
 
-  # scan_repositories:
-  #   needs: build_privado
-  #   strategy:
-  #     matrix:
-  #       owner: ["Privado-Demo"]
-  #       repo_name:
-  #         [
-  #           "privado-analytics",
-  #           "privado-accounts-api",
-  #           "shift-privacy-left-app",
-  #         ]
+  scan_repositories:
+    needs: build_privado
+    strategy:
+      matrix:
+        owner: ["Privado-Demo"]
+        repo_name:
+          [
+            "privado-analytics",
+            "privado-accounts-api",
+            "shift-privacy-left-app",
+          ]
 
-  #   continue-on-error: true
-  #   runs-on: ubuntu-latest
+    continue-on-error: true
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - uses: actions/checkout@v3
+    steps:
+      - uses: actions/checkout@v3
 
-  #     - name: Install JDK
-  #       uses: actions/setup-java@v3
-  #       with:
-  #         distribution: 'zulu'
-  #         java-version: '19'
+      - name: Install JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '18'
 
-  #     - name: ex
-  #       run: export PATH=$PATH:$JAVA_HOME/bin:$PATH
+      - name: Export Java Home Path
+        run: export PATH=$JAVA_HOME/bin:$PATH
 
-  #     - name: Java path
-  #       run: echo $JAVA_HOME
+      - name: Java path
+        run: echo $JAVA_HOME
 
-  #     - name: check java version
-  #       run: java -version
+      - name: check java version
+        run: java -version
 
-  #     - name: check javac version 
-  #       run: javac -version
+      - name: check javac version 
+        run: javac -version
 
-  #     - name: Clone Privado-Inc/privado
-  #       uses: actions/checkout@v2
-  #       with:
-  #         owner: "Privado-Inc"
-  #         repository: "Privado-Inc/privado"
-  #         path: ./privado-core-and-rules/privado
+      - name: Clone Privado-Inc/privado
+        uses: actions/checkout@v2
+        with:
+          owner: "Privado-Inc"
+          repository: "Privado-Inc/privado"
+          path: ./privado-core-and-rules/privado
 
 
-  #     - name: Download base binary 
-  #       uses: actions/download-artifact@master
-  #       with:
-  #         name: ${{github.base_ref}}-binary
-  #         path: ./privado-core-and-rules/${{github.base_ref}}/privado-core
+      - name: Download base binary 
+        uses: actions/download-artifact@master
+        with:
+          name: ${{github.base_ref}}-binary
+          path: ./privado-core-and-rules/${{github.base_ref}}/privado-core
 
-  #     - name: Download head binary 
-  #       uses: actions/download-artifact@master
-  #       with:
-  #         name: ${{github.head_ref}}-binary
-  #         path: ./privado-core-and-rules/${{github.head_ref}}/privado-core
+      - name: Download head binary 
+        uses: actions/download-artifact@master
+        with:
+          name: ${{github.head_ref}}-binary
+          path: ./privado-core-and-rules/${{github.head_ref}}/privado-core
 
-  #     - name: Check contents (base)
-  #       run: ls ./privado-core-and-rules/${{github.base_ref}}/privado-core && ls -l
+      - name: Check contents (base)
+        run: ls ./privado-core-and-rules/${{github.base_ref}}/privado-core && ls -l
       
-  #     - name: Check contents (head)
-  #       run: ls ./privado-core-and-rules/${{github.head_ref}}/privado-core && ls -l
+      - name: Check contents (head)
+        run: ls ./privado-core-and-rules/${{github.head_ref}}/privado-core && ls -l
 
-  #     - name: Folder to store reports
-  #       run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
+      - name: Folder to store reports
+        run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/stable_results && mkdir ${GITHUB_WORKSPACE}/dev_results && mkdir ${GITHUB_WORKSPACE}/time_results
 
-  #     - name: Trigger metadata
-  #       run: echo " {\"pr_branch\":\"${{github.head_ref}}\", \"push_branch\":\"${{github.ref_name}}\", \"prNumber\":\"${{github.event.number}}\", \"commitID\":\"${GITHUB_SHA}\"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
+      - name: Trigger metadata
+        run: echo " {\"pr_branch\":\"${{github.head_ref}}\", \"push_branch\":\"${{github.ref_name}}\", \"prNumber\":\"${{github.event.number}}\", \"commitID\":\"${GITHUB_SHA}\"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
 
-  #     - name: Download CPU and Memory usage capture tool
-  #       run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
+      - name: Download CPU and Memory usage capture tool
+        run: mkdir ${GITHUB_WORKSPACE}/tools && curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/capture_usage.sh --output ${GITHUB_WORKSPACE}/tools/capture_usage.sh
 
-  #     - name: Start monitoring cpu and memory usage
-  #       run: bash ${GITHUB_WORKSPACE}/tools/capture_usage.sh &
+      - name: Start monitoring cpu and memory usage
+        run: bash ${GITHUB_WORKSPACE}/tools/capture_usage.sh &
 
-  #     # Setup python 3.8 in the pipeline
-  #     - name: Setup Python 3.8
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: "3.8"
+      # Setup python 3.8 in the pipeline
+      - name: Setup Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
 
-  #     # Setup privado environment in the pipeline
-  #     - name: Setup Privado Env
-  #       run: curl -o- https://raw.githubusercontent.com/Privado-Inc/privado-cli/main/install.sh | bash
+      # Setup privado environment in the pipeline
+      - name: Setup Privado Env
+        run: curl -o- https://raw.githubusercontent.com/Privado-Inc/privado-cli/main/install.sh | bash
 
-  #     - name: Clone repository
-  #       uses: actions/checkout@v2
-  #       with:
-  #         owner: ${{matrix.owner}}
-  #         repository: ${{matrix.owner}}/${{matrix.repo_name}}
-  #         path: ./repos/${{matrix.repo_name}}
+      - name: Clone repository
+        uses: actions/checkout@v2
+        with:
+          owner: ${{matrix.owner}}
+          repository: ${{matrix.owner}}/${{matrix.repo_name}}
+          path: ./repos/${{matrix.repo_name}}
 
-  #     - name: change permission
-  #       run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin/privado-core
+      - name: change permission
+        run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin/privado-core
 
-  #     # - name: change git permission
-  #     #   run: git update-index --chmod=+x ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core
+      # - name: change git permission
+      #   run: git update-index --chmod=+x ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core
 
-  #     - name: check file 1
-  #       run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} -lha
+      - name: check file 1
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} -lha
 
-  #     - name: check file 2
-  #       run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target -lha
+      - name: check file 2
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target -lha
 
-  #     - name: check file 3
-  #       run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal -lha
+      - name: check file 3
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal -lha
 
-  #     - name: check file 1
-  #       run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage -lha
+      - name: check file 1
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage -lha
 
-  #     - name: check file
-  #       run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin -lha 
+      - name: check file
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin -lha 
 
-  #     - name: check file
-  #       run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/privado -lha
+      - name: check file
+        run: ls ${GITHUB_WORKSPACE}/privado-core-and-rules/privado -lha
 
-  #     - name: simple scan using
-  #       run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload
+      - name: simple scan using
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload
 
-  #     - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-  #       run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} && { time ./privado-core.bat scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
+      - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}} && { time ./privado-core.bat scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
-  #     - name: Store ${{matrix.repo_name}}.json (stable)
-  #       run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
+      - name: Store ${{matrix.repo_name}}.json (stable)
+        run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
 
-  #     - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
-  #       run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}} && { time ./privado-core.bat scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt
+      - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}} && { time ./privado-core.bat scan --skip-upload -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado "${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}"; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt
 
-  #     - name: Store ${{matrix.repo_name}}.json (dev)
-  #       run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
+      - name: Store ${{matrix.repo_name}}.json (dev)
+        run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
 
-  #     - name: Pass JSON (stable) to the next job
-  #       uses: actions/upload-artifact@master
-  #       with:
-  #         name: ${{matrix.repo_name}}_stable
-  #         path: /home/runner/work/privado-core/privado-core/stable_results/${{matrix.repo_name}}.json
+      - name: Pass JSON (stable) to the next job
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_stable
+          path: /home/runner/work/privado-core/privado-core/stable_results/${{matrix.repo_name}}.json
 
-  #     - name: Pass JSON (dev) to the next job
-  #       uses: actions/upload-artifact@master
-  #       with:
-  #         name: ${{matrix.repo_name}}_dev
-  #         path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
+      - name: Pass JSON (dev) to the next job
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_dev
+          path: /home/runner/work/privado-core/privado-core/dev_results/${{matrix.repo_name}}.json
 
-  #     - name: Upload CPU and memory usage file
-  #       uses: actions/upload-artifact@master
-  #       with:
-  #         name: ${{matrix.repo_name}}_cpu
-  #         path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
+      - name: Upload CPU and memory usage file
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_cpu
+          path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
 
-  #     - name: Upload time stats for repos
-  #       uses: actions/upload-artifact@master
-  #       with:
-  #         name: ${{matrix.repo_name}}_time
-  #         path: /home/runner/work/privado-core/privado-core/time_results
+      - name: Upload time stats for repos
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_time
+          path: /home/runner/work/privado-core/privado-core/time_results
 
-  #     - name: Upload Trigger metadata
-  #       uses: actions/upload-artifact@master
-  #       with:
-  #         name: ${{matrix.repo_name}}_trigger
-  #         path: /home/runner/work/privado-core/privado-core/reports/trigger_metadata.json
+      - name: Upload Trigger metadata
+        uses: actions/upload-artifact@master
+        with:
+          name: ${{matrix.repo_name}}_trigger
+          path: /home/runner/work/privado-core/privado-core/reports/trigger_metadata.json
 
-  # compare_and_send_reports:
-    # needs: scan_repositories
+  compare_and_send_reports:
+    needs: scan_repositories
     
-    # runs-on: ubuntu-latest
-    # steps:
-    #   - uses: actions/download-artifact@master
-    #     with:
-    #       path: ./results
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@master
+        with:
+          path: ./results
 
-    #   - name: Download the comparison tool
-    #     run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
+      - name: Download the comparison tool
+        run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
 
-    #   - name: Check contents of folder
-    #     run: cd ./results/privado-analytics_time/ && ls -lha
+      - name: Check contents of folder
+        run: cd ./results/privado-analytics_time/ && ls -lha
 
-    #   - name: Compare the two results (privado-analytics)
-    #     run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-analytics_time/privado-analytics_time_dev.txt
+      - name: Compare the two results (privado-analytics)
+        run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-analytics_time/privado-analytics_time_dev.txt
 
-    #   - name: Compare the two results (privado-accounts-api)
-    #     run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api_cpu/results_1.txt ./results/privado-accounts-api_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
+      - name: Compare the two results (privado-accounts-api)
+        run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api_cpu/results_1.txt ./results/privado-accounts-api_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
 
-    #   - name: Compare the two results (shift-privacy-left-app)
-    #     run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app_cpu/results_1.txt ./results/shift-privacy-left-app_trigger/trigger_metadata.json ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_stable.txt ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_dev.txt
+      - name: Compare the two results (shift-privacy-left-app)
+        run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app_cpu/results_1.txt ./results/shift-privacy-left-app_trigger/trigger_metadata.json ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_stable.txt ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_dev.txt
 
-    #   - name: Post results to slack
-    #     uses: MeilCli/slack-upload-file@v3
-    #     with:
-    #       slack_token: ${{ secrets.SLACK_TOKEN }}
-    #       channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-    #       file_path: "/home/runner/work/privado-core/privado-core/comparison_report.csv"
-    #       initial_comment: "Comparison Results generated."
-    #       file_type: "csv"
+      - name: Post results to slack
+        uses: MeilCli/slack-upload-file@v3
+        with:
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
+          file_path: "/home/runner/work/privado-core/privado-core/comparison_report.csv"
+          initial_comment: "Comparison Results generated."
+          file_type: "csv"
