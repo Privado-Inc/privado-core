@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v3
             
       - name: check java version
-        run: sudo java -version
+        run: java -version
 
       - name: Install JDK
         uses: actions/setup-java@v3
@@ -66,7 +66,7 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
       - name: simple scan using
-        run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
+        run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
 
       # - name: Upload repositories and rules
       #   uses: actions/upload-artifact@master
