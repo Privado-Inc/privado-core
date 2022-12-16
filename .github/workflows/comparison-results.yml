@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v2
         with:
           owner: Privado-Demo
-          repository: Privado-Demo/privado-analytics
+          repository: Privado-Demo/shift-privacy-left-app
           path: ./repos/privado-analytics
       
       - name: Check file contents
@@ -63,7 +63,7 @@ jobs:
         run: chmod 777 /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
 
       - name: simple scan using
-        run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/privado-analytics -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
+        run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
 
       # - name: Upload repositories and rules
       #   uses: actions/upload-artifact@master
