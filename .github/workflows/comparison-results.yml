@@ -17,8 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
+      - name: change permission
+        run: chmod 777 /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
+      
       - name: check java version
-        run: java -version
+        run: sudo java -version
 
       - name: Install JDK
         uses: actions/setup-java@v3
@@ -64,9 +67,6 @@ jobs:
 
       - name: Build binary 
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
-
-      - name: change permission
-        run: chmod 777 /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin/privado-core
 
       - name: simple scan using
         run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && sudo ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
