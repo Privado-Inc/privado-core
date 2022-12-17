@@ -18,33 +18,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.cache
-import ai.privado.utility.Utilities._
 
 import scala.collection.mutable
 
-/** Cache Used to store Application/Scan specific information
-  */
-object AppCache {
+object TaggerCache {
 
-  var localScanPath: String       = ""
-  var scanPath: String            = ""
-  var repoName: String            = ""
-  var privadoVersionMain: String  = ""
-  var fpByOverlappingDE           = 0
-  var fpByDerivedSourcePresence   = 0
-  var groupingByLineNumber        = 0
-  var totalFlowFromReachableBy    = 0
-  var totalFlowAfterThisFiltering = 0
-  var totalFlows                  = 0
-  val fpMap                       = mutable.HashMap[String, Int]()
-  val totalMap                    = mutable.HashMap[String, Int]()
+  val typeDeclMemberNameCache = mutable.HashMap[String, mutable.HashMap[String, String]]()
 
-  def init(scanPath: String) = {
-    this.scanPath = scanPath
-    this.localScanPath = getRepoScanPath(scanPath)
-    this.repoName = this.localScanPath.split("[/\\\\]").last
-  }
 }

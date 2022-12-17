@@ -36,6 +36,10 @@ case class PrivadoInput(
   ignoreInternalRules: Boolean = false,
   skipDownloadDependencies: Boolean = false,
   disableDeDuplication: Boolean = false,
+  disableRunTimeSemantics: Boolean = false,
+  disableThisFiltering: Boolean = false,
+  disableFlowSeparationByDataElement: Boolean = false,
+  disable2ndLevelClosure: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
@@ -44,25 +48,33 @@ case class PrivadoInput(
 )
 
 object CommandConstants {
-  val SCAN                       = "scan"
-  val INTERNAL_CONFIG            = "internal-config"
-  val INTERNAL_CONFIG_ABBR       = "ic"
-  val EXTERNAL_CONFIG            = "external-config"
-  val EXTERNAL_CONFIG_ABBR       = "ec"
-  val IGNORE_DEFAULT_RULES       = "ignore-default-rules"
-  val IGNORE_DEFAULT_RULES_ABBR  = "i"
-  val SKIP_DOWNLOAD_DEP          = "skip-download-dependencies"
-  val SKIP_DOWNLOAD_DEP_ABBR     = "sdd"
-  val DISABLE_DEDUPLICATION      = "disable-deduplication"
-  val DISABLE_DEDUPLICATION_ABBR = "dd"
-  val IGNORE_EXCLUDE_RULES       = "ignore-exclude-rules"
-  val IGNORE_EXCLUDE_RULES_ABBR  = "ier"
-  val UPLOAD                     = "upload"
-  val UPLOAD_ABBR                = "u"
-  val SKIP_UPLOAD                = "skip-upload"
-  val SKIP_UPLOAD_ABBR           = "su"
-  val VALIDATE                   = "validate"
-  val ENABLE_JS                  = "enablejs"
+  val SCAN                                         = "scan"
+  val INTERNAL_CONFIG                              = "internal-config"
+  val INTERNAL_CONFIG_ABBR                         = "ic"
+  val EXTERNAL_CONFIG                              = "external-config"
+  val EXTERNAL_CONFIG_ABBR                         = "ec"
+  val IGNORE_DEFAULT_RULES                         = "ignore-default-rules"
+  val IGNORE_DEFAULT_RULES_ABBR                    = "i"
+  val SKIP_DOWNLOAD_DEP                            = "skip-download-dependencies"
+  val SKIP_DOWNLOAD_DEP_ABBR                       = "sdd"
+  val DISABLE_DEDUPLICATION                        = "disable-deduplication"
+  val DISABLE_DEDUPLICATION_ABBR                   = "dd"
+  val DISABLE_RUNTIME_SEMANTICS                    = "disable-runtime-semantics"
+  val DISABLE_RUNTIME_SEMANTICS_ABBR               = "drs"
+  val DISABLE_THIS_FILTERING                       = "disable-this-filtering"
+  val DISABLE_THIS_FILTERING_ABBR                  = "dtf"
+  val DISABLE_FLOW_SEPERATION_BY_DATA_ELEMENT      = "disable-flow-separation-by-data-element"
+  val DISABLE_FLOW_SEPERATION_BY_DATA_ELEMENT_ABBR = "dfsde"
+  val DISABLE_2ND_LEVEL_CLOSURE                    = "disable-2nd-level-closure"
+  val DISABLE_2ND_LEVEL_CLOSURE_ABBR               = "d2lc"
+  val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
+  val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
+  val UPLOAD                                       = "upload"
+  val UPLOAD_ABBR                                  = "u"
+  val SKIP_UPLOAD                                  = "skip-upload"
+  val SKIP_UPLOAD_ABBR                             = "su"
+  val VALIDATE                                     = "validate"
+  val ENABLE_JS                                    = "enablejs"
 }
 
 object CommandParser {
@@ -113,6 +125,26 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(disableDeDuplication = true))
               .text("Disable De-Duplication of dataflow"),
+            opt[Unit](CommandConstants.DISABLE_RUNTIME_SEMANTICS)
+              .abbr(CommandConstants.DISABLE_RUNTIME_SEMANTICS_ABBR)
+              .optional()
+              .action((_, c) => c.copy(disableRunTimeSemantics = true))
+              .text("Disable runtime semantics"),
+            opt[Unit](CommandConstants.DISABLE_THIS_FILTERING)
+              .abbr(CommandConstants.DISABLE_THIS_FILTERING_ABBR)
+              .optional()
+              .action((_, c) => c.copy(disableThisFiltering = true))
+              .text("Disable 'this' filtering"),
+            opt[Unit](CommandConstants.DISABLE_FLOW_SEPERATION_BY_DATA_ELEMENT)
+              .abbr(CommandConstants.DISABLE_FLOW_SEPERATION_BY_DATA_ELEMENT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(disableFlowSeparationByDataElement = true))
+              .text("Disable flow separation by data element"),
+            opt[Unit](CommandConstants.DISABLE_2ND_LEVEL_CLOSURE)
+              .abbr(CommandConstants.DISABLE_2ND_LEVEL_CLOSURE_ABBR)
+              .optional()
+              .action((_, c) => c.copy(disable2ndLevelClosure = true))
+              .text("Disable 2nd level closure"),
             opt[Unit](CommandConstants.ENABLE_JS)
               .abbr(CommandConstants.ENABLE_JS)
               .optional()

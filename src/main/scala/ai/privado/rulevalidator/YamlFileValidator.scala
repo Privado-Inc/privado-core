@@ -14,14 +14,14 @@ import scala.collection.mutable
 import scala.io.Source
 import scala.jdk.CollectionConverters.SetHasAsScala
 
-
 object YamlFileValidator {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val SCHEMA_DIR_PATH     = "/ai/privado/rulevalidator/schema/"
   private val JSON_SCHEMA_VERSION = SpecVersion.VersionFlag.V7
-  private val NON_PATTERN_RULES = Set[String](CatLevelOne.THREATS.name, CatLevelOne.POLICIES.name, ConfigRuleType.SEMANTICS.toString)
+  private val NON_PATTERN_RULES =
+    Set[String](CatLevelOne.THREATS.name, CatLevelOne.POLICIES.name, ConfigRuleType.SEMANTICS.toString)
   private val SOURCES = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sources.json")).mkString
   private val SINKS   = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinks.json")).mkString
   private val POLICIES =
@@ -123,11 +123,11 @@ object YamlFileValidator {
       matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
         case Left(()) => Right(())
         case Right((typeOfRule: String, schemaFile: String)) =>
-          if (NON_PATTERN_RULES.contains(typeOfRule)){
+          if (NON_PATTERN_RULES.contains(typeOfRule)) {
             Left(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
           } else {
             validateRegexPattern(yamlAsJson, typeOfRule) match {
-              case Right(_) => Left(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
+              case Right(_)    => Left(ruleFile.validateJsonFile(schemaFile, yamlAsJson))
               case Left(value) => Left(value)
             }
           }
@@ -150,9 +150,14 @@ object YamlFileValidator {
     * @param callerCommand
     *   String value to govern pretty print of validation messages
     * @return
-    *   Unit in case of no matching schema is found, else tuple of (RuleType: String, SchemaFilePath: String) for matching type
+    *   Unit in case of no matching schema is found, else tuple of (RuleType: String, SchemaFilePath: String) for
+    *   matching type
     */
-  def matchSchemaFile(ruleFile: File, ruleJsonTree: JsonNode, callerCommand: String = ""): Either[Unit, (String, String)] = {
+  def matchSchemaFile(
+    ruleFile: File,
+    ruleJsonTree: JsonNode,
+    callerCommand: String = ""
+  ): Either[Unit, (String, String)] = {
 
     val catLevelOneKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
@@ -189,7 +194,7 @@ object YamlFileValidator {
 
   def validateRegexPattern(content: JsonNode, typeOfRule: String): Either[mutable.Set[String], Unit] = {
     val contentJson = ujson.read(content.toString)(typeOfRule).arr.toList
-    val errors = mutable.Set[String]()
+    val errors      = mutable.Set[String]()
     contentJson.foreach(value => {
       value("patterns").arr.toList.foreach(pattern => {
         try {
@@ -231,7 +236,8 @@ object YamlFileValidator {
       file
         .loadSchema(schemaFile)
         .validate(jsonObj)
-        .asScala.foreach(error => errors.addOne(error.toString))
+        .asScala
+        .foreach(error => errors.addOne(error.toString))
       errors
     }
   }
