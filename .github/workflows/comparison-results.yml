@@ -177,19 +177,19 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_cpu
-          path: ${{GITHUB_WORKSPACE}}/tools/results_1.txt
+          path: ${GITHUB_WORKSPACE}/tools/results_1.txt
 
       - name: Upload time stats for repos
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_time
-          path: ${{GITHUB_WORKSPACE}}/time_results
+          path: ${GITHUB_WORKSPACE}/time_results
 
       - name: Upload Trigger metadata
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_trigger
-          path: ${{GITHUB_WORKSPACE}}/reports/trigger_metadata.json
+          path: ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
 
   # compare_and_send_reports:
   #   needs: scan_repositories
