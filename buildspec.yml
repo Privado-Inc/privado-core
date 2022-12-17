@@ -1,7 +1,7 @@
 version: 0.2
 
 env:
-    shell: bash
+  shell: bash
 phases:
   pre_build:
     commands:

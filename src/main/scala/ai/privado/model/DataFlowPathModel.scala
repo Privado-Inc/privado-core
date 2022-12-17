@@ -22,10 +22,13 @@
 
 package ai.privado.model
 
+import io.joern.dataflowengineoss.language.Path
+
 case class DataFlowPathModel(
   sourceId: String,
   sinkId: String,
   sinkSubCategory: String,
   sinkNodeType: String,
-  pathId: String
+  pathId: String,
+  dataflowsMapByType: Map[String, Path]
 )

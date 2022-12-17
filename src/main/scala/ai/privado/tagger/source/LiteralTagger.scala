@@ -33,7 +33,15 @@ class LiteralTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     // Step 1.2
-    val literals = cpg.literal.code("\"(" + ruleInfo.combinedRulePattern + ")\"").l
+    // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
+    val literals = cpg
+      .call("(?:add|get|put|pop).*")
+      .argument
+      .where(_.argumentIndex(1))
+      .isLiteral
+      .code("\"(" + ruleInfo.combinedRulePattern + ")\"")
+      .whereNot(_.code(".*\\s.*"))
+      .l
     literals.foreach(literal => {
       storeForTag(builder, literal)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
       addRuleTags(builder, literal, ruleInfo)
