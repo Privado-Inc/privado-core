@@ -36,13 +36,6 @@ jobs:
           repository: ${{matrix.owner}}/privado-core
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
-
-      # - name: Clone repository
-      #   uses: actions/checkout@v2
-      #   with:
-      #     owner: Privado-Demo
-      #     repository: Privado-Demo/shift-privacy-left-app
-      #     path: ./repos/shift-privacy-left-app
       
       - name: Check file contents
         run: ls -l ${GITHUB_WORKSPACE}/temp/
@@ -50,20 +43,11 @@ jobs:
       - name: Build binary 
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
 
-      # - name: simple scan using
-      #   run: cd /${GITHUB_WORKSPACE}/temp/${{matrix.ref}}/target/universal/stage/bin && ./privado-core scan ${GITHUB_WORKSPACE}/repos/shift-privacy-left-app -ic ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} --skip-upload
-
-      # - name: Upload repositories and rules
-      #   uses: actions/upload-artifact@master
-      #   with:
-      #     name: privado-rules
-      #     path: /home/runner/work/privado-core/privado-core/temp/privado
-
       - name: Upload binary
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.ref}}-binary
-          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}
+          path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage
 
   scan_repositories:
     needs: build_privado
@@ -113,13 +97,13 @@ jobs:
         uses: actions/download-artifact@master
         with:
           name: ${{github.base_ref}}-binary
-          path: ./privado-core-and-rules/${{github.base_ref}}/privado-core
+          path: ./privado-core-and-rules/${{github.base_ref}}/privado-core-binary
 
       - name: Download head binary 
         uses: actions/download-artifact@master
         with:
           name: ${{github.head_ref}}-binary
-          path: ./privado-core-and-rules/${{github.head_ref}}/privado-core
+          path: ./privado-core-and-rules/${{github.head_ref}}/privado-core-binary
 
       - name: Check contents (base)
         run: ls ./privado-core-and-rules/${{github.base_ref}}/privado-core && ls -l
@@ -157,22 +141,22 @@ jobs:
           path: ./repos/${{matrix.repo_name}}
 
       - name: change permission of stable privado-core
-        run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin/privado-core
+        run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core-binary/bin/privado-core
 
       - name: change permission of dev privado-core
-        run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core/target/universal/stage/bin/privado-core
+        run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core-binary/bin/privado-core
 
       # - name: simple scan using
       #   run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin && ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (stable) using privado scan
-        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_stable.txt
 
       - name: Store ${{matrix.repo_name}}.json (stable)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/stable_results/${{matrix.repo_name}}.json
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (dev) using privado scan
-        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core/target/universal/stage/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt
+        run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_dev.txt
 
       - name: Store ${{matrix.repo_name}}.json (dev)
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/dev_results/${{matrix.repo_name}}.json
