@@ -246,7 +246,7 @@ jobs:
     steps: 
 
     - name: Download the comparison tool
-        run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
+      run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
 
     - name: Download ${{github.base_ref}} JSON File (${{matrix.repo_name}}) 
     - uses: action/download-artifact@master
