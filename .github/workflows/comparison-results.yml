@@ -285,8 +285,8 @@ jobs:
       run: echo ${{strategy.job-total}}
 
     - name: Post results to slack
-      if: strategy.job-index == strategy.job-total
       uses: MeilCli/slack-upload-file@v3
+      if: strategy.job-index == strategy.job-total
       with:
         slack_token: ${{ secrets.SLACK_TOKEN }}
         channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
