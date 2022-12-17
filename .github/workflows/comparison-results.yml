@@ -153,7 +153,7 @@ jobs:
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_${{github.base_ref}}.txt
 
       - name: Store ${{matrix.repo_name}}.json (${{github.base_ref}})
-        run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{gitbub.base_ref}}/privado.json
+        run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}}/privado.json
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (${{github.head_ref}}) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_${{github.head_ref}}.txt
@@ -165,7 +165,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_stable
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{gitbub.base_ref}}/privado.json
+          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}}/privado.json
 
       - name: Pass JSON (${{github.head_ref}}) to the next job
         uses: actions/upload-artifact@master
