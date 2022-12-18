@@ -26,7 +26,7 @@ jobs:
         run: echo $si
 
       - name: check
-        if: strategy.job-total == $[]
+        if: strategy.job-total == $si
         run: echo hello
           
       - name: Install JDK-18
