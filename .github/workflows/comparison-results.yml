@@ -233,8 +233,8 @@ jobs:
   compare-and-send-reports: 
     needs: scan_repositories
     strategy:
+      max-parallel: 1
       matrix:
-        max-parallel: 1
         repo_name:
           [
             "privado-analytics",
