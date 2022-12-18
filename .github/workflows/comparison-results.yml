@@ -20,7 +20,7 @@ jobs:
       - name: check22
         run: echo ${{strategy.job-index}}
 
-       - name: check
+      - name: check
         if: strategy.job-total - 1 == strategy.job-index 
         run: echo hello
           
