@@ -155,6 +155,12 @@ jobs:
       - name: Store ${{matrix.repo_name}}.json (${{github.base_ref}})
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}}/privado.json
 
+      - name: check 2
+        run: ls ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results -lha
+
+      - name: check 1
+        run: ls ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}} -lha
+
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (${{github.head_ref}}) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_${{github.head_ref}}.txt
 
