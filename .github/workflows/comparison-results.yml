@@ -250,31 +250,31 @@ jobs:
         run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
 
       - name: Download ${{github.base_ref}} JSON File (${{matrix.repo_name}}) 
-        uses: action/download-artifact@master
+        uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_stable
           path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}
 
       - name: Download ${{github.head_ref}} JSON File (${{matrix.repo_name}})
-        uses: action/download-artifact@master
+        uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_dev
           path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/{{github.head_ref}}
 
       - name: Download ${{github.head_ref}} Time Result (${{matrix.repo_name}})
-        uses: action/download-artifact@master
+        uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_time
           path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}
 
       - name: Download ${{github.head_ref}} CPU and Memory Result (${{matrix.repo_name}})
-        uses: action/download-artifact@master
+        uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_cpu
           path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}
 
       - name: Download ${{github.head_ref}} Trigger Metadata Result (${{matrix.repo_name}})
-        uses: action/download-artifact@master
+        uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_trigger
           path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}
