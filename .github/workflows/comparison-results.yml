@@ -286,7 +286,7 @@ jobs:
           path: ./${{matrix.repo_name}}
 
       - name: Compare Result (${{matrix.repo_name}})
-        run: python ./compare.py ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}/privado.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}/privado-.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/results_1.txt ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/trigger_metadata.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{matrix.repo_name}}_time_${{github.base_ref}}.txt ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{matrix.repo_name}}_time_${{github.base_ref}}.txt
+        run: python ./compare.py ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}/privado.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}/privado.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/results_1.txt ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/trigger_metadata.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{matrix.repo_name}}_time_${{github.base_ref}}.txt ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{matrix.repo_name}}_time_${{github.base_ref}}.txt
 
       - name: print
         run: echo ${{strategy.job-total}}
