@@ -308,7 +308,7 @@ jobs:
       #     file_type: "csv"
 
   send-result:
-    needs: compare-result
+    needs: compare-reports
     runs-on: ubuntu-latest
     steps: 
       - uses: actions/checkout@v3
