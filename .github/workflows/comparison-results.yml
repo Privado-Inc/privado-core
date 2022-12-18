@@ -259,31 +259,31 @@ jobs:
         uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_stable
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}
+          path: ./${{matrix.repo_name}}/${{github.base_ref}}
 
       - name: Download ${{github.head_ref}} JSON File (${{matrix.repo_name}})
         uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_dev
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/{{github.head_ref}}
+          path: ./${{matrix.repo_name}}/{{github.head_ref}}
 
       - name: Download ${{github.head_ref}} Time Result (${{matrix.repo_name}})
         uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_time
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}
+          path: ./${{matrix.repo_name}}
 
       - name: Download ${{github.head_ref}} CPU and Memory Result (${{matrix.repo_name}})
         uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_cpu
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}
+          path: ./${{matrix.repo_name}}
 
       - name: Download ${{github.head_ref}} Trigger Metadata Result (${{matrix.repo_name}})
         uses: actions/download-artifact@master
         with: 
           name: ${{matrix.repo_name}}_trigger
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}
+          path: ./${{matrix.repo_name}}
 
       - name: Compare Result (${{matrix.repo_name}})
         run: python ./compare.py ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}/privado.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{github.base_ref}}/privado-.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/results_1.txt ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/trigger_metadata.json ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{matrix.repo_name}}_time_${{github.base_ref}}.txt ${GITHUB_WORKSPACE}/${{matrix.repo_name}}/${{matrix.repo_name}}_time_${{github.base_ref}}.txt
