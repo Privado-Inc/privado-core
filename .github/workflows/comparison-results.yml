@@ -21,7 +21,7 @@ jobs:
         run: echo ${{strategy.job-index}}
 
       - name: check
-        if: {{strategy.job-total - 1 == strategy.job-index }}
+        if: $((strategy.job-total - 1 == strategy.job-index ))
         run: echo hello
           
       - name: Install JDK-18
