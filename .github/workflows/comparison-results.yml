@@ -234,7 +234,7 @@ jobs:
     needs: scan_repositories
     strategy:
       matrix:
-        max_parallel: 1
+        max_parallel: 2
         repo_name:
           [
             "privado-analytics",
