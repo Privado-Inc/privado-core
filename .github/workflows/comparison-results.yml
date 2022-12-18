@@ -295,7 +295,7 @@ jobs:
         uses: actions/upload-artifact@master
         with: 
           name: final-report
-          path: home/runner/work/privado-core/privado-core/comparison_report.csv
+          path: /home/runner/work/privado-core/privado-core/comparison_report.csv
 
       # - name: Post results to slack
       #   uses: MeilCli/slack-upload-file@v3
