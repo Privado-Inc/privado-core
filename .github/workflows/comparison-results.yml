@@ -16,16 +16,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-
-      - name: change
-        run: ::set-env name=si::$((${{strategy.job-toal}} - 1))
-
-      - name: check22
-        run: echo $si
-
-      # - name: check
-      #   if: strategy.job-total == $si
-      #   run: echo hello
           
       - name: Install JDK-18
         uses: actions/setup-java@v3
@@ -246,7 +236,7 @@ jobs:
   #         initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
   #         file_type: "csv"
   
-  compare-and-send-reports: 
+  compare-reports: 
     needs: scan_repositories
     strategy:
       max-parallel: 1
@@ -301,12 +291,42 @@ jobs:
       - name: print
         run: echo ${{strategy.job-total}}
 
+      - name: Upload Report for Next Job
+        uses: actions/upload-artifact@mater
+        with: 
+          name: final-report
+          path: ${GITHUB_WORKSPACE}/comparison_report.csv
+
+      # - name: Post results to slack
+      #   uses: MeilCli/slack-upload-file@v3
+      #   if: strategy.job-index == strategy.job-total
+      #   with:
+      #     slack_token: ${{ secrets.SLACK_TOKEN }}
+      #     channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
+      #     file_path: "${GITHUB_WORKSPACE}/comparison_report.csv"
+      #     initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
+      #     file_type: "csv"
+
+  send-result:
+    needs: compare-result
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v3
+
+      - name: Download Final Report
+        uses: actions/download-artifact@master
+        with:
+          name: final-report
+          path: ./report
+      
+      - name: check
+        run: ls /home/runner/work/privado-core/privado-core/report -lha
+      
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
-        if: strategy.job-index == strategy.job-total
         with:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-          file_path: "${GITHUB_WORKSPACE}/comparison_report.csv"
+          file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
           initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
           file_type: "csv"
