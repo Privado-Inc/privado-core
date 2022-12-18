@@ -171,31 +171,31 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_stable
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}}/privado.json
+          path: /home/runner/work/privado-core/privado-core/${{matrix.repo_name}}_results/${{github.base_ref}}/privado.json
 
       - name: Pass JSON (${{github.head_ref}}) to the next job
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_dev
-          path: ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.head_ref}}/privado.json
+          path: /home/runner/work/privado-core/privado-core/${{matrix.repo_name}}_results/${{github.head_ref}}/privado.json
           
       - name: Upload CPU and memory usage file
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_cpu
-          path: ${GITHUB_WORKSPACE}/tools/results_1.txt
+          path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
 
       - name: Upload time stats for repos
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_time
-          path: ${GITHUB_WORKSPACE}/time_results
+          path: /home/runner/work/privado-core/privado-core/time_results
 
       - name: Upload Trigger metadata
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_trigger
-          path: ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
+          path: /home/runner/work/privado-core/privado-core/reports/trigger_metadata.json
 
   # compare_and_send_reports:
   #   needs: scan_repositories
