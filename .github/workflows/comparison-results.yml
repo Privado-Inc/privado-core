@@ -14,20 +14,18 @@ jobs:
         ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
           
     runs-on: ubuntu-latest
-    env: 
-      size: ${{strategy.job-total}}
     steps:
       - uses: actions/checkout@v3
 
       - name: change
-        run: ::set-env name=si::$(($size+200))
+        run: ::set-env name=si::$((${{strtegy.job-toal}} - 1))
 
       - name: check22
         run: echo $si
 
-      - name: check
-        if: strategy.job-total == $si
-        run: echo hello
+      # - name: check
+      #   if: strategy.job-total == $si
+      #   run: echo hello
           
       - name: Install JDK-18
         uses: actions/setup-java@v3
