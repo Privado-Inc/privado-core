@@ -112,7 +112,7 @@ jobs:
       #   run: ls ./privado-core-and-rules/${{github.head_ref}}/privado-core-binary && ls -l
 
       - name: Create Folder to store reports
-        run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}} && mkdir ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.head_ref}} && mkdir ${GITHUB_WORKSPACE}/time_results
+        run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir -p ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}} && mkdir -p ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.head_ref}} && mkdir ${GITHUB_WORKSPACE}/time_results
 
       - name: Trigger metadata
         run: echo " {\"pr_branch\":\"${{github.head_ref}}\", \"push_branch\":\"${{github.ref_name}}\", \"prNumber\":\"${{github.event.number}}\", \"commitID\":\"${GITHUB_SHA}\"}" > ${GITHUB_WORKSPACE}/reports/trigger_metadata.json && cat ${GITHUB_WORKSPACE}/reports/trigger_metadata.json
