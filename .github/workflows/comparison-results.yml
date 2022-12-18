@@ -244,6 +244,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps: 
+      - uses: actions/checkout@v3
 
       - name: Download the comparison tool
         run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
