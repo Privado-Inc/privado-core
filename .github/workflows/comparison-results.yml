@@ -10,7 +10,7 @@ jobs:
   build_privado:
     strategy:
       matrix:
-        owner: ["karan-batavia"]
+        owner: ["Privado-Inc"]
         ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
           
     runs-on: ubuntu-latest
@@ -37,8 +37,6 @@ jobs:
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
       
-      # - name: Check file contents
-      #   run: ls -l ${GITHUB_WORKSPACE}/temp/
 
       - name: Build Privado binary for ${{matrix.ref}} branch
         run: cd ${GITHUB_WORKSPACE}/temp/${{matrix.ref}} && ~/bin/sbt -java-home $JAVA_HOME clean && ~/bin/sbt -java-home $JAVA_HOME stage 
@@ -105,11 +103,6 @@ jobs:
           name: ${{github.head_ref}}-binary
           path: ./privado-core-and-rules/${{github.head_ref}}/privado-core-binary
 
-      # - name: Check contents (base)
-      #   run: ls ./privado-core-and-rules/${{github.base_ref}}/privado-core-binary && ls -l
-      
-      # - name: Check contents (head)
-      #   run: ls ./privado-core-and-rules/${{github.head_ref}}/privado-core-binary && ls -l
 
       - name: Create Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir -p ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}} && mkdir -p ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.head_ref}} && mkdir ${GITHUB_WORKSPACE}/time_results
@@ -146,20 +139,11 @@ jobs:
       - name: change permission of dev privado-core
         run: chmod 777 ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core-binary/bin/privado-core
 
-      # - name: simple scan using
-      #   run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core/target/universal/stage/bin && ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload
-
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (${{github.base_ref}}) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.base_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_${{github.base_ref}}.txt
 
       - name: Store ${{matrix.repo_name}}.json (${{github.base_ref}})
         run: cat ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}}/.privado/privado.json > ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}}/privado.json
-
-      - name: check 2
-        run: ls ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results -lha
-
-      - name: check 1
-        run: ls ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{github.base_ref}} -lha
 
       - name: Scan ${{matrix.owner}}/${{matrix.repo_name}} (${{github.head_ref}}) using privado scan
         run: cd ${GITHUB_WORKSPACE}/privado-core-and-rules/${{github.head_ref}}/privado-core-binary/bin && { time ./privado-core scan ${GITHUB_WORKSPACE}/repos/${{matrix.repo_name}} -ic ${GITHUB_WORKSPACE}/privado-core-and-rules/privado --skip-upload; } 2> ${GITHUB_WORKSPACE}/time_results/${{matrix.repo_name}}_time_${{github.head_ref}}.txt
@@ -196,45 +180,6 @@ jobs:
         with:
           name: ${{matrix.repo_name}}_trigger
           path: /home/runner/work/privado-core/privado-core/reports/trigger_metadata.json
-
-  # compare_and_send_reports:
-  #   needs: scan_repositories
-    
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/download-artifact@master
-  #       with:
-  #         path: ./results
-
-  #     - name: Download the comparison tool
-  #       run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
-
-  #     - name: Check contents of folder
-  #       run: cd ./results/privado-analytics_time/ && ls -lha
-
-  #     - name: stable content
-  #       run: cat ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt
-
-  #     - name: dev content
-  #       run: cat ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
-
-  #     - name: Compare the two results (privado-analytics)
-  #       run: python ./compare.py ./results/privado-analytics_stable/privado-analytics.json ./results/privado-analytics_dev/privado-analytics.json ./results/privado-analytics_cpu/results_1.txt ./results/privado-analytics_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-analytics_time/privado-analytics_time_dev.txt
-
-  #     - name: Compare the two results (privado-accounts-api)
-  #       run: python ./compare.py ./results/privado-accounts-api_stable/privado-accounts-api.json ./results/privado-accounts-api_dev/privado-accounts-api.json ./results/privado-accounts-api_cpu/results_1.txt ./results/privado-accounts-api_trigger/trigger_metadata.json ./results/privado-accounts-api_time/privado-accounts-api_time_stable.txt ./results/privado-accounts-api_time/privado-accounts-api_time_dev.txt
-
-  #     - name: Compare the two results (shift-privacy-left-app)
-  #       run: python ./compare.py ./results/shift-privacy-left-app_stable/shift-privacy-left-app.json ./results/shift-privacy-left-app_dev/shift-privacy-left-app.json ./results/shift-privacy-left-app_cpu/results_1.txt ./results/shift-privacy-left-app_trigger/trigger_metadata.json ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_stable.txt ./results/shift-privacy-left-app_time/shift-privacy-left-app_time_dev.txt
-
-  #     - name: Post results to slack
-  #       uses: MeilCli/slack-upload-file@v3
-  #       with:
-  #         slack_token: ${{ secrets.SLACK_TOKEN }}
-  #         channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-  #         file_path: "/home/runner/work/privado-core/privado-core/comparison_report.csv"
-  #         initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
-  #         file_type: "csv"
   
   compare-reports: 
     needs: scan_repositories
@@ -297,16 +242,6 @@ jobs:
           name: final-report
           path: /home/runner/work/privado-core/privado-core/comparison_report.csv
 
-      # - name: Post results to slack
-      #   uses: MeilCli/slack-upload-file@v3
-      #   if: strategy.job-index == strategy.job-total
-      #   with:
-      #     slack_token: ${{ secrets.SLACK_TOKEN }}
-      #     channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-      #     file_path: "${GITHUB_WORKSPACE}/comparison_report.csv"
-      #     initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
-      #     file_type: "csv"
-
   send-result:
     needs: compare-reports
     runs-on: ubuntu-latest
@@ -319,14 +254,11 @@ jobs:
           name: final-report
           path: ./report
       
-      - name: check
-        run: ls /home/runner/work/privado-core/privado-core/report -lha
-      
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
         with:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
           file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}}"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \n PR link - https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
           file_type: "csv"
