@@ -30,9 +30,8 @@ jobs:
         run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
       - name: Clone privado-core/${{matrix.ref}}
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          owner: ${{matrix.owner}}
           repository: ${{matrix.owner}}/privado-core
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
@@ -84,9 +83,8 @@ jobs:
       #   run: javac -version
 
       - name: Clone Privado-Inc/privado
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          owner: "Privado-Inc"
           repository: "Privado-Inc/privado"
           path: ./privado-core-and-rules/privado
 
@@ -127,9 +125,8 @@ jobs:
         run: curl -o- https://raw.githubusercontent.com/Privado-Inc/privado-cli/main/install.sh | bash
 
       - name: Clone repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
-          owner: ${{matrix.owner}}
           repository: ${{matrix.owner}}/${{matrix.repo_name}}
           path: ./repos/${{matrix.repo_name}}
 
