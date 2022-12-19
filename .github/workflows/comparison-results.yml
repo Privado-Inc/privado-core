@@ -10,7 +10,7 @@ jobs:
   build_privado:
     strategy:
       matrix:
-        owner: ["Privado-Demo"]
+        owner: ["Privado-Inc"]
         ref: ["${{github.head_ref}}", "${{github.base_ref}}"]
           
     runs-on: ubuntu-latest
