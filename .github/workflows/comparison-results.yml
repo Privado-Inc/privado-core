@@ -1,10 +1,10 @@
 name: Monitoring Stability and Comparing Results
-## Heyy, comparison-result-generation branch identity
 
 # Triggers when a pull_request or a push action is configured on master branch
 on:
   pull_request:
-    branches: ["main", "comparison-result-generation"]
+    branches:
+      - "**"
 
 jobs:
   build_privado:
@@ -32,7 +32,6 @@ jobs:
       - name: Clone privado-core/${{matrix.ref}}
         uses: actions/checkout@v2
         with:
-          owner: ${{matrix.owner}}
           repository: ${{matrix.owner}}/privado-core
           path: ./temp/${{matrix.ref}}
           ref: ${{matrix.ref}} 
@@ -86,7 +85,6 @@ jobs:
       - name: Clone Privado-Inc/privado
         uses: actions/checkout@v2
         with:
-          owner: "Privado-Inc"
           repository: "Privado-Inc/privado"
           path: ./privado-core-and-rules/privado
 
@@ -129,7 +127,6 @@ jobs:
       - name: Clone repository
         uses: actions/checkout@v2
         with:
-          owner: ${{matrix.owner}}
           repository: ${{matrix.owner}}/${{matrix.repo_name}}
           path: ./repos/${{matrix.repo_name}}
 
@@ -260,5 +257,5 @@ jobs:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
           file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \n PR link - https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
           file_type: "csv"
