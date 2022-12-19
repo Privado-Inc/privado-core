@@ -1,5 +1,4 @@
 name: Monitoring Stability and Comparing Results
-## Heyy, comparison-result-generation branch identity
 
 # Triggers when a pull_request or a push action is configured on master branch
 on:
