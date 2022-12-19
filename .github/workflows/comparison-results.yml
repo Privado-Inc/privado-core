@@ -17,6 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
           
+      - name: Replace artifact names
+        run: result=$(echo ${{github.base_ref}} | sed "s/\//-/g") && echo $result
+      
       - name: Install JDK-18
         uses: actions/setup-java@v3
         with:
