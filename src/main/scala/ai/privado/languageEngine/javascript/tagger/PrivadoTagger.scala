@@ -45,20 +45,26 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     val sourceRules = rules.sources
     logger.info("Starting tagging")
 
-    val literalTagger = new LiteralTagger(cpg)
-    val apiTagger     = new APITagger(cpg)
+    val literalTagger     = new LiteralTagger(cpg)
+    val identifierTagger  = new IdentifierTagger(cpg)
+    val apiTagger         = new APITagger(cpg)
+    val regularSinkTagger = new RegularSinkTagger(cpg)
+    println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
     sourceRules.foreach(rule => {
       literalTagger.setRuleAndApply(rule)
     })
-    println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-    // new LiteralTagger(cpg).createAndApply()
 
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
-    new IdentifierTagger(cpg).createAndApply()
+    sourceRules.foreach(rule => {
+      identifierTagger.setRuleAndApply(rule)
+    })
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
-    new RegularSinkTagger(cpg).createAndApply()
+
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    // new APITagger(cpg).createAndApply()
+
     rules.sinks
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .foreach(rule => apiTagger.setRuleAndApply(rule))
