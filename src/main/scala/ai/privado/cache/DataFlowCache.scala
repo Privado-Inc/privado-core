@@ -29,6 +29,7 @@ import ai.privado.semantic.Language.finder
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.semanticcpg.language._
 
+import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
@@ -40,8 +41,7 @@ object DataFlowCache {
 
   private lazy val finalDataflow: List[DataFlowPathModel] = {
     if (!ScanProcessor.config.disableDeDuplication)
-      setDataflowWithdedup
-    println(dataflow)
+      setDataflowWithdedup()
     dataflow.values.flatMap(_.values).flatten.toList
   }
 
@@ -63,9 +63,10 @@ object DataFlowCache {
 
   def getDataflow: List[DataFlowPathModel] = finalDataflow
 
-  private def setDataflowWithdedup = {
+  private def setDataflowWithdedup(): Unit = {
 
-    def addToMap(dataFlowPathModel: DataFlowPathModel) = {
+    println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
+    def addToMap(dataFlowPathModel: DataFlowPathModel): Unit = {
 
       val pathId               = dataFlowPathModel.pathId
       val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
