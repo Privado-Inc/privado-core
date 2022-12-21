@@ -22,9 +22,11 @@
 
 package ai.privado.cache
 
+import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.DataFlowPathModel
 import ai.privado.semantic.Language.finder
+import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.semanticcpg.language._
 
 import scala.collection.mutable
@@ -32,15 +34,22 @@ import scala.collection.mutable.ListBuffer
 
 object DataFlowCache {
 
-  val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
+  var dataflowsMapByType: Map[String, Path] = Map[String, Path]()
+
+  private val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
+
+  private lazy val finalDataflow: List[DataFlowPathModel] = {
+    if (!ScanProcessor.config.disableDeDuplication)
+      setDataflowWithdedup
+    println(dataflow)
+    dataflow.values.flatMap(_.values).flatten.toList
+  }
 
   def setDataflow(dataFlowPathModel: DataFlowPathModel): Unit = {
 
     val pathId               = dataFlowPathModel.pathId
-    val dataflowsMapByType   = dataFlowPathModel.dataflowsMapByType
     val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
     val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
-    val flowSize             = dataflowsMapByType(pathId).elements.size
     val sourceId             = dataFlowPathModel.sourceId
 
     if (!dataflow.contains(sourceId)) {
@@ -49,9 +58,27 @@ object DataFlowCache {
       dataflow(sourceId)(fileLineNo) = ListBuffer()
     }
 
-    if (ScanProcessor.config.disableDeDuplication) {
-      dataflow(sourceId)(fileLineNo).append(dataFlowPathModel)
-    } else {
+    dataflow(sourceId)(fileLineNo).append(dataFlowPathModel)
+  }
+
+  def getDataflow: List[DataFlowPathModel] = finalDataflow
+
+  private def setDataflowWithdedup = {
+
+    def addToMap(dataFlowPathModel: DataFlowPathModel) = {
+
+      val pathId               = dataFlowPathModel.pathId
+      val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
+      val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
+      val flowSize             = dataflowsMapByType(pathId).elements.size
+      val sourceId             = dataFlowPathModel.sourceId
+
+      if (!dataflow.contains(sourceId)) {
+        dataflow(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
+      } else if (!dataflow(sourceId).contains(fileLineNo)) {
+        dataflow(sourceId)(fileLineNo) = ListBuffer()
+      }
+
       if (dataflow(sourceId)(fileLineNo).nonEmpty) {
         val currentPathId               = dataflow(sourceId)(fileLineNo).head.pathId
         val currentSinkNodeWithLocation = dataflowsMapByType(currentPathId).elements.last.location
@@ -65,9 +92,29 @@ object DataFlowCache {
       } else {
         dataflow(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)
       }
-    }
-  }
 
-  def getDataflow: List[DataFlowPathModel] = dataflow.values.flatMap(_.values).flatten.toList
+    }
+
+    val filteredSourceIdMap = dataflow.map(entrySet => {
+      val sourceId        = entrySet._1
+      val allPathIds      = entrySet._2.values.flatten.map(_.pathId).toSet
+      val filteredPathIds = DuplicateFlowProcessor.pathIdsPerSourceIdAfterDedup(allPathIds)
+
+      val filteredFileLineNumberMap = entrySet._2.map(fileLineNoEntry => {
+        (fileLineNoEntry._1, fileLineNoEntry._2.filter(dfpm => filteredPathIds.contains(dfpm.pathId)))
+      })
+      (sourceId, filteredFileLineNumberMap)
+    })
+
+    println(filteredSourceIdMap)
+    for (dataflowKey: String <- dataflow.keys) {
+      dataflow.remove(dataflowKey)
+    }
+    filteredSourceIdMap.foreach(sourceMap => {
+      sourceMap._2.foreach(fileLineNoEntry => {
+        fileLineNoEntry._2.foreach(dfpm => addToMap(dfpm))
+      })
+    })
+  }
 
 }
