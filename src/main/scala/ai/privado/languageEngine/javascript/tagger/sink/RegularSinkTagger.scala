@@ -25,27 +25,21 @@ package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities.addRuleTags
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg) extends ConcurrentWriterCpgPass[RuleInfo](cpg) {
+class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
-  override def generateParts(): Array[RuleInfo] = {
-    RuleCache.getRule.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
-      .toArray
-  }
-
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
 
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
-
   }
 }
