@@ -23,7 +23,8 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities.dump
@@ -36,16 +37,38 @@ object ExporterUtility {
 
   /** Convert List of path element schema object
     */
-  def convertPathElements(nodes: List[CfgNode]): List[DataFlowSubCategoryPathExcerptModel] = {
-    nodes.flatMap(node => convertIndividualPathElement(node))
+  def convertPathElements(nodes: List[AstNode], sourceId: String = ""): List[DataFlowSubCategoryPathExcerptModel] = {
+    val sizeOfList = nodes.size
+    nodes.zipWithIndex.flatMap { case (node, index) =>
+      if (
+        index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
+      ) {
+        val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        TaggerCache.typeDeclMemberNameCache(typeFullName).get(sourceId) match {
+          case Some(m) =>
+            convertIndividualPathElement(m) ++ convertIndividualPathElement(node, index, sizeOfList)
+          case e =>
+            convertIndividualPathElement(node, index, sizeOfList)
+        }
+      } else
+        convertIndividualPathElement(node, index, sizeOfList)
+    }
   }
 
   /** Convert Individual path element
     * @param node
     *   \- cfg node
+    * @param index
+    *   \- index of the list item if any
+    * @param sizeOfList
+    *   \- size of the list if any
     * @return
     */
-  def convertIndividualPathElement(node: CfgNode): Option[DataFlowSubCategoryPathExcerptModel] = {
+  def convertIndividualPathElement(
+    node: AstNode,
+    index: Int = -1,
+    sizeOfList: Int = -1
+  ): Option[DataFlowSubCategoryPathExcerptModel] = {
     val sample = node.code
     val lineNumber: Int = {
       node.lineNumber match {

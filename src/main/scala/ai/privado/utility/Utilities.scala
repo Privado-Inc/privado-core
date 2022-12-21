@@ -419,7 +419,7 @@ object Utilities {
     TaggerCache.typeDeclMemberNameCache.keys.foreach(typeDeclValue => {
       val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
       val allMembers         = typeDeclNode.member.name.toSet
-      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
+      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.name.toSet
       val nonPersonalMembers = allMembers.diff(personalMembers)
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")

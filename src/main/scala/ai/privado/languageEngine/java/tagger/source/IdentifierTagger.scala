@@ -28,6 +28,7 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
+import io.shiftleft.codepropertygraph.generated.nodes.Member
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
@@ -89,8 +90,8 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         val typeDeclMemberName = typeDeclValEntry._2.headOption match {
           case Some(typeDeclMember) => // updating cache
             if (!TaggerCache.typeDeclMemberNameCache.contains(typeDeclVal))
-              TaggerCache.typeDeclMemberNameCache.addOne(typeDeclVal -> mutable.HashMap[String, String]())
-            TaggerCache.typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember.name)
+              TaggerCache.typeDeclMemberNameCache.addOne(typeDeclVal -> mutable.HashMap[String, Member]())
+            TaggerCache.typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember)
             typeDeclMember.name
           case None =>
             "Member not found"
@@ -142,11 +143,14 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
           .block
           .astChildren
           .isReturn
-          .code(
-            "(?i).*" + TaggerCache
+          .code("(?i).*" + {
+            TaggerCache
               .typeDeclMemberNameCache(typeDeclVal)
-              .getOrElse(ruleInfo.id, "Member Not Found") + ".*"
-          )
+              .get(ruleInfo.id) match {
+              case Some(a) => a.name
+              case _       => "Member not found"
+            }
+          } + ".*")
           .method
           .callIn
           .l
@@ -225,7 +229,10 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         // Tag for storing memberName in derived Objects -> patient (patient extends user) --> (email, password)
         storeForTag(builder, impactedObject)(
           ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
-          TaggerCache.typeDeclMemberNameCache(typeDeclName).getOrElse(ruleInfo.id, "Member Not Found")
+          TaggerCache.typeDeclMemberNameCache(typeDeclName).get(ruleInfo.id) match {
+            case Some(a) => a.name
+            case _       => "Member not found"
+          }
         )
       })
     })

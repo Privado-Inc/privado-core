@@ -23,10 +23,12 @@
 
 package ai.privado.cache
 
+import io.shiftleft.codepropertygraph.generated.nodes.Member
+
 import scala.collection.mutable
 
 object TaggerCache {
 
-  val typeDeclMemberNameCache = mutable.HashMap[String, mutable.HashMap[String, String]]()
+  val typeDeclMemberNameCache = mutable.HashMap[String, mutable.HashMap[String, Member]]()
 
 }
