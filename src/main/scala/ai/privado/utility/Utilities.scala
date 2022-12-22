@@ -210,7 +210,12 @@ object Utilities {
     * that line.
     */
   def dump(filename: String, lineToHighlight: Option[Integer], methodFullName: String = ""): String = {
-    val methodType          = methodFullName.split(":").headOption.getOrElse("")
+    val methodType = {
+      val methodInterface = methodFullName.split(":").headOption.getOrElse("")
+      if (methodInterface.contains("unresolved") || methodInterface.contains("<operator>")) ""
+      else methodInterface
+    }
+
     val arrow: CharSequence = "/* <=== " + methodType + " */ "
     try {
       if (!filename.equals("<empty>")) {
