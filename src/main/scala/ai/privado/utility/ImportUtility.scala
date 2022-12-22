@@ -1,9 +1,9 @@
 package ai.privado.utility
-import scala.util.matching.Regex
+
 import scala.util.control.Breaks._
-import java.net.MalformedURLException
 import java.nio.charset.MalformedInputException
 import scala.io.Source
+import io.shiftleft.codepropertygraph.generated.Languages
 
 object ImportUtility {
 
@@ -12,9 +12,9 @@ object ImportUtility {
   // get language specific import matching regex
   private def getMatchImportRegex(language: String): String = {
     val result = language match {
-      case "java"  => "^\\s*(import)\\s+.*$"
-      case "py"    => "^\\s*(import)\\s+.*$"
-      case "js"    => "^\\s*(import|require)\\s+.*$"
+      case Languages.JAVA => "^\\s*(import)\\s+.*$"
+      case Languages.PYTHON => "^\\s*(import)\\s+.*$"
+      case Languages.JAVASCRIPT => "^\\s*(import|require)\\s+.*$"
       case default => "(import)\\s+" // Default is java
     }
     return result;
@@ -22,10 +22,10 @@ object ImportUtility {
 
   private def getFileExtension(language: String): String = {
     val result = language match {
-      case "java"       => ".java"
-      case "python"     => ".py"
-      case "javascript" => ".js"
-      case default      => ".java" // Default is java
+      case Languages.JAVA => ".java"
+      case Languages.PYTHON => ".py"
+      case Languages.JAVASCRIPT => ".js"
+      case default => ".java" // Default is java
     }
 
     return result;
@@ -34,21 +34,22 @@ object ImportUtility {
   // get regex to match only import words
   private def getLiteralWordRegex(language: String): String = {
     val result = language match {
-      case "java"  => "(import)\\s+" // Almost always is accompanied by a space at the end
-      case "py"    => "(import)\\s+" // Almost always is accompanied by a space at the end
+      case Languages.JAVA => "(import)\\s+"
+      case Languages.PYTHON => "(import)\\s+"
+      case Languages.JAVASCRIPT => "(import|require)\\s+"
       case default => "(import)\\s+" // Default is java
     }
     return result;
   }
 
   private def returnImportStatements(filePath: String, language: String): Set[String] = {
-    val source               = Source.fromFile(filePath)
-    val matchImportRegex     = getMatchImportRegex(language);
+    val source = Source.fromFile(filePath)
+    val matchImportRegex = getMatchImportRegex(language);
     val onlyLiteralWordRegex = getLiteralWordRegex(language);
 
-    var multilineFlag              = false;
+    var multilineFlag = false;
     var uniqueImports: Set[String] = Set()
-    val result                     = new StringBuilder("")
+    val result = new StringBuilder("")
     try {
       breakable {
         for (line <- source.getLines()) {
@@ -84,7 +85,7 @@ object ImportUtility {
   }
 
   private def scanAllFilesInDirectory(dirpath: String, language: String): Unit = {
-    val files         = new java.io.File(dirpath).listFiles();
+    val files = new java.io.File(dirpath).listFiles();
     val fileExtension = getFileExtension(language);
 
     for (file <- files) {
@@ -106,4 +107,5 @@ object ImportUtility {
     scanAllFilesInDirectory(dirpath, language);
     return allImports;
   }
+
 }
