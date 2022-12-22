@@ -46,6 +46,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   FieldIdentifier,
   Identifier,
   Literal,
+  Member,
   MethodParameterIn,
   NewTag
 }
@@ -391,7 +392,7 @@ object Utilities {
     */
   def getFileNameForNode(node: CfgNode) = {
     Traversal(node).head match {
-      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
+      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier | _: Member) =>
         a.file.name.headOption.getOrElse("")
       case a => a.location.filename
     }

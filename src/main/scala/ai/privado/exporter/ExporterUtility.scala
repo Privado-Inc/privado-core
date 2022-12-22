@@ -83,8 +83,9 @@ object ExporterUtility {
       }
     }
     val fileName = Traversal(node).head match {
-      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) => a.file.name.head
-      case a                                                                                      => a.location.filename
+      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier | _: Member) =>
+        a.file.name.head
+      case a => a.location.filename
     }
     val absoluteFileName = {
       val file = File(fileName)
