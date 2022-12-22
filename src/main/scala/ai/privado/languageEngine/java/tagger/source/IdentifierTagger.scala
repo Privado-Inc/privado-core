@@ -181,8 +181,14 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     memberType: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclHavingMemberType = cpg.typeDecl.where(_.member.typeFullName(memberType))
-    typeDeclHavingMemberType.fullName.dedup.foreach(typeDeclVal => {
+    val typeDeclHavingMemberTypeTuple =
+      cpg.typeDecl.member.typeFullName(memberType).map(member => (member, member.typeDecl.fullName)).dedup.l
+    typeDeclHavingMemberTypeTuple.foreach(typeDeclTuple => {
+      val typeDeclVal    = typeDeclTuple._2
+      val typeDeclMember = typeDeclTuple._1
+      if (!TaggerCache.typeDeclMemberNameCache.contains(typeDeclVal))
+        TaggerCache.typeDeclMemberNameCache.addOne(typeDeclVal -> mutable.HashMap[String, Member]())
+      TaggerCache.typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember)
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {

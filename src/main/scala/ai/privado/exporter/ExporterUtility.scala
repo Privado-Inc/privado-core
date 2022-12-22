@@ -33,6 +33,8 @@ import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language._
 import better.files.File
 
+import scala.collection.mutable
+
 object ExporterUtility {
 
   /** Convert List of path element schema object
@@ -44,10 +46,23 @@ object ExporterUtility {
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
         val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        // Going 1 level deep for derived sources to add extra nodes
         TaggerCache.typeDeclMemberNameCache(typeFullName).get(sourceId) match {
           case Some(m) =>
-            convertIndividualPathElement(m) ++ convertIndividualPathElement(node, index, sizeOfList)
-          case e =>
+            val typeFullNameLevel2 = m.typeFullName
+            TaggerCache.typeDeclMemberNameCache.getOrElse(typeFullNameLevel2, mutable.HashMap()).get(sourceId) match {
+              case Some(m2) =>
+                // Going 2 level deep for derived sources to add extra nodes
+                convertIndividualPathElement(m2) ++ convertIndividualPathElement(m) ++ convertIndividualPathElement(
+                  node,
+                  index,
+                  sizeOfList
+                )
+              case _ =>
+                convertIndividualPathElement(m) ++ convertIndividualPathElement(node, index, sizeOfList)
+            }
+
+          case _ =>
             convertIndividualPathElement(node, index, sizeOfList)
         }
       } else
