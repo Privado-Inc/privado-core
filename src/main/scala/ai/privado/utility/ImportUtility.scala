@@ -4,6 +4,7 @@ import scala.util.matching.Regex
 import scala.util.control.Breaks._
 import java.net.MalformedURLException
 import java.nio.charset.MalformedInputException
+import scala.io.Source
 
 
 object ImportUtility {  
