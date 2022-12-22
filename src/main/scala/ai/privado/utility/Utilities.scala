@@ -209,8 +209,9 @@ object Utilities {
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
     * that line.
     */
-  def dump(filename: String, lineToHighlight: Option[Integer]): String = {
-    val arrow: CharSequence = "/* <=== */ "
+  def dump(filename: String, lineToHighlight: Option[Integer], methodFullName: String = ""): String = {
+    val methodType          = methodFullName.split(":").headOption.getOrElse("")
+    val arrow: CharSequence = "/* <=== " + methodType + " */ "
     try {
       if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
