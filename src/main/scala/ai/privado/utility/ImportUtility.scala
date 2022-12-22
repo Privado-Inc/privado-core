@@ -10,6 +10,8 @@ import scala.io.Source
 object ImportUtility {  
 
     private var allImports: Set[String] = Set();
+
+    // get language specific import matching regex
     private def getMatchImportRegex(language: String): String = {
         val result = language match {
             case "java" => "^\\s*(import)\\s+.*$"
@@ -20,6 +22,8 @@ object ImportUtility {
         return result;
     }
 
+
+    // get regex to match only import words
     private def getLiteralWordRegex(language: String): String = {
         val result = language match {
             case "java" => "(import)\\s+" // Almost always is accompanied by a space at the end
@@ -42,15 +46,17 @@ object ImportUtility {
             {
                 for (line <- source.getLines()) {
                         val scanLine = line.trim();
-                        if (scanLine.matches("/\\*.*")) {
+                        if (scanLine.matches("/\\*.*")) { // set flag if multiline comment is encountered
                             multilineFlag = true;
                         }    
+
+                        // Ignore if inside a multiline comment
                         if (!multilineFlag) {
                             if (scanLine matches matchImportRegex) {
                                 val withoutImportLine = scanLine.replace(onlyLiteralWordRegex.r.findFirstIn(line).mkString, "");
-                                uniqueImports += withoutImportLine;
+                                uniqueImports += withoutImportLine; // add each import to set
                             } else {
-                                if (!scanLine.matches("(package|//)\\s*.*") && scanLine.lengthCompare(0) != 0) {
+                                if (!scanLine.matches("(package|//)\\s*.*") && scanLine.lengthCompare(0) != 0) { // Ignore if there is nothing or a package definition on a line
                                     break
                                 }
                             }
@@ -73,9 +79,9 @@ object ImportUtility {
     private def scanAllFilesInDirectory(dirpath: String): Unit = {
         val files = new java.io.File(dirpath).listFiles();
         for (file <- files) {
-            if (file.isDirectory()) scanAllFilesInDirectory(file.getAbsolutePath())
+            if (file.isDirectory()) scanAllFilesInDirectory(file.getAbsolutePath()) // Recursively call for each directory
             else {
-                if (file.getAbsolutePath().matches(".+.(java)")) {
+                if (file.getAbsolutePath().matches(".+.(java)")) { // Scan only java files
                     // println(file.getAbsolutePath())
                     var fileImports: Set[String] = returnImportStatements(file.getAbsolutePath(), "java");
                     for (el <- fileImports) {
