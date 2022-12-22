@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.APITagger
 import ai.privado.tagger.source.LiteralTagger
@@ -19,10 +19,20 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-    new LiteralTagger(cpg).createAndApply()
+    logger.info("Starting tagging")
+    val literalTagger = new LiteralTagger(cpg)
+    val apiTagger = new APITagger(cpg)
+
+    val sourceRules = rules.sources
+
+    sourceRules.foreach(rule => {
+      literalTagger.setRuleAndApply(rule)
+    })
+
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    new APITagger(cpg).createAndApply()
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.API))
+      .foreach(rule => apiTagger.setRuleAndApply(rule))
 
     logger.info("Done with tagging")
 
