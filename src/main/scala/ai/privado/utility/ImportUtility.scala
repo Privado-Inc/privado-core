@@ -34,7 +34,7 @@ object ImportUtility {
   // get regex to match only import words
   private def getLiteralWordRegex(language: String): String = {
     val result = language match {
-      case Languages.JAVA => "(import)\\s+"
+      case Languages.JAVA => "(import|static)\\s+"
       case Languages.PYTHON => "(import)\\s+"
       case Languages.JAVASCRIPT => "(import|require)\\s+"
       case default => "(import)\\s+" // Default is java
@@ -61,7 +61,7 @@ object ImportUtility {
           // Ignore if inside a multiline comment
           if (!multilineFlag) {
             if (scanLine matches matchImportRegex) {
-              val withoutImportLine = scanLine.replace(onlyLiteralWordRegex.r.findFirstIn(line).mkString, "");
+              val withoutImportLine = scanLine.replace(onlyLiteralWordRegex.r.findAllIn(line).mkString, "");
               uniqueImports += withoutImportLine; // add each import to set
             } else {
               if (!scanLine.matches("(package|//)\\s*.*") && scanLine.lengthCompare(0) != 0) { // Ignore if there is nothing or a package definition on a line
