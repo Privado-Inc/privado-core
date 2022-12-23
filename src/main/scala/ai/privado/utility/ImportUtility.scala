@@ -43,7 +43,7 @@ object ImportUtility {
   }
 
   private def returnImportStatements(filePath: String, language: String): Set[String] = {
-    val source = Source.fromFile(filePath)
+
     val matchImportRegex = getMatchImportRegex(language);
     val onlyLiteralWordRegex = getLiteralWordRegex(language);
 
@@ -51,6 +51,7 @@ object ImportUtility {
     var uniqueImports: Set[String] = Set()
     val result = new StringBuilder("")
     try {
+      val source = Source.fromFile(filePath)
       breakable {
         for (line <- source.getLines()) {
           val scanLine = line.trim();
@@ -78,9 +79,9 @@ object ImportUtility {
       }
     } catch {
       case e: MalformedInputException => println(e)
+    } finally {
+      source.close()
     }
-
-    source.close()
     return uniqueImports;
   }
 
