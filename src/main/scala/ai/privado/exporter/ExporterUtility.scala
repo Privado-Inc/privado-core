@@ -27,6 +27,7 @@ import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.semantic.Language.finder
+import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.dump
 import io.shiftleft.codepropertygraph.generated.nodes._
 import overflowdb.traversal.Traversal
@@ -42,31 +43,61 @@ object ExporterUtility {
   def convertPathElements(nodes: List[AstNode], sourceId: String = ""): List[DataFlowSubCategoryPathExcerptModel] = {
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
+      val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList)
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
         val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
         // Going 1 level deep for derived sources to add extra nodes
-        TaggerCache.typeDeclMemberNameCache(typeFullName).get(sourceId) match {
-          case Some(m) =>
-            val typeFullNameLevel2 = m.typeFullName
-            TaggerCache.typeDeclMemberNameCache.getOrElse(typeFullNameLevel2, mutable.HashMap()).get(sourceId) match {
-              case Some(m2) =>
+        TaggerCache.typeDeclMemberCache.getOrElse(typeFullName, mutable.HashMap[String, Member]()).get(sourceId) match {
+          case Some(member) =>
+            val typeFullNameLevel2 = member.typeFullName
+            TaggerCache.typeDeclMemberCache
+              .getOrElse(typeFullNameLevel2, mutable.HashMap[String, Member]())
+              .get(sourceId) match {
+              case Some(member2) =>
                 // Going 2 level deep for derived sources to add extra nodes
-                convertIndividualPathElement(m2) ++ convertIndividualPathElement(m) ++ convertIndividualPathElement(
-                  node,
-                  index,
-                  sizeOfList
-                )
+                convertIndividualPathElement(
+                  member2,
+                  messageInExcerpt = generateDSMemberMsg(member2.name, typeFullNameLevel2)
+                ) ++ convertIndividualPathElement(
+                  member,
+                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName)
+                ) ++ currentNodeModel
               case _ =>
-                convertIndividualPathElement(m) ++ convertIndividualPathElement(node, index, sizeOfList)
+                convertIndividualPathElement(
+                  member,
+                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName)
+                ) ++ currentNodeModel
             }
 
-          case _ =>
-            convertIndividualPathElement(node, index, sizeOfList)
+          case _ => // Checking if 2nd level is of Extends type
+            TaggerCache.typeDeclExtendingTypeDeclCache
+              .getOrElse(typeFullName, mutable.HashMap[String, TypeDecl]())
+              .get(sourceId) match {
+              case Some(typeDecl) => // Fetching information for the 2nd level member node
+                TaggerCache.typeDeclMemberCache
+                  .getOrElse(typeDecl.fullName, mutable.HashMap[String, Member]())
+                  .get(sourceId) match {
+                  case Some(member) =>
+                    val currentTypeDeclNode = // Fetching the current TypeDecl node
+                      TaggerCache.typeDeclDerivedByExtendsCache.get(typeFullName)
+                    convertIndividualPathElement(
+                      member,
+                      messageInExcerpt = generateDSMemberMsg(member.name, typeDecl.fullName)
+                    ) ++ convertIndividualPathElement(
+                      currentTypeDeclNode.get,
+                      messageInExcerpt = generateDSExtendsMsg(typeDecl.name, typeFullName)
+                    ) ++ currentNodeModel
+                  case _ =>
+                    currentNodeModel
+                }
+              case _ =>
+                currentNodeModel
+            }
         }
       } else
-        convertIndividualPathElement(node, index, sizeOfList)
+        currentNodeModel
     }
   }
 
@@ -82,7 +113,8 @@ object ExporterUtility {
   def convertIndividualPathElement(
     node: AstNode,
     index: Int = -1,
-    sizeOfList: Int = -1
+    sizeOfList: Int = -1,
+    messageInExcerpt: String = ""
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
     val sample = node.code
     val lineNumber: Int = {
@@ -97,11 +129,7 @@ object ExporterUtility {
         case None    => -1
       }
     }
-    val fileName = Traversal(node).head match {
-      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier | _: Member) =>
-        a.file.name.head
-      case a => a.location.filename
-    }
+    val fileName = Utilities.getFileNameForNode(node)
     val absoluteFileName = {
       val file = File(fileName)
       if (file.exists)
@@ -114,11 +142,21 @@ object ExporterUtility {
       }
     }
 
-    if (fileName == "<empty>" || sample == "<empty>")
+    if (fileName.equals(Constants.EMPTY) || sample.equals(Constants.EMPTY))
       None
     else {
-      val methodFullName = Traversal(node).isCall.methodFullName.headOption.getOrElse("")
-      val excerpt        = dump(absoluteFileName, node.lineNumber, methodFullName)
+      val message = {
+        if (Traversal(node).isCall.nonEmpty) {
+          val methodFullName  = Traversal(node).isCall.methodFullName.headOption.getOrElse("")
+          val methodInterface = methodFullName.split(":").headOption.getOrElse("")
+          if (methodInterface.contains("unresolved") || methodInterface.contains("<operator>")) ""
+          else methodInterface
+        } else if (Traversal(node).isIdentifier.nonEmpty)
+          Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        else
+          messageInExcerpt
+      }
+      val excerpt = dump(absoluteFileName, node.lineNumber, message)
       Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
     }
   }
@@ -146,6 +184,24 @@ object ExporterUtility {
         )
       case None => None
     }
+  }
+
+  /** Helper function to generate message
+    * @param memberName
+    * @param typeDeclFullName
+    * @return
+    */
+  private def generateDSMemberMsg(memberName: String, typeDeclFullName: String): String = {
+    s"'$memberName' is a member of '$typeDeclFullName' class"
+  }
+
+  /** Helper function to generate message
+    * @param typeDeclName
+    * @param typeDeclFullName
+    * @return
+    */
+  private def generateDSExtendsMsg(typeDeclName: String, typeDeclFullName: String): String = {
+    s"'$typeDeclName' class is inherited by '$typeDeclFullName' class"
   }
 
 }
