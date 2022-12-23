@@ -1,7 +1,8 @@
+package ai.privado.utility
+
 import scala.util.control.Breaks._
 import java.nio.charset.MalformedInputException
 import scala.io.Source
-import ai.privado.utility.Utilities
 import ai.privado.model.Language
 
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -50,7 +51,6 @@ object ImportUtility {
 
     var multilineFlag              = false;
     var uniqueImports: Set[String] = Set()
-    val result                     = new StringBuilder("")
     try {
 
       breakable {
@@ -87,8 +87,7 @@ object ImportUtility {
   }
 
   private def scanAllFilesInDirectory(dirpath: String, language: Language.Value): Unit = {
-    val fileExtension = getFileExtension(language);
-    val files         = Utilities.getAllFilesRecursively(dirpath, Set("." + language.toString())).get
+    val files = Utilities.getAllFilesRecursively(dirpath, Set("." + language.toString())).get
 
     // .par used to convert list to a parallel operational list
     for (file <- files.par) {
