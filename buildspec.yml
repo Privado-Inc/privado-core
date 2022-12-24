@@ -27,6 +27,7 @@ phases:
       - echo $CODEBUILD_WEBHOOK_BASE_REF
       - echo $CODEBUILD_WEBHOOK_HEAD_REF
       - echo $CODEBUILD_WEBHOOK_TRIGGER
+      - echo `CODEBUILD_WEBHOOK_TRIGGER`
       - exit 1
       #- TAG_1=latest
       - TAG_2=$VERSION
