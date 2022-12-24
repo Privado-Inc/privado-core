@@ -24,10 +24,6 @@ phases:
             VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
         fi
       - echo $VERSION
-      - echo $CODEBUILD_WEBHOOK_BASE_REF
-      - echo $CODEBUILD_WEBHOOK_HEAD_REF
-      - echo $CODEBUILD_WEBHOOK_TRIGGER
-      - echo `CODEBUILD_WEBHOOK_TRIGGER`
       - BRANCH_NAME=${CODEBUILD_WEBHOOK_TRIGGER:7}
       - echo $BRANCH_NAME
       - |
@@ -37,12 +33,8 @@ phases:
         else
             TAG_1=$BRANCH_NAME
         fi
-      - echo $TAG_1
       - TAG_2=$VERSION
-      - echo $CODEBUILD_WEBHOOK_HEAD_REF
       - TAG_3=${CODEBUILD_WEBHOOK_HEAD_REF##*/}
-      - echo $TAG3
-      - exit 1
 
   build:
     commands:
