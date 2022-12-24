@@ -23,8 +23,11 @@ phases:
             VERSION_INITIAL=${LATEST_TAG:1}
             VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
         fi
-        echo $VERSION
-      - TAG_1=latest
+      - echo $VERSION
+      - echo $CODEBUILD_WEBHOOK_BASE_REF
+      - echo $CODEBUILD_WEBHOOK_HEAD_REF
+      - exit 1
+      #- TAG_1=latest
       - TAG_2=$VERSION
       - echo $CODEBUILD_WEBHOOK_HEAD_REF
       - TAG_3=${CODEBUILD_WEBHOOK_HEAD_REF##*/}
