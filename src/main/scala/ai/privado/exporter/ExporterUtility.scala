@@ -78,7 +78,8 @@ object ExporterUtility {
     if (fileName == "<empty>" || sample == "<empty>")
       None
     else {
-      val excerpt = dump(absoluteFileName, node.lineNumber)
+      val methodFullName = Traversal(node).isCall.methodFullName.headOption.getOrElse("")
+      val excerpt        = dump(absoluteFileName, node.lineNumber, methodFullName)
       Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
     }
   }

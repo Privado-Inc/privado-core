@@ -102,7 +102,7 @@ object ThreatUtility {
   ): DataFlowSubCategoryPathExcerptModel = {
 
     val lineNumber = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
-    val excerpt    = Utilities.dump(filename, Some(lineNumber)) + "\n" + excerptPostfix + "\n"
+    val excerpt    = Utilities.dump(filename, Some(lineNumber), "") + "\n" + excerptPostfix + "\n"
     DataFlowSubCategoryPathExcerptModel(sample, lineNumber, -1, filename, excerpt)
   }
 
