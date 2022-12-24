@@ -103,9 +103,7 @@ object JavaProcessor {
           cpg.close()
           import java.io.File
           val cpgFile = new File(cpgconfig.outputPath)
-          println(
-            s"\n\n\nBinary graph file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n"
-          )
+          println(s"\n\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n")
         }
       }
 
