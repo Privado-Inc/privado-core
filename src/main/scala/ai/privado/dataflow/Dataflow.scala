@@ -25,7 +25,7 @@ package ai.privado.dataflow
 
 import ai.privado.cache
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, NodeType}
 import ai.privado.semantic.Language.finder
@@ -70,7 +70,11 @@ class Dataflow(cpg: Cpg) {
     if (sources.isEmpty || sinks.isEmpty)
       Map[String, Path]()
     else {
+      println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
       val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+      println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
+      println(s"${Calendar.getInstance().getTime} - --Filtering flows invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
         if (ScanProcessor.config.disableThisFiltering)
@@ -78,6 +82,8 @@ class Dataflow(cpg: Cpg) {
         else
           dataflowPathsUnfiltered.filter(filterFlowsByContext).filter(flowNotTaintedByThis)
       }
+      println(s"${TimeMetric.getNewTime()} - --Filtering flows is done in \t\t\t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPaths.size}")
       AppCache.totalFlowAfterThisFiltering = dataflowPaths.size
       // Stores key -> PathID, value -> Path
       var dataflowMapByPathId = Map[String, Path]()
@@ -93,13 +99,20 @@ class Dataflow(cpg: Cpg) {
           })
           .toMap
       } else {
-        println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
+        println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
         dataflowMapByPathId = DuplicateFlowProcessor.process(dataflowPaths)
+        println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
+            .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowMapByPathId.size}")
       }
+      println(s"${Calendar.getInstance().getTime} - --Filtering post Deduplication invoked...")
       filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
       // Need to return the filtered result
       val dataflowFromCache = DataFlowCache.getDataflow
-      dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
+      val result =
+        dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
+      println(s"${TimeMetric.getNewTime()} - --Filtering post Deduplication is done in \t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${result.size}")
+      result
     }
   }
 
