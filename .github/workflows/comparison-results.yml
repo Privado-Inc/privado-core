@@ -198,7 +198,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Download the comparison tool
-        run: curl https://raw.githubusercontent.com/Privado-Inc/privado-core-results-monitoring/main/compare.py --output ${GITHUB_WORKSPACE}/compare.py
+        run: curl https://raw.githubusercontent.com/ankit-privado/privado-core-results-monitoring/summary-work/compare.py --output ${GITHUB_WORKSPACE}/compare.py
 
       - name: Download ${{github.base_ref}} JSON File (${{matrix.repo_name}}) 
         uses: actions/download-artifact@master
@@ -241,6 +241,12 @@ jobs:
         with: 
           name: final-report
           path: /home/runner/work/privado-core/privado-core/comparison_report.csv
+      
+      - name: upload Summary report for Next job
+        uses: actions/upload-artifact@master
+        with:
+          name: summary-report
+          path: /home/runner/work/privado-core/privado-core/summary-report.txt
 
   send-result:
     needs: compare-reports
@@ -253,6 +259,12 @@ jobs:
         with:
           name: final-report
           path: ./report
+
+      - name: Download Summary Report
+        uses: actions/download-artifact@master
+        with:
+          name: summary-report
+          path: ./report
       
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
@@ -260,5 +272,5 @@ jobs:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
           file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}} \nSummary Report ${cat /home/runner/work/privado-core/privado-core/report/summary-report.txt}"
           file_type: "csv"
