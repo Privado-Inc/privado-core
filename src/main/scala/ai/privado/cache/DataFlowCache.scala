@@ -37,7 +37,7 @@ object DataFlowCache {
 
   var dataflowsMapByType: Map[String, Path] = Map[String, Path]()
 
-  private val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
+  val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
 
   private lazy val finalDataflow: List[DataFlowPathModel] = {
     if (!ScanProcessor.config.disableDeDuplication)

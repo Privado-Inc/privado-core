@@ -284,10 +284,11 @@ object ScanProcessor extends CommandProcessor {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
-    println(s"${Calendar.getInstance().getTime} - Guessing source code language...")
-
     Try(guessLanguage(sourceRepoLocation)) match {
-      case Success(languageDetected) =>
+      case Success(languageDetected) => {
+        println(
+          s"${TimeMetric.getNewTime()} - Language detection done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
         languageDetected match {
           case Some(lang) =>
             MetricHandler.metricsData("language") = Json.fromString(lang)
@@ -315,6 +316,7 @@ object ScanProcessor extends CommandProcessor {
             logger.error("Unable to detect language! Is it supported yet?")
             Left("Unable to detect language!")
         }
+      }
       case Failure(exc) =>
         logger.debug("Error while guessing language", exc)
         println(s"Error Occurred: ${exc.getMessage}")

@@ -24,7 +24,7 @@
 package ai.privado.dataflow
 
 import ai.privado.cache.{AppCache, DataFlowCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.{Path, _}
@@ -35,6 +35,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
+import java.util.Calendar
 import scala.util.{Failure, Success}
 
 class Dataflow(cpg: Cpg) {
@@ -53,10 +54,17 @@ class Dataflow(cpg: Cpg) {
     val sources = getSources
     val sinks   = getSinks
 
+    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
+    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
+
     if (sources.isEmpty || sinks.isEmpty)
       Map[String, Path]()
     else {
+      println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
       val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+      println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
+      println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
         if (ScanProcessor.config.disableThisFiltering)
@@ -66,6 +74,8 @@ class Dataflow(cpg: Cpg) {
             .filter(DuplicateFlowProcessor.filterFlowsByContext)
             .filter(DuplicateFlowProcessor.flowNotTaintedByThis)
       }
+      println(s"${TimeMetric.getNewTime()} - --Filtering flows 1 is done in \t\t\t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPaths.size}")
       AppCache.totalFlowAfterThisFiltering = dataflowPaths.size
       // Stores key -> PathID, value -> Path
       val dataflowMapByPathId = dataflowPaths
@@ -81,10 +91,22 @@ class Dataflow(cpg: Cpg) {
 
       // Setting cache
       DataFlowCache.dataflowsMapByType = dataflowMapByPathId
+
+      println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
       DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
+      println(
+        s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t- ${TimeMetric
+            .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
+      )
       // Need to return the filtered result
+      println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
       val dataflowFromCache = DataFlowCache.getDataflow
-      dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
+      println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
+      val result =
+        dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
+
+      result
     }
   }
 
