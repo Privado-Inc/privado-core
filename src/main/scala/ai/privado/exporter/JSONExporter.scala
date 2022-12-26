@@ -23,11 +23,12 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, Environment, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.exporter.DataFlowSubCategoryModel
-import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
@@ -134,9 +135,22 @@ object JSONExporter {
         complianceViolations.size
       )
 
+      logger.debug(
+        s"Total False positive flows removed : \n" +
+          s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
+          s"FP by derived source Data element : ${AppCache.fpByDerivedSourcePresence}\n" +
+          s"Grouping by Data element : ${AppCache.groupingByLineNumber}\n" +
+          s"Total flows before FP : ${AppCache.totalFlows}\n" +
+          s"Total flows from Reachable By: ${AppCache.totalFlowFromReachableBy}\n" +
+          s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
+          s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
+      )
+
+      logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")
+
       logger.info("Completed exporting policy violations")
-      File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
-      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f               = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")

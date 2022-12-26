@@ -4,11 +4,13 @@ ThisBuild / organization := "ai.privado"
 ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
-val cpgVersion        = "1.3.584"
-val joernVersion      = "1.1.1334"
-val overflowdbVersion = "1.160"
+
+val cpgVersion        = "1.3.563"
+val joernVersion      = "1.1.1146"
+val overflowdbVersion = "1.148"
+
 //External dependency versions
-val circeVersion = "0.14.1"
+val circeVersion   = "0.14.1"
 val jacksonVersion = "2.14.0"
 val mockitoVersion = "1.17.12"
 
@@ -42,7 +44,7 @@ libraryDependencies ++= Seq(
   "com.networknt"                    % "json-schema-validator"   % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-  "com.github.wnameless.json" % "json-flattener" % "0.14.0"
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

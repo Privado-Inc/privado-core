@@ -264,6 +264,9 @@ object ScanProcessor extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
     println(s"Privado Core Version: ${Environment.privadoVersionCore}")
+    if (!File(config.sourceLocation.head).isWritable) {
+      println(s"Warning: Privado doesn't have write permission on give repo location - ${config.sourceLocation.head}")
+    }
     processCpg()
   }
 
@@ -283,10 +286,11 @@ object ScanProcessor extends CommandProcessor {
     val sourceRepoLocation = config.sourceLocation.head
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
-    println(s"${Calendar.getInstance().getTime} - Guessing source code language...")
-
     Try(guessLanguage(sourceRepoLocation)) match {
-      case Success(languageDetected) =>
+      case Success(languageDetected) => {
+        println(
+          s"${TimeMetric.getNewTime()} - Language detection done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
         languageDetected match {
           case Some(lang) =>
             MetricHandler.metricsData("language") = Json.fromString(lang)
@@ -317,6 +321,7 @@ object ScanProcessor extends CommandProcessor {
             logger.error("Unable to detect language! Is it supported yet?")
             Left("Unable to detect language!")
         }
+      }
       case Failure(exc) =>
         logger.debug("Error while guessing language", exc)
         println(s"Error Occurred: ${exc.getMessage}")

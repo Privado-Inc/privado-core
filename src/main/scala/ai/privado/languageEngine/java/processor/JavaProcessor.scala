@@ -23,8 +23,9 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.entrypoint.TimeMetric
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.semantic.Language._
@@ -45,8 +46,8 @@ import scala.util.{Failure, Success, Try}
 
 object JavaProcessor {
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
+  private val logger    = LoggerFactory.getLogger(getClass)
+  private var cpgconfig = Config()
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
@@ -54,35 +55,55 @@ object JavaProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
-        new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+        try {
+          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
+          new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          logger.info("Applying data flow overlay")
+          val context = new LayerCreatorContext(cpg)
+          val options = new OssDataFlowOptions()
+          new OssDataFlow(options).run(context)
+          logger.info("=====================")
+          println(
+            s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
 
-        logger.info("Applying data flow overlay")
-        val context = new LayerCreatorContext(cpg)
-        val options = new OssDataFlowOptions()
-        new OssDataFlow(options).run(context)
-        logger.info("=====================")
-
-        // Run tagger
-        println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(processedRules)
-        println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow
-
-        println(s"${Calendar.getInstance().getTime} - Brewing result...")
-        MetricHandler.setScanStatus(true)
-        // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-          case Left(err) =>
-            MetricHandler.otherErrorsOrWarnings.addOne(err)
-            Left(err)
-          case Right(_) =>
-            println(
-              s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
-            )
-            logger.debug(
-              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-            )
-            Right(())
+          // Run tagger
+          println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
+          cpg.runTagger(processedRules)
+          println(
+            s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
+          val dataflowMap = cpg.dataflow
+          println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.getDataflow.size}")
+          println(
+            s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
+          )
+          println(s"${Calendar.getInstance().getTime} - Brewing result...")
+          MetricHandler.setScanStatus(true)
+          // Exporting
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              Left(err)
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+              )
+              logger.debug(
+                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+              )
+              Right(())
+          }
+        } finally {
+          cpg.close()
+          import java.io.File
+          val cpgFile = new File(cpgconfig.outputPath)
+          println(s"\n\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n")
         }
       }
 
@@ -108,10 +129,11 @@ object JavaProcessor {
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
-    val cpgconfig =
-      Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
+    cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val xtocpg = JavaSrc2Cpg().createCpgWithOverlays(cpgconfig)
-    println(s"${Calendar.getInstance().getTime} - Base processing done...")
+    println(
+      s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+    )
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 

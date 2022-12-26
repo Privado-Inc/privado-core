@@ -25,7 +25,7 @@ package ai.privado.languageEngine.javascript.tagger
 
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.APITagger
 import ai.privado.tagger.source.LiteralTagger
@@ -42,16 +42,32 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
   override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
+    val sourceRules = rules.sources
     logger.info("Starting tagging")
 
+    val literalTagger     = new LiteralTagger(cpg)
+    val identifierTagger  = new IdentifierTagger(cpg)
+    val apiTagger         = new APITagger(cpg)
+    val regularSinkTagger = new RegularSinkTagger(cpg)
     println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-    new LiteralTagger(cpg).createAndApply()
+    sourceRules.foreach(rule => {
+      literalTagger.setRuleAndApply(rule)
+    })
+
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
-    new IdentifierTagger(cpg).createAndApply()
+    sourceRules.foreach(rule => {
+      identifierTagger.setRuleAndApply(rule)
+    })
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
-    new RegularSinkTagger(cpg).createAndApply()
+
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    new APITagger(cpg).createAndApply()
+
+    rules.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.API))
+      .foreach(rule => apiTagger.setRuleAndApply(rule))
 
     logger.info("Done with tagging")
 

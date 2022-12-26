@@ -22,12 +22,20 @@
 
 package ai.privado.utility
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
-
-import ai.privado.model.{ConfigAndRules, Constants, Language, RuleInfo, Semantic}
-import ai.privado.model.DatabaseDetails
+import ai.privado.model.{
+  CatLevelOne,
+  ConfigAndRules,
+  Constants,
+  DatabaseDetails,
+  InternalTag,
+  Language,
+  RuleInfo,
+  Semantic
+}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
@@ -55,8 +63,11 @@ import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
 import java.security.MessageDigest
+import scala.collection.mutable.ListBuffer
 
 object Utilities {
+
+  implicit val resolver: ICallResolver = NoResolve
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -117,6 +128,7 @@ object Utilities {
   }
 
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
+    *
     * @param cpg
     *   \- cpg for adding customSemantics
     * @return
@@ -125,17 +137,66 @@ object Utilities {
     val semanticsFilename = Source.fromResource("default.semantics")
 
     val defaultSemantics = semanticsFilename.getLines().toList
-    val customLeakageSemantics = cpg.call
-      .where(_.tag.nameExact(Constants.id).value("Leakages.*"))
+    val customSinkSemantics = cpg.call
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
       .dedup
       .l
-      .map(generateCustomLeakageSemantic)
+      .map(generateSemanticForTaint(_, -1))
+
+    val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
+
+    var customNonTaintDefaultSemantics   = List[String]()
+    var specialNonTaintDefaultSemantics  = List[String]()
+    var customStringSemantics            = List[String]()
+    var customNonPersonalMemberSemantics = List[String]()
+
+    if (!ScanProcessor.config.disableRunTimeSemantics) {
+      customNonTaintDefaultSemantics = nonTaintingMethods
+        .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
+        .fullName
+        .l
+        .map(generateNonTaintSemantic)
+
+      specialNonTaintDefaultSemantics = nonTaintingMethods
+        .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
+        .fullName
+        .l
+        .map(generateSemanticForTaint(_, 0))
+
+      customStringSemantics = cpg.method
+        .filter(_.isExternal)
+        .where(_.callIn)
+        .fullName(".*:java.lang.String\\(.*")
+        .fullNameNot(".*\\.set[A-Za-z_]*:.*")
+        .fullName
+        .dedup
+        .l
+        .map(generateSemanticForTaint(_, -1))
+
+      customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
+    }
     val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
+
+    logger.debug("\nCustom Non taint default semantics")
+    customNonTaintDefaultSemantics.foreach(logger.debug)
+    logger.debug("\nCustom specialNonTaintDefaultSemantics semantics")
+    specialNonTaintDefaultSemantics.foreach(logger.debug)
+    logger.debug("\nCustom customStringSemantics semantics")
+    customStringSemantics.foreach(logger.debug)
+    logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
+    customNonPersonalMemberSemantics.foreach(logger.debug)
+    logger.debug("\nCustom customSinkSemantics semantics")
+    customSinkSemantics.foreach(logger.debug)
+    logger.debug("\nCustom semanticFromConfig semantics")
+    semanticFromConfig.foreach(logger.debug)
+
     val finalSemantics =
-      (defaultSemantics ++ customLeakageSemantics ++ semanticFromConfig).mkString("\n")
-    logger.debug("Final Semantics");
-    finalSemantics.split("\n").foreach(logger.debug)
+      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
+        ++ customStringSemantics ++ customNonPersonalMemberSemantics
+        ++ customSinkSemantics ++ semanticFromConfig)
+        .mkString("\n")
+
     Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
@@ -148,8 +209,14 @@ object Utilities {
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
     * that line.
     */
-  def dump(filename: String, lineToHighlight: Option[Integer]): String = {
-    val arrow: CharSequence = "/* <=== */ "
+  def dump(filename: String, lineToHighlight: Option[Integer], methodFullName: String = ""): String = {
+    val methodType = {
+      val methodInterface = methodFullName.split(":").headOption.getOrElse("")
+      if (methodInterface.contains("unresolved") || methodInterface.contains("<operator>")) ""
+      else methodInterface
+    }
+
+    val arrow: CharSequence = "/* <=== " + methodType + " */ "
     try {
       if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
@@ -220,10 +287,10 @@ object Utilities {
   def isFileProcessable(filePath: String): Boolean = {
     RuleCache.getRule.exclusions
       .flatMap(exclusionRule => {
-          Try(!filePath.matches(exclusionRule.combinedRulePattern)) match {
-            case Success(result) => Some(result)
-            case Failure(_)      => None
-          }
+        Try(!filePath.matches(exclusionRule.combinedRulePattern)) match {
+          case Success(result) => Some(result)
+          case Failure(_)      => None
+        }
       })
       .foldLeft(true)((a, b) => a && b)
   }
@@ -236,10 +303,10 @@ object Utilities {
   def isPrivacySink(sinkName: String): Boolean = {
     RuleCache.getRule.sinkSkipList
       .flatMap(sinkSkipRule => {
-            Try(!sinkName.matches(sinkSkipRule.combinedRulePattern)) match {
-              case Success(result) => Some(result)
-              case Failure(_)      => None
-            }
+        Try(!sinkName.matches(sinkSkipRule.combinedRulePattern)) match {
+          case Success(result) => Some(result)
+          case Failure(_)      => None
+        }
       })
       .foldLeft(true)((a, b) => a && b)
   }
@@ -271,17 +338,22 @@ object Utilities {
   def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
-  /** Generate custom leakage semantics based on the number of parameter in method signature
+  /** Generate semantics for tainting passed argument based on the number of parameter in method signature
     * @param methodName
     *   \- complete signature of method
     * @return
     *   \- semantic string
     */
-  private def generateCustomLeakageSemantic(methodName: String) = {
-    val parameterNumber    = methodName.count(_.equals(','))
+  private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
     var parameterSemantics = ""
-    for (i <- 1 to (parameterNumber + 1))
-      parameterSemantics += s"$i->-1 "
+    var parameterNumber    = 2
+    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
+      parameterNumber = 7
+    } else {
+      parameterNumber = methodName.count(_.equals(','))
+    }
+    for (i <- 0 to (parameterNumber + 1))
+      parameterSemantics += s"$i->$toTaint "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
@@ -329,5 +401,47 @@ object Utilities {
         a.file.name.headOption.getOrElse("")
       case a => a.location.filename
     }
+  }
+
+  /** Returns the Semantics for functions with void return type Default behavior is not propagating the taint
+    * @param String
+    *   methodFullName
+    * @return
+    *   String
+    */
+  private def generateNonTaintSemantic(methodFullName: String): String = {
+    "\"" + methodFullName + "\" "
+  }
+
+  /** Generates Semantics for non Personal member
+    * @param cpg
+    * @return
+    *   non-tainting semantic rule
+    */
+  def generateNonPersonalMemberSemantics(cpg: Cpg): List[String] = {
+
+    val semanticList = ListBuffer[String]()
+
+    TaggerCache.typeDeclMemberNameCache.keys.foreach(typeDeclValue => {
+      val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
+      val allMembers         = typeDeclNode.member.name.toSet
+      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
+      val nonPersonalMembers = allMembers.diff(personalMembers)
+
+      val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
+      if (nonPersonalMembersRegex.nonEmpty) {
+        typeDeclNode.method.block.astChildren.isReturn
+          .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+          .method
+          .callIn
+          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
+          .methodFullName
+          .dedup
+          .foreach(methodName => {
+            semanticList.addOne(generateNonTaintSemantic(methodName))
+          })
+      }
+    })
+    semanticList.toList
   }
 }

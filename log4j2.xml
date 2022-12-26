@@ -2,11 +2,13 @@
 <Configuration status="WARN">
     <Appenders>
         <Console name="Console" target="SYSTEM_ERR">
-            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %c{0}: %msg%n"/>
+            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %logger{36} %c{0}: %msg%n"/>
         </Console>
     </Appenders>
     <Loggers>
         <logger name="com.networknt.schema" level="ERROR" />
+        <logger name="io.shiftleft" level="WARN" />
+        <logger name="io.joern" level="WARN" />
         <Root level="DEBUG">
             <AppenderRef ref="Console" />
         </Root>
