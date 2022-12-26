@@ -95,7 +95,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
       DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
       println(
-        s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t- ${TimeMetric
+        s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
             .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
       )
       // Need to return the filtered result

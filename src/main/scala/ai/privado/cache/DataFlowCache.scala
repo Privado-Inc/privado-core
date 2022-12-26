@@ -39,7 +39,7 @@ object DataFlowCache {
 
   val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
 
-  private lazy val finalDataflow: List[DataFlowPathModel] = {
+  lazy val finalDataflow: List[DataFlowPathModel] = {
     if (!ScanProcessor.config.disableDeDuplication)
       setDataflowWithdedup()
     dataflow.values.flatMap(_.values).flatten.toList
@@ -107,7 +107,6 @@ object DataFlowCache {
       (sourceId, filteredFileLineNumberMap)
     })
 
-    println(filteredSourceIdMap)
     for (dataflowKey: String <- dataflow.keys) {
       dataflow.remove(dataflowKey)
     }
