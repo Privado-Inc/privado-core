@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.exporter.JSONExporter
@@ -79,7 +79,7 @@ object JavaProcessor {
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataflowMap.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.getDataflow.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
           )
