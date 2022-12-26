@@ -35,10 +35,10 @@ class IdentifierNonMemberTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
     implicit val resolver: ICallResolver = NoResolve
-    TaggerCache.typeDeclMemberNameCache.keys.foreach(typeDeclValue => {
+    TaggerCache.typeDeclMemberCache.keys.foreach(typeDeclValue => {
       val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
       val allMembers         = typeDeclNode.member.name.toSet
-      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
+      val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
       val nonPersonalMembers = allMembers.diff(personalMembers)
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")

@@ -28,6 +28,7 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
+import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
@@ -88,9 +89,9 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         val typeDeclVal = typeDeclValEntry._1.fullName
         val typeDeclMemberName = typeDeclValEntry._2.headOption match {
           case Some(typeDeclMember) => // updating cache
-            if (!TaggerCache.typeDeclMemberNameCache.contains(typeDeclVal))
-              TaggerCache.typeDeclMemberNameCache.addOne(typeDeclVal -> mutable.HashMap[String, String]())
-            TaggerCache.typeDeclMemberNameCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember.name)
+            if (!TaggerCache.typeDeclMemberCache.contains(typeDeclVal))
+              TaggerCache.typeDeclMemberCache.addOne(typeDeclVal -> mutable.HashMap[String, Member]())
+            TaggerCache.typeDeclMemberCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember)
             typeDeclMember.name
           case None =>
             "Member not found"
@@ -142,11 +143,14 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
           .block
           .astChildren
           .isReturn
-          .code(
-            "(?i).*" + TaggerCache
-              .typeDeclMemberNameCache(typeDeclVal)
-              .getOrElse(ruleInfo.id, "Member Not Found") + ".*"
-          )
+          .code("(?i).*" + {
+            TaggerCache
+              .typeDeclMemberCache(typeDeclVal)
+              .get(ruleInfo.id) match {
+              case Some(a) => a.name
+              case _       => "Member not found"
+            }
+          } + ".*")
           .method
           .callIn
           .l
@@ -177,8 +181,14 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     memberType: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclHavingMemberType = cpg.typeDecl.where(_.member.typeFullName(memberType))
-    typeDeclHavingMemberType.fullName.dedup.foreach(typeDeclVal => {
+    val typeDeclHavingMemberTypeTuple =
+      cpg.typeDecl.member.typeFullName(memberType).map(member => (member, member.typeDecl.fullName)).dedup.l
+    typeDeclHavingMemberTypeTuple.foreach(typeDeclTuple => {
+      val typeDeclVal    = typeDeclTuple._2
+      val typeDeclMember = typeDeclTuple._1
+      if (!TaggerCache.typeDeclMemberCache.contains(typeDeclVal))
+        TaggerCache.typeDeclMemberCache.addOne(typeDeclVal -> mutable.HashMap[String, Member]())
+      TaggerCache.typeDeclMemberCache(typeDeclVal).addOne(ruleInfo.id -> typeDeclMember)
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
@@ -205,9 +215,20 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     typeDeclName: String,
     ruleInfo: RuleInfo
   ) = {
-    val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclName))
+    val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclName)).dedup.l
+
+    typeDeclsExtendingTypeName.foreach(typeDecl => {
+      TaggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
+    })
 
     typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
+
+      if (!TaggerCache.typeDeclExtendingTypeDeclCache.contains(typeDeclVal))
+        TaggerCache.typeDeclExtendingTypeDeclCache.addOne(typeDeclVal -> mutable.HashMap[String, TypeDecl]())
+      TaggerCache
+        .typeDeclExtendingTypeDeclCache(typeDeclVal)
+        .addOne(ruleInfo.id -> cpg.typeDecl.where(_.fullNameExact(typeDeclName)).head)
+
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
@@ -225,7 +246,10 @@ class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
         // Tag for storing memberName in derived Objects -> patient (patient extends user) --> (email, password)
         storeForTag(builder, impactedObject)(
           ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
-          TaggerCache.typeDeclMemberNameCache(typeDeclName).getOrElse(ruleInfo.id, "Member Not Found")
+          TaggerCache.typeDeclMemberCache(typeDeclName).get(ruleInfo.id) match {
+            case Some(a) => a.name
+            case _       => "Member not found"
+          }
         )
       })
     })
