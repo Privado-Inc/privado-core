@@ -7,12 +7,16 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
-import io.joern.pysrc2cpg.{Py2Cpg, Py2CpgOnFileSystemConfig, Py2CpgOnFileSystem}
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.passes.frontend.{PythonModuleDefinedCallLinker, PythonNaiveCallLinker}
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -30,6 +34,14 @@ object PythonProcessor {
       case Success(cpg) =>
         logger.info("Applying default overlays")
         logger.info("=====================")
+
+        // Apply default overlays
+        X2Cpg.applyDefaultOverlays(cpg)
+        new PythonModuleDefinedCallLinker(cpg).createAndApply()
+        new PythonNaiveCallLinker(cpg).createAndApply()
+
+        // Apply OSS Dataflow overlay
+        new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
