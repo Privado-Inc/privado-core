@@ -67,6 +67,9 @@ class Dataflow(cpg: Cpg) {
     val sources = getSources
     val sinks   = getSinks
 
+    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
+    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
+
     if (sources.isEmpty || sinks.isEmpty)
       Map[String, Path]()
     else {
