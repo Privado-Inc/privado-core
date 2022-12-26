@@ -114,7 +114,7 @@ class Dataflow(cpg: Cpg) {
       val result =
         dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
       println(s"${TimeMetric.getNewTime()} - --Filtering post Deduplication is done in \t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${result.size}")
+          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataflowFromCache.size}")
       result
     }
   }
