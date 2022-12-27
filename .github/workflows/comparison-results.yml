@@ -97,7 +97,6 @@ jobs:
           repository: "Privado-Inc/privado"
           path: ./privado-core-and-rules/privado
 
-
       - name: Download base binary 
         uses: actions/download-artifact@master
         with:
@@ -109,7 +108,6 @@ jobs:
         with:
           name: ${{ env.HEAD_NAME }}
           path: ./privado-core-and-rules/${{ env.HEAD_NAME }}/privado-core-binary
-
 
       - name: Create Folder to store reports
         run: mkdir ${GITHUB_WORKSPACE}/reports && mkdir -p ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{ env.BASE_NAME }} && mkdir -p ${GITHUB_WORKSPACE}/${{matrix.repo_name}}_results/${{ env.HEAD_NAME }} && mkdir ${GITHUB_WORKSPACE}/time_results
@@ -166,13 +164,11 @@ jobs:
           name: ${{matrix.repo_name}}_stable
           path: /home/runner/work/privado-core/privado-core/${{matrix.repo_name}}_results/${{ env.BASE_NAME }}/privado.json
           
-
       - name: Pass JSON (${{github.head_ref}}) to the next job
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_dev
           path: /home/runner/work/privado-core/privado-core/${{matrix.repo_name}}_results/${{ env.HEAD_NAME }}/privado.json
-          
           
       - name: Upload CPU and memory usage file
         uses: actions/upload-artifact@master
@@ -180,14 +176,12 @@ jobs:
           name: ${{matrix.repo_name}}_cpu
           path: /home/runner/work/privado-core/privado-core/tools/results_1.txt
           
-
       - name: Upload time stats for repos
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_time
           path: /home/runner/work/privado-core/privado-core/time_results
           
-
       - name: Upload Trigger metadata
         uses: actions/upload-artifact@master
         with:
@@ -202,8 +196,15 @@ jobs:
         with:
           name: comparison_report
           path: /home/runner/work/privado-core/privado-core/comparison_report.csv
-          
 
+      - name: Create Summary report
+        run: touch ${GITHUB_WORKSPACE}/summary-report.txt
+
+      - name: Upload Summary Report
+        uses: actions/upload-artifact@master
+        with: 
+          name: summary-report
+          path: /home/runner/work/privado-core/privado-core/summary-report.txt
 
   compare-reports: 
     needs: scan_repositories
@@ -251,11 +252,17 @@ jobs:
           name: ${{matrix.repo_name}}_cpu
           path: ./${{matrix.repo_name}}
           
-      - name: Download Comparison report
+      - name: Download Comparison Report
         uses: actions/download-artifact@master
         with: 
           name: comparison_report
           path: ./
+
+      - name: Download Summary Report
+        uses: actions/download-artifact@master
+        with:
+          name: summary-report
+          path: ./ 
 
       - name: Download ${{github.head_ref}} Trigger Metadata Result (${{matrix.repo_name}})
         uses: actions/download-artifact@master
@@ -272,16 +279,14 @@ jobs:
       - name: Upload Report for Next Job
         uses: actions/upload-artifact@master
         with: 
-          name: final-report
-          path: /home/runner/work/privado-core/privado-core/comparison_report.csv
-
-      - name: Upload Report for Next Job
-        uses: actions/upload-artifact@master
-        with: 
           name: comparison_report
           path: /home/runner/work/privado-core/privado-core/comparison_report.csv
 
-  
+      - name: upload Summary Report for Next job
+        uses: actions/upload-artifact@master
+        with:
+          name: summary-report
+          path: /home/runner/work/privado-core/privado-core/summary-report.txt
 
   send-result:
     needs: compare-reports
