@@ -78,18 +78,20 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    if (apis.methodFullName(commonHttpPackages).l.size == 0) {
-      if (httpPackagesInImport()) {
-        logger.debug("Using brute force approach for finding API sinks")
-        sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-        sinkTagger(propertySinks, apis, builder, ruleInfo)
-      } else {
-        logger.debug("Skipping API Tagger")
+    apis.methodFullName(commonHttpPackages).l.size match {
+      case 0 =>
+        if (httpPackagesInImport()) {
+          println("Using API Tagger for finding API sinks")
+          sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
+          sinkTagger(propertySinks, apis, builder, ruleInfo)
+        } else {
+          println("Skipping API Tagger because not valid match found")
+        }
+      case _ => {
+        println("Using Enhanced API tagger to find API sinks")
+        sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
+        sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
       }
-    } else {
-      logger.debug("Using Enhanced Tagger for finding API sinks")
-      sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
-      sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
     }
   }
 
