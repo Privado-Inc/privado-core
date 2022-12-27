@@ -24,6 +24,7 @@ package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.AppCache
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.ImportUtility
@@ -34,6 +35,7 @@ import ai.privado.utility.Utilities.{
   isFileProcessable,
   storeForTag
 }
+import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -74,21 +76,24 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
 
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
   val commonHttpPackages: String =
-    "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
+    "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     apis.methodFullName(commonHttpPackages).l.size match {
       case 0 =>
         if (httpPackagesInImport()) {
-          println("Using API Tagger for finding API sinks")
+          logger.debug("Using API Tagger for finding API sinks")
+          MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("v1")
           sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
           sinkTagger(propertySinks, apis, builder, ruleInfo)
         } else {
-          println("Skipping API Tagger because not valid match found")
+          MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("NA")
+          logger.debug("Skipping API Tagger because not valid match found")
         }
       case _ => {
-        println("Using Enhanced API tagger to find API sinks")
+        logger.debug("Using Enhanced API tagger to find API sinks")
+        MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("v2")
         sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
         sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
       }
