@@ -189,7 +189,7 @@ class Dataflow(cpg: Cpg) {
     })
 
     dataflowsMapBySourceId.foreach(flow => {
-      filterSinkListAndStoreInCache(flow._1, flow._2.toList, dataflowsMapByType, sinkSubCategory, sinkNodetypes)
+      filterSinkListAndStoreInCache(flow._1, flow._2.toList, dataflowMapByPathId, sinkSubCategory, sinkNodetypes)
     })
   }
 
