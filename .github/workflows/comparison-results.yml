@@ -272,6 +272,12 @@ jobs:
       - name: Upload Report for Next Job
         uses: actions/upload-artifact@master
         with: 
+          name: final-report
+          path: /home/runner/work/privado-core/privado-core/comparison_report.csv
+
+      - name: Upload Report for Next Job
+        uses: actions/upload-artifact@master
+        with: 
           name: comparison_report
           path: /home/runner/work/privado-core/privado-core/comparison_report.csv
 
@@ -288,6 +294,18 @@ jobs:
         with:
           name: comparison_report
           path: ./report
+
+      - name: Download Summary Report
+        uses: actions/download-artifact@master
+        with:
+          name: summary-report
+          path: ./report
+      
+      - name: Set summary variable
+        run: |
+          echo "MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$(cat /home/runner/work/privado-core/privado-core/report/summary-report.txt)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
       
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
@@ -295,5 +313,5 @@ jobs:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
           file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}} \nSummary Report:\n ${{ env.MESSAGE }}"
           file_type: "csv"
