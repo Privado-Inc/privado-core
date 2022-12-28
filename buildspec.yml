@@ -27,7 +27,7 @@ phases:
       - BRANCH_NAME=${CODEBUILD_WEBHOOK_TRIGGER:7}
       - echo $BRANCH_NAME
       - |
-        if [[ $BRANCH_NAME = "main" ]]
+        if [[ $AWS_REGION = "eu-west-1" ]]
         then
             TAG_1=latest
         else
