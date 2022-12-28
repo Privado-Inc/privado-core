@@ -23,10 +23,19 @@
 
 package ai.privado.cache
 
+import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
+
 import scala.collection.mutable
 
 object TaggerCache {
 
-  val typeDeclMemberNameCache = mutable.HashMap[String, mutable.HashMap[String, String]]()
+  // Stores typeDeclFullName --> ( sourceRuleId --->  Member Node)
+  val typeDeclMemberCache = mutable.HashMap[String, mutable.HashMap[String, Member]]()
+
+  // Stores typeDeclFullName --> ( sourceRuleId --->  Extending TypeDecl Node)
+  val typeDeclExtendingTypeDeclCache = mutable.HashMap[String, mutable.HashMap[String, TypeDecl]]()
+
+  // Stores typeDeclFullName --> TypeDeclNode
+  val typeDeclDerivedByExtendsCache = mutable.HashMap[String, TypeDecl]()
 
 }

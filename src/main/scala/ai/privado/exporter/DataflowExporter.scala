@@ -54,17 +54,18 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
       dataflowModelBySourceId.map(dataflowBySourceEntrySet => {
         DataFlowSubCategoryModel(
           dataflowBySourceEntrySet._1,
-          convertSourceModelList(dataflowBySourceEntrySet._2, sinkSubCategory)
+          convertSourceModelList(dataflowBySourceEntrySet._1, dataflowBySourceEntrySet._2, sinkSubCategory)
         )
       })
     })
   }
 
   def convertSourceModelList(
+    sourceId: String,
     sourceModelList: List[DataFlowPathModel],
     sinkSubCategory: String
   ): List[DataFlowSubCategorySinkModel] = {
-    def convertSink(sinkId: String, sinkPathIds: List[String]) = {
+    def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String]) = {
       val sinkIdAfterSplit = sinkId.split("#_#")
 
       // Special case for API type of nodes
@@ -96,7 +97,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         apiUrl,
         databaseDetails.getOrElse(DatabaseDetails("", "", "", "")),
         sinkPathIds
-          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId))
+          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId, sourceId))
       )
     }
 
@@ -113,12 +114,12 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         sinkMap(sinkId) = ListBuffer()
       sinkMap(sinkId).append(sourceModel.pathId)
     })
-    sinkMap.map(entrySet => convertSink(entrySet._1, entrySet._2.toList)).toList
+    sinkMap.map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toList)).toList
 
   }
 
-  private def convertPathsList(sinkFlow: Path, pathId: String) = {
-    DataFlowSubCategoryPathModel(pathId, ExporterUtility.convertPathElements(sinkFlow.elements))
+  private def convertPathsList(sinkFlow: Path, pathId: String, sourceId: String) = {
+    DataFlowSubCategoryPathModel(pathId, ExporterUtility.convertPathElements(sinkFlow.elements, sourceId))
   }
 
 }

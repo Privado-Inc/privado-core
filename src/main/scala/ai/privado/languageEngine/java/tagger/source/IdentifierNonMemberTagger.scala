@@ -33,14 +33,14 @@ import overflowdb.BatchedUpdate
 
 class IdentifierNonMemberTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String](cpg) {
 
-  override def generateParts(): Array[String] = TaggerCache.typeDeclMemberNameCache.keys.toArray
+  override def generateParts(): Array[String] = TaggerCache.typeDeclMemberCache.keys.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, typeDeclValue: String): Unit = {
 
     implicit val resolver: ICallResolver = NoResolve
     val typeDeclNode                     = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
     val allMembers                       = typeDeclNode.member.name.toSet
-    val personalMembers                  = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
+    val personalMembers                  = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
     val nonPersonalMembers               = allMembers.diff(personalMembers)
 
     val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
