@@ -80,7 +80,7 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    apis.methodFullName(commonHttpPackages).l.size match {
+    apis.methodFullName(s"${commonHttpPackages}${APISINKS_REGEX}.*").l.size match {
       case 0 =>
         if (httpPackagesInImport()) {
           logger.debug("Using API Tagger for finding API sinks")
