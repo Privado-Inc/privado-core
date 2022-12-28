@@ -9,7 +9,7 @@
         <logger name="com.networknt.schema" level="ERROR" />
         <logger name="io.shiftleft" level="WARN" />
         <logger name="io.joern" level="WARN" />
-        <Root level="DEBUG">
+        <Root level="ERROR">
             <AppenderRef ref="Console" />
         </Root>
     </Loggers>
