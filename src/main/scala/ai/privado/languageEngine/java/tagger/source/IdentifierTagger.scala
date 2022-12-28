@@ -23,26 +23,28 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import java.util.UUID
 import scala.collection.mutable
 
-class IdentifierTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE     = UUID.randomUUID.toString
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
+
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
     // Step 1.1
     val rulePattern = ruleInfo.combinedRulePattern
