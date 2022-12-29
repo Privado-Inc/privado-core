@@ -31,8 +31,7 @@ class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val identifierTagger = new IdentifierTagger(cpg)
-    identifierTagger.setRuleAndApply(sources.head)
+    new IdentifierTagger(cpg).createAndApply()
   }
 
   override val javaFileContents =

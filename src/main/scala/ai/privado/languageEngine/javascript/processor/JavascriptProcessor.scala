@@ -71,7 +71,7 @@ object JavascriptProcessor {
         cpg.runTagger(processedRules)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow
-
+        println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         // Exporting

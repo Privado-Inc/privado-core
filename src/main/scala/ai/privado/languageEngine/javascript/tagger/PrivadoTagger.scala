@@ -42,32 +42,16 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
   override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
-    val sourceRules = rules.sources
     logger.info("Starting tagging")
 
-    val literalTagger     = new LiteralTagger(cpg)
-    val identifierTagger  = new IdentifierTagger(cpg)
-    val apiTagger         = new APITagger(cpg)
-    val regularSinkTagger = new RegularSinkTagger(cpg)
     println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-    sourceRules.foreach(rule => {
-      literalTagger.setRuleAndApply(rule)
-    })
-
+    new LiteralTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
-    sourceRules.foreach(rule => {
-      identifierTagger.setRuleAndApply(rule)
-    })
+    new IdentifierTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
-
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
-      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
+    new RegularSinkTagger(cpg).createAndApply()
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.API))
-      .foreach(rule => apiTagger.setRuleAndApply(rule))
+    new APITagger(cpg).createAndApply()
 
     logger.info("Done with tagging")
 
