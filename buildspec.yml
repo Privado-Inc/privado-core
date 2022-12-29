@@ -23,10 +23,16 @@ phases:
             VERSION_INITIAL=${LATEST_TAG:1}
             VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
         fi
-        echo $VERSION
-      - TAG_1=latest
+      - echo $VERSION
+      - echo $BRANCH_NAME
+      - |
+        if [[ $AWS_REGION = "eu-west-1" ]]
+        then
+            TAG_1=latest
+        else
+            TAG_1=${CODEBUILD_WEBHOOK_TRIGGER:7}
+        fi
       - TAG_2=$VERSION
-      - echo $CODEBUILD_WEBHOOK_HEAD_REF
       - TAG_3=${CODEBUILD_WEBHOOK_HEAD_REF##*/}
 
   build:
