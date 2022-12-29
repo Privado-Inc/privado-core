@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.python.tagger
 
 import ai.privado.entrypoint.TimeMetric
+import ai.privado.languageEngine.python.tagger.source.IdentifierTagger
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
@@ -20,28 +21,24 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    val literalTagger = new LiteralTagger(cpg)
-    val apiTagger = new APITagger(cpg)
-    val regularSinkTagger = new RegularSinkTagger(cpg)
-
-    val sourceRules = rules.sources
-
-    sourceRules.foreach(rule => {
-      literalTagger.setRuleAndApply(rule)
-    })
-
+    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --LiteralTagger invoked...")
+    new LiteralTagger(cpg).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+    println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
+    new IdentifierTagger(cpg).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.API))
-      .foreach(rule => apiTagger.setRuleAndApply(rule))
+    new APITagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
-      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
+    new RegularSinkTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
