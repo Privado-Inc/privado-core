@@ -22,12 +22,13 @@
  */
 package ai.privado.languageEngine.java.tagger.sink
 
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, Language, RuleInfo}
+import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.ImportUtility
+import ai.privado.model.Language
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDefaultSemantics,
@@ -40,13 +41,23 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 
+/*
+  Enum class to represent the different API Tagger versions being used for Java
+  Skip Tagger -> The tagger is being skipped to prevent False Positive Results
+  V1 Tagger -> The brute implementation of finding sinks is being used
+  V2 Tagger -> The approach uses most common HTTP Packages for sinks in Java
+ */
+object APITaggerVersionJava extends Enumeration {
+  type APITaggerVersionJava = Value
+  val SkipTagger, V1Tagger, V2Tagger = Value
+}
 class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
-
   val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch                   = mutable.HashMap[String, Integer]()
@@ -74,29 +85,37 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .l
 
+  lazy val apiTaggerToUse = apis.methodFullName(s"${commonHttpPackages}${APISINKS_REGEX}.*").l.size match {
+    case 0 =>
+      if (httpPackagesInImport()) {
+        MetricHandler.metricsData("apiTaggerVersion") = Json.fromString(APITaggerVersionJava.V1Tagger.toString)
+        APITaggerVersionJava.V1Tagger
+      } else {
+        MetricHandler.metricsData("apiTaggerVersion") = Json.fromString(APITaggerVersionJava.SkipTagger.toString)
+        APITaggerVersionJava.SkipTagger
+      }
+    case _ =>
+      MetricHandler.metricsData("apiTaggerVersion") = Json.fromString(APITaggerVersionJava.V2Tagger.toString)
+      APITaggerVersionJava.V2Tagger
+  }
+
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
   val commonHttpPackages: String =
     "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    apis.methodFullName(s"${commonHttpPackages}${APISINKS_REGEX}.*").l.size match {
-      case 0 =>
-        if (httpPackagesInImport()) {
-          logger.debug("Using API Tagger for finding API sinks")
-          MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("v1")
-          sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-          sinkTagger(propertySinks, apis, builder, ruleInfo)
-        } else {
-          MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("NA")
-          logger.debug("Skipping API Tagger because not valid match found")
-        }
-      case _ => {
+    apiTaggerToUse match {
+      case APITaggerVersionJava.V1Tagger =>
+        logger.debug("Using brute API Tagger to find API sinks")
+        sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
+        sinkTagger(propertySinks, apis, builder, ruleInfo)
+      case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
-        MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("v2")
         sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
         sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
-      }
+      case _ =>
+        logger.debug("Skipping API Tagger because valid match not found")
     }
   }
 
