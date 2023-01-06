@@ -1,6 +1,8 @@
 package ai.privado.languageEngine.python.tagger
 
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.TimeMetric
+import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.source.IdentifierTagger
 import ai.privado.model.{ConfigAndRules, NodeType}
 import ai.privado.tagger.PrivadoBaseTagger
@@ -41,6 +43,12 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new RegularSinkTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
+    println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
+    new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     logger.info("Done with tagging")
