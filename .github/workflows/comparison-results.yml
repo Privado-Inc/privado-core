@@ -161,7 +161,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: ${{matrix.repo_name}}_dev
-          path: /home/runner/work/privado-core/privado-core/${{matrix.repo_name}}_results/${{ env.HEAD_NAME }}/privado.json
+          path: /home/runner/work/privado-core/privado-core/${{matrix.repo_name}}_results/${{ env.HEAD_OWNER_NAME }}-${{ env.HEAD_BRANCH_NAME }}/privado.json
           
       - name: Upload CPU and memory usage file
         uses: actions/upload-artifact@master
