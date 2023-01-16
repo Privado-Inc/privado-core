@@ -79,8 +79,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
   /** Tag return object of regex matching method Step 2.1
     */
   private def tagMethodReturn(builder: BatchedUpdate.DiffGraphBuilder, rulePattern: String, ruleInfo: RuleInfo):  Unit = {
-    val methodReturnMatches = cpg.method(rulePattern).repeat(_.astChildren)(_.emit).filter(_.isReturn).l
-    println(methodReturnMatches)
+    val methodReturnMatches = cpg.method("get"+rulePattern).repeat(_.astChildren)(_.emit).filter(_.isReturn).l
     methodReturnMatches.foreach(methodReturn => {
       storeForTag(builder, methodReturn.asInstanceOf[Return])(InternalTag.VARIABLE_REGEX_METHOD_RETURN.toString)
       addRuleTags(builder, methodReturn.asInstanceOf[Return], ruleInfo)
