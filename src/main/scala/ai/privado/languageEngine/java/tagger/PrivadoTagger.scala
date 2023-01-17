@@ -84,7 +84,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
     rules.sinks
       .filter(rule => rule.nodeType.equals(NodeType.API))
-      .foreach(rule => apiTagger.setRuleAndApply(rule))
+      .foreach(rule => apiTagger.createAndApply())
 
     println(
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"

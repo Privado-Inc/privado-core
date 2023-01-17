@@ -94,7 +94,7 @@ object ImportUtility {
       allImports.addAll(fileImports)
     }
 
-    return allImports;
+    allImports;
   }
 
 }

@@ -26,7 +26,6 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.ImportUtility
 import ai.privado.model.Language
 import ai.privado.utility.Utilities.{
@@ -43,9 +42,11 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters.SetIsParallelizable
 
 /*
   Enum class to represent the different API Tagger versions being used for Java
@@ -57,10 +58,13 @@ object APITaggerVersionJava extends Enumeration {
   type APITaggerVersionJava = Value
   val SkipTagger, V1Tagger, V2Tagger = Value
 }
-class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
-  val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch                   = mutable.HashMap[String, Integer]()
+
+class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  private val logger     = LoggerFactory.getLogger(this.getClass)
+  val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  val topMatch           = mutable.HashMap[String, Integer]()
+
   val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
@@ -71,14 +75,8 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
     val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
     topMatch(key) = (currVal + 1)
   })
-  var APISINKS_IGNORE_REGEX = "^("
-  topMatch.foreach((mapEntry) => {
-    if (mapEntry == topMatch.last) {
-      APISINKS_IGNORE_REGEX += mapEntry._1 + ").*"
-    } else {
-      APISINKS_IGNORE_REGEX += mapEntry._1 + "|"
-    }
-  })
+
+  val APISINKS_IGNORE_REGEX = topMatch.keys.mkString("^(", "|", ").*")
   val apis = cacheCall
     .name(APISINKS_REGEX)
     .methodFullNameNot(APISINKS_IGNORE_REGEX)
@@ -102,7 +100,14 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
   val commonHttpPackages: String =
     "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+
+  override def generateParts(): Array[_ <: AnyRef] = {
+    RuleCache.getRule.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.API))
+      .toArray
+  }
+
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     apiTaggerToUse match {
@@ -138,8 +143,18 @@ class JavaAPITagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
   }
 
   private def httpPackagesInImport(): Boolean = {
-    val imports = ImportUtility.getAllImportsFromProject(AppCache.localScanPath, Language.JAVA)
-    imports.size match {
+    val imports          = ImportUtility.getAllImportsFromProject(AppCache.localScanPath, Language.JAVA)
+    val httpPackageRegex = commonHttpPackages.r
+    val httpPackages     = mutable.HashSet[String]()
+
+    imports.par.foreach((statement) => {
+      httpPackageRegex.findFirstIn(statement) match {
+        case Some(value) => httpPackages.addOne(value)
+        case _           => ()
+      }
+    })
+
+    httpPackages.size match {
       case 0 => true
       case _ => false
     }
