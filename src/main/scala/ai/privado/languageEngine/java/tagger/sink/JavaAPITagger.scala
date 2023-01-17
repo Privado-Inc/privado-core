@@ -155,8 +155,8 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     })
 
     httpPackages.size match {
-      case 0 => true
-      case _ => false
+      case 0 => false
+      case _ => true
     }
   }
 

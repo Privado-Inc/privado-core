@@ -29,7 +29,7 @@ import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierNonMemberTagger, IdentifierTagger}
-import ai.privado.model.{ConfigAndRules, NodeType}
+import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.RegularSinkTagger
@@ -48,44 +48,40 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
     logger.info("Starting tagging")
-    val literalTagger       = new LiteralTagger(cpg)
-    val identifierTagger    = new IdentifierTagger(cpg)
-    val apiTagger           = new JavaAPITagger(cpg)
-    val regularSinkTagger   = new RegularSinkTagger(cpg)
-    val customInheritTagger = new CustomInheritTagger(cpg)
-
     val sourceRules = rules.sources
+
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --LiteralTagger invoked...")
     new LiteralTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
+
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
     new IdentifierTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
-    println(s"${Calendar.getInstance().getTime} - --IdentifierTagger Non Member tagger invoked...")
 
+    println(s"${Calendar.getInstance().getTime} - --IdentifierTagger Non Member tagger invoked...")
     new IdentifierNonMemberTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger Non Member is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
+
     println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
     new DBConfigTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
+
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
-    println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.API))
-      .foreach(rule => apiTagger.createAndApply())
 
+    println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
+    new JavaAPITagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
