@@ -70,7 +70,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     })
 
     // Step 2.1
-    tagMethodReturn(builder, rulePattern, ruleInfo)
+    tagMatchingGetters(builder, rulePattern, ruleInfo)
 
     // Step 2.2 --> contains step 2.3, 2.4
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
@@ -78,7 +78,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
 
   /** Tag return object of regex matching method Step 2.1
     */
-  private def tagMethodReturn(builder: BatchedUpdate.DiffGraphBuilder, rulePattern: String, ruleInfo: RuleInfo):  Unit = {
+  private def tagMatchingGetters(builder: BatchedUpdate.DiffGraphBuilder, rulePattern: String, ruleInfo: RuleInfo):  Unit = {
     val callInMatches = cpg.method("get"+rulePattern).callIn.l
     callInMatches.foreach(callInMatch => {
       storeForTag(builder, callInMatch)(InternalTag.VARIABLE_REGEX_CALL_IN.toString)
