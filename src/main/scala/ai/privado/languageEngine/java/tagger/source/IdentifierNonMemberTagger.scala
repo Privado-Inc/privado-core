@@ -23,55 +23,56 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.cache.TaggerCache
-import ai.privado.model.{Constants, InternalTag}
+import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.storeForTag
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
-class IdentifierNonMemberTagger(cpg: Cpg) extends SimpleCpgPass(cpg) {
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+class IdentifierNonMemberTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String](cpg) {
+
+  override def generateParts(): Array[String] = TaggerCache.typeDeclMemberCache.keys.toArray
+
+  override def runOnPart(builder: DiffGraphBuilder, typeDeclValue: String): Unit = {
 
     implicit val resolver: ICallResolver = NoResolve
-    TaggerCache.typeDeclMemberNameCache.keys.foreach(typeDeclValue => {
-      val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
-      val allMembers         = typeDeclNode.member.name.toSet
-      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
-      val nonPersonalMembers = allMembers.diff(personalMembers)
+    val typeDeclNode                     = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
+    val allMembers                       = typeDeclNode.member.name.toSet
+    val personalMembers                  = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
+    val nonPersonalMembers               = allMembers.diff(personalMembers)
 
-      val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
-      if (nonPersonalMembersRegex.nonEmpty) {
-        val impactedMethods = typeDeclNode.method.block.astChildren.isReturn
-          .code("(?i).*(" + nonPersonalMembersRegex + ").*")
-          .method
-          .callIn
-          .l
-
-        impactedMethods.foreach(impactedReturnCall => {
-          storeForTag(builder, impactedReturnCall)(
-            InternalTag.NON_SENSITIVE_METHOD_RETURN.toString,
-            "Data.Sensitive.NonPersonal.Method"
-          )
-        })
-      }
-
-      val impactedGetters = cpg.method
-        .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+    val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
+    if (nonPersonalMembersRegex.nonEmpty) {
+      val impactedMethods = typeDeclNode.method.block.astChildren.isReturn
+        .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+        .method
         .callIn
-        .where(_.argument(1).isIdentifier.typeFullName(typeDeclValue))
-        .where(_.argument(2).code("(?i).*(" + nonPersonalMembersRegex + ").*"))
         .l
 
-      impactedGetters.foreach(impactedGetter => {
-        if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedGetter)(
-            InternalTag.NON_SENSITIVE_FIELD_ACCESS.toString,
-            "Data.Sensitive.NonPersonal.MemberAccess"
-          )
-        }
+      impactedMethods.foreach(impactedReturnCall => {
+        storeForTag(builder, impactedReturnCall)(
+          InternalTag.NON_SENSITIVE_METHOD_RETURN.toString,
+          "Data.Sensitive.NonPersonal.Method"
+        )
       })
+    }
+
+    val impactedGetters = cpg.method
+      .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+      .callIn
+      .where(_.argument(1).isIdentifier.typeFullName(typeDeclValue))
+      .where(_.argument(2).code("(?i).*(" + nonPersonalMembersRegex + ").*"))
+      .l
+
+    impactedGetters.foreach(impactedGetter => {
+      if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
+        storeForTag(builder, impactedGetter)(
+          InternalTag.NON_SENSITIVE_FIELD_ACCESS.toString,
+          "Data.Sensitive.NonPersonal.MemberAccess"
+        )
+      }
     })
   }
 }

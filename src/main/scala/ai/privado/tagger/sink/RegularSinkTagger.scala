@@ -23,20 +23,26 @@
 
 package ai.privado.tagger.sink
 
-import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.tagger.PrivadoSimplePass
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
+import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg) extends PrivadoSimplePass(cpg) {
+class RegularSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def generateParts(): Array[RuleInfo] = {
+    RuleCache.getRule.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .toArray
+  }
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
     val sinks = cacheCall.methodFullName(ruleInfo.combinedRulePattern).l
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {

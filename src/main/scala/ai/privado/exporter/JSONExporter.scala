@@ -137,12 +137,9 @@ object JSONExporter {
 
       logger.debug(
         s"Total False positive flows removed : \n" +
-          s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
-          s"FP by derived source Data element : ${AppCache.fpByDerivedSourcePresence}\n" +
-          s"Grouping by Data element : ${AppCache.groupingByLineNumber}\n" +
-          s"Total flows before FP : ${AppCache.totalFlows}\n" +
-          s"Total flows from Reachable By: ${AppCache.totalFlowFromReachableBy}\n" +
+          s"Total flows before FP: ${AppCache.totalFlowFromReachableBy}\n" +
           s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
+          s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
           s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
       )
 
