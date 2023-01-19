@@ -34,11 +34,8 @@ object AppCache {
   var repoName: String            = ""
   var privadoVersionMain: String  = ""
   var fpByOverlappingDE           = 0
-  var fpByDerivedSourcePresence   = 0
-  var groupingByLineNumber        = 0
   var totalFlowFromReachableBy    = 0
   var totalFlowAfterThisFiltering = 0
-  var totalFlows                  = 0
   val fpMap                       = mutable.HashMap[String, Int]()
   val totalMap                    = mutable.HashMap[String, Int]()
 

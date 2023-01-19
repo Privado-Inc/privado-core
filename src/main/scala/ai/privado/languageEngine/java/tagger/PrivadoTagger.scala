@@ -47,29 +47,19 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
   override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
-    val literalTagger       = new LiteralTagger(cpg)
-    val identifierTagger    = new IdentifierTagger(cpg)
-    val apiTagger           = new APITagger(cpg)
-    val regularSinkTagger   = new RegularSinkTagger(cpg)
-    val customInheritTagger = new CustomInheritTagger(cpg)
-
     val sourceRules = rules.sources
-
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --LiteralTagger invoked...")
-    sourceRules.foreach(rule => {
-      literalTagger.setRuleAndApply(rule)
-    })
+    new LiteralTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
-    sourceRules.foreach(rule => {
-      identifierTagger.setRuleAndApply(rule)
-    })
+    new IdentifierTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger Non Member tagger invoked...")
+
     new IdentifierNonMemberTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger Non Member is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
@@ -80,16 +70,12 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
-      .foreach(rule => regularSinkTagger.setRuleAndApply(rule))
+    new RegularSinkTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
-    rules.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.API))
-      .foreach(rule => apiTagger.setRuleAndApply(rule))
+    new APITagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
@@ -98,7 +84,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
       println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
-      StorageInheritRule.rules.foreach(rule => customInheritTagger.setRuleAndApply(rule))
+      new CustomInheritTagger(cpg).createAndApply()
       println(
         s"${TimeMetric.getNewTime()} - --CustomInheritTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
       )
@@ -106,7 +92,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
     val collectionTagger = new CollectionTagger(cpg, sourceRules)
-    rules.collections.foreach(rule => collectionTagger.setRuleAndApply(rule))
+    new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )

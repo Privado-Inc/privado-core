@@ -41,13 +41,16 @@ import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
   Call,
   CfgNode,
   FieldIdentifier,
   Identifier,
   Literal,
+  Member,
   MethodParameterIn,
-  NewTag
+  NewTag,
+  TypeDecl
 }
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -209,14 +212,8 @@ object Utilities {
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
     * that line.
     */
-  def dump(filename: String, lineToHighlight: Option[Integer], methodFullName: String = ""): String = {
-    val methodType = {
-      val methodInterface = methodFullName.split(":").headOption.getOrElse("")
-      if (methodInterface.contains("unresolved") || methodInterface.contains("<operator>")) ""
-      else methodInterface
-    }
-
-    val arrow: CharSequence = "/* <=== " + methodType + " */ "
+  def dump(filename: String, lineToHighlight: Option[Integer], message: String = ""): String = {
+    val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
       if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
@@ -395,12 +392,8 @@ object Utilities {
     * @param node
     * @return
     */
-  def getFileNameForNode(node: CfgNode) = {
-    Traversal(node).head match {
-      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
-        a.file.name.headOption.getOrElse("")
-      case a => a.location.filename
-    }
+  def getFileNameForNode(node: AstNode): String = {
+    Traversal(node).file.name.headOption.getOrElse(Constants.EMPTY)
   }
 
   /** Returns the Semantics for functions with void return type Default behavior is not propagating the taint
@@ -422,10 +415,10 @@ object Utilities {
 
     val semanticList = ListBuffer[String]()
 
-    TaggerCache.typeDeclMemberNameCache.keys.foreach(typeDeclValue => {
+    TaggerCache.typeDeclMemberCache.keys.foreach(typeDeclValue => {
       val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
       val allMembers         = typeDeclNode.member.name.toSet
-      val personalMembers    = TaggerCache.typeDeclMemberNameCache(typeDeclValue).values.toSet
+      val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
       val nonPersonalMembers = allMembers.diff(personalMembers)
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
