@@ -230,8 +230,7 @@ object DuplicateFlowProcessor {
       val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
         .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
       if (sinkCatLevelTwoCustomTag.nonEmpty) {
-        val sinkId = sinkCatLevelTwoCustomTag.head.value
-        def filterFlowsOverlappingWithOtherDataElement() = {
+        def filterFlowsOverlappingWithOtherDataElement(sinkId: String) = {
           // Logic to filter flows which are interfering with the current source item
           // Ex - If traversing flow for email, discard flow which uses password
 
@@ -313,13 +312,15 @@ object DuplicateFlowProcessor {
               DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
             )
         }
-        if (ScanProcessor.config.disableFlowSeparationByDataElement)
-          DataFlowCache.setDataflow(
-            DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-          )
-        else
-          filterFlowsOverlappingWithOtherDataElement()
-        AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+        sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
+          if (ScanProcessor.config.disableFlowSeparationByDataElement)
+            DataFlowCache.setDataflow(
+              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
+            )
+          else
+            filterFlowsOverlappingWithOtherDataElement(sinkId)
+          AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+        })
       }
     }
 

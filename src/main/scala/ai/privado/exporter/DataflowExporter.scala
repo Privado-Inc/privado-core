@@ -47,6 +47,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
 
   def getFlowByType(sinkSubCategory: String, sinkNodeTypes: Set[String]): Set[DataFlowSubCategoryModel] = {
     sinkNodeTypes.flatMap(sinkNodeType => {
+      val dataflowsAvailable = DataFlowCache.getDataflow
       val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
         dataflowModel.sinkSubCategory.equals(sinkSubCategory) && dataflowModel.sinkNodeType.equals(sinkNodeType)
       )

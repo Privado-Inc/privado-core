@@ -22,7 +22,6 @@ dependsOn(domainClasses)
 libraryDependencies ++= Seq(
   "com.github.pathikrit"            %% "better-files"            % "3.9.1",
   "com.github.scopt"                %% "scopt"                   % "3.7.1",
-  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
   "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
@@ -44,7 +43,9 @@ libraryDependencies ++= Seq(
   "com.networknt"                    % "json-schema-validator"   % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0"
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
+  "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

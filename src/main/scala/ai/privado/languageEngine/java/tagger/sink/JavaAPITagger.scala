@@ -25,9 +25,8 @@ package ai.privado.languageEngine.java.tagger.sink
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, Language, NodeType, RuleInfo, SystemConfig}
 import ai.privado.utility.ImportUtility
-import ai.privado.model.Language
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDefaultSemantics,
@@ -39,7 +38,7 @@ import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
@@ -61,10 +60,10 @@ object APITaggerVersionJava extends Enumeration {
 }
 
 class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  private val logger     = LoggerFactory.getLogger(this.getClass)
-  val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch           = mutable.HashMap[String, Integer]()
+  private val logger                             = LoggerFactory.getLogger(this.getClass)
+  val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
 
   val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
   val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
@@ -151,14 +150,21 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     ruleInfo: RuleInfo
   ): Unit = {
     val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
+    apis.foreach(apiNode => addRuleTags(builder, apiNode, ruleInfo))
     if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
       val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
         val apiNode     = flow.elements.last
-        addRuleTags(builder, apiNode, ruleInfo)
+        // addRuleTags(builder, apiNode, ruleInfo)
         storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
       })
+      val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
+      val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
+      apiNodesWithoutLiteralPath.foreach(apiNode => storeForTag(builder, apiNode)(Constants.apiUrl, "https://API.com"))
+    }
+    if (filteredLiteralSourceNode.isEmpty) {
+      apis.foreach(apiNode => storeForTag(builder, apiNode)(Constants.apiUrl, "https://API.com"))
     }
   }
 
