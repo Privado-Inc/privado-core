@@ -14,7 +14,8 @@ import io.shiftleft.semanticcpg.language._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.frontend.{PythonModuleDefinedCallLinker, PythonNaiveCallLinker}
+import io.joern.x2cpg.passes.frontend.PythonNaiveCallLinker
+import io.joern.x2cpg.passes.frontend.impl.{PythonTypeHintCallLinker, PythonTypeRecovery}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -37,7 +38,8 @@ object PythonProcessor {
 
         // Apply default overlays
         X2Cpg.applyDefaultOverlays(cpg)
-        new PythonModuleDefinedCallLinker(cpg).createAndApply()
+        new PythonTypeRecovery(cpg).createAndApply()
+        new PythonTypeHintCallLinker(cpg).createAndApply()
         new PythonNaiveCallLinker(cpg).createAndApply()
 
         // Apply OSS Dataflow overlay
@@ -98,12 +100,11 @@ object PythonProcessor {
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutFile = File.newTemporaryFile(suffix = "cpg.bin")
+    val cpgOutFile = File.newTemporaryFile(suffix = ".cpg.bin")
     cpgOutFile.deleteOnExit()
-    // TODO Discover ignoreVenvDir and set it later below
-    val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, None)
-    val xtocpg = Try(Py2CpgOnFileSystem.buildCpg(cpgconfig))
-    // TODO Doesn't seem to be valid for now
+    // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
+    val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, File(".venv").path, true)
+    val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig)
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
