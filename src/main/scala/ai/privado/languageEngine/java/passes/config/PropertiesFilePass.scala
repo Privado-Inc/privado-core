@@ -165,7 +165,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     SourceFiles
       .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
       .filter(Utilities.isFileProcessable)
-      .filter(_.matches(".*resources.*"))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
