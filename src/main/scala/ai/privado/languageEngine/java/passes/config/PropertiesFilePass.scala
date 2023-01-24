@@ -25,6 +25,7 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.RuleInfo
+import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
@@ -161,8 +162,10 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
   private def propertiesFiles(projectRoot: String): List[String] = {
-    val filePaths = SourceFiles.determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
-    filePaths.filterNot(_.matches(".*src/test/.*")).filter(_.matches(".*resources.*"))
+    SourceFiles
+      .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
+      .filter(Utilities.isFileProcessable)
+      .filter(_.matches(".*resources.*"))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
