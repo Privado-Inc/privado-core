@@ -25,6 +25,7 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.RuleInfo
+import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
@@ -161,7 +162,9 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
   private def propertiesFiles(projectRoot: String): List[String] = {
-    SourceFiles.determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
+    SourceFiles
+      .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
+      .filter(Utilities.isFileProcessable)
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
