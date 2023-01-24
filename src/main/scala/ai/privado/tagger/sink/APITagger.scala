@@ -28,7 +28,6 @@ import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, St
 import ai.privado.model.{NodeType, Constants, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
-  getDefaultSemantics,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
@@ -40,6 +39,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import io.joern.dataflowengineoss.DefaultSemantics
 
 import scala.collection.mutable.HashMap
 
@@ -69,7 +69,7 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .l
 
-  implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
+  implicit val engineContext: EngineContext = EngineContext(semantics = DefaultSemantics(), config = EngineConfig(4))
 
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +

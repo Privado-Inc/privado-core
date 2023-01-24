@@ -26,32 +26,12 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
-import ai.privado.model.{
-  CatLevelOne,
-  ConfigAndRules,
-  Constants,
-  DatabaseDetails,
-  InternalTag,
-  Language,
-  RuleInfo,
-  Semantic
-}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, DatabaseDetails, InternalTag, Language, RuleInfo, Semantic}
 import better.files.File
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CfgNode,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  MethodParameterIn,
-  NewTag,
-  TypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, FieldIdentifier, Identifier, Literal, Member, MethodParameterIn, NewTag, TypeDecl}
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -62,6 +42,7 @@ import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.io.Source
 import io.shiftleft.semanticcpg.language._
 import ai.privado.semantic.Language.finder
+import io.joern.dataflowengineoss.DefaultSemantics
 import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
@@ -122,14 +103,6 @@ object Utilities {
     }
   }
 
-  /** Utility to get the default semantics for dataflow queries
-    * @return
-    */
-  def getDefaultSemantics: Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("\n")))
-  }
-
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
     *
     * @param cpg
@@ -137,9 +110,8 @@ object Utilities {
     * @return
     */
   def getSemantics(cpg: Cpg): Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
 
-    val defaultSemantics = semanticsFilename.getLines().toList
+    val defaultSemantics = DefaultSemantics().elements.toList
     val customSinkSemantics = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
