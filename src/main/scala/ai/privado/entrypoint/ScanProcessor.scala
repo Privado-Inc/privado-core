@@ -40,6 +40,8 @@ import org.slf4j.LoggerFactory
 import java.util.Calendar
 import scala.sys.exit
 import scala.util.{Failure, Success, Try}
+import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
+
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -80,7 +82,7 @@ object ScanProcessor extends CommandProcessor {
       rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
-        ir.listRecursively
+        ir.listRecursively.toList.par
           .filter(f =>
             ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
               f.extension(toLowerCase = true).toString.contains(".yml")) &&
