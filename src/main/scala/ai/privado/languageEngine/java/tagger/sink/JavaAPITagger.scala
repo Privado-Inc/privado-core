@@ -45,6 +45,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
+import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters.SetIsParallelizable
 
@@ -113,14 +114,17 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
+        println(s"${Calendar.getInstance().getTime} - --BRUTE API TAGGER invoked...")
         sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
         sinkTagger(propertySinks, apis, builder, ruleInfo)
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
+        println(s"${Calendar.getInstance().getTime} - --ENHANCED API TAGGER invoked...")
         sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
         sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found")
+        println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED...")
     }
   }
 
