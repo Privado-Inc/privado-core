@@ -28,6 +28,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
+import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
@@ -56,6 +57,11 @@ object JavaProcessor {
     xtocpg match {
       case Success(cpg) => {
         try {
+          println(s"${Calendar.getInstance().getTime} - Processing Logger Lombok pass")
+          new LoggerLombokPass(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Logger Lombok pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
           println(
