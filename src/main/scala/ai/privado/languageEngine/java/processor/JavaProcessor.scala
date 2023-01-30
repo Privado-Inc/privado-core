@@ -136,6 +136,9 @@ object JavaProcessor {
     cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val javasrc = JavaSrc2Cpg()
     val xtocpg = javasrc.createCpg(cpgconfig).map { cpg =>
+      println(
+        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+      )
       println(s"${Calendar.getInstance().getTime} - Processing Logger Lombok pass")
       new LoggerLombokPass(cpg).createAndApply()
       println(
@@ -144,9 +147,6 @@ object JavaProcessor {
       applyDefaultOverlays(cpg)
       cpg
     }
-    println(
-      s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-    )
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
