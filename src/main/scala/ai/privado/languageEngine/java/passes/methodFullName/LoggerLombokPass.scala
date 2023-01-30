@@ -26,32 +26,39 @@ package ai.privado.languageEngine.java.passes.methodFullName
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class LoggerLombokPass(cpg: Cpg) extends ForkJoinParallelCpgPass[String](cpg) {
-  override def generateParts(): Array[String] = {
-    cpg.annotation.name("Slf4j").file.name.toArray
+import scala.collection.immutable.HashMap
+
+class LoggerLombokPass(cpg: Cpg) extends CpgPass(cpg) {
+  override def run(builder: DiffGraphBuilder): Unit = {
+    val lombokLogger = cpg.annotation.name("CommonsLog|Flogger|Log|Log4j2|Slf4j").name.dedup.l
+    if(lombokLogger.nonEmpty){
+      val lombokLoggerType = lombokLogger.headOption.get
+      val callNodes = cpg
+        .identifier("log")
+        .astParent
+        .isCall
+        .where(_.methodFullName("<unresolvedNamespace>.*"))
+      callNodes.foreach(callNode => {
+        updateNode(builder, callNode, lombokLoggerType)
+      })
+    }
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, fileName: String): Unit = {
+  def updateNode(builder: DiffGraphBuilder, node: Call, lombokLoggerType: String): Unit = {
+    val loggerMap = HashMap("CommonsLog" -> "org.apache.commons.logging.Log",
+      "Flogger"-> "com.google.common.flogger.FluentLogger",
+      "Log"-> "java.util.logging.Logger",
+      "Log4j2"-> "org.apache.logging.log4j.Logger",
+      "Slf4j"->"org.slf4j.Logger")
 
-    val callNodes = cpg
-      .identifier("log")
-      .astParent
-      .isCall
-      .filter(_.file.name.headOption.getOrElse("").equals(fileName))
-      .where(_.methodFullName("<unresolvedNamespace>.*"))
-    callNodes.foreach(callNode => {
-      updateNode(builder, callNode)
-    })
-  }
-
-  def updateNode(builder: DiffGraphBuilder, node: Call): Unit = {
     builder.setNodeProperty(
       node,
       PropertyNames.MethodFullName,
-      node.methodFullName.replace("<unresolvedNamespace>", "org.slf4j.Logger")
+      node.methodFullName.replace("<unresolvedNamespace>", loggerMap.getOrElse(lombokLoggerType, "<unresolvedNamespace>"))
     )
   }
 }
