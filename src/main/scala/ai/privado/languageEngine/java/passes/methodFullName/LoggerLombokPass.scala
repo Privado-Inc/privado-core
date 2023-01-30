@@ -29,7 +29,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-
 import scala.collection.immutable.HashMap
 
 class LoggerLombokPass(cpg: Cpg) extends CpgPass(cpg) {

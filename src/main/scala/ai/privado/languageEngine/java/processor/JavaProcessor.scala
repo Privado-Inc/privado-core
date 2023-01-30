@@ -36,8 +36,11 @@ import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, defaultOverlayCreators}
+import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
+import io.joern.x2cpg.passes.base.{FileCreationPass, NamespaceCreator}
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.{Languages, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
@@ -57,11 +60,6 @@ object JavaProcessor {
     xtocpg match {
       case Success(cpg) => {
         try {
-          println(s"${Calendar.getInstance().getTime} - Processing Logger Lombok pass")
-          new LoggerLombokPass(cpg).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Logger Lombok pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
           println(
@@ -136,7 +134,16 @@ object JavaProcessor {
     else
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
     cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
-    val xtocpg = JavaSrc2Cpg().createCpgWithOverlays(cpgconfig)
+    val javasrc = JavaSrc2Cpg()
+    val xtocpg = javasrc.createCpg(cpgconfig).map { cpg =>
+      println(s"${Calendar.getInstance().getTime} - Processing Logger Lombok pass")
+      new LoggerLombokPass(cpg).createAndApply()
+      println(
+        s"${TimeMetric.getNewTime()} - Logger Lombok pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+      )
+      applyDefaultOverlays(cpg)
+      cpg
+    }
     println(
       s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )

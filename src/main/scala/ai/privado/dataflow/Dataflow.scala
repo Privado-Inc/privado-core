@@ -62,6 +62,9 @@ class Dataflow(cpg: Cpg) {
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
       val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+
+      println(Traversal.from(dataflowPathsUnfiltered).p)
+
       println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
