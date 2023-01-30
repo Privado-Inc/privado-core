@@ -41,7 +41,6 @@ import scala.sys.exit
 import scala.util.{Failure, Success, Try}
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 
-
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
