@@ -36,6 +36,7 @@ import ai.privado.semantic.Language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -123,7 +124,6 @@ object JavaProcessor {
     * @return
     */
   def createJavaCpg(processedRules: ConfigAndRules, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
-
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
@@ -131,10 +131,33 @@ object JavaProcessor {
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
     cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
     val xtocpg = JavaSrc2Cpg().createCpgWithOverlays(cpgconfig)
+    if (config.showUnresolvedFunctionsReport)
+      reportUnresolvedMethods(xtocpg)
     println(
       s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
+  def reportUnresolvedMethods(xtocpg: Try[Cpg]): Unit = {
+    var unresolved = 0
+    var total = 0;
+    xtocpg match {
+      case Success(cpg) => {
+        total = cpg.call.methodFullName.l.length
+        unresolved = cpg.call.methodFullName.filter(_.matches("(?i)(.*)(unresolved)(namespace|signature)?(.*)")).l.length
+      }
+    }
+    println()
+    println("---------------------------------------------------------------------------------------------------------")
+    println("Total number of calls: " + total)
+    println("Calls with unresolved namespace/signature: " + unresolved)
+    println("Resolved function calls: " + (total-unresolved))
+    if (unresolved > 0) {
+      val unresolvedPercentage = (unresolved * 100) / total
+      println(unresolvedPercentage + "% calls could NOT be resolved")
+    }
+    println("---------------------------------------------------------------------------------------------------------")
+    println()
+  }
 }
