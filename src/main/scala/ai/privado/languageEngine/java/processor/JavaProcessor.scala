@@ -153,14 +153,19 @@ object JavaProcessor {
     println()
     println("---------------------------------------------------------------------------------------------------------")
     println("Total number of function calls: " + total)
+    println()
 
-    var percentage = (unresolvedNamespaces * 100) / total
-    println("Calls with unresolved namespace: " + unresolvedNamespaces + " | " + percentage + "%")
-    percentage = (unresolvedSignatures * 100) / total
-    println("Calls with unresolved signatures: " + unresolvedSignatures + " | " + percentage + "%")
+    var percentage = (unresolvedSignatures * 100) / total
+    println("Calls with unresolved signatures: " + unresolvedSignatures + " | " + percentage + "% of total calls")
+    percentage = (unresolvedNamespaces * 100) / total
+    println("Calls with unresolved namespace: " + unresolvedNamespaces + " | " + percentage + "% of total calls")
+    percentage  = (unresolvedNamespaces * 100) / unresolvedSignatures
+    println(percentage + "% of unresolved calls have unresolved namespaces")
 
-    val resolved = (total-(unresolvedSignatures+unresolvedNamespaces))
-    println("Resolved function calls: " + resolved)
+    val resolved = total-unresolvedSignatures
+    percentage = (resolved * 100) / total
+    println()
+    println("Resolved function calls: " + resolved + " | " + percentage + "% of total calls")
 
     println("---------------------------------------------------------------------------------------------------------")
     println()
