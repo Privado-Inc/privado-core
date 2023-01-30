@@ -26,21 +26,16 @@ package ai.privado.languageEngine.java.passes.methodFullName
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.{CpgPass, ForkJoinParallelCpgPass, SimpleCpgPass}
 import io.shiftleft.semanticcpg.language._
 
-class LoggerLombokPass(cpg: Cpg) extends ForkJoinParallelCpgPass[String](cpg) {
-  override def generateParts(): Array[String] = {
-    cpg.annotation.name("Slf4j").file.name.toArray
-  }
+class LoggerLombokPass(cpg: Cpg) extends CpgPass(cpg) {
 
-  override def runOnPart(builder: DiffGraphBuilder, fileName: String): Unit = {
-
+  override def run(builder: DiffGraphBuilder): Unit = {
     val callNodes = cpg
       .identifier("log")
       .astParent
       .isCall
-      .filter(_.file.name.headOption.getOrElse("").equals(fileName))
       .where(_.methodFullName("<unresolvedNamespace>.*"))
     callNodes.foreach(callNode => {
       updateNode(builder, callNode)
