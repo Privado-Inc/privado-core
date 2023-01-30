@@ -140,23 +140,28 @@ object JavaProcessor {
   }
 
   def reportUnresolvedMethods(xtocpg: Try[Cpg]): Unit = {
-    var unresolved = 0
-    var total = 0;
+    var unresolvedSignatures = 0
+    var unresolvedNamespaces = 0
+    var total = 0
     xtocpg match {
       case Success(cpg) => {
         total = cpg.call.methodFullName.l.length
-        unresolved = cpg.call.methodFullName.filter(_.matches("(?i)(.*)(unresolved)(namespace|signature)?(.*)")).l.length
+        unresolvedSignatures = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").l.length
+        unresolvedNamespaces = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").l.length
       }
     }
     println()
     println("---------------------------------------------------------------------------------------------------------")
-    println("Total number of calls: " + total)
-    println("Calls with unresolved namespace/signature: " + unresolved)
-    println("Resolved function calls: " + (total-unresolved))
-    if (unresolved > 0) {
-      val unresolvedPercentage = (unresolved * 100) / total
-      println(unresolvedPercentage + "% calls could NOT be resolved")
-    }
+    println("Total number of function calls: " + total)
+
+    var percentage = (unresolvedNamespaces * 100) / total
+    println("Calls with unresolved namespace: " + unresolvedNamespaces + " | " + percentage + "%")
+    percentage = (unresolvedSignatures * 100) / total
+    println("Calls with unresolved signatures: " + unresolvedSignatures + " | " + percentage + "%")
+
+    val resolved = (total-(unresolvedSignatures+unresolvedNamespaces))
+    println("Resolved function calls: " + resolved)
+
     println("---------------------------------------------------------------------------------------------------------")
     println()
   }
