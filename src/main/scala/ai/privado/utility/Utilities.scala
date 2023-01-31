@@ -437,4 +437,84 @@ object Utilities {
     })
     semanticList.toList
   }
+
+  def reportUnresolvedMethods(xtocpg: Try[Cpg], filename: String): Unit = {
+    var total = 0
+    var unresolvedSignatures = 0
+    var unresolvedNamespaces = 0
+    var unresolvedSignaturesList = List[String]()
+    var unresolvedNamespacesList = List[String]()
+
+    xtocpg match {
+      case Success(cpg) => {
+        total = cpg.call.methodFullName.l.length
+        unresolvedSignatures = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").l.length
+        unresolvedSignaturesList = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").methodFullName.l
+        unresolvedNamespaces = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").l.length
+        unresolvedNamespacesList = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").methodFullName.l
+      }
+    }
+
+    val statfile = File(filename)
+    statfile.write("")
+    val divider = "---------------------------------------------------------------------------------------------------------"
+
+    println()
+    println(divider)
+    var statstr = "Total number of function calls: " + total
+    println(statstr)
+    statfile.appendLine(statstr)
+    println()
+
+    var percentage = 0
+
+    statstr = "Calls with unresolved signatures: " + unresolvedSignatures
+    println(statstr)
+    statfile.appendLine(statstr)
+    if (unresolvedSignatures > 0) {
+      percentage = (unresolvedSignatures * 100) / total
+      statstr = percentage + "% of total calls are unresolved"
+      statfile.appendLine(statstr)
+      println()
+    }
+
+    statstr = "Calls with unresolved namespace: " + unresolvedNamespaces
+    println(statstr)
+    statfile.appendLine(statstr)
+    if (unresolvedNamespaces > 0) {
+      percentage = (unresolvedNamespaces * 100) / total
+      val subsetPercentage = (unresolvedNamespaces * 100) / unresolvedSignatures
+      statstr = percentage + "% of total calls | " + subsetPercentage + "% of unresolved calls are unresolved namespaces"
+      println(statstr)
+      statfile.appendLine(statstr)
+      println()
+    }
+
+    val resolved = total - unresolvedSignatures
+    println()
+    statstr = "Resolved function calls: " + resolved
+    println(statstr)
+    statfile.appendLine(statstr)
+    if (resolved > 0) {
+      percentage = (resolved * 100) / total
+      statstr = percentage + "% calls resolved"
+      println(statstr)
+      statfile.appendLine(statstr)
+    }
+
+    if (unresolvedSignaturesList.length > 0) {
+      statfile.appendLine(divider)
+      statfile.appendLine("List of Calls with Unresolved Signatures:")
+      unresolvedSignaturesList.zipWithIndex.map { case (us, index) => statfile.appendLine((index + 1) + " - " + us) }
+    }
+
+    if (unresolvedNamespacesList.length > 0) {
+      statfile.appendLine(divider)
+      statfile.appendLine("List of Calls with Unresolved Namespaces:")
+      unresolvedNamespacesList.zipWithIndex.map { case (un, index) => statfile.appendLine((index + 1) + " - " + un) }
+    }
+
+    println(divider)
+    println()
+  }
 }
