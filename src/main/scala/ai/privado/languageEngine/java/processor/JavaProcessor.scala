@@ -31,14 +31,14 @@ import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
+import better.files.File
+import com.google.gson.Gson
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, defaultOverlayCreators}
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.joern.x2cpg.passes.base.{FileCreationPass, NamespaceCreator}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -47,6 +47,7 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
+import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object JavaProcessor {
@@ -153,34 +154,60 @@ object JavaProcessor {
   }
 
   def reportUnresolvedMethods(xtocpg: Try[Cpg]): Unit = {
+    var total = 0
     var unresolvedSignatures = 0
     var unresolvedNamespaces = 0
-    var total = 0
+    var unresolvedSignaturesList = List[String]()
+    var unresolvedNamespacesList = List[String]()
+
     xtocpg match {
       case Success(cpg) => {
-        total = cpg.call.methodFullName.l.length
+        total =  cpg.call.methodFullName.l.length
         unresolvedSignatures = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").l.length
+        unresolvedSignaturesList = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").methodFullName.l
         unresolvedNamespaces = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").l.length
+        unresolvedNamespacesList = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").methodFullName.l
       }
     }
+
+    val statfile = File("java.txt")
+    statfile.write("")
+    val divider = "---------------------------------------------------------------------------------------------------------"
+
     println()
-    println("---------------------------------------------------------------------------------------------------------")
-    println("Total number of function calls: " + total)
+    println(divider)
+    var statstr = "Total number of function calls: " + total
+    println(statstr)
+    statfile.appendLine(statstr)
     println()
 
     var percentage = (unresolvedSignatures * 100) / total
-    println("Calls with unresolved signatures: " + unresolvedSignatures + " | " + percentage + "% of total calls")
+    statstr = "Calls with unresolved signatures: " + unresolvedSignatures + " | " + percentage + "% of total calls"
+    println(statstr)
+    statfile.appendLine(statstr)
+
     percentage = (unresolvedNamespaces * 100) / total
-    println("Calls with unresolved namespace: " + unresolvedNamespaces + " | " + percentage + "% of total calls")
-    percentage  = (unresolvedNamespaces * 100) / unresolvedSignatures
-    println(percentage + "% of unresolved calls have unresolved namespaces")
+    val subsetPercentage  = (unresolvedNamespaces * 100) / unresolvedSignatures
+    statstr = "Calls with unresolved namespace: " + unresolvedNamespaces + " | " + percentage + "% of total calls" + " | " + subsetPercentage + "% of unresolved calls"
+    println(statstr)
+    statfile.appendLine(statstr)
 
     val resolved = total-unresolvedSignatures
     percentage = (resolved * 100) / total
     println()
-    println("Resolved function calls: " + resolved + " | " + percentage + "% of total calls")
+    statstr = "Resolved function calls: " + resolved + " | " + percentage + "% of total calls"
+    println(statstr)
+    statfile.appendLine(statstr)
 
-    println("---------------------------------------------------------------------------------------------------------")
+    statfile.appendLine(divider)
+    statfile.appendLine("List of Calls with Unresolved Signatures:")
+    unresolvedSignaturesList.zipWithIndex.map { case (us, index) => statfile.appendLine((index+1)+" - "+us) }
+
+    statfile.appendLine(divider)
+    statfile.appendLine("List of Calls with Unresolved Namespaces:")
+    unresolvedNamespacesList.zipWithIndex.map { case (un, index) => statfile.appendLine((index+1)+" - "+un) }
+
+    println(divider)
     println()
   }
 }
