@@ -474,8 +474,10 @@ object Utilities {
     if (unresolvedSignatures > 0) {
       percentage = (unresolvedSignatures * 100) / total
       statstr = percentage + "% of total calls are unresolved"
+      println(statstr)
       statfile.appendLine(statstr)
       println()
+      statfile.appendLine("")
     }
 
     statstr = "Calls with unresolved namespace: " + unresolvedNamespaces
@@ -488,10 +490,10 @@ object Utilities {
       println(statstr)
       statfile.appendLine(statstr)
       println()
+      statfile.appendLine("")
     }
 
     val resolved = total - unresolvedSignatures
-    println()
     statstr = "Resolved function calls: " + resolved
     println(statstr)
     statfile.appendLine(statstr)
@@ -500,6 +502,8 @@ object Utilities {
       statstr = percentage + "% calls resolved"
       println(statstr)
       statfile.appendLine(statstr)
+      println()
+      statfile.appendLine("")
     }
 
     if (unresolvedSignaturesList.length > 0) {
