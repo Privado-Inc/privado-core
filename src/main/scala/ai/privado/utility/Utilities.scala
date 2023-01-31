@@ -467,13 +467,13 @@ object Utilities {
     println()
     statfile.appendLine("")
 
-    var percentage = 0
+    var percentage: Double = 0.0
 
     statstr = "Calls with unresolved signatures: " + unresolvedSignatures
     println(statstr)
     statfile.appendLine(statstr)
     if (unresolvedSignatures > 0) {
-      percentage = (unresolvedSignatures * 100) / total
+      percentage = (unresolvedSignatures.toDouble * 100.0) / total.toDouble
       statstr = percentage + "% of total calls are unresolved"
       println(statstr)
       statfile.appendLine(statstr)
@@ -485,8 +485,8 @@ object Utilities {
     println(statstr)
     statfile.appendLine(statstr)
     if (unresolvedNamespaces > 0) {
-      percentage = (unresolvedNamespaces * 100) / total
-      val subsetPercentage = (unresolvedNamespaces * 100) / unresolvedSignatures
+      percentage = (unresolvedNamespaces.toDouble * 100.0) / total.toDouble
+      val subsetPercentage = (unresolvedNamespaces.toDouble * 100.0) / unresolvedSignatures.toDouble
       statstr = percentage + "% of total calls | " + subsetPercentage + "% of unresolved calls are unresolved namespaces"
       println(statstr)
       statfile.appendLine(statstr)
@@ -499,7 +499,7 @@ object Utilities {
     println(statstr)
     statfile.appendLine(statstr)
     if (resolved > 0) {
-      percentage = (resolved * 100) / total
+      percentage = (resolved.toDouble * 100.0) / total.toDouble
       statstr = percentage + "% calls resolved"
       println(statstr)
       statfile.appendLine(statstr)
