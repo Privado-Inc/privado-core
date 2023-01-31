@@ -465,6 +465,7 @@ object Utilities {
     println(statstr)
     statfile.appendLine(statstr)
     println()
+    statfile.appendLine("")
 
     var percentage = 0
 
