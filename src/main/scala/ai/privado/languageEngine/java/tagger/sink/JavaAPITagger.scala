@@ -66,10 +66,20 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch           = mutable.HashMap[String, Integer]()
 
-  val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
-  lazy val APISINKS_REGEX =
-    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
+  val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
+  val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
+
+  val COMMON_IGNORED_SINKS_REGEX = commonIgnoredSinks.size match {
+    case 0 => "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*"
+    case _ => commonIgnoredSinks.map(config => config.value).mkString("(?i)(", "|", ")")
+  }
+
+  lazy val APISINKS_REGEX = apiSinksRegex.size match {
+    case 0 =>
+      "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
+        "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
+    case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
+  }
 
   internalMethodCall.foreach((method) => {
     val key     = method.split("[.:]").take(2).mkString(".")
@@ -99,8 +109,14 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
-  val commonHttpPackages: String =
-    "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
+  val systemConfigHttpLibraries             = RuleCache.getSystemConfigByKey("apiHttpLibraries")
+  val commonHttpPackages: String = {
+    systemConfigHttpLibraries.size match {
+      case 0 =>
+        "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
+      case _ => systemConfigHttpLibraries.map(config => config.value).mkString("(?i)(", "|", ")")
+    }
+  }
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getRule.sinks
@@ -114,12 +130,12 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
-        println(s"${Calendar.getInstance().getTime} - --BRUTE API TAGGER invoked...")
+        println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
         sinkTagger(propertySinks, apis, builder, ruleInfo)
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
-        println(s"${Calendar.getInstance().getTime} - --ENHANCED API TAGGER invoked...")
+        println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
         sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
       case _ =>
