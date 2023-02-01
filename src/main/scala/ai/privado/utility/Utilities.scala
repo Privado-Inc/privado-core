@@ -438,20 +438,36 @@ object Utilities {
     semanticList.toList
   }
 
-  def reportUnresolvedMethods(xtocpg: Try[Cpg], filename: String): Unit = {
+    def reportUnresolvedMethods(xtocpg: Try[Cpg], filename: String): Unit = {
     var total = 0
     var unresolvedSignatures = 0
     var unresolvedNamespaces = 0
-    var unresolvedSignaturesList = List[String]()
-    var unresolvedNamespacesList = List[String]()
+    var unresolvedSignaturesList = ListBuffer[String]()
+    var unresolvedNamespacesList = ListBuffer[String]()
+
+    val java_unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
+    val java_unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
+    val python_unresolved = "(?i)(.*)(unknownfullname)(.*)"
+
+    var unresolved_sig_pattern = python_unresolved
+    if (filename.equals(Constants.JAVA_STATS)) {
+      unresolved_sig_pattern = java_unresolved_signature
+    }
 
     xtocpg match {
       case Success(cpg) => {
         total = cpg.call.methodFullName.l.length
-        unresolvedSignatures = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").l.length
-        unresolvedSignaturesList = cpg.call.methodFullName("(?i)(.*)(unresolved)(signature)(.*)").methodFullName.l
-        unresolvedNamespaces = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").l.length
-        unresolvedNamespacesList = cpg.call.methodFullName("(?i)(.*)(unresolved)(namespace)(.*)").methodFullName.l
+        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length
+        cpg.call.methodFullName(unresolved_sig_pattern).l.map(us => {
+          unresolvedSignaturesList += us.methodFullName + "\n\t" + "Line Number: " + us.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(us)
+        })
+
+        if (filename.equals(Constants.JAVA_STATS)) {
+          unresolvedNamespaces = cpg.call.methodFullName(java_unresolved_namespace).l.length
+          cpg.call.methodFullName(java_unresolved_namespace).l.map(un => {
+            unresolvedNamespacesList += un.methodFullName + "\n\t" + "Line Number: " + un.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(un)
+          })
+        }
       }
     }
 

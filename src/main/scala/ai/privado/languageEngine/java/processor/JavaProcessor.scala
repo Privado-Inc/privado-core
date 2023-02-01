@@ -150,7 +150,7 @@ object JavaProcessor {
       cpg
     }
     if (config.showUnresolvedFunctionsReport)
-      Utilities.reportUnresolvedMethods(xtocpg, "java.txt")
+      Utilities.reportUnresolvedMethods(xtocpg, Constants.JAVA_STATS)
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 }
