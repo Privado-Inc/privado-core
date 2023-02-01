@@ -96,7 +96,7 @@ object Constants {
   val EMPTY                         = "<empty>"
 
   // Stat files
-  val JAVA_STAT   = "java.txt"
-  val JS_STAT     = "js.txt"
-  val PYTHON_STAT = "python.txt"
+  val JAVA_STATS   = "java.txt"
+  val JS_STATS     = "js.txt"
+  val PYTHON_STATS = "python.txt"
 }
