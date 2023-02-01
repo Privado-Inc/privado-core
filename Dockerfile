@@ -1,5 +1,5 @@
 ARG VERSION=1.0.0
-FROM adoptopenjdk/openjdk15:latest as build
+FROM openjdk:18.0 as build
 RUN apt update && apt install -y python3 git curl bash
 RUN ln -sf python3 /usr/bin/python
 
