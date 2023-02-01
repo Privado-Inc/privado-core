@@ -84,4 +84,8 @@ object RuleCache {
       internalRules.addOne((rule.id, 0))
     }
   }
+
+  def getSystemConfigByKey(key: String) = {
+    rule.systemConfig.filter(config => config.key.equals(key))
+  }
 }
