@@ -53,7 +53,8 @@ object ScanProcessor extends CommandProcessor {
       List[PolicyOrThreat](),
       List[RuleInfo](),
       List[Semantic](),
-      List[RuleInfo]()
+      List[RuleInfo](),
+      List[SystemConfig]()
     )
 
   def parseRules(rulesPath: String, lang: String): ConfigAndRules = {
@@ -76,6 +77,8 @@ object ScanProcessor extends CommandProcessor {
     def filterByLang(rule: RuleInfo): Boolean =
       rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSemanticByLang(rule: Semantic): Boolean =
+      rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+    def filterSystemConfigByLang(rule: SystemConfig): Boolean =
       rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
@@ -161,7 +164,16 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last)
                           )
                         )
-                        .filter(filterByLang)
+                        .filter(filterByLang),
+                      systemConfig = configAndRules.systemConfig
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last)
+                          )
+                        )
+                        .filter(filterSystemConfigByLang)
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -183,7 +195,8 @@ object ScanProcessor extends CommandProcessor {
               exclusions = a.exclusions ++ b.exclusions,
               threats = a.threats ++ b.threats,
               semantics = a.semantics ++ b.semantics,
-              sinkSkipList = a.sinkSkipList ++ b.sinkSkipList
+              sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
+              systemConfig = a.systemConfig ++ b.systemConfig
             )
           )
       catch {
@@ -232,6 +245,7 @@ object ScanProcessor extends CommandProcessor {
     val threats      = externalConfigAndRules.threats ++ internalConfigAndRules.threats
     val semantics    = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
     val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
+    val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
@@ -241,7 +255,8 @@ object ScanProcessor extends CommandProcessor {
         exclusions = exclusions.distinctBy(_.id),
         threats = threats.distinctBy(_.id),
         semantics = semantics.distinctBy(_.signature),
-        sinkSkipList = sinkSkipList.distinctBy(_.id)
+        sinkSkipList = sinkSkipList.distinctBy(_.id),
+        systemConfig = systemConfig
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")

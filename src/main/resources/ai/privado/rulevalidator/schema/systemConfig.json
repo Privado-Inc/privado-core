@@ -1,0 +1,52 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/systemConfig.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "systemConfig"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "systemConfig": {
+      "$id": "#root/systemConfig",
+      "title": "SystemConfig",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/systemConfig/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "key",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "$id": "#root/systemConfig/items/key",
+            "title": "Key",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "apiHttpLibraries", "someOtherSystemConfig"
+            ],
+            "pattern": "^.*$"
+          },
+          "value": {
+            "$id": "#root/systemConfig/items/value",
+            "title": "Value",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "java.http.connection.URL"
+            ],
+            "pattern": "^.*$"
+          }
+        }
+      }
+
+    }
+  }
+}
