@@ -28,13 +28,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.utility.ImportUtility
 import ai.privado.model.Language
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDefaultSemantics,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
+import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getFileNameForNode, isFileProcessable, storeForTag}
 import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -163,7 +157,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   private def httpPackagesInImport(): Boolean = {
-    val imports          = ImportUtility.getAllImportsFromProject(AppCache.localScanPath, Language.JAVA)
+    val imports          = ImportUtility.getAllImportsFromProject(AppCache.scanPath, Language.JAVA)
     val httpPackageRegex = commonHttpPackages.r
     val httpPackages     = mutable.HashSet[String]()
 
