@@ -7,15 +7,13 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
-import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig}
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.frontend.PythonNaiveCallLinker
-import io.joern.x2cpg.passes.frontend.impl.{PythonTypeHintCallLinker, PythonTypeRecovery}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
