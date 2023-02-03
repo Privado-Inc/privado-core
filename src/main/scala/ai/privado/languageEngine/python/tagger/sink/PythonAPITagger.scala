@@ -26,8 +26,6 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.utility.ImportUtility
-import ai.privado.model.Language
 import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getFileNameForNode, isFileProcessable, storeForTag}
 import io.circe.Json
 import io.joern.dataflowengineoss.language._
@@ -40,23 +38,14 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.util.Calendar
-import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters.SetIsParallelizable
 
 
 class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger     = LoggerFactory.getLogger(this.getClass)
   val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch           = mutable.HashMap[String, Integer]()
 
   val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
   val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
-
-//  val COMMON_IGNORED_SINKS_REGEX = commonIgnoredSinks.size match {
-//    case 0 => "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*"
-//    case _ => commonIgnoredSinks.map(config => config.value).mkString("(?i)(", "|", ")")
-//  }
 
   lazy val APISINKS_REGEX = apiSinksRegex.size match {
     case 0 =>
@@ -64,18 +53,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
   }
 
-  internalMethodCall.foreach((method) => {
-    val key     = method.split("[.:]").take(2).mkString(".")
-    val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
-    topMatch(key) = (currVal + 1)
-  })
-
-//  val APISINKS_IGNORE_REGEX = topMatch.keys.mkString("^(", "|", ").*")
-  val apis = cacheCall
-    .name(APISINKS_REGEX)
-//    .methodFullNameNot(APISINKS_IGNORE_REGEX)
-//    .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
-    .l
+  val apis = cacheCall.name(APISINKS_REGEX).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 
