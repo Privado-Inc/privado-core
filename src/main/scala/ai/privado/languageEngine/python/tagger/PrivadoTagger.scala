@@ -2,6 +2,7 @@ package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.TimeMetric
+import ai.privado.languageEngine.python.tagger.sink.PythonAPITagger
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.source.IdentifierTagger
 import ai.privado.model.{ConfigAndRules, NodeType}
@@ -34,7 +35,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    new APITagger(cpg).createAndApply()
+    new PythonAPITagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
