@@ -57,7 +57,8 @@ case class ConfigAndRules(
   threats: List[PolicyOrThreat],
   exclusions: List[RuleInfo],
   semantics: List[Semantic],
-  sinkSkipList: List[RuleInfo]
+  sinkSkipList: List[RuleInfo],
+  systemConfig: List[SystemConfig]
 )
 
 case class DataFlow(sources: List[String], sinks: List[String])
@@ -81,6 +82,14 @@ case class Semantic(
   flow: String,
   file: String,
   language: Language.Language,
+  categoryTree: Array[String]
+)
+
+case class SystemConfig(
+  key: String,
+  value: String,
+  language: Language.Language,
+  file: String,
   categoryTree: Array[String]
 )
 
@@ -139,6 +148,22 @@ object CirceEnDe {
     }
   }
 
+  implicit val decodeSystemConfig: Decoder[SystemConfig] = new Decoder[SystemConfig] {
+    override def apply(c: HCursor): Result[SystemConfig] = {
+      val key   = c.downField(Constants.key).as[String]
+      val value = c.downField(Constants.value).as[String]
+      Right(
+        SystemConfig(
+          key = key.getOrElse(""),
+          value = value.getOrElse(""),
+          file = "",
+          categoryTree = Array[String](),
+          language = Language.UNKNOWN
+        )
+      )
+    }
+  }
+
   implicit val decodeRules: Decoder[ConfigAndRules] = new Decoder[ConfigAndRules] {
     override def apply(c: HCursor): Result[ConfigAndRules] = {
       val sources      = c.downField(Constants.sources).as[List[RuleInfo]]
@@ -149,6 +174,7 @@ object CirceEnDe {
       val threats      = c.downField(Constants.threats).as[List[PolicyOrThreat]]
       val semantics    = c.downField(Constants.semantics).as[List[Semantic]]
       val sinkSkipList = c.downField(Constants.sinkSkipList).as[List[RuleInfo]]
+      val systemConfig = c.downField(Constants.systemConfig).as[List[SystemConfig]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -158,7 +184,8 @@ object CirceEnDe {
           exclusions = exclusions.getOrElse(List[RuleInfo]()),
           threats = threats.getOrElse(List[PolicyOrThreat]()),
           semantics = semantics.getOrElse(List[Semantic]()),
-          sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]())
+          sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]()),
+          systemConfig = systemConfig.getOrElse(List[SystemConfig]())
         )
       )
     }

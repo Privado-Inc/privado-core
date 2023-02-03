@@ -73,7 +73,7 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
+      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject)"
 
   lazy val APISINKSIGNORE_REGEX = "(?i)(json|map).*(put:|get:)"
 

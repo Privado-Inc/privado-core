@@ -21,7 +21,12 @@ object YamlFileValidator {
   private val SCHEMA_DIR_PATH     = "/ai/privado/rulevalidator/schema/"
   private val JSON_SCHEMA_VERSION = SpecVersion.VersionFlag.V7
   private val NON_PATTERN_RULES =
-    Set[String](CatLevelOne.THREATS.name, CatLevelOne.POLICIES.name, ConfigRuleType.SEMANTICS.toString)
+    Set[String](
+      CatLevelOne.THREATS.name,
+      CatLevelOne.POLICIES.name,
+      ConfigRuleType.SEMANTICS.toString,
+      ConfigRuleType.SYSTEM_CONFIG.toString
+    )
   private val SOURCES = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sources.json")).mkString
   private val SINKS   = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinks.json")).mkString
   private val POLICIES =
@@ -35,6 +40,8 @@ object YamlFileValidator {
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}semantics.json")).mkString
   private val SINK_SKIP_LIST =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinkSkipList.json")).mkString
+  private val SYSTEM_CONFIG =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}systemConfig.json")).mkString
   val mapper = new ObjectMapper(new YAMLFactory())
 
   val factory: JsonSchemaFactory = JsonSchemaFactory
@@ -185,6 +192,8 @@ object YamlFileValidator {
       case ConfigRuleType.SEMANTICS      => Right(ConfigRuleType.SEMANTICS.toString, SEMANTICS)
       case ConfigRuleType.EXCLUSIONS     => Right(ConfigRuleType.EXCLUSIONS.toString, EXCLUSIONS)
       case ConfigRuleType.SINK_SKIP_LIST => Right(ConfigRuleType.SINK_SKIP_LIST.toString, SINK_SKIP_LIST)
+      case ConfigRuleType.SYSTEM_CONFIG  => Right(ConfigRuleType.SYSTEM_CONFIG.toString, SYSTEM_CONFIG)
+
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
         println(f"File : ${ruleFile.pathAsString}: Config Invalid. Correct the rules and try again.")
