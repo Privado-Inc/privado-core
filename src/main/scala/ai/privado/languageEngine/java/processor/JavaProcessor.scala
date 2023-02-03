@@ -32,7 +32,7 @@ import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
-import ai.privado.utility.{Utilities}
+import ai.privado.utility.{UnresolvedReportUtility}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import better.files.File
@@ -150,7 +150,7 @@ object JavaProcessor {
       cpg
     }
     if (config.showUnresolvedFunctionsReport)
-      Utilities.reportUnresolvedMethods(xtocpg, Constants.JAVA_STATS)
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, Constants.JAVA_STATS)
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 }
