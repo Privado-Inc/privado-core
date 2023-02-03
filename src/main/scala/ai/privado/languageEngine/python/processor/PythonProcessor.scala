@@ -36,6 +36,9 @@ object PythonProcessor {
         try {
           logger.info("Applying default overlays")
           logger.info("=====================")
+          println(
+            s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
 
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
@@ -49,16 +52,16 @@ object PythonProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           cpg.runTagger(processedRules)
+          println(
+            s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow
-          println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${
-            TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()
-          } - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(
             s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n"
           )
-
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting
@@ -120,7 +123,12 @@ object PythonProcessor {
     cpgOutFile.deleteOnExit()
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, File(".venv").path, true)
-    val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig)
+    val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
+      println(
+        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+      )
+      cpg
+    }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
