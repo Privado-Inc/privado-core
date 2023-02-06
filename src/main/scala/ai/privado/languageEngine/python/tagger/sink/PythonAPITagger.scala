@@ -49,7 +49,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   lazy val APISINKS_REGEX = apiSinksRegex.size match {
     case 0 =>
-      "(?i)(?:url|client|get|set|post|put|patch|delete|head|options|request|trigger|init|fetch|execute|response|pool|client|http|load|list|trace|remove|write|provider|host|access|info_read|select|perform)"
+      "(?i).*(?:url|client|get|set|post|put|patch|delete|head|options|request|feed|trigger|init|send|receive|redirect|fetch|execute|response|pool|client|http|load|list|trace|remove|write|provider|host|access|info_read|select|perform).*"
     case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
   }
 
