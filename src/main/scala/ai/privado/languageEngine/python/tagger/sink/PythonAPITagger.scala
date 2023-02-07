@@ -49,7 +49,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   lazy val APISINKS_REGEX = apiSinksRegex.size match {
     case 0 =>
-      "(?i).*(?:url|client|get|set|post|put|patch|delete|head|options|request|feed|trigger|init|send|receive|redirect|fetch|execute|response|pool|client|http|load|list|trace|remove|write|provider|host|access|info_read|select|perform).*"
+      "(?i).*(?:url|client|get|set|post|put|patch|delete|head|options|request|feed|trigger|init|find|send|receive|redirect|fetch|execute|response|pool|client|http|load|list|trace|remove|write|provider|host|access|info_read|select|perform).*"
     case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
   }
 
@@ -62,7 +62,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val commonHttpPackages: String = {
     systemConfigHttpLibraries.size match {
       case 0 =>
-        "^(?i)(request|aiohttp|treq|grequests|urllib|http|uplink|httoop|tornado.httpclient|pycurl).*"
+        "(?i)(request|aiohttp|treq|grequests|urllib|http|uplink|httoop|tornado.httpclient|pycurl|bs4|.*(HttpClient)).*"
       case _ => systemConfigHttpLibraries.map(config => config.value).mkString("(?i)(", "|", ")")
     }
   }
