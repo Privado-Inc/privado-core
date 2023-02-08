@@ -40,8 +40,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   StoredNode,
   Tag
 }
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
+import ai.privado.metric.MetricHandler
 
 import scala.collection.mutable
 
@@ -58,16 +60,38 @@ class SinkExporter(cpg: Cpg) {
 
   def getProbableSinks: List[String] = {
 
+    println("----------------------------Probable SInk: Language-------------------------------")
+    val lang = MetricHandler.metricsData("language")
+    val isPython = lang.toString().contains(Languages.PYTHONSRC)
+
     /** Get all the Methods which are tagged as SINKs */
     val taggedSinkMethods = cpg.tag
       .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .call
       .l
-      .map(i => i.methodFullName.split(":").headOption.getOrElse(""))
+      .map(i => {
+        var res = i.methodFullName
+        if (!isPython) {
+          res = res.split(":").headOption.getOrElse("")
+        }
+        res
+      })
       .distinct
 
+    println("--------------------Tagged Sink Methods---------------------------------------")
+    println(taggedSinkMethods.length)
+
     /** Get all the Methods which are external */
-    val dependenciesTPs = cpg.method.external.l.map(i => i.fullName.split(":").headOption.getOrElse(""))
+    val dependenciesTPs = cpg.method.external.l.map(i => {
+      var res = i.fullName
+      if (!isPython) {
+        res = res.split(":").headOption.getOrElse("")
+      }
+      res
+    })
+
+    println("--------------------Dependencies TPS---------------------------------------")
+    println(dependenciesTPs.length)
 
     /** Actions: by excluding taggedSinkMethods check isPrivacySink transform method FullName close to groupIds remove
       * duplicates
@@ -78,13 +102,15 @@ class SinkExporter(cpg: Cpg) {
       .filter((str) => !str.endsWith(".println"))
       .map((str) => {
         try {
-          str.split("\\.").take(6).mkString(".")
+          str.split("\\.").take(6).mkString(".").split(":").headOption.getOrElse("")
         } catch {
           case _: Exception => str
         }
       })
       .distinct
-
+    println("-------------------------Filtered TPS----------------------------------")
+    println(filteredTPs)
+    println(filteredTPs.length)
     filteredTPs
   }
 
