@@ -88,7 +88,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
   private def getRoute(code: String): String = {
     val regex = """\((\"|\')(/.*?)(\"|\')""".r
     Try(regex.findFirstMatchIn(code).map(_.group(2))) match {
-      case Success(url) => url.get
+      case Success(url) => if (url == None) "" else url.get
       case Failure(e) =>
         logger.debug("Exception : ", e)
         ""
