@@ -61,7 +61,7 @@ object JavaProcessor {
       case Success(cpg) => {
         try {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+//          new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )

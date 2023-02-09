@@ -23,8 +23,6 @@
 
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -40,7 +38,6 @@ import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import io.circe.yaml.parser
 import com.github.wnameless.json.flattener.JsonFlattener
-
 /** This pass creates a graph layer for Java `.properties` files.
   */
 class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
@@ -122,7 +119,9 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   private def obtainKeyValuePairs(file: String): List[(String, String)] = {
     if (file.matches(""".*\.(?:yml|yaml)""")) {
       loadAndConvertYMLtoProperties(file)
-    } else {
+    } else if (file.endsWith(".xml")) {
+      loadAndConvertXMLtoProperties(file)
+    }else {
       loadFromProperties(file)
     }
   }
@@ -151,6 +150,24 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
   }
 
+  private def loadAndConvertXMLtoProperties(file: String): List[(String, String)] = {
+    val properties = new Properties();
+    val inputStream = better.files.File(file).newInputStream
+    properties.loadFromXML(inputStream)
+
+    val propertyNames = properties.propertyNames()
+
+    println(propertyNames
+      .asScala
+      .toList
+      .collect(p => (p.toString, properties.getProperty(p.toString))))
+
+    propertyNames
+      .asScala
+      .toList
+      .collect(p => (p.toString, properties.getProperty(p.toString)))
+  }
+
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
     properties
       .propertyNames()
@@ -163,7 +180,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
 
   private def propertiesFiles(projectRoot: String): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
+      .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml", ".xml"))
       .filter(Utilities.isFileProcessable)
   }
 
@@ -184,3 +201,9 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
 }
+
+//object Test extends App {
+//  val file = ""
+//  SourceFiles
+//    .determine(Set("/home/midas/Privado/repos/GPS-Attendance-Management"), Set(".properties", ".yml", ".yaml", ".xml")).foreach(println)
+//}
