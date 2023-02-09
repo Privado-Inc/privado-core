@@ -5,8 +5,8 @@ ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.3.591"
-val joernVersion      = "1.1.1437"
+val cpgVersion        = "1.3.592"
+val joernVersion      = "1.1.1440"
 val overflowdbVersion = "1.167"
 
 //External dependency versions
@@ -22,8 +22,7 @@ dependsOn(domainClasses)
 libraryDependencies ++= Seq(
   "com.github.pathikrit"            %% "better-files"            % "3.9.1",
   "com.github.scopt"                %% "scopt"                   % "3.7.1",
-  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.18.0"       % Runtime,
-  "org.slf4j" % "slf4j-simple" % "2.0.6",
+  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
   "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
