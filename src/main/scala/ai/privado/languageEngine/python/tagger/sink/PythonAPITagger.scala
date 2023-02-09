@@ -62,7 +62,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val commonHttpPackages: String = {
     systemConfigHttpLibraries.size match {
       case 0 =>
-        "(?i)(request|aiohttp|treq|grequests|urllib|http|uplink|httoop|tornado.httpclient|pycurl|bs4|.*(HttpClient)).*"
+        "(?i)(request|aiohttp|treq|grequests|urllib|http|uplink|httoop|flask_restful|tornado.httpclient|pycurl|bs4|.*(HttpClient)).*"
       case _ => systemConfigHttpLibraries.map(config => config.value).mkString("(?i)(", "|", ")")
     }
   }
