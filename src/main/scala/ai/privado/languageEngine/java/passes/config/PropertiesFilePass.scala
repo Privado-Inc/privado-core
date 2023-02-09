@@ -33,16 +33,21 @@ import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 
 import scala.jdk.CollectionConverters._
-import java.util.Properties
+import java.util.{InvalidPropertiesFormatException, Properties}
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import io.circe.yaml.parser
 import com.github.wnameless.json.flattener.JsonFlattener
+
+import scala.xml._
+
 /** This pass creates a graph layer for Java `.properties` files.
   */
 class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  var testCpg: Cpg = _
 
   override def generateParts(): Array[String] = propertiesFiles(projectRoot).toArray
 
@@ -150,22 +155,47 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
   }
 
-  private def loadAndConvertXMLtoProperties(file: String): List[(String, String)] = {
+  private def XMLParserBean(xmlPath: String): List[(String, String)] = {
+
+    val xml = XML.loadFile(xmlPath)
+    val nameValuePairs = (xml \\ "bean").flatMap { bean =>
+      (bean \\ "property").map { prop =>
+        ((prop \@ "name"), (prop \@ "value"))
+      }
+    }
+
+    println(nameValuePairs
+      .toList
+      .collect {
+        case (name, value) => (name, value)
+      }
+      .filter {
+        case (name, value) => name.nonEmpty && value.nonEmpty
+      })
+    nameValuePairs
+      .toList
+      .collect { case (name, value) => if (value.nonEmpty) (name, value) else ("", "") }
+      .filter {
+      case (name, value) => name.nonEmpty && value.nonEmpty
+    }
+  }
+
+
+   private def loadAndConvertXMLtoProperties(file: String): List[(String, String)] = {
     val properties = new Properties();
     val inputStream = better.files.File(file).newInputStream
-    properties.loadFromXML(inputStream)
 
-    val propertyNames = properties.propertyNames()
+     try {
+       properties.loadFromXML(inputStream)
+       val propertyNames = properties.propertyNames()
+       propertyNames
+         .asScala
+         .toList
+         .collect(p => (p.toString, properties.getProperty(p.toString)))
+     } catch {
+       case e: InvalidPropertiesFormatException => XMLParserBean(file)
+     }
 
-    println(propertyNames
-      .asScala
-      .toList
-      .collect(p => (p.toString, properties.getProperty(p.toString))))
-
-    propertyNames
-      .asScala
-      .toList
-      .collect(p => (p.toString, properties.getProperty(p.toString)))
   }
 
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
@@ -201,9 +231,3 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
 }
-
-//object Test extends App {
-//  val file = ""
-//  SourceFiles
-//    .determine(Set("/home/midas/Privado/repos/GPS-Attendance-Management"), Set(".properties", ".yml", ".yaml", ".xml")).foreach(println)
-//}
