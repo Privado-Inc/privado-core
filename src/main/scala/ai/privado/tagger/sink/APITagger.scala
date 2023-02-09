@@ -26,12 +26,7 @@ package ai.privado.tagger.sink
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.{NodeType, Constants, RuleInfo}
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
+import ai.privado.utility.Utilities.{addRuleTags, getFileNameForNode, isFileProcessable, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg

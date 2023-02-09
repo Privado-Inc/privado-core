@@ -26,7 +26,13 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getFileNameForNode, isFileProcessable, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDefaultSemantics,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
 import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -39,10 +45,9 @@ import overflowdb.BatchedUpdate
 
 import java.util.Calendar
 
-
 class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  private val logger     = LoggerFactory.getLogger(this.getClass)
-  val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  private val logger = LoggerFactory.getLogger(this.getClass)
+  val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
   val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
   val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
@@ -84,11 +89,11 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   private def sinkTagger(
-                          apiInternalSinkPattern: List[CfgNode],
-                          apis: List[CfgNode],
-                          builder: BatchedUpdate.DiffGraphBuilder,
-                          ruleInfo: RuleInfo
-                        ): Unit = {
+    apiInternalSinkPattern: List[CfgNode],
+    apis: List[CfgNode],
+    builder: BatchedUpdate.DiffGraphBuilder,
+    ruleInfo: RuleInfo
+  ): Unit = {
     val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
     if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
       val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
