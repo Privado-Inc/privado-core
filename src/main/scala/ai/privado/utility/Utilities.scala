@@ -28,6 +28,8 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model._
 import better.files.File
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.DefaultSemantics.{javaFlows, operatorFlows}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
@@ -104,8 +106,7 @@ object Utilities {
     * @return
     */
   def getDefaultSemantics: Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("\n")))
+    DefaultSemantics.javaSemantics()
   }
 
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
@@ -115,9 +116,6 @@ object Utilities {
     * @return
     */
   def getSemantics(cpg: Cpg): Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-
-    val defaultSemantics = semanticsFilename.getLines().toList
     val customSinkSemantics = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
@@ -172,13 +170,11 @@ object Utilities {
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
 
-    val finalSemantics =
-      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
-        ++ customStringSemantics ++ customNonPersonalMemberSemantics
-        ++ customSinkSemantics ++ semanticFromConfig)
-        .mkString("\n")
-
-    Semantics.fromList(new Parser().parse(finalSemantics))
+    val list =
+      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
+    val parsed         = new Parser().parse(list.mkString("\n"))
+    val finalSemantics = operatorFlows ++ javaFlows ++ parsed
+    Semantics.fromList(finalSemantics)
   }
 
   /** Utility to filter rules by catLevelOne
