@@ -40,23 +40,24 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
     In order to create a proper pair of handler and its attached route, we need to navigate the AST
     from the methodRef node, find the relevant call node and then extract route info from these methodRef
     nodes and and begin tagging.
-    */
+     */
     val collectionMethodRefs = cpg.methodRef
-      .where(_.astParent
-        .astParent
-        .isCall
-        .argument
-        .code(urlPattern)
+      .where(
+        _.astParent.astParent.isCall.argument
+          .code(urlPattern)
       )
 
-    val collectionMethodsCache = collectionMethodRefs.map{ m =>
-      methodUrlMap.addOne(
-        // we only get methodFullName here from the call node, so we have to get the relevant method for key
-        cpg.method.fullNameExact(m.methodFullName).l.head.id() ->
-        getRoute(m.astParent.astParent.where(_.isCall).head.asInstanceOf[Call].argument.isCall.code.head)
-      )
-      cpg.method.fullNameExact(m.methodFullName).l
-    }.l.flatten(method => method) // returns the handler method list
+    val collectionMethodsCache = collectionMethodRefs
+      .map { m =>
+        methodUrlMap.addOne(
+          // we only get methodFullName here from the call node, so we have to get the relevant method for key
+          cpg.method.fullNameExact(m.methodFullName).l.head.id() ->
+            getRoute(m.astParent.astParent.where(_.isCall).head.asInstanceOf[Call].argument.isCall.code.head)
+        )
+        cpg.method.fullNameExact(m.methodFullName).l
+      }
+      .l
+      .flatten(method => method) // returns the handler method list
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
@@ -83,11 +84,11 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
   }
 
   /** Returns the route extracted from the code
-   */
+    */
   private def getRoute(code: String): String = {
     val regex = """\((\"|\')(/.*?)(\"|\')""".r
     Try(regex.findFirstMatchIn(code).map(_.group(2))) match {
-      case Success(url) => url.get
+      case Success(url) => if (url == None) "" else url.get
       case Failure(e) =>
         logger.debug("Exception : ", e)
         ""

@@ -28,7 +28,13 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.utility.ImportUtility
 import ai.privado.model.Language
-import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getFileNameForNode, isFileProcessable, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDefaultSemantics,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
 import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
