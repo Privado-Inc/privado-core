@@ -61,7 +61,7 @@ class JavascriptMethodFullNamePassRequireStyleTest extends JavascriptTaggingTest
       |}
       |""".stripMargin
 
-  override val rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List())
+  override val rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List())
 
   "Javascript MethodFullName pass" should {
     "add methodFullName for called by identifier node" in {
@@ -126,7 +126,7 @@ class JavascriptMethodFullNamePassImportStyleTest extends JavascriptTaggingTestB
       |}
       |""".stripMargin
 
-  override val rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List())
+  override val rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List())
 
   "Javascript MethodFullName pass" should {
     "add methodFullName for called by identifier node" in {
