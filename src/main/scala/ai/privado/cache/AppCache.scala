@@ -40,8 +40,8 @@ object AppCache {
   val totalMap                    = mutable.HashMap[String, Int]()
 
   def init(scanPath: String) = {
-    this.scanPath = scanPath
-    this.localScanPath = getRepoScanPath(scanPath)
+    this.scanPath = scanPath // Scan Path of the repo on the host machine
+    this.localScanPath = getRepoScanPath(scanPath) // scan path perceived by the binary (can be different inside docker)
     this.repoName = this.localScanPath.split("[/\\\\]").last
   }
 }

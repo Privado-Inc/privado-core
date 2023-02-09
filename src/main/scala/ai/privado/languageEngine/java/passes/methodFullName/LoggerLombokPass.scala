@@ -34,7 +34,7 @@ import scala.collection.immutable.HashMap
 class LoggerLombokPass(cpg: Cpg) extends CpgPass(cpg) {
   override def run(builder: DiffGraphBuilder): Unit = {
     val lombokLogger = cpg.annotation.name("CommonsLog|Flogger|Log|Log4j2|Slf4j").name.dedup.l
-    if(lombokLogger.nonEmpty){
+    if (lombokLogger.nonEmpty) {
       val lombokLoggerType = lombokLogger.headOption.get
       val callNodes = cpg
         .identifier("log")
@@ -48,16 +48,19 @@ class LoggerLombokPass(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   def updateNode(builder: DiffGraphBuilder, node: Call, lombokLoggerType: String): Unit = {
-    val loggerMap = HashMap("CommonsLog" -> "org.apache.commons.logging.Log",
-      "Flogger"-> "com.google.common.flogger.FluentLogger",
-      "Log"-> "java.util.logging.Logger",
-      "Log4j2"-> "org.apache.logging.log4j.Logger",
-      "Slf4j"->"org.slf4j.Logger")
+    val loggerMap = HashMap(
+      "CommonsLog" -> "org.apache.commons.logging.Log",
+      "Flogger"    -> "com.google.common.flogger.FluentLogger",
+      "Log"        -> "java.util.logging.Logger",
+      "Log4j2"     -> "org.apache.logging.log4j.Logger",
+      "Slf4j"      -> "org.slf4j.Logger"
+    )
 
     builder.setNodeProperty(
       node,
       PropertyNames.MethodFullName,
-      node.methodFullName.replace("<unresolvedNamespace>", loggerMap.getOrElse(lombokLoggerType, "<unresolvedNamespace>"))
+      node.methodFullName
+        .replace("<unresolvedNamespace>", loggerMap.getOrElse(lombokLoggerType, "<unresolvedNamespace>"))
     )
   }
 }
