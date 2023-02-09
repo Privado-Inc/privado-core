@@ -9,7 +9,13 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
-import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
+import io.joern.pysrc2cpg.{
+  Py2CpgOnFileSystem,
+  Py2CpgOnFileSystemConfig,
+  PythonNaiveCallLinker,
+  PythonTypeHintCallLinker,
+  PythonTypeRecovery
+}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
@@ -27,10 +33,10 @@ object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
 
   private def processCPG(
-                          xtocpg: Try[codepropertygraph.Cpg],
-                          processedRules: ConfigAndRules,
-                          sourceRepoLocation: String
-                        ): Either[String, Unit] = {
+    xtocpg: Try[codepropertygraph.Cpg],
+    processedRules: ConfigAndRules,
+    sourceRepoLocation: String
+  ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
         try {
@@ -58,10 +64,9 @@ object PythonProcessor {
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow
-          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
-          println(
-            s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n"
-          )
+          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+          println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting
@@ -103,23 +108,23 @@ object PythonProcessor {
   }
 
   /** Create cpg using Python Language
-   *
-   * @param sourceRepoLocation
-   * @param lang
-   * @return
-   */
+    *
+    * @param sourceRepoLocation
+    * @param lang
+    * @return
+    */
   def createPythonCpg(
-                           processedRules: ConfigAndRules,
-                           sourceRepoLocation: String,
-                           lang: String
-                         ): Either[String, Unit] = {
+    processedRules: ConfigAndRules,
+    sourceRepoLocation: String,
+    lang: String
+  ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutFile = File.newTemporaryFile(suffix = ".cpg.bin")
+    val cpgOutFile             = File.newTemporaryFile(suffix = ".cpg.bin")
     cpgOutFile.deleteOnExit()
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, File(".venv").path, true)

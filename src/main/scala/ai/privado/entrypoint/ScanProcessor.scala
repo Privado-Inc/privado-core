@@ -71,10 +71,10 @@ object ScanProcessor extends CommandProcessor {
       }
     }
     val langToFilter = lang match {
-      case Languages.JAVASRC => Language.JAVA
-      case Languages.JSSRC   => Language.JAVASCRIPT
+      case Languages.JAVASRC   => Language.JAVA
+      case Languages.JSSRC     => Language.JAVASCRIPT
       case Languages.PYTHONSRC => Language.PYTHON
-      case _                 => Language.JAVA
+      case _                   => Language.JAVA
     }
     def filterByLang(rule: RuleInfo): Boolean =
       rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
