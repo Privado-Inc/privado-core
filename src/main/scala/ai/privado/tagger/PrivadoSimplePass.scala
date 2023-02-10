@@ -25,10 +25,10 @@ package ai.privado.tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.SimpleCpgPass
+import io.shiftleft.passes.CpgPass
 import org.slf4j.LoggerFactory
 
-abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
+abstract class PrivadoSimplePass(cpg: Cpg) extends CpgPass(cpg) {
 
   var ruleInfo: RuleInfo = null
   val logger             = LoggerFactory.getLogger(getClass)
