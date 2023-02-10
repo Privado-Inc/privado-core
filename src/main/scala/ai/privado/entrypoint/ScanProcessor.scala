@@ -25,6 +25,7 @@ package ai.privado.entrypoint
 import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
+import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model._
 import ai.privado.rulevalidator.YamlFileValidator
@@ -70,9 +71,10 @@ object ScanProcessor extends CommandProcessor {
       }
     }
     val langToFilter = lang match {
-      case Languages.JAVASRC => Language.JAVA
-      case Languages.JSSRC   => Language.JAVASCRIPT
-      case _                 => Language.JAVA
+      case Languages.JAVASRC   => Language.JAVA
+      case Languages.JSSRC     => Language.JAVASCRIPT
+      case Languages.PYTHONSRC => Language.PYTHON
+      case _                   => Language.JAVA
     }
     def filterByLang(rule: RuleInfo): Boolean =
       rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
@@ -315,6 +317,9 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.JSSRC && config.enableJS =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
+              case language if language == Languages.PYTHONSRC =>
+                println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
+                PythonProcessor.createPythonCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
