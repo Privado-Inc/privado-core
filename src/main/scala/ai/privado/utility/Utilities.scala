@@ -169,13 +169,12 @@ object Utilities {
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
 
-    val finalSemantics =
-      (operatorFlows ++ javaFlows ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
-        ++ customStringSemantics ++ customNonPersonalMemberSemantics
-        ++ customSinkSemantics ++ semanticFromConfig)
-        .mkString("\n")
+    val list =
+      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
+    val parsed = new Parser().parse(list.mkString("\n"))
+    val finalSemantics = operatorFlows ++ javaFlows ++ parsed
+    Semantics.fromList(finalSemantics)
 
-    Semantics.fromList(new Parser().parse(finalSemantics))
   }
 
   /** Utility to filter rules by catLevelOne
