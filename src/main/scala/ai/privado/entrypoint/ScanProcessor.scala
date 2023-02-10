@@ -317,7 +317,7 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.JSSRC && config.enableJS =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
-              case language if language == Languages.PYTHONSRC && config.enablePython =>
+              case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
                 PythonProcessor.createPythonCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
               case _ =>
