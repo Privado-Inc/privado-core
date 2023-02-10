@@ -38,9 +38,9 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
+import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.sys.exit
 import scala.util.{Failure, Success, Try}
-import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -299,7 +299,7 @@ object ScanProcessor extends CommandProcessor {
   }
 
   private def processCpg() = {
-    val sourceRepoLocation = config.sourceLocation.head
+    val sourceRepoLocation = File(config.sourceLocation.head).path.toAbsolutePath.toString
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
     Try(guessLanguage(sourceRepoLocation)) match {

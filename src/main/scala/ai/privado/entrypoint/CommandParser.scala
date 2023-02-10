@@ -45,7 +45,8 @@ case class PrivadoInput(
   skipUpload: Boolean = false,
   upload: Boolean = false,
   enableJS: Boolean = false,
-  enablePython: Boolean = false
+  enablePython: Boolean = false,
+  showUnresolvedFunctionsReport: Boolean = false
 )
 
 object CommandConstants {
@@ -77,6 +78,8 @@ object CommandConstants {
   val VALIDATE                                     = "validate"
   val ENABLE_JS                                    = "enablejs"
   val ENABLE_PYTHON                                = "enable-python"
+  val UNRESOLVED_REPORT                            = "unresolved_report"
+  val UNRESOLVED_REPORT_ABBR                       = "ur"
 }
 
 object CommandParser {
@@ -169,6 +172,11 @@ object CommandParser {
               .text(
                 "Skip the output result getting uploaded to cloud without being prompted (if you have not given the consent for the same). You can skip the upload if you have already given such consent"
               ),
+            opt[Unit](CommandConstants.UNRESOLVED_REPORT)
+              .abbr(CommandConstants.UNRESOLVED_REPORT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(showUnresolvedFunctionsReport = true))
+              .text("Calculate %age of unresolved function namespaces/signatures"),
             opt[Unit](CommandConstants.UPLOAD)
               .abbr(CommandConstants.UPLOAD_ABBR)
               .optional()
