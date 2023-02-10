@@ -45,7 +45,7 @@ case class PrivadoInput(
   skipUpload: Boolean = false,
   upload: Boolean = false,
   enableJS: Boolean = false,
-  showUnresolvedFunctionsReport: Boolean = false,
+  showUnresolvedFunctionsReport: Boolean = false
 )
 
 object CommandConstants {
