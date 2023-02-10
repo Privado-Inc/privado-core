@@ -23,8 +23,10 @@
 package ai.privado.utility
 
 import better.files.File
-import scala.util.{Success, Try}
+
+import scala.util.{Failure, Success, Try}
 import ai.privado.model.Constants
+
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -62,35 +64,36 @@ object UnresolvedReportUtility {
           })
         }
       }
+      case Failure(_)      => None
     }
 
     val statfile = File(filename)
     statfile.write("")
     val divider = "---------------------------------------------------------------------------------------------------------"
 
-    var statstr = "\n" + divider + "\n"
-    statstr += "Total number of function calls: " + total + "\n\n"
+    var statstr = s"\n$divider\n"
+    statstr += s"Total number of function calls: $total\n\n"
 
     var percentage: Double = 0.0
 
-    statstr += "Calls with unresolved signatures: " + unresolvedSignatures + "\n"
+    statstr += s"Calls with unresolved signatures: $unresolvedSignatures\n"
     if (unresolvedSignatures > 0) {
       percentage = (unresolvedSignatures.toDouble * 100.0) / total.toDouble
-      statstr += percentage + "% of total calls are unresolved" + "\n"
+      statstr += s"$percentage% of total calls are unresolved\n"
     }
 
-    statstr += "\nCalls with unresolved namespace: " + unresolvedNamespaces + "\n"
+    statstr += s"\nCalls with unresolved namespace: $unresolvedNamespaces\n"
     if (unresolvedNamespaces > 0) {
       percentage = (unresolvedNamespaces.toDouble * 100.0) / total.toDouble
       val subsetPercentage = (unresolvedNamespaces.toDouble * 100.0) / unresolvedSignatures.toDouble
-      statstr += percentage + "% of total calls | " + subsetPercentage + "% of unresolved calls are unresolved namespaces" + "\n"
+      statstr += s"$percentage% of total calls | $subsetPercentage% of unresolved calls are unresolved namespaces\n"
     }
 
     val resolved = total - unresolvedSignatures
-    statstr += "\nResolved function calls: " + resolved + "\n"
+    statstr += s"\nResolved function calls: $resolved\n"
     if (resolved > 0) {
       percentage = (resolved.toDouble * 100.0) / total.toDouble
-      statstr += percentage + "% calls resolved" + "\n"
+      statstr += s"$percentage% calls resolved\n"
     }
 
     print(statstr)
@@ -99,13 +102,13 @@ object UnresolvedReportUtility {
     if (unresolvedSignaturesList.length > 0) {
       statfile.appendLine(divider)
       statfile.appendLine("List of Calls with Unresolved Signatures:")
-      unresolvedSignaturesList.zipWithIndex.map { case (us, index) => statfile.appendLine((index + 1) + " - " + us) }
+      unresolvedSignaturesList.zipWithIndex.map { case (us, index) => statfile.appendLine(s"${(index + 1)} - $us") }
     }
 
     if (unresolvedNamespacesList.length > 0) {
       statfile.appendLine(divider)
       statfile.appendLine("List of Calls with Unresolved Namespaces:")
-      unresolvedNamespacesList.zipWithIndex.map { case (un, index) => statfile.appendLine((index + 1) + " - " + un) }
+      unresolvedNamespacesList.zipWithIndex.map { case (un, index) => statfile.appendLine(s"${(index + 1)} - $un") }
     }
 
     println(divider)
