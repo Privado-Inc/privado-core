@@ -49,7 +49,8 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
 
   var testCpg: Cpg = _
 
-  override def generateParts(): Array[String] = propertiesFiles(projectRoot).toArray
+  override def generateParts(): Array[String] =
+    propertiesFiles(projectRoot, Set(".properties", ".yml", ".yaml", ".xml")).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
     val fileNode      = addFileNode(file, builder)
@@ -126,7 +127,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       loadAndConvertYMLtoProperties(file)
     } else if (file.endsWith(".xml")) {
       loadAndConvertXMLtoProperties(file)
-    }else {
+    } else {
       loadFromProperties(file)
     }
   }
@@ -155,47 +156,71 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
   }
 
-  private def XMLParserBean(xmlPath: String): List[(String, String)] = {
-
-    val xml = XML.loadFile(xmlPath)
-    val nameValuePairs = (xml \\ "bean").flatMap { bean =>
-      (bean \\ "property").map { prop =>
-        ((prop \@ "name"), (prop \@ "value"))
-      }
-    }
-
-    println(nameValuePairs
-      .toList
-      .collect {
-        case (name, value) => (name, value)
-      }
-      .filter {
-        case (name, value) => name.nonEmpty && value.nonEmpty
+  // if beans file contain placeholders, search in .properties files across the project
+  private def resolvePlaceholderValuesXML(placeholder: String): String = {
+    val propertyFiles: List[String] = propertiesFiles(projectRoot, Set(".properties"))
+    propertyFiles.foreach(file => {
+      // Search across properties to find the required
+      loadFromProperties(file).foreach(propertyValue => {
+        val (name, value) = propertyValue;
+        if (name.equals(placeholder)) return value;
       })
-    nameValuePairs
-      .toList
-      .collect { case (name, value) => if (value.nonEmpty) (name, value) else ("", "") }
-      .filter {
-      case (name, value) => name.nonEmpty && value.nonEmpty
-    }
+    })
+    ""
   }
 
+  // Used to extract (name, value) pairs from a bean config file
+  private def XMLParserBean(xmlPath: String): List[(String, String)] = {
+    try {
+      val xml = XML.loadFile(xmlPath)
+      val nameValuePairs = (xml \\ "bean").flatMap { bean =>
+        {
+          var result: (String, String) = ("", "")
+          (bean \\ "property").map { prop =>
+            {
+              // Search for property tags inside a bean
+              val propValue = prop \@ "value"
+              if (propValue.startsWith("$") && propValue.endsWith("}")) {
+                val value = resolvePlaceholderValuesXML(
+                  propValue.substring(2, propValue.length - 1)
+                ) // Pass placeholder name without ${ and }
+                if (value.nonEmpty) {
+                  result = ((prop \@ "name"), value)
+                }
+              } else {
+                result = ((prop \@ "name"), propValue)
+              }
+            }
+            result
+          }
+        }
+      }
 
-   private def loadAndConvertXMLtoProperties(file: String): List[(String, String)] = {
-    val properties = new Properties();
+      return nameValuePairs.toList
+        .collect { case (name, value) => if (value.nonEmpty) (name, value) else ("", "") }
+        .filter { case (name, value) =>
+          name.nonEmpty && value.nonEmpty // Filter out name, value pairs which could not be resolved
+        }
+    } catch {
+      case e: Throwable => println(e)
+    }
+
+    List[("", "")]()
+
+  }
+
+  private def loadAndConvertXMLtoProperties(file: String): List[(String, String)] = {
+    val properties  = new Properties();
     val inputStream = better.files.File(file).newInputStream
-
-     try {
-       properties.loadFromXML(inputStream)
-       val propertyNames = properties.propertyNames()
-       propertyNames
-         .asScala
-         .toList
-         .collect(p => (p.toString, properties.getProperty(p.toString)))
-     } catch {
-       case e: InvalidPropertiesFormatException => XMLParserBean(file)
-     }
-
+    try {
+      properties.loadFromXML(inputStream)
+      properties.propertyNames.asScala.toList
+        .collect(p => (p.toString, properties.getProperty(p.toString)))
+    } catch {
+      case _: Throwable => {
+        XMLParserBean(file)
+      }
+    }
   }
 
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
@@ -208,9 +233,10 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       .toList
   }
 
-  private def propertiesFiles(projectRoot: String): List[String] = {
+  // Add extensions as a parameter to decouple it
+  private def propertiesFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml", ".xml"))
+      .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
   }
 
@@ -225,6 +251,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
+
     val propertyNode = NewJavaProperty().name(key).value(value)
     builder.addNode(propertyNode)
     propertyNode
