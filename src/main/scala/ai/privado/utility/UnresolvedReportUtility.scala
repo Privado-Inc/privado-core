@@ -33,7 +33,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.utility.Utilities.getFileNameForNode
 
 object UnresolvedReportUtility {
-  def reportUnresolvedMethods(xtocpg: Try[Cpg], statfilepath: String): Unit = {
+  def reportUnresolvedMethods(xtocpg: Try[Cpg], statfilepath: String, language: String): Unit = {
     var total                    = 0
     var unresolvedSignatures     = 0
     var unresolvedNamespaces     = 0
@@ -45,7 +45,7 @@ object UnresolvedReportUtility {
     val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
 
     var unresolved_sig_pattern = unknown_full_name
-    if (statfilepath.endsWith(Constants.JAVA_STATS)) {
+    if (language.equals(Constants.JAVA_STATS)) {
       unresolved_sig_pattern = unresolved_signature
     }
 
@@ -62,7 +62,7 @@ object UnresolvedReportUtility {
             )
           })
 
-        if (statfilepath.endsWith(Constants.JAVA_STATS)) {
+        if (language.equals(Constants.JAVA_STATS)) {
           unresolvedNamespaces = cpg.call.methodFullName(unresolved_namespace).l.length
           cpg.call
             .methodFullName(unresolved_namespace)

@@ -151,7 +151,7 @@ object JavaProcessor {
     }
     if (config.showUnresolvedFunctionsReport) {
       val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.JAVA_STATS}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path)
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Constants.PYTHON_STATS)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
