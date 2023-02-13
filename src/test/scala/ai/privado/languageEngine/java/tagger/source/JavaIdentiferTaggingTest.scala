@@ -62,7 +62,8 @@ class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
       Array()
     )
   )
-  override val rule: ConfigAndRules = ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List(), List())
+  override val rule: ConfigAndRules =
+    ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List(), List())
 
   "Identifier Tagger" should {
     "tag a firstName identifier" in {

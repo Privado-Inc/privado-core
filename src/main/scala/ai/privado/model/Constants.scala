@@ -99,4 +99,9 @@ object Constants {
   val CONFIG_DIR_IN_CONFIG          = "config"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
   val EMPTY                         = "<empty>"
+
+  // Stat files
+  val JAVA_STATS   = "java.txt"
+  val JS_STATS     = "js.txt"
+  val PYTHON_STATS = "python.txt"
 }

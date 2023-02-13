@@ -5,9 +5,9 @@ ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.3.585"
-val joernVersion      = "1.1.1359"
-val overflowdbVersion = "1.160"
+val cpgVersion        = "1.3.592"
+val joernVersion      = "1.1.1441"
+val overflowdbVersion = "1.167"
 
 //External dependency versions
 val circeVersion   = "0.14.1"
@@ -25,6 +25,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
+  "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
   "io.joern"                        %% "joern-cli"               % Versions.joern,
   "io.joern"                        %% "semanticcpg"             % Versions.joern,
   "io.joern"                        %% "semanticcpg"             % Versions.joern % Test classifier "tests",
@@ -104,3 +105,4 @@ resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").ge
 ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
+
