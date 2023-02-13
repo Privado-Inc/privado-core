@@ -9,13 +9,8 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
-import io.joern.pysrc2cpg.{
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonNaiveCallLinker,
-  PythonTypeHintCallLinker,
-  PythonTypeRecovery
-}
+import ai.privado.utility.UnresolvedReportUtility
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
@@ -133,6 +128,10 @@ object PythonProcessor {
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
       cpg
+    }
+    if (config.showUnresolvedFunctionsReport) {
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.PYTHON_STATS}"
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }

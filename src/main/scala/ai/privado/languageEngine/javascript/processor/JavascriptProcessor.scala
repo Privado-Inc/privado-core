@@ -24,17 +24,15 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.cache.AppCache
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
+import ai.privado.languageEngine.javascript.passes.methodfullname.{MethodFullName, MethodFullNameForEmptyNodes, MethodFullNameFromIdentifier}
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
+import ai.privado.utility.UnresolvedReportUtility
 import io.joern.joerncli.DefaultOverlays
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -124,6 +122,10 @@ object JavascriptProcessor {
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
+    if (config.showUnresolvedFunctionsReport) {
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.JS_STATS}"
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path)
+    }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 

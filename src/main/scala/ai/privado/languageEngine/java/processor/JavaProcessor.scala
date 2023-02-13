@@ -149,8 +149,10 @@ object JavaProcessor {
       applyDefaultOverlays(cpg)
       cpg
     }
-    if (config.showUnresolvedFunctionsReport)
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, Constants.JAVA_STATS)
+    if (config.showUnresolvedFunctionsReport) {
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.JAVA_STATS}"
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path)
+    }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 }
