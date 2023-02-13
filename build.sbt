@@ -10,8 +10,8 @@ val joernVersion      = "1.1.1441"
 val overflowdbVersion = "1.167"
 
 //External dependency versions
-val circeVersion   = "0.14.4"
-val jacksonVersion = "2.14.2"
+val circeVersion   = "0.14.1"
+val jacksonVersion = "2.14.0"
 val mockitoVersion = "1.17.12"
 
 lazy val schema         = Projects.schema
@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"                     %% "requests"                % "0.7.0",
   "org.scala-lang.modules"          %% "scala-xml"               % "2.1.0",
   "commons-io"                       % "commons-io"              % "2.11.0",
-  "com.networknt"                    % "json-schema-validator"   % "1.0.76",
+  "com.networknt"                    % "json-schema-validator"   % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
   "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
