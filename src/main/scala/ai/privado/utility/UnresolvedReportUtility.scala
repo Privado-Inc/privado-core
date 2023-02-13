@@ -26,6 +26,7 @@ import better.files.File
 
 import scala.util.{Failure, Success, Try}
 import ai.privado.model.Constants
+import ai.privado.model.Language
 
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language._
@@ -33,20 +34,20 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.utility.Utilities.getFileNameForNode
 
 object UnresolvedReportUtility {
-  def reportUnresolvedMethods(xtocpg: Try[Cpg], filename: String): Unit = {
+  def reportUnresolvedMethods(xtocpg: Try[Cpg], statfilepath: String, language: Language.Language): Unit = {
     var total                    = 0
     var unresolvedSignatures     = 0
     var unresolvedNamespaces     = 0
     var unresolvedSignaturesList = ListBuffer[String]()
     var unresolvedNamespacesList = ListBuffer[String]()
 
-    val java_unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
-    val java_unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
-    val python_unresolved         = "(?i)(.*)(unknownfullname)(.*)"
+    val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
+    val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
+    val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
 
-    var unresolved_sig_pattern = python_unresolved
-    if (filename.equals(Constants.JAVA_STATS)) {
-      unresolved_sig_pattern = java_unresolved_signature
+    var unresolved_sig_pattern = unknown_full_name
+    if (language.equals(Language.JAVA)) {
+      unresolved_sig_pattern = unresolved_signature
     }
 
     xtocpg match {
@@ -62,10 +63,10 @@ object UnresolvedReportUtility {
             )
           })
 
-        if (filename.equals(Constants.JAVA_STATS)) {
-          unresolvedNamespaces = cpg.call.methodFullName(java_unresolved_namespace).l.length
+        if (language.equals(Constants.JAVA_STATS)) {
+          unresolvedNamespaces = cpg.call.methodFullName(unresolved_namespace).l.length
           cpg.call
-            .methodFullName(java_unresolved_namespace)
+            .methodFullName(unresolved_namespace)
             .l
             .map(un => {
               unresolvedNamespacesList += un.methodFullName + "\n\t" + "Line Number: " + un.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(
@@ -74,10 +75,10 @@ object UnresolvedReportUtility {
             })
         }
       }
-      case Failure(_)      => None
+      case Failure(_) => None
     }
 
-    val statfile = File(filename)
+    val statfile = File(statfilepath)
     statfile.write("")
     val divider =
       "---------------------------------------------------------------------------------------------------------"
