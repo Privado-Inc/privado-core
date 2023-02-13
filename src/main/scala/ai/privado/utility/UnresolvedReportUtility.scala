@@ -34,7 +34,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.utility.Utilities.getFileNameForNode
 
 object UnresolvedReportUtility {
-  def reportUnresolvedMethods(xtocpg: Try[Cpg], statfilepath: String, language: Language.Language): Unit = {
+  def reportUnresolvedMethods(xtocpg: Try[Cpg], statoutdir: String, language: Language.Language): Unit = {
     var total                    = 0
     var unresolvedSignatures     = 0
     var unresolvedNamespaces     = 0
@@ -63,7 +63,7 @@ object UnresolvedReportUtility {
             )
           })
 
-        if (language.equals(Constants.JAVA_STATS)) {
+        if (language.equals(Language.JAVA)) {
           unresolvedNamespaces = cpg.call.methodFullName(unresolved_namespace).l.length
           cpg.call
             .methodFullName(unresolved_namespace)
@@ -78,6 +78,13 @@ object UnresolvedReportUtility {
       case Failure(_) => None
     }
 
+    val outputDirectory = File(statoutdir).createDirectoryIfNotExists()
+    var statfilepath    = ""
+    language match {
+      case Language.JAVA       => statfilepath = s"$outputDirectory/${Constants.JAVA_STATS}"
+      case Language.JAVASCRIPT => statfilepath = s"$outputDirectory/${Constants.JS_STATS}"
+      case Language.PYTHON     => statfilepath = s"$outputDirectory/${Constants.PYTHON_STATS}"
+    }
     val statfile = File(statfilepath)
     statfile.write("")
     val divider =

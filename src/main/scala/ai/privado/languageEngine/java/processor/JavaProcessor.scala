@@ -147,7 +147,7 @@ object JavaProcessor {
       cpg
     }
     if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.JAVA_STATS}"
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
       UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)

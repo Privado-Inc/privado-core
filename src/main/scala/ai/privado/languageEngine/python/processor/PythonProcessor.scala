@@ -136,7 +136,7 @@ object PythonProcessor {
       cpg
     }
     if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.PYTHON_STATS}"
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
       UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
