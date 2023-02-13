@@ -26,6 +26,7 @@ import better.files.File
 
 import scala.util.{Failure, Success, Try}
 import ai.privado.model.Constants
+import ai.privado.model.Language
 
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language._
@@ -33,7 +34,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.utility.Utilities.getFileNameForNode
 
 object UnresolvedReportUtility {
-  def reportUnresolvedMethods(xtocpg: Try[Cpg], statfilepath: String, language: String): Unit = {
+  def reportUnresolvedMethods(xtocpg: Try[Cpg], statfilepath: String, language: Language.Language): Unit = {
     var total                    = 0
     var unresolvedSignatures     = 0
     var unresolvedNamespaces     = 0
@@ -45,7 +46,7 @@ object UnresolvedReportUtility {
     val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
 
     var unresolved_sig_pattern = unknown_full_name
-    if (language.equals(Constants.JAVA_STATS)) {
+    if (language.equals(Language.JAVA)) {
       unresolved_sig_pattern = unresolved_signature
     }
 

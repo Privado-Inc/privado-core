@@ -37,7 +37,7 @@ import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
-import io.joern.joerncli.DefaultOverlays
+import ai.privado.model.Language
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
@@ -128,7 +128,7 @@ object JavascriptProcessor {
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     if (config.showUnresolvedFunctionsReport) {
       val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.JS_STATS}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Constants.JS_STATS)
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }

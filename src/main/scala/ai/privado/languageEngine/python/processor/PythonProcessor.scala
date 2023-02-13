@@ -25,7 +25,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-
+import ai.privado.model.Language
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
@@ -137,7 +137,7 @@ object PythonProcessor {
     }
     if (config.showUnresolvedFunctionsReport) {
       val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.PYTHON_STATS}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Constants.PYTHON_STATS)
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
