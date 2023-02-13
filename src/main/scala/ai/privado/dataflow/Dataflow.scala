@@ -30,7 +30,7 @@ import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.{Path, _}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member, StoredNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -42,7 +42,7 @@ class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = Utilities.getSemantics(cpg), config = EngineConfig(4))
+    EngineContext(config = EngineConfig(4))
 
   /** Compute the flow of data from tagged Sources to Sinks
     * @return
@@ -107,8 +107,8 @@ class Dataflow(cpg: Cpg) {
     }
   }
 
-  private def getSources: List[CfgNode] = {
-    def filterSources(traversal: Traversal[StoredNode]) = {
+  private def getSources: List[AstNode] = {
+    def filterSources(traversal: Traversal[AstNode]) = {
       traversal.tag
         .nameExact(Constants.catLevelOne)
         .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
@@ -119,8 +119,7 @@ class Dataflow(cpg: Cpg) {
       .where(filterSources)
       .l ++ cpg.call
       .where(filterSources)
-      .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l
-
+      .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
   }
 
   private def getSinks: List[CfgNode] = {

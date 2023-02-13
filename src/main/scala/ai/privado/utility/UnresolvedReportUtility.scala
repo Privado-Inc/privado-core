@@ -74,7 +74,7 @@ object UnresolvedReportUtility {
             })
         }
       }
-      case Failure(_)      => None
+      case Failure(_) => None
     }
 
     val statfile = File(filename)

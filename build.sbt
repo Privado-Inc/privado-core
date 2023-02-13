@@ -10,8 +10,8 @@ val joernVersion      = "1.1.1441"
 val overflowdbVersion = "1.167"
 
 //External dependency versions
-val circeVersion   = "0.14.1"
-val jacksonVersion = "2.14.0"
+val circeVersion   = "0.14.4"
+val jacksonVersion = "2.14.2"
 val mockitoVersion = "1.17.12"
 
 lazy val schema         = Projects.schema
@@ -22,7 +22,6 @@ dependsOn(domainClasses)
 libraryDependencies ++= Seq(
   "com.github.pathikrit"            %% "better-files"            % "3.9.1",
   "com.github.scopt"                %% "scopt"                   % "3.7.1",
-  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
   "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
@@ -41,10 +40,11 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"                     %% "requests"                % "0.7.0",
   "org.scala-lang.modules"          %% "scala-xml"               % "2.1.0",
   "commons-io"                       % "commons-io"              % "2.11.0",
-  "com.networknt"                    % "json-schema-validator"   % "1.0.72",
+  "com.networknt"                    % "json-schema-validator"   % "1.0.76",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0"
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
+  "org.slf4j" % "slf4j-simple" % "2.0.5" % Runtime
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
