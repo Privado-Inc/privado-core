@@ -127,7 +127,7 @@ object JavascriptProcessor {
       Config(inputPath = absoluteSourceLocation)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}/${Constants.JS_STATS}"
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
       UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
