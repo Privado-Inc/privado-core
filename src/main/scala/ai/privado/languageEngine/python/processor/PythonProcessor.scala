@@ -10,7 +10,13 @@ import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
-import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
+import io.joern.pysrc2cpg.{
+  Py2CpgOnFileSystem,
+  Py2CpgOnFileSystemConfig,
+  PythonNaiveCallLinker,
+  PythonTypeHintCallLinker,
+  PythonTypeRecovery
+}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._

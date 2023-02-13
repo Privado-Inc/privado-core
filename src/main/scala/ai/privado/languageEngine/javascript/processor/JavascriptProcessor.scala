@@ -26,7 +26,11 @@ package ai.privado.languageEngine.javascript.processor
 import ai.privado.cache.AppCache
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
-import ai.privado.languageEngine.javascript.passes.methodfullname.{MethodFullName, MethodFullNameForEmptyNodes, MethodFullNameFromIdentifier}
+import ai.privado.languageEngine.javascript.passes.methodfullname.{
+  MethodFullName,
+  MethodFullNameForEmptyNodes,
+  MethodFullNameFromIdentifier
+}
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}

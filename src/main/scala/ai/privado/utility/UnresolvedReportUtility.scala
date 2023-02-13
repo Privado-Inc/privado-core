@@ -42,7 +42,7 @@ object UnresolvedReportUtility {
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
-    val unknown_full_name         = "(?i)(.*)(unknownfullname)(.*)"
+    val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
 
     var unresolved_sig_pattern = unknown_full_name
     if (statfilepath.endsWith(Constants.JAVA_STATS)) {
@@ -74,7 +74,7 @@ object UnresolvedReportUtility {
             })
         }
       }
-      case Failure(_)      => None
+      case Failure(_) => None
     }
 
     val statfile = File(statfilepath)
