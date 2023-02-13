@@ -44,7 +44,7 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
   "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
-  "org.slf4j" % "slf4j-simple" % "2.0.5" % Runtime
+  "org.slf4j"                        % "slf4j-simple"            % "2.0.5"        % Runtime
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -105,4 +105,3 @@ resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").ge
 ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
-
