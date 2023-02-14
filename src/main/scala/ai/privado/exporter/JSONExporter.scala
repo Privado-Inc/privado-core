@@ -27,7 +27,13 @@ import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, sinkProcessing}
-import ai.privado.model.exporter.{DataFlowSubCategoryModel, SinkModel, SinkProcessingModel, SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{
+  DataFlowSubCategoryModel,
+  SinkModel,
+  SinkProcessingModel,
+  SourceModel,
+  SourceProcessingModel
+}
 import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
@@ -76,14 +82,15 @@ object JSONExporter {
       output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
       output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
-      val sources = Future(sourceExporter.getSources) // Future creates a thread and starts resolving the function call asynchronously
-      val processing = Future(sourceExporter.getProcessing)
-      val sinks = Future(sinkExporter.getSinks)
+      val sources = Future(
+        sourceExporter.getSources
+      ) // Future creates a thread and starts resolving the function call asynchronously
+      val processing      = Future(sourceExporter.getProcessing)
+      val sinks           = Future(sinkExporter.getSinks)
       val processingSinks = Future(sinkExporter.getProcessing)
-      val probableSinks = Future(sinkExporter.getProbableSinks)
-      val collections = Future(collectionExporter.getCollections)
-      val violations = Future(policyAndThreatExporter.getViolations(repoPath))
-
+      val probableSinks   = Future(sinkExporter.getProbableSinks)
+      val collections     = Future(collectionExporter.getCollections)
+      val violations      = Future(policyAndThreatExporter.getViolations(repoPath))
 
       // Called when the asynchronous call is completed
       sources.onComplete({
@@ -105,7 +112,6 @@ object JSONExporter {
           println(e)
         }
       })
-
 
       processing.onComplete({
         case Success(value) => {
@@ -158,8 +164,6 @@ object JSONExporter {
         }
       })
 
-
-
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       RuleCache.getRule.sinks.foreach(sinkRule => {
         if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
@@ -176,7 +180,6 @@ object JSONExporter {
 
       output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
       logger.info("Completed Sink Exporting")
-
 
       logger.info("Completed Collections Exporting")
 
@@ -247,4 +250,3 @@ object JSONExporter {
   }
 
 }
-
