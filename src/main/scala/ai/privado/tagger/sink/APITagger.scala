@@ -26,13 +26,7 @@ package ai.privado.tagger.sink
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.model.{NodeType, Constants, RuleInfo}
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDefaultSemantics,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
+import ai.privado.utility.Utilities.{addRuleTags, getFileNameForNode, isFileProcessable, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -40,6 +34,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import io.joern.dataflowengineoss.DefaultSemantics
 
 import scala.collection.mutable.HashMap
 
@@ -69,11 +64,11 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .l
 
-  implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
+  implicit val engineContext: EngineContext = EngineContext(semantics = DefaultSemantics(), config = EngineConfig(4))
 
   lazy val APISINKS_REGEX =
     "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
+      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject)"
 
   lazy val APISINKSIGNORE_REGEX = "(?i)(json|map).*(put:|get:)"
 
