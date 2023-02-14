@@ -32,6 +32,7 @@ object AppCache {
   var localScanPath: String       = ""
   var scanPath: String            = ""
   var repoName: String            = ""
+  var isLombokPresent             = false
   var privadoVersionMain: String  = ""
   var fpByOverlappingDE           = 0
   var totalFlowFromReachableBy    = 0
