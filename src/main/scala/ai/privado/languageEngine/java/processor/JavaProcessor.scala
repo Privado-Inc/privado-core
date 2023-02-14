@@ -102,7 +102,7 @@ object JavaProcessor {
                 Left(err)
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/$outputIntermediateFileName' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
                 Right(())
             }
