@@ -23,14 +23,16 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model._
 import io.shiftleft.semanticcpg.language._
 
-class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
+class JavaIdentifierTaggingTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    ScanProcessor.config = PrivadoInput(disable2ndLevelClosure = true)
     new IdentifierTagger(cpg).createAndApply()
   }
 
@@ -62,7 +64,8 @@ class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
       Array()
     )
   )
-  override val rule: ConfigAndRules = ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List())
+  override val rule: ConfigAndRules =
+    ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List(), List())
 
   "Identifier Tagger" should {
     "tag a firstName identifier" in {
