@@ -105,4 +105,6 @@ object Constants {
   val JAVA_STATS   = "java.txt"
   val JS_STATS     = "js.txt"
   val PYTHON_STATS = "python.txt"
+
+  val delombok = "delombok"
 }
