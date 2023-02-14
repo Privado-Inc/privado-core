@@ -27,8 +27,13 @@ import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.exporter.DataFlowSubCategoryModel
-import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
+import ai.privado.model.exporter.{
+  DataFlowPathIntermediateModel,
+  DataFlowSourceIntermediateModel,
+  DataFlowSubCategoryModel,
+  DataFlowSubCategoryPathExcerptModel
+}
+import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
@@ -168,6 +173,30 @@ object JSONExporter {
       case ex: Exception =>
         println("Failed to export output")
         logger.debug("Failed to export output", ex)
+        Left(ex.toString)
+    }
+  }
+
+  def IntermediateFileExport(
+    outputFileName: String,
+    repoPath: String,
+    dataflows: List[DataFlowSourceIntermediateModel]
+  ): Either[String, Unit] = {
+    logger.info("Initialed the Intermediate exporter engine")
+    val output = mutable.LinkedHashMap[String, Json]()
+    try {
+      output.addOne(Constants.dataFlow -> dataflows.asJson)
+      logger.info("Completed Intermediate Sink Exporting")
+
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Intermediate Exporter engine")
+      Right(())
+
+    } catch {
+      case ex: Exception =>
+        println("Failed to export intermediate output")
+        logger.debug("Failed to export intermediate output", ex)
         Left(ex.toString)
     }
   }
