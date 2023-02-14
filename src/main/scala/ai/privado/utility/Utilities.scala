@@ -26,47 +26,26 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
-import ai.privado.model.{
-  CatLevelOne,
-  ConfigAndRules,
-  Constants,
-  DatabaseDetails,
-  InternalTag,
-  Language,
-  RuleInfo,
-  Semantic
-}
+import ai.privado.model._
 import better.files.File
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.DefaultSemantics.{javaFlows, operatorFlows}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CfgNode,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  Member,
-  MethodParameterIn,
-  NewTag,
-  TypeDecl
-}
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
-
-import scala.util.{Failure, Success, Try}
-import java.nio.file.Paths
-import java.util.regex.{Pattern, PatternSyntaxException}
-import scala.io.Source
-import io.shiftleft.semanticcpg.language._
-import ai.privado.semantic.Language.finder
 import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
+import java.nio.file.Paths
 import java.security.MessageDigest
+import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
 object Utilities {
 
@@ -126,8 +105,7 @@ object Utilities {
     * @return
     */
   def getDefaultSemantics: Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("\n")))
+    DefaultSemantics.javaSemantics()
   }
 
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
@@ -137,9 +115,6 @@ object Utilities {
     * @return
     */
   def getSemantics(cpg: Cpg): Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-
-    val defaultSemantics = semanticsFilename.getLines().toList
     val customSinkSemantics = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
@@ -194,13 +169,11 @@ object Utilities {
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
 
-    val finalSemantics =
-      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
-        ++ customStringSemantics ++ customNonPersonalMemberSemantics
-        ++ customSinkSemantics ++ semanticFromConfig)
-        .mkString("\n")
-
-    Semantics.fromList(new Parser().parse(finalSemantics))
+    val list =
+      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
+    val parsed         = new Parser().parse(list.mkString("\n"))
+    val finalSemantics = operatorFlows ++ javaFlows ++ parsed
+    Semantics.fromList(finalSemantics)
   }
 
   /** Utility to filter rules by catLevelOne
@@ -377,6 +350,8 @@ object Utilities {
       rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def getSemanticRuleByLang(rule: Semantic) =
       rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+    def getSystemConfigByLang(rule: SystemConfig) =
+      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
 
     val sources      = rules.sources.filter(getRuleByLang)
     val sinks        = rules.sinks.filter(getRuleByLang)
@@ -384,8 +359,19 @@ object Utilities {
     val exclusions   = rules.exclusions.filter(getRuleByLang)
     val semantics    = rules.semantics.filter(getSemanticRuleByLang)
     val sinkSkipList = rules.sinkSkipList.filter(getRuleByLang)
+    val systemConfig = rules.systemConfig.filter(getSystemConfigByLang)
 
-    ConfigAndRules(sources, sinks, collections, rules.policies, rules.threats, exclusions, semantics, sinkSkipList)
+    ConfigAndRules(
+      sources,
+      sinks,
+      collections,
+      rules.policies,
+      rules.threats,
+      exclusions,
+      semantics,
+      sinkSkipList,
+      systemConfig
+    )
   }
 
   /** Returns file name for a node

@@ -42,6 +42,10 @@ object Constants {
   val signature = "signature"
   val flow      = "flow"
 
+  // systemConfig
+  val key   = "key"
+  val value = "value"
+
   val third_parties = "third_parties"
   val internal_apis = "internal_apis"
   val collections   = "collections"
@@ -52,6 +56,7 @@ object Constants {
   val threats       = "threats"
   val semantics     = "semantics"
   val sinkSkipList  = "sinkSkipList"
+  val systemConfig  = "systemConfig"
 
   val tags               = "tags"
   val description        = "description"
@@ -94,4 +99,11 @@ object Constants {
   val CONFIG_DIR_IN_CONFIG          = "config"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
   val EMPTY                         = "<empty>"
+
+  // Stat files
+  val JAVA_STATS   = "java.txt"
+  val JS_STATS     = "js.txt"
+  val PYTHON_STATS = "python.txt"
+
+  val delombok = "delombok"
 }

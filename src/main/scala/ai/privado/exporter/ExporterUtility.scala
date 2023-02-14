@@ -157,7 +157,14 @@ object ExporterUtility {
           messageInExcerpt
       }
       val excerpt = dump(absoluteFileName, node.lineNumber, message)
-      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, fileName, excerpt))
+      // Get the actual filename
+      val actualFileName = {
+        if (AppCache.isLombokPresent)
+          fileName.replace("/" + Constants.delombok, "")
+        else
+          fileName
+      }
+      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
     }
   }
 
