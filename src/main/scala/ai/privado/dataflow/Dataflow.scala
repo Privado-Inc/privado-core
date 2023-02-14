@@ -25,17 +25,26 @@ package ai.privado.dataflow
 
 import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.exporter.ExporterUtility
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.utility.Utilities
-import io.joern.dataflowengineoss.language.{Path, _}
+import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, StoredNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import ai.privado.model.exporter.{
+  DataFlowPathIntermediateModel,
+  DataFlowSinkIntermediateModel,
+  DataFlowSubCategoryPathIntermediateModel,
+  DataFlowSubCategoryPathModel,
+  DataFlowSourceIntermediateModel
+}
 
 import java.util.Calendar
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
 
 class Dataflow(cpg: Cpg) {
@@ -62,6 +71,27 @@ class Dataflow(cpg: Cpg) {
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
       val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+
+      if (ScanProcessor.config.testOutput) {
+        val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
+        // Fetching the sourceId, sinkId and path Info
+        dataflowPathsUnfiltered.map(path => {
+          val paths    = path.elements.map(node => ExporterUtility.convertIndividualPathElement(node))
+          val pathId   = DuplicateFlowProcessor.calculatePathId(path)
+          var sourceId = ""
+          if (path.elements.head.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name).nonEmpty) {
+            sourceId = path.elements.head.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+          } else {
+            sourceId = Traversal(path.elements.head).isIdentifier.typeFullName.headOption.getOrElse("")
+          }
+          val sinkId = path.elements.last.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+          intermediateDataflow += DataFlowPathIntermediateModel(sourceId, sinkId, pathId.getOrElse(""), paths)
+        })
+
+        // Storing the pathInfo into dataFlowCache
+        DataFlowCache.intermediateDataFlow = intermediateDataflow.toList
+      }
+
       println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
