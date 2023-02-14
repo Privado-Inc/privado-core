@@ -71,9 +71,6 @@ object DataFlowCache {
 
   def getDataflow: List[DataFlowPathModel] = finalDataflow
 
-  /*
-   *
-   * */
   def getIntermediateDataFlow(): List[DataFlowSourceIntermediateModel] = {
 
     // Translating into json output format structure

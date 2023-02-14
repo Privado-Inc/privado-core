@@ -107,6 +107,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${TimeMetric.getNewTime()} - --Filtering flows 1 is done in \t\t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPaths.size}")
       AppCache.totalFlowAfterThisFiltering = dataflowPaths.size
+      // Stores key -> PathID, value -> Path
       val dataflowMapByPathId = dataflowPaths
         .flatMap(dataflow => {
           DuplicateFlowProcessor.calculatePathId(dataflow) match {
