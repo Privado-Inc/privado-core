@@ -31,26 +31,24 @@ import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.utility.{UnresolvedReportUtility}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
-import better.files.File
-import com.google.gson.Gson
+import ai.privado.model.Language
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
-import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
+import better.files.File
 
 object JavaProcessor {
 
@@ -166,8 +164,12 @@ object JavaProcessor {
       applyDefaultOverlays(cpg)
       cpg
     }
-    if (config.showUnresolvedFunctionsReport)
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, Constants.JAVA_STATS)
+
+    if (config.showUnresolvedFunctionsReport) {
+      val path = s"${AppCache.scanPath}/${Constants.outputDirectoryName}"
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
+    }
+
     val msg = processCPG(xtocpg, processedRules, sourceRepoLocation)
 
     // Delete the delomboked directory after scanning is completed
