@@ -251,9 +251,9 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
-
     val propertyNode = NewJavaProperty().name(key).value(value)
     builder.addNode(propertyNode)
+    println(key, value)
     propertyNode
   }
 
