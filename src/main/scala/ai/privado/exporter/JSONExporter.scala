@@ -268,7 +268,8 @@ object JSONExporter {
       output.addOne(Constants.dataFlow -> dataflows.asJson)
       logger.info("Completed Intermediate Sink Exporting")
 
-      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Intermediate Exporter engine")
       Right(())
