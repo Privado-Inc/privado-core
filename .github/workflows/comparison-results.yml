@@ -296,11 +296,17 @@ jobs:
       - name: Zip the results
         run: zip result-${{github.event.number}}.zip -r ./results
 
+      - name: Set summary variable
+        run: |
+          echo "MESSAGE<<EOF" >> $GITHUB_ENV
+          echo "$(cat /home/runner/work/privado-core/privado-core/report/slack_summary.txt)" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
       - name: Post results to slack
         uses: MeilCli/slack-upload-file@v3
         with:
           slack_token: ${{ secrets.SLACK_TOKEN }}
           channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
           file_path: "/home/runner/work/privado-core/privado-core/result-${{github.event.number}}.zip"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}} \nSummary Report:\n ${{ env.MESSAGE }}"
           file_type: "zip"
