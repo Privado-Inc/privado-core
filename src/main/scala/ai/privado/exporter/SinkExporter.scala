@@ -25,6 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.exporter.JSONExporter.getClass
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag}
 import ai.privado.semantic.Language.finder
@@ -40,8 +41,11 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   StoredNode,
   Tag
 }
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
+import ai.privado.metric.MetricHandler
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
@@ -49,6 +53,8 @@ class SinkExporter(cpg: Cpg) {
 
   lazy val sinkTagList: List[List[Tag]] = getSinkTagList
   lazy val sinkList: List[CfgNode]      = getSinkList
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Fetch and Convert sources to desired output
     */
@@ -58,16 +64,36 @@ class SinkExporter(cpg: Cpg) {
 
   def getProbableSinks: List[String] = {
 
+    val lang     = MetricHandler.metricsData("language")
+    val isPython = lang.toString().contains(Languages.PYTHONSRC)
+
     /** Get all the Methods which are tagged as SINKs */
     val taggedSinkMethods = cpg.tag
       .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .call
       .l
-      .map(i => i.methodFullName.split(":").headOption.getOrElse(""))
+      .map(i => {
+        var res = i.methodFullName
+        if (!isPython) {
+          res = res.split(":").headOption.getOrElse("")
+        }
+        res
+      })
       .distinct
 
+    logger.debug("Tagged Sink Methods: ", taggedSinkMethods.length)
+
     /** Get all the Methods which are external */
-    val dependenciesTPs = cpg.method.external.l.map(i => i.fullName.split(":").headOption.getOrElse(""))
+    val dependenciesTPs = cpg.method.external.l.map(i => {
+      var res = i.fullName
+      if (!isPython) {
+        res = res.split(":").headOption.getOrElse("")
+      }
+      res
+    })
+
+    logger.debug("Dependencies TPS: ", dependenciesTPs.length)
+    logger.debug("Total Methods: ", cpg.method.l.length)
 
     /** Actions: by excluding taggedSinkMethods check isPrivacySink transform method FullName close to groupIds remove
       * duplicates
@@ -78,13 +104,15 @@ class SinkExporter(cpg: Cpg) {
       .filter((str) => !str.endsWith(".println"))
       .map((str) => {
         try {
-          str.split("\\.").take(6).mkString(".")
+          str.split("\\.").take(6).mkString(".").split(":").headOption.getOrElse("")
         } catch {
           case _: Exception => str
         }
       })
       .distinct
 
+    logger.debug("Filtered TPS: ", filteredTPs)
+    logger.debug("Filtered TPs Count: ", filteredTPs.length)
     filteredTPs
   }
 

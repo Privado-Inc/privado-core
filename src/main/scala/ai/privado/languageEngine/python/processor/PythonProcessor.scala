@@ -8,6 +8,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
+import ai.privado.utility.UnresolvedReportUtility
 import io.joern.pysrc2cpg.{
   ImportsPass,
   Py2CpgOnFileSystem,
@@ -24,7 +25,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-
+import ai.privado.model.Language
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
@@ -134,6 +135,10 @@ object PythonProcessor {
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
       cpg
+    }
+    if (config.showUnresolvedFunctionsReport) {
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
