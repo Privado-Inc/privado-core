@@ -51,6 +51,9 @@ jobs:
       - name: Debug log
         run: ls ./temp/standalone-monitoring-stability/
 
+      - name: Run aws-export
+        run: python3 ./temp/standalone-monitoring-stability/aws-export.py ${{github.event.number}}
+
         # - name: Upload privado binary for next job
         #   uses: actions/upload-artifact@master
         #   with:
