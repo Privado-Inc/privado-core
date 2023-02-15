@@ -250,7 +250,7 @@ object DuplicateFlowProcessor {
               })
           }
 
-          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId) && !dataflowSinkType.equals("storages")
+          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId)
 
           // approach 2.2
           val sinkNode  = dataflowsMapByType(sinkPathId).elements.isCall.last
@@ -283,7 +283,7 @@ object DuplicateFlowProcessor {
           val finalMatchedDataElement = identifierMatchedDataElement ++ callMatchedDataElement
 
           val isFpByApproach2 = !finalMatchedDataElement
-            .contains(pathSourceId) && !dataflowSinkType.equals("storages")
+            .contains(pathSourceId)
 
           if (isFpByApproach1 && isFpByApproach2) {
             logger.debug(
