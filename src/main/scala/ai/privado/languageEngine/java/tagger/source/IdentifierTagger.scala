@@ -55,6 +55,12 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
       addRuleTags(builder, identifier, ruleInfo)
     })
 
+    val regexMatchingMembers = cpg.member.name(rulePattern).l
+    regexMatchingMembers.foreach(member => {
+      storeForTag(builder, member)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
+      addRuleTags(builder, member, ruleInfo)
+    })
+
     val regexMatchingFieldIdentifiersIdentifiers =
       cpg.fieldAccess
         .where(
