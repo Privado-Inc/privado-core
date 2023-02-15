@@ -29,6 +29,7 @@ import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model._
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.DefaultSemantics.{javaFlows, operatorFlows}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
@@ -171,7 +172,7 @@ object Utilities {
     val list =
       customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
-    val finalSemantics = getDefaultSemantics.elements ++ parsed
+    val finalSemantics = operatorFlows ++ javaFlows ++ parsed
     Semantics.fromList(finalSemantics)
   }
 
@@ -409,9 +410,21 @@ object Utilities {
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
       if (nonPersonalMembersRegex.nonEmpty) {
         typeDeclNode.method.block.astChildren.isReturn
-          .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+          .code("return (?i)(" + nonPersonalMembersRegex + ")")
           .method
           .callIn
+          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
+          .methodFullName
+          .dedup
+          .foreach(methodName => {
+            semanticList.addOne(generateNonTaintSemantic(methodName))
+          })
+
+        cpg.identifier
+          .typeFullName(typeDeclValue)
+          .astParent
+          .isCall
+          .name("(?i)get(" + nonPersonalMembersRegex + ")")
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
           .methodFullName
           .dedup

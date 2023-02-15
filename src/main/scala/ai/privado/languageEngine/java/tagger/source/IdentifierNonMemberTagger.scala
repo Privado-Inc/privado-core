@@ -23,13 +23,12 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.model.{Constants, InternalTag, RuleInfo}
+import ai.privado.cache.TaggerCache
+import ai.privado.model.{Constants, InternalTag}
 import ai.privado.utility.Utilities.storeForTag
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
+import io.shiftleft.passes.{ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 class IdentifierNonMemberTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String](cpg) {
 
@@ -46,12 +45,17 @@ class IdentifierNonMemberTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String
     val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
     if (nonPersonalMembersRegex.nonEmpty) {
       val impactedMethods = typeDeclNode.method.block.astChildren.isReturn
-        .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+        .code("return (?i)(" + nonPersonalMembersRegex + ")")
         .method
         .callIn
+        .l ++ cpg.identifier
+        .typeFullName(typeDeclValue)
+        .astParent
+        .isCall
+        .name("(?i)get(" + nonPersonalMembersRegex + ")")
         .l
 
-      impactedMethods.foreach(impactedReturnCall => {
+      impactedMethods.dedup.foreach(impactedReturnCall => {
         storeForTag(builder, impactedReturnCall)(
           InternalTag.NON_SENSITIVE_METHOD_RETURN.toString,
           "Data.Sensitive.NonPersonal.Method"
@@ -59,16 +63,16 @@ class IdentifierNonMemberTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String
       })
     }
 
-    val impactedGetters = cpg.method
+    val impactedFieldAccess = cpg.method
       .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
       .callIn
       .where(_.argument(1).isIdentifier.typeFullName(typeDeclValue))
-      .where(_.argument(2).code("(?i).*(" + nonPersonalMembersRegex + ").*"))
+      .where(_.argument(2).code("(?i)(" + nonPersonalMembersRegex + ")"))
       .l
 
-    impactedGetters.foreach(impactedGetter => {
-      if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
-        storeForTag(builder, impactedGetter)(
+    impactedFieldAccess.foreach(impactedAccess => {
+      if (impactedAccess.tag.nameExact(Constants.id).l.isEmpty) {
+        storeForTag(builder, impactedAccess)(
           InternalTag.NON_SENSITIVE_FIELD_ACCESS.toString,
           "Data.Sensitive.NonPersonal.MemberAccess"
         )
