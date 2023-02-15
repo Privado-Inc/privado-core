@@ -52,8 +52,11 @@ jobs:
       - name: Run aws-export
         run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{github.event.number}}
 
+      - name: Debug log
+        run: ls ./temp/standalone-monitoring-stability
+        
       - name: Move results to a folder
-        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{github.event.number}}.xlsx ./results/output-{{github.event.number}}.xlsx && mv result.zip ./results/result-${{github.event.number}}.zip
+        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{github.event.number}}.xlsx ./results/output-{{github.event.number}}.xlsx 
 
       - name: Upload output and result for next job
         uses: actions/upload-artifact@master
