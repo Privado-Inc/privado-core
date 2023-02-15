@@ -29,6 +29,7 @@ jobs:
       - name: Install sbt
         run: mkdir -p ~/bin && curl -Ls https://raw.githubusercontent.com/dwijnand/sbt-extras/master/sbt > ~/bin/sbt && chmod 0755 ~/bin/sbt
 
+      # Install python
       - name: Install Python 3.10
         uses: actions/setup-python@v4
         with:
