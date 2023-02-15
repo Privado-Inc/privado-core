@@ -56,7 +56,7 @@ jobs:
         run: ls ./temp/standalone-monitoring-stability/temp
 
       - name: Move results to a folder
-        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{github.event.number}}.xlsx ./results/output-${{github.event.number}}.xlsx && mv ./temp/result.zip ./results/result-${{github.event.number}}.zip
+        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{github.event.number}}.xlsx ./results/output-${{github.event.number}}.xlsx && mv ./temp/result-${{github.event.number}}.zip ./results/result-${{github.event.number}}.zip
 
       - name: Upload output and result for next job
         uses: actions/upload-artifact@master
