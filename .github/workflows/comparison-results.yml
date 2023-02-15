@@ -52,14 +52,17 @@ jobs:
         run: ls ./temp/standalone-monitoring-stability/
 
       - name: Run aws-export
-        run: python3 ./temp/standalone-monitoring-stability/aws-export.py ${{github.event.number}}
+        run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{github.event.number}}
 
-        # - name: Upload privado binary for next job
-        #   uses: actions/upload-artifact@master
-        #   with:
-        #     name: ${{ env.UPLOAD_NAME }}
-        #     path: /home/runner/work/privado-core/privado-core/temp/${{matrix.ref}}/target/universal/stage
-          
+      - name: Move results to a folder
+        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{github.event.number}}.xlsx ./results/output-{{github.event.number}}.xlsx && mv result-${{github.event.number}}.zip ./results/result-${{github.event.number}}.zip
+
+      - name: Upload output and result for next job
+        uses: actions/upload-artifact@master
+        with:
+          name: results
+          path: /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results
+        
 
   # scan_repositories:
   #   needs: build_privado
@@ -286,22 +289,26 @@ jobs:
 
   
 
-  # send-result:
-  #   runs-on: ubuntu-latest
-  #   steps: 
-  #     - uses: actions/checkout@v3
+  send-result:
+    needs: setup_and_scan
+    runs-on: ubuntu-latest
+    steps: 
+      - uses: actions/checkout@v3
 
-  #     - name: Download Final Report
-  #       uses: actions/download-artifact@master
-  #       with:
-  #         name: comparison_report
-  #         path: ./report
+      - name: Download result folder
+        uses: actions/download-artifact@master
+        with:
+          name: results
+          path: ./results
+
+      - name: Debug log
+        run: ls ./results
       
-  #     - name: Post results to slack
-  #       uses: MeilCli/slack-upload-file@v3
-  #       with:
-  #         slack_token: ${{ secrets.SLACK_TOKEN }}
-  #         channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
-  #         file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
-  #         initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
-  #         file_type: "csv"
+      # - name: Post results to slack
+      #   uses: MeilCli/slack-upload-file@v3
+      #   with:
+      #     slack_token: ${{ secrets.SLACK_TOKEN }}
+      #     channel_id: ${{ secrets.SLACK_CHANNEL_ID }}
+      #     file_path: "/home/runner/work/privado-core/privado-core/report/comparison_report.csv"
+      #     initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}"
+      #     file_type: "csv"
