@@ -93,10 +93,11 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     propertyNodes.foreach { propertyNode =>
       membersAndValues
         .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
-        .foreach { case (key, _) =>
-          println(s"Member edge ${key.code.slice(3, key.code.length - 2)} <-> ${propertyNode.value}")
-          builder.addEdge(propertyNode, key, EdgeTypes.IS_USED_AT)
-          builder.addEdge(key, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+        .foreach { case (key, value) =>
+          println(s"Member edge str ${key.code.slice(3, key.code.length - 2)} <-> ${propertyNode.value}")
+          println(s"Member edge ${value.code} <-> ${propertyNode.value}")
+          builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
+          builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
         }
     }
   }
@@ -119,7 +120,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   def annotatedMembers() = cpg.annotation
     .code(".*@Value.*")
     .where(_.member)
-    .map { x => (x.parameterAssign.head, x.member.head.name) }
+    .map { x => (x.parameterAssign.head, x.member.head) }
     .l
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.

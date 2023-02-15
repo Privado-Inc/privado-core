@@ -25,12 +25,12 @@ package ai.privado.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
-import ai.privado.model.{NodeType, Constants, RuleInfo}
+import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.utility.Utilities.{addRuleTags, getFileNameForNode, isFileProcessable, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
@@ -86,7 +86,7 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   private def sinkTagger(
-    apiInternalSinkPattern: List[CfgNode],
+    apiInternalSinkPattern: List[AstNode],
     apis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo

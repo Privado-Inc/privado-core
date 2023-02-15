@@ -1,7 +1,6 @@
 package ai.privado.languageEngine.python.processor
 
 import ai.privado.cache.{AppCache, DataFlowCache}
-import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.semantic.Language._
@@ -10,7 +9,9 @@ import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.entrypoint.ScanProcessor.config
 import io.joern.pysrc2cpg.{
+  ImportsPass,
   Py2CpgOnFileSystem,
   Py2CpgOnFileSystemConfig,
   PythonNaiveCallLinker,
@@ -49,6 +50,7 @@ object PythonProcessor {
 
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
+          new ImportsPass(cpg).createAndApply()
           new PythonTypeRecovery(cpg).createAndApply()
           new PythonTypeHintCallLinker(cpg).createAndApply()
           new PythonNaiveCallLinker(cpg).createAndApply()
