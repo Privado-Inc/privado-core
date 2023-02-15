@@ -9,6 +9,7 @@ import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.entrypoint.ScanProcessor.config
 import io.joern.pysrc2cpg.{
   ImportsPass,
   Py2CpgOnFileSystem,
