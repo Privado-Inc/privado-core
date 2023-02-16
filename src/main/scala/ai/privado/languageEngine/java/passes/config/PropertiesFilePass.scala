@@ -70,8 +70,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
         propertyNodes.foreach(connectGetPropertyLiterals(_, builder))
         connectAnnotatedParameters(propertyNodes, builder)
-        connectAnnotatedMembers(propertyNodes, builder)
-        println("Property file pass connectAnnotatedParameters() RETURNED")
         propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
@@ -98,8 +96,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       membersAndValues
         .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
         .foreach { case (key, value) =>
-          println(s"Member edge str ${key.code.slice(3, key.code.length - 2)} <-> ${propertyNode.value}")
-          println(s"Member edge ${value.code} <-> ${propertyNode.value}")
           builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
           builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
         }
@@ -118,8 +114,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       (x.start.parameter.head, value)
     }
     .l
-
-  def getMembers(): List
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
@@ -277,7 +271,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     val (key, value) = keyValuePair
     val propertyNode = NewJavaProperty().name(key).value(value)
     builder.addNode(propertyNode)
-    println(key, value)
     propertyNode
   }
 
