@@ -95,7 +95,7 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
       val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
       apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
+        val literalCode = flow.elements.head.code
         val apiNode     = flow.elements.last
         addRuleTags(builder, apiNode, ruleInfo)
         storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
