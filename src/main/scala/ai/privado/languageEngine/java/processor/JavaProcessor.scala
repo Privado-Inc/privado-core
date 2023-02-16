@@ -97,7 +97,7 @@ object JavaProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getIntermediateDataFlow
+              DataFlowCache.getIntermediateDataFlow()
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
