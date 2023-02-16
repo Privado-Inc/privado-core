@@ -28,6 +28,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model._
 import better.files.File
+import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
@@ -43,7 +44,6 @@ import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
-import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
 object Utilities {
@@ -56,7 +56,7 @@ object Utilities {
     */
   def storeForTag(
     builder: BatchedUpdate.DiffGraphBuilder,
-    node: CfgNode
+    node: AstNode
   )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName)) {
@@ -81,7 +81,7 @@ object Utilities {
 
   /** Utility to add Tag based on a rule Object
     */
-  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: CfgNode, ruleInfo: RuleInfo): Unit = {
+  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: AstNode, ruleInfo: RuleInfo): Unit = {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName)) {
       val storeForTagHelper = storeForTag(builder, node) _
@@ -104,8 +104,7 @@ object Utilities {
     * @return
     */
   def getDefaultSemantics: Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-    Semantics.fromList(new Parser().parse(semanticsFilename.getLines().mkString("\n")))
+    DefaultSemantics()
   }
 
   /** Utility to get the semantics (default + custom) using cpg for dataflow queries
@@ -115,9 +114,6 @@ object Utilities {
     * @return
     */
   def getSemantics(cpg: Cpg): Semantics = {
-    val semanticsFilename = Source.fromResource("default.semantics")
-
-    val defaultSemantics = semanticsFilename.getLines().toList
     val customSinkSemantics = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
@@ -172,13 +168,11 @@ object Utilities {
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
 
-    val finalSemantics =
-      (defaultSemantics ++ customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics
-        ++ customStringSemantics ++ customNonPersonalMemberSemantics
-        ++ customSinkSemantics ++ semanticFromConfig)
-        .mkString("\n")
-
-    Semantics.fromList(new Parser().parse(finalSemantics))
+    val list =
+      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
+    val parsed         = new Parser().parse(list.mkString("\n"))
+    val finalSemantics = getDefaultSemantics.elements ++ parsed
+    Semantics.fromList(finalSemantics)
   }
 
   /** Utility to filter rules by catLevelOne

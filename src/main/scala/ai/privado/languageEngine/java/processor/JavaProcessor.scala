@@ -25,28 +25,31 @@ package ai.privado.languageEngine.java.processor
 
 import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.TimeMetric
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
+import ai.privado.utility.{UnresolvedReportUtility}
+import ai.privado.model.Constants.{outputDirectoryName, outputFileName, outputIntermediateFileName}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
+import ai.privado.model.Language
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, defaultOverlayCreators}
-import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.joern.x2cpg.passes.base.{FileCreationPass, NamespaceCreator}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.{Languages, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
+import io.joern.x2cpg.utils.ExternalCommand
+import better.files.File
 
 object JavaProcessor {
 
@@ -89,7 +92,24 @@ object JavaProcessor {
           )
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
-          // Exporting
+          // Exporting Results
+          if (ScanProcessor.config.testOutput) {
+            JSONExporter.IntermediateFileExport(
+              outputIntermediateFileName,
+              sourceRepoLocation,
+              DataFlowCache.getIntermediateDataFlow
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                Left(err)
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                )
+                Right(())
+            }
+          }
+
           JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -127,13 +147,28 @@ object JavaProcessor {
     * @return
     */
   def createJavaCpg(processedRules: ConfigAndRules, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
-
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
     cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
+
+    // Create delomboked directory if source code uses lombok
+    val dependencies        = JavaSrc2Cpg.getDependencyList(cpgconfig)
+    val hasLombokDependency = dependencies.exists(_.contains("lombok"))
+    if (hasLombokDependency) {
+      val delombokPath = Delombok.run(AppCache.scanPath)
+      AppCache.isLombokPresent = true
+
+      // Creating a new CpgConfig which uses the delombokPath
+      cpgconfig = Config(
+        inputPath = delombokPath,
+        fetchDependencies = !config.skipDownloadDependencies,
+        delombokMode = Some("no-delombok")
+      )
+    }
+
     val javasrc = JavaSrc2Cpg()
     val xtocpg = javasrc.createCpg(cpgconfig).map { cpg =>
       println(
@@ -147,7 +182,78 @@ object JavaProcessor {
       applyDefaultOverlays(cpg)
       cpg
     }
-    processCPG(xtocpg, processedRules, sourceRepoLocation)
+
+    if (config.showUnresolvedFunctionsReport) {
+      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
+    }
+
+    val msg = processCPG(xtocpg, processedRules, sourceRepoLocation)
+
+    // Delete the delomboked directory after scanning is completed
+    if (AppCache.isLombokPresent) {
+      val dirName = AppCache.scanPath + "/" + Constants.delombok
+      Try(File(dirName).delete()) match {
+        case Success(_)         => logger.debug("Succesfully deleted delomboked code")
+        case Failure(exception) => logger.debug(s"Exception :", exception)
+      }
+    }
+    msg
+  }
+}
+
+object Delombok {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
+
+  private def systemJavaPath: String = {
+    sys.env
+      .get("JAVA_HOME")
+      .flatMap { javaHome =>
+        val javaExecutable = File(javaHome, "bin", "java")
+        Option.when(javaExecutable.exists && javaExecutable.isExecutable) {
+          javaExecutable.canonicalPath
+        }
+      }
+      .getOrElse("java")
+  }
+
+  private def delombokToTempDirCommand(tempDir: File, analysisJavaHome: Option[String]) = {
+    val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
+    val classPathArg = Try(File.newTemporaryFile("classpath").deleteOnExit()) match {
+      case Success(file) =>
+        // Write classpath to a file to work around Windows length limits.
+        file.write(System.getProperty("java.class.path"))
+        s"@${file.canonicalPath}"
+
+      case Failure(t) =>
+        logger.warn(
+          s"Failed to create classpath file for delombok execution. Results may be missing on Windows systems",
+          t
+        )
+        System.getProperty("java.class.path")
+    }
+    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
+  }
+
+  def run(projectDir: String, analysisJavaHome: Option[String] = None): String = {
+    val dirName = projectDir + "/" + Constants.delombok
+    Try(File(dirName).createDirectoryIfNotExists()) match {
+      case Success(tempDir) =>
+        ExternalCommand.run(delombokToTempDirCommand(tempDir, analysisJavaHome), cwd = projectDir) match {
+          case Success(_) =>
+            tempDir.path.toAbsolutePath.toString
+
+          case Failure(t) =>
+            logger.warn(s"Executing delombok failed", t)
+            logger.warn("Creating AST with original source instead. Some methods and type information will be missing.")
+            projectDir
+        }
+
+      case Failure(e) =>
+        logger.warn(s"Failed to create temporary directory for delomboked source. Methods and types may be missing", e)
+        projectDir
+    }
   }
 
 }

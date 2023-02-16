@@ -20,69 +20,72 @@
  * For more information, contact support@privado.ai
  *
  */
+package ai.privado.languageEngine.python.tagger.sink
 
-package ai.privado.tagger.sink
-
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.utility.Utilities.{addRuleTags, getFileNameForNode, isFileProcessable, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDefaultSemantics,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
+import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
-import io.joern.dataflowengineoss.DefaultSemantics
 
-import scala.collection.mutable.HashMap
+import java.util.Calendar
 
-class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  private val logger = LoggerFactory.getLogger(this.getClass)
+  val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
-  val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch                   = HashMap[String, Integer]()
-  val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
+  val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
+  val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
 
-  internalMethodCall.foreach((method) => {
-    val key     = method.split("[.:]").take(2).mkString(".")
-    val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
-    topMatch(key) = (currVal + 1)
-  })
-  var APISINKS_IGNORE_REGEX = "^("
-  topMatch.foreach((mapEntry) => {
-    if (mapEntry == topMatch.last) {
-      APISINKS_IGNORE_REGEX += mapEntry._1 + ").*"
-    } else {
-      APISINKS_IGNORE_REGEX += mapEntry._1 + "|"
+  lazy val APISINKS_REGEX = apiSinksRegex.size match {
+    case 0 =>
+      "(?i).*(?:url|client|get|set|post|put|patch|delete|head|options|request|feed|trigger|init|find|send|receive|redirect|fetch|execute|response|pool|client|http|load|list|trace|remove|write|provider|host|access|info_read|select|perform).*"
+    case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
+  }
+
+  val apis = cacheCall.name(APISINKS_REGEX).l
+
+  MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
+
+  implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
+  val systemConfigHttpLibraries             = RuleCache.getSystemConfigByKey("apiHttpLibraries")
+  val commonHttpPackages: String = {
+    systemConfigHttpLibraries.size match {
+      case 0 =>
+        "(?i)(request|aiohttp|treq|grequests|urllib|http|uplink|httoop|flask_restful|tornado.httpclient|pycurl|bs4|.*(HttpClient)).*"
+      case _ => systemConfigHttpLibraries.map(config => config.value).mkString("(?i)(", "|", ")")
     }
-  })
-  val apis = cacheCall
-    .name(APISINKS_REGEX)
-    .methodFullNameNot(APISINKS_IGNORE_REGEX)
-    .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
-    .l
-
-  implicit val engineContext: EngineContext = EngineContext(semantics = DefaultSemantics(), config = EngineConfig(4))
-
-  lazy val APISINKS_REGEX =
-    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject)"
-
-  lazy val APISINKSIGNORE_REGEX = "(?i)(json|map).*(put:|get:)"
+  }
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getRule.sinks
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toArray
   }
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
 
-    sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-    val propertySinks = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    sinkTagger(propertySinks, apis, builder, ruleInfo)
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    val apiInternalSinkPattern = cpg.literal.code("(?:\"|'){0,1}(" + ruleInfo.combinedRulePattern + ")(?:\"|'){0,1}").l
+    val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+
+    logger.debug("Using Enhanced API tagger to find API sinks")
+    println(s"${Calendar.getInstance().getTime} - --API TAGGER Common HTTP Libraries Used...")
+    sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
+    sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
   }
 
   private def sinkTagger(
@@ -102,4 +105,5 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       })
     }
   }
+
 }

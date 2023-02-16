@@ -28,8 +28,10 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.semantic.Language.finder
+import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
   Call,
   CfgNode,
   FieldIdentifier,
@@ -47,7 +49,7 @@ import scala.collection.mutable
 class SourceExporter(cpg: Cpg) {
 
   lazy val sourcesTagList: List[List[Tag]] = getSourcesTagList
-  lazy val sourcesList: List[CfgNode]      = getSourcesList
+  lazy val sourcesList: List[AstNode]      = getSourcesList
 
   /** Fetch and Convert sources to desired output
     */
@@ -57,7 +59,7 @@ class SourceExporter(cpg: Cpg) {
 
   def getProcessing: List[SourceProcessingModel] = {
 
-    val processingMap = mutable.HashMap[String, mutable.Set[CfgNode]]()
+    val processingMap = mutable.HashMap[String, mutable.Set[AstNode]]()
     sourcesList.foreach(source => {
       def addToMap(sourceId: String): Unit = {
         if (processingMap.contains(sourceId)) {
@@ -81,13 +83,7 @@ class SourceExporter(cpg: Cpg) {
                 entrySet._2.toList
                   .distinctBy(_.code)
                   .distinctBy(_.lineNumber)
-                  .distinctBy(node => {
-                    Traversal(node).head match {
-                      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
-                        a.file.name.head
-                      case a => a.location.filename
-                    }
-                  })
+                  .distinctBy(Utilities.getFileNameForNode)
             })
         )
       )
@@ -120,8 +116,8 @@ class SourceExporter(cpg: Cpg) {
 
   /** Fetch all the sources node
     */
-  private def getSourcesList: List[CfgNode] = {
-    def filterSource(traversal: Traversal[StoredNode]) = {
+  private def getSourcesList: List[AstNode] = {
+    def filterSource(traversal: Traversal[AstNode]) = {
       traversal.tag
         .nameExact(Constants.catLevelOne)
         .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
@@ -135,11 +131,11 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l
     sources
   }
 
-  private def convertSourcesList(sources: List[List[Tag]]) = {
+  private def convertSourcesList(sources: List[List[Tag]]): List[SourceModel] = {
     def convertSource(sourceId: String) = {
       RuleCache.getRuleInfo(sourceId) match {
         case Some(rule) =>

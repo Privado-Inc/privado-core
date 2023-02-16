@@ -20,7 +20,7 @@ RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.t
 
 #RUN export BUILD_VERSION=$JAR_VERSION && export CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && sbt publish universal:packageBin
 
-RUN export BUILD_VERSION=$JAR_VERSION && sbt universal:packageBin
+RUN export BUILD_VERSION=$JAR_VERSION && sbt test universal:packageBin
 
 FROM alpine:3.16
 RUN apk add --no-cache bash

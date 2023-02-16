@@ -28,12 +28,18 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.utility.ImportUtility
 import ai.privado.model.Language
-import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getFileNameForNode, isFileProcessable, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDefaultSemantics,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
 import io.circe.Json
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
@@ -139,7 +145,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   private def sinkTagger(
-    apiInternalSinkPattern: List[CfgNode],
+    apiInternalSinkPattern: List[AstNode],
     apis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo
@@ -149,7 +155,8 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
-        val apiNode     = flow.elements.last
+        println(s"sinkTagger() ====> literalcode: $literalCode")
+        val apiNode = flow.elements.last
         addRuleTags(builder, apiNode, ruleInfo)
         storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
       })

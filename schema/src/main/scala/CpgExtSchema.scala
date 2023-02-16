@@ -30,6 +30,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   import cpgSchema.base._
   import cpgSchema.fs._
   import cpgSchema.method._
+  import cpgSchema.typeSchema._
 
   // Add node types, edge types, and properties here
 
