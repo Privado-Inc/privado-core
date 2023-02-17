@@ -31,7 +31,7 @@ import ai.privado.model.Language
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.utility.Utilities.getFileNameForNode
+import ai.privado.utility.Utilities.{getFileNameForNode, resolver}
 
 object UnresolvedReportUtility {
   def reportUnresolvedMethods(xtocpg: Try[Cpg], statoutdir: String, language: Language.Language): Unit = {
@@ -40,6 +40,8 @@ object UnresolvedReportUtility {
     var unresolvedNamespaces     = 0
     var unresolvedSignaturesList = ListBuffer[String]()
     var unresolvedNamespacesList = ListBuffer[String]()
+    var nonempty                 = 0
+    var isempty                  = 0
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
@@ -54,13 +56,18 @@ object UnresolvedReportUtility {
       case Success(cpg) => {
         total = cpg.call.methodFullName.l.length
         unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length
+
+        nonempty = cpg.call.callee.filter(_.nonEmpty == false).l.length
+        isempty = cpg.call.callee.filter(_.isEmpty).l.length
+
         cpg.call
           .methodFullName(unresolved_sig_pattern)
           .l
+          .filter((i) => i.name != "import")
           .map(us => {
-            unresolvedSignaturesList += us.methodFullName + "\n\t" + "Line Number: " + us.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(
+            unresolvedSignaturesList += us.methodFullName + "(" + us.name + ")" + "\n\t" + "Line Number: " + us.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(
               us
-            )
+            ) + "\n\t" + "Callee FullName: " + us.callee.fullName.l
           })
 
         if (language.equals(Language.JAVA)) {
@@ -117,6 +124,11 @@ object UnresolvedReportUtility {
 
     print(statstr)
     statfile.appendText(statstr)
+
+//    if (nonempty > 0)
+    statstr += s"\nCalls with nonEmpty Callee false: $nonempty"
+//    if (isempty > 0)
+    statstr += s"\nCalls with isEmpty Callee: $isempty\n"
 
     if (unresolvedSignaturesList.length > 0) {
       statfile.appendLine(divider)
