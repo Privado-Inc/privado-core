@@ -83,7 +83,7 @@ object Utilities {
     */
   def addRuleTags(
     builder: BatchedUpdate.DiffGraphBuilder,
-    node: CfgNode,
+    node: AstNode,
     ruleInfo: RuleInfo,
     ruleId: Option[String] = None
   ): Unit = {

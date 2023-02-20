@@ -111,4 +111,8 @@ object Constants {
 
   // Rule ids
   val internalAPIRuleId = "Sinks.API.InternalAPI"
+  val ignoredSinks      = "ignoredSinks"
+  val apiSinks          = "apiSinks"
+  val apiHttpLibraries  = "apiHttpLibraries"
+  val apiIdentifier     = "apiIdentifier"
 }
