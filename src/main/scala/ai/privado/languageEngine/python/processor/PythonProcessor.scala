@@ -58,6 +58,12 @@ object PythonProcessor {
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
+          // Unresolved function report
+          if (config.showUnresolvedFunctionsReport) {
+            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+            UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
+          }
+
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           cpg.runTagger(processedRules)
@@ -152,10 +158,6 @@ object PythonProcessor {
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
       cpg
-    }
-    if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
     }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
