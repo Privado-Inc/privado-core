@@ -106,3 +106,7 @@ resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").ge
 ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
+
+lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")
