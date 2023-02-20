@@ -71,13 +71,12 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("(?:\"|'){0,1}(" + ruleInfo.combinedRulePattern + ")(?:\"|'){0,1}").l
-    val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    val apiInternalSources = cpg.literal.code("(?:\"|'){0,1}(" + ruleInfo.combinedRulePattern + ")(?:\"|'){0,1}").l
+    val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
 
     logger.debug("Using Enhanced API tagger to find API sinks")
     println(s"${Calendar.getInstance().getTime} - --API TAGGER Common HTTP Libraries Used...")
-    sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
-    sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
+    sinkTagger(apiInternalSources ++ propertySources, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
   }
 
 }

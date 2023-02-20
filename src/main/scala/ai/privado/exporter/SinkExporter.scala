@@ -25,9 +25,8 @@ package ai.privado.exporter
 
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
-import ai.privado.exporter.JSONExporter.getClass
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
-import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag}
+import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag, NodeType}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities.isPrivacySink
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -38,7 +37,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Identifier,
   Literal,
   MethodParameterIn,
-  StoredNode,
   Tag
 }
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -205,14 +203,13 @@ class SinkExporter(cpg: Cpg) {
         case Some(rule) =>
           val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sinkId)
           val apiUrl = {
-            if (rule.id.contains("API")) {
+            if (rule.nodeType == NodeType.API) {
               cpg.call
                 .where(_.tag.nameExact(Constants.id).value(rule.id))
                 .tag
                 .nameExact(Constants.apiUrl + rule.catLevelTwo)
                 .value
                 .dedup
-                .l
                 .toArray
             } else
               Array[String]()
@@ -238,14 +235,10 @@ class SinkExporter(cpg: Cpg) {
       val node = nodeList
         .filterNot(node => InternalTag.valuesAsString.contains(node.name))
         .filter(node => node.name.equals(Constants.id) || node.name.startsWith(Constants.privadoDerived))
-      if (node.nonEmpty) {
-        Some(node.value.toSet)
-      } else
-        None
+      node.value.toSet
     }
     sinks
       .flatMap(sink => getSinks(sink))
-      .flatten
       .filter(_.nonEmpty)
       .toSet
       .flatMap(source => convertSink(source))

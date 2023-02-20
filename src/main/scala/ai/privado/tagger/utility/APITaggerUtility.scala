@@ -23,6 +23,7 @@
 
 package ai.privado.tagger.utility
 
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities.{
@@ -47,32 +48,42 @@ object APITaggerUtility {
     ruleInfo: RuleInfo
   ): Unit = {
     val filteredSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
-    // Tag all api sinks irrespective of a dataflow except for Internal api's
-    if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
-      apis.foreach(apiNode => addRuleTags(builder, apiNode, ruleInfo))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = apis.reachableByFlows(filteredSourceNode).l
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
         val apiNode     = flow.elements.last
-        // Tag internal api's only when we find a dataflow to them
+        // Tag API's when we find a dataflow to them
         if (ruleInfo.id.equals(Constants.internalAPIRuleId))
           addRuleTags(builder, apiNode, ruleInfo)
+        else {
+          val cleanedUrl = cleanUrl(literalCode)
+          val newRuleId  = ruleInfo.id + "." + cleanedUrl
+          RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleId, name = ruleInfo.name + " " + cleanedUrl))
+          addRuleTags(builder, apiNode, ruleInfo, Some(newRuleId))
+        }
         storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, literalCode)
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
         val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
-        apiNodesWithoutLiteralPath.foreach(apiNode =>
+        apiNodesWithoutLiteralPath.foreach(apiNode => {
+          addRuleTags(builder, apiNode, ruleInfo)
           storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, Constants.API)
-        )
+        })
       }
+    } // Add url as 'API' for non Internal api nodes, for cases where there is no http literal present in source code
+    else if (filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+      apis.foreach(apiNode => {
+        addRuleTags(builder, apiNode, ruleInfo)
+        storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, Constants.API)
+      })
     }
-    // Add url as 'API' for non Internal api nodes, for cases where there is no http literal matched
-    if (filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
-      apis.foreach(apiNode => storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, Constants.API))
-    }
+  }
+
+  def cleanUrl(urlValue: String): String = {
+    urlValue.stripPrefix("\"").stripSuffix("\"")
   }
 
 }

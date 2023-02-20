@@ -82,11 +82,16 @@ object Utilities {
 
   /** Utility to add Tag based on a rule Object
     */
-  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: CfgNode, ruleInfo: RuleInfo): Unit = {
+  def addRuleTags(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: CfgNode,
+    ruleInfo: RuleInfo,
+    ruleId: Option[String] = None
+  ): Unit = {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName)) {
       val storeForTagHelper = storeForTag(builder, node) _
-      storeForTagHelper(Constants.id, ruleInfo.id)
+      storeForTagHelper(Constants.id, ruleId.getOrElse(ruleInfo.id))
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
@@ -97,7 +102,7 @@ object Utilities {
         case _       => ()
       }
       // storing by catLevelTwo and nodeType to get id
-      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
+      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
   }
 
