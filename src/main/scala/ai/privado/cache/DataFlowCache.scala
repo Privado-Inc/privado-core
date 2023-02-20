@@ -24,6 +24,12 @@ package ai.privado.cache
 
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.model.exporter.{
+  DataFlowPathIntermediateModel,
+  DataFlowSinkIntermediateModel,
+  DataFlowSourceIntermediateModel,
+  DataFlowSubCategoryPathIntermediateModel
+}
 import ai.privado.model.DataFlowPathModel
 import ai.privado.semantic.Language.finder
 import io.joern.dataflowengineoss.language.Path
@@ -45,6 +51,8 @@ object DataFlowCache {
     dataflow.values.flatMap(_.values).flatten.toList
   }
 
+  var intermediateDataFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
+
   def setDataflow(dataFlowPathModel: DataFlowPathModel): Unit = {
 
     val pathId               = dataFlowPathModel.pathId
@@ -63,6 +71,26 @@ object DataFlowCache {
   }
 
   def getDataflow: List[DataFlowPathModel] = finalDataflow
+
+  def getIntermediateDataFlow(): List[DataFlowSourceIntermediateModel] = {
+
+    // Translating into json output format structure
+    val intermediateSourceResult     = ListBuffer[DataFlowSourceIntermediateModel]()
+    val intermediateDataFlowBySource = intermediateDataFlow.groupBy(_.sourceId)
+    intermediateDataFlowBySource.map(entrySet => {
+      val intermediateDataFlowBySink = entrySet._2.groupBy(_.sinkId)
+      val intermediateSinkResult     = ListBuffer[DataFlowSinkIntermediateModel]()
+      intermediateDataFlowBySink.map(pathValue => {
+        val intermediatePathResult = ListBuffer[DataFlowSubCategoryPathIntermediateModel]()
+        pathValue._2.foreach(value => {
+          intermediatePathResult += DataFlowSubCategoryPathIntermediateModel(value.pathId, value.paths)
+        })
+        intermediateSinkResult += DataFlowSinkIntermediateModel(pathValue._1, intermediatePathResult.toList)
+      })
+      intermediateSourceResult += DataFlowSourceIntermediateModel(entrySet._1, intermediateSinkResult.toList)
+    })
+    intermediateSourceResult.toList
+  }
 
   private def setDataflowWithdedup(): Unit = {
 

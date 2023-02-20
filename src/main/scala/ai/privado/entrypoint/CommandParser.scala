@@ -45,6 +45,7 @@ case class PrivadoInput(
   skipUpload: Boolean = false,
   upload: Boolean = false,
   enableJS: Boolean = false,
+  testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false
 )
 
@@ -78,6 +79,8 @@ object CommandConstants {
   val ENABLE_JS                                    = "enablejs"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
+  val TEST_OUTPUT                                  = "test-output"
+  val TEST_OUTPUT_ABBR                             = "tout"
 }
 
 object CommandParser {
@@ -177,6 +180,11 @@ object CommandParser {
               .text(
                 "Upload the output results to cloud without being prompted for the consent. If you have already given the consent this flag has no effect"
               ),
+            opt[Unit](CommandConstants.TEST_OUTPUT)
+              .abbr(CommandConstants.TEST_OUTPUT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(testOutput = true))
+              .text("Export the intermediate flow output"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
