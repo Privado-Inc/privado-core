@@ -46,19 +46,18 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
   def getFlowByType(sinkSubCategory: String, sinkNodeTypes: Set[String]): Set[DataFlowSubCategoryModel] = {
-    sinkNodeTypes.flatMap(sinkNodeType => {
-      val dataflowsAvailable = DataFlowCache.getDataflow
-      val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
-        dataflowModel.sinkSubCategory.equals(sinkSubCategory) && dataflowModel.sinkNodeType.equals(sinkNodeType)
-      )
-      val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)
-      dataflowModelBySourceId.map(dataflowBySourceEntrySet => {
+    val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
+      dataflowModel.sinkSubCategory.equals(sinkSubCategory) && sinkNodeTypes.contains(dataflowModel.sinkNodeType)
+    )
+    val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)
+    dataflowModelBySourceId
+      .map(dataflowBySourceEntrySet => {
         DataFlowSubCategoryModel(
           dataflowBySourceEntrySet._1,
           convertSourceModelList(dataflowBySourceEntrySet._1, dataflowBySourceEntrySet._2, sinkSubCategory)
         )
       })
-    })
+      .toSet
   }
 
   def convertSourceModelList(
