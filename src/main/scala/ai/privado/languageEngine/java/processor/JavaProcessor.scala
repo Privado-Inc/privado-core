@@ -77,6 +77,12 @@ object JavaProcessor {
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
+          // Unresolved function report
+          if (config.showUnresolvedFunctionsReport) {
+            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+            UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
+          }
+
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           cpg.runTagger(processedRules)
@@ -181,11 +187,6 @@ object JavaProcessor {
       )
       applyDefaultOverlays(cpg)
       cpg
-    }
-
-    if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
     }
 
     val msg = processCPG(xtocpg, processedRules, sourceRepoLocation)
