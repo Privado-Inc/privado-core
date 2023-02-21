@@ -35,13 +35,14 @@ import ai.privado.utility.Utilities.{getFileNameForNode, resolver}
 
 object UnresolvedReportUtility {
   def reportUnresolvedMethods(xtocpg: Try[Cpg], statoutdir: String, language: Language.Language): Unit = {
-    var total                    = 0
-    var unresolvedSignatures     = 0
-    var unresolvedNamespaces     = 0
-    var unresolvedSignaturesList = ListBuffer[String]()
-    var unresolvedNamespacesList = ListBuffer[String]()
-    var nonempty                 = 0
-    var isempty                  = 0
+    var total                         = 0
+    var unresolvedSignatures          = 0
+    var unresolvedNamespaces          = 0
+    var unresolvedSignatureWithCallee = 0
+    var unresolvedSignaturesList      = ListBuffer[String]()
+    var unresolvedNamespacesList      = ListBuffer[String]()
+    var nonempty                      = 0
+    var isempty                       = 0
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
@@ -64,8 +65,17 @@ object UnresolvedReportUtility {
         cpg.call
           .methodFullName(unresolved_sig_pattern)
           .l
-          .filter((i) => i.name != "import")
+          .filter((i) => {
+            var res = true
+            if (language.equals(Language.PYTHON)) {
+              res = i.name != "import"
+            }
+            res
+          })
           .map(us => {
+            if (us.callee.fullName.l.length > 0) {
+              unresolvedSignatureWithCallee += 1
+            }
             unresolvedSignaturesList += us.methodFullName + "(" + us.name + ")" + "\n\t" + "Line Number: " + us.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(
               us
             ) + "\n\t" + "Callee FullName: " + us.callee.fullName.l
@@ -107,6 +117,14 @@ object UnresolvedReportUtility {
     if (unresolvedSignatures > 0) {
       percentage = (unresolvedSignatures.toDouble * 100.0) / total.toDouble
       statstr += s"$percentage% of total calls are unresolved\n"
+    }
+
+    if (language.equals(Language.PYTHON)) {
+      statstr += s"\nCalls with unresolved signatures having callee: $unresolvedSignatureWithCallee\n"
+      if (unresolvedSignatureWithCallee > 0) {
+        percentage = (unresolvedSignatureWithCallee.toDouble * 100.0) / unresolvedSignatures.toDouble
+        statstr += s"$percentage% of unresolved signatures having callee from unresolved signatures\n"
+      }
     }
 
     statstr += s"\nCalls with unresolved namespace: $unresolvedNamespaces\n"
