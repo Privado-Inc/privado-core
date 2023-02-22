@@ -23,6 +23,7 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
@@ -112,7 +113,13 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
-        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, apis, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          apis,
+          builder,
+          ruleInfo,
+          ScanProcessor.config.enableBruteAPIDisplay
+        )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")

@@ -46,7 +46,8 @@ object APITaggerUtility {
     apiInternalSinkPattern: List[CfgNode],
     apis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
-    ruleInfo: RuleInfo
+    ruleInfo: RuleInfo,
+    showAPI: Boolean = true
   ): Unit = {
     val filteredSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
@@ -67,7 +68,7 @@ object APITaggerUtility {
         storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, literalCode)
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
-      if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+      if (showAPI && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
         val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
         apiNodesWithoutLiteralPath.foreach(apiNode => {
@@ -76,7 +77,7 @@ object APITaggerUtility {
         })
       }
     } // Add url as 'API' for non Internal api nodes, for cases where there is no http literal present in source code
-    else if (filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+    else if (showAPI && filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
       apis.foreach(apiNode => {
         addRuleTags(builder, apiNode, ruleInfo)
         storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
