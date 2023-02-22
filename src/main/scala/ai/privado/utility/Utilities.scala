@@ -24,6 +24,7 @@ package ai.privado.utility
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.exporter.ConsoleExporter.logger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model._
@@ -40,6 +41,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
+import java.net.URL
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
@@ -426,5 +428,23 @@ object Utilities {
       }
     })
     semanticList.toList
+  }
+
+  /** Returns a domain for a given url string
+    * @param urlString
+    * @return
+    */
+  def getDomainFromString(urlString: String) = {
+    try {
+      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
+      val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
+      val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
+      url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+    } catch {
+      case e: Exception =>
+        logger.debug("Exception while getting domain from string : ", e)
+        urlString
+    }
+
   }
 }

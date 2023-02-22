@@ -106,7 +106,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     sourceModelList.foreach(sourceModel => {
       var sinkId = sourceModel.sinkId
       val sinkAPITag = dataflowsMap(sourceModel.pathId).elements.last.tag
-        .filter(node => node.name.equals(Constants.apiUrl + sinkSubCategory))
+        .filter(node => node.name.equals(Constants.apiUrl + sourceModel.sinkId))
       if (sinkAPITag.nonEmpty) {
         sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
       }

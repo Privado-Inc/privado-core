@@ -31,7 +31,8 @@ import ai.privado.utility.Utilities.{
   getDefaultSemantics,
   getFileNameForNode,
   isFileProcessable,
-  storeForTag
+  storeForTag,
+  getDomainFromString
 }
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import overflowdb.BatchedUpdate
@@ -54,15 +55,16 @@ object APITaggerUtility {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
         val apiNode     = flow.elements.last
         // Tag API's when we find a dataflow to them
+        var newRuleIdToUse = ruleInfo.id
         if (ruleInfo.id.equals(Constants.internalAPIRuleId))
           addRuleTags(builder, apiNode, ruleInfo)
         else {
-          val cleanedUrl = cleanUrl(literalCode)
-          val newRuleId  = ruleInfo.id + "." + cleanedUrl
-          RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleId, name = ruleInfo.name + " " + cleanedUrl))
-          addRuleTags(builder, apiNode, ruleInfo, Some(newRuleId))
+          val domain = getDomainFromString(literalCode)
+          newRuleIdToUse = ruleInfo.id + "." + domain
+          RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+          addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
         }
-        storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, literalCode)
+        storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, literalCode)
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
@@ -70,14 +72,14 @@ object APITaggerUtility {
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
         apiNodesWithoutLiteralPath.foreach(apiNode => {
           addRuleTags(builder, apiNode, ruleInfo)
-          storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, Constants.API)
+          storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
         })
       }
     } // Add url as 'API' for non Internal api nodes, for cases where there is no http literal present in source code
     else if (filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
       apis.foreach(apiNode => {
         addRuleTags(builder, apiNode, ruleInfo)
-        storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.catLevelTwo, Constants.API)
+        storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
       })
     }
   }

@@ -207,7 +207,7 @@ class SinkExporter(cpg: Cpg) {
               cpg.call
                 .where(_.tag.nameExact(Constants.id).value(rule.id))
                 .tag
-                .nameExact(Constants.apiUrl + rule.catLevelTwo)
+                .nameExact(Constants.apiUrl + rule.id)
                 .value
                 .dedup
                 .toArray
