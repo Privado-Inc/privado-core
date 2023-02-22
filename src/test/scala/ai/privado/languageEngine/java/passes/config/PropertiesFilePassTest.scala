@@ -131,7 +131,7 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
   override val configFileContents =
     """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
       |<beans>
-      |<bean id="myField" class="org.springframework.beans.factory.config.FieldRetrievingFactoryBean">
+      |<bean id="myField" class="com.example.test.GFG">
       |    <property name="staticField" value="${jdbc.url}"/>
       |</bean>
       |</beans>
@@ -141,19 +141,13 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
     """jdbc.url=http://localhost:8081/""".stripMargin
   override val javaFileContents =
     """
-      |// Java program to demonstrate Properties class to get all
-      |// the system properties
+      |package com.example.test;
       |
       |import java.util.*;
       |import java.io.*;
       |
       |public class GFG {
-      |	public String getProperty()
-      |	{
-      |		Properties p = System.getProperties();
-      |		String propertyValue = p.getProperty("url.coloradosoftwaresummit");
-      |     return propertyValue;
-      |	}
+      |	private String staticField;
       |}
       |""".stripMargin
 
@@ -164,6 +158,10 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
       .contains("http://localhost:8081/") shouldBe true
   }
 
+  "Two way edge between member and propertyNode" in {
+    val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
+    javaP.value shouldBe "http://localhost:8081/"
+  }
 }
 
 /** Base class for tests on properties files and Java code.

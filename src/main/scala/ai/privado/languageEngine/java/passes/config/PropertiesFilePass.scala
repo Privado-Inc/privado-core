@@ -27,7 +27,7 @@ import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.resolver
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty, TypeDecl}
 import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -49,7 +49,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   private val logger = LoggerFactory.getLogger(getClass)
 
   var testCpg: Cpg = _
-
   override def generateParts(): Array[String] =
     propertiesFiles(projectRoot, Set(".properties", ".yml", ".yaml", ".xml")).toArray
 
@@ -70,6 +69,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
         propertyNodes.foreach(connectGetPropertyLiterals(_, builder))
         connectAnnotatedParameters(propertyNodes, builder)
+        connectBeanPropertiesToMembers(propertyNodes, builder)
         propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
@@ -82,7 +82,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
     val paramsAndValues = annotatedParameters()
-
     propertyNodes.foreach { propertyNode =>
       paramsAndValues
         .filter { case (_, value) => propertyNode.name == value }
@@ -102,6 +101,19 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
           builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
         }
     }
+
+  }
+
+  private def connectBeanPropertiesToMembers(propertyNodes: List[NewJavaProperty], builder: DiffGraphBuilder): Unit = {
+    propertyNodes.foreach(propertyNode => {
+      val members = getMember(propertyNode.name)
+      val member  = if (members.nonEmpty) members.head else null
+      if (member != null) {
+        println(s"Edge establised: ${propertyNode.name} <-> ${member.typeDecl.fullName}.${member.name}")
+        builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT);
+        builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
+      }
+    })
   }
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
@@ -124,6 +136,9 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     .where(_.member)
     .map { x => (x.parameterAssign.head, x.member.head) }
     .l
+
+  private def getMember(member: String) =
+    cpg.member.where(_.name(member)).toList
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
@@ -196,6 +211,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       val nameValuePairs = (xml \\ "bean").flatMap { bean =>
         {
           var result: (String, String) = ("", "")
+          val className: String        = bean \@ "class"
           (bean \\ "property").map { prop =>
             {
               // Search for property tags inside a bean
@@ -210,8 +226,15 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
               } else {
                 result = ((prop \@ "name"), propValue)
               }
+
             }
-            result
+
+            if (getMember((prop \@ "name")).exists(member => member.typeDecl.fullName.equals(className))) {
+              result // Only pass on those results whose classname is equal to the bean class name
+            } else {
+              ("", "")
+            }
+
           }
         }
       }
@@ -272,6 +295,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
     val propertyNode = NewJavaProperty().name(key).value(value)
+//    println(key, value)
     builder.addNode(propertyNode)
     propertyNode
   }
