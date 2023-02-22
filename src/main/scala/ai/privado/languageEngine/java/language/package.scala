@@ -45,7 +45,7 @@ package object language {
     def originalProperty: Traversal[JavaProperty] = trav.out(EdgeTypes.ORIGINAL_PROPERTY).cast[JavaProperty]
   }
 
-  implicit class NodeToProperty(val node: CfgNode) {
+  implicit class NodeToProperty(val node: AstNode) {
     def originalProperty: Option[JavaProperty] = {
       val property = node.out(EdgeTypes.ORIGINAL_PROPERTY)
       if (property != null && property.hasNext) {

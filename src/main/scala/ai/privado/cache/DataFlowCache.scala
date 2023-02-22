@@ -57,8 +57,9 @@ object DataFlowCache {
 
     val pathId               = dataFlowPathModel.pathId
     val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
-    val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
-    val sourceId             = dataFlowPathModel.sourceId
+    val fileLineNo =
+      sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename + dataFlowPathModel.sinkId
+    val sourceId = dataFlowPathModel.sourceId
 
     if (!dataflow.contains(sourceId)) {
       dataflow(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
@@ -98,9 +99,10 @@ object DataFlowCache {
 
       val pathId               = dataFlowPathModel.pathId
       val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
-      val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
-      val flowSize             = dataflowsMapByType(pathId).elements.size
-      val sourceId             = dataFlowPathModel.sourceId
+      val fileLineNo =
+        sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename + dataFlowPathModel.sinkId
+      val flowSize = dataflowsMapByType(pathId).elements.size
+      val sourceId = dataFlowPathModel.sourceId
 
       if (!dataflow.contains(sourceId)) {
         dataflow(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
@@ -109,11 +111,14 @@ object DataFlowCache {
       }
 
       if (dataflow(sourceId)(fileLineNo).nonEmpty) {
-        val currentPathId               = dataflow(sourceId)(fileLineNo).head.pathId
+        val currentDataFlowPathModel    = dataflow(sourceId)(fileLineNo).head
+        val currentPathId               = currentDataFlowPathModel.pathId
         val currentSinkNodeWithLocation = dataflowsMapByType(currentPathId).elements.last.location
 
         val currentFileLineNo =
-          currentSinkNodeWithLocation.lineNumber.getOrElse(0).toString + currentSinkNodeWithLocation.filename
+          currentSinkNodeWithLocation.lineNumber
+            .getOrElse(0)
+            .toString + currentSinkNodeWithLocation.filename + currentDataFlowPathModel.sinkId
         val currentFlowSize = dataflowsMapByType(dataflow(sourceId)(fileLineNo).head.pathId).elements.size
         if (currentFileLineNo.equals(fileLineNo) && flowSize < currentFlowSize) {
           dataflow(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)

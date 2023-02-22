@@ -66,6 +66,12 @@ object JavascriptProcessor {
         new MethodFullName(cpg).createAndApply()
         new MethodFullNameFromIdentifier(cpg).createAndApply()
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
+
+        // Unresolved function report
+        if (config.showUnresolvedFunctionsReport) {
+          val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+          UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
+        }
         logger.info("=====================")
 
         // Run tagger
@@ -126,10 +132,6 @@ object JavascriptProcessor {
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
-    }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
