@@ -27,14 +27,14 @@ import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.resolver
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
 import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 
 import scala.jdk.CollectionConverters._
-import java.util.{InvalidPropertiesFormatException, Properties}
+import java.util.{Properties}
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import io.circe.yaml.parser
@@ -67,9 +67,12 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
-        propertyNodes.foreach(connectGetPropertyLiterals(_, builder))
-        connectAnnotatedParameters(propertyNodes, builder)
-        connectBeanPropertiesToMembers(propertyNodes, builder)
+
+        propertyNodes.foreach(propertyNode => {
+          connectGetPropertyLiterals(_, builder)
+          connectAnnotatedParameters(propertyNode, builder)
+          connectBeanPropertiesToMembers(propertyNode, builder)
+        })
 
         propertyNodes
       case Failure(exception) =>
@@ -79,42 +82,25 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
   private def connectAnnotatedParameters(
-    propertyNodes: List[NewJavaProperty],
+    propertyNode: NewJavaProperty,
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
     val paramsAndValues = annotatedParameters()
-    propertyNodes.foreach { propertyNode =>
-      paramsAndValues
-        .filter { case (_, value) => propertyNode.name == value }
-        .foreach { case (param, _) =>
-          builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
-          builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-        }
-    }
-    val membersAndValues = annotatedMembers()
-    propertyNodes.foreach { propertyNode =>
-      membersAndValues
-        .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
-        .foreach { case (key, value) =>
-          println(s"Member edge str ${key.code.slice(3, key.code.length - 2)} <-> ${propertyNode.value}")
-          println(s"Member edge ${value.code} <-> ${propertyNode.value}")
-          builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
-          builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-        }
-    }
-
+    paramsAndValues
+      .filter { case (_, value) => propertyNode.name == value }
+      .foreach { case (param, _) =>
+        builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
+        builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+      }
   }
 
-  private def connectBeanPropertiesToMembers(propertyNodes: List[NewJavaProperty], builder: DiffGraphBuilder): Unit = {
-    propertyNodes.foreach(propertyNode => {
-      val members = getMember(propertyNode.name)
-      val member  = if (members.nonEmpty) members.head else null
-      if (member != null) {
-        println(s"Edge establised: ${propertyNode.name} <-> ${member.typeDecl.fullName}.${member.name}")
-        builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT);
-        builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
-      }
-    })
+  private def connectBeanPropertiesToMembers(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
+    val members = getMember(propertyNode.name)
+    val member  = if (members.nonEmpty) members.head else null
+    if (member != null) {
+      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT);
+      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
+    }
   }
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
@@ -128,14 +114,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       val value       = literalName.slice(3, literalName.length - 2)
       (x.start.parameter.head, value)
     }
-    .l
-
-  /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
-    */
-  def annotatedMembers() = cpg.annotation
-    .code(".*@Value.*")
-    .where(_.member)
-    .map { x => (x.parameterAssign.head, x.member.head) }
     .l
 
   private def getMember(member: String) =
@@ -296,7 +274,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
     val propertyNode = NewJavaProperty().name(key).value(value)
-//    println(key, value)
     builder.addNode(propertyNode)
     propertyNode
   }
