@@ -118,7 +118,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           apis,
           builder,
           ruleInfo,
-          ScanProcessor.config.enableBruteAPIDisplay
+          ScanProcessor.config.enableAPIDisplay
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")

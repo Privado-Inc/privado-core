@@ -40,7 +40,7 @@ case class PrivadoInput(
   disableThisFiltering: Boolean = false,
   disableFlowSeparationByDataElement: Boolean = false,
   disable2ndLevelClosure: Boolean = false,
-  enableBruteAPIDisplay: Boolean = false,
+  enableAPIDisplay: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
@@ -157,7 +157,7 @@ object CommandParser {
             opt[Unit](CommandConstants.ENABLE_API_DISPLAY)
               .abbr(CommandConstants.ENABLE_API_DISPLAY_ABBR)
               .optional()
-              .action((_, c) => c.copy(enableBruteAPIDisplay = true))
+              .action((_, c) => c.copy(enableAPIDisplay = true))
               .text("Enable api display"),
             opt[Unit](CommandConstants.ENABLE_JS)
               .abbr(CommandConstants.ENABLE_JS)
