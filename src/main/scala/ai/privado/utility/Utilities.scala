@@ -97,6 +97,8 @@ object Utilities {
       }
       // storing by catLevelTwo and nodeType to get id
       storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
+    } else {
+      println("----- Im getting executed -----")
     }
   }
 

@@ -36,16 +36,14 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
        def create_user():
           ...
 
+       create_user = @bp.route("/user/add", methods=["POST", "GET"])
+
     frontend creates a call node with its 'code' string as 'create_user = bp.route(\"/user/add\" ..)'
     In order to create a proper pair of handler and its attached route, we need to navigate the AST
     from the methodRef node, find the relevant call node and then extract route info from these methodRef
     nodes and and begin tagging.
      */
-    val collectionMethodRefs = cpg.methodRef
-      .where(
-        _.astParent.astParent.isCall.argument
-          .code(urlPattern)
-      )
+    val collectionMethodRefs = cpg.methodRef.where(_.astParent.astParent.isCall.argument.code(urlPattern))
 
     val collectionMethodsCache = collectionMethodRefs
       .map { m =>
@@ -61,19 +59,26 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
+
         // TODO: handle cases where `request.args.get('id', None)` used directly in handler block without method param
         val parameters =
           collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("self")).l
-        if (parameters.isEmpty) {
+        val matchingLocals = collectionMethod.local.code(sourceRule.combinedRulePattern).l
+
+        if (parameters.isEmpty && matchingLocals.isEmpty) {
           None
         } else {
           parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
+          matchingLocals.foreach(local => storeForTag(builder, local)(Constants.id, sourceRule.id))
           Some(collectionMethod)
         }
+
       })
     })
 
-    collectionPoints.foreach(collectionPoint => {
+    var collectionXYZoints = collectionPoints.l
+
+    collectionXYZoints.foreach(collectionPoint => {
       addRuleTags(builder, collectionPoint, ruleInfo)
       storeForTag(builder, collectionPoint)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
