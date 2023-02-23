@@ -40,7 +40,7 @@ case class DataFlowSubCategoryPathModel(pathId: String, path: List[DataFlowSubCa
 
 case class DataFlowSourceIntermediateModel(sourceId: String, sinks: List[DataFlowSinkIntermediateModel])
 
-case class DataFlowSinkIntermediateModel(sinkId: String, paths: List[DataFlowSubCategoryPathIntermediateModel])
+case class DataFlowSinkIntermediateModel(id: String, paths: List[DataFlowSubCategoryPathIntermediateModel])
 
 case class DataFlowSubCategoryPathIntermediateModel(
   pathId: String,

@@ -97,7 +97,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
     if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
       val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
-      apiFlows.foreach(flow => {
+      apiFlows.foreach((flow) => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
         val apiNode     = flow.elements.last
         addRuleTags(builder, apiNode, ruleInfo)
