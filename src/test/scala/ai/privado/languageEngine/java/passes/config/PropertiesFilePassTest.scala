@@ -33,11 +33,13 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty, Literal, MethodParameterIn}
 
-class AnnotationTests extends PropertiesFilePassTestBase {
+class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
     """
       |internal.logger.api.base=https://logger.privado.ai/
       |""".stripMargin
+
+  override val propertyFileContents = ""
   override val javaFileContents: String =
     """
       |
@@ -70,7 +72,7 @@ class AnnotationTests extends PropertiesFilePassTestBase {
   }
 }
 
-class GetPropertyTests extends PropertiesFilePassTestBase {
+class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
       |internal.logger.api.base=https://logger.privado.ai/
@@ -87,6 +89,8 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
       |     }
       |}
       |""".stripMargin
+
+  override val propertyFileContents = ""
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
@@ -122,24 +126,71 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
   }
 }
 
+// Unit test to check if property is added in the cpg using XML files.
+class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
+  override val configFileContents =
+    """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      |<beans>
+      |<bean id="myField" class="com.example.test.GFG">
+      |    <property name="staticField" value="${jdbc.url}"/>
+      |</bean>
+      |</beans>
+      |""".stripMargin
+
+  override val propertyFileContents: String =
+    """jdbc.url=http://localhost:8081/""".stripMargin
+  override val javaFileContents =
+    """
+      |package com.example.test;
+      |
+      |import java.util.*;
+      |import java.io.*;
+      |
+      |public class GFG {
+      |	private String staticField;
+      |}
+      |""".stripMargin
+
+  "create a `property` node for each property" in {
+    val properties = cpg.property.map(x => (x.name, x.value)).toMap
+    properties
+      .get("staticField")
+      .contains("http://localhost:8081/") shouldBe true
+  }
+
+  "Two way edge between member and propertyNode" in {
+    val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
+    javaP.value shouldBe "http://localhost:8081/"
+  }
+}
+
 /** Base class for tests on properties files and Java code.
   */
-abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+// file extension to support for any file as properties
+abstract class PropertiesFilePassTestBase(fileExtension: String)
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll {
 
   var cpg: Cpg = _
   val configFileContents: String
   val javaFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
+  val propertyFileContents: String
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
-    (inputDir / "test.properties").write(configFileContents)
+    (inputDir / s"test.$fileExtension").write(configFileContents)
     (inputDir / "GeneralConfig.java").write(javaFileContents)
     (inputDir / "unrelated.file").write("foo")
+    if (propertyFileContents.nonEmpty) {
+      (inputDir / "application.properties").write(propertyFileContents)
+    }
     outputFile = File.newTemporaryFile()
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
     cpg = new JavaSrc2Cpg().createCpg(config).get
+
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
     super.beforeAll()
   }
