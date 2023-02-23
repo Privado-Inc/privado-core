@@ -24,22 +24,20 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.resolver
+import com.github.wnameless.json.flattener.JsonFlattener
+import io.circe.yaml.parser
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
-import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 
+import java.util.Properties
 import scala.jdk.CollectionConverters._
-import java.util.{Properties}
 import scala.util.{Failure, Success, Try}
-import io.shiftleft.semanticcpg.language._
-import io.circe.yaml.parser
-import com.github.wnameless.json.flattener.JsonFlattener
-
 import scala.xml._
 
 /** This pass creates a graph layer for Java `.properties` files.
@@ -48,7 +46,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  var testCpg: Cpg = _
   override def generateParts(): Array[String] =
     propertiesFiles(projectRoot, Set(".properties", ".yml", ".yaml", ".xml")).toArray
 
@@ -69,7 +66,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
 
         propertyNodes.foreach(propertyNode => {
-          connectGetPropertyLiterals(_, builder)
+          connectGetPropertyLiterals(propertyNode, builder)
           connectAnnotatedParameters(propertyNode, builder)
           connectBeanPropertiesToMembers(propertyNode, builder)
         })
