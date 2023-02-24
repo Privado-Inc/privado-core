@@ -34,7 +34,7 @@ import ai.privado.model.exporter.{
   SourceModel,
   SourceProcessingModel
 }
-import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.exporter.{
   DataFlowPathIntermediateModel,
@@ -42,7 +42,6 @@ import ai.privado.model.exporter.{
   DataFlowSubCategoryModel,
   DataFlowSubCategoryPathExcerptModel
 }
-import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
@@ -65,6 +64,7 @@ import ExecutionContext.Implicits.global
 import duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
+import io.shiftleft.semanticcpg.language._
 
 object JSONExporter {
 
