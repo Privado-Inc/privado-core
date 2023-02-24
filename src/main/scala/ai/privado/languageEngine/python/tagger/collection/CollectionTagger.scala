@@ -76,9 +76,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       })
     })
 
-    var collectionXYZoints = collectionPoints.l
-
-    collectionXYZoints.foreach(collectionPoint => {
+    collectionPoints.foreach(collectionPoint => {
       addRuleTags(builder, collectionPoint, ruleInfo)
       storeForTag(builder, collectionPoint)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,

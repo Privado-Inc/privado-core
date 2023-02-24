@@ -47,9 +47,7 @@ class CollectionExporter(cpg: Cpg) {
       .l
       .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
 
-    var somelist = collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2)).toList
-
-    somelist
+    collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2)).toList
   }
 
   private def processByCollectionId(collectionId: String, collectionMethods: List[Method]) = {
@@ -96,7 +94,6 @@ class CollectionExporter(cpg: Cpg) {
               .value
               .filter(!_.startsWith(Constants.privadoDerived))
               .foreach(addToMap)
-            localVar.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
 
           } catch {
             case e: Exception => logger.debug("Exception : ", e)

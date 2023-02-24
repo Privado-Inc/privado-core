@@ -100,11 +100,6 @@ object JSONExporter {
       val collections     = Future(collectionExporter.getCollections)
       val violations      = Future(policyAndThreatExporter.getViolations(repoPath))
 
-      val collectionMapByCollectionId = cpg.method
-        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
-        .l
-        .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
-
       // Called when the asynchronous call is completed
       sources.onComplete({
         case Success(value) => {
