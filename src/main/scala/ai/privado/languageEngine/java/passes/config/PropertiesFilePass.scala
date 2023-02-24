@@ -115,7 +115,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
   def annotatedMembers() = cpg.annotation
-    .code(".*@Value.*")
+    .fullName(".*Value.*")
     .where(_.member)
     .map { x => (x.parameterAssign.head, x.member.head) }
     .l
