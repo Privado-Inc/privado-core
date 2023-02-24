@@ -38,6 +38,22 @@ case class DataFlowSubCategoryPathExcerptModel(
 
 case class DataFlowSubCategoryPathModel(pathId: String, path: List[DataFlowSubCategoryPathExcerptModel])
 
+case class DataFlowSourceIntermediateModel(sourceId: String, sinks: List[DataFlowSinkIntermediateModel])
+
+case class DataFlowSinkIntermediateModel(id: String, paths: List[DataFlowSubCategoryPathIntermediateModel])
+
+case class DataFlowSubCategoryPathIntermediateModel(
+  pathId: String,
+  path: List[Option[DataFlowSubCategoryPathExcerptModel]]
+)
+
+case class DataFlowPathIntermediateModel(
+  sourceId: String,
+  sinkId: String,
+  pathId: String,
+  paths: List[Option[DataFlowSubCategoryPathExcerptModel]]
+)
+
 object DataFlowEncoderDecoder {
   implicit val dataFlowSubCategoryModelDecoder: Decoder[DataFlowSubCategoryModel] =
     deriveDecoder[DataFlowSubCategoryModel]
@@ -63,4 +79,25 @@ object DataFlowEncoderDecoder {
     deriveDecoder[DatabaseDetails]
   implicit val databaseDetailsEncoder: Encoder[DatabaseDetails] =
     deriveEncoder[DatabaseDetails]
+
+  implicit val dataFlowPathModelIntermediateDecoder: Decoder[DataFlowPathIntermediateModel] =
+    deriveDecoder[DataFlowPathIntermediateModel]
+  implicit val dataFlowPathModelIntermediateEncoder: Encoder[DataFlowPathIntermediateModel] =
+    deriveEncoder[DataFlowPathIntermediateModel]
+
+  implicit val dataFlowSubCategoryPathIntermediateModelDecoder: Decoder[DataFlowSubCategoryPathIntermediateModel] =
+    deriveDecoder[DataFlowSubCategoryPathIntermediateModel]
+  implicit val dataFlowSubCategoryPathIntermediateModelEncoder: Encoder[DataFlowSubCategoryPathIntermediateModel] =
+    deriveEncoder[DataFlowSubCategoryPathIntermediateModel]
+
+  implicit val DataFlowSourceIntermediateModelDecoder: Decoder[DataFlowSourceIntermediateModel] =
+    deriveDecoder[DataFlowSourceIntermediateModel]
+  implicit val DataFlowSourceIntermediateModelEncoder: Encoder[DataFlowSourceIntermediateModel] =
+    deriveEncoder[DataFlowSourceIntermediateModel]
+
+  implicit val DataFlowSinkIntermediateModelDecoder: Decoder[DataFlowSinkIntermediateModel] =
+    deriveDecoder[DataFlowSinkIntermediateModel]
+  implicit val DataFlowSinkIntermediateModelEncoder: Encoder[DataFlowSinkIntermediateModel] =
+    deriveEncoder[DataFlowSinkIntermediateModel]
+
 }

@@ -24,6 +24,12 @@ package ai.privado.cache
 
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.model.exporter.{
+  DataFlowPathIntermediateModel,
+  DataFlowSinkIntermediateModel,
+  DataFlowSourceIntermediateModel,
+  DataFlowSubCategoryPathIntermediateModel
+}
 import ai.privado.model.DataFlowPathModel
 import ai.privado.semantic.Language.finder
 import io.joern.dataflowengineoss.language.Path
@@ -45,12 +51,15 @@ object DataFlowCache {
     dataflow.values.flatMap(_.values).flatten.toList
   }
 
+  var intermediateDataFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
+
   def setDataflow(dataFlowPathModel: DataFlowPathModel): Unit = {
 
     val pathId               = dataFlowPathModel.pathId
     val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
-    val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
-    val sourceId             = dataFlowPathModel.sourceId
+    val fileLineNo =
+      sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename + dataFlowPathModel.sinkId
+    val sourceId = dataFlowPathModel.sourceId
 
     if (!dataflow.contains(sourceId)) {
       dataflow(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
@@ -63,6 +72,26 @@ object DataFlowCache {
 
   def getDataflow: List[DataFlowPathModel] = finalDataflow
 
+  def getIntermediateDataFlow(): List[DataFlowSourceIntermediateModel] = {
+
+    // Translating into json output format structure
+    val intermediateSourceResult     = ListBuffer[DataFlowSourceIntermediateModel]()
+    val intermediateDataFlowBySource = intermediateDataFlow.groupBy(_.sourceId)
+    intermediateDataFlowBySource.map(entrySet => {
+      val intermediateDataFlowBySink = entrySet._2.groupBy(_.sinkId)
+      val intermediateSinkResult     = ListBuffer[DataFlowSinkIntermediateModel]()
+      intermediateDataFlowBySink.map(pathValue => {
+        val intermediatePathResult = ListBuffer[DataFlowSubCategoryPathIntermediateModel]()
+        pathValue._2.foreach(value => {
+          intermediatePathResult += DataFlowSubCategoryPathIntermediateModel(value.pathId, value.paths)
+        })
+        intermediateSinkResult += DataFlowSinkIntermediateModel(pathValue._1, intermediatePathResult.toList)
+      })
+      intermediateSourceResult += DataFlowSourceIntermediateModel(entrySet._1, intermediateSinkResult.toList)
+    })
+    intermediateSourceResult.toList
+  }
+
   private def setDataflowWithdedup(): Unit = {
 
     println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
@@ -70,9 +99,10 @@ object DataFlowCache {
 
       val pathId               = dataFlowPathModel.pathId
       val sinkNodeWithLocation = dataflowsMapByType(pathId).elements.last.location
-      val fileLineNo           = sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename
-      val flowSize             = dataflowsMapByType(pathId).elements.size
-      val sourceId             = dataFlowPathModel.sourceId
+      val fileLineNo =
+        sinkNodeWithLocation.lineNumber.getOrElse(0).toString + sinkNodeWithLocation.filename + dataFlowPathModel.sinkId
+      val flowSize = dataflowsMapByType(pathId).elements.size
+      val sourceId = dataFlowPathModel.sourceId
 
       if (!dataflow.contains(sourceId)) {
         dataflow(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
@@ -81,11 +111,14 @@ object DataFlowCache {
       }
 
       if (dataflow(sourceId)(fileLineNo).nonEmpty) {
-        val currentPathId               = dataflow(sourceId)(fileLineNo).head.pathId
+        val currentDataFlowPathModel    = dataflow(sourceId)(fileLineNo).head
+        val currentPathId               = currentDataFlowPathModel.pathId
         val currentSinkNodeWithLocation = dataflowsMapByType(currentPathId).elements.last.location
 
         val currentFileLineNo =
-          currentSinkNodeWithLocation.lineNumber.getOrElse(0).toString + currentSinkNodeWithLocation.filename
+          currentSinkNodeWithLocation.lineNumber
+            .getOrElse(0)
+            .toString + currentSinkNodeWithLocation.filename + currentDataFlowPathModel.sinkId
         val currentFlowSize = dataflowsMapByType(dataflow(sourceId)(fileLineNo).head.pathId).elements.size
         if (currentFileLineNo.equals(fileLineNo) && flowSize < currentFlowSize) {
           dataflow(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)

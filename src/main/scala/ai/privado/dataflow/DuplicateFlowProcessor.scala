@@ -28,7 +28,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Expression, Identifier}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -230,8 +230,7 @@ object DuplicateFlowProcessor {
       val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
         .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
       if (sinkCatLevelTwoCustomTag.nonEmpty) {
-        val sinkId = sinkCatLevelTwoCustomTag.head.value
-        def filterFlowsOverlappingWithOtherDataElement() = {
+        def filterFlowsOverlappingWithOtherDataElement(sinkId: String) = {
           // Logic to filter flows which are interfering with the current source item
           // Ex - If traversing flow for email, discard flow which uses password
 
@@ -251,7 +250,7 @@ object DuplicateFlowProcessor {
               })
           }
 
-          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId) && !dataflowSinkType.equals("storages")
+          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId)
 
           // approach 2.2
           val sinkNode  = dataflowsMapByType(sinkPathId).elements.isCall.last
@@ -284,7 +283,7 @@ object DuplicateFlowProcessor {
           val finalMatchedDataElement = identifierMatchedDataElement ++ callMatchedDataElement
 
           val isFpByApproach2 = !finalMatchedDataElement
-            .contains(pathSourceId) && !dataflowSinkType.equals("storages")
+            .contains(pathSourceId)
 
           if (isFpByApproach1 && isFpByApproach2) {
             logger.debug(
@@ -313,13 +312,15 @@ object DuplicateFlowProcessor {
               DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
             )
         }
-        if (ScanProcessor.config.disableFlowSeparationByDataElement)
-          DataFlowCache.setDataflow(
-            DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-          )
-        else
-          filterFlowsOverlappingWithOtherDataElement()
-        AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+        sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
+          if (ScanProcessor.config.disableFlowSeparationByDataElement)
+            DataFlowCache.setDataflow(
+              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
+            )
+          else
+            filterFlowsOverlappingWithOtherDataElement(sinkId)
+          AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+        })
       }
     }
 
@@ -423,7 +424,7 @@ object DuplicateFlowProcessor {
     * @param sourceNode
     * @return
     */
-  private def getMemberNameForDerivedSourceNode(derivedByTag: (String, String), sourceNode: CfgNode) = {
+  private def getMemberNameForDerivedSourceNode(derivedByTag: (String, String), sourceNode: AstNode) = {
     val tagName  = derivedByTag._1
     val tagValue = derivedByTag._2
     sourceNode.tag.nameExact(tagValue + Constants.underScore + tagName).value.l.headOption match {

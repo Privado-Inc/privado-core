@@ -5,8 +5,8 @@ ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.3.592"
-val joernVersion      = "1.1.1441"
+val cpgVersion        = "1.3.593"
+val joernVersion      = "1.1.1461"
 val overflowdbVersion = "1.167"
 
 //External dependency versions
@@ -22,7 +22,6 @@ dependsOn(domainClasses)
 libraryDependencies ++= Seq(
   "com.github.pathikrit"            %% "better-files"            % "3.9.1",
   "com.github.scopt"                %% "scopt"                   % "3.7.1",
-  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
   "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
@@ -44,7 +43,9 @@ libraryDependencies ++= Seq(
   "com.networknt"                    % "json-schema-validator"   % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0"
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
+  "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -106,3 +107,6 @@ ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
 
+lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")
