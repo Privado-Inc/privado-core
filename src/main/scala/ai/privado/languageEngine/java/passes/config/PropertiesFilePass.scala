@@ -92,7 +92,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     propertyNodes.foreach { propertyNode =>
       membersAndValues
         .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
-        .foreach { case (key, value) =>
+        .foreach { case (_, value) =>
           builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
           builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
         }
