@@ -409,18 +409,14 @@ object Utilities {
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
       if (nonPersonalMembersRegex.nonEmpty) {
-        typeDeclNode.method.block.astChildren.isReturn
+        val nonPersonalMethodFullNames = typeDeclNode.method.block.astChildren.isReturn
           .code("return (?i)(" + nonPersonalMembersRegex + ")")
           .method
           .callIn
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
           .methodFullName
           .dedup
-          .foreach(methodName => {
-            semanticList.addOne(generateNonTaintSemantic(methodName))
-          })
-
-        cpg.identifier
+          .l ++ cpg.identifier
           .typeFullName(typeDeclValue)
           .astParent
           .isCall
@@ -428,9 +424,12 @@ object Utilities {
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
           .methodFullName
           .dedup
-          .foreach(methodName => {
-            semanticList.addOne(generateNonTaintSemantic(methodName))
-          })
+          .l
+
+        nonPersonalMethodFullNames.dedup.foreach(methodName => {
+          semanticList.addOne(generateNonTaintSemantic(methodName))
+        })
+
       }
     })
     semanticList.toList
