@@ -172,7 +172,7 @@ object Utilities {
     val list =
       customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
-    val finalSemantics = operatorFlows ++ javaFlows ++ parsed
+    val finalSemantics = getDefaultSemantics.elements ++ parsed
     Semantics.fromList(finalSemantics)
   }
 
