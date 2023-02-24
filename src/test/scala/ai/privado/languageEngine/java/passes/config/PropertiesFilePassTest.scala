@@ -95,6 +95,7 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   "ConfigFilePass" should {
     "create a file node for the property file" in {
       val List(name: String) = cpg.file.name.l
+
       name.endsWith("/test.properties") shouldBe true
     }
 
@@ -151,6 +152,14 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
       |}
       |""".stripMargin
 
+  "ConfigFilePass" should {
+    "create a file node for the property file" in {
+      val List(name: String) = cpg.file.name.l.filter(file => file.endsWith(".xml"))
+      print(name)
+      name.endsWith("/test.xml") shouldBe true
+    }
+  }
+
   "create a `property` node for each property" in {
     val properties = cpg.property.map(x => (x.name, x.value)).toMap
     properties
@@ -181,7 +190,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
-    (inputDir / s"test.$fileExtension").write(configFileContents)
+    (inputDir / s"test$fileExtension").write(configFileContents)
     (inputDir / "GeneralConfig.java").write(javaFileContents)
     (inputDir / "unrelated.file").write("foo")
     if (propertyFileContents.nonEmpty) {
