@@ -60,10 +60,10 @@ class CollectionExporter(cpg: Cpg) {
         .or(_.tag.nameExact(Constants.id), _.tag.name(Constants.privadoDerived + ".*"))
         .foreach(parameter => {
           try {
-            def addToMap(parameterId: String): Unit = {
-              if (!collectionParameterMapById.contains(parameterId))
-                collectionParameterMapById(parameterId) = ListBuffer()
-              collectionParameterMapById(parameterId).append(parameter)
+            def addToMap(localVariableId: String): Unit = {
+              if (!collectionParameterMapById.contains(localVariableId))
+                collectionParameterMapById(localVariableId) = ListBuffer()
+              collectionParameterMapById(localVariableId).append(parameter)
             }
             parameter.tag
               .nameExact(Constants.id)
