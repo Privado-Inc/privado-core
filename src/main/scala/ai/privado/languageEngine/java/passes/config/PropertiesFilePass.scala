@@ -60,7 +60,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     builder: BatchedUpdate.DiffGraphBuilder
   ): List[NewJavaProperty] = {
     Try {
-      obtainKeyValuePairs(file)
+      obtainKeyValuePairs(file, builder)
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
@@ -68,7 +68,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
         propertyNodes.foreach(propertyNode => {
           connectGetPropertyLiterals(propertyNode, builder)
           connectAnnotatedParameters(propertyNode, builder)
-          connectBeanPropertiesToMembers(propertyNode, builder)
         })
 
         propertyNodes
@@ -91,14 +90,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       }
   }
 
-  private def connectBeanPropertiesToMembers(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
-    val members = getMember(propertyNode.name)
-    val member  = if (members.nonEmpty) members.head else null
-    if (member != null) {
-      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT);
-      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
-    }
-  }
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
@@ -113,8 +104,8 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
     .l
 
-  private def getMember(member: String) =
-    cpg.member.where(_.name(member)).toList
+  private def getMember(member: String, className: String) =
+    cpg.member.where(_.typeDecl.fullName(className)).where(_.name(member)).toList
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
@@ -133,11 +124,11 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     .where(_.inCall.name(".*getProperty"))
     .l
 
-  private def obtainKeyValuePairs(file: String): List[(String, String)] = {
+  private def obtainKeyValuePairs(file: String, builder: DiffGraphBuilder): List[(String, String)] = {
     if (file.matches(""".*\.(?:yml|yaml)""")) {
       loadAndConvertYMLtoProperties(file)
     } else if (file.endsWith(".xml")) {
-      loadAndConvertXMLtoProperties(file)
+      loadAndConvertXMLtoProperties(file, builder)
     } else {
       loadFromProperties(file)
     }
@@ -181,7 +172,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
   // Used to extract (name, value) pairs from a bean config file
-  private def XMLParserBean(xmlPath: String): List[(String, String)] = {
+  private def XMLParserBean(xmlPath: String, builder: DiffGraphBuilder): List[(String, String)] = {
     try {
       val xml = XML.loadFile(xmlPath)
       val nameValuePairs = (xml \\ "bean").flatMap { bean =>
@@ -205,12 +196,16 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
 
             }
 
-            if (getMember((prop \@ "name")).exists(member => member.typeDecl.fullName.equals(className))) {
-              result // Only pass on those results whose classname is equal to the bean class name
-            } else {
-              ("", "")
+            val members = getMember((prop \@ "name"), className);
+            if (members.nonEmpty) {
+              val propertyNode = NewJavaProperty().name(result._1).value(result._2)
+              val member = members.head
+              if (member != null) {
+                builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
+                builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
+              }
             }
-
+            result
           }
         }
       }
@@ -228,7 +223,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
 
   }
 
-  private def loadAndConvertXMLtoProperties(file: String): List[(String, String)] = {
+  private def loadAndConvertXMLtoProperties(file: String, builder: DiffGraphBuilder): List[(String, String)] = {
     val properties  = new Properties();
     val inputStream = better.files.File(file).newInputStream
     try {
@@ -237,7 +232,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
         .collect(p => (p.toString, properties.getProperty(p.toString)))
     } catch {
       case _: Throwable => {
-        XMLParserBean(file)
+        XMLParserBean(file, builder)
       }
     }
   }

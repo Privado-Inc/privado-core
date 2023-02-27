@@ -134,6 +134,10 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
       |<beans>
       |<bean id="myField" class="com.example.test.GFG">
       |    <property name="staticField" value="${jdbc.url}"/>
+      |    <property name="static_two" value="hello-world"/>
+      |</bean>
+      |<bean id="myField" class="com.example.test.MFM">
+      |    <property name="testProperty" ref="myField"/>
       |</bean>
       |</beans>
       |""".stripMargin
@@ -155,7 +159,6 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
   "ConfigFilePass" should {
     "create a file node for the property file" in {
       val List(name: String) = cpg.file.name.l.filter(file => file.endsWith(".xml"))
-      print(name)
       name.endsWith("/test.xml") shouldBe true
     }
   }
@@ -163,13 +166,27 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
   "create a `property` node for each property" in {
     val properties = cpg.property.map(x => (x.name, x.value)).toMap
     properties
+      .get("static_two")
+      .contains("hello-world") shouldBe true
+  }
+
+  "Two way edge between member and propertyNode" in {
+    val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
+    properties
       .get("staticField")
       .contains("http://localhost:8081/") shouldBe true
   }
 
-  "Two way edge between member and propertyNode" in {
-    val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
-    javaP.value shouldBe "http://localhost:8081/"
+  "Two way edge between member and propertyNode for no code reference" in {
+    val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
+    properties
+      .contains("static_two") shouldBe false
+  }
+
+  "References to another beans should be skipped" in {
+    val properties = cpg.property.map(property => (property.name, property.value)).toMap;
+    properties
+      .contains("testProperty") shouldBe false
   }
 }
 
