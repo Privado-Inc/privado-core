@@ -121,7 +121,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           ScanProcessor.config.enableAPIDisplay
         )
       case APITaggerVersionJava.V2Tagger =>
-        logger.debug("Using Enhanced API tagger to find API sinks")
+        logger.debug("Using Enhanced API tagger to find API  sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
