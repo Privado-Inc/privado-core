@@ -31,22 +31,32 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty, Literal, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AnnotationParameterAssign,
+  CfgNode,
+  JavaProperty,
+  Literal,
+  MethodParameterIn
+}
 
 class AnnotationTests extends PropertiesFilePassTestBase {
   override val configFileContents: String =
     """
       |internal.logger.api.base=https://logger.privado.ai/
+      |slack.base.url=https://hooks.slack.com/services/some/leaking/url
       |""".stripMargin
   override val javaFileContents: String =
     """
       |
       |import org.springframework.beans.factory.annotation.Value;
       |
+      |@Value("${slack.base.url}")
+      |private static final String slackWebHookURL;
+      |
       |class Foo {
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
-      |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
+      |			ObjectMapper objectMapper, ExecutorService apiExecutor, SlackStub slackStub,
       |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
       |   }
       |}
@@ -54,7 +64,11 @@ class AnnotationTests extends PropertiesFilePassTestBase {
 
   "ConfigFilePass" should {
     "connect annotated parameter to property" in {
+      println("Starting test")
+      val property                       = cpg.property.l
+      val propertyUsedAt                 = cpg.property.usedAt.l
       val List(param: MethodParameterIn) = cpg.property.usedAt.l
+      println("Param name: " + param.name)
       param.name shouldBe "loggerBaseURL"
     }
 
@@ -67,6 +81,21 @@ class AnnotationTests extends PropertiesFilePassTestBase {
       param.originalPropertyValue.head shouldBe "https://logger.privado.ai/"
     }
 
+    /*
+    "connect annotated member to property" in {
+      val List(param: AnnotationParameterAssign) = cpg.property.usedAt.l
+      param.code shouldBe "slackWebHookURL"
+    }
+
+    "connect property to annotated member" in {
+      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
+      javaP.value shouldBe "https://hooks.slack.com/services/some/leaking/url"
+
+      val List(param: AnnotationParameterAssign) = cpg.property.usedAt.l
+      param.originalProperty.head.value shouldBe "https://hooks.slack.com/services/some/leaking/url"
+      param.originalPropertyValue.head shouldBe "https://hooks.slack.com/services/some/leaking/url"
+    }
+     */
   }
 }
 
