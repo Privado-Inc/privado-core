@@ -187,7 +187,8 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
             })
           }
         } else if (apiLiteral.startsWith("${") || apiLiteral.matches(ruleInfo.combinedRulePattern)) {
-          apiLiteral = apiLiteral.stripPrefix("${").stripSuffix("}").replaceAll("\\.", "_")
+          if (apiLiteral.startsWith("{"))
+            apiLiteral = apiLiteral.stripPrefix("${").stripSuffix("}").replaceAll("\\.", "_")
           apiCalls.foreach(apiNode => {
             val domain         = getDomainFromString(apiLiteral)
             val newRuleIdToUse = ruleInfo.id + "." + domain
