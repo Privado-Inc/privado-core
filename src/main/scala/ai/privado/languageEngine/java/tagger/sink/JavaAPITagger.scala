@@ -24,17 +24,19 @@ package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
-import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
+import ai.privado.languageEngine.java.language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.ImportUtility
+import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+import overflowdb.traversal.Traversal
 
 import java.util.Calendar
 import scala.collection.mutable
@@ -109,6 +111,9 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         List()
     }
 
+    // To handle feign implementation
+    tagFeignClientAPI(builder, ruleInfo)
+
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
@@ -151,6 +156,40 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       case 0 => false
       case _ => true
     }
+  }
+
+  def tagFeignClientAPI(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    implicit val resolver: ICallResolver = NoResolve
+    cpg.typeDecl
+      .where(_.annotation.name("FeignClient"))
+      .foreach(typeDecl => {
+        val classAnnotations = typeDecl.annotation.name("FeignClient").l
+        val annotationCode = classAnnotations.code.headOption
+          .getOrElse("")
+        val apiLiteral = annotationCode
+          .split("[,=\"]")
+          .map(_.trim)
+          .filter(_.nonEmpty)
+          .find(_.matches(ruleInfo.combinedRulePattern))
+          .getOrElse("")
+        val apiCalls = typeDecl.method.callIn.l
+        if (apiLiteral.nonEmpty) {
+          apiCalls.foreach(apiNode => {
+            val domain         = getDomainFromString(apiLiteral)
+            val newRuleIdToUse = ruleInfo.id + "." + domain
+            RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+            addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
+            storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
+          })
+        } else if (!ruleInfo.id.equals(Constants.internalAPIRuleId) && !annotationCode.matches(".*url.*")) {
+          // Case when feign url is present in some config file and uses some server mechanism like eureka, ribbon etc,
+          // which needs to be brought up here, for now we say it is API
+          apiCalls.foreach(apiNode => {
+            addRuleTags(builder, apiNode, ruleInfo)
+            storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
+          })
+        }
+      })
   }
 
 }
