@@ -36,7 +36,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import java.util.Calendar
 import scala.collection.mutable
@@ -113,7 +112,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
     // To handle feign implementation
     tagFeignClientAPIUsingFeignClient(builder, ruleInfo)
-    val feignAPISinks = getFeignClientAPISinksUsingRequestLine()
+    val feignAPISinks = getFeignClientAPISinksUsingRequestLine
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
@@ -173,27 +172,30 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         val classAnnotations = typeDecl.annotation.name("FeignClient").l
         val annotationCode = classAnnotations.code.headOption
           .getOrElse("")
-        val apiLiteral = annotationCode
-          .split("[,=\"]")
-          .map(_.trim)
-          .filter(_.nonEmpty)
-          .find(_.matches(ruleInfo.combinedRulePattern))
-          .getOrElse("")
+        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*".r
+        var apiLiteral = annotationCode match {
+          case urlParameterPattern(urlParameter) =>
+            urlParameter.stripPrefix("\"").stripSuffix("\"")
+          case _ => ""
+        }
         val apiCalls = typeDecl.method.whereNot(_.annotation.name("RequestLine")).callIn.l
-        if (apiLiteral.nonEmpty) {
-          apiCalls.foreach(apiNode => {
-            if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+          if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
+            apiCalls.foreach(apiNode => {
               addRuleTags(builder, apiNode, ruleInfo)
               storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, apiLiteral)
-            } else {
-              val domain         = getDomainFromString(apiLiteral)
-              val newRuleIdToUse = ruleInfo.id + "." + domain
-              RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
-              addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
-              storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
-            }
+            })
+          }
+        } else if (apiLiteral.startsWith("${") || apiLiteral.matches(ruleInfo.combinedRulePattern)) {
+          apiLiteral = apiLiteral.stripPrefix("${").stripSuffix("}")
+          apiCalls.foreach(apiNode => {
+            val domain         = getDomainFromString(apiLiteral)
+            val newRuleIdToUse = ruleInfo.id + "." + domain
+            RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+            addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
+            storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
           })
-        } else if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+        } else if (apiLiteral.isEmpty) {
           // Case when feign url is present in some config file and uses some server mechanism like eureka, ribbon etc,
           // which needs to be brought up here, for now we say it is API
           apiCalls.foreach(apiNode => {
@@ -208,7 +210,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     * @param builder
     * @param ruleInfo
     */
-  private def getFeignClientAPISinksUsingRequestLine(): List[Call] = {
+  private def getFeignClientAPISinksUsingRequestLine: List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
     cpg.method
       .where(_.annotation.name("RequestLine"))
