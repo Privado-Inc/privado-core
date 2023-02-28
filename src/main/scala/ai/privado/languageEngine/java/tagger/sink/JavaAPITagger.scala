@@ -121,11 +121,12 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis ++ feignAPISinks,
+          apis,
           builder,
           ruleInfo,
           ScanProcessor.config.enableAPIDisplay
         )
+        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
@@ -178,7 +179,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           .filter(_.nonEmpty)
           .find(_.matches(ruleInfo.combinedRulePattern))
           .getOrElse("")
-        val apiCalls = typeDecl.method.callIn.l
+        val apiCalls = typeDecl.method.whereNot(_.annotation.name("RequestLine")).callIn.l
         if (apiLiteral.nonEmpty) {
           apiCalls.foreach(apiNode => {
             if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
@@ -192,7 +193,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
               storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
             }
           })
-        } else if (!ruleInfo.id.equals(Constants.internalAPIRuleId) && !annotationCode.matches(".*url.*")) {
+        } else if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
           // Case when feign url is present in some config file and uses some server mechanism like eureka, ribbon etc,
           // which needs to be brought up here, for now we say it is API
           apiCalls.foreach(apiNode => {
