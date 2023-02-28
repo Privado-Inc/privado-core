@@ -33,6 +33,7 @@ import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AnnotationParameterAssign,
+  AstNode,
   CfgNode,
   JavaProperty,
   Literal,
@@ -50,10 +51,10 @@ class AnnotationTests extends PropertiesFilePassTestBase {
       |
       |import org.springframework.beans.factory.annotation.Value;
       |
+      |class Foo {
+      |
       |@Value("${slack.base.url}")
       |private static final String slackWebHookURL;
-      |
-      |class Foo {
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
       |			ObjectMapper objectMapper, ExecutorService apiExecutor, SlackStub slackStub,
@@ -64,38 +65,34 @@ class AnnotationTests extends PropertiesFilePassTestBase {
 
   "ConfigFilePass" should {
     "connect annotated parameter to property" in {
-      println("Starting test")
-      val property                       = cpg.property.l
-      val propertyUsedAt                 = cpg.property.usedAt.l
-      val List(param: MethodParameterIn) = cpg.property.usedAt.l
-      println("Param name: " + param.name)
-      param.name shouldBe "loggerBaseURL"
+      val anno: List[AstNode] = cpg.property.usedAt.l
+      anno.length shouldBe 2
+
+      anno.foreach(element => {
+        element.label match {
+          case "METHOD_PARAMETER_IN" =>
+            val List(param: MethodParameterIn) = element.l
+            param.name shouldBe "loggerBaseURL"
+          case "MEMBER" =>
+            element.code shouldBe "java.lang.String slackWebHookURL"
+          case _ => s"Unknown label ${element.label}. Test failed"
+        }
+      })
     }
 
     "connect property to annotated parameter" in {
-      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
-      javaP.value shouldBe "https://logger.privado.ai/"
+      val properties = cpg.property.usedAt.originalProperty.l
 
-      val List(param: MethodParameterIn) = cpg.property.usedAt.l
-      param.originalProperty.head.value shouldBe "https://logger.privado.ai/"
-      param.originalPropertyValue.head shouldBe "https://logger.privado.ai/"
+      properties.length shouldBe 2
+
+      properties.foreach(prop => {
+        prop.name match {
+          case "internal.logger.api.base" => prop.value shouldBe ("https://logger.privado.ai/")
+          case "slack.base.url"           => prop.value shouldBe ("https://hooks.slack.com/services/some/leaking/url")
+          case _                          => s"Unknown value ${prop.value}. Test failed"
+        }
+      })
     }
-
-    /*
-    "connect annotated member to property" in {
-      val List(param: AnnotationParameterAssign) = cpg.property.usedAt.l
-      param.code shouldBe "slackWebHookURL"
-    }
-
-    "connect property to annotated member" in {
-      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
-      javaP.value shouldBe "https://hooks.slack.com/services/some/leaking/url"
-
-      val List(param: AnnotationParameterAssign) = cpg.property.usedAt.l
-      param.originalProperty.head.value shouldBe "https://hooks.slack.com/services/some/leaking/url"
-      param.originalPropertyValue.head shouldBe "https://hooks.slack.com/services/some/leaking/url"
-    }
-     */
   }
 }
 
