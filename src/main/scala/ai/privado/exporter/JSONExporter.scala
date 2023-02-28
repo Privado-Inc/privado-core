@@ -34,7 +34,7 @@ import ai.privado.model.exporter.{
   SourceModel,
   SourceProcessingModel
 }
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
+import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.exporter.{
   DataFlowPathIntermediateModel,
