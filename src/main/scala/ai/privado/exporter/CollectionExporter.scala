@@ -200,15 +200,15 @@ class CollectionExporter(cpg: Cpg) {
 
   def processByLiteralId(
     localVariableId: String,
-    methodLocalOccurrences: List[Literal]
+    methodLiteralOccurrences: List[Literal]
   ): CollectionOccurrenceDetailModel = {
 
     CollectionOccurrenceDetailModel(
       localVariableId,
-      methodLocalOccurrences
-        .flatMap(localVar => {
-          ExporterUtility.convertIndividualPathElement(localVar) match {
-            case Some(pathElement) => getCollectionOccurrenceModel(Traversal(localVar).method, pathElement)
+      methodLiteralOccurrences
+        .flatMap(literal => {
+          ExporterUtility.convertIndividualPathElement(literal) match {
+            case Some(pathElement) => getCollectionOccurrenceModel(Traversal(literal).method, pathElement)
             case None              => None
           }
         })
