@@ -63,13 +63,15 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
         // TODO: handle cases where `request.args.get('id', None)` used directly in handler block without method param
         val parameters =
           collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("self")).l
-        val matchingLocals = collectionMethod.local.code(sourceRule.combinedRulePattern).l
+        val matchingLocals   = collectionMethod.local.code(sourceRule.combinedRulePattern).l
+        val matchingLiterals = collectionMethod.literal.code(sourceRule.combinedRulePattern).l
 
-        if (parameters.isEmpty && matchingLocals.isEmpty) {
+        if (parameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty) {
           None
         } else {
           parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
           matchingLocals.foreach(local => storeForTag(builder, local)(Constants.id, sourceRule.id))
+          matchingLiterals.foreach(literal => storeForTag(builder, literal)(Constants.id, sourceRule.id))
           Some(collectionMethod)
         }
 

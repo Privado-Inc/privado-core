@@ -23,10 +23,15 @@
 
 package ai.privado.exporter
 
-import ai.privado.model.exporter.{CollectionModel, CollectionOccurrenceDetailModel, CollectionOccurrenceModel, DataFlowSubCategoryPathExcerptModel}
+import ai.privado.model.exporter.{
+  CollectionModel,
+  CollectionOccurrenceDetailModel,
+  CollectionOccurrenceModel,
+  DataFlowSubCategoryPathExcerptModel
+}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Local, Method, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Local, Method, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -54,6 +59,7 @@ class CollectionExporter(cpg: Cpg) {
 
     val collectionParameterMapById = mutable.HashMap[String, ListBuffer[MethodParameterIn]]()
     val collectionLocalMapById     = mutable.HashMap[String, ListBuffer[Local]]()
+    val collectionLiteralMapById   = mutable.HashMap[String, ListBuffer[Literal]]()
 
     collectionMethods.foreach(collectionMethod => {
       collectionMethod.parameter
@@ -101,6 +107,29 @@ class CollectionExporter(cpg: Cpg) {
         })
     })
 
+    collectionMethods.foreach(collectionMethod => {
+      collectionMethod.literal
+        .and(_.tag.nameExact(Constants.id))
+        .foreach(literal => {
+          try {
+            def addToMap(literalId: String): Unit = {
+              if (!collectionLiteralMapById.contains(literalId))
+                collectionLiteralMapById(literalId) = ListBuffer()
+              collectionLiteralMapById(literalId).append(literal)
+            }
+
+            literal.tag
+              .nameExact(Constants.id)
+              .value
+              .filter(!_.startsWith(Constants.privadoDerived))
+              .foreach(addToMap)
+
+          } catch {
+            case e: Exception => logger.debug("Exception : ", e)
+          }
+        })
+    })
+
     val ruleInfo = ExporterUtility.getRuleInfoForExporting(collectionId)
     CollectionModel(
       collectionId,
@@ -110,6 +139,8 @@ class CollectionExporter(cpg: Cpg) {
         .map(entrySet => processByParameterId(entrySet._1, entrySet._2.toList))
         .toList ::: collectionLocalMapById
         .map(entrySet => processByLocalVariableId(entrySet._1, entrySet._2.toList))
+        .toList ::: collectionLiteralMapById
+        .map(entrySet => processByLiteralId(entrySet._1, entrySet._2.toList))
         .toList
     )
   }
@@ -153,6 +184,23 @@ class CollectionExporter(cpg: Cpg) {
   def processByLocalVariableId(
     localVariableId: String,
     methodLocalOccurrences: List[Local]
+  ): CollectionOccurrenceDetailModel = {
+
+    CollectionOccurrenceDetailModel(
+      localVariableId,
+      methodLocalOccurrences
+        .flatMap(localVar => {
+          ExporterUtility.convertIndividualPathElement(localVar) match {
+            case Some(pathElement) => getCollectionOccurrenceModel(Traversal(localVar).method, pathElement)
+            case None              => None
+          }
+        })
+    )
+  }
+
+  def processByLiteralId(
+    localVariableId: String,
+    methodLocalOccurrences: List[Literal]
   ): CollectionOccurrenceDetailModel = {
 
     CollectionOccurrenceDetailModel(
