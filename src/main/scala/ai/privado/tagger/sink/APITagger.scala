@@ -24,16 +24,13 @@
 package ai.privado.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
-import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.utility.Utilities.{addRuleTags, getFileNameForNode, isFileProcessable, storeForTag}
-import io.joern.dataflowengineoss.language._
+import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
+import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.DefaultSemantics
 
 import scala.collection.mutable.HashMap
@@ -78,28 +75,8 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       .toArray
   }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
-
-    sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-    val propertySinks = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    sinkTagger(propertySinks, apis, builder, ruleInfo)
-  }
-
-  private def sinkTagger(
-    apiInternalSinkPattern: List[AstNode],
-    apis: List[CfgNode],
-    builder: BatchedUpdate.DiffGraphBuilder,
-    ruleInfo: RuleInfo
-  ): Unit = {
-    val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
-    if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
-      apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
-        val apiNode     = flow.elements.last
-        addRuleTags(builder, apiNode, ruleInfo)
-        storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
-      })
-    }
+    val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
+    val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    sinkTagger(apiInternalSources ++ propertySources, apis, builder, ruleInfo)
   }
 }

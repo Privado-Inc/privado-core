@@ -23,27 +23,18 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.entrypoint.ScanProcessor
+import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.ImportUtility
-import ai.privado.model.Language
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDefaultSemantics,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
 import io.circe.Json
-import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import java.util.Calendar
 import scala.collection.mutable
@@ -61,25 +52,14 @@ object APITaggerVersionJava extends Enumeration {
 }
 
 class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  private val logger     = LoggerFactory.getLogger(this.getClass)
-  val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch           = mutable.HashMap[String, Integer]()
+  private val logger                             = LoggerFactory.getLogger(this.getClass)
+  val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
 
-  val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
-  val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
+  val COMMON_IGNORED_SINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.ignoredSinks)
 
-  val COMMON_IGNORED_SINKS_REGEX = commonIgnoredSinks.size match {
-    case 0 => "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*"
-    case _ => commonIgnoredSinks.map(config => config.value).mkString("(?i)(", "|", ")")
-  }
-
-  lazy val APISINKS_REGEX = apiSinksRegex.size match {
-    case 0 =>
-      "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-        "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
-    case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
-  }
+  lazy val APISINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.apiSinks)
 
   internalMethodCall.foreach((method) => {
     val key     = method.split("[.:]").take(2).mkString(".")
@@ -108,15 +88,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       APITaggerVersionJava.V2Tagger
   }
 
-  implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
-  val systemConfigHttpLibraries             = RuleCache.getSystemConfigByKey("apiHttpLibraries")
-  val commonHttpPackages: String = {
-    systemConfigHttpLibraries.size match {
-      case 0 =>
-        "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
-      case _ => systemConfigHttpLibraries.map(config => config.value).mkString("(?i)(", "|", ")")
-    }
-  }
+  val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getRule.sinks
@@ -125,40 +97,41 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
-    val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
+    val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+
+    // Support to use `identifier` in API's
+    val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierSource = {
+      if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
+        cpg.identifier(identifierRegex).l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+      else
+        List()
+    }
+
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
-        sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-        sinkTagger(propertySinks, apis, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          apis,
+          builder,
+          ruleInfo,
+          ScanProcessor.config.enableAPIDisplay
+        )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
-        sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
-        sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          apis.methodFullName(commonHttpPackages).l,
+          builder,
+          ruleInfo
+        )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED...")
-    }
-  }
-
-  private def sinkTagger(
-    apiInternalSinkPattern: List[AstNode],
-    apis: List[CfgNode],
-    builder: BatchedUpdate.DiffGraphBuilder,
-    ruleInfo: RuleInfo
-  ): Unit = {
-    val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
-    if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
-      apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
-        val apiNode     = flow.elements.last
-        addRuleTags(builder, apiNode, ruleInfo)
-        storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
-      })
     }
   }
 
