@@ -46,18 +46,18 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
   def getFlowByType(sinkSubCategory: String, sinkNodeTypes: Set[String]): Set[DataFlowSubCategoryModel] = {
-    sinkNodeTypes.flatMap(sinkNodeType => {
-      val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
-        dataflowModel.sinkSubCategory.equals(sinkSubCategory) && dataflowModel.sinkNodeType.equals(sinkNodeType)
-      )
-      val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)
-      dataflowModelBySourceId.map(dataflowBySourceEntrySet => {
+    val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
+      dataflowModel.sinkSubCategory.equals(sinkSubCategory) && sinkNodeTypes.contains(dataflowModel.sinkNodeType)
+    )
+    val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)
+    dataflowModelBySourceId
+      .map(dataflowBySourceEntrySet => {
         DataFlowSubCategoryModel(
           dataflowBySourceEntrySet._1,
           convertSourceModelList(dataflowBySourceEntrySet._1, dataflowBySourceEntrySet._2, sinkSubCategory)
         )
       })
-    })
+      .toSet
   }
 
   def convertSourceModelList(
@@ -106,7 +106,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
     sourceModelList.foreach(sourceModel => {
       var sinkId = sourceModel.sinkId
       val sinkAPITag = dataflowsMap(sourceModel.pathId).elements.last.tag
-        .filter(node => node.name.equals(Constants.apiUrl))
+        .filter(node => node.name.equals(Constants.apiUrl + sourceModel.sinkId))
       if (sinkAPITag.nonEmpty) {
         sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
       }

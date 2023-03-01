@@ -25,6 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.model.Constants
 import ai.privado.model.exporter._
+import ai.privado.utility.Utilities._
 import org.slf4j.LoggerFactory
 
 import java.net.URL
@@ -34,20 +35,6 @@ import Console.{BLUE, BOLD, CYAN, GREEN, MAGENTA, RED, RESET, WHITE, YELLOW}
 object ConsoleExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
-
-  private def getDomainFromString(urlString: String) = {
-    try {
-      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
-      val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
-      val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
-      url.getHost.replaceAll("www.", "").replaceAll("\"", "")
-    } catch {
-      case e: Exception =>
-        logger.debug("Exception while getting domain from string : ", e)
-        urlString
-    }
-
-  }
 
   def exportConsoleSummary(
     dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]],
