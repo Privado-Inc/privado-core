@@ -57,6 +57,8 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
+  val FEIGN_CLIENT                               = "FeignClient"
+  val REQUEST_LINE                               = "RequestLine"
 
   val COMMON_IGNORED_SINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.ignoredSinks)
 
@@ -136,7 +138,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           ruleInfo
         )
       case _ =>
-        logger.debug("Skipping API Tagger, only applying Feign client because valid match not found")
+        logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
     }
@@ -161,24 +163,35 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   /** Implements the style where Feign client annotation is used
+    *
+    * FeignClient(url = "http://localhost:8080")
+    *
+    * public interface PersonClient {
+    *
+    * RequestMapping(method \= RequestMethod.GET, value = "/persons")
+    *
+    * Resources<Person> getPersons();
+    *
+    * }
     * @param builder
     * @param ruleInfo
     */
   private def tagFeignClientAPIUsingFeignClient(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     implicit val resolver: ICallResolver = NoResolve
     cpg.typeDecl
-      .where(_.annotation.name("FeignClient"))
+      .where(_.annotation.name(FEIGN_CLIENT))
       .foreach(typeDecl => {
-        val classAnnotations = typeDecl.annotation.name("FeignClient").l
+        val classAnnotations = typeDecl.annotation.name(FEIGN_CLIENT).l
         val annotationCode = classAnnotations.code.headOption
           .getOrElse("")
+        // Logic to exact the value present in `url = "value"`
         val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*".r
         var apiLiteral = annotationCode match {
           case urlParameterPattern(urlParameter) =>
             urlParameter.stripPrefix("\"").stripSuffix("\"")
           case _ => ""
         }
-        val apiCalls = typeDecl.method.whereNot(_.annotation.name("RequestLine")).callIn.l
+        val apiCalls = typeDecl.method.whereNot(_.annotation.name(REQUEST_LINE)).callIn.l
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
           if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
             apiCalls.foreach(apiNode => {
@@ -208,16 +221,13 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   /** Returns call node which are probable API sinks which used RequestLine annotation is used
-    * @param builder
-    * @param ruleInfo
     */
   private def getFeignClientAPISinksUsingRequestLine: List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
     cpg.method
-      .where(_.annotation.name("RequestLine"))
+      .where(_.annotation.name(REQUEST_LINE))
       .callIn
       .l
-
   }
 
 }
