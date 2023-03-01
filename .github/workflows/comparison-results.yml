@@ -96,12 +96,12 @@ jobs:
           name: results
           path: ./results
 
-      - name: Clone standalone-monitoring-stability/PR-blocker
+      - name: Clone standalone-monitoring-stability/main
         uses: actions/checkout@v3
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: PR-blocker
+          ref: main
 
       - name: Export workflow output
         run: cd ./temp/standalone-monitoring-stability && python3 ./workflow_check.py /home/runner/work/privado-core/privado-core/results/slack_summary.txt
