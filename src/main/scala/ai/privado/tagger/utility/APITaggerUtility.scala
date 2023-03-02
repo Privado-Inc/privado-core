@@ -29,10 +29,10 @@ import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDefaultSemantics,
-  getDomainFromString,
   getFileNameForNode,
   isFileProcessable,
-  storeForTag
+  storeForTag,
+  getDomainFromString
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
