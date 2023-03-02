@@ -59,7 +59,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       |private static final String slackWebHookURL;
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
-      |			ObjectMapper objectMapper, ExecutorService apiExecutor, SlackStub slackStub,
+      |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
       |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
       |   }
       |}
