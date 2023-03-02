@@ -30,6 +30,7 @@ import ai.privado.model.Language
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -55,8 +56,17 @@ object PythonProcessor {
           new PythonTypeHintCallLinker(cpg).createAndApply()
           new PythonNaiveCallLinker(cpg).createAndApply()
 
+
+
+
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+
+          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
+          new PythonPropertyFilePass(cpg, sourceRepoLocation).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
@@ -70,6 +80,7 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
+
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow
@@ -144,13 +155,15 @@ object PythonProcessor {
     lang: String
   ): Either[String, Unit] = {
 
+    println("Inside create python cpg")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
     val cpgOutFile             = File.newTemporaryFile(suffix = ".cpg.bin")
-    cpgOutFile.deleteOnExit()
+//    cpgOutFile.deleteOnExit()
+    println(cpgOutFile.path)
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, File(".venv").path, true)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
