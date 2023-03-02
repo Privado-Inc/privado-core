@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.model.exporter.{CollectionModel, CollectionOccurrenceDetailModel, CollectionOccurrenceModel}
+import ai.privado.model.exporter.{CollectionModel, CollectionOccurrenceDetailModel, CollectionOccurrenceModel, DataFlowSubCategoryPathExcerptModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Method, MethodParameterIn}
@@ -83,10 +83,10 @@ class CollectionExporter(cpg: Cpg) {
         .and(_.tag.nameExact(Constants.id))
         .foreach(localVar => {
           try {
-            def addToMap(parameterId: String): Unit = {
-              if (!collectionLocalMapById.contains(parameterId))
-                collectionLocalMapById(parameterId) = ListBuffer()
-              collectionLocalMapById(parameterId).append(localVar)
+            def addToMap(localVariableId: String): Unit = {
+              if (!collectionLocalMapById.contains(localVariableId))
+                collectionLocalMapById(localVariableId) = ListBuffer()
+              collectionLocalMapById(localVariableId).append(localVar)
             }
 
             localVar.tag
@@ -125,20 +125,29 @@ class CollectionExporter(cpg: Cpg) {
         .flatMap(methodParameter => {
           ExporterUtility.convertIndividualPathElement(methodParameter) match {
             case Some(pathElement) =>
-              Some(
-                CollectionOccurrenceModel(
-                  getCollectionUrl(methodParameter),
-                  pathElement.sample,
-                  pathElement.lineNumber,
-                  pathElement.columnNumber,
-                  pathElement.fileName,
-                  pathElement.excerpt
-                )
-              )
+              getCollectionOccurrenceModel(Traversal(methodParameter).method, pathElement)
+
             case None => None
           }
         })
     )
+  }
+
+  def getCollectionOccurrenceModel(
+    methodNode: Traversal[Method],
+    pathElement: DataFlowSubCategoryPathExcerptModel
+  ): Some[CollectionOccurrenceModel] = {
+    Some(
+      CollectionOccurrenceModel(
+        getCollectionUrl(methodNode),
+        pathElement.sample,
+        pathElement.lineNumber,
+        pathElement.columnNumber,
+        pathElement.fileName,
+        pathElement.excerpt
+      )
+    )
+
   }
 
   def processByLocalVariableId(
@@ -151,30 +160,21 @@ class CollectionExporter(cpg: Cpg) {
       methodLocalOccurrences
         .flatMap(localVar => {
           ExporterUtility.convertIndividualPathElement(localVar) match {
-            case Some(pathElement) =>
-              Some(
-                CollectionOccurrenceModel(
-                  getCollectionUrlForLocalVar(localVar),
-                  pathElement.sample,
-                  pathElement.lineNumber,
-                  pathElement.columnNumber,
-                  pathElement.fileName,
-                  pathElement.excerpt
-                )
-              )
-            case None => None
+            case Some(pathElement) => getCollectionOccurrenceModel(Traversal(localVar).method, pathElement)
+            case None              => None
           }
         })
     )
   }
 
-  /** Returns rest Url for this parameter's method
-    * @param parameterIn
-    *   \- methodParameter
+  /** Returns rest Url for this methodNode which is already tagged under COLLECTION_METHOD_ENDPOINT
+    * @param methodNode
+    *   \- Traversal[Method
     * @return
+    *   String
     */
-  private def getCollectionUrl(parameterIn: MethodParameterIn) = {
-    Try(Traversal(parameterIn).method.tag.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).value.head) match {
+  private def getCollectionUrl(methodNode: Traversal[Method]) = {
+    Try(methodNode.tag.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).value.head) match {
       case Success(url) => url
       case Failure(e) =>
         logger.debug("Exception : ", e)
@@ -182,12 +182,4 @@ class CollectionExporter(cpg: Cpg) {
     }
   }
 
-  private def getCollectionUrlForLocalVar(localVar: Local) = {
-    Try(Traversal(localVar).method.tag.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).value.head) match {
-      case Success(url) => url
-      case Failure(e) =>
-        logger.debug("Exception : ", e)
-        ""
-    }
-  }
 }
