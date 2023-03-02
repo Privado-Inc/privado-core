@@ -22,7 +22,7 @@
 
 package ai.privado.cache
 
-import ai.privado.model.{ConfigAndRules, PolicyOrThreat, RuleInfo}
+import ai.privado.model.{ConfigAndRules, Constants, PolicyOrThreat, RuleInfo}
 
 import scala.collection.mutable
 
@@ -85,7 +85,20 @@ object RuleCache {
     }
   }
 
-  def getSystemConfigByKey(key: String) = {
-    rule.systemConfig.filter(config => config.key.equals(key))
+  def getSystemConfigByKey(key: String): String = {
+    if (rule.systemConfig.filter(config => config.key.equals(key)).nonEmpty)
+      rule.systemConfig.filter(config => config.key.equals(key)).map(config => config.value).mkString("(?i)(", "|", ")")
+    else {
+      key match {
+        case Constants.ignoredSinks =>
+          "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*"
+        case Constants.apiSinks =>
+          "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
+            "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
+        case Constants.apiHttpLibraries =>
+          "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
+        case _ => ""
+      }
+    }
   }
 }
