@@ -87,7 +87,6 @@ class CollectionExporter(cpg: Cpg) {
         .and(_.tag.nameExact(Constants.id))
         .foreach(localVar => {
           try {
-
             localVar.tag
               .nameExact(Constants.id)
               .value
