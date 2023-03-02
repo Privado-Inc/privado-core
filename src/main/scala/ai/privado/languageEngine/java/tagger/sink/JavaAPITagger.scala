@@ -115,6 +115,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     // To handle feign implementation
     tagFeignClientAPIUsingFeignClient(builder, ruleInfo)
     val feignAPISinks = getFeignClientAPISinksUsingRequestLine
+    val feingAPIBeanSinks = getFeignClientAPISinksUsingBean
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
@@ -127,20 +128,20 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           ruleInfo,
           ScanProcessor.config.enableAPIDisplay
         )
-        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
+        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks ++ feingAPIBeanSinks, builder, ruleInfo)
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks,
+          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ feingAPIBeanSinks,
           builder,
           ruleInfo
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
-        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
+        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks ++ feingAPIBeanSinks, builder, ruleInfo)
     }
   }
 
@@ -228,6 +229,22 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       .where(_.annotation.name(REQUEST_LINE))
       .callIn
       .l
+  }
+
+  /** Returns call node which are probable API sinks which used Bean configuration is used
+    */
+  private def getFeignClientAPISinksUsingBean: List[Call] = {
+    implicit val resolver: ICallResolver = NoResolve
+    val targetArguments = cpg.method
+      .where(_.annotation.name("Bean"))
+      .ast.isCall.name("target").where(_.methodFullName(".*(?i)feign.*")).argument.whereNot(_.argumentIndex(0)).l
+    if (targetArguments.nonEmpty){
+      val firstArgument = targetArguments.where(_.argumentIndex(1)).code.headOption.getOrElse("").split(".class").headOption.getOrElse("")
+      //val secondArgument = targetArguments.where(_.argumentIndex(2)).code.headOption.getOrElse("")
+      cpg.typeDecl.where(_.fullName(".*"+firstArgument)).method.callIn.l
+    }
+    else
+      List()
   }
 
 }
