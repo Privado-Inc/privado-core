@@ -23,24 +23,22 @@
 
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.resolver
+import com.github.wnameless.json.flattener.JsonFlattener
+import io.circe.yaml.parser
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
-import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 
-import scala.jdk.CollectionConverters._
 import java.util.Properties
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
-import io.shiftleft.semanticcpg.language._
-import io.circe.yaml.parser
-import com.github.wnameless.json.flattener.JsonFlattener
+import scala.xml._
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
@@ -48,7 +46,8 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[String] = propertiesFiles(projectRoot).toArray
+  override def generateParts(): Array[String] =
+    propertiesFiles(projectRoot, Set(".properties", ".yml", ".yaml", ".xml")).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
     val fileNode      = addFileNode(file, builder)
@@ -61,12 +60,16 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     builder: BatchedUpdate.DiffGraphBuilder
   ): List[NewJavaProperty] = {
     Try {
-      obtainKeyValuePairs(file)
+      obtainKeyValuePairs(file, builder)
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
-        propertyNodes.foreach(connectGetPropertyLiterals(_, builder))
-        connectAnnotatedParameters(propertyNodes, builder)
+
+        propertyNodes.foreach(propertyNode => {
+          connectGetPropertyLiterals(propertyNode, builder)
+          connectAnnotatedParameters(propertyNode, builder)
+        })
+
         propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
@@ -75,29 +78,28 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   }
 
   private def connectAnnotatedParameters(
-    propertyNodes: List[NewJavaProperty],
+    propertyNode: NewJavaProperty,
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
     val paramsAndValues = annotatedParameters()
 
-    propertyNodes.foreach { propertyNode =>
-      paramsAndValues
-        .filter { case (_, value) => propertyNode.name == value }
-        .foreach { case (param, _) =>
-          builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
-          builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-        }
-    }
+    paramsAndValues
+      .filter { case (_, value) => propertyNode.name == value }
+      .foreach { case (param, _) =>
+        builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
+        builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+      }
+
     val membersAndValues = annotatedMembers()
-    propertyNodes.foreach { propertyNode =>
-      membersAndValues
-        .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
-        .foreach { case (_, value) =>
-          builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
-          builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-        }
-    }
+
+    membersAndValues
+      .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
+      .foreach { case (_, value) =>
+        builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
+        builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+      }
   }
+
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
@@ -112,13 +114,15 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
     .l
 
-  /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
+  /** List of all members annotated with Spring's `Value` annotation, along with the property name.
     */
-  def annotatedMembers() = cpg.annotation
+  private def annotatedMembers() = cpg.annotation
     .fullName(".*Value.*")
     .where(_.member)
     .map { x => (x.parameterAssign.head, x.member.head) }
     .l
+  private def getMember(member: String, className: String) =
+    cpg.member.where(_.typeDecl.fullName(className)).where(_.name(member)).toList
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
@@ -137,9 +141,11 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     .where(_.inCall.name(".*getProperty"))
     .l
 
-  private def obtainKeyValuePairs(file: String): List[(String, String)] = {
+  private def obtainKeyValuePairs(file: String, builder: DiffGraphBuilder): List[(String, String)] = {
     if (file.matches(""".*\.(?:yml|yaml)""")) {
       loadAndConvertYMLtoProperties(file)
+    } else if (file.endsWith(".xml")) {
+      loadAndConvertXMLtoProperties(file, builder)
     } else {
       loadFromProperties(file)
     }
@@ -169,6 +175,85 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
   }
 
+  // if beans file contain placeholders, search in .properties files across the project
+  private def resolvePlaceholderValuesXML(placeholder: String): String = {
+    val propertyFiles: List[String] = propertiesFiles(projectRoot, Set(".properties"))
+    propertyFiles.foreach(file => {
+      // Search across properties to find the required
+      loadFromProperties(file).foreach(propertyValue => {
+        val (name, value) = propertyValue;
+        if (name.equals(placeholder)) return value;
+      })
+    })
+    ""
+  }
+
+  // Used to extract (name, value) pairs from a bean config file
+  private def XMLParserBean(xmlPath: String, builder: DiffGraphBuilder): List[(String, String)] = {
+    try {
+      val xml = XML.loadFile(xmlPath)
+      val nameValuePairs = (xml \\ "bean").flatMap { bean =>
+        {
+          var result: (String, String) = ("", "")
+          val className: String        = bean \@ "class"
+          (bean \\ "property").map { prop =>
+            {
+              // Search for property tags inside a bean
+              val propValue = prop \@ "value"
+              if (propValue.startsWith("$") && propValue.endsWith("}")) {
+                val value = resolvePlaceholderValuesXML(
+                  propValue.substring(2, propValue.length - 1)
+                ) // Pass placeholder name without ${ and }
+                if (value.nonEmpty) {
+                  result = ((prop \@ "name"), value)
+                }
+              } else {
+                result = ((prop \@ "name"), propValue)
+              }
+
+            }
+
+            val members = getMember((prop \@ "name"), className);
+            if (members.nonEmpty) {
+              val propertyNode = NewJavaProperty().name(result._1).value(result._2)
+              val member = members.head
+              if (member != null) {
+                builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
+                builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
+              }
+            }
+            result
+          }
+        }
+      }
+
+      return nameValuePairs.toList
+        .collect { case (name, value) => if (value.nonEmpty) (name, value) else ("", "") }
+        .filter { case (name, value) =>
+          name.nonEmpty && value.nonEmpty // Filter out name, value pairs which could not be resolved
+        }
+    } catch {
+      case e: Throwable => println(e)
+    }
+
+    List[("", "")]()
+
+  }
+
+  private def loadAndConvertXMLtoProperties(file: String, builder: DiffGraphBuilder): List[(String, String)] = {
+    val properties  = new Properties();
+    val inputStream = better.files.File(file).newInputStream
+    try {
+      properties.loadFromXML(inputStream)
+      properties.propertyNames.asScala.toList
+        .collect(p => (p.toString, properties.getProperty(p.toString)))
+    } catch {
+      case _: Throwable => {
+        XMLParserBean(file, builder)
+      }
+    }
+  }
+
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
     properties
       .propertyNames()
@@ -179,9 +264,10 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       .toList
   }
 
-  private def propertiesFiles(projectRoot: String): List[String] = {
+  // Add extensions as a parameter to decouple it
+  private def propertiesFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), Set(".properties", ".yml", ".yaml"))
+      .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
   }
 
