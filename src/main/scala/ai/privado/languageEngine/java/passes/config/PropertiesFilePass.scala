@@ -82,11 +82,21 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
     val paramsAndValues = annotatedParameters()
+
     paramsAndValues
       .filter { case (_, value) => propertyNode.name == value }
       .foreach { case (param, _) =>
         builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
         builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+      }
+
+    val membersAndValues = annotatedMembers()
+
+    membersAndValues
+      .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
+      .foreach { case (_, value) =>
+        builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
+        builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
       }
   }
 
@@ -104,6 +114,13 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     }
     .l
 
+  /** List of all members annotated with Spring's `Value` annotation, along with the property name.
+    */
+  private def annotatedMembers() = cpg.annotation
+    .fullName(".*Value.*")
+    .where(_.member)
+    .map { x => (x.parameterAssign.head, x.member.head) }
+    .l
   private def getMember(member: String, className: String) =
     cpg.member.where(_.typeDecl.fullName(className)).where(_.name(member)).toList
 
