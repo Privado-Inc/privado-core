@@ -31,7 +31,7 @@ import ai.privado.model.exporter.{
 }
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Local, Method, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Literal, Local, Method, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -66,17 +66,15 @@ class CollectionExporter(cpg: Cpg) {
         .or(_.tag.nameExact(Constants.id), _.tag.name(Constants.privadoDerived + ".*"))
         .foreach(parameter => {
           try {
-            def addToMap(parameterId: String): Unit = {
-              if (!collectionParameterMapById.contains(parameterId))
-                collectionParameterMapById(parameterId) = ListBuffer()
-              collectionParameterMapById(parameterId).append(parameter)
-            }
             parameter.tag
               .nameExact(Constants.id)
               .value
               .filter(!_.startsWith(Constants.privadoDerived))
-              .foreach(addToMap)
-            parameter.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+              .foreach(x => addToMap(x, collectionParameterMapById, parameter))
+            parameter.tag
+              .name(Constants.privadoDerived + ".*")
+              .value
+              .foreach(x => addToMap(x, collectionParameterMapById, parameter))
 
           } catch {
             case e: Exception => logger.debug("Exception : ", e)
@@ -89,17 +87,12 @@ class CollectionExporter(cpg: Cpg) {
         .and(_.tag.nameExact(Constants.id))
         .foreach(localVar => {
           try {
-            def addToMap(localVariableId: String): Unit = {
-              if (!collectionLocalMapById.contains(localVariableId))
-                collectionLocalMapById(localVariableId) = ListBuffer()
-              collectionLocalMapById(localVariableId).append(localVar)
-            }
 
             localVar.tag
               .nameExact(Constants.id)
               .value
               .filter(!_.startsWith(Constants.privadoDerived))
-              .foreach(addToMap)
+              .foreach(x => addToMap(x, collectionLocalMapById, localVar))
 
           } catch {
             case e: Exception => logger.debug("Exception : ", e)
@@ -112,23 +105,23 @@ class CollectionExporter(cpg: Cpg) {
         .and(_.tag.nameExact(Constants.id))
         .foreach(literal => {
           try {
-            def addToMap(literalId: String): Unit = {
-              if (!collectionLiteralMapById.contains(literalId))
-                collectionLiteralMapById(literalId) = ListBuffer()
-              collectionLiteralMapById(literalId).append(literal)
-            }
-
             literal.tag
               .nameExact(Constants.id)
               .value
               .filter(!_.startsWith(Constants.privadoDerived))
-              .foreach(addToMap)
+              .foreach(x => addToMap(x, collectionLiteralMapById, literal))
 
           } catch {
             case e: Exception => logger.debug("Exception : ", e)
           }
         })
     })
+
+    def addToMap[T](literalId: String, mapper: mutable.HashMap[String, ListBuffer[T]], node: T): Unit = {
+      if (!mapper.contains(literalId))
+        mapper(literalId) = ListBuffer()
+      mapper(literalId).append(node)
+    }
 
     val ruleInfo = ExporterUtility.getRuleInfoForExporting(collectionId)
     CollectionModel(
