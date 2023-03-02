@@ -34,7 +34,7 @@ import ai.privado.utility.Utilities.{
   storeForTag,
   getDomainFromString
 }
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -43,7 +43,7 @@ object APITaggerUtility {
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
 
   def sinkTagger(
-    apiInternalSinkPattern: List[CfgNode],
+    apiInternalSinkPattern: List[AstNode],
     apis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo,
