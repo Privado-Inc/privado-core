@@ -48,6 +48,7 @@ import ai.privado.model.exporter.ViolationEncoderDecoder._
 import ai.privado.model.exporter.CollectionEncoderDecoder._
 import ai.privado.model.exporter.SinkEncoderDecoder._
 import better.files.File
+import privado_core.BuildInfo
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
@@ -83,13 +84,16 @@ object JSONExporter {
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
-      output.addOne(Constants.coreVersion   -> Environment.privadoVersionCore.asJson)
-      output.addOne(Constants.cliVersion    -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
-      output.addOne(Constants.mainVersion   -> AppCache.privadoVersionMain.asJson)
-      output.addOne(Constants.createdAt     -> Calendar.getInstance().getTimeInMillis.asJson)
-      output.addOne(Constants.repoName      -> AppCache.repoName.asJson)
-      output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-      output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
+
+      output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
+      output.addOne(Constants.cliVersion  -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
+      output.addOne(Constants.mainVersion -> AppCache.privadoVersionMain.asJson)
+      output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
+      output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
+      output.addOne(Constants.repoName                     -> AppCache.repoName.asJson)
+      output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
+      output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
+
       val sources = Future(
         sourceExporter.getSources
       ) // Future creates a thread and starts resolving the function call asynchronously

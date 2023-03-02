@@ -9,6 +9,7 @@ val cpgVersion        = "1.3.597"
 val joernVersion      = "1.1.1485"
 val overflowdbVersion = "1.169"
 
+
 //External dependency versions
 val circeVersion   = "0.14.1"
 val jacksonVersion = "2.14.0"
@@ -106,3 +107,7 @@ resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").ge
 ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
+
+lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")

@@ -31,15 +31,18 @@ import ai.privado.model.Language
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.utility.Utilities.getFileNameForNode
+import ai.privado.utility.Utilities.{getFileNameForNode, resolver}
 
 object UnresolvedReportUtility {
   def reportUnresolvedMethods(xtocpg: Try[Cpg], statoutdir: String, language: Language.Language): Unit = {
-    var total                    = 0
-    var unresolvedSignatures     = 0
-    var unresolvedNamespaces     = 0
-    var unresolvedSignaturesList = ListBuffer[String]()
-    var unresolvedNamespacesList = ListBuffer[String]()
+    var total                         = 0
+    var unresolvedSignatures          = 0
+    var unresolvedNamespaces          = 0
+    var unresolvedSignatureWithCallee = 0
+    var unresolvedSignaturesList      = ListBuffer[String]()
+    var unresolvedNamespacesList      = ListBuffer[String]()
+    var nonempty                      = 0
+    var isempty                       = 0
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
@@ -52,15 +55,30 @@ object UnresolvedReportUtility {
 
     xtocpg match {
       case Success(cpg) => {
-        total = cpg.call.methodFullName.l.length
-        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length
+        val importCount = cpg.call.l.filter((i) => i.name == "import").l.length
+        total = cpg.call.methodFullName.l.length - importCount
+        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length - importCount
+
+        nonempty = cpg.call.callee.filter(_.nonEmpty == false).l.length
+        isempty = cpg.call.callee.filter(_.isEmpty).l.length
+
         cpg.call
           .methodFullName(unresolved_sig_pattern)
           .l
+          .filter((i) => {
+            var res = true
+            if (language.equals(Language.PYTHON)) {
+              res = i.name != "import"
+            }
+            res
+          })
           .map(us => {
-            unresolvedSignaturesList += us.methodFullName + "\n\t" + "Line Number: " + us.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(
+            if (us.callee.fullName.l.length > 0) {
+              unresolvedSignatureWithCallee += 1
+            }
+            unresolvedSignaturesList += us.methodFullName + "(" + us.name + ")" + "\n\t" + "Line Number: " + us.lineNumber.get + "\n\t" + "File: " + getFileNameForNode(
               us
-            )
+            ) + "\n\t" + "Callee FullName: " + us.callee.fullName.l
           })
 
         if (language.equals(Language.JAVA)) {
@@ -101,6 +119,14 @@ object UnresolvedReportUtility {
       statstr += s"$percentage% of total calls are unresolved\n"
     }
 
+    if (language.equals(Language.PYTHON)) {
+      statstr += s"\nCalls with unresolved signatures having callee: $unresolvedSignatureWithCallee\n"
+      if (unresolvedSignatureWithCallee > 0) {
+        percentage = (unresolvedSignatureWithCallee.toDouble * 100.0) / unresolvedSignatures.toDouble
+        statstr += s"$percentage% of unresolved signatures having callee from unresolved signatures\n"
+      }
+    }
+
     statstr += s"\nCalls with unresolved namespace: $unresolvedNamespaces\n"
     if (unresolvedNamespaces > 0) {
       percentage = (unresolvedNamespaces.toDouble * 100.0) / total.toDouble
@@ -117,6 +143,11 @@ object UnresolvedReportUtility {
 
     print(statstr)
     statfile.appendText(statstr)
+
+//    if (nonempty > 0)
+    statstr += s"\nCalls with nonEmpty Callee false: $nonempty"
+//    if (isempty > 0)
+    statstr += s"\nCalls with isEmpty Callee: $isempty\n"
 
     if (unresolvedSignaturesList.length > 0) {
       statfile.appendLine(divider)
