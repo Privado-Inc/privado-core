@@ -100,7 +100,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
       }
   }
 
-
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
   def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
@@ -216,7 +215,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
             val members = getMember((prop \@ "name"), className);
             if (members.nonEmpty) {
               val propertyNode = NewJavaProperty().name(result._1).value(result._2)
-              val member = members.head
+              val member       = members.head
               if (member != null) {
                 println(propertyNode.name, member.name)
                 builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
