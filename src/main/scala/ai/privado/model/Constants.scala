@@ -107,4 +107,12 @@ object Constants {
   val PYTHON_STATS = "python.txt"
 
   val delombok = "delombok"
+  val API      = "API"
+
+  // Rule ids
+  val internalAPIRuleId = "Sinks.API.InternalAPI"
+  val ignoredSinks      = "ignoredSinks"
+  val apiSinks          = "apiSinks"
+  val apiHttpLibraries  = "apiHttpLibraries"
+  val apiIdentifier     = "apiIdentifier"
 }
