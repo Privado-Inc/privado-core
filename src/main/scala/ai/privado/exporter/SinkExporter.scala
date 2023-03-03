@@ -205,7 +205,7 @@ class SinkExporter(cpg: Cpg) {
           val apiUrl = {
             if (rule.nodeType == NodeType.API) {
               cpg.call
-                .where(_.tag.nameExact(Constants.id).value(rule.id))
+                .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
                 .tag
                 .nameExact(Constants.apiUrl + rule.id)
                 .value
