@@ -23,27 +23,19 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.entrypoint.ScanProcessor
+import ai.privado.languageEngine.java.language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.ImportUtility
-import ai.privado.model.Language
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDefaultSemantics,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
+import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.circe.Json
-import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import java.util.Calendar
 import scala.collection.mutable
@@ -61,25 +53,16 @@ object APITaggerVersionJava extends Enumeration {
 }
 
 class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  private val logger     = LoggerFactory.getLogger(this.getClass)
-  val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch           = mutable.HashMap[String, Integer]()
+  private val logger                             = LoggerFactory.getLogger(this.getClass)
+  val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
+  val FEIGN_CLIENT                               = "FeignClient"
+  val REQUEST_LINE                               = "RequestLine"
 
-  val commonIgnoredSinks = RuleCache.getSystemConfigByKey("ignoredSinks")
-  val apiSinksRegex      = RuleCache.getSystemConfigByKey("apiSinks")
+  val COMMON_IGNORED_SINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.ignoredSinks)
 
-  val COMMON_IGNORED_SINKS_REGEX = commonIgnoredSinks.size match {
-    case 0 => "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*"
-    case _ => commonIgnoredSinks.map(config => config.value).mkString("(?i)(", "|", ")")
-  }
-
-  lazy val APISINKS_REGEX = apiSinksRegex.size match {
-    case 0 =>
-      "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-        "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity)"
-    case _ => apiSinksRegex.map(config => config.value).mkString("(?i)(", "|", ")")
-  }
+  lazy val APISINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.apiSinks)
 
   internalMethodCall.foreach((method) => {
     val key     = method.split("[.:]").take(2).mkString(".")
@@ -108,15 +91,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       APITaggerVersionJava.V2Tagger
   }
 
-  implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
-  val systemConfigHttpLibraries             = RuleCache.getSystemConfigByKey("apiHttpLibraries")
-  val commonHttpPackages: String = {
-    systemConfigHttpLibraries.size match {
-      case 0 =>
-        "^(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl).*"
-      case _ => systemConfigHttpLibraries.map(config => config.value).mkString("(?i)(", "|", ")")
-    }
-  }
+  val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getRule.sinks
@@ -125,40 +100,47 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val apiInternalSinkPattern = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
-    val propertySinks          = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
+    val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+
+    // Support to use `identifier` in API's
+    val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierSource = {
+      if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
+        cpg.identifier(identifierRegex).l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+      else
+        List()
+    }
+
+    // To handle feign implementation
+    tagFeignClientAPIUsingFeignClient(builder, ruleInfo)
+    val feignAPISinks = getFeignClientAPISinksUsingRequestLine
+
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
-        sinkTagger(apiInternalSinkPattern, apis, builder, ruleInfo)
-        sinkTagger(propertySinks, apis, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          apis ++ feignAPISinks,
+          builder,
+          ruleInfo
+          // ScanProcessor.config.enableAPIDisplay   Turning off the usage of this flag as per request from CR team
+        )
+      // sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
-        sinkTagger(apiInternalSinkPattern, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
-        sinkTagger(propertySinks, apis.methodFullName(commonHttpPackages).l, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks,
+          builder,
+          ruleInfo
+        )
       case _ =>
-        logger.debug("Skipping API Tagger because valid match not found")
-        println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED...")
-    }
-  }
-
-  private def sinkTagger(
-    apiInternalSinkPattern: List[CfgNode],
-    apis: List[CfgNode],
-    builder: BatchedUpdate.DiffGraphBuilder,
-    ruleInfo: RuleInfo
-  ): Unit = {
-    val filteredLiteralSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
-    if (apis.nonEmpty && filteredLiteralSourceNode.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(filteredLiteralSourceNode).l
-      apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
-        val apiNode     = flow.elements.last
-        addRuleTags(builder, apiNode, ruleInfo)
-        storeForTag(builder, apiNode)(Constants.apiUrl, literalCode)
-      })
+        logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
+        println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
+        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
     }
   }
 
@@ -178,6 +160,74 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       case 0 => false
       case _ => true
     }
+  }
+
+  /** Implements the style where Feign client annotation is used
+    *
+    * FeignClient(url = "http://localhost:8080")
+    *
+    * public interface PersonClient {
+    *
+    * RequestMapping(method \= RequestMethod.GET, value = "/persons")
+    *
+    * Resources<Person> getPersons();
+    *
+    * }
+    * @param builder
+    * @param ruleInfo
+    */
+  private def tagFeignClientAPIUsingFeignClient(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    implicit val resolver: ICallResolver = NoResolve
+    cpg.typeDecl
+      .where(_.annotation.name(FEIGN_CLIENT))
+      .foreach(typeDecl => {
+        val classAnnotations = typeDecl.annotation.name(FEIGN_CLIENT).l
+        val annotationCode = classAnnotations.code.headOption
+          .getOrElse("")
+        // Logic to exact the value present in `url = "value"`
+        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*".r
+        var apiLiteral = annotationCode match {
+          case urlParameterPattern(urlParameter) =>
+            urlParameter.stripPrefix("\"").stripSuffix("\"")
+          case _ => ""
+        }
+        val apiCalls = typeDecl.method.whereNot(_.annotation.name(REQUEST_LINE)).callIn.l
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+          if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
+            apiCalls.foreach(apiNode => {
+              addRuleTags(builder, apiNode, ruleInfo)
+              storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, apiLiteral)
+            })
+          }
+        } else if (apiLiteral.startsWith("${") || apiLiteral.matches(ruleInfo.combinedRulePattern)) {
+          if (apiLiteral.startsWith("${"))
+            apiLiteral = apiLiteral.stripPrefix("${").stripSuffix("}").replaceAll("\\.", "_")
+          apiCalls.foreach(apiNode => {
+            val domain         = getDomainFromString(apiLiteral)
+            val newRuleIdToUse = ruleInfo.id + "." + domain
+            RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+            addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
+            storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
+          })
+        } else if (apiLiteral.isEmpty) {
+          // Case when feign url is present in some config file and uses some server mechanism like eureka, ribbon etc,
+          // which needs to be brought up here, for now we say it is API
+          apiCalls.foreach(apiNode => {
+            addRuleTags(builder, apiNode, ruleInfo)
+            storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
+          })
+        }
+      })
+  }
+
+  /** Returns call node which are probable API sinks which used RequestLine annotation is used
+    */
+  private def getFeignClientAPISinksUsingRequestLine: List[Call] = {
+    implicit val resolver: ICallResolver = NoResolve
+    cpg.method
+      .where(_.annotation.name(REQUEST_LINE))
+      .callIn
+      .l
   }
 
 }
