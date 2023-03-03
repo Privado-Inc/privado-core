@@ -33,6 +33,7 @@ import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -127,6 +128,8 @@ object Utilities {
     var specialNonTaintDefaultSemantics  = List[String]()
     var customStringSemantics            = List[String]()
     var customNonPersonalMemberSemantics = List[String]()
+    val lang = MetricHandler.metricsData("language")
+    val isPython = lang.toString().contains(Languages.PYTHONSRC)
 
     if (!ScanProcessor.config.disableRunTimeSemantics) {
       customNonTaintDefaultSemantics = nonTaintingMethods
@@ -171,7 +174,10 @@ object Utilities {
     val list =
       customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
-    val finalSemantics = getDefaultSemantics.elements ++ parsed
+    var finalSemantics = getDefaultSemantics.elements
+    if (!isPython) {
+      finalSemantics = finalSemantics ++ parsed
+    }
     Semantics.fromList(finalSemantics)
   }
 
