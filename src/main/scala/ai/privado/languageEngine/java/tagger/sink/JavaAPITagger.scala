@@ -113,9 +113,9 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     }
 
     // To handle feign implementation
-    tagFeignClientAPIUsingFeignClient(builder, ruleInfo)
-    val feignAPISinks = getFeignClientAPISinksUsingRequestLine
-    val feingAPIBeanSinks = getFeignClientAPISinksUsingBean
+    val typeDeclWithoutUrl = tagFeignClientAPIUsingFeignClient(builder, ruleInfo)
+    val feignAPISinks      = getFeignClientAPISinksUsingRequestLine
+    val feingAPIBeanSinks  = getFeignClientAPISinksUsingBean
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
@@ -128,7 +128,12 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           ruleInfo,
           ScanProcessor.config.enableAPIDisplay
         )
-        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks ++ feingAPIBeanSinks, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          feignAPISinks ++ feingAPIBeanSinks,
+          builder,
+          ruleInfo
+        )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
@@ -141,7 +146,12 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
-        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks ++ feingAPIBeanSinks, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          feignAPISinks ++ feingAPIBeanSinks,
+          builder,
+          ruleInfo
+        )
     }
   }
 
@@ -177,11 +187,11 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     * @param builder
     * @param ruleInfo
     */
-  private def tagFeignClientAPIUsingFeignClient(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+  private def tagFeignClientAPIUsingFeignClient(builder: DiffGraphBuilder, ruleInfo: RuleInfo) = {
     implicit val resolver: ICallResolver = NoResolve
-    cpg.typeDecl
+    val typeDeclWithouUrl = cpg.typeDecl
       .where(_.annotation.name(FEIGN_CLIENT))
-      .foreach(typeDecl => {
+      .flatMap(typeDecl => {
         val classAnnotations = typeDecl.annotation.name(FEIGN_CLIENT).l
         val annotationCode = classAnnotations.code.headOption
           .getOrElse("")
@@ -192,7 +202,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
             urlParameter.stripPrefix("\"").stripSuffix("\"")
           case _ => ""
         }
-        val apiCalls = typeDecl.method.whereNot(_.annotation.name(REQUEST_LINE)).callIn.l
+        val apiCalls = typeDecl.method.callIn.l
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
           if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
             apiCalls.foreach(apiNode => {
@@ -200,6 +210,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
               storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, apiLiteral)
             })
           }
+          None
         } else if (apiLiteral.startsWith("${") || apiLiteral.matches(ruleInfo.combinedRulePattern)) {
           if (apiLiteral.startsWith("${"))
             apiLiteral = apiLiteral.stripPrefix("${").stripSuffix("}").replaceAll("\\.", "_")
@@ -210,15 +221,21 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
             addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
             storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
           })
+          None
         } else if (apiLiteral.isEmpty) {
           // Case when feign url is present in some config file and uses some server mechanism like eureka, ribbon etc,
           // which needs to be brought up here, for now we say it is API
+          /*
           apiCalls.foreach(apiNode => {
             addRuleTags(builder, apiNode, ruleInfo)
             storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
           })
-        }
+           */
+          Some(typeDecl)
+        } else
+          None
       })
+    typeDeclWithouUrl.l
   }
 
   /** Returns call node which are probable API sinks which used RequestLine annotation is used
@@ -237,13 +254,20 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     implicit val resolver: ICallResolver = NoResolve
     val targetArguments = cpg.method
       .where(_.annotation.name("Bean"))
-      .ast.isCall.name("target").where(_.methodFullName(".*(?i)feign.*")).argument.whereNot(_.argumentIndex(0)).l
-    if (targetArguments.nonEmpty){
-      val firstArgument = targetArguments.where(_.argumentIndex(1)).code.headOption.getOrElse("").split(".class").headOption.getOrElse("")
-      //val secondArgument = targetArguments.where(_.argumentIndex(2)).code.headOption.getOrElse("")
-      cpg.typeDecl.where(_.fullName(".*"+firstArgument)).method.callIn.l
-    }
-    else
+      .ast
+      .isCall
+      .name("target")
+      .where(_.methodFullName(".*(?i)feign.*"))
+      .argument
+      .whereNot(_.argumentIndex(0))
+      .l
+    if (targetArguments.nonEmpty) {
+      val firstArgument =
+        targetArguments.where(_.argumentIndex(1)).code.headOption.getOrElse("").split(".class").headOption.getOrElse("")
+      // val secondArgument = targetArguments.where(_.argumentIndex(2)).code.headOption.getOrElse("")
+      // cpg.typeDecl.where(_.fullName(".*" + firstArgument)).method.callIn.l
+      cpg.typeDecl.name(firstArgument).method.callIn.l
+    } else
       List()
   }
 
