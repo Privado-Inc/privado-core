@@ -68,7 +68,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
           .call("(?:get).*")
           .argument
           .isLiteral
-          .code("\"(" + sourceRule.combinedRulePattern + ")\"")
+          .code("(\"|')(" + sourceRule.combinedRulePattern + ")(\"|')")
           .whereNot(_.code(".*\\s.*"))
           .l
 
