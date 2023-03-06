@@ -32,11 +32,12 @@ import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
-import ai.privado.utility.{UnresolvedReportUtility}
+import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName, outputIntermediateFileName}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
+import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -50,7 +51,8 @@ import java.util.Calendar
 import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
 import better.files.File
-import java.nio.file.{Paths, Files}
+
+import java.nio.file.{Files, Paths}
 
 object JavaProcessor {
 
@@ -162,11 +164,10 @@ object JavaProcessor {
 
 
 
-    if (!Files.exists(Paths.get("./.privado"))) {
-      Files.createDirectory(Paths.get("./.privado"));
-    }
+    // Create the .privado folder if not present
+    createCpgFolder();
 
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/.privado/cpg.bin"
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin"
     cpgconfig = Config(inputPath = sourceRepoLocation, outputPath = cpgOutputPath, fetchDependencies = !config.skipDownloadDependencies)
 
     // Create delomboked directory if source code uses lombok

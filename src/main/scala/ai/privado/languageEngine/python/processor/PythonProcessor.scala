@@ -10,14 +10,7 @@ import ai.privado.model.Constants.{outputDirectoryName, outputFileName, outputIn
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.entrypoint.ScanProcessor.config
-import io.joern.pysrc2cpg.{
-  ImportsPass,
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonNaiveCallLinker,
-  PythonTypeHintCallLinker,
-  PythonTypeRecovery
-}
+import io.joern.pysrc2cpg.{ImportsPass, Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
@@ -27,10 +20,12 @@ import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import ai.privado.model.Language
+import ai.privado.utility.Utilities.createCpgFolder
+
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import java.nio.file.{Paths, Files}
+import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -121,6 +116,7 @@ object PythonProcessor {
           cpg.close()
           import java.io.File
           val cpgFile = new File(sourceRepoLocation)
+          print(cpgFile.getAbsolutePath)
           println(s"\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n")
         }
       }
@@ -150,10 +146,12 @@ object PythonProcessor {
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/.privado/cpg.bin"
-    if (!Files.exists(Paths.get("./.privado"))) {
-      Files.createDirectory(Paths.get("./.privado"));
-    }
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin"
+
+
+    // Create the .privado folder if not present
+    createCpgFolder();
+
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath), absoluteSourceLocation, File(".venv").path, true)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
