@@ -21,6 +21,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import ai.privado.model.Language
 import ai.privado.utility.Utilities.createCpgFolder
+import io.joern.javasrc2cpg.Config
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -29,7 +30,7 @@ import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
-
+  private var cpgconfig = Config(outputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin")
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
@@ -115,8 +116,7 @@ object PythonProcessor {
         } finally {
           cpg.close()
           import java.io.File
-          val cpgFile = new File(sourceRepoLocation)
-          print(cpgFile.getAbsolutePath)
+          val cpgFile = new File(cpgconfig.outputPath)
           println(s"\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n")
         }
       }
@@ -153,7 +153,7 @@ object PythonProcessor {
     createCpgFolder();
 
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
-    val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath), absoluteSourceLocation, File(".venv").path, true)
+    val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath) ,absoluteSourceLocation, File(".venv").path, true)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"

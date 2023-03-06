@@ -71,8 +71,8 @@ object Utilities {
 
 
   def createCpgFolder(): Unit = {
-    if (!Files.exists(Paths.get(s"./$outputDirectoryName"))) {
-      Files.createDirectory(Paths.get(s"./$outputDirectoryName"));
+    if (!Files.exists(Paths.get(outputDirectoryName))) {
+      Files.createDirectory(Paths.get(outputDirectoryName));
     }
   }
 
