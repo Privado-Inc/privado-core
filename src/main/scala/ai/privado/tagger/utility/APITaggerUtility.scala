@@ -28,7 +28,14 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.model.{Constants, RuleInfo}
-import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getDomainFromString, getFileNameForNode, isFileProcessable, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDefaultSemantics,
+  getDomainFromString,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
@@ -48,7 +55,7 @@ object APITaggerUtility {
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode).l
-        if(ScanProcessor.config.disableDeDuplication)
+        if (ScanProcessor.config.disableDeDuplication)
           flows
         else
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
