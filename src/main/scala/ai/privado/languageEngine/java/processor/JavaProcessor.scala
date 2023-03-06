@@ -50,6 +50,7 @@ import java.util.Calendar
 import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
 import better.files.File
+import java.nio.file.{Paths, Files}
 
 object JavaProcessor {
 
@@ -158,7 +159,15 @@ object JavaProcessor {
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
-    cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
+
+
+
+    if (!Files.exists(Paths.get("./.privado"))) {
+      Files.createDirectory(Paths.get("./.privado"));
+    }
+
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/.privado/cpg.bin"
+    cpgconfig = Config(inputPath = sourceRepoLocation, outputPath = cpgOutputPath, fetchDependencies = !config.skipDownloadDependencies)
 
     // Create delomboked directory if source code uses lombok
     val dependencies        = JavaSrc2Cpg.getDependencyList(cpgconfig)
@@ -167,11 +176,14 @@ object JavaProcessor {
       val delombokPath = Delombok.run(AppCache.scanPath)
       AppCache.isLombokPresent = true
 
+
+
       // Creating a new CpgConfig which uses the delombokPath
       cpgconfig = Config(
         inputPath = delombokPath,
         fetchDependencies = !config.skipDownloadDependencies,
-        delombokMode = Some("no-delombok")
+        delombokMode = Some("no-delombok"),
+        outputPath = cpgOutputPath
       )
     }
 

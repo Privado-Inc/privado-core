@@ -48,6 +48,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+import java.nio.file.{Paths, Files}
 
 object JavascriptProcessor {
 
@@ -127,10 +128,15 @@ object JavascriptProcessor {
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/.privado/cpg.bin"
+    if (!Files.exists(Paths.get("./.privado"))) {
+      Files.createDirectory(Paths.get("./.privado"));
+    }
+
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
-      Config(inputPath = absoluteSourceLocation)
+      Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }

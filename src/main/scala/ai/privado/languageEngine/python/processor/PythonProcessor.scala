@@ -30,6 +30,7 @@ import ai.privado.model.Language
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+import java.nio.file.{Paths, Files}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -149,10 +150,12 @@ object PythonProcessor {
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutFile             = File.newTemporaryFile(suffix = ".cpg.bin")
-    cpgOutFile.deleteOnExit()
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/.privado/cpg.bin"
+    if (!Files.exists(Paths.get("./.privado"))) {
+      Files.createDirectory(Paths.get("./.privado"));
+    }
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
-    val cpgconfig = Py2CpgOnFileSystemConfig(cpgOutFile.path, absoluteSourceLocation, File(".venv").path, true)
+    val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath), absoluteSourceLocation, File(".venv").path, true)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
