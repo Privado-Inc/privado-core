@@ -4,13 +4,14 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Call, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
@@ -45,7 +46,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
      */
     val collectionMethodRefs = cpg.methodRef.where(_.astParent.astParent.isCall.argument.code(urlPattern))
 
-    val collectionMethodsCache = collectionMethodRefs
+    var collectionMethodsCache = collectionMethodRefs
       .map { m =>
         methodUrlMap.addOne(
           // we only get methodFullName here from the call node, so we have to get the relevant method for key
@@ -56,6 +57,21 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       }
       .l
       .flatten(method => method) // returns the handler method list
+    /*
+    Pattern: django.*[.](url|path)
+    Method Full Name starts with django and ends with .url or .path
+     */
+    val djangoCollectionRedirectCalls = cpg.call.methodFullName("django.*[.](url|path)").l
+    val djangoCollectionMethods       = mutable.ListBuffer[Method]()
+
+    for (call <- djangoCollectionRedirectCalls) {
+      if (!(call.isArgument.isEmpty || call.argument.isMethodRef.l.isEmpty)) {
+        methodUrlMap.addOne(call.argument.isMethodRef.head.referencedMethod.id() -> call.argument.isLiteral.head.code)
+        djangoCollectionMethods += call.argument.isMethodRef.head.referencedMethod
+      }
+    }
+
+    collectionMethodsCache = collectionMethodsCache ::: djangoCollectionMethods.toList
 
     val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
@@ -72,13 +88,13 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
           .whereNot(_.code(".*\\s.*"))
           .l
 
-        if (parameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty) {
-          None
-        } else {
+        if (!(parameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
           parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
           matchingLocals.foreach(local => storeForTag(builder, local)(Constants.id, sourceRule.id))
           matchingLiterals.foreach(literal => storeForTag(builder, literal)(Constants.id, sourceRule.id))
           Some(collectionMethod)
+        } else {
+          None
         }
 
       })
