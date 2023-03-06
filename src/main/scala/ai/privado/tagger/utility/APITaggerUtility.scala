@@ -24,16 +24,11 @@
 package ai.privado.tagger.utility
 
 import ai.privado.cache.RuleCache
+import ai.privado.dataflow.DuplicateFlowProcessor
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.model.{Constants, RuleInfo}
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDefaultSemantics,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag,
-  getDomainFromString
-}
+import ai.privado.utility.Utilities.{addRuleTags, getDefaultSemantics, getDomainFromString, getFileNameForNode, isFileProcessable, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
@@ -51,7 +46,13 @@ object APITaggerUtility {
   ): Unit = {
     val filteredSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(filteredSourceNode).l
+      val apiFlows = {
+        val flows = apis.reachableByFlows(filteredSourceNode).l
+        if(ScanProcessor.config.disableDeDuplication)
+          flows
+        else
+          DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
+      }
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
         val apiNode     = flow.elements.last
