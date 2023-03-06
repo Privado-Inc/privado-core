@@ -116,5 +116,5 @@ jobs:
         run: cat ./temp/standalone-monitoring-stability/action_result.txt
 
       - name: Workflow report analysis
-        if: ${{ env.MESSAGE != 'true' }}
+        if: ${{ env.MESSAGE == 'true' }}
         run: exit 1
