@@ -112,9 +112,9 @@ jobs:
           echo "$(cat ./temp/standalone-monitoring-stability/action_result.txt)" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV 
 
+      - name: Print action result
+        run: cat ./temp/standalone-monitoring-stability/action_result.txt
+
       - name: Workflow report analysis
         if: ${{ env.MESSAGE != 'true' }}
-        uses: actions/github-script@v3
-        with:
-          script: |
-            core.setFailed(${{ env.MESSAGE }})
+        run: exit 1
