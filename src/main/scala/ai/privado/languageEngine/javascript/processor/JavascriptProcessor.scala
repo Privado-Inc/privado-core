@@ -30,7 +30,7 @@ import ai.privado.languageEngine.javascript.passes.methodfullname.{MethodFullNam
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
@@ -125,7 +125,7 @@ object JavascriptProcessor {
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin"
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
     // Create the .privado folder if not present
     createCpgFolder();
 

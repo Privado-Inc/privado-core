@@ -31,9 +31,8 @@ import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, storages}
 import ai.privado.utility.UnresolvedReportUtility
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName, outputIntermediateFileName}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
@@ -167,7 +166,7 @@ object JavaProcessor {
     // Create the .privado folder if not present
     createCpgFolder();
 
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin"
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
     cpgconfig = Config(inputPath = sourceRepoLocation, outputPath = cpgOutputPath, fetchDependencies = !config.skipDownloadDependencies)
 
     // Create delomboked directory if source code uses lombok

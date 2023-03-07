@@ -6,7 +6,7 @@ import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName, outputIntermediateFileName}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputIntermediateFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.entrypoint.ScanProcessor.config
@@ -146,7 +146,7 @@ object PythonProcessor {
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin"
+    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
 
 
     // Create the .privado folder if not present
