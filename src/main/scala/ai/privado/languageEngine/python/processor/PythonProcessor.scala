@@ -30,7 +30,7 @@ import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
-  private var cpgconfig = Config(outputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/cpg.bin")
+  private var cpgconfig = Config(outputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName")
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
