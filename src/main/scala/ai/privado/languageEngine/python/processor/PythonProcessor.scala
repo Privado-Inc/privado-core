@@ -10,7 +10,14 @@ import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outpu
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.entrypoint.ScanProcessor.config
-import io.joern.pysrc2cpg.{ImportsPass, Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig, PythonNaiveCallLinker, PythonTypeHintCallLinker, PythonTypeRecovery}
+import io.joern.pysrc2cpg.{
+  ImportsPass,
+  Py2CpgOnFileSystem,
+  Py2CpgOnFileSystemConfig,
+  PythonNaiveCallLinker,
+  PythonTypeHintCallLinker,
+  PythonTypeRecovery
+}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
@@ -30,7 +37,8 @@ import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
-  private var cpgconfig = Config(outputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName")
+  private var cpgconfig =
+    Config(outputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName")
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
@@ -146,14 +154,13 @@ object PythonProcessor {
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
-
+    val cpgOutputPath          = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
 
     // Create the .privado folder if not present
     createCpgFolder();
 
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
-    val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath) ,absoluteSourceLocation, File(".venv").path, true)
+    val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath), absoluteSourceLocation, File(".venv").path, true)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
