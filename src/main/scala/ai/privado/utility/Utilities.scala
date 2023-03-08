@@ -70,7 +70,6 @@ object Utilities {
     builder
   }
 
-
   def createCpgFolder(): Unit = {
     if (!Files.exists(Paths.get(outputDirectoryName))) {
       Files.createDirectory(Paths.get(outputDirectoryName));
@@ -425,8 +424,9 @@ object Utilities {
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
       if (nonPersonalMembersRegex.nonEmpty) {
+        // Below same regex is repeated in IdentifierNonMemberTagger-->runOnPart
         val nonPersonalMethodFullNames = typeDeclNode.method.block.astChildren.isReturn
-          .code("return (?i)(" + nonPersonalMembersRegex + ")")
+          .code(s"return (?i)(this.)?($nonPersonalMembersRegex)(;)?")
           .method
           .callIn
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
@@ -436,7 +436,7 @@ object Utilities {
           .typeFullName(typeDeclValue)
           .astParent
           .isCall
-          .name("(?i)get(" + nonPersonalMembersRegex + ")")
+          .name(s"(?i)(get|is)($nonPersonalMembersRegex)")
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
           .methodFullName
           .dedup

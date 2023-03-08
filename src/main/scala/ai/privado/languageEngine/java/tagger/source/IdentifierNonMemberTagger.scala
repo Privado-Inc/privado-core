@@ -44,15 +44,16 @@ class IdentifierNonMemberTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String
 
     val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
     if (nonPersonalMembersRegex.nonEmpty) {
+      // Below same regex is repeated in Utilities-->generateNonPersonalMemberSemantics
       val impactedMethods = typeDeclNode.method.block.astChildren.isReturn
-        .code("return (?i)(" + nonPersonalMembersRegex + ")")
+        .code(s"return (?i)(this.)?($nonPersonalMembersRegex)(;)?")
         .method
         .callIn
         .l ++ cpg.identifier
         .typeFullName(typeDeclValue)
         .astParent
         .isCall
-        .name("(?i)get(" + nonPersonalMembersRegex + ")")
+        .name(s"(?i)(get|is)($nonPersonalMembersRegex)")
         .l
 
       impactedMethods.dedup.foreach(impactedReturnCall => {
