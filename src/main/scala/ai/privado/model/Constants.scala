@@ -89,6 +89,8 @@ object Constants {
   val outputDirectoryName          = ".privado"
   val outputIntermediateFileName   = "intermediate.json"
   val privadoLanguageEngineVersion = "privadoLanguageEngineVersion"
+  val cpgOutputFileName            = "cpg.bin"
+
   // database details
   val dbName      = "dbName"
   val dbVendor    = "dbVendor"
@@ -107,4 +109,12 @@ object Constants {
   val PYTHON_STATS = "python.txt"
 
   val delombok = "delombok"
+  val API      = "API"
+
+  // Rule ids
+  val internalAPIRuleId = "Sinks.API.InternalAPI"
+  val ignoredSinks      = "ignoredSinks"
+  val apiSinks          = "apiSinks"
+  val apiHttpLibraries  = "apiHttpLibraries"
+  val apiIdentifier     = "apiIdentifier"
 }

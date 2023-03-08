@@ -24,8 +24,10 @@ package ai.privado.utility
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.exporter.ConsoleExporter.logger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
@@ -41,11 +43,13 @@ import overflowdb.BatchedUpdate
 import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
+import java.net.URL
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Files
 
 object Utilities {
 
@@ -66,6 +70,13 @@ object Utilities {
     builder
   }
 
+
+  def createCpgFolder(): Unit = {
+    if (!Files.exists(Paths.get(outputDirectoryName))) {
+      Files.createDirectory(Paths.get(outputDirectoryName));
+    }
+  }
+
   /** Utility to add database detail tags to sink
     */
   def addDatabaseDetailTags(
@@ -82,11 +93,16 @@ object Utilities {
 
   /** Utility to add Tag based on a rule Object
     */
-  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: AstNode, ruleInfo: RuleInfo): Unit = {
+  def addRuleTags(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNode,
+    ruleInfo: RuleInfo,
+    ruleId: Option[String] = None
+  ): Unit = {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName)) {
       val storeForTagHelper = storeForTag(builder, node) _
-      storeForTagHelper(Constants.id, ruleInfo.id)
+      storeForTagHelper(Constants.id, ruleId.getOrElse(ruleInfo.id))
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
@@ -97,7 +113,7 @@ object Utilities {
         case _       => ()
       }
       // storing by catLevelTwo and nodeType to get id
-      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
+      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
   }
 
@@ -433,5 +449,23 @@ object Utilities {
       }
     })
     semanticList.toList
+  }
+
+  /** Returns a domain for a given url string
+    * @param urlString
+    * @return
+    */
+  def getDomainFromString(urlString: String) = {
+    try {
+      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
+      val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
+      val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
+      url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+    } catch {
+      case e: Exception =>
+        logger.debug("Exception while getting domain from string : ", e)
+        urlString
+    }
+
   }
 }
