@@ -123,12 +123,17 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis ++ feignAPISinks ++ feingAPIBeanSinks,
+          apis,
+          builder,
+          ruleInfo,
+          ScanProcessor.config.enableAPIDisplay
+        )
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          feignAPISinks ++ feingAPIBeanSinks,
           builder,
           ruleInfo
-          // ScanProcessor.config.enableAPIDisplay   Turning off the usage of this flag as per request from CR team
         )
-      // sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks ++ feingAPIBeanSinks, builder, ruleInfo)
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
