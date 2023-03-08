@@ -103,7 +103,7 @@ class FeignAPI(cpg: Cpg) {
         val annotationCode = classAnnotations.code.headOption
           .getOrElse("")
         // Logic to exact the value present in `url = "value"`
-        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*".r
+        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*(,)?".r
         val apiLiteral = annotationCode match {
           case urlParameterPattern(urlParameter) =>
             urlParameter
