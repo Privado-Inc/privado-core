@@ -27,6 +27,7 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.exporter.ConsoleExporter.logger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
@@ -48,6 +49,7 @@ import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Files
 
 object Utilities {
 
@@ -66,6 +68,13 @@ object Utilities {
       builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
     }
     builder
+  }
+
+
+  def createCpgFolder(): Unit = {
+    if (!Files.exists(Paths.get(outputDirectoryName))) {
+      Files.createDirectory(Paths.get(outputDirectoryName));
+    }
   }
 
   /** Utility to add database detail tags to sink

@@ -118,6 +118,22 @@ object DuplicateFlowProcessor {
     pathIds.diff(visitedFlows) // This will give us all the Path ids which are super set of overlapping paths
   }
 
+  /** For a given list of paths discards the sub-flow by using the dedup algorithm, returning unique flows
+    *
+    * @param dataflowPaths
+    *   \- list of path
+    * @return
+    */
+  def getUniquePathsAfterDedup(dataflowPaths: List[Path]): List[Path] = {
+    val flows = dataflowPaths
+      .map(path => {
+        (DuplicateFlowProcessor.calculatePathId(path).getOrElse(""), path)
+      })
+      .toMap
+    val uniquePathIds = DuplicateFlowProcessor.pathIdsPerSourceIdAfterDedup(flows.keySet)
+    uniquePathIds.map(pathId => flows(pathId)).toList
+  }
+
   /** Generates a pathId for a given path, based on node Id
     * @param flow
     * @return
