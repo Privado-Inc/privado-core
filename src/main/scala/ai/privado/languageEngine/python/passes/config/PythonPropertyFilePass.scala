@@ -21,7 +21,7 @@ import com.github.wnameless.json.flattener.JsonFlattener
 import scala.io.Source
 
 class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
-  override def generateParts(): Array[String] = configFiles(projectRoot).toArray
+  override def generateParts(): Array[String] = configFiles(projectRoot, Set(".ini", ".yml", ".yaml", ".env")).toArray
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -78,9 +78,9 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .l
   }
 
-  private def configFiles(projectRoot: String): List[String] = {
+  private def configFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), Set(".ini", ".yml", ".yaml", ".env"))
+      .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
   }
 
@@ -94,7 +94,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     propertyNode: NewJavaProperty,
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
-    println("In connect")
     matchEnvironGetCalls(propertyNode.name.strip()).foreach(lit => {
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)

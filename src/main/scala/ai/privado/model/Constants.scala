@@ -89,6 +89,7 @@ object Constants {
   val outputDirectoryName          = ".privado"
   val outputIntermediateFileName   = "intermediate.json"
   val privadoLanguageEngineVersion = "privadoLanguageEngineVersion"
+
   // database details
   val dbName      = "dbName"
   val dbVendor    = "dbVendor"
