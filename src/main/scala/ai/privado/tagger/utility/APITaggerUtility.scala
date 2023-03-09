@@ -36,10 +36,11 @@ import ai.privado.utility.Utilities.{
   isFileProcessable,
   storeForTag
 }
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identifier, Member}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import overflowdb.traversal.Traversal
 
 object APITaggerUtility {
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
@@ -61,7 +62,7 @@ object APITaggerUtility {
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
       }
       apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
+        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
         val apiNode     = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id
