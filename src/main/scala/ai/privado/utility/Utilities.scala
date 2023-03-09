@@ -27,9 +27,11 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.exporter.ConsoleExporter.logger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.DefaultSemantics.{javaFlows, operatorFlows}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
@@ -47,6 +49,7 @@ import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Files
 
 object Utilities {
 
@@ -65,6 +68,12 @@ object Utilities {
       builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
     }
     builder
+  }
+
+  def createCpgFolder(): Unit = {
+    if (!Files.exists(Paths.get(outputDirectoryName))) {
+      Files.createDirectory(Paths.get(outputDirectoryName));
+    }
   }
 
   /** Utility to add database detail tags to sink
@@ -415,16 +424,28 @@ object Utilities {
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
       if (nonPersonalMembersRegex.nonEmpty) {
-        typeDeclNode.method.block.astChildren.isReturn
-          .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+        // Below same regex is repeated in IdentifierNonMemberTagger-->runOnPart
+        val nonPersonalMethodFullNames = typeDeclNode.method.block.astChildren.isReturn
+          .code(s"return (?i)(this.)?($nonPersonalMembersRegex)(;)?")
           .method
           .callIn
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
           .methodFullName
           .dedup
-          .foreach(methodName => {
-            semanticList.addOne(generateNonTaintSemantic(methodName))
-          })
+          .l ++ cpg.identifier
+          .typeFullName(typeDeclValue)
+          .astParent
+          .isCall
+          .name(s"(?i)(get|is)($nonPersonalMembersRegex)")
+          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
+          .methodFullName
+          .dedup
+          .l
+
+        nonPersonalMethodFullNames.dedup.foreach(methodName => {
+          semanticList.addOne(generateNonTaintSemantic(methodName))
+        })
+
       }
     })
     semanticList.toList

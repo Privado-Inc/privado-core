@@ -17,6 +17,7 @@ import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import io.circe.yaml.parser
 import com.github.wnameless.json.flattener.JsonFlattener
+import io.shiftleft.codepropertygraph.generated.traversal.toJavaPropertyTraversalExtGen
 
 import scala.io.Source
 
@@ -72,6 +73,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   }
 
   private def matchEnvironGetCalls(propertyName: String): List[Literal] = {
+    println(cpg.literal.code(".*conn.*").where(_.inCall.methodFullName(".*pyodbc.connect")).l)
     cpg.literal
       .codeExact("\"" + propertyName + "\"")
       .where(_.inCall.methodFullName(".*environ.get"))
