@@ -105,7 +105,9 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
     val identifierSource = {
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
-        cpg.identifier(identifierRegex).l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+        cpg.identifier(identifierRegex).l ++ cpg.member
+          .name(identifierRegex)
+          .l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
       else
         List()
     }
@@ -116,7 +118,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         new FeignAPI(cpg).tagFeignAPIWithDomainAndReturnWithoutDomainAPISinks(
           builder,
           ruleInfo,
-          apiInternalSources ++ propertySources
+          apiInternalSources ++ propertySources ++ identifierSource
         )
       else
         List()
