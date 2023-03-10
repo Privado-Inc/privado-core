@@ -129,9 +129,9 @@ object JavascriptProcessor {
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
+    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
     // Create the .privado folder if not present
-    createCpgFolder();
+    createCpgFolder(sourceRepoLocation);
 
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
