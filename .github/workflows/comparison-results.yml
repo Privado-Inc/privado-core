@@ -2,9 +2,7 @@ name: Monitoring Stability and Comparing Results
 
 # Triggers when a pull_request is triggered
 on:
-  pull_request:
-    branches:
-      - "**"
+  pull_request_target:
 
 jobs:
   setup_and_scan:
