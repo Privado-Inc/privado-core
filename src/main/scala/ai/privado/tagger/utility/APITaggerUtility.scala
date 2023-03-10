@@ -24,20 +24,23 @@
 package ai.privado.tagger.utility
 
 import ai.privado.cache.RuleCache
+import ai.privado.dataflow.DuplicateFlowProcessor
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDefaultSemantics,
+  getDomainFromString,
   getFileNameForNode,
   isFileProcessable,
-  storeForTag,
-  getDomainFromString
+  storeForTag
 }
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identifier, Member}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import overflowdb.traversal.Traversal
 
 object APITaggerUtility {
   implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
@@ -51,9 +54,15 @@ object APITaggerUtility {
   ): Unit = {
     val filteredSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(filteredSourceNode).l
+      val apiFlows = {
+        val flows = apis.reachableByFlows(filteredSourceNode).l
+        if (ScanProcessor.config.disableDeDuplication)
+          flows
+        else
+          DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
+      }
       apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code)
+        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
         val apiNode     = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id

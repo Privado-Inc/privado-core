@@ -29,7 +29,6 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.ImportUtility
-import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
@@ -40,6 +39,7 @@ import org.slf4j.LoggerFactory
 import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters.SetIsParallelizable
+import scala.util.matching.Regex
 
 /*
   Enum class to represent the different API Tagger versions being used for Java
@@ -57,8 +57,6 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
-  val FEIGN_CLIENT                               = "FeignClient"
-  val REQUEST_LINE                               = "RequestLine"
 
   val COMMON_IGNORED_SINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.ignoredSinks)
 
@@ -79,7 +77,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   lazy val apiTaggerToUse = apis.methodFullName(s"${commonHttpPackages}${APISINKS_REGEX}.*").l.size match {
     case 0 =>
-      if (httpPackagesInImport()) {
+      if (isPackageInImport(commonHttpPackages.r)) {
         MetricHandler.metricsData("apiTaggerVersion") = Json.fromString(APITaggerVersionJava.V1Tagger.toString)
         APITaggerVersionJava.V1Tagger
       } else {
@@ -107,14 +105,24 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
     val identifierSource = {
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
-        cpg.identifier(identifierRegex).l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+        cpg.identifier(identifierRegex).l ++ cpg.member
+          .name(identifierRegex)
+          .l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
       else
         List()
     }
 
-    // To handle feign implementation
-    tagFeignClientAPIUsingFeignClient(builder, ruleInfo)
-    val feignAPISinks = getFeignClientAPISinksUsingRequestLine
+    // To handle feign implementation, run if feign found in any of the imports
+    val feignAPISinks = {
+      if (isPackageInImport(".*(?i)feign.*".r))
+        new FeignAPI(cpg).tagFeignAPIWithDomainAndReturnWithoutDomainAPISinks(
+          builder,
+          ruleInfo,
+          apiInternalSources ++ propertySources ++ identifierSource
+        )
+      else
+        List()
+    }
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
@@ -144,90 +152,10 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     }
   }
 
-  private def httpPackagesInImport(): Boolean = {
-    val imports          = ImportUtility.getAllImportsFromProject(AppCache.scanPath, Language.JAVA)
-    val httpPackageRegex = commonHttpPackages.r
-    val httpPackages     = mutable.HashSet[String]()
-
-    imports.par.foreach((statement) => {
-      httpPackageRegex.findFirstIn(statement) match {
-        case Some(value) => httpPackages.addOne(value)
-        case _           => ()
-      }
-    })
-
-    httpPackages.size match {
-      case 0 => false
-      case _ => true
-    }
-  }
-
-  /** Implements the style where Feign client annotation is used
-    *
-    * FeignClient(url = "http://localhost:8080")
-    *
-    * public interface PersonClient {
-    *
-    * RequestMapping(method \= RequestMethod.GET, value = "/persons")
-    *
-    * Resources<Person> getPersons();
-    *
-    * }
-    * @param builder
-    * @param ruleInfo
+  /** Checks if the given regex matches with any import statement
+    * @param packageRegex
+    * @return
     */
-  private def tagFeignClientAPIUsingFeignClient(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    implicit val resolver: ICallResolver = NoResolve
-    cpg.typeDecl
-      .where(_.annotation.name(FEIGN_CLIENT))
-      .foreach(typeDecl => {
-        val classAnnotations = typeDecl.annotation.name(FEIGN_CLIENT).l
-        val annotationCode = classAnnotations.code.headOption
-          .getOrElse("")
-        // Logic to exact the value present in `url = "value"`
-        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*".r
-        var apiLiteral = annotationCode match {
-          case urlParameterPattern(urlParameter) =>
-            urlParameter.stripPrefix("\"").stripSuffix("\"")
-          case _ => ""
-        }
-        val apiCalls = typeDecl.method.whereNot(_.annotation.name(REQUEST_LINE)).callIn.l
-        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
-          if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
-            apiCalls.foreach(apiNode => {
-              addRuleTags(builder, apiNode, ruleInfo)
-              storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, apiLiteral)
-            })
-          }
-        } else if (apiLiteral.startsWith("${") || apiLiteral.matches(ruleInfo.combinedRulePattern)) {
-          if (apiLiteral.startsWith("${"))
-            apiLiteral = apiLiteral.stripPrefix("${").stripSuffix("}").replaceAll("\\.", "_")
-          apiCalls.foreach(apiNode => {
-            val domain         = getDomainFromString(apiLiteral)
-            val newRuleIdToUse = ruleInfo.id + "." + domain
-            RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
-            addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
-            storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
-          })
-        } else if (apiLiteral.isEmpty) {
-          // Case when feign url is present in some config file and uses some server mechanism like eureka, ribbon etc,
-          // which needs to be brought up here, for now we say it is API
-          apiCalls.foreach(apiNode => {
-            addRuleTags(builder, apiNode, ruleInfo)
-            storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
-          })
-        }
-      })
-  }
-
-  /** Returns call node which are probable API sinks which used RequestLine annotation is used
-    */
-  private def getFeignClientAPISinksUsingRequestLine: List[Call] = {
-    implicit val resolver: ICallResolver = NoResolve
-    cpg.method
-      .where(_.annotation.name(REQUEST_LINE))
-      .callIn
-      .l
-  }
-
+  private def isPackageInImport(packageRegex: Regex): Boolean =
+    ImportUtility.getAllImportsFromProject(AppCache.scanPath, Language.JAVA).par.map(packageRegex.findFirstIn).nonEmpty
 }
