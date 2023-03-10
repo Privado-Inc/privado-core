@@ -27,6 +27,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
+
     val fileNode      = addFileNode(file, builder);
     val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
     propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
@@ -42,16 +43,13 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
-        println(keyValuePairs)
         propertyNodes.foreach(propertyNode => {
-          println(propertyNode.name)
           connectGetEnvironLiterals(propertyNode, builder)
         })
 
         propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
-        println(exception.getMessage)
         List()
     }
   }
@@ -73,7 +71,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   }
 
   private def matchEnvironGetCalls(propertyName: String): List[Literal] = {
-    println(cpg.literal.code(".*conn.*").where(_.inCall.methodFullName(".*pyodbc.connect")).l)
     cpg.literal
       .codeExact("\"" + propertyName + "\"")
       .where(_.inCall.methodFullName(".*environ.get"))
