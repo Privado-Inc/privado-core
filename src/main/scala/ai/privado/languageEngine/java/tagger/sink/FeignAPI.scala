@@ -24,6 +24,8 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.RuleCache
+import ai.privado.dataflow.DuplicateFlowProcessor
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.languageEngine.java.language._
 import ai.privado.utility.Utilities
@@ -142,14 +144,21 @@ class FeignAPI(cpg: Cpg) {
     if (targetArguments.nonEmpty) {
       implicit val engineContext: EngineContext =
         EngineContext(semantics = Utilities.getDefaultSemantics, config = EngineConfig(4))
-      val feignFlows = feignTargetCalls.reachableByFlows(httpSources).l
+      val feignFlows = {
+        val flows = feignTargetCalls.reachableByFlows(httpSources).l
+        if (ScanProcessor.config.disableDeDuplication)
+          flows
+        else
+          DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
+      }
       val firstArgument =
         targetArguments.where(_.argumentIndex(1)).code.headOption.getOrElse("").split(".class").headOption.getOrElse("")
       val apiLiteral = {
         if (feignFlows.isEmpty)
           ""
         else
-          feignFlows.head.elements.head.originalPropertyValue.getOrElse(feignFlows.head.elements.head.code)
+          feignFlows.head.elements.head.originalPropertyValue
+            .getOrElse(feignFlows.head.elements.head.code.split(" ").last)
       }
       (cpg.typeDecl.name(firstArgument).l, apiLiteral)
     } else

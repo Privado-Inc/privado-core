@@ -39,8 +39,7 @@ import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
-  private var cpgconfig =
-    Config(outputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName")
+
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     processedRules: ConfigAndRules,
@@ -132,6 +131,8 @@ object PythonProcessor {
         } finally {
           cpg.close()
           import java.io.File
+          val cpgconfig =
+            Config(outputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName")
           val cpgFile = new File(cpgconfig.outputPath)
           println(s"\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n")
         }
@@ -163,10 +164,10 @@ object PythonProcessor {
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
-    val cpgOutputPath          = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
+    val cpgOutputPath          = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
 
     // Create the .privado folder if not present
-    createCpgFolder();
+    createCpgFolder(sourceRepoLocation);
 
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(Paths.get(cpgOutputPath), absoluteSourceLocation, File(".venv").path, true)
