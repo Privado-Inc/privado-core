@@ -201,11 +201,12 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
       if (
         TaggerCache
           .typeDeclMemberCache(typeDeclName)
-          .nonEmpty && TaggerCache.typeDeclMemberCache(typeDeclName).contains(ruleInfo.id)
+          .nonEmpty
+        // && TaggerCache.typeDeclMemberCache(typeDeclName).contains(ruleInfo.id)
       ) {
         TaggerCache
           .typeDeclMemberCache(typeDecl.fullName)
-          .addOne(ruleInfo.id -> TaggerCache.typeDeclMemberCache(typeDeclName).get(ruleInfo.id).get)
+          .addAll(TaggerCache.typeDeclMemberCache(typeDeclName))
         // To Mark all field Access and getters
         tagAllFieldAccessAndGetters(
           builder,
