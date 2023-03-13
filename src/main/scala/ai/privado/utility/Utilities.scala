@@ -144,8 +144,8 @@ object Utilities {
     var specialNonTaintDefaultSemantics  = List[String]()
     var customStringSemantics            = List[String]()
     var customNonPersonalMemberSemantics = List[String]()
-    val lang = MetricHandler.metricsData("language")
-    val isPython = lang.toString().contains(Languages.PYTHONSRC)
+    val lang                             = MetricHandler.metricsData("language")
+    val isPython                         = lang.toString().contains(Languages.PYTHONSRC)
 
     if (!ScanProcessor.config.disableRunTimeSemantics) {
       customNonTaintDefaultSemantics = nonTaintingMethods
