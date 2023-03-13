@@ -28,16 +28,18 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
+import ai.privado.languageEngine.java.tagger.source.Utility._
 
 import java.util.UUID
 import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
+  implicit val resolver: ICallResolver                      = NoResolve
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE     = UUID.randomUUID.toString
@@ -127,46 +129,8 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
             )
           })
 
-        // To mark all the field access
-        implicit val resolver: ICallResolver = NoResolve
-
-        val impactedGetters = cpg.method
-          .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
-          .callIn
-          .where(_.argument(1).isIdentifier.typeFullName(typeDeclVal))
-          .where(_.argument(2).code(memberNameRegex).filterNot(item => item.code.equals(item.code.toUpperCase)))
-          // .where(_.inAst.isMethod.name("get.*"))
-          .l
-
-        impactedGetters.foreach(impactedGetter => {
-          if (impactedGetter.tag.nameExact(Constants.id).l.isEmpty) {
-            storeForTag(builder, impactedGetter)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
-            addRuleTags(builder, impactedGetter, ruleInfo)
-          }
-        })
-
-        val impactedReturnMethods = cpg.typeDecl
-          .where(_.fullName(typeDeclVal))
-          .method
-          .block
-          .astChildren
-          .isReturn
-          .code("(?i).*" + {
-            TaggerCache
-              .typeDeclMemberCache(typeDeclVal)
-              .get(ruleInfo.id) match {
-              case Some(a) => a.name
-              case _       => "Member not found"
-            }
-          } + ".*")
-          .method
-          .callIn
-          .l
-
-        impactedReturnMethods.foreach(impactedReturnCall => {
-          storeForTag(builder, impactedReturnCall)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id)
-        })
-
+        // To Mark all field Access and getters
+        tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
       })
 
     if (ScanProcessor.config.disable2ndLevelClosure) {
@@ -189,6 +153,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     memberType: String,
     ruleInfo: RuleInfo
   ): Unit = {
+    // stores tuple(Member, TypeDeclFullName)
     val typeDeclHavingMemberTypeTuple =
       cpg.typeDecl.member.typeFullName(memberType).map(member => (member, member.typeDecl.fullName)).dedup.l
     typeDeclHavingMemberTypeTuple.foreach(typeDeclTuple => {
@@ -212,6 +177,9 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
           ruleInfo.id
         )
       })
+
+      // To Mark all field Access and getters
+      tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMember.name)
     })
   }
 
@@ -227,6 +195,26 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
 
     typeDeclsExtendingTypeName.foreach(typeDecl => {
       TaggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
+
+      if (!TaggerCache.typeDeclMemberCache.contains(typeDecl.fullName))
+        TaggerCache.typeDeclMemberCache.addOne(typeDecl.fullName -> mutable.HashMap[String, Member]())
+      if (
+        TaggerCache
+          .typeDeclMemberCache(typeDeclName)
+          .nonEmpty && TaggerCache.typeDeclMemberCache(typeDeclName).contains(ruleInfo.id)
+      ) {
+        TaggerCache
+          .typeDeclMemberCache(typeDecl.fullName)
+          .addOne(ruleInfo.id -> TaggerCache.typeDeclMemberCache(typeDeclName).get(ruleInfo.id).get)
+        // To Mark all field Access and getters
+        tagAllFieldAccessAndGetters(
+          builder,
+          typeDecl.fullName,
+          ruleInfo,
+          TaggerCache.typeDeclMemberCache(typeDeclName).get(ruleInfo.id).get.name
+        )
+      }
+
     })
 
     typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
@@ -261,5 +249,32 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         )
       })
     })
+  }
+
+  /** Function to tag all the field access operations and all the methods whose return code matches the member regex
+    * @param builder
+    * @param typeDeclVal
+    * @param memberNameRegex
+    * @param ruleInfo
+    * @param typeDeclMemberName
+    */
+  def tagAllFieldAccessAndGetters(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    typeDeclVal: String,
+    ruleInfo: RuleInfo,
+    typeDeclMemberName: String
+  ): Unit = {
+    val impactedGetters = getFieldAccessCallsMatchingRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
+      .filterNot(item => item.code.equals(item.code.toUpperCase))
+
+    impactedGetters.foreach(impactedGetter => {
+      storeForTag(builder, impactedGetter)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
+      addRuleTags(builder, impactedGetter, ruleInfo)
+    })
+
+    val impactedReturnMethods = getCallsMatchingReturnRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
+    impactedReturnMethods
+      .foreach(storeForTag(builder, _)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id))
+
   }
 }

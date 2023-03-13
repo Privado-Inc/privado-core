@@ -50,6 +50,7 @@ import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
+import scala.collection.{immutable, mutable}
 
 object Utilities {
 
@@ -178,7 +179,7 @@ object Utilities {
     logger.debug("\nCustom customStringSemantics semantics")
     customStringSemantics.foreach(logger.debug)
     logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
-    customNonPersonalMemberSemantics.foreach(logger.debug)
+    customNonPersonalMemberSemantics.foreach(println)
     logger.debug("\nCustom customSinkSemantics semantics")
     customSinkSemantics.foreach(logger.debug)
     logger.debug("\nCustom semanticFromConfig semantics")
@@ -414,41 +415,15 @@ object Utilities {
     */
   def generateNonPersonalMemberSemantics(cpg: Cpg): List[String] = {
 
-    val semanticList = ListBuffer[String]()
+    val nonPersonalMethodFullNames = cpg.tag
+      .where(_.nameExact(InternalTag.INSENSITIVE_METHOD_RETURN.toString))
+      .call
+      .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
+      .methodFullName
+      .dedup
+      .l
 
-    TaggerCache.typeDeclMemberCache.keys.foreach(typeDeclValue => {
-      val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
-      val allMembers         = typeDeclNode.member.name.toSet
-      val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
-      val nonPersonalMembers = allMembers.diff(personalMembers)
-
-      val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
-      if (nonPersonalMembersRegex.nonEmpty) {
-        // Below same regex is repeated in IdentifierNonMemberTagger-->runOnPart
-        val nonPersonalMethodFullNames = typeDeclNode.method.block.astChildren.isReturn
-          .code(s"return (?i)(this.)?($nonPersonalMembersRegex)(;)?")
-          .method
-          .callIn
-          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
-          .methodFullName
-          .dedup
-          .l ++ cpg.identifier
-          .typeFullName(typeDeclValue)
-          .astParent
-          .isCall
-          .name(s"(?i)(get|is)($nonPersonalMembersRegex)")
-          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
-          .methodFullName
-          .dedup
-          .l
-
-        nonPersonalMethodFullNames.dedup.foreach(methodName => {
-          semanticList.addOne(generateNonTaintSemantic(methodName))
-        })
-
-      }
-    })
-    semanticList.toList
+    nonPersonalMethodFullNames.map(methodName => generateNonTaintSemantic(methodName)).sorted
   }
 
   /** Returns a domain for a given url string
