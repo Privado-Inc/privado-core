@@ -168,9 +168,9 @@ object JavaProcessor {
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Create the .privado folder if not present
-    createCpgFolder();
+    createCpgFolder(sourceRepoLocation);
 
-    val cpgOutputPath = s"${Paths.get(".").toAbsolutePath}/$outputDirectoryName/$cpgOutputFileName"
+    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
     cpgconfig = Config(
       inputPath = sourceRepoLocation,
       outputPath = cpgOutputPath,
