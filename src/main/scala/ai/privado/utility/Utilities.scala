@@ -179,7 +179,7 @@ object Utilities {
     logger.debug("\nCustom customStringSemantics semantics")
     customStringSemantics.foreach(logger.debug)
     logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
-    customNonPersonalMemberSemantics.foreach(println)
+    customNonPersonalMemberSemantics.foreach(logger.debug)
     logger.debug("\nCustom customSinkSemantics semantics")
     customSinkSemantics.foreach(logger.debug)
     logger.debug("\nCustom semanticFromConfig semantics")

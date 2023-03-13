@@ -198,12 +198,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
 
       if (!TaggerCache.typeDeclMemberCache.contains(typeDecl.fullName))
         TaggerCache.typeDeclMemberCache.addOne(typeDecl.fullName -> mutable.HashMap[String, Member]())
-      if (
-        TaggerCache
-          .typeDeclMemberCache(typeDeclName)
-          .nonEmpty
-        // && TaggerCache.typeDeclMemberCache(typeDeclName).contains(ruleInfo.id)
-      ) {
+      if (TaggerCache.typeDeclMemberCache(typeDeclName).nonEmpty) {
         TaggerCache
           .typeDeclMemberCache(typeDecl.fullName)
           .addAll(TaggerCache.typeDeclMemberCache(typeDeclName))
@@ -212,7 +207,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
           builder,
           typeDecl.fullName,
           ruleInfo,
-          TaggerCache.typeDeclMemberCache(typeDeclName).get(ruleInfo.id).get.name
+          TaggerCache.typeDeclMemberCache(typeDeclName)(ruleInfo.id).name
         )
       }
 

@@ -62,10 +62,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    println(s"${Calendar.getInstance().getTime} - --IdentifierTagger Non Member tagger invoked...")
+    println(s"${Calendar.getInstance().getTime} - --InSensitive call tagger invoked...")
     new InSensitiveCallTagger(cpg).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --IdentifierTagger Non Member is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --InSensitive call tagger is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
