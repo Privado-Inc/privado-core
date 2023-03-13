@@ -93,6 +93,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
     val membersAndValues = annotatedMembers()
 
     membersAndValues
+      .filter(_._1 != null)
       .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
       .foreach { case (_, value) =>
         builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
@@ -118,7 +119,13 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   private def annotatedMembers() = cpg.annotation
     .fullName(".*Value.*")
     .where(_.member)
-    .map { x => (x.parameterAssign.head, x.member.head) }
+    .map { x =>
+      {
+        val param = if (x.parameterAssign.l.length > 0) { x.parameterAssign.head }
+        else { null }
+        (param, x.member.head)
+      }
+    }
     .l
   private def getMember(member: String, className: String) =
     cpg.member.where(_.typeDecl.fullName(className)).where(_.name(member)).toList
