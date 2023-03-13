@@ -23,7 +23,12 @@
 
 package ai.privado.exporter
 
-import ai.privado.model.exporter.{CollectionModel, CollectionOccurrenceDetailModel, CollectionOccurrenceModel, DataFlowSubCategoryPathExcerptModel}
+import ai.privado.model.exporter.{
+  CollectionModel,
+  CollectionOccurrenceDetailModel,
+  CollectionOccurrenceModel,
+  DataFlowSubCategoryPathExcerptModel
+}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Method, MethodParameterIn}
