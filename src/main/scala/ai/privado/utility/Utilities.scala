@@ -417,8 +417,13 @@ object Utilities {
     val semanticList = ListBuffer[String]()
 
     TaggerCache.typeDeclMemberCache.keys.foreach(typeDeclValue => {
-      val typeDeclNode       = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
-      val allMembers         = typeDeclNode.member.name.toSet
+      val typeDeclNode = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
+      // Need to considers members of classes which inherits via extends/implements, as hence are also a member
+      val inheritedMembers =
+        typeDeclNode.inheritsFromTypeFullName
+          .flatMap(inheritFullName => cpg.typeDecl.fullName(inheritFullName).member.name.toSet)
+          .toSet
+      val allMembers         = typeDeclNode.member.name.toSet ++ inheritedMembers
       val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
       val nonPersonalMembers = allMembers.diff(personalMembers)
 
