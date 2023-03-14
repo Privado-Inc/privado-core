@@ -31,6 +31,13 @@ import io.shiftleft.semanticcpg.language._
 
 object Utility {
 
+  /** For a given Type declaration full name, and the member name regex, look for all the methods which returns and
+    * matches the memberRegex provided and return the call nodes for them
+    * @param cpg
+    * @param typeDeclFullName
+    * @param regexString
+    * @return
+    */
   def getCallsMatchingReturnRegex(cpg: Cpg, typeDeclFullName: String, regexString: String): List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
 
@@ -51,6 +58,14 @@ object Utility {
       .l
   }
 
+  /** For a given Type declaration full name, and the member name regex, look for all the field access operation where
+    * the identifier is of type (typeFullName) and is operating on the memberRegex like code
+    *
+    * @param cpg
+    * @param typeDeclFullName
+    * @param regexString
+    * @return
+    */
   def getFieldAccessCallsMatchingRegex(cpg: Cpg, typeDeclFullName: String, regexString: String): List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
     cpg.method
@@ -61,6 +76,13 @@ object Utility {
       .l
   }
 
+  /** For a given TypeDecl full name fetch all the members and segregate them as Personal and nonPersonal members
+    *
+    * Note - Personal members are those which match the source rule
+    * @param cpg
+    * @param typeDeclFullName
+    * @return
+    */
   def getPersonalNonPersonalMembers(cpg: Cpg, typeDeclFullName: String): (Set[String], Set[String]) = {
     val typeDeclNode = cpg.typeDecl.where(_.fullName(typeDeclFullName)).l
     val inheritedMembers =
@@ -69,7 +91,7 @@ object Utility {
         .toSet
     val allMembers = typeDeclNode.member.name.toSet ++ inheritedMembers
 
-    val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclFullName).values.name.toSet
+    val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclFullName).flatMap(_._2).name.toSet
     val nonPersonalMembers = allMembers.diff(personalMembers)
     (personalMembers, nonPersonalMembers)
   }

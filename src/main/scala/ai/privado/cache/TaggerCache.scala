@@ -31,12 +31,25 @@ import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 object TaggerCache {
   // Stores typeDeclFullName --> ( sourceRuleId --->  Member Node)
-  val typeDeclMemberCache = new ConcurrentHashMap[String, mutable.HashMap[String, Member]]().asScala
+  val typeDeclMemberCache = new ConcurrentHashMap[String, mutable.HashMap[String, mutable.HashSet[Member]]]().asScala
 
   // Stores typeDeclFullName --> ( sourceRuleId --->  Extending TypeDecl Node)
   val typeDeclExtendingTypeDeclCache = mutable.HashMap[String, mutable.HashMap[String, TypeDecl]]()
 
   // Stores typeDeclFullName --> TypeDeclNode
   val typeDeclDerivedByExtendsCache = mutable.HashMap[String, TypeDecl]()
+
+  /** Checks and add item to Type decl member cache
+    * @param typeDeclVal
+    * @param ruleId
+    * @param typeDeclMember
+    */
+  def addItemToTypeDeclMemberCache(typeDeclVal: String, ruleId: String, typeDeclMember: Member): Unit = {
+    if (!TaggerCache.typeDeclMemberCache.contains(typeDeclVal))
+      TaggerCache.typeDeclMemberCache.addOne(typeDeclVal -> mutable.HashMap[String, mutable.HashSet[Member]]())
+    if (!TaggerCache.typeDeclMemberCache(typeDeclVal).contains(ruleId))
+      TaggerCache.typeDeclMemberCache(typeDeclVal).addOne(ruleId -> mutable.HashSet())
+    TaggerCache.typeDeclMemberCache(typeDeclVal)(ruleId).addOne(typeDeclMember)
+  }
 
 }

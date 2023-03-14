@@ -49,13 +49,19 @@ object ExporterUtility {
       ) {
         val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
         // Going 1 level deep for derived sources to add extra nodes
-        TaggerCache.typeDeclMemberCache.getOrElse(typeFullName, mutable.HashMap[String, Member]()).get(sourceId) match {
-          case Some(member) =>
+        TaggerCache.typeDeclMemberCache
+          .getOrElse(typeFullName, mutable.HashMap[String, mutable.HashSet[Member]]())
+          .get(sourceId) match {
+          case Some(members) =>
+            // Picking up only the head as any path to base is sufficient
+            val member             = members.head
             val typeFullNameLevel2 = member.typeFullName
             TaggerCache.typeDeclMemberCache
-              .getOrElse(typeFullNameLevel2, mutable.HashMap[String, Member]())
+              .getOrElse(typeFullNameLevel2, mutable.HashMap[String, mutable.HashSet[Member]]())
               .get(sourceId) match {
-              case Some(member2) =>
+              case Some(member2Set) =>
+                // Picking up only the head as any path to base is sufficient
+                val member2 = member2Set.head
                 // Going 2 level deep for derived sources to add extra nodes
                 convertIndividualPathElement(
                   member2,
@@ -77,9 +83,11 @@ object ExporterUtility {
               .get(sourceId) match {
               case Some(typeDecl) => // Fetching information for the 2nd level member node
                 TaggerCache.typeDeclMemberCache
-                  .getOrElse(typeDecl.fullName, mutable.HashMap[String, Member]())
+                  .getOrElse(typeDecl.fullName, mutable.HashMap[String, mutable.HashSet[Member]]())
                   .get(sourceId) match {
-                  case Some(member) =>
+                  case Some(members) =>
+                    // Picking up only the head as any path to base is sufficient
+                    val member = members.head
                     val currentTypeDeclNode = // Fetching the current TypeDecl node
                       TaggerCache.typeDeclDerivedByExtendsCache.get(typeFullName)
                     convertIndividualPathElement(
