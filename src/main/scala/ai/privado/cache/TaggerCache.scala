@@ -26,11 +26,12 @@ package ai.privado.cache
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 
 import scala.collection.mutable
+import java.util.concurrent.ConcurrentHashMap
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 object TaggerCache {
-
   // Stores typeDeclFullName --> ( sourceRuleId --->  Member Node)
-  val typeDeclMemberCache = mutable.HashMap[String, mutable.HashMap[String, Member]]()
+  val typeDeclMemberCache = new ConcurrentHashMap[String, mutable.HashMap[String, Member]]().asScala
 
   // Stores typeDeclFullName --> ( sourceRuleId --->  Extending TypeDecl Node)
   val typeDeclExtendingTypeDeclCache = mutable.HashMap[String, mutable.HashMap[String, TypeDecl]]()
