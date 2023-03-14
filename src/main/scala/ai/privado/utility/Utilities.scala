@@ -71,9 +71,9 @@ object Utilities {
     builder
   }
 
-  def createCpgFolder(): Unit = {
-    if (!Files.exists(Paths.get(outputDirectoryName))) {
-      Files.createDirectory(Paths.get(outputDirectoryName));
+  def createCpgFolder(sourceRepoLocation: String): Unit = {
+    if (!Files.exists(Paths.get(s"$sourceRepoLocation/$outputDirectoryName"))) {
+      Files.createDirectory(Paths.get(s"$sourceRepoLocation/$outputDirectoryName"));
     }
   }
 
