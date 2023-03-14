@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language._
 
 class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
 
@@ -28,11 +29,11 @@ class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaPropert
     } catch {
       case e: Exception => logger.debug("Exception while processing db config: " + e)
     }
+
   }
 
   private def parsePropForDynamoDB(dbUrl: JavaProperty): Unit = {
     // Example dynamodb url :- https://dynamodb.<region>.amazonaws.com/<table-name>
-
     val dbVendor   = "dynamodb"
     val dbLocation = dbUrl.value.split("\\.")(1)
     val dbName     = dbUrl.value.split("/").last
@@ -86,5 +87,4 @@ class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaPropert
     )
 
   }
-
 }

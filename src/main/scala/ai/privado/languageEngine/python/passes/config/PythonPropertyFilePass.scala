@@ -6,7 +6,7 @@ import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
-import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
+import io.shiftleft.passes.{ForkJoinParallelCpgPass}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import io.circe.yaml.parser
 import com.github.wnameless.json.flattener.JsonFlattener
-import io.shiftleft.codepropertygraph.generated.traversal.toJavaPropertyTraversalExtGen
+import com.typesafe.config._
 
 import scala.io.Source
 
@@ -38,8 +38,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): List[NewJavaProperty] = {
     Try {
-      getDotenvKeyValuePairs(file)
-
+      obtainKeyValuePairs(file).filter(pair => pair._1.size > 0 && pair._2.size > 0)
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
@@ -54,11 +53,21 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     }
   }
 
+  private def obtainKeyValuePairs(file: String): List[(String, String)] = {
+    if (file.endsWith(".conf")) {
+      parseConfFiles(file)
+    } else if (file.endsWith(".ini")) {
+      parseINIFiles(file)
+    } else {
+      getDotenvKeyValuePairs(file)
+    }
+  }
+
   private def getDotenvKeyValuePairs(file: String): List[(String, String)] = {
     val envProps = new Properties()
     Source
       .fromFile(file)
-      .getLines
+      .getLines()
       .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
       .foreach(line => {
         val Array(key, value) = line.split("=", 2)
@@ -89,6 +98,22 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     fileNode
   }
 
+  private def parseINIFiles(filePath: String): List[(String, String)] = {
+    val fileContent = Source.fromFile(filePath).getLines().mkString("\n")
+    val iniFormat   = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.PROPERTIES)
+
+    getAllProperties(ConfigFactory.parseString(fileContent, iniFormat))
+  }
+
+  private def parseConfFiles(filePath: String): List[(String, String)] = {
+    getAllProperties(ConfigFactory.load(filePath))
+  }
+
+  private def getAllProperties(config: Config): List[(String, String)] = {
+    val entries = config.entrySet().asScala.toList
+    entries.map(entry => (entry.getKey, entry.getValue.unwrapped.toString)).toList
+  }
+
   private def connectGetEnvironLiterals(
     propertyNode: NewJavaProperty,
     builder: BatchedUpdate.DiffGraphBuilder
@@ -104,6 +129,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
+    println(key, value)
     val propertyNode = NewJavaProperty().name(key).value(value)
     builder.addNode(propertyNode)
     propertyNode
