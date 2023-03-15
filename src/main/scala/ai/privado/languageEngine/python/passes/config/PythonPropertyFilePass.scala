@@ -1,22 +1,17 @@
 package ai.privado.languageEngine.python.passes.config
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
-import io.shiftleft.passes.{ForkJoinParallelCpgPass}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewFile, NewJavaProperty}
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
-import overflowdb.traversal._
 
 import scala.jdk.CollectionConverters._
 import java.util.Properties
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
-import io.circe.yaml.parser
-import com.github.wnameless.json.flattener.JsonFlattener
 import com.typesafe.config._
 
 import scala.io.Source
@@ -27,8 +22,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
-
-    val fileNode      = addFileNode(file, builder);
+    val fileNode      = addFileNode(file, builder)
     val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
     propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
   }
@@ -38,7 +32,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): List[NewJavaProperty] = {
     Try {
-      obtainKeyValuePairs(file).filter(pair => pair._1.size > 0 && pair._2.size > 0)
+      obtainKeyValuePairs(file).filter(pair => pair._1.nonEmpty && pair._2.nonEmpty)
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
@@ -111,7 +105,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
 
   private def getAllProperties(config: Config): List[(String, String)] = {
     val entries = config.entrySet().asScala.toList
-    entries.map(entry => (entry.getKey, entry.getValue.unwrapped.toString)).toList
+    entries.map(entry => (entry.getKey, entry.getValue.unwrapped.toString))
   }
 
   private def connectGetEnvironLiterals(
@@ -129,7 +123,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
-    println(key, value)
     val propertyNode = NewJavaProperty().name(key).value(value)
     builder.addNode(propertyNode)
     propertyNode

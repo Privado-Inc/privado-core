@@ -158,7 +158,6 @@ object PythonProcessor {
     lang: String
   ): Either[String, Unit] = {
 
-    println("Inside create python cpg")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
