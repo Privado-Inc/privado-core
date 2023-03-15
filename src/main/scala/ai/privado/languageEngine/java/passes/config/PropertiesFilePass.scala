@@ -218,7 +218,6 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
               val propertyNode = NewJavaProperty().name(result._1).value(result._2)
               val member       = members.head
               if (member != null) {
-                println(propertyNode.name, member.name)
                 builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
                 builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY);
               }
