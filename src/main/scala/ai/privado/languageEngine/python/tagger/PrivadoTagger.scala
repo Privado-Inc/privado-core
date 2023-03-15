@@ -40,10 +40,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    println(s"${Calendar.getInstance().getTime} - --DBConfig Tagger invoked...")
+    println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
     new PythonDBConfigTagger(cpg).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --DBConfig Tagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
