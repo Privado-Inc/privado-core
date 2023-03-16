@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.tagger.source
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
@@ -37,7 +37,7 @@ import ai.privado.languageEngine.java.tagger.source.Utility._
 import java.util.UUID
 import scala.collection.mutable
 
-class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class IdentifierTagger(cpg: Cpg, privadoScanConfig: PrivadoInput) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   implicit val resolver: ICallResolver                              = NoResolve
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
@@ -131,7 +131,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
       })
 
-    if (ScanProcessor.config.disable2ndLevelClosure) {
+    if (privadoScanConfig.disable2ndLevelClosure) {
       typeDeclWithMemberNameHavingMemberName
         .distinctBy(_._1.fullName)
         .foreach(typeDeclValEntry => {

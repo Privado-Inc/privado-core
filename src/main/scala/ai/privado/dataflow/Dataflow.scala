@@ -45,7 +45,7 @@ class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = Utilities.getSemantics(cpg), config = EngineConfig(4))
+    EngineContext(semantics = Utilities.getSemantics(cpg, ScanProcessor.config), config = EngineConfig(4))
 
   /** Compute the flow of data from tagged Sources to Sinks
     * @return

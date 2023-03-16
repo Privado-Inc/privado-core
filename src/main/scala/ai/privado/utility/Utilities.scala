@@ -23,7 +23,7 @@
 package ai.privado.utility
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.ConsoleExporter.logger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
@@ -130,7 +130,7 @@ object Utilities {
     *   \- cpg for adding customSemantics
     * @return
     */
-  def getSemantics(cpg: Cpg): Semantics = {
+  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput): Semantics = {
     val customSinkSemantics = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .methodFullName
@@ -145,7 +145,7 @@ object Utilities {
     var customStringSemantics            = List[String]()
     var customNonPersonalMemberSemantics = List[String]()
 
-    if (!ScanProcessor.config.disableRunTimeSemantics) {
+    if (!privadoScanConfig.disableRunTimeSemantics) {
       customNonTaintDefaultSemantics = nonTaintingMethods
         .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
         .fullName
