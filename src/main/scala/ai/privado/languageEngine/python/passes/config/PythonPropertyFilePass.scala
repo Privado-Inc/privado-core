@@ -13,11 +13,13 @@ import java.util.Properties
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import com.typesafe.config._
+import java.io.File
 
 import scala.io.Source
 
 class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
-  override def generateParts(): Array[String] = configFiles(projectRoot, Set(".ini", ".yml", ".yaml", ".env")).toArray
+  override def generateParts(): Array[String] =
+    configFiles(projectRoot, Set(".ini", ".yml", ".yaml", ".env")).toArray
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -36,6 +38,12 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
+
+        println("All the properties detected..")
+        for (propertyNode <- propertyNodes) {
+          println(s"${propertyNode.name} = ${propertyNode.value}")
+        }
+
         propertyNodes.foreach(propertyNode => {
           connectGetEnvironLiterals(propertyNode, builder)
         })
@@ -81,9 +89,32 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   }
 
   private def configFiles(projectRoot: String, extensions: Set[String]): List[String] = {
+
+    def getListOfFiles(dir: String): List[File] = {
+      val d = new File(dir)
+      if (d.exists && d.isDirectory) {
+        d.listFiles.filter(_.isFile).toList
+      } else {
+        List[File]()
+      }
+    }
+
+    val configFileList = SourceFiles
+      .determine(Set(projectRoot), extensions)
+      .filter(Utilities.isFileProcessable)
+      .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
+      .distinct
+
+    println("Config files detected are..")
+    for (file <- configFileList) {
+      println(file)
+    }
+
     SourceFiles
       .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
+      .concat(getListOfFiles(projectRoot).map(f => f.getName).filter(_.matches(".*\\.env.*")))
+      .distinct
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
@@ -113,6 +144,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
     matchEnvironGetCalls(propertyNode.name.strip()).foreach(lit => {
+      println(s"Edge added for property ${propertyNode.name}")
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     })
