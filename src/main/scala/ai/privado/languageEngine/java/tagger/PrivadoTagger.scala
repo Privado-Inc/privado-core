@@ -45,7 +45,7 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(rules: ConfigAndRules, privadoScanConfig: PrivadoInput): Traversal[Tag] = {
+  override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
 
     logger.info("Starting tagging")
     val sourceRules = rules.sources
@@ -57,7 +57,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     )
 
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
-    new IdentifierTagger(cpg, privadoScanConfig).createAndApply()
+    new IdentifierTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
