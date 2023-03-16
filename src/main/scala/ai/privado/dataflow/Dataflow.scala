@@ -26,8 +26,8 @@ package ai.privado.dataflow
 import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
+import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -45,7 +45,7 @@ class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = Utilities.getSemantics(cpg, ScanProcessor.config), config = EngineConfig(4))
+    EngineContext(semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config), config = EngineConfig(4))
 
   /** Compute the flow of data from tagged Sources to Sinks
     * @return

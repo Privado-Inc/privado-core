@@ -23,17 +23,19 @@
 
 package ai.privado.languageEngine.java
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
-import ai.privado.utility.Utilities
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 
 class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   val privadoScanConfig: PrivadoInput = PrivadoInput()
+  var semantics: Semantics            = Semantics.empty
   override def beforeAll(): Unit = {
     super.beforeAll()
     new IdentifierTagger(cpg, privadoScanConfig).createAndApply()
     new InSensitiveCallTagger(cpg).createAndApply()
+    semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig)
   }
   override val javaFileContents =
     """
@@ -64,23 +66,19 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   "Semantic generated for 1st Level derivation" should {
     "have non-personal semantics for 2nd Level class by extends" in {
-      val semantics = Utilities.getSemantics(cpg, privadoScanConfig)
       semantics.elements.contains(FlowSemantic("User.getAmount:int()", List())) shouldBe true
       semantics.elements.contains(FlowSemantic("User.getId:java.lang.String()", List())) shouldBe true
     }
 
     "not have personal semantics for 2nd Level class by extends" in {
-      val semantics = Utilities.getSemantics(cpg, privadoScanConfig)
       semantics.elements.contains(FlowSemantic("User.getFirstName:java.lang.String()", List())) shouldBe false
     }
 
     "have non-personal semantics for 1st Level class" in {
-      val semantics = Utilities.getSemantics(cpg, privadoScanConfig)
       semantics.elements.contains(FlowSemantic("BaseClass.getId:java.lang.String()", List())) shouldBe true
     }
 
     "not have personal semantics for 1st Level class" in {
-      val semantics = Utilities.getSemantics(cpg, privadoScanConfig)
       semantics.elements.contains(FlowSemantic("BaseClass.getFirstName:java.lang.String()", List())) shouldBe false
     }
 
