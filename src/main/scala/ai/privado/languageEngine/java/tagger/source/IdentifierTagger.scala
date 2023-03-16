@@ -194,9 +194,9 @@ class IdentifierTagger(cpg: Cpg, privadoScanConfig: PrivadoInput) extends ForkJo
 
       TaggerCache
         .typeDeclMemberCache(typeDeclName)
+        .filter(_._1.equals(ruleInfo.id))
         .foreach(entrySet => {
           val sourceRuleId = entrySet._1
-          // TODO Try optimizing this for only for the ruleId for which we are running runOnPart
           entrySet._2.foreach(TaggerCache.addItemToTypeDeclMemberCache(typeDecl.fullName, sourceRuleId, _))
         })
       // To Mark all field Access and getters
