@@ -13,13 +13,14 @@ import java.util.Properties
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language._
 import com.typesafe.config._
-import java.io.File
 
+import java.io.File
 import scala.io.Source
 
 class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
-  override def generateParts(): Array[String] =
+  override def generateParts(): Array[String] = {
     configFiles(projectRoot, Set(".ini", ".yml", ".yaml", ".env")).toArray
+  }
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -72,7 +73,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .getLines()
       .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
       .foreach(line => {
-        val Array(key, value) = line.split("=", 2)
+        val Array(key, value) = line.split("=", 2);
         envProps.setProperty(key, value)
       })
 
@@ -84,7 +85,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   private def matchEnvironGetCalls(propertyName: String): List[Literal] = {
     cpg.literal
       .codeExact("\"" + propertyName + "\"")
-      .where(_.inCall.methodFullName(".*environ.get"))
+      .where(_.inCall.methodFullName(".*\\(?environ\\)?\\.get"))
       .l
   }
 
@@ -103,7 +104,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
       .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
-      .distinct
 
     println("Config files detected are..")
     for (file <- configFileList) {
@@ -113,8 +113,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     SourceFiles
       .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
-      .concat(getListOfFiles(projectRoot).map(f => f.getName).filter(_.matches(".*\\.env.*")))
-      .distinct
+      .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
