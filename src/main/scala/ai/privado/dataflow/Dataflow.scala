@@ -24,7 +24,7 @@
 package ai.privado.dataflow
 
 import ai.privado.cache.{AppCache, DataFlowCache}
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants}
@@ -51,7 +51,7 @@ class Dataflow(cpg: Cpg) {
     * @return
     *   \- Map of PathId -> Path corresponding to source to sink path
     */
-  def dataflow: Map[String, Path] = {
+  def dataflow(privadoScanConfig: PrivadoInput): Map[String, Path] = {
 
     logger.info("Generating dataflow")
     val sources = getSources
@@ -64,7 +64,21 @@ class Dataflow(cpg: Cpg) {
       Map[String, Path]()
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
-      val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+      val dataflowPathsUnfiltered = {
+        if (privadoScanConfig.disable2ndLevelClosure)
+          sinks.reachableByFlows(sources).l
+        else {
+          // If 2nd level is turned off then dataflows for storages should consider Derived Sources also, but for rest only Sources
+          val nonStorageSources =
+            sources.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+          val nonStorageSinks = sinks.whereNot(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
+          val storageSinks    = sinks.where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
+
+          val nonStorageFlows = nonStorageSinks.reachableByFlows(nonStorageSources).toSet
+          val storageFlows    = storageSinks.reachableByFlows(sources).toSet
+          (nonStorageFlows ++ storageFlows).l
+        }
+      }
 
       if (ScanProcessor.config.testOutput) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
