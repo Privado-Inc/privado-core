@@ -55,6 +55,10 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
         parsePropForSpringJDBCAndJPA(dbUrl)
       } else if (dbUrl.value.contains("mongodb")) {
         parsePropForSpringDataMongo(dbUrl)
+      } else if (dbUrl.name.contains("neo4j.host") && dbUrl.value.matches("(localhost|[^{]*\\..*\\.[^}]*)")) {
+        parsePropForNeo4jNativeDriver(dbUrl)
+      } else if (dbUrl.name.contains("neo4j.driver.uri")) {
+        parsePropForNeo4jSpringBootDriver(dbUrl)
       }
     } catch {
       case e: Exception => logger.debug("Exception while processing db config: " + e)
@@ -184,6 +188,37 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
       "Storages.SpringFramework.Jooq"
+    )
+  }
+
+  private def parsePropForNeo4jNativeDriver(dbUrl: JavaProperty): Unit = {
+    val dbVendor   = "bolt"
+    val dbLocation = dbUrl.value
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails("Neo4j Graph Database(Read)", dbVendor, dbLocation, "Read"),
+      "Storages.Neo4jGraphDatabase.Read"
+    )
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails("Neo4j Graph Database(Write)", dbVendor, dbLocation, "Write"),
+      "Storages.Neo4jGraphDatabase.Write"
+    )
+  }
+
+  private def parsePropForNeo4jSpringBootDriver(dbUrl: JavaProperty): Unit = {
+    val dbVendor   = dbUrl.value.split(":")(0)
+    val dbLocation = dbUrl.value.split("/")(2)
+    // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails("Neo4j Graph Database(Read)", dbVendor, dbLocation, "Read"),
+      "Storages.Neo4jGraphDatabase.Read"
+    )
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails("Neo4j Graph Database (Write)", dbVendor, dbLocation, "Write"),
+      "Storages.Neo4jGraphDatabase.Write"
     )
   }
 
