@@ -194,14 +194,20 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
   private def parsePropForNeo4jNativeDriver(dbUrl: JavaProperty): Unit = {
     val dbVendor   = "bolt"
     val dbLocation = dbUrl.value
+    val dbName = "Neo4j Graph Database"
 
     DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails("Neo4j Graph Database(Read)", dbVendor, dbLocation, "Read"),
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
+      "Storages.Neo4jGraphDatabase"
+    )
+    
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
       "Storages.Neo4jGraphDatabase.Read"
     )
 
     DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails("Neo4j Graph Database(Write)", dbVendor, dbLocation, "Write"),
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
       "Storages.Neo4jGraphDatabase.Write"
     )
   }
@@ -210,14 +216,20 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
     val dbVendor   = dbUrl.value.split(":")(0)
     val dbLocation = dbUrl.value.split("/")(2)
     // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
+    val dbName = "Neo4j Graph Database"
 
     DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails("Neo4j Graph Database(Read)", dbVendor, dbLocation, "Read"),
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
+      "Storages.Neo4jGraphDatabase"
+    )
+    
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
       "Storages.Neo4jGraphDatabase.Read"
     )
 
     DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails("Neo4j Graph Database (Write)", dbVendor, dbLocation, "Write"),
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
       "Storages.Neo4jGraphDatabase.Write"
     )
   }
