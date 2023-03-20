@@ -266,7 +266,7 @@ object JSONExporter {
     repoPath: String,
     dataflows: List[DataFlowSourceIntermediateModel]
   ): Either[String, Unit] = {
-    logger.info("Initialed the Intermediate exporter engine")
+    logger.info("Initiated the Intermediate exporter engine")
     val output = mutable.LinkedHashMap[String, Json]()
     try {
       output.addOne(Constants.dataFlow -> dataflows.asJson)

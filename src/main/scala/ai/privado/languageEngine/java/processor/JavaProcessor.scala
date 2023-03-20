@@ -23,16 +23,19 @@
 
 package ai.privado.languageEngine.java.processor
 
+import ai.privado.audit.auditProcessor
 import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
+import ai.privado.exporter.ExcelExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{
   cpgOutputFileName,
+  outputAuditFileName,
   outputDirectoryName,
   outputFileName,
   outputIntermediateFileName,
@@ -107,6 +110,10 @@ object JavaProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting Results
+          if (ScanProcessor.config.generateAuditReport) {
+            ExcelExporter.auditExport(outputAuditFileName, auditProcessor.processTagMember(xtocpg), sourceRepoLocation)
+          }
+
           if (ScanProcessor.config.testOutput) {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
