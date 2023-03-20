@@ -74,7 +74,12 @@ class Dataflow(cpg: Cpg) {
           val pathId   = DuplicateFlowProcessor.calculatePathId(path)
           var sourceId = ""
           if (path.elements.head.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name).nonEmpty) {
-            sourceId = path.elements.head.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+            sourceId = path.elements.head.tag
+              .nameExact(Constants.id)
+              .valueNot(Constants.privadoDerived + ".*")
+              .value
+              .headOption
+              .getOrElse("")
           } else {
             sourceId = Traversal(path.elements.head).isIdentifier.typeFullName.headOption.getOrElse("")
           }
