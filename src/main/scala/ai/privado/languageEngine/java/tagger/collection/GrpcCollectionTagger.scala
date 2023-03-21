@@ -35,8 +35,24 @@ class GrpcCollectionTagger(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit = {
 
-    val grpcCollectionPoints = cpg.method
-      .where(_.call.name("onCompleted")) // grpc server always call this in handler when grpc-java is used
+    /* We try to see if onCompleted call is there since this is called by methods that are
+    handling the grpc calls when grpc-java is used. We further check if its called from a
+    StreamObserver object. For eg. in the following case,
+
+      public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
+      ...
+      foo.onNext()
+      foo.onCompleted();
+      }
+
+    we aim to find if foo's type is StreamObserver and then return the sayHello method as the
+    GRPC collection point since it handles the request
+     */
+    val grpcCollectionPoints = cpg.call
+      .name("onCompleted")
+      .filter(_.argument.size == 1)
+      .where(_.argument.typ.fullName(".*StreamObserver.*"))
+      .method
       .l
 
     grpcCollectionPoints.foreach(collectionPoint => {
