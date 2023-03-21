@@ -27,23 +27,23 @@ import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.NodeToProperty
+import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
-  getDefaultSemantics,
   getDomainFromString,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
 }
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identifier, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import overflowdb.traversal.Traversal
 
 object APITaggerUtility {
-  implicit val engineContext: EngineContext = EngineContext(semantics = getDefaultSemantics, config = EngineConfig(4))
+  implicit val engineContext: EngineContext =
+    EngineContext(semantics = SemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
 
   def sinkTagger(
     apiInternalSinkPattern: List[AstNode],

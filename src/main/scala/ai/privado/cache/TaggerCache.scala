@@ -26,16 +26,30 @@ package ai.privado.cache
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 
 import scala.collection.mutable
+import java.util.concurrent.ConcurrentHashMap
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
-object TaggerCache {
-
+class TaggerCache {
   // Stores typeDeclFullName --> ( sourceRuleId --->  Member Node)
-  val typeDeclMemberCache = mutable.HashMap[String, mutable.HashMap[String, Member]]()
+  val typeDeclMemberCache = new ConcurrentHashMap[String, mutable.HashMap[String, mutable.HashSet[Member]]]().asScala
 
   // Stores typeDeclFullName --> ( sourceRuleId --->  Extending TypeDecl Node)
   val typeDeclExtendingTypeDeclCache = mutable.HashMap[String, mutable.HashMap[String, TypeDecl]]()
 
   // Stores typeDeclFullName --> TypeDeclNode
   val typeDeclDerivedByExtendsCache = mutable.HashMap[String, TypeDecl]()
+
+  /** Checks and add item to Type decl member cache
+    * @param typeDeclVal
+    * @param ruleId
+    * @param typeDeclMember
+    */
+  def addItemToTypeDeclMemberCache(typeDeclVal: String, ruleId: String, typeDeclMember: Member): Unit = {
+    if (!typeDeclMemberCache.contains(typeDeclVal))
+      typeDeclMemberCache.addOne(typeDeclVal -> mutable.HashMap[String, mutable.HashSet[Member]]())
+    if (!typeDeclMemberCache(typeDeclVal).contains(ruleId))
+      typeDeclMemberCache(typeDeclVal).addOne(ruleId -> mutable.HashSet())
+    typeDeclMemberCache(typeDeclVal)(ruleId).addOne(typeDeclMember)
+  }
 
 }

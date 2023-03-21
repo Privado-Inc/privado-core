@@ -53,7 +53,9 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
 
         if (
           callNodes != null & ruleInfo.id
-            .matches("Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*")
+            .matches(
+              "Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.Neo4jGraphDatabase.*"
+            )
         ) {
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
           logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")

@@ -24,6 +24,7 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.cache.AppCache
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
@@ -80,7 +81,7 @@ object JavascriptProcessor {
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         cpg.runTagger(processedRules)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow
+        val dataflowMap = cpg.dataflow(ScanProcessor.config)
         println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
