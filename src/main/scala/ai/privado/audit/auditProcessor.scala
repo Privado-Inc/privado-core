@@ -14,13 +14,14 @@ object auditProcessor {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  // Get list of Class Name
   private def getClassName(xtocpg: Try[Cpg]): List[String] = {
     logger.info("Process Class Name from cpg")
     val sourceList = ListBuffer[String]()
     xtocpg match {
       case Success(cpg) => {
-        val i = cpg.typeDecl.filter(_.order > 0).toList
-        i.foreach(node => {
+        val typeDeclList = cpg.typeDecl.filter(_.order > 0).toList
+        typeDeclList.foreach(node => {
           if (node.head.fullName.nonEmpty) {
             sourceList += node.fullName
           }
@@ -36,6 +37,7 @@ object auditProcessor {
     sourceList.toList
   }
 
+  // Get list of member variable present in given class
   private def getMemberUsingClassName(
     xtocpg: Try[Cpg],
     classInfoList: List[String]
@@ -82,6 +84,7 @@ object auditProcessor {
     // Header List
     result += List("Class", "Member", "Tagged", "Source Rule ID")
 
+    // Construct the excel sheet and fill the data
     try {
       memberInfo.foreach {
         case (key, value) => {

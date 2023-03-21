@@ -110,8 +110,33 @@ object JavaProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting Results
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              return Left(err)
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+              )
+              logger.debug(
+                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+              )
+          }
+
           if (ScanProcessor.config.generateAuditReport) {
-            ExcelExporter.auditExport(outputAuditFileName, auditProcessor.processTagMember(xtocpg), sourceRepoLocation)
+            ExcelExporter.auditExport(
+              outputAuditFileName,
+              auditProcessor.processTagMember(xtocpg),
+              sourceRepoLocation
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                return Left(err)
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
           }
 
           if (ScanProcessor.config.testOutput) {
@@ -122,28 +147,14 @@ object JavaProcessor {
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
-                Left(err)
+                return Left(err)
               case Right(_) =>
                 println(
                   s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
-                Right(())
             }
           }
-
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-            case Left(err) =>
-              MetricHandler.otherErrorsOrWarnings.addOne(err)
-              Left(err)
-            case Right(_) =>
-              println(
-                s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
-              )
-              logger.debug(
-                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-              )
-              Right(())
-          }
+          Right(())
         } finally {
           cpg.close()
           import java.io.File
