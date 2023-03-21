@@ -25,7 +25,7 @@ package ai.privado.dataflow
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, Language, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Expression, Identifier}
@@ -329,7 +329,7 @@ object DuplicateFlowProcessor {
             )
         }
         sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
-          if (ScanProcessor.config.disableFlowSeparationByDataElement)
+          if (ScanProcessor.config.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA)
             DataFlowCache.setDataflow(
               DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
             )

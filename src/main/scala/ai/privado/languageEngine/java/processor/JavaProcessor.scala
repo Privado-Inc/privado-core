@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -56,8 +56,6 @@ import java.util.Calendar
 import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
 import better.files.File
-
-import java.nio.file.{Files, Paths}
 
 object JavaProcessor {
 
@@ -93,12 +91,13 @@ object JavaProcessor {
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          cpg.runTagger(processedRules)
+          val taggerCache = new TaggerCache
+          cpg.runTagger(processedRules, taggerCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow
+          val dataflowMap = cpg.dataflow(ScanProcessor.config)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(
@@ -124,7 +123,7 @@ object JavaProcessor {
             }
           }
 
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               Left(err)
