@@ -23,26 +23,12 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, sinkProcessing}
-import ai.privado.model.exporter.{
-  DataFlowSubCategoryModel,
-  SinkModel,
-  SinkProcessingModel,
-  SourceModel,
-  SourceProcessingModel
-}
-import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.exporter.{
-  DataFlowPathIntermediateModel,
-  DataFlowSourceIntermediateModel,
-  DataFlowSubCategoryModel,
-  DataFlowSubCategoryPathExcerptModel
-}
-import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
+import ai.privado.model.exporter.DataFlowSubCategoryModel
+import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.exporter.DataFlowSourceIntermediateModel
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
@@ -74,12 +60,13 @@ object JSONExporter {
     cpg: Cpg,
     outputFileName: String,
     repoPath: String,
-    dataflows: Map[String, Path]
+    dataflows: Map[String, Path],
+    taggerCache: TaggerCache = new TaggerCache()
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg)
     val sinkExporter            = new SinkExporter(cpg)
-    val dataflowExporter        = new DataflowExporter(cpg, dataflows)
+    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
     val collectionExporter      = new CollectionExporter(cpg)
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()

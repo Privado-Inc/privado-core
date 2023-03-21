@@ -25,6 +25,7 @@ package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.auditProcessor
 import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -94,7 +95,8 @@ object JavaProcessor {
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          cpg.runTagger(processedRules)
+          val taggerCache = new TaggerCache
+          cpg.runTagger(processedRules, taggerCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
