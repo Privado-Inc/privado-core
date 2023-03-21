@@ -27,7 +27,7 @@ import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.model.{CatLevelOne, Constants, Language}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -105,7 +105,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
-        if (ScanProcessor.config.disableThisFiltering)
+        if (ScanProcessor.config.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered
