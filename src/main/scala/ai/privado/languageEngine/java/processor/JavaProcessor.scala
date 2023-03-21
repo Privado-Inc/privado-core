@@ -57,8 +57,6 @@ import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
 import better.files.File
 
-import java.nio.file.{Files, Paths}
-
 object JavaProcessor {
 
   private val logger    = LoggerFactory.getLogger(getClass)
@@ -98,7 +96,7 @@ object JavaProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow
+          val dataflowMap = cpg.dataflow(ScanProcessor.config)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(
