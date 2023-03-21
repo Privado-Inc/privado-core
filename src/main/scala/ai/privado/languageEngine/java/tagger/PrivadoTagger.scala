@@ -24,11 +24,11 @@
 package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.RuleCache
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
-import ai.privado.languageEngine.java.tagger.source.{IdentifierNonMemberTagger, IdentifierTagger}
+import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
@@ -62,10 +62,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    println(s"${Calendar.getInstance().getTime} - --IdentifierTagger Non Member tagger invoked...")
-    new IdentifierNonMemberTagger(cpg).createAndApply()
+    println(s"${Calendar.getInstance().getTime} - --InSensitive call tagger invoked...")
+    new InSensitiveCallTagger(cpg).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --IdentifierTagger Non Member is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --InSensitive call tagger is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
