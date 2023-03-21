@@ -83,7 +83,11 @@ object Utility {
     * @param typeDeclFullName
     * @return
     */
-  def getPersonalNonPersonalMembers(cpg: Cpg, typeDeclFullName: String): (Set[String], Set[String]) = {
+  def getPersonalNonPersonalMembers(
+    cpg: Cpg,
+    typeDeclFullName: String,
+    taggerCache: TaggerCache
+  ): (Set[String], Set[String]) = {
     val typeDeclNode = cpg.typeDecl.where(_.fullName(typeDeclFullName)).l
     val inheritedMembers =
       typeDeclNode.inheritsFromTypeFullName
@@ -91,7 +95,7 @@ object Utility {
         .toSet
     val allMembers = typeDeclNode.member.name.toSet ++ inheritedMembers
 
-    val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclFullName).flatMap(_._2).name.toSet
+    val personalMembers    = taggerCache.typeDeclMemberCache(typeDeclFullName).flatMap(_._2).name.toSet
     val nonPersonalMembers = allMembers.diff(personalMembers)
     (personalMembers, nonPersonalMembers)
   }

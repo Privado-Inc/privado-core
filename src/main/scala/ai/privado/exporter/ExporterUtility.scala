@@ -40,7 +40,11 @@ object ExporterUtility {
 
   /** Convert List of path element schema object
     */
-  def convertPathElements(nodes: List[AstNode], sourceId: String = ""): List[DataFlowSubCategoryPathExcerptModel] = {
+  def convertPathElements(
+    nodes: List[AstNode],
+    sourceId: String = "",
+    taggerCache: TaggerCache = new TaggerCache()
+  ): List[DataFlowSubCategoryPathExcerptModel] = {
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
       val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList)
@@ -49,14 +53,14 @@ object ExporterUtility {
       ) {
         val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
         // Going 1 level deep for derived sources to add extra nodes
-        TaggerCache.typeDeclMemberCache
+        taggerCache.typeDeclMemberCache
           .getOrElse(typeFullName, mutable.HashMap[String, mutable.HashSet[Member]]())
           .get(sourceId) match {
           case Some(members) =>
             // Picking up only the head as any path to base is sufficient
             val member             = members.head
             val typeFullNameLevel2 = member.typeFullName
-            TaggerCache.typeDeclMemberCache
+            taggerCache.typeDeclMemberCache
               .getOrElse(typeFullNameLevel2, mutable.HashMap[String, mutable.HashSet[Member]]())
               .get(sourceId) match {
               case Some(member2Set) =>
@@ -78,18 +82,18 @@ object ExporterUtility {
             }
 
           case _ => // Checking if 2nd level is of Extends type
-            TaggerCache.typeDeclExtendingTypeDeclCache
+            taggerCache.typeDeclExtendingTypeDeclCache
               .getOrElse(typeFullName, mutable.HashMap[String, TypeDecl]())
               .get(sourceId) match {
               case Some(typeDecl) => // Fetching information for the 2nd level member node
-                TaggerCache.typeDeclMemberCache
+                taggerCache.typeDeclMemberCache
                   .getOrElse(typeDecl.fullName, mutable.HashMap[String, mutable.HashSet[Member]]())
                   .get(sourceId) match {
                   case Some(members) =>
                     // Picking up only the head as any path to base is sufficient
                     val member = members.head
                     val currentTypeDeclNode = // Fetching the current TypeDecl node
-                      TaggerCache.typeDeclDerivedByExtendsCache.get(typeFullName)
+                      taggerCache.typeDeclDerivedByExtendsCache.get(typeFullName)
                     convertIndividualPathElement(
                       member,
                       messageInExcerpt = generateDSMemberMsg(member.name, typeDecl.fullName)

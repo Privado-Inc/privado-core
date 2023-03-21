@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -79,4 +79,6 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
   )
   val rule: ConfigAndRules =
     ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List())
+
+  val taggerCache = new TaggerCache()
 }

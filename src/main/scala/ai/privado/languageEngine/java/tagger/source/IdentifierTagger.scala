@@ -36,7 +36,7 @@ import ai.privado.languageEngine.java.tagger.source.Utility._
 import java.util.UUID
 import scala.collection.mutable
 
-class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   implicit val resolver: ICallResolver                              = NoResolve
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
@@ -98,7 +98,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
         val typeDeclVal = typeDeclValEntry._1.fullName
         val typeDeclMemberName = typeDeclValEntry._2.headOption match {
           case Some(typeDeclMember) => // updating cache
-            TaggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+            taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
             typeDeclMember.name
           case None =>
             "Member not found"
@@ -154,7 +154,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     typeDeclHavingMemberTypeTuple.foreach(typeDeclTuple => {
       val typeDeclVal    = typeDeclTuple._2
       val typeDeclMember = typeDeclTuple._1
-      TaggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+      taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
       val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
@@ -187,30 +187,30 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclName)).dedup.l
 
     typeDeclsExtendingTypeName.foreach(typeDecl => {
-      TaggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
+      taggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
 
-      TaggerCache
+      taggerCache
         .typeDeclMemberCache(typeDeclName)
         .filter(_._1.equals(ruleInfo.id))
         .foreach(entrySet => {
           val sourceRuleId = entrySet._1
-          entrySet._2.foreach(TaggerCache.addItemToTypeDeclMemberCache(typeDecl.fullName, sourceRuleId, _))
+          entrySet._2.foreach(taggerCache.addItemToTypeDeclMemberCache(typeDecl.fullName, sourceRuleId, _))
         })
       // To Mark all field Access and getters
       tagAllFieldAccessAndGetters(
         builder,
         typeDecl.fullName,
         ruleInfo,
-        TaggerCache.typeDeclMemberCache(typeDecl.fullName)(ruleInfo.id).name.mkString("|")
+        taggerCache.typeDeclMemberCache(typeDecl.fullName)(ruleInfo.id).name.mkString("|")
       )
 
     })
 
     typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
 
-      if (!TaggerCache.typeDeclExtendingTypeDeclCache.contains(typeDeclVal))
-        TaggerCache.typeDeclExtendingTypeDeclCache.addOne(typeDeclVal -> mutable.HashMap[String, TypeDecl]())
-      TaggerCache
+      if (!taggerCache.typeDeclExtendingTypeDeclCache.contains(typeDeclVal))
+        taggerCache.typeDeclExtendingTypeDeclCache.addOne(typeDeclVal -> mutable.HashMap[String, TypeDecl]())
+      taggerCache
         .typeDeclExtendingTypeDeclCache(typeDeclVal)
         .addOne(ruleInfo.id -> cpg.typeDecl.where(_.fullNameExact(typeDeclName)).head)
 
@@ -229,7 +229,7 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
           ruleInfo.id
         )
         // Tag for storing memberName in derived Objects -> patient (patient extends user) --> (email, password)
-        TaggerCache
+        taggerCache
           .typeDeclMemberCache(typeDeclName)(ruleInfo.id)
           .name
           .foreach(memberName =>
