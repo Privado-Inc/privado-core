@@ -3,7 +3,7 @@ package ai.privado.languageEngine.python.passes.config
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewFile, NewJavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, NewFile, NewJavaProperty}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -47,6 +47,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
 
         propertyNodes.foreach(propertyNode => {
           connectGetEnvironLiterals(propertyNode, builder)
+          connectDBConfigMembers(propertyNode, builder)
         })
 
         propertyNodes
@@ -122,6 +123,23 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     fileNode
   }
 
+  // for a specific implementation we've encountered
+  private def matchDBConfigCalls(propertyNode: String): List[Member] = {
+    if (propertyNode.matches("(?i).*host.*")) {
+      cpg.member("host").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    } else if (propertyNode.matches("(?i).*(database|db).*")) {
+      cpg.member("database").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    } else if (propertyNode.matches("(?i).*(port).*")) {
+      cpg.member("port").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    } else if (propertyNode.matches("(?i).*(pass)word?.*")) {
+      cpg.member("password").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    } else if (propertyNode.matches("(?i).*(user)name?.*")) {
+      cpg.member("username").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    }
+
+    List[Member]()
+  }
+
   private def parseINIFiles(filePath: String): List[(String, String)] = {
     val fileContent = Source.fromFile(filePath).getLines().mkString("\n")
     val iniFormat   = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.PROPERTIES)
@@ -146,6 +164,14 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       println(s"Edge added for property ${propertyNode.name}")
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+    })
+  }
+
+  private def connectDBConfigMembers(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
+    matchDBConfigCalls(propertyNode.name.strip()).foreach(member => {
+      println(s"Edge added for property ${propertyNode.name}")
+      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
+      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     })
   }
 
