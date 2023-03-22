@@ -40,11 +40,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
 
-        println("All the properties detected..")
-        for (propertyNode <- propertyNodes) {
-          println(s"${propertyNode.name} = ${propertyNode.value}")
-        }
-
         propertyNodes.foreach(propertyNode => {
           connectGetEnvironLiterals(propertyNode, builder)
           connectDBConfigMembers(propertyNode, builder)
@@ -106,11 +101,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .filter(Utilities.isFileProcessable)
       .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
 
-    println("Config files detected are..")
-    for (file <- configFileList) {
-      println(file)
-    }
-
     SourceFiles
       .determine(Set(projectRoot), extensions)
       .filter(Utilities.isFileProcessable)
@@ -165,7 +155,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): Unit = {
     matchEnvironGetCalls(propertyNode.name.strip()).foreach(lit => {
-      println(s"Edge added for property ${propertyNode.name}")
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     })
@@ -173,7 +162,6 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
 
   private def connectDBConfigMembers(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
     matchDBConfigCalls(propertyNode.name.strip()).foreach(member => {
-      println(s"Edge added for property ${propertyNode.name}")
       builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
       builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     })

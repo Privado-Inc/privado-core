@@ -84,6 +84,7 @@ object Utilities {
     node: CfgNode,
     databaseDetails: DatabaseDetails
   ): Unit = {
+
     val storeForTagHelper = storeForTag(builder, node) _
     storeForTagHelper(Constants.dbName, databaseDetails.dbName)
     storeForTagHelper(Constants.dbVendor, databaseDetails.dbVendor)

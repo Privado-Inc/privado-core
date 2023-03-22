@@ -19,11 +19,11 @@ class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaPropert
 
   override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
     try {
-      if (dbUrl.value.contains("dynamo") || dbUrl.name.matches("(?i).*dynamo.*")) {
+      if (dbUrl.value.contains("dynamodb")) {
         parsePropForDynamoDB(dbUrl)
-      } else if (dbUrl.value.contains("postgres") || dbUrl.name.matches("(?i).*postgres.*")) {
+      } else if (dbUrl.value.contains("postgres:")) {
         parsePropForPostgreSQL(dbUrl)
-      } else if (dbUrl.value.contains("mongo") || dbUrl.name.matches("(?i).*mongo.*")) {
+      } else if (dbUrl.value.contains("mongo")) {
         parsePropForMongoDB(dbUrl)
       }
     } catch {
