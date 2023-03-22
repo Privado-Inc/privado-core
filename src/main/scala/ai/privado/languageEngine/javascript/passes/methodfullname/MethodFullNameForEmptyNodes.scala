@@ -31,10 +31,10 @@ import io.shiftleft.semanticcpg.language._
 
 class MethodFullNameForEmptyNodes(cpg: Cpg) extends ForkJoinParallelCpgPass[Call](cpg) {
   override def generateParts(): Array[Call] = {
-    cpg.call.methodFullName("").toArray
+    cpg.call.methodFullName("").toArray ++ cpg.call.methodFullName("<unknownFullName>").toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, callNode: Call): Unit = {
-    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, callNode.name)
+    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, callNode.methodFullName + callNode.name)
   }
 }
