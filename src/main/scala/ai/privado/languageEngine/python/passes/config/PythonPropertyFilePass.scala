@@ -127,6 +127,10 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   private def matchDBConfigCalls(propertyNode: String): List[Member] = {
     if (propertyNode.matches("(?i).*host.*")) {
       cpg.member("host").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    } else if (
+      propertyNode.matches("(?i).*(url|uri).*") && (propertyNode.contains(".") || propertyNode.contains("__"))
+    ) {
+      cpg.member("url").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
     } else if (propertyNode.matches("(?i).*(database|db).*")) {
       cpg.member("database").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
     } else if (propertyNode.matches("(?i).*(port).*")) {
@@ -135,9 +139,9 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       cpg.member("password").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
     } else if (propertyNode.matches("(?i).*(user)name?.*")) {
       cpg.member("username").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
+    } else {
+      List[Member]()
     }
-
-    List[Member]()
   }
 
   private def parseINIFiles(filePath: String): List[(String, String)] = {
