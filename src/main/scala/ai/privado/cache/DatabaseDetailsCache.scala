@@ -30,7 +30,7 @@ import scala.collection.mutable
   */
 object DatabaseDetailsCache {
 
-  val databaseDetailsMap = mutable.HashMap[String, DatabaseDetails]()
+  private val databaseDetailsMap = mutable.HashMap[String, DatabaseDetails]()
 
   def addDatabaseDetails(databaseDetails: DatabaseDetails, ruleId: String): Unit =
     databaseDetailsMap.addOne(ruleId -> databaseDetails)
