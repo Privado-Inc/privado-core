@@ -47,8 +47,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    println(DatabaseDetailsCache.databaseDetailsMap)
-
     println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
     new CustomInheritTagger(cpg).createAndApply()
     println(

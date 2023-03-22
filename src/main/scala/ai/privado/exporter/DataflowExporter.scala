@@ -75,11 +75,6 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
         case _ => List[String]()
       }
 
-      RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
-        case Some(rule) => println(rule.id)
-        case _          => Option.empty[DatabaseDetails]
-      }
-
       val databaseDetails = RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
         case Some(rule)
             if rule.id.matches(
