@@ -35,6 +35,11 @@ class MethodFullNameForEmptyNodes(cpg: Cpg) extends ForkJoinParallelCpgPass[Call
   }
 
   override def runOnPart(builder: DiffGraphBuilder, callNode: Call): Unit = {
+    val prefix = if (callNode.methodFullName == "") {
+      ""
+    } else {
+      "<unknownFullName>."
+    }
     builder.setNodeProperty(callNode, PropertyNames.MethodFullName, callNode.methodFullName + callNode.name)
   }
 }
