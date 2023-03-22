@@ -14,10 +14,14 @@ object GRPCTaggerUtility {
 
   def getGrpcEndpoints(cpg: Cpg): List[Method] = {
 // Detecting `onCompleted` call by traversing function calls inside of all methods to narrow down gRPC services
-    return cpg.method.where(_.call.name("onCompleted").filter(_.argument.size == 1).where(_.argument.typ.fullName(StreamObserverPattern))).l
+    return cpg.method
+      .where(
+        _.call.name("onCompleted").filter(_.argument.size == 1).where(_.argument.typ.fullName(StreamObserverPattern))
+      )
+      .l
   }
 
-  def getGrpcSinkCalls(cpg: Cpg, grpcEndpoints: List[Method]): ListBuffer[Call] = {
+  def getGrpcSinkCalls(cpg: Cpg, grpcEndpoints: List[Method]): List[Call] = {
     // `onNext` is always called inside of gRPC service methods
     // This `onNext` always has a StreamObserver in signature and takes only one argument
     val OnNext        = "onNext"
@@ -54,39 +58,34 @@ object GRPCTaggerUtility {
       callList.foreach(sinkCall => {
         // Get full type name of arguments going inside gRPC sink call
         val sinkArgTypes = sinkCall.argument.isIdentifier.typeFullName.l
-        if (endpointArgTypes.toSet == sinkArgTypes.toSet) {
+        if (endpointArgTypes.equals(sinkArgTypes.toSet)) {
           grpcSinkCalls += sinkCall
         }
       })
 
     })
 
-    return grpcSinkCalls
+    return grpcSinkCalls.l
   }
 
-  def getGrpcSinkRules(cpg: Cpg): ListBuffer[RuleInfo] = {
+  def getGrpcSinkRules(cpg: Cpg): RuleInfo = {
     val endpoints = getGrpcEndpoints(cpg)
-    var ruleList  = ListBuffer[RuleInfo]()
-
-    getGrpcSinkCalls(cpg, endpoints).foreach(sink => {
-      ruleList += RuleInfo(
-        "Sinks.RPC.gRPC.Call",
-        "gRPC Call",
-        "",
-        Array[String]("grpc.io"),
-        List[String](sink.methodFullName),
-        false,
-        "",
-        HashMap[String, String](),
-        NodeType.REGULAR,
-        "",
-        CatLevelOne.SINKS,
-        "api",
-        Language.JAVA,
-        Array[String]()
-      )
-    })
-
-    return ruleList
+    val methodFullNamesCombined = getGrpcSinkCalls(cpg, endpoints).map(sink => sink.methodFullName).mkString("(","|",")")
+    return RuleInfo(
+      "Sinks.RPC.gRPC.Call",
+      "gRPC Call",
+      "",
+      Array[String]("grpc.io"),
+      List[String](methodFullNamesCombined),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "api",
+      Language.JAVA,
+      Array[String]()
+    )
   }
 }
