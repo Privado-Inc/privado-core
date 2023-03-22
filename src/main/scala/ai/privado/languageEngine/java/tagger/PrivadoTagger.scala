@@ -81,7 +81,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    GRPCTaggerUtility.getGrpcSinkRules(cpg).foreach(RuleCache.setRuleInfo)
+    RuleCache.setRuleInfo(GRPCTaggerUtility.getGrpcSinkRules(cpg))
 
     println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
     new JavaAPITagger(cpg).createAndApply()
