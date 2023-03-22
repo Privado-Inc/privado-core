@@ -37,7 +37,6 @@ object Constants {
   val privadoDerived = "privadoDerived"
   val underScore     = "_"
   val apiUrl         = "apiUrl"
-  val grpcName       = "grpcName/"
 
   // semantic
   val signature = "signature"
