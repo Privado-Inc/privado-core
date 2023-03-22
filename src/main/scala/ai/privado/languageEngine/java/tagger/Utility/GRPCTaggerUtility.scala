@@ -58,7 +58,7 @@ object GRPCTaggerUtility {
       callList.foreach(sinkCall => {
         // Get full type name of arguments going inside gRPC sink call
         val sinkArgTypes = sinkCall.argument.isIdentifier.typeFullName.l
-        if (endpointArgTypes.equals(sinkArgTypes.toSet)) {
+        if (endpointArgTypes.toSet.equals(sinkArgTypes.toSet)) {
           grpcSinkCalls += sinkCall
         }
       })
@@ -70,7 +70,8 @@ object GRPCTaggerUtility {
 
   def getGrpcSinkRules(cpg: Cpg): RuleInfo = {
     val endpoints = getGrpcEndpoints(cpg)
-    val methodFullNamesCombined = getGrpcSinkCalls(cpg, endpoints).map(sink => sink.methodFullName).mkString("(","|",")")
+    val methodFullNamesCombined =
+      getGrpcSinkCalls(cpg, endpoints).map(sink => sink.methodFullName).mkString("(", "|", ")")
     return RuleInfo(
       "Sinks.RPC.gRPC.Call",
       "gRPC Call",
