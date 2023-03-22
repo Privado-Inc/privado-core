@@ -14,12 +14,7 @@ object GRPCTaggerUtility {
 
   def getGrpcEndpoints(cpg: Cpg): List[Method] = {
 // Detecting `onCompleted` call by traversing function calls inside of all methods to narrow down gRPC services
-    return cpg
-      .call("onCompleted")
-      .filter(_.argument.size == 1)
-      .where(_.argument.typ.fullName(StreamObserverPattern))
-      .method
-      .l
+    return cpg.method.where(_.call.name("onCompleted").filter(_.argument.size == 1).where(_.argument.typ.fullName(StreamObserverPattern))).l
   }
 
   def getGrpcSinkCalls(cpg: Cpg, grpcEndpoints: List[Method]): ListBuffer[Call] = {
