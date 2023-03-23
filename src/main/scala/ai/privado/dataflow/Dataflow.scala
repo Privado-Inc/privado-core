@@ -68,6 +68,16 @@ class Dataflow(cpg: Cpg) {
         if (privadoScanConfig.disable2ndLevelClosure)
           sinks.reachableByFlows(sources).l
         else {
+          val firstLevelSources =
+            sources.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+          sinks.reachableByFlows(firstLevelSources).l
+        }
+        // Commented the below piece of code as we still need to test out and fix few open Issues which are
+        // resulting in FP in 2nd level derivation for Storages
+        /*
+        if (privadoScanConfig.disable2ndLevelClosure)
+          sinks.reachableByFlows(sources).l
+        else {
           // If 2nd level is turned off then dataflows for storages should consider Derived Sources also, but for rest only Sources
           val nonStorageSources =
             sources.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
@@ -78,6 +88,7 @@ class Dataflow(cpg: Cpg) {
           val storageFlows    = storageSinks.reachableByFlows(sources).toSet
           (nonStorageFlows ++ storageFlows).l
         }
+         */
       }
 
       if (ScanProcessor.config.testOutput) {
