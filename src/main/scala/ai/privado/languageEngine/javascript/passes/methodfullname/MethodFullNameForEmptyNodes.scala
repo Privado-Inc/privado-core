@@ -40,6 +40,6 @@ class MethodFullNameForEmptyNodes(cpg: Cpg) extends ForkJoinParallelCpgPass[Call
     } else {
       "<unknownFullName>."
     }
-    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, callNode.methodFullName + callNode.name)
+    builder.setNodeProperty(callNode, PropertyNames.MethodFullName, prefix + callNode.name)
   }
 }
