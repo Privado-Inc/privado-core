@@ -81,7 +81,7 @@ object GRPCTaggerUtility {
       false,
       "",
       HashMap[String, String](),
-      NodeType.REGULAR,
+      NodeType.API,
       "",
       CatLevelOne.SINKS,
       "api",
