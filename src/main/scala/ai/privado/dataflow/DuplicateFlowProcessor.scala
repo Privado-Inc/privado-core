@@ -23,9 +23,9 @@
 package ai.privado.dataflow
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, Language, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Expression, Identifier}
@@ -160,7 +160,10 @@ object DuplicateFlowProcessor {
     * @param dataflowMapByPathId
     *   \- map containing pathId -> path
     */
-  def filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId: Map[String, Path]): Unit = {
+  def filterIrrelevantFlowsAndStoreInCache(
+    dataflowMapByPathId: Map[String, Path],
+    privadoScanConfig: PrivadoInput
+  ): Unit = {
 
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
     RuleCache.getRule.sinks.foreach(sinkRule => {
@@ -173,7 +176,8 @@ object DuplicateFlowProcessor {
       filterFlowsBySubCategoryNodeTypeAndStoreInCache(
         dataflowMapByPathId,
         sinkSubTypeEntry._1,
-        sinkSubTypeEntry._2.toSet
+        sinkSubTypeEntry._2.toSet,
+        privadoScanConfig
       )
     )
   }
@@ -189,7 +193,8 @@ object DuplicateFlowProcessor {
   private def filterFlowsBySubCategoryNodeTypeAndStoreInCache(
     dataflowMapByPathId: Map[String, Path],
     sinkSubCategory: String,
-    sinkNodetypes: Set[String]
+    sinkNodetypes: Set[String],
+    privadoScanConfig: PrivadoInput
   ): Unit = {
     val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
       dataflowEntrySet._2.elements.last
@@ -211,7 +216,10 @@ object DuplicateFlowProcessor {
       val source = entrySet._2.elements.head
       try {
         source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+        if (privadoScanConfig.disable2ndLevelClosure)
+          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+        else
+          source.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString).value.foreach(addToMap)
       } catch {
         case e: Exception => logger.debug("Exception while fetching sourceId in dataflow : ", e)
       }
