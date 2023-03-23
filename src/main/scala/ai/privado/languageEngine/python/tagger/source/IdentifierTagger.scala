@@ -57,10 +57,10 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     })
 
     //    Example: row_vehicle['VEHICLE_REGISTRATION_NUMBER']
-    //    Call("<operator>.indexAccess")
+    //    Call("<operator>.indexAccess") // Tagging
     //      [Arguments]
     //      -Literal 'VEHICLE_REGISTRATION_NUMBER'
-    //      -Identifier row_vehicle // Tagging
+    //      -Identifier row_vehicle
     val indexAccessLiterals = cpg
       .call("<operator>.indexAccess")
       .argument
@@ -68,9 +68,9 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
-    val indexAccessSiblingIdentifiers = indexAccessLiterals.astSiblings.l
+    val indexAccessSiblingIdentifiers = indexAccessLiterals.astParent.isCall.l
     indexAccessSiblingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      storeForTag(builder, identifier)(InternalTag.INDEX_ACCESS_CALL.toString)
       addRuleTags(builder, identifier, ruleInfo)
     })
 

@@ -37,6 +37,7 @@ object InternalTag extends Enumeration {
   val SENSITIVE_METHOD_RETURN                  = Value("SENSITIVE_METHOD_RETURN")
   val NON_SENSITIVE_METHOD_RETURN              = Value("NON_SENSITIVE_METHOD_RETURN")
   val NON_SENSITIVE_FIELD_ACCESS               = Value("NON_SENSITIVE_FIELD_ACCESS")
+  val INDEX_ACCESS_CALL                        = Value("INDEX_ACCESS_CALL")
 
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
