@@ -12,6 +12,8 @@ import org.scalatest.wordspec.AnyWordSpec
 import java.nio.file.Paths
 
 class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
+
+  val mongo_url = "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
   override val configFileContents: String =
     """
        |MONGO_URL=mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority
@@ -21,24 +23,19 @@ class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
     """
       |import os
       |
-      |class Config:
-      |   url = environ.get("MONGO_URL")
-      |   db = MongoClient(url)
-      |""".stripMargin
+      |mongo_url = os.environ.get("MONGO_URL")""".stripMargin
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
-      val List(name: String) = cpg.file.name.l
-      name.endsWith("/test.env") shouldBe true
+      val files = cpg.file.name.l
+      files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
     }
 
     "create a `property` node for each property" in {
       val properties = cpg.property.map(x => (x.name, x.value)).toMap
       properties
         .get("MONGO_URL")
-        .contains(
-          "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
-        ) shouldBe true
+        .contains(mongo_url) shouldBe true
     }
 
     "connect property nodes to file" in {
@@ -52,16 +49,49 @@ class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
     }
     "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
       val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
-      javaP.value shouldBe "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
+      javaP.value shouldBe mongo_url
 
       val List(lit: Literal) = cpg.property.usedAt.l
-      lit.originalProperty.head.value shouldBe "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
-      lit.originalPropertyValue.head shouldBe "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
+      lit.originalProperty.head.value shouldBe mongo_url
+      lit.originalPropertyValue.head shouldBe mongo_url
     }
   }
 }
 
+class INIFileTest extends PythonPropertiesFilePassTestBase(".ini") {
+  override val configFileContents: String =
+    """
+      |[mysql]
+      |host = localhost
+      |user = user7
+      |passwd = s$cret
+      |db = ydb""".stripMargin
+  override val codeFileContents: String =
+    """
+      |import configparser
+      |
+      |config = configparser.ConfigParser()
+      |db_host = config['mysql']['host']
+      |""".stripMargin
 
+  "create a file node for the property file" in {
+    val files = cpg.file.name.l
+    files.filter(_.endsWith(".ini")).head.endsWith("/test.ini") shouldBe true
+  }
+
+  "create a `property` node for each property" in {
+    val properties = cpg.property.map(x => (x.name, x.value)).toMap
+    properties
+      .get("host")
+      .contains("localhost") shouldBe true
+  }
+
+  "connect property nodes to file" in {
+    val List(filename: String) = cpg.property.file.name.dedup.l
+    filename.endsWith("/test.ini") shouldBe true
+  }
+
+}
 abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     extends AnyWordSpec
     with Matchers

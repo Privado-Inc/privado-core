@@ -19,7 +19,7 @@ import scala.io.Source
 
 class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
   override def generateParts(): Array[String] = {
-    configFiles(projectRoot, Set(".ini", ".yml", ".yaml", ".env")).toArray
+    configFiles(projectRoot, Set(".ini", ".env", ".conf")).toArray
   }
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -53,9 +53,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
   }
 
   private def obtainKeyValuePairs(file: String): List[(String, String)] = {
-    if (file.endsWith(".conf")) {
-      parseConfFiles(file)
-    } else if (file.endsWith(".ini")) {
+    if (file.endsWith(".ini")) {
       parseINIFiles(file)
     } else {
       getDotenvKeyValuePairs(file)
@@ -78,6 +76,8 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .toList
   }
 
+  /** Matches the exact key of the propertyNode to its corresponding os.environ.get() calls.
+    */
   private def matchEnvironGetCalls(propertyName: String): List[Literal] = {
     cpg.literal
       .codeExact("\"" + propertyName + "\"")
@@ -85,6 +85,8 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .l
   }
 
+  /** Gets all files to be processed as property files.
+    */
   private def configFiles(projectRoot: String, extensions: Set[String]): List[String] = {
 
     def getListOfFiles(dir: String): List[File] = {
@@ -96,15 +98,10 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       }
     }
 
-    val configFileList = SourceFiles
-      .determine(Set(projectRoot), extensions)
-      .filter(Utilities.isFileProcessable)
-      .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
-
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .filter(Utilities.isFileProcessable)
       .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
+      .filter(Utilities.isFileProcessable)
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
@@ -113,7 +110,9 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     fileNode
   }
 
-  // for a specific implementation we've encountered
+  /** This method works for a specific implementation where a datbabase configuration class is created and configs are
+    * exported from that class.
+    */
   private def matchDBConfigCalls(propertyNode: String): List[Member] = {
     if (propertyNode.matches("(?i).*host.*")) {
       cpg.member("host").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
@@ -141,15 +140,13 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     getAllProperties(ConfigFactory.parseString(fileContent, iniFormat))
   }
 
-  private def parseConfFiles(filePath: String): List[(String, String)] = {
-    getAllProperties(ConfigFactory.load(filePath))
-  }
-
   private def getAllProperties(config: Config): List[(String, String)] = {
     val entries = config.entrySet().asScala.toList
     entries.map(entry => (entry.getKey, entry.getValue.unwrapped.toString))
   }
 
+  /** Create an edge between the literals in the environ.get calls and the property nodes.
+    */
   private def connectGetEnvironLiterals(
     propertyNode: NewJavaProperty,
     builder: BatchedUpdate.DiffGraphBuilder
@@ -160,6 +157,8 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     })
   }
 
+  /** Create an edge between the literals in the db config members and the property nodes.
+    */
   private def connectDBConfigMembers(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
     matchDBConfigCalls(propertyNode.name.strip()).foreach(member => {
       builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)

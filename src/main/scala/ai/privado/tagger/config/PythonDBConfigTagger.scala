@@ -34,57 +34,73 @@ class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaPropert
 
   private def parsePropForDynamoDB(dbUrl: JavaProperty): Unit = {
     // Example dynamodb url :- https://dynamodb.<region>.amazonaws.com/<table-name>
-    val dbVendor   = "dynamodb"
-    val dbLocation = dbUrl.value.split("\\.")(1)
-    val dbName     = dbUrl.value.split("/").last
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.AmazonDynamoDB.Write"
-    )
+    try {
+      val dbVendor   = "dynamodb"
+      val dbLocation = dbUrl.value.split("\\.")(1)
+      val dbName     = dbUrl.value.split("/").last
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.AmazonDynamoDB.Read"
-    )
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        "Storages.AmazonDynamoDB.Write"
+      )
+
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        "Storages.AmazonDynamoDB.Read"
+      )
+    } catch {
+      case e: Throwable => logger.debug("Error parsing details for dynamo db")
+    }
+
   }
 
   private def parsePropForPostgreSQL(dbUrl: JavaProperty): Unit = {
     // Example postgre URL: - postgresql://myuser:mypassword@10.0.0.1:5432/mydatabase
 
-    val tokens     = dbUrl.value.split("@")
-    val dbLocation = tokens.last.split("/")(0)
-    val dbName     = dbUrl.value.split("/").last
-    val dbVendor   = "postgresql"
+    try {
+      val tokens     = dbUrl.value.split("@")
+      val dbLocation = tokens.last.split("/")(0)
+      val dbName     = dbUrl.value.split("/").last
+      val dbVendor   = "postgresql"
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.Postgres.ReadAndWrite"
-    )
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        "Storages.Postgres.ReadAndWrite"
+      )
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.Postgres.Read"
-    )
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        "Storages.Postgres.Read"
+      )
+    } catch {
+      case e: Throwable => logger.debug("Error parsing details for postgre SQL")
+    }
+
   }
 
   private def parsePropForMongoDB(dbUrl: JavaProperty): Unit = {
     // Example mongo url :- mongodb://<username>:<password>@<host>:<port>/<database>?<options>
 
-    val tokens     = dbUrl.value.split("@")
-    val dbVendor   = "mongodb"
-    val dbLocation = tokens.last.split("/")(0)
-    val dbName     = dbUrl.value.split("/").last.split("\\?")(0)
+    try {
+      val tokens     = dbUrl.value.split("@")
+      val dbVendor   = "mongodb"
+      val dbLocation = tokens.last.split("/")(0)
+      val dbName     = dbUrl.value.split("/").last.split("\\?")(0)
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.MongoDB.Write"
-    )
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        "Storages.MongoDB.Write"
+      )
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.MongoDB.Read"
-    )
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        "Storages.MongoDB.Read"
+      )
+
+    } catch {
+      case e: Throwable => logger.debug("Error parsing details for mongodb")
+    }
 
   }
 }
