@@ -21,6 +21,8 @@
  */
 
 package ai.privado.cache
+import ai.privado.model.Language
+import ai.privado.model.Language.Language
 import ai.privado.utility.Utilities._
 
 import scala.collection.mutable
@@ -32,6 +34,7 @@ object AppCache {
   var localScanPath: String       = ""
   var scanPath: String            = ""
   var repoName: String            = ""
+  var repoLanguage: Language      = Language.UNKNOWN
   var isLombokPresent             = false
   var privadoVersionMain: String  = ""
   var fpByOverlappingDE           = 0
