@@ -24,10 +24,10 @@
 package ai.privado.dataflow
 
 import ai.privado.cache.{AppCache, DataFlowCache}
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
-import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities
+import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.model.{CatLevelOne, Constants, Language}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -45,13 +45,13 @@ class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = Utilities.getSemantics(cpg), config = EngineConfig(4))
+    EngineContext(semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config), config = EngineConfig(4))
 
   /** Compute the flow of data from tagged Sources to Sinks
     * @return
     *   \- Map of PathId -> Path corresponding to source to sink path
     */
-  def dataflow: Map[String, Path] = {
+  def dataflow(privadoScanConfig: PrivadoInput): Map[String, Path] = {
 
     logger.info("Generating dataflow")
     val sources = getSources
@@ -64,7 +64,21 @@ class Dataflow(cpg: Cpg) {
       Map[String, Path]()
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
-      val dataflowPathsUnfiltered = sinks.reachableByFlows(sources).l
+      val dataflowPathsUnfiltered = {
+        if (privadoScanConfig.disable2ndLevelClosure)
+          sinks.reachableByFlows(sources).l
+        else {
+          // If 2nd level is turned off then dataflows for storages should consider Derived Sources also, but for rest only Sources
+          val nonStorageSources =
+            sources.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+          val nonStorageSinks = sinks.whereNot(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
+          val storageSinks    = sinks.where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
+
+          val nonStorageFlows = nonStorageSinks.reachableByFlows(nonStorageSources).toSet
+          val storageFlows    = storageSinks.reachableByFlows(sources).toSet
+          (nonStorageFlows ++ storageFlows).l
+        }
+      }
 
       if (ScanProcessor.config.testOutput) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
@@ -74,7 +88,12 @@ class Dataflow(cpg: Cpg) {
           val pathId   = DuplicateFlowProcessor.calculatePathId(path)
           var sourceId = ""
           if (path.elements.head.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name).nonEmpty) {
-            sourceId = path.elements.head.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+            sourceId = path.elements.head.tag
+              .nameExact(Constants.id)
+              .valueNot(Constants.privadoDerived + ".*")
+              .value
+              .headOption
+              .getOrElse("")
           } else {
             sourceId = Traversal(path.elements.head).isIdentifier.typeFullName.headOption.getOrElse("")
           }
@@ -91,7 +110,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
-        if (ScanProcessor.config.disableThisFiltering)
+        if (ScanProcessor.config.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered

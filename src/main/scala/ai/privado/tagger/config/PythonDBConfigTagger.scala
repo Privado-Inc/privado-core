@@ -7,7 +7,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
 
 class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
 

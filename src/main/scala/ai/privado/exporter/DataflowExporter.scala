@@ -23,9 +23,9 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{DataFlowCache, DatabaseDetailsCache, RuleCache}
+import ai.privado.cache.{DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.model.exporter.{DataFlowSubCategoryModel, DataFlowSubCategoryPathModel, DataFlowSubCategorySinkModel}
-import ai.privado.model.{Constants, DataFlowPathModel, NodeType, DatabaseDetails}
+import ai.privado.model.{Constants, DataFlowPathModel, DatabaseDetails, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -34,7 +34,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
+class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: TaggerCache) {
 
   val falsePositiveSources: List[String] = List[String](
     "Data.Sensitive.OnlineIdentifiers.Cookies",
@@ -78,7 +78,11 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
       val databaseDetails = RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
         case Some(rule)
             if rule.id.matches(
+<<<<<<< HEAD
               "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.AmazonDynamoDB.*|Storages.Postgres.*|Storages.MongoDB.*"
+=======
+              "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.Neo4jGraphDatabase.*"
+>>>>>>> cc61cacc94c9dc324b4499b0af8dc576e48dad65
             ) =>
           DatabaseDetailsCache.getDatabaseDetails(rule.id)
         case _ => Option.empty[DatabaseDetails]
@@ -119,7 +123,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path]) {
   }
 
   private def convertPathsList(sinkFlow: Path, pathId: String, sourceId: String) = {
-    DataFlowSubCategoryPathModel(pathId, ExporterUtility.convertPathElements(sinkFlow.elements, sourceId))
+    DataFlowSubCategoryPathModel(pathId, ExporterUtility.convertPathElements(sinkFlow.elements, sourceId, taggerCache))
   }
 
 }
