@@ -23,7 +23,6 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.model._
 import io.shiftleft.semanticcpg.language._
@@ -32,7 +31,7 @@ class JavaIdentifierTaggingTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, PrivadoInput()).createAndApply()
+    new IdentifierTagger(cpg, taggerCache).createAndApply()
   }
 
   override val javaFileContents =

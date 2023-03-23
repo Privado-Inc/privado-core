@@ -31,13 +31,13 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import ai.privado.languageEngine.java.tagger.source.Utility._
 
-class InSensitiveCallTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[String](cpg) {
+class InSensitiveCallTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[String](cpg) {
 
-  override def generateParts(): Array[String] = TaggerCache.typeDeclMemberCache.keys.toArray
+  override def generateParts(): Array[String] = taggerCache.typeDeclMemberCache.keys.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, typeDeclFullName: String): Unit = {
 
-    val (_, nonPersonalMembers)       = getPersonalNonPersonalMembers(cpg, typeDeclFullName)
+    val (_, nonPersonalMembers)       = getPersonalNonPersonalMembers(cpg, typeDeclFullName, taggerCache)
     val nonPersonalMembersRegexString = nonPersonalMembers.mkString("(", "|", ")")
     if (nonPersonalMembers.nonEmpty) {
       val impactedCalls = getCallsMatchingReturnRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString)
