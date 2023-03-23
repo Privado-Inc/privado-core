@@ -68,10 +68,10 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
-    val indexAccessSiblingIdentifiers = indexAccessLiterals.astParent.isCall.l
-    indexAccessSiblingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.INDEX_ACCESS_CALL.toString)
-      addRuleTags(builder, identifier, ruleInfo)
+    val indexAccessCalls = indexAccessLiterals.astParent.isCall.l
+    indexAccessCalls.foreach(iaCall => {
+      storeForTag(builder, iaCall)(InternalTag.INDEX_ACCESS_CALL.toString)
+      addRuleTags(builder, iaCall, ruleInfo)
     })
 
   }
