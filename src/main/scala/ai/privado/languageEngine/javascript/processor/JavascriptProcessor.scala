@@ -34,10 +34,11 @@ import ai.privado.languageEngine.javascript.passes.methodfullname.{
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
+import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
@@ -48,6 +49,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+import java.nio.file.{Files, Paths}
 
 object JavascriptProcessor {
 
@@ -66,6 +68,12 @@ object JavascriptProcessor {
         new MethodFullName(cpg).createAndApply()
         new MethodFullNameFromIdentifier(cpg).createAndApply()
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
+
+        // Unresolved function report
+        if (config.showUnresolvedFunctionsReport) {
+          val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+          UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
+        }
         logger.info("=====================")
 
         // Run tagger
@@ -121,15 +129,15 @@ object JavascriptProcessor {
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
+    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+    // Create the .privado folder if not present
+    createCpgFolder(sourceRepoLocation);
+
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
-      Config(inputPath = absoluteSourceLocation)
+      Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
-    }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 

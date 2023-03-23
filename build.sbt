@@ -6,8 +6,8 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.3.597"
-val joernVersion      = "1.1.1494"
-val overflowdbVersion = "1.169"
+val joernVersion      = "1.1.1535"
+val overflowdbVersion = "1.170"
 
 //External dependency versions
 val circeVersion   = "0.14.1"
@@ -62,8 +62,8 @@ ThisBuild / resolvers ++= Seq(
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots")
 )
-lazy val astGenDlUrl       = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/"
-lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe")
+lazy val astGenDlUrl       = "https://github.com/joernio/astgen/releases/download/v2.14.0/"
+lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe", "astgen-macos-arm")
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {
@@ -106,3 +106,7 @@ resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").ge
 ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
+
+lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")

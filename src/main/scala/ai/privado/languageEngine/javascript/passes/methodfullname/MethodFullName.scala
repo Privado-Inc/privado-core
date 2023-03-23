@@ -85,7 +85,7 @@ class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(String, String, 
         (
           staticImport.importedAs.getOrElse(""),
           staticImport.importedEntity.getOrElse(""),
-          staticImport.file.name.head,
+          staticImport.file.name.headOption.getOrElse(""),
           "pkg."
         )
       )

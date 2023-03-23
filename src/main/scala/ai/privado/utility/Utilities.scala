@@ -24,15 +24,19 @@ package ai.privado.utility
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor
+import ai.privado.exporter.ConsoleExporter.logger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
+import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.DefaultSemantics.{javaFlows, operatorFlows}
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -40,11 +44,13 @@ import overflowdb.BatchedUpdate
 import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
+import java.net.URL
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+import java.nio.file.Files
 
 object Utilities {
 
@@ -65,6 +71,12 @@ object Utilities {
     builder
   }
 
+  def createCpgFolder(sourceRepoLocation: String): Unit = {
+    if (!Files.exists(Paths.get(s"$sourceRepoLocation/$outputDirectoryName"))) {
+      Files.createDirectory(Paths.get(s"$sourceRepoLocation/$outputDirectoryName"));
+    }
+  }
+
   /** Utility to add database detail tags to sink
     */
   def addDatabaseDetailTags(
@@ -81,11 +93,16 @@ object Utilities {
 
   /** Utility to add Tag based on a rule Object
     */
-  def addRuleTags(builder: BatchedUpdate.DiffGraphBuilder, node: AstNode, ruleInfo: RuleInfo): Unit = {
+  def addRuleTags(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNode,
+    ruleInfo: RuleInfo,
+    ruleId: Option[String] = None
+  ): Unit = {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName)) {
       val storeForTagHelper = storeForTag(builder, node) _
-      storeForTagHelper(Constants.id, ruleInfo.id)
+      storeForTagHelper(Constants.id, ruleId.getOrElse(ruleInfo.id))
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
@@ -96,7 +113,7 @@ object Utilities {
         case _       => ()
       }
       // storing by catLevelTwo and nodeType to get id
-      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleInfo.id)
+      storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
   }
 
@@ -127,6 +144,8 @@ object Utilities {
     var specialNonTaintDefaultSemantics  = List[String]()
     var customStringSemantics            = List[String]()
     var customNonPersonalMemberSemantics = List[String]()
+    val lang                             = MetricHandler.metricsData("language")
+    val isPython                         = lang.toString().contains(Languages.PYTHONSRC)
 
     if (!ScanProcessor.config.disableRunTimeSemantics) {
       customNonTaintDefaultSemantics = nonTaintingMethods
@@ -171,7 +190,10 @@ object Utilities {
     val list =
       customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
-    val finalSemantics = getDefaultSemantics.elements ++ parsed
+    var finalSemantics = getDefaultSemantics.elements
+    if (!isPython) {
+      finalSemantics = finalSemantics ++ parsed
+    }
     Semantics.fromList(finalSemantics)
   }
 
@@ -408,18 +430,48 @@ object Utilities {
 
       val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
       if (nonPersonalMembersRegex.nonEmpty) {
-        typeDeclNode.method.block.astChildren.isReturn
-          .code("(?i).*(" + nonPersonalMembersRegex + ").*")
+        // Below same regex is repeated in IdentifierNonMemberTagger-->runOnPart
+        val nonPersonalMethodFullNames = typeDeclNode.method.block.astChildren.isReturn
+          .code(s"return (?i)(this.)?($nonPersonalMembersRegex)(;)?")
           .method
           .callIn
           .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
           .methodFullName
           .dedup
-          .foreach(methodName => {
-            semanticList.addOne(generateNonTaintSemantic(methodName))
-          })
+          .l ++ cpg.identifier
+          .typeFullName(typeDeclValue)
+          .astParent
+          .isCall
+          .name(s"(?i)(get|is)($nonPersonalMembersRegex)")
+          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
+          .methodFullName
+          .dedup
+          .l
+
+        nonPersonalMethodFullNames.dedup.foreach(methodName => {
+          semanticList.addOne(generateNonTaintSemantic(methodName))
+        })
+
       }
     })
     semanticList.toList
+  }
+
+  /** Returns a domain for a given url string
+    * @param urlString
+    * @return
+    */
+  def getDomainFromString(urlString: String) = {
+    try {
+      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
+      val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
+      val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
+      url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+    } catch {
+      case e: Exception =>
+        logger.debug("Exception while getting domain from string : ", e)
+        urlString
+    }
+
   }
 }

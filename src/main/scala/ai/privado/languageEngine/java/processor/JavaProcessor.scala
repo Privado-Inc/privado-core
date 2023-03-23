@@ -31,12 +31,18 @@ import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName, storages}
-import ai.privado.utility.{UnresolvedReportUtility}
-import ai.privado.model.Constants.{outputDirectoryName, outputFileName, outputIntermediateFileName}
+import ai.privado.model.Constants.{
+  cpgOutputFileName,
+  outputDirectoryName,
+  outputFileName,
+  outputIntermediateFileName,
+  storages
+}
+import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
+import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -50,6 +56,8 @@ import java.util.Calendar
 import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
 import better.files.File
+
+import java.nio.file.{Files, Paths}
 
 object JavaProcessor {
 
@@ -76,6 +84,12 @@ object JavaProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
+
+          // Unresolved function report
+          if (config.showUnresolvedFunctionsReport) {
+            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+            UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
+          }
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
@@ -152,7 +166,16 @@ object JavaProcessor {
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
-    cpgconfig = Config(inputPath = sourceRepoLocation, fetchDependencies = !config.skipDownloadDependencies)
+
+    // Create the .privado folder if not present
+    createCpgFolder(sourceRepoLocation);
+
+    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+    cpgconfig = Config(
+      inputPath = sourceRepoLocation,
+      outputPath = cpgOutputPath,
+      fetchDependencies = !config.skipDownloadDependencies
+    )
 
     // Create delomboked directory if source code uses lombok
     val dependencies        = JavaSrc2Cpg.getDependencyList(cpgconfig)
@@ -165,7 +188,8 @@ object JavaProcessor {
       cpgconfig = Config(
         inputPath = delombokPath,
         fetchDependencies = !config.skipDownloadDependencies,
-        delombokMode = Some("no-delombok")
+        delombokMode = Some("no-delombok"),
+        outputPath = cpgOutputPath
       )
     }
 
@@ -181,11 +205,6 @@ object JavaProcessor {
       )
       applyDefaultOverlays(cpg)
       cpg
-    }
-
-    if (config.showUnresolvedFunctionsReport) {
-      val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-      UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVA)
     }
 
     val msg = processCPG(xtocpg, processedRules, sourceRepoLocation)
