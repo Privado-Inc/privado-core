@@ -223,7 +223,7 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
 /** Base class for tests on properties files and Java code.
   */
 // file extension to support for any file as properties
-abstract class PropertiesFilePassTestBase(fileExtension: String, language: String = "java")
+abstract class PropertiesFilePassTestBase(fileExtension: String)
     extends AnyWordSpec
     with Matchers
     with BeforeAndAfterAll {
@@ -245,21 +245,11 @@ abstract class PropertiesFilePassTestBase(fileExtension: String, language: Strin
     }
     outputFile = File.newTemporaryFile()
 
-    language match {
-      case "java" => {
-        (inputDir / "GeneralConfig.java").write(codeFileContents)
-        val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    (inputDir / "GeneralConfig.java").write(codeFileContents)
+    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
 
-        cpg = new JavaSrc2Cpg().createCpg(config).get
-        new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
-      }
-      case "python" => {
-        (inputDir / "GeneralConfig.py").write(codeFileContents)
-        val pythonConfig = Py2CpgOnFileSystemConfig(Paths.get(outputFile.toString()), Paths.get(inputDir.toString()))
-        cpg = new Py2CpgOnFileSystem().createCpg(pythonConfig).get
-        new PythonPropertyFilePass(cpg, inputDir.toString()).createAndApply()
-      }
-    }
+    cpg = new JavaSrc2Cpg().createCpg(config).get
+    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
 
     super.beforeAll()
   }
