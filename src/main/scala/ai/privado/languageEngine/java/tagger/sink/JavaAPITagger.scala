@@ -92,7 +92,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    RuleCache.getRule.sinks
+    RuleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toArray
   }
