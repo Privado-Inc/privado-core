@@ -34,6 +34,7 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    val rulePattern = ruleInfo.combinedRulePattern
     // Step 1.2
     // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
     val generalLiterals = cpg
@@ -41,15 +42,15 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       .argument
       .where(_.argumentIndex(1))
       .isLiteral
-      .code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)")
+      .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
 
     val sqlQueryLiterals = cpg
-      .call("(?:sql|query|select|find|execute)")
+      .call("(?:sql|query|select|find|execute|hasattr)")
       .argument
       .isLiteral
-      .code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)")
+      .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
 
