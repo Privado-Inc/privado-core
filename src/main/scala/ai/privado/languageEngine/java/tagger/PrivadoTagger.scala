@@ -104,7 +104,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     )
 
     println(s"${Calendar.getInstance().getTime} - --GrpcCollectionTagger invoked...")
-    new GrpcCollectionTagger(cpg).createAndApply()
+    new GrpcCollectionTagger(cpg, sourceRules).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --GrpcCollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )

@@ -23,14 +23,18 @@
 
 package ai.privado.languageEngine.java.tagger.collection
 
-import ai.privado.model.{InternalTag}
+import ai.privado.cache.RuleCache
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+import overflowdb.traversal.Traversal
 
-class GrpcCollectionTagger(cpg: Cpg) extends CpgPass(cpg) {
+import scala.collection.immutable.HashMap
+
+class GrpcCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends CpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def run(builder: DiffGraphBuilder): Unit = {
@@ -40,26 +44,59 @@ class GrpcCollectionTagger(cpg: Cpg) extends CpgPass(cpg) {
     StreamObserver object. For eg. in the following case,
 
       public void sayHello(HelloRequest req, StreamObserver<HelloReply> responseObserver) {
-      ...
-      foo.onNext()
-      foo.onCompleted();
+        ...
+        foo.onNext()
+        foo.onCompleted();
       }
 
     we aim to find if foo's type is StreamObserver and then return the sayHello method as the
     GRPC collection point since it handles the request
      */
-    val grpcCollectionPoints = cpg.call
+
+    val grpcCollectionMethods = cpg.call
       .name("onCompleted")
       .filter(_.argument.size == 1)
       .where(_.argument.typ.fullName(".*StreamObserver.*"))
       .method
       .l
 
+    val methodFullNamesCombined = grpcCollectionMethods.map(sink => sink.fullName).mkString("(", "|", ")")
+
+    // Create a hardcoded rule specially for GRPC so we adhere to CollectionExporter style of operation
+    val ruleInfo = RuleInfo(
+      "Collections.RPC.gRPC.Handler",
+      "gRPC Handler",
+      "",
+      Array[String]("grpc.io"),
+      List[String](methodFullNamesCombined),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      "GRPC",
+      Language.JAVA,
+      Array[String]()
+    )
+
+    // Tag parameters same way we do while tagging collections
+    val grpcCollectionPoints = Traversal(grpcCollectionMethods).flatMap(collectionMethod => {
+      sourceRuleInfos.flatMap(sourceRule => {
+        val parameters =
+          collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("this")).l
+        if (parameters.isEmpty) {
+          None
+        } else {
+          parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
+          Some(collectionMethod)
+        }
+      })
+    })
+
     grpcCollectionPoints.foreach(collectionPoint => {
-      storeForTag(builder, collectionPoint)(
-        InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
-        "GRPC Request Handler:" + collectionPoint.name
-      )
+      addRuleTags(builder, collectionPoint, ruleInfo)
+      storeForTag(builder, collectionPoint)(InternalTag.COLLECTION_METHOD_ENDPOINT.toString, collectionPoint.name)
     })
   }
 }
