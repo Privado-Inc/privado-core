@@ -27,7 +27,7 @@ import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -69,7 +69,10 @@ class Dataflow(cpg: Cpg) {
           sinks.reachableByFlows(sources).l
         else {
           val firstLevelSources =
-            sources.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+            sources.or(
+              _.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name),
+              _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+            )
           sinks.reachableByFlows(firstLevelSources).l
         }
         // Commented the below piece of code as we still need to test out and fix few open Issues which are
@@ -80,7 +83,10 @@ class Dataflow(cpg: Cpg) {
         else {
           // If 2nd level is turned off then dataflows for storages should consider Derived Sources also, but for rest only Sources
           val nonStorageSources =
-            sources.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+            sources.or(
+              _.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name),
+              _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+            )
           val nonStorageSinks = sinks.whereNot(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
           val storageSinks    = sinks.where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
 
@@ -147,7 +153,7 @@ class Dataflow(cpg: Cpg) {
       DataFlowCache.dataflowsMapByType = dataflowMapByPathId
 
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
-      DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId)
+      DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig)
       println(
         s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
             .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
