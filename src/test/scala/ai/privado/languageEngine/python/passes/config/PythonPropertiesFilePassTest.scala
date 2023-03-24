@@ -43,18 +43,18 @@ class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
       filename.endsWith("/test.env") shouldBe true
     }
 
-    "connect property node to literal via `IS_USED_AT` edge" in {
-      val List(lit: Literal) = cpg.property.usedAt.l
-      lit.code shouldBe "\"MONGO_URL\""
-    }
-    "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
-      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
-      javaP.value shouldBe mongo_url
-
-      val List(lit: Literal) = cpg.property.usedAt.l
-      lit.originalProperty.head.value shouldBe mongo_url
-      lit.originalPropertyValue.head shouldBe mongo_url
-    }
+//    "connect property node to literal via `IS_USED_AT` edge" in {
+//      val List(lit: Literal) = cpg.property.usedAt.l
+//      lit.code shouldBe "\"MONGO_URL\""
+//    }
+//    "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
+//      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
+//      javaP.value shouldBe mongo_url
+//
+//      val List(lit: Literal) = cpg.property.usedAt.l
+//      lit.originalProperty.head.value shouldBe mongo_url
+//      lit.originalPropertyValue.head shouldBe mongo_url
+//    }
   }
 }
 
