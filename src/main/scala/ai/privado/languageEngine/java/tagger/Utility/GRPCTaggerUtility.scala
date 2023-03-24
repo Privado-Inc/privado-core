@@ -35,7 +35,7 @@ object GRPCTaggerUtility {
     grpcEndpoints.foreach(endpoint => {
       // Detecting gRPC API sink calls. These sink calls have the same name as function calls inside of onNext functions
       // To identify correct sinks, this filter makes sure sink call's parent is NOT `onNext`
-      val callList = cpg
+      val sinks = cpg
         .call(endpoint.name)
         .whereNot(
           _.astParent.isCall
@@ -71,26 +71,26 @@ object GRPCTaggerUtility {
           .fullName
           .l
 
-      callList.foreach(sinkCall => {
+      sinks.foreach(sink => {
         // Get full type name of arguments going inside gRPC sink call
-        val sinkArgTypes = sinkCall.argument.isIdentifier.typeFullName.l
+        val sinkArgTypes = sink.argument.isIdentifier.typeFullName.l
 
         sinkArgTypes.foreach(sinkArgType => {
           if (inCallArgTypes.contains(sinkArgType)) {
-            grpcSinkCalls += sinkCall
+            grpcSinkCalls += sink
           }
           if (identifierArgTypes.contains(sinkArgType)) {
-            grpcSinkCalls += sinkCall
+            grpcSinkCalls += sink
           }
 
           if (inCallArgTypes.size == 0) {
             if (sinkArgType.matches(stub)) {
-              grpcSinkCalls += sinkCall
+              grpcSinkCalls += sink
             }
           }
           if (identifierArgTypes.size == 0) {
             if (sinkArgType.matches(stub)) {
-              grpcSinkCalls += sinkCall
+              grpcSinkCalls += sink
             }
           }
         })
