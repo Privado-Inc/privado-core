@@ -16,7 +16,7 @@ object auditProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
 
   // Get list of Class Name having getter and setter method
-  private def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
+  def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
     logger.info("Process Class Name from cpg")
     val classNameList = ListBuffer[String]()
     xtocpg match {
@@ -43,7 +43,7 @@ object auditProcessor {
   }
 
   // Search other potential Class in package
-  private def ExtractClassFromPackage(xtocpg: Try[Cpg], classFullNameList: Set[String]): Set[String] = {
+  def extractClassFromPackage(xtocpg: Try[Cpg], classFullNameList: Set[String]): Set[String] = {
     val packageNameSet = mutable.Set[String]()
 
     classFullNameList.foreach(fullName => {
@@ -73,10 +73,7 @@ object auditProcessor {
   }
 
   // Get list of member variable present in given class
-  private def getMemberUsingClassName(
-    xtocpg: Try[Cpg],
-    classNameSet: Set[String]
-  ): mutable.Map[String, List[Member]] = {
+  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): mutable.Map[String, List[Member]] = {
     logger.info("Process Member Name from cpg")
     val memberInfoMap = mutable.Map[String, List[Member]]()
 
@@ -100,7 +97,7 @@ object auditProcessor {
   }
 
   // Get Collection Input Class Name
-  private def getCollectionInputList(xtocpg: Try[Cpg]): List[String] = {
+  def getCollectionInputList(xtocpg: Try[Cpg]): List[String] = {
     val collectionInputList = ListBuffer[String]()
 
     xtocpg match {
@@ -121,15 +118,15 @@ object auditProcessor {
     collectionInputList.toList
   }
 
-  def processDataElementDiscovery(xtocpg: Try[Cpg]): List[List[String]] = {
+  def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
     logger.info("Initiated the audit engine")
     val classNameRuleList   = getSourceUsingRules(xtocpg)
     val collectionInputList = getCollectionInputList(xtocpg)
-    val derivedClassName    = ExtractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
+    val derivedClassName    = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
     val memberInfo =
       getMemberUsingClassName(xtocpg, (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet)
     val workbookResult      = new ListBuffer[List[String]]()
-    val typeDeclMemberCache = TaggerCache.typeDeclMemberCache
+    val typeDeclMemberCache = taggerCache.typeDeclMemberCache
 
     // Stores ClassName --> (MemberName --> SourceRuleID)
     val taggedMemberInfo = mutable.HashMap[String, mutable.HashMap[String, String]]()

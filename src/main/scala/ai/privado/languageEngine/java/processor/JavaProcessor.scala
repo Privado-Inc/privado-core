@@ -126,7 +126,7 @@ object JavaProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              auditProcessor.processDataElementDiscovery(xtocpg),
+              auditProcessor.processDataElementDiscovery(xtocpg, taggerCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
