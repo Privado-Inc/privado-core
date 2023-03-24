@@ -28,7 +28,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.languageEngine.java.language._
-import ai.privado.utility.Utilities
+import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -143,7 +143,7 @@ class FeignAPI(cpg: Cpg) {
       .l
     if (targetArguments.nonEmpty) {
       implicit val engineContext: EngineContext =
-        EngineContext(semantics = Utilities.getDefaultSemantics, config = EngineConfig(4))
+        EngineContext(semantics = SemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
       val feignFlows = {
         val flows = feignTargetCalls.reachableByFlows(httpSources).l
         if (ScanProcessor.config.disableDeDuplication)

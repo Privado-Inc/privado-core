@@ -118,6 +118,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   private def annotatedMembers() = cpg.annotation
     .fullName(".*Value.*")
     .where(_.member)
+    .filter(_.parameterAssign.l.length > 0)
     .map { x => (x.parameterAssign.head, x.member.head) }
     .l
   private def getMember(member: String, className: String) =

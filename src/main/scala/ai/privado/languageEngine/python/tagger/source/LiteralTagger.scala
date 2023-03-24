@@ -18,61 +18,47 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
- *
  */
 
 package ai.privado.languageEngine.python.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
+import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
 
-class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
-
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern = ruleInfo.combinedRulePattern
+    // Step 1.2
+    // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
+    val generalLiterals = cpg
+      .call("(?:add|get|put|pop).*")
+      .argument
+      .where(_.argumentIndex(1))
+      .isLiteral
+      .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
+      .whereNot(_.code(".*\\s.*"))
+      .l
 
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
-    regexMatchingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, identifier, ruleInfo)
-    })
-
-    val regexMatchingFieldIdentifiersIdentifiers =
-      cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
-    regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, identifier, ruleInfo)
-    })
-
-    val regexMatchingMembers = cpg.member.name(rulePattern).l
-    regexMatchingMembers.foreach(member => {
-      storeForTag(builder, member)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
-      addRuleTags(builder, member, ruleInfo)
-    })
-
-    //    Example: row_vehicle['VEHICLE_REGISTRATION_NUMBER']
-    //    Call("<operator>.indexAccess") // Tagging
-    //      [Arguments]
-    //      -Literal 'VEHICLE_REGISTRATION_NUMBER'
-    //      -Identifier row_vehicle
-    val indexAccessLiterals = cpg
-      .call("<operator>.indexAccess")
+    val sqlQueryLiterals = cpg
+      .call("(?:sql|query|select|find|execute|hasattr)")
       .argument
       .isLiteral
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
-    val indexAccessCalls = indexAccessLiterals.astParent.isCall.l
-    indexAccessCalls.foreach(iaCall => {
-      storeForTag(builder, iaCall)(InternalTag.INDEX_ACCESS_CALL.toString)
-      addRuleTags(builder, iaCall, ruleInfo)
-    })
 
+    val literals = generalLiterals ++ sqlQueryLiterals
+
+    literals.foreach(literal => {
+      storeForTag(builder, literal)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+      addRuleTags(builder, literal, ruleInfo)
+    })
   }
 }
