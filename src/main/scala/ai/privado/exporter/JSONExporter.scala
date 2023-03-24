@@ -51,6 +51,7 @@ import ExecutionContext.Implicits.global
 import duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
+import io.shiftleft.semanticcpg.language._
 
 object JSONExporter {
 
