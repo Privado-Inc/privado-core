@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -49,6 +49,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
 
     // Caching Rule
     RuleCache.setRule(rule)
+    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 
