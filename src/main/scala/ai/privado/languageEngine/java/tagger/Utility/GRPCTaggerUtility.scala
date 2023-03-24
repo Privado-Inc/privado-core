@@ -94,32 +94,14 @@ object GRPCTaggerUtility {
             }
           }
         })
-
       })
     })
 
     return grpcSinkCalls.l
   }
 
-  def getGrpcSinkRules(cpg: Cpg): RuleInfo = {
+  def getGrpcSinks(cpg: Cpg): List[Call] = {
     val endpoints = getGrpcEndpoints(cpg)
-    val methodFullNamesCombined =
-      getGrpcSinkCalls(cpg, endpoints).map(sink => sink.methodFullName).mkString("(", "|", ")")
-    return RuleInfo(
-      "Sinks.RPC.gRPC.Call",
-      "gRPC Call",
-      "",
-      Array[String]("grpc.io"),
-      List[String](methodFullNamesCombined),
-      false,
-      "",
-      HashMap[String, String](),
-      NodeType.API,
-      "",
-      CatLevelOne.SINKS,
-      "api",
-      Language.JAVA,
-      Array[String]()
-    )
+    return getGrpcSinkCalls(cpg, endpoints)
   }
 }
