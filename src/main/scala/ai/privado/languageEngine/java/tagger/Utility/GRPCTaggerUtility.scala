@@ -13,10 +13,14 @@ object GRPCTaggerUtility {
   private val StreamObserverPattern = "(?i)(.*)(StreamObserver)(.*)"
 
   def getGrpcEndpoints(cpg: Cpg): List[Method] = {
+    val onCompleted = "onCompleted"
 // Detecting `onCompleted` call by traversing function calls inside of all methods to narrow down gRPC services
     return cpg.method
       .where(
-        _.call.name("onCompleted").filter(_.argument.size == 1).where(_.argument.typ.fullName(StreamObserverPattern))
+        _.call
+          .name(onCompleted)
+          .filter(_.argument.size == 1)
+          .where(_.argument.typ.fullName(StreamObserverPattern))
       )
       .l
   }
@@ -24,7 +28,8 @@ object GRPCTaggerUtility {
   def getGrpcSinkCalls(cpg: Cpg, grpcEndpoints: List[Method]): List[Call] = {
     // `onNext` is always called inside of gRPC service methods
     // This `onNext` always has a StreamObserver in signature and takes only one argument
-    val OnNext        = "onNext"
+    val onNext        = "onNext"
+    val stub          = "(?i)(.*)(stub)(.*)"
     var grpcSinkCalls = ListBuffer[Call]()
 
     grpcEndpoints.foreach(endpoint => {
@@ -34,7 +39,7 @@ object GRPCTaggerUtility {
         .call(endpoint.name)
         .whereNot(
           _.astParent.isCall
-            .name(OnNext)
+            .name(onNext)
             .filter(_.argument.size == 1)
             .where(_.argument.typ.fullName(StreamObserverPattern))
         )
@@ -43,10 +48,10 @@ object GRPCTaggerUtility {
       // Detecting `onNext` call inside of gRPC endpoint method
       // `onNext` takes on argument, this should be the call that satisfies gRPC/proto file contract
       // Get full type name of arguments that the server/endpoint will process
-      val endpointArgTypes =
+      val inCallArgTypes =
         endpoint.call
-          .name(OnNext)
-          .filter(_.argument.size == 1)
+          .name(onNext)
+          .filter(_.argument.size <= 2)
           .where(_.argument.typ.fullName(StreamObserverPattern))
           .argument
           .isCall
@@ -55,14 +60,42 @@ object GRPCTaggerUtility {
           .typeFullName
           .l
 
+      val identifierArgTypes =
+        endpoint.call
+          .name(onNext)
+          .filter(_.argument.size <= 2)
+          .where(_.argument.typ.fullName(StreamObserverPattern))
+          .argument
+          .isIdentifier
+          .typ
+          .fullName
+          .l
+
       callList.foreach(sinkCall => {
         // Get full type name of arguments going inside gRPC sink call
         val sinkArgTypes = sinkCall.argument.isIdentifier.typeFullName.l
-        if (endpointArgTypes.toSet.equals(sinkArgTypes.toSet)) {
-          grpcSinkCalls += sinkCall
-        }
-      })
 
+        sinkArgTypes.foreach(sinkArgType => {
+          if (inCallArgTypes.contains(sinkArgType)) {
+            grpcSinkCalls += sinkCall
+          }
+          if (identifierArgTypes.contains(sinkArgType)) {
+            grpcSinkCalls += sinkCall
+          }
+
+          if (inCallArgTypes.size == 0) {
+            if (sinkArgType.matches(stub)) {
+              grpcSinkCalls += sinkCall
+            }
+          }
+          if (identifierArgTypes.size == 0) {
+            if (sinkArgType.matches(stub)) {
+              grpcSinkCalls += sinkCall
+            }
+          }
+        })
+
+      })
     })
 
     return grpcSinkCalls.l
