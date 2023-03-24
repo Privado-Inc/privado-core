@@ -27,8 +27,8 @@ class DataElementGetterSetterDiscoveryTest extends AuditTestBase {
       val list = auditProcessor.getSourceUsingRules(Try(cpg))
 
       list.size shouldBe 2
-      list should contain ("com.ai.privado.Entity.User")
-      list should contain ("com.ai.privado.Entity.Account")
+      list should contain("com.ai.privado.Entity.User")
+      list should contain("com.ai.privado.Entity.Account")
       list should not contain ("com.ai.privado.Entity.Address")
     }
 
@@ -38,7 +38,7 @@ class DataElementGetterSetterDiscoveryTest extends AuditTestBase {
       val discoveryList = auditProcessor.extractClassFromPackage(Try(cpg), classList.toSet)
 
       discoveryList.size shouldBe 3
-      discoveryList should contain ("com.ai.privado.Entity.Address")
+      discoveryList should contain("com.ai.privado.Entity.Address")
     }
 
     "Test class member variable" in {

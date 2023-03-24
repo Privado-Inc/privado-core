@@ -11,10 +11,10 @@ abstract class AuditTestBase extends AnyWordSpec with Matchers with BeforeAndAft
 
   var cpg: Cpg = _
   val javaFileContentMap: Map[String, String]
-  var inputDir: File = _
+  var inputDir: File   = _
   var outputFile: File = _
 
-   override def beforeAll(): Unit = {
+  override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     for ((key, content) <- javaFileContentMap) {
       (inputDir / s"$key.java").write(content)
