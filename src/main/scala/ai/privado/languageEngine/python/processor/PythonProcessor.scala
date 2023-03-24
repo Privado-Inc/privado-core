@@ -33,6 +33,8 @@ import io.joern.javasrc2cpg.Config
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
@@ -61,6 +63,12 @@ object PythonProcessor {
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+
+          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
+          new PythonPropertyFilePass(cpg, sourceRepoLocation).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {

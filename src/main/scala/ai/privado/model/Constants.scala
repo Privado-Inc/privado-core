@@ -79,6 +79,7 @@ object Constants {
   val notDetected                  = "Not Detected"
   val createdAt                    = "createdAt"
   val repoName                     = "repoName"
+  val language                     = "language"
   val gitMetaData                  = "gitMetaData"
   val sources                      = "sources"
   val localScanPath                = "localScanPath"
