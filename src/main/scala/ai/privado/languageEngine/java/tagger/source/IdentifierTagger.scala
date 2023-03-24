@@ -108,7 +108,10 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           .whereNot(_.code("this"))
           .foreach(impactedObject => {
             if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-              storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+              storeForTag(builder, impactedObject)(
+                InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                ruleInfo.id
+              )
               storeForTag(builder, impactedObject)(
                 Constants.id,
                 Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
