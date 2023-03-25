@@ -106,13 +106,13 @@ class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(String, String, 
     // dependency directly consumed as call node `cors()`
     cachedCall
       .filter(_.name.equals(importedAs))
-      .filter(_.file.name.head.equals(fileName))
+      .filter(_.file.name.headOption.getOrElse("").equals(fileName))
       .foreach(callNode => updateCallNode(builder, callNode, importedEntity, packageName))
 
     // dependency consumed via a identifier node `bodyParser.verifyJson()`
     cpg
       .identifier(importedAs)
-      .filter(_.file.name.head.equals(fileName))
+      .filter(_.file.name.headOption.getOrElse("").equals(fileName))
       .astParent
       .isCall
       .nameNot(Operators.ALL.asScala.toSeq: _*)
