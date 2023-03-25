@@ -30,7 +30,8 @@ import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
   MethodFullName,
   MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
+  MethodFullNameFromIdentifier,
+  MethodFullNameStyleDep
 }
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -68,10 +69,14 @@ object JavascriptProcessor {
         logger.info("Applying default overlays")
         logger.info("Enhancing Javascript graph")
         logger.debug("Running custom passes")
+        new MethodFullNameStyleDep(cpg).createAndApply()
+        println("done with MethodFullNameStyleDep")
         new MethodFullName(cpg).createAndApply()
+        println("done with MethodFullName")
         new MethodFullNameFromIdentifier(cpg).createAndApply()
+        println("done with MethodFullNameFromIdentifier")
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
-
+        println("done with MethodFullNameForEmptyNodes")
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
           val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
