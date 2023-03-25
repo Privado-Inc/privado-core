@@ -140,8 +140,6 @@ object JavascriptProcessor {
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
-    new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-
     val maybeCpg = new JsSrc2Cpg() createCpgWithOverlays (cpgconfig)
     println("done with base CPG")
     val xtocpg = maybeCpg.map { cpg =>
