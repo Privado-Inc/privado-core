@@ -23,9 +23,9 @@
 
 package ai.privado.languageEngine.java.semantic
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{CatLevelOne, Constants, InternalTag, Semantic}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Semantic, Language}
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -51,69 +51,74 @@ object SemanticGenerator {
     * @return
     */
   def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput): Semantics = {
-    val customSinkSemantics = cpg.call
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-      .methodFullName
-      .dedup
-      .l
-      .map(generateSemanticForTaint(_, -1))
-      .sorted
-
-    val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
-
-    var customNonTaintDefaultSemantics   = List[String]()
-    var specialNonTaintDefaultSemantics  = List[String]()
-    var customStringSemantics            = List[String]()
-    var customNonPersonalMemberSemantics = List[String]()
-
-    if (!privadoScanConfig.disableRunTimeSemantics) {
-      customNonTaintDefaultSemantics = nonTaintingMethods
-        .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
-        .fullName
-        .l
-        .map(generateNonTaintSemantic)
-        .sorted
-
-      specialNonTaintDefaultSemantics = nonTaintingMethods
-        .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
-        .fullName
-        .l
-        .map(generateSemanticForTaint(_, 0))
-        .sorted
-
-      customStringSemantics = cpg.method
-        .filter(_.isExternal)
-        .where(_.callIn)
-        .fullName(".*:java.lang.String\\(.*")
-        .fullNameNot(".*\\.set[A-Za-z_]*:.*")
-        .fullName
+    val lang = AppCache.repoLanguage
+    if (lang != Language.JAVA) {
+      getDefaultSemantics
+    } else {
+      val customSinkSemantics = cpg.call
+        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+        .methodFullName
         .dedup
         .l
         .map(generateSemanticForTaint(_, -1))
         .sorted
 
-      customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
+      val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
+
+      var customNonTaintDefaultSemantics   = List[String]()
+      var specialNonTaintDefaultSemantics  = List[String]()
+      var customStringSemantics            = List[String]()
+      var customNonPersonalMemberSemantics = List[String]()
+
+      if (!privadoScanConfig.disableRunTimeSemantics) {
+        customNonTaintDefaultSemantics = nonTaintingMethods
+          .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
+          .fullName
+          .l
+          .map(generateNonTaintSemantic)
+          .sorted
+
+        specialNonTaintDefaultSemantics = nonTaintingMethods
+          .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
+          .fullName
+          .l
+          .map(generateSemanticForTaint(_, 0))
+          .sorted
+
+        customStringSemantics = cpg.method
+          .filter(_.isExternal)
+          .where(_.callIn)
+          .fullName(".*:java.lang.String\\(.*")
+          .fullNameNot(".*\\.set[A-Za-z_]*:.*")
+          .fullName
+          .dedup
+          .l
+          .map(generateSemanticForTaint(_, -1))
+          .sorted
+
+        customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
+      }
+      val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic).sorted
+
+      logger.debug("\nCustom Non taint default semantics")
+      customNonTaintDefaultSemantics.foreach(logger.debug)
+      logger.debug("\nCustom specialNonTaintDefaultSemantics semantics")
+      specialNonTaintDefaultSemantics.foreach(logger.debug)
+      logger.debug("\nCustom customStringSemantics semantics")
+      customStringSemantics.foreach(logger.debug)
+      logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
+      customNonPersonalMemberSemantics.foreach(logger.debug)
+      logger.debug("\nCustom customSinkSemantics semantics")
+      customSinkSemantics.foreach(logger.debug)
+      logger.debug("\nCustom semanticFromConfig semantics")
+      semanticFromConfig.foreach(logger.debug)
+
+      val list =
+        customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
+      val parsed         = new Parser().parse(list.mkString("\n"))
+      val finalSemantics = SemanticGenerator.getDefaultSemantics.elements ++ parsed
+      Semantics.fromList(finalSemantics)
     }
-    val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic).sorted
-
-    logger.debug("\nCustom Non taint default semantics")
-    customNonTaintDefaultSemantics.foreach(logger.debug)
-    logger.debug("\nCustom specialNonTaintDefaultSemantics semantics")
-    specialNonTaintDefaultSemantics.foreach(logger.debug)
-    logger.debug("\nCustom customStringSemantics semantics")
-    customStringSemantics.foreach(logger.debug)
-    logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
-    customNonPersonalMemberSemantics.foreach(logger.debug)
-    logger.debug("\nCustom customSinkSemantics semantics")
-    customSinkSemantics.foreach(logger.debug)
-    logger.debug("\nCustom semanticFromConfig semantics")
-    semanticFromConfig.foreach(logger.debug)
-
-    val list =
-      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
-    val parsed         = new Parser().parse(list.mkString("\n"))
-    val finalSemantics = SemanticGenerator.getDefaultSemantics.elements ++ parsed
-    Semantics.fromList(finalSemantics)
   }
 
   /** Generate semantics for tainting passed argument based on the number of parameter in method signature
