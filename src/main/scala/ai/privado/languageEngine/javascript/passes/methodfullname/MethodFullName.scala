@@ -45,7 +45,7 @@ class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(Identifier, Stri
     *   prefix name to be added in methodFullName
     */
   override def generateParts(): Array[(Identifier, String, String, String)] = {
-
+    println("inside MethodFullName - generateParts() started")
     // Captures `const bodyParser = require('body-parser')` style
     val requireStyleDependency = cpg.dependency.name.l.par
       .flatMap(dependencyName => {
@@ -77,11 +77,13 @@ class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(Identifier, Stri
           })
       })
       .toArray
+    println("inside MethodFullName - generateParts() done")
     requireStyleDependency
   }
 
   override def runOnPart(builder: DiffGraphBuilder, importedTuple: (Identifier, String, String, String)): Unit = {
-    val importedAs     = importedTuple._1
+    val importedAs = importedTuple._1
+    println(s"inside MethodFullName - runOnPart() processing identifier ${importedAs.name} started")
     val importedEntity = importedTuple._2
     val fileName       = importedTuple._3
     val packageName    = importedTuple._4
@@ -99,7 +101,7 @@ class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(Identifier, Stri
     Traversal(importedAs).astParent.isCall
       .nameNot(Operators.ALL.asScala.toSeq: _*)
       .foreach(callNode => updateCallNode(builder, callNode, importedEntity, packageName))
-
+    println(s"inside MethodFullName - runOnPart() processing identifier ${importedAs.name} done")
   }
 
   /** Adds methodFullName to call nodes with the information passed
