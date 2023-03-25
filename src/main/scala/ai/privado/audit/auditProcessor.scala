@@ -24,6 +24,7 @@ object auditProcessor {
         // Get DTO/Entity Class name
         val typeDeclList = cpg.typeDecl
           .filter(_.order > 0)
+          .whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"))
           .or(_.where(_.method.name("^(get|set).*")), _.where(_.method.name("^(hascode|equals)")))
           .toList
         typeDeclList.foreach(node => {
@@ -59,7 +60,7 @@ object auditProcessor {
       case Success(cpg) => {
         packageNameSet.foreach(packageName => {
           val pattern      = s"$packageName.*"
-          val typeDeclList = cpg.typeDecl.filter(_.order > 0).where(_.fullName(pattern)).toList
+          val typeDeclList = cpg.typeDecl.filter(_.order > 0).where(_.fullName(pattern)).whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$")).toList
           typeDeclList.foreach(typeDecl => derivedClassName += typeDecl.fullName)
         })
       }

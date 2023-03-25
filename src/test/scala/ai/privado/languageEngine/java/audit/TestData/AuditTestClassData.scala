@@ -35,4 +35,50 @@ object AuditTestClassData {
       |   public String houseNo;
       |}
       |""".stripMargin
+
+  val userController =
+    """
+      |package com.ai.privado.Controller;
+      |
+      |import com.ai.privado.Entity.User;
+      |import org.springframework.web.bind.annotation.*;
+      |
+      |@RestController
+      |@RequestMapping("/user")
+      |public class UserController {
+      |
+      |   @PostMapping("/add")
+      |   public String userHandler(@RequestBody User user) {
+      |     return user.getFirstName();
+      |   }
+      |}
+      |""".stripMargin
+
+  val salaryLombok =
+    """
+      |package com.ai.privado.Entity;
+      |
+      |import lombok.Getter;
+      |import lombok.Setter;
+      |
+      |@Getter
+      |@Setter
+      |public class Salary {
+      |
+      |   public String payment;
+      |
+      |}
+      |""".stripMargin
+
+  val addressController =
+    """
+      |package com.ai.privado.Controller;
+      |
+      |public class AddressController {
+      |
+      |   public String addressInfo;
+      |
+      |   public String getAddressInfo() {return addressInfo;}
+      |}
+      |""".stripMargin
 }
