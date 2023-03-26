@@ -78,7 +78,6 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
     "Test Collection discovery" in {
       val collectionList = DataElementDiscovery.getCollectionInputList(Try(cpg))
-      println(collectionList)
       collectionList should contain("com.test.privado.Entity.User")
       collectionList should not contain ("com.test.privado.Entity.Account")
       collectionList should not contain ("com.test.privado.Entity.Salary")

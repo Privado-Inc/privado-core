@@ -185,8 +185,8 @@ object DataElementDiscovery {
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
-        println("Failed to process audit report")
-        logger.debug("Failed to process audit report", ex)
+        println("Failed to process Data Element Discovery report")
+        logger.debug("Failed to process Data Element Discovery report", ex)
     }
     workbookResult.toList
   }
