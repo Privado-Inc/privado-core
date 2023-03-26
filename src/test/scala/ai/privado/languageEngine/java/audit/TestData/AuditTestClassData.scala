@@ -4,9 +4,8 @@ object AuditTestClassData {
 
   val user =
     """
-      |package com.ai.privado.Entity;
+      |package com.test.privado.Entity;
       |
-      |@Entity
       |public class User {
       |   public String firstName;
       |
@@ -17,9 +16,8 @@ object AuditTestClassData {
 
   val account =
     """
-      |package com.ai.privado.Entity;
+      |package com.test.privado.Entity;
       |
-      |@Entity
       |public class Account {
       |   public String accountNo;
       |
@@ -29,19 +27,26 @@ object AuditTestClassData {
 
   val address =
     """
-      |package com.ai.privado.Entity;
+      |package com.test.privado.Entity;
       |
       |public class Address {
       |   public String houseNo;
+      |
+      |   public String giveHouseNo() {
+      |     return houseNo;
+      |   }
       |}
       |""".stripMargin
 
   val userController =
     """
-      |package com.ai.privado.Controller;
+      |package com.test.privado.Controller;
       |
-      |import com.ai.privado.Entity.User;
-      |import org.springframework.web.bind.annotation.*;
+      |import com.test.privado.Entity.User;
+      |import org.springframework.web.bind.annotation.PostMapping;
+      |import org.springframework.web.bind.annotation.RequestBody;
+      |import org.springframework.web.bind.annotation.RequestMapping;
+      |import org.springframework.web.bind.annotation.RestController;
       |
       |@RestController
       |@RequestMapping("/user")
@@ -56,7 +61,7 @@ object AuditTestClassData {
 
   val salaryLombok =
     """
-      |package com.ai.privado.Entity;
+      |package com.test.privado.Entity;
       |
       |import lombok.Getter;
       |import lombok.Setter;
@@ -72,13 +77,33 @@ object AuditTestClassData {
 
   val addressController =
     """
-      |package com.ai.privado.Controller;
+      |package com.test.privado.Controller;
       |
       |public class AddressController {
       |
       |   public String addressInfo;
       |
       |   public String getAddressInfo() {return addressInfo;}
+      |}
+      |""".stripMargin
+
+  val invoice =
+    """
+      |package com.test.privado.Entity;
+      |
+      |public class Invoice {
+      |
+      |   public String invoiceNo;
+      |
+      |   @Override
+      |    public int hashCode() {
+      |        return super.hashCode();
+      |    }
+      |
+      |    @Override
+      |    public boolean equals(Object obj) {
+      |        return super.equals(obj);
+      |    }
       |}
       |""".stripMargin
 }

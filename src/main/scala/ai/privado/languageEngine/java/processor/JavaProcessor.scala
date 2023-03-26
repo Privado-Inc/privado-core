@@ -23,8 +23,7 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.audit.auditProcessor
-import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.audit.DataElementDiscovery
 import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
@@ -126,7 +125,7 @@ object JavaProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              auditProcessor.processDataElementDiscovery(xtocpg, taggerCache),
+              DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>

@@ -1,7 +1,6 @@
 package ai.privado.audit
 
 import ai.privado.cache.TaggerCache
-import ai.privado.model.{CatLevelOne, Constants}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
@@ -11,7 +10,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-object auditProcessor {
+object DataElementDiscovery {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -25,7 +24,11 @@ object auditProcessor {
         val typeDeclList = cpg.typeDecl
           .filter(_.order > 0)
           .whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"))
-          .or(_.where(_.method.name("^(get|set).*")), _.where(_.method.name("^(hascode|equals)")))
+          .or(
+            _.where(_.method.name("^(get|set).*")),
+            _.where(_.method.name("^(hascode|equals)")),
+            _.where(_.annotation.name(".*(Getter|Setter).*"))
+          )
           .toList
         typeDeclList.foreach(node => {
           if (node.head.fullName.nonEmpty) {
@@ -59,8 +62,12 @@ object auditProcessor {
     xtocpg match {
       case Success(cpg) => {
         packageNameSet.foreach(packageName => {
-          val pattern      = s"$packageName.*"
-          val typeDeclList = cpg.typeDecl.filter(_.order > 0).where(_.fullName(pattern)).whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$")).toList
+          val pattern = s"$packageName.*"
+          val typeDeclList = cpg.typeDecl
+            .filter(_.order > 0)
+            .where(_.fullName(pattern))
+            .whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"))
+            .toList
           typeDeclList.foreach(typeDecl => derivedClassName += typeDecl.fullName)
         })
       }
@@ -156,15 +163,21 @@ object auditProcessor {
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key, new mutable.HashMap[String, String])
             value.foreach(member => {
               if (ruleMemberInfo.contains(member.name)) {
-                workbookResult += List("", member.name, "YES", ruleMemberInfo.getOrElse(member.name, "Default value"))
+                workbookResult += List(
+                  "",
+                  member.name,
+                  "YES",
+                  ruleMemberInfo.getOrElse(member.name, "Default value"),
+                  ""
+                )
               } else {
-                workbookResult += List("", member.name, "NO", "--")
+                workbookResult += List("", member.name, "NO", "--", "")
               }
             })
           } else {
             workbookResult += List(key, "--", "NO", "", isCollectionInput)
             value.foreach(member => {
-              workbookResult += List("", member.name, "NO", "--")
+              workbookResult += List("", member.name, "NO", "--", "")
             })
           }
         }
