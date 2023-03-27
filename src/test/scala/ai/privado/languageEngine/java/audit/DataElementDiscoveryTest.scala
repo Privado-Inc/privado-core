@@ -1,14 +1,8 @@
 package ai.privado.languageEngine.java.audit
 import ai.privado.audit.DataElementDiscovery
-import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
-import ai.privado.languageEngine.java.semantic.Language.tagger
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
-import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.LiteralTagger
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -19,7 +13,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     new IdentifierTagger(cpg, taggerCache).createAndApply()
-    new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
+    new CollectionTagger(cpg, sourceRule).createAndApply()
   }
 
   override val javaFileContentMap: Map[String, String] = getContent()
@@ -96,7 +90,6 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
 
       workbookList.foreach(row => {
-        println(row)
         classNameList += row.head
         memberList += row(1)
         sourceRuleIdMap.put(row(1), row(3))

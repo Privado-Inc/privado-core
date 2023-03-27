@@ -112,7 +112,7 @@ object JavaProcessor {
           JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
-              return Left(err)
+              Left(err)
             case Right(_) =>
               println(
                 s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
@@ -120,40 +120,42 @@ object JavaProcessor {
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
-          }
 
-          if (ScanProcessor.config.generateAuditReport) {
-            ExcelExporter.auditExport(
-              outputAuditFileName,
-              DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache),
-              sourceRepoLocation
-            ) match {
-              case Left(err) =>
-                MetricHandler.otherErrorsOrWarnings.addOne(err)
-                return Left(err)
-              case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
-                )
-            }
-          }
+              // Export the Audit report
+              if (ScanProcessor.config.generateAuditReport) {
+                ExcelExporter.auditExport(
+                  outputAuditFileName,
+                  DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache),
+                  sourceRepoLocation
+                ) match {
+                  case Left(err) =>
+                    MetricHandler.otherErrorsOrWarnings.addOne(err)
+                    return Left(err)
+                  case Right(_) =>
+                    println(
+                      s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+                    )
+                }
+              }
 
-          if (ScanProcessor.config.testOutput) {
-            JSONExporter.IntermediateFileExport(
-              outputIntermediateFileName,
-              sourceRepoLocation,
-              DataFlowCache.getIntermediateDataFlow()
-            ) match {
-              case Left(err) =>
-                MetricHandler.otherErrorsOrWarnings.addOne(err)
-                return Left(err)
-              case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
-                )
-            }
+              // Export the Intermediate report
+              if (ScanProcessor.config.testOutput) {
+                JSONExporter.IntermediateFileExport(
+                  outputIntermediateFileName,
+                  sourceRepoLocation,
+                  DataFlowCache.getIntermediateDataFlow()
+                ) match {
+                  case Left(err) =>
+                    MetricHandler.otherErrorsOrWarnings.addOne(err)
+                    return Left(err)
+                  case Right(_) =>
+                    println(
+                      s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                    )
+                }
+              }
+              Right(())
           }
-          Right(())
         } finally {
           cpg.close()
           import java.io.File

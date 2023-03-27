@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.audit
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -33,7 +33,6 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
     cpg = xtocpg.get
 
     RuleCache.setRule(rule)
-    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 
