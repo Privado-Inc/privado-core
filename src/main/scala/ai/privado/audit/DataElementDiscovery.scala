@@ -89,7 +89,6 @@ object DataElementDiscovery {
       case Success(cpg) => {
         classNameSet.foreach(className => {
           // Get member variable of class and put it into map
-          // val memberInfo = cpg.member.filter(_.typeDecl.order > 0).where(_.typeDecl.fullName(className)).l
           val memberInfo = cpg.typeDecl.filter(_.order > 0).where(_.fullName(className)).member.toList
           memberInfoMap.put(className, memberInfo)
         })
@@ -110,7 +109,6 @@ object DataElementDiscovery {
 
     xtocpg match {
       case Success(cpg) => {
-        // val parameterIn = cpg.method.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name)).parameter.l
         // Get tagged collection input list
         val methodList = cpg.parameter.where(_.tag).l
         methodList.foreach(method => {
