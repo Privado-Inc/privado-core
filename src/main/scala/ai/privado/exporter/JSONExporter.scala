@@ -79,6 +79,7 @@ object JSONExporter {
       output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
       output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
       output.addOne(Constants.repoName                     -> AppCache.repoName.asJson)
+      output.addOne(Constants.language                     -> AppCache.repoLanguage.toString.asJson)
       output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
 
