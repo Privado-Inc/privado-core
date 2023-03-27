@@ -24,14 +24,14 @@
 package ai.privado.languageEngine.java.tagger.source
 
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model._
 import io.shiftleft.semanticcpg.language._
 
-class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
+class JavaIdentifierTaggingTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg).createAndApply()
+    new IdentifierTagger(cpg, taggerCache).createAndApply()
   }
 
   override val javaFileContents =
@@ -43,27 +43,6 @@ class JavaIdentiferTaggingTest extends JavaTaggingTestBase {
       |   public void setFirstName(String firstName) {this.firstName = firstName;}
       |}
       |""".stripMargin
-
-  val sources = List(
-    RuleInfo(
-      "Data.Sensitive.FirstName",
-      "FirstName",
-      "",
-      Array(),
-      List("(?i).*firstName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.JAVA,
-      Array()
-    )
-  )
-  override val rule: ConfigAndRules =
-    ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List(), List())
 
   "Identifier Tagger" should {
     "tag a firstName identifier" in {

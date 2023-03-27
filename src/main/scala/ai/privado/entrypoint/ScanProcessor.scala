@@ -27,6 +27,7 @@ import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.metric.MetricHandler
+import ai.privado.model.Language.Language
 import ai.privado.model._
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
@@ -41,6 +42,7 @@ import java.util.Calendar
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.sys.exit
 import scala.util.{Failure, Success, Try}
+import privado_core.BuildInfo
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -58,7 +60,7 @@ object ScanProcessor extends CommandProcessor {
       List[SystemConfig]()
     )
 
-  def parseRules(rulesPath: String, lang: String): ConfigAndRules = {
+  def parseRules(rulesPath: String, lang: Language): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
@@ -70,18 +72,13 @@ object ScanProcessor extends CommandProcessor {
           exit(1)
       }
     }
-    val langToFilter = lang match {
-      case Languages.JAVASRC   => Language.JAVA
-      case Languages.JSSRC     => Language.JAVASCRIPT
-      case Languages.PYTHONSRC => Language.PYTHON
-      case _                   => Language.JAVA
-    }
+
     def filterByLang(rule: RuleInfo): Boolean =
-      rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSemanticByLang(rule: Semantic): Boolean =
-      rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSystemConfigByLang(rule: SystemConfig): Boolean =
-      rule.language == langToFilter || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
         ir.listRecursively.toList.par
@@ -210,7 +207,7 @@ object ScanProcessor extends CommandProcessor {
     parsedRules
   }
 
-  def processRules(lang: String): ConfigAndRules = {
+  def processRules(lang: Language): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
@@ -280,6 +277,7 @@ object ScanProcessor extends CommandProcessor {
   override def process(): Either[String, Unit] = {
     println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
     println(s"Privado Core Version: ${Environment.privadoVersionCore}")
+    println(s"Privado Language Engine Version: ${BuildInfo.joernVersion}")
     if (!File(config.sourceLocation.head).isWritable) {
       println(s"Warning: Privado doesn't have write permission on give repo location - ${config.sourceLocation.head}")
     }
@@ -291,7 +289,8 @@ object ScanProcessor extends CommandProcessor {
     * @return
     *   rule
     */
-  def processAndCacheRule(lang: String): ConfigAndRules = {
+  def processAndCacheRule(lang: Language): ConfigAndRules = {
+    AppCache.repoLanguage = lang // we are caching the repo language here, and we will use this to get the repo's lang
     val processedRules = processRules(lang)
     logger.info("Caching rules")
     RuleCache.setRule(processedRules)
@@ -313,20 +312,24 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(processAndCacheRule(lang), sourceRepoLocation, language)
+                JavaProcessor.createJavaCpg(processAndCacheRule(Language.JAVA), sourceRepoLocation, language)
               case language if language == Languages.JSSRC && config.enableJS =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
+                JavascriptProcessor.createJavaScriptCpg(
+                  processAndCacheRule(Language.JAVASCRIPT),
+                  sourceRepoLocation,
+                  lang
+                )
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
-                PythonProcessor.createPythonCpg(processAndCacheRule(lang), sourceRepoLocation, lang)
+                PythonProcessor.createPythonCpg(processAndCacheRule(Language.PYTHON), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
                     s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
-                  JavaProcessor.createJavaCpg(processAndCacheRule(Languages.JAVASRC), sourceRepoLocation, lang)
+                  JavaProcessor.createJavaCpg(processAndCacheRule(Language.JAVA), sourceRepoLocation, lang)
                 } else {
                   println(s"As of now we only support privacy code scanning for 'Java' code base.")
                   println(s"We detected this code base of '${lang}'.")

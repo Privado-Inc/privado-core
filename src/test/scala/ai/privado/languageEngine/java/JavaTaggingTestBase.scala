@@ -23,8 +23,8 @@
 
 package ai.privado.languageEngine.java
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.ConfigAndRules
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -38,7 +38,6 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
   val javaFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
-  val rule: ConfigAndRules
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -50,6 +49,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
 
     // Caching Rule
     RuleCache.setRule(rule)
+    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 
@@ -60,4 +60,26 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     super.afterAll()
   }
 
+  val sourceRule = List(
+    RuleInfo(
+      "Data.Sensitive.FirstName",
+      "FirstName",
+      "",
+      Array(),
+      List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
+  val rule: ConfigAndRules =
+    ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List())
+
+  val taggerCache = new TaggerCache()
 }

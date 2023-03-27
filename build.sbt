@@ -5,9 +5,9 @@ ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.3.592"
-val joernVersion      = "1.1.1441"
-val overflowdbVersion = "1.167"
+val cpgVersion        = "1.3.597"
+val joernVersion      = "1.1.1543"
+val overflowdbVersion = "1.171"
 
 //External dependency versions
 val circeVersion   = "0.14.1"
@@ -22,7 +22,6 @@ dependsOn(domainClasses)
 libraryDependencies ++= Seq(
   "com.github.pathikrit"            %% "better-files"            % "3.9.1",
   "com.github.scopt"                %% "scopt"                   % "3.7.1",
-  "org.apache.logging.log4j"         % "log4j-slf4j-impl"        % "2.17.1"       % Runtime,
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
   "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
@@ -44,7 +43,9 @@ libraryDependencies ++= Seq(
   "com.networknt"                    % "json-schema-validator"   % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
-  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0"
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
+  "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -61,8 +62,8 @@ ThisBuild / resolvers ++= Seq(
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
   Resolver.sonatypeRepo("snapshots")
 )
-lazy val astGenDlUrl       = "https://github.com/max-leuthaeuser/astgen/releases/download/latest/"
-lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe")
+lazy val astGenDlUrl       = "https://github.com/joernio/astgen/releases/download/v2.14.0/"
+lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe", "astgen-macos-arm")
 
 lazy val astGenDlTask = taskKey[Unit](s"Download astgen binaries")
 astGenDlTask := {
@@ -106,3 +107,6 @@ ThisBuild / publishTo := Some(
   "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
 )
 
+lazy val root = (project in file("."))
+  .enablePlugins(BuildInfoPlugin)
+  .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")

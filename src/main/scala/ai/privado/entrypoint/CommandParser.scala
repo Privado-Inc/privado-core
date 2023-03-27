@@ -40,11 +40,13 @@ case class PrivadoInput(
   disableThisFiltering: Boolean = false,
   disableFlowSeparationByDataElement: Boolean = false,
   disable2ndLevelClosure: Boolean = false,
+  enableAPIDisplay: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
   upload: Boolean = false,
   enableJS: Boolean = false,
+  testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false
 )
 
@@ -68,6 +70,8 @@ object CommandConstants {
   val DISABLE_FLOW_SEPERATION_BY_DATA_ELEMENT_ABBR = "dfsde"
   val DISABLE_2ND_LEVEL_CLOSURE                    = "disable-2nd-level-closure"
   val DISABLE_2ND_LEVEL_CLOSURE_ABBR               = "d2lc"
+  val ENABLE_API_DISPLAY                           = "enable-api-display"
+  val ENABLE_API_DISPLAY_ABBR                      = "ead"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
   val UPLOAD                                       = "upload"
@@ -78,6 +82,8 @@ object CommandConstants {
   val ENABLE_JS                                    = "enablejs"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
+  val TEST_OUTPUT                                  = "test-output"
+  val TEST_OUTPUT_ABBR                             = "tout"
 }
 
 object CommandParser {
@@ -148,6 +154,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(disable2ndLevelClosure = true))
               .text("Disable 2nd level closure"),
+            opt[Unit](CommandConstants.ENABLE_API_DISPLAY)
+              .abbr(CommandConstants.ENABLE_API_DISPLAY_ABBR)
+              .optional()
+              .action((_, c) => c.copy(enableAPIDisplay = true))
+              .text("Enable api display"),
             opt[Unit](CommandConstants.ENABLE_JS)
               .abbr(CommandConstants.ENABLE_JS)
               .optional()
@@ -177,6 +188,11 @@ object CommandParser {
               .text(
                 "Upload the output results to cloud without being prompted for the consent. If you have already given the consent this flag has no effect"
               ),
+            opt[Unit](CommandConstants.TEST_OUTPUT)
+              .abbr(CommandConstants.TEST_OUTPUT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(testOutput = true))
+              .text("Export the intermediate flow output"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

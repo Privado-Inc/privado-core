@@ -23,12 +23,12 @@
 package ai.privado.dataflow
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Expression, Identifier}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -118,6 +118,22 @@ object DuplicateFlowProcessor {
     pathIds.diff(visitedFlows) // This will give us all the Path ids which are super set of overlapping paths
   }
 
+  /** For a given list of paths discards the sub-flow by using the dedup algorithm, returning unique flows
+    *
+    * @param dataflowPaths
+    *   \- list of path
+    * @return
+    */
+  def getUniquePathsAfterDedup(dataflowPaths: List[Path]): List[Path] = {
+    val flows = dataflowPaths
+      .map(path => {
+        (DuplicateFlowProcessor.calculatePathId(path).getOrElse(""), path)
+      })
+      .toMap
+    val uniquePathIds = DuplicateFlowProcessor.pathIdsPerSourceIdAfterDedup(flows.keySet)
+    uniquePathIds.map(pathId => flows(pathId)).toList
+  }
+
   /** Generates a pathId for a given path, based on node Id
     * @param flow
     * @return
@@ -144,7 +160,10 @@ object DuplicateFlowProcessor {
     * @param dataflowMapByPathId
     *   \- map containing pathId -> path
     */
-  def filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId: Map[String, Path]): Unit = {
+  def filterIrrelevantFlowsAndStoreInCache(
+    dataflowMapByPathId: Map[String, Path],
+    privadoScanConfig: PrivadoInput
+  ): Unit = {
 
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
     RuleCache.getRule.sinks.foreach(sinkRule => {
@@ -157,7 +176,8 @@ object DuplicateFlowProcessor {
       filterFlowsBySubCategoryNodeTypeAndStoreInCache(
         dataflowMapByPathId,
         sinkSubTypeEntry._1,
-        sinkSubTypeEntry._2.toSet
+        sinkSubTypeEntry._2.toSet,
+        privadoScanConfig
       )
     )
   }
@@ -173,7 +193,8 @@ object DuplicateFlowProcessor {
   private def filterFlowsBySubCategoryNodeTypeAndStoreInCache(
     dataflowMapByPathId: Map[String, Path],
     sinkSubCategory: String,
-    sinkNodetypes: Set[String]
+    sinkNodetypes: Set[String],
+    privadoScanConfig: PrivadoInput
   ): Unit = {
     val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
       dataflowEntrySet._2.elements.last
@@ -195,7 +216,10 @@ object DuplicateFlowProcessor {
       val source = entrySet._2.elements.head
       try {
         source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-        source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+        if (privadoScanConfig.disable2ndLevelClosure)
+          source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+        else
+          source.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString).value.foreach(addToMap)
       } catch {
         case e: Exception => logger.debug("Exception while fetching sourceId in dataflow : ", e)
       }
@@ -230,8 +254,7 @@ object DuplicateFlowProcessor {
       val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
         .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
       if (sinkCatLevelTwoCustomTag.nonEmpty) {
-        val sinkId = sinkCatLevelTwoCustomTag.head.value
-        def filterFlowsOverlappingWithOtherDataElement() = {
+        def filterFlowsOverlappingWithOtherDataElement(sinkId: String) = {
           // Logic to filter flows which are interfering with the current source item
           // Ex - If traversing flow for email, discard flow which uses password
 
@@ -251,7 +274,7 @@ object DuplicateFlowProcessor {
               })
           }
 
-          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId) && !dataflowSinkType.equals("storages")
+          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId)
 
           // approach 2.2
           val sinkNode  = dataflowsMapByType(sinkPathId).elements.isCall.last
@@ -284,7 +307,7 @@ object DuplicateFlowProcessor {
           val finalMatchedDataElement = identifierMatchedDataElement ++ callMatchedDataElement
 
           val isFpByApproach2 = !finalMatchedDataElement
-            .contains(pathSourceId) && !dataflowSinkType.equals("storages")
+            .contains(pathSourceId)
 
           if (isFpByApproach1 && isFpByApproach2) {
             logger.debug(
@@ -313,13 +336,15 @@ object DuplicateFlowProcessor {
               DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
             )
         }
-        if (ScanProcessor.config.disableFlowSeparationByDataElement)
-          DataFlowCache.setDataflow(
-            DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-          )
-        else
-          filterFlowsOverlappingWithOtherDataElement()
-        AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+        sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
+          if (ScanProcessor.config.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA)
+            DataFlowCache.setDataflow(
+              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
+            )
+          else
+            filterFlowsOverlappingWithOtherDataElement(sinkId)
+          AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+        })
       }
     }
 
@@ -423,7 +448,7 @@ object DuplicateFlowProcessor {
     * @param sourceNode
     * @return
     */
-  private def getMemberNameForDerivedSourceNode(derivedByTag: (String, String), sourceNode: CfgNode) = {
+  private def getMemberNameForDerivedSourceNode(derivedByTag: (String, String), sourceNode: AstNode) = {
     val tagName  = derivedByTag._1
     val tagValue = derivedByTag._2
     sourceNode.tag.nameExact(tagValue + Constants.underScore + tagName).value.l.headOption match {

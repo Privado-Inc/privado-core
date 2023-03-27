@@ -24,26 +24,43 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import better.files.File
+import io.joern.console.cpgcreation.PythonSrcCpgGenerator
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, JavaProperty, Literal, MethodParameterIn}
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AnnotationParameterAssign,
+  AstNode,
+  CfgNode,
+  JavaProperty,
+  Literal,
+  MethodParameterIn
+}
+import java.nio.file.{Paths, Files}
 
-class AnnotationTests extends PropertiesFilePassTestBase {
+class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
     """
       |internal.logger.api.base=https://logger.privado.ai/
+      |slack.base.url=https://hooks.slack.com/services/some/leaking/url
       |""".stripMargin
-  override val javaFileContents: String =
+
+  override val propertyFileContents = ""
+  override val codeFileContents: String =
     """
       |
       |import org.springframework.beans.factory.annotation.Value;
       |
       |class Foo {
+      |
+      |@Value("${slack.base.url}")
+      |private static final String slackWebHookURL;
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
       |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
@@ -54,28 +71,43 @@ class AnnotationTests extends PropertiesFilePassTestBase {
 
   "ConfigFilePass" should {
     "connect annotated parameter to property" in {
-      val List(param: MethodParameterIn) = cpg.property.usedAt.l
-      param.name shouldBe "loggerBaseURL"
+      val anno: List[AstNode] = cpg.property.usedAt.l
+      anno.length shouldBe 2
+
+      anno.foreach(element => {
+        element.label match {
+          case "METHOD_PARAMETER_IN" =>
+            val List(param: MethodParameterIn) = element.l
+            param.name shouldBe "loggerBaseURL"
+          case "MEMBER" =>
+            element.code shouldBe "java.lang.String slackWebHookURL"
+          case _ => s"Unknown label ${element.label}. Test failed"
+        }
+      })
     }
 
     "connect property to annotated parameter" in {
-      val List(javaP: JavaProperty) = cpg.property.usedAt.originalProperty.l
-      javaP.value shouldBe "https://logger.privado.ai/"
+      val properties = cpg.property.usedAt.originalProperty.l
 
-      val List(param: MethodParameterIn) = cpg.property.usedAt.l
-      param.originalProperty.head.value shouldBe "https://logger.privado.ai/"
-      param.originalPropertyValue.head shouldBe "https://logger.privado.ai/"
+      properties.length shouldBe 2
+
+      properties.foreach(prop => {
+        prop.name match {
+          case "internal.logger.api.base" => prop.value shouldBe ("https://logger.privado.ai/")
+          case "slack.base.url"           => prop.value shouldBe ("https://hooks.slack.com/services/some/leaking/url")
+          case _                          => s"Unknown value ${prop.value}. Test failed"
+        }
+      })
     }
-
   }
 }
 
-class GetPropertyTests extends PropertiesFilePassTestBase {
+class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
       |internal.logger.api.base=https://logger.privado.ai/
       |""".stripMargin
-  override val javaFileContents =
+  override val codeFileContents =
     """
       | import org.springframework.core.env.Environment;
       |
@@ -88,9 +120,12 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
       |}
       |""".stripMargin
 
+  override val propertyFileContents = ""
+
   "ConfigFilePass" should {
     "create a file node for the property file" in {
       val List(name: String) = cpg.file.name.l
+
       name.endsWith("/test.properties") shouldBe true
     }
 
@@ -122,25 +157,100 @@ class GetPropertyTests extends PropertiesFilePassTestBase {
   }
 }
 
+// Unit test to check if property is added in the cpg using XML files.
+class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
+  override val configFileContents =
+    """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+      |<beans>
+      |<bean id="myField" class="com.example.test.GFG">
+      |    <property name="staticField" value="${jdbc.url}"/>
+      |    <property name="static_two" value="hello-world"/>
+      |</bean>
+      |<bean id="myField" class="com.example.test.MFM">
+      |    <property name="testProperty" ref="myField"/>
+      |</bean>
+      |</beans>
+      |""".stripMargin
+
+  override val propertyFileContents: String =
+    """jdbc.url=http://localhost:8081/""".stripMargin
+  override val codeFileContents =
+    """
+      |package com.example.test;
+      |
+      |import java.util.*;
+      |import java.io.*;
+      |
+      |public class GFG {
+      |	private String staticField;
+      |}
+      |""".stripMargin
+
+  "ConfigFilePass" should {
+    "create a file node for the property file" in {
+      val List(name: String) = cpg.file.name.l.filter(file => file.endsWith(".xml"))
+      name.endsWith("/test.xml") shouldBe true
+    }
+  }
+
+  "create a `property` node for each property" in {
+    val properties = cpg.property.map(x => (x.name, x.value)).toMap
+    properties
+      .get("static_two")
+      .contains("hello-world") shouldBe true
+  }
+
+  "Two way edge between member and propertyNode" in {
+    val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
+    properties
+      .get("staticField")
+      .contains("http://localhost:8081/") shouldBe true
+  }
+
+  "Two way edge between member and propertyNode for no code reference" in {
+    val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
+    properties
+      .contains("static_two") shouldBe false
+  }
+
+  "References to another beans should be skipped" in {
+    val properties = cpg.property.map(property => (property.name, property.value)).toMap;
+    properties
+      .contains("testProperty") shouldBe false
+  }
+}
+
 /** Base class for tests on properties files and Java code.
   */
-abstract class PropertiesFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+// file extension to support for any file as properties
+abstract class PropertiesFilePassTestBase(fileExtension: String)
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll {
 
   var cpg: Cpg = _
   val configFileContents: String
-  val javaFileContents: String
+  val codeFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
+  val propertyFileContents: String
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
-    (inputDir / "test.properties").write(configFileContents)
-    (inputDir / "GeneralConfig.java").write(javaFileContents)
+    (inputDir / s"test$fileExtension").write(configFileContents)
+
     (inputDir / "unrelated.file").write("foo")
+    if (propertyFileContents.nonEmpty) {
+      (inputDir / "application.properties").write(propertyFileContents)
+    }
     outputFile = File.newTemporaryFile()
+
+    (inputDir / "GeneralConfig.java").write(codeFileContents)
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+
     cpg = new JavaSrc2Cpg().createCpg(config).get
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
+
     super.beforeAll()
   }
 
