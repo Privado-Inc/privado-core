@@ -25,13 +25,15 @@ package ai.privado.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
-import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.DefaultSemantics
+import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 import scala.collection.mutable.HashMap
 
@@ -75,8 +77,19 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       .toArray
   }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
-    val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    val apiInternalSources = cpg.literal
+      .code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')")
+      .map(literalNode => {
+        // Runtime string parent is used to consider string which are generated at runtime
+        // Ex - In javascript `/user/${userId}/paymentDetails`
+        val runtimeStringParent = Traversal(literalNode).astParent.isCall.name(Constants.runtimeString).l
+        if (runtimeStringParent.nonEmpty) {
+          runtimeStringParent.head
+        } else
+          literalNode
+      })
+      .l
+    val propertySources = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     sinkTagger(apiInternalSources ++ propertySources, apis, builder, ruleInfo)
   }
 }

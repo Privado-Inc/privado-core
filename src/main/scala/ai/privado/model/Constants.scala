@@ -109,8 +109,9 @@ object Constants {
   val JS_STATS     = "js.txt"
   val PYTHON_STATS = "python.txt"
 
-  val delombok = "delombok"
-  val API      = "API"
+  val delombok      = "delombok"
+  val API           = "API"
+  val runtimeString = "__Runtime.TO_STRING"
 
   // Rule ids
   val internalAPIRuleId = "Sinks.API.InternalAPI"

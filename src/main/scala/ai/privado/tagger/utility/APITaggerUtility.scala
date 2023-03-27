@@ -36,10 +36,12 @@ import ai.privado.utility.Utilities.{
   isFileProcessable,
   storeForTag
 }
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
 import overflowdb.BatchedUpdate
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language._
 
 object APITaggerUtility {
   implicit val engineContext: EngineContext =
@@ -62,8 +64,34 @@ object APITaggerUtility {
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
       }
       apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
-        val apiNode     = flow.elements.last
+        val sourceNode = Traversal(flow.elements.head).l
+        val literalCode = {
+          if (sourceNode.isCall.name(Constants.runtimeString).nonEmpty) {
+            sourceNode.isCall
+              .name(Constants.runtimeString)
+              .head
+              .astChildren
+              .map(node => {
+                if (node.isLiteral)
+                  node.code.stripSuffix("\"").stripPrefix("\"")
+                else {
+                  // Ex - In javascript `/user/${user.userId}/paymentDetails` needs to be represented as
+                  // /user/${user[userId]}/paymentDetails due to Andromeda constraint for now
+                  // Will have to remove this special handling once fix is ready in andromeda
+                  "${" + {
+                    val splitByDot = node.code.split("\\.")
+                    if (splitByDot.size <= 1)
+                      node.code
+                    else
+                      splitByDot(0) + splitByDot.slice(1, splitByDot.size).mkString("[", "", "]")
+                  } + "}"
+                }
+              })
+              .mkString("\"", "", "\"")
+          } else
+            sourceNode.head.originalPropertyValue.getOrElse(sourceNode.head.code.split(" ").last)
+        }
+        val apiNode = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id
         if (ruleInfo.id.equals(Constants.internalAPIRuleId))
