@@ -35,7 +35,9 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     builder: BatchedUpdate.DiffGraphBuilder
   ): List[NewJavaProperty] = {
     Try {
-      obtainKeyValuePairs(file).filter(pair => pair._1.nonEmpty && pair._2.nonEmpty)
+      obtainKeyValuePairs(file)
+        .concat(getConnectionMethodPairs(resolveConnectionMethodCalls()))
+        .filter(pair => pair._1.nonEmpty && pair._2.nonEmpty)
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
@@ -67,7 +69,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .getLines()
       .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
       .foreach(line => {
-        val Array(key, value) = line.split("=", 2);
+        val Array(key, value) = line.split("=", 2)
         envProps.setProperty(key, value)
       })
 
@@ -75,6 +77,21 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
       .map(prop => (prop._1, prop._2))
       .toList
   }
+
+  /** Resolves methods used to connect to databases using some popular python modules
+    */
+  private def resolveConnectionMethodCalls(): List[Literal] = {
+    cpg.literal
+      .where(_.inCall.methodFullName("sqlalchemy.*create_engine.*"))
+      .l
+      .concat(cpg.literal.where(_.inCall.methodFullName("pyodbc.*.*connect.*")).l)
+      .concat(cpg.literal.where(_.inCall.methodFullName("pyscopg2.*.*connect.*")).l)
+      .concat(cpg.literal.where(_.inCall.methodFullName(".*MongoClient.*")).l)
+  }
+
+  // The parameters passed can only be database urls, so property name is db_url for all the method calls as there is no key
+  private def getConnectionMethodPairs(connectionValues: List[Literal]): List[(String, String)] =
+    connectionValues.map(lit => ("db_url", lit.code))
 
   /** Matches the exact key of the propertyNode to its corresponding os.environ.get() calls.
     */
