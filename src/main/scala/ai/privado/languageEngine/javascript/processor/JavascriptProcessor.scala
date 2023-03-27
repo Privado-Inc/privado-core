@@ -30,27 +30,30 @@ import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
   MethodFullName,
   MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
+  MethodFullNameFromIdentifier,
+  MethodFullNameStyleDep
 }
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
-import ai.privado.model.Language
 import ai.privado.utility.Utilities.createCpgFolder
-import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
-import io.shiftleft.codepropertygraph
-import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.jssrc2cpg.passes.{ConstClosurePass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecovery, RequirePass}
+import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
+import io.joern.x2cpg.passes.frontend.JavascriptCallLinker
+import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import java.nio.file.{Files, Paths}
 
 object JavascriptProcessor {
 
@@ -66,10 +69,14 @@ object JavascriptProcessor {
         logger.info("Applying default overlays")
         logger.info("Enhancing Javascript graph")
         logger.debug("Running custom passes")
+        new MethodFullNameStyleDep(cpg).createAndApply()
+        println("done with MethodFullNameStyleDep")
         new MethodFullName(cpg).createAndApply()
+        println("done with MethodFullName")
         new MethodFullNameFromIdentifier(cpg).createAndApply()
+        println("done with MethodFullNameFromIdentifier")
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
-
+        println("done with MethodFullNameForEmptyNodes")
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
           val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
@@ -138,7 +145,24 @@ object JavascriptProcessor {
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
-    val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
+    val maybeCpg = new JsSrc2Cpg() createCpgWithOverlays (cpgconfig)
+    println("done with base CPG")
+    val xtocpg = maybeCpg.map { cpg =>
+      new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+      println("done with OssDataFlow")
+      new RequirePass(cpg).createAndApply()
+      println("done with RequirePass")
+      new ConstClosurePass(cpg).createAndApply()
+      println("done with ConstClosurePass")
+      new JavascriptCallLinker(cpg).createAndApply()
+      println("done with JavascriptCallLinker")
+//      new JavaScriptTypeRecovery(cpg, enabledDummyTypes = false).createAndApply()
+//      println("done with JavaScriptTypeRecovery")
+//      new JavaScriptTypeHintCallLinker(cpg).createAndApply()
+//      println("done with JavaScriptTypeHintCallLinker")
+      //      postProcessingPasses(cpg, Option(config)).foreach(_.createAndApply())
+      cpg
+    }
     processCPG(xtocpg, processedRules, sourceRepoLocation)
   }
 
