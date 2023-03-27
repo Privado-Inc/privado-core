@@ -14,6 +14,8 @@ object DataElementDiscovery {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  private val excludeClassNameRegex = "^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"
+
   // Get list of Class Name having getter and setter method
   def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
     logger.info("Process Class Name from cpg")
@@ -23,7 +25,7 @@ object DataElementDiscovery {
         // Get DTO/Entity Class name
         val typeDeclList = cpg.typeDecl
           .filter(_.order > 0)
-          .whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"))
+          .whereNot(_.name(excludeClassNameRegex))
           .or(
             _.where(_.method.name("^(get|set).*")),
             _.where(_.method.name("^(hascode|equals)")),
@@ -66,7 +68,7 @@ object DataElementDiscovery {
           val typeDeclList = cpg.typeDecl
             .filter(_.order > 0)
             .where(_.fullName(pattern))
-            .whereNot(_.name("^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"))
+            .whereNot(_.name(excludeClassNameRegex))
             .toList
           typeDeclList.foreach(typeDecl => derivedClassName += typeDecl.fullName)
         })
@@ -110,9 +112,9 @@ object DataElementDiscovery {
     xtocpg match {
       case Success(cpg) => {
         // Get tagged collection input list
-        val methodList = cpg.parameter.where(_.tag).l
-        methodList.foreach(method => {
-          collectionInputList += method.typeFullName
+        val parameterList = cpg.parameter.where(_.tag).l
+        parameterList.foreach(parameter => {
+          collectionInputList += parameter.typeFullName
         })
       }
       case Failure(exception) => {
