@@ -291,16 +291,22 @@ object Utilities {
     * @return
     */
   def getDomainFromString(urlString: String) = {
-    try {
-      val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
-      val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
-      val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
-      url.getHost.replaceAll("www.", "").replaceAll("\"", "")
-    } catch {
-      case e: Exception =>
-        logger.debug("Exception while getting domain from string : ", e)
-        urlString
+    val domain = {
+      try {
+        val cleanedUrlString = urlString.replaceAll("'", "").replaceAll("\"", "")
+        val prefixToReplace  = if (cleanedUrlString.contains("http://")) "http://" else "https://"
+        val url              = new URL("https://" + cleanedUrlString.replaceAll(prefixToReplace, "").trim)
+        url.getHost.replaceAll("www.", "").replaceAll("\"", "")
+      } catch {
+        case e: Exception =>
+          logger.debug("Exception while getting domain from string : ", e)
+          urlString
+      }
     }
 
+    if (domain.isEmpty)
+      urlString
+    else
+      domain
   }
 }
