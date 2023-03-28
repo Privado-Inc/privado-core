@@ -30,6 +30,7 @@ object GRPCTaggerUtility {
     // This `onNext` always has a StreamObserver in signature and takes only one argument
     val onNext        = "onNext"
     val stub          = "(?i)(.*)(stub)(.*)"
+    val anyType       = "ANY"
     var grpcSinkCalls = ListBuffer[Call]()
 
     grpcEndpoints.foreach(endpoint => {
@@ -93,7 +94,12 @@ object GRPCTaggerUtility {
               grpcSinkCalls += sink
             }
           }
+
+          if (sinkArgType.equals(anyType)) {
+            grpcSinkCalls += sink
+          }
         })
+
       })
     })
 
