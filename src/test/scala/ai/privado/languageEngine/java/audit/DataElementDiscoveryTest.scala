@@ -113,7 +113,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("accountNo")
       memberList should not contain ("addressInfo")
 
-      // validate sourceRuleID in result
+      // validate source Rule ID in result
       sourceRuleIdMap("firstName").toString should equal("Data.Sensitive.FirstName")
 
       // validate collection Tag in result
