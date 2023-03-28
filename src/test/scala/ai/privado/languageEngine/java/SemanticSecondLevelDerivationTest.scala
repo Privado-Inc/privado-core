@@ -44,9 +44,13 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
       |   public String firstName;
       |   public String id;
       |   public String getFirstName() {return firstName;}
+      |   public void setFirstName(String firstName) {this.firstName = firstName;} 
       |   public String getId() {return id;}
+      |   public void setId(String id) {this.id = id;}
       |   public foo1() {
       |     BaseClass b = new BaseClass();
+      |     b.setFirstName("Alex");
+      |     b.setId("101");
       |     b.getFirstName();
       |     b.getId();
       |   }
@@ -56,8 +60,12 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
       |public class User extends BaseClass{
       |   public int amount;
       |   public int getAmount() {return amount;}
+      |   public void setAmount(int amount) {this.amount = amount;}
       |   public foo2() {
       |     User u = new User();
+      |     u.setId("102");
+      |     u.setAmount(25000);
+      |     u.setFirstName("Hales");
       |     u.getId();
       |     u.getAmount();
       |     u.getFirstName();
@@ -69,9 +77,13 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
       |   public BaseClass baseClass;
       |   public String getType() {return type;}
       |   public BaseClass getBaseClass() {return baseClass;}
+      |   public void setType(String type) {this.type = type;}
+      |   public void setBaseClass(BaseClass baseClass) {this.baseClass = baseClass;}
       |   
       |   public foo3() {
       |     Customer c = new Customer();
+      |     c.setType("internal");
+      |     c.setBaseClass(new BaseClass());
       |     c.getType();
       |     c.getBaseClass();
       |   }
@@ -104,6 +116,28 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
 
     "not have personal semantics for 2nd Level class by member" in {
       semantics.elements.contains(FlowSemantic("Customer.getBaseClass:BaseClass", List())) shouldBe false
+    }
+
+    "have setters semantics for 2nd Level class by extends" in {
+      semantics.elements.contains(FlowSemantic("User.setAmount:void(int)", List())) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.setId:void(java.lang.String)", List())) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic("User.setFirstName:void(java.lang.String)", List((0, 0), (1, 1), (1, 0)))
+      ) shouldBe true
+    }
+
+    "have setters semantics for 1st Level class" in {
+      semantics.elements.contains(FlowSemantic("BaseClass.setId:void(java.lang.String)", List())) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic("BaseClass.setFirstName:void(java.lang.String)", List((0, 0), (1, 1), (1, 0)))
+      ) shouldBe true
+    }
+
+    "have setters semantics for 2nd Level class by member" in {
+      semantics.elements.contains(FlowSemantic("Customer.setType:void(java.lang.String)", List())) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic("Customer.setBaseClass:void(BaseClass)", List((0, 0), (1, 1), (1, 0)))
+      ) shouldBe true
     }
   }
 }
