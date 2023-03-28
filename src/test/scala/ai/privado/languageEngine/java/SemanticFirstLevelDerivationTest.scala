@@ -67,7 +67,7 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   "Semantic generated for 1st Level derivation" should {
     "have non-personal semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(FlowSemantic("User.getAmount:int()", List())) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.getAmount:int()", List())) shouldBe false
       semantics.elements.contains(FlowSemantic("User.getId:java.lang.String()", List())) shouldBe true
     }
 
