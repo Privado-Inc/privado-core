@@ -90,6 +90,16 @@ class APITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       })
       .l
     val propertySources = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    sinkTagger(apiInternalSources ++ propertySources, apis, builder, ruleInfo)
+    // Support to use `identifier` in API's
+    val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierSource = {
+      if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
+        cpg.identifier(identifierRegex).l ++ cpg.member
+          .name(identifierRegex)
+          .l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+      else
+        List()
+    }
+    sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, apis, builder, ruleInfo)
   }
 }
