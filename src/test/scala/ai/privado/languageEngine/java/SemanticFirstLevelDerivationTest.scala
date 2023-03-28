@@ -22,6 +22,7 @@
  */
 
 package ai.privado.languageEngine.java
+import ai.privado.cache.AppCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}

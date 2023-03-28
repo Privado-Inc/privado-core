@@ -79,6 +79,7 @@ object Constants {
   val notDetected                  = "Not Detected"
   val createdAt                    = "createdAt"
   val repoName                     = "repoName"
+  val language                     = "language"
   val gitMetaData                  = "gitMetaData"
   val sources                      = "sources"
   val localScanPath                = "localScanPath"
@@ -90,6 +91,7 @@ object Constants {
   val outputIntermediateFileName   = "intermediate.json"
   val privadoLanguageEngineVersion = "privadoLanguageEngineVersion"
   val cpgOutputFileName            = "cpg.bin"
+  val outputAuditFileName          = "audit-report.xlsx"
 
   // database details
   val dbName      = "dbName"

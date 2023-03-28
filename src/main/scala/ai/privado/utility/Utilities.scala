@@ -31,6 +31,7 @@ import better.files.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -77,6 +78,7 @@ object Utilities {
     node: CfgNode,
     databaseDetails: DatabaseDetails
   ): Unit = {
+
     val storeForTagHelper = storeForTag(builder, node) _
     storeForTagHelper(Constants.dbName, databaseDetails.dbName)
     storeForTagHelper(Constants.dbVendor, databaseDetails.dbVendor)
