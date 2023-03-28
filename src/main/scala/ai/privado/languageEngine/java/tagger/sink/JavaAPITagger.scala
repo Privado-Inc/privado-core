@@ -91,6 +91,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
+  val grpcSinks = GRPCTaggerUtility.getGrpcSinks(cpg)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getAllRuleInfo
@@ -131,7 +132,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis ++ GRPCTaggerUtility.getGrpcSinks(cpg),
+          apis ++ grpcSinks,
           builder,
           ruleInfo,
           ScanProcessor.config.enableAPIDisplay
@@ -142,7 +143,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ GRPCTaggerUtility.getGrpcSinks(cpg),
+          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks,
           builder,
           ruleInfo
         )
@@ -151,7 +152,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          feignAPISinks ++ GRPCTaggerUtility.getGrpcSinks(cpg),
+          feignAPISinks ++ grpcSinks,
           builder,
           ruleInfo
         )
