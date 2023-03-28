@@ -148,15 +148,13 @@ object SemanticGenerator {
     *   \- semantic string
     */
   private def generateSetterSemantic(methodName: String) = {
-    var parameterSemantics = ""
+    var parameterSemantics = "0->0 "
     var parameterNumber    = 2
     if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
       parameterNumber = 7
     } else {
       parameterNumber = methodName.count(_.equals(','))
     }
-    if (parameterNumber == 0)
-      parameterSemantics += s"0->0 "
     for (i <- 1 to (parameterNumber + 1))
       parameterSemantics += s"$i->$i $i->0 "
     "\"" + methodName + "\" " + parameterSemantics.trim
