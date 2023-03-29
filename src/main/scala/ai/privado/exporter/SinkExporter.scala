@@ -177,6 +177,10 @@ class SinkExporter(cpg: Cpg) {
         cpg.call
           .where(filterSink)
           .map(item => item.tag.l)
+          .l ++
+        cpg.templateDom
+          .where(filterSink)
+          .map(item => item.tag.l)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).map(item => item.tag.l).l
     sinks
   }
@@ -192,6 +196,9 @@ class SinkExporter(cpg: Cpg) {
           .where(filterSink)
           .l ++
         cpg.call
+          .where(filterSink)
+          .l ++
+        cpg.templateDom
           .where(filterSink)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l
     sinks
