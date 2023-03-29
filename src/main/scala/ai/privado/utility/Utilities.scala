@@ -303,4 +303,14 @@ object Utilities {
     }
 
   }
+
+  def getDomainFromTemplates(templateStr: String): String = {
+    val regex = """(http:|https:){0,1}\/\/([\w_\-]+(?:(?:\.[\w_\-]+)+))([\w.,@?^=%&:\/~+#\-]*[\w@?^=%&\/~+#\-])""".r
+    Try(regex.findFirstMatchIn(templateStr).map(_.group(2))) match {
+      case Success(url) => if (url == None) "" else url.get
+      case Failure(e) =>
+        logger.debug("Exception : ", e)
+        ""
+    }
+  }
 }
