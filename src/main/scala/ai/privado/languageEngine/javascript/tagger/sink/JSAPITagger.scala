@@ -41,6 +41,8 @@ class JSAPITagger(cpg: Cpg) extends APITagger(cpg) {
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
+    // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
+    // Tag the respective templateDom node as API sink
     val scriptTags =
       cpg.templateDom.name("JSXElement").code("(?i)[\\\"]*<script.*" + ruleInfo.combinedRulePattern + ".*").l
     scriptTags.foreach(scriptTag => {

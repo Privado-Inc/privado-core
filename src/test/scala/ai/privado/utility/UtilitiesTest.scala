@@ -50,7 +50,7 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         strategy="lazyOnload"
       />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "www.googletagservices.com"
+      domain shouldBe "googletagservices.com"
     }
     "domain extratcion sample three" in {
       val code =
@@ -61,7 +61,19 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     strategy="lazyOnload"
   />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "www.googletagservices.com"
+      domain shouldBe "googletagservices.com"
+    }
+
+    "domain extratcion sample four" in {
+      val code =
+        """<Script
+        id="prebid-script"
+        data-testid="prebid-script"
+        src={`${CDN_ADS_URL}/prebid.js`}
+        strategy="lazyOnload"
+        />"""
+      val domain = Utilities.getDomainFromTemplates(code)
+      domain shouldBe "uknown-domain"
     }
   }
 }
