@@ -95,42 +95,40 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
-        val typeDeclVal = typeDeclValEntry._1.fullName
-        val typeDeclMemberName = typeDeclValEntry._2.headOption match {
-          case Some(typeDeclMember) => // updating cache
-            taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
-            typeDeclMember.name
-          case None =>
-            "Member not found"
-        }
-        val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal))
-        impactedObjects
-          .whereNot(_.code("this"))
-          .foreach(impactedObject => {
-            if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+        typeDeclValEntry._2.foreach(typeDeclMember => {
+          val typeDeclVal = typeDeclValEntry._1.fullName
+          // updating cache
+          taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+          val typeDeclMemberName = typeDeclMember.name
+          val impactedObjects    = cpg.identifier.where(_.typeFullName(typeDeclVal))
+          impactedObjects
+            .whereNot(_.code("this"))
+            .foreach(impactedObject => {
+              if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+                storeForTag(builder, impactedObject)(
+                  InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                  ruleInfo.id
+                )
+                storeForTag(builder, impactedObject)(
+                  Constants.id,
+                  Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                )
+                storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+              }
               storeForTag(builder, impactedObject)(
-                InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
                 ruleInfo.id
               )
+              // Tag for storing memberName in derived Objects -> user --> (email, password)
               storeForTag(builder, impactedObject)(
-                Constants.id,
-                Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+                typeDeclMemberName
               )
-              storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-            }
-            storeForTag(builder, impactedObject)(
-              Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-              ruleInfo.id
-            )
-            // Tag for storing memberName in derived Objects -> user --> (email, password)
-            storeForTag(builder, impactedObject)(
-              ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-              typeDeclMemberName
-            )
-          })
+            })
 
-        // To Mark all field Access and getters
-        tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
+          // To Mark all field Access and getters
+          tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
+        })
       })
 
     typeDeclWithMemberNameHavingMemberName

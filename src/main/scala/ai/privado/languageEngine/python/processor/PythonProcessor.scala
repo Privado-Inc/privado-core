@@ -58,6 +58,9 @@ object PythonProcessor {
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
           new PythonTypeRecovery(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
           new PythonTypeHintCallLinker(cpg).createAndApply()
           new PythonNaiveCallLinker(cpg).createAndApply()
 

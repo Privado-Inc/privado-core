@@ -35,7 +35,10 @@ import overflowdb.BatchedUpdate
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class RegularSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  lazy val cacheCall = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+  lazy val cacheCall = cpg.call
+    .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
+    .whereNot(_.method.name(".*<meta.*>$"))
+    .l
 
   override def generateParts(): Array[RuleInfo] = {
     RuleCache.getRule.sinks

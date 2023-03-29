@@ -45,7 +45,8 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion,
   "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
   "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
-  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime,
+  "org.apache.poi"                   % "poi-ooxml"               % "5.2.2"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
