@@ -91,7 +91,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
-  val grpcSinks = GRPCTaggerUtility.getGrpcSinks(cpg)
+  val grpcSinks                  = GRPCTaggerUtility.getGrpcSinks(cpg)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     RuleCache.getAllRuleInfo

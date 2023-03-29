@@ -14,8 +14,10 @@ object GRPCTaggerUtility {
 
   def getGrpcEndpoints(cpg: Cpg): List[Method] = {
     val onCompleted = "onCompleted"
-// Detecting `onCompleted` call by traversing function calls inside of all methods to narrow down gRPC services
+
+    // Detecting `onCompleted` call by traversing function calls inside of all methods to narrow down gRPC services
     return cpg.method
+      .where(_.parameter.typeFullName(StreamObserverPattern))
       .where(
         _.call
           .name(onCompleted)
@@ -29,9 +31,11 @@ object GRPCTaggerUtility {
     // `onNext` is always called inside of gRPC service methods
     // This `onNext` always has a StreamObserver in signature and takes only one argument
     val onNext        = "onNext"
-    val stub          = "(?i)(.*)(stub)(.*)"
+    val stubPattern   = "(?i)(.*)(stub)(.*)"
     val anyType       = "ANY"
     var grpcSinkCalls = ListBuffer[Call]()
+
+    println(grpcEndpoints.length)
 
     grpcEndpoints.foreach(endpoint => {
       // Detecting gRPC API sink calls. These sink calls have the same name as function calls inside of onNext functions
@@ -46,64 +50,39 @@ object GRPCTaggerUtility {
         )
         .l
 
+      println(sinks.length)
+
       // Detecting `onNext` call inside of gRPC endpoint method
       // `onNext` takes on argument, this should be the call that satisfies gRPC/proto file contract
       // Get full type name of arguments that the server/endpoint will process
-      val inCallArgTypes =
-        endpoint.call
-          .name(onNext)
-          .filter(_.argument.size <= 2)
-          .where(_.argument.typ.fullName(StreamObserverPattern))
-          .argument
-          .isCall
-          .argument
-          .isIdentifier
-          .typeFullName
-          .l
+      val endpointParamTypes = endpoint.parameter.typeFullName.l
 
-      val identifierArgTypes =
-        endpoint.call
-          .name(onNext)
-          .filter(_.argument.size <= 2)
-          .where(_.argument.typ.fullName(StreamObserverPattern))
-          .argument
-          .isIdentifier
-          .typ
-          .fullName
-          .l
+      println(endpointParamTypes.length)
 
       sinks.foreach(sink => {
         // Get full type name of arguments going inside gRPC sink call
         val sinkArgTypes = sink.argument.isIdentifier.typeFullName.l
-
         sinkArgTypes.foreach(sinkArgType => {
-          if (inCallArgTypes.contains(sinkArgType)) {
+          // Add sinks for matching sink args, unresolved args, or if they have a stub in args
+          if (endpointParamTypes.contains(sinkArgType)) {
             grpcSinkCalls += sink
-          }
-          if (identifierArgTypes.contains(sinkArgType)) {
+          } else if (sinkArgType.equals(anyType)) {
             grpcSinkCalls += sink
-          }
-
-          if (inCallArgTypes.size == 0) {
-            if (sinkArgType.matches(stub)) {
-              grpcSinkCalls += sink
-            }
-          }
-          if (identifierArgTypes.size == 0) {
-            if (sinkArgType.matches(stub)) {
-              grpcSinkCalls += sink
-            }
-          }
-
-          if (sinkArgType.equals(anyType)) {
+          } else if (sinkArgType.matches(stubPattern)) {
             grpcSinkCalls += sink
           }
         })
 
+        // Add sinks if endpointParams are empty or if they don't get resolved
+        if (endpointParamTypes.size == 0) {
+          grpcSinkCalls += sink
+        } else if (endpointParamTypes.equals(anyType)) {
+          grpcSinkCalls += sink
+        }
       })
     })
 
-    return grpcSinkCalls.l
+    return grpcSinkCalls.dedup.l
   }
 
   def getGrpcSinks(cpg: Cpg): List[Call] = {
