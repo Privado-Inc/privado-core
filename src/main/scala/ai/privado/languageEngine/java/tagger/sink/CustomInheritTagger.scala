@@ -26,34 +26,34 @@ package ai.privado.languageEngine.java.tagger.sink
 import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.model.RuleInfo
-import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
+
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
-    val typeDeclNode = cpg.typeDecl
-      .filter(
-        _.inheritsFromTypeFullName
-          .map(inheritsFrom => inheritsFrom.matches(ruleInfo.patterns.head))
-          .foldLeft(false)((a, b) => a || b)
-      )
-      .l
+    val typeDeclNodeL1 = getImpactedTypeDeclNode(ruleInfo.patterns.head)
+    // We are calling the function getImpactedTypeDeclNode again to get classes following below format
+    // public interface BillableUsageRepository extends EnrichmentRepository<BillableUsageEntity>
+    // EnrichmentRepository extends JPARepository
+    val typeDeclNode = typeDeclNodeL1 ++ getImpactedTypeDeclNode(typeDeclNodeL1.fullName.mkString("(", "|", ")"))
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
 
         if (
           callNodes != null & ruleInfo.id
-            .matches("Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*")
+            .matches(
+              "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.AmazonDynamoDB.*|Storages.Postgres.*|Storages.MongoDB.*|Storages.Neo4jGraphDatabase.*"
+            )
         ) {
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
           logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")
@@ -65,5 +65,21 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
         callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
       })
     }
+  }
+
+  /** Fetch all the typeDeclNode which inherits from classes which match the stringPattern regex
+    * @param stringPattern
+    * @return
+    */
+  def getImpactedTypeDeclNode(stringPattern: String): List[TypeDecl] = {
+    cpg.typeDecl
+      .filter(
+        _.inheritsFromTypeFullName
+          .map(inheritsFrom => {
+            inheritsFrom.matches(stringPattern)
+          })
+          .foldLeft(false)((a, b) => a || b)
+      )
+      .l
   }
 }

@@ -24,13 +24,16 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import better.files.File
+import io.joern.console.cpgcreation.PythonSrcCpgGenerator
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language._
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AnnotationParameterAssign,
   AstNode,
@@ -39,6 +42,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Literal,
   MethodParameterIn
 }
+import java.nio.file.{Paths, Files}
 
 class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
@@ -48,7 +52,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       |""".stripMargin
 
   override val propertyFileContents = ""
-  override val javaFileContents: String =
+  override val codeFileContents: String =
     """
       |
       |import org.springframework.beans.factory.annotation.Value;
@@ -103,7 +107,7 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
       |internal.logger.api.base=https://logger.privado.ai/
       |""".stripMargin
-  override val javaFileContents =
+  override val codeFileContents =
     """
       | import org.springframework.core.env.Environment;
       |
@@ -170,7 +174,7 @@ class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
 
   override val propertyFileContents: String =
     """jdbc.url=http://localhost:8081/""".stripMargin
-  override val javaFileContents =
+  override val codeFileContents =
     """
       |package com.example.test;
       |
@@ -226,7 +230,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
 
   var cpg: Cpg = _
   val configFileContents: String
-  val javaFileContents: String
+  val codeFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
   val propertyFileContents: String
@@ -234,16 +238,19 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     (inputDir / s"test$fileExtension").write(configFileContents)
-    (inputDir / "GeneralConfig.java").write(javaFileContents)
+
     (inputDir / "unrelated.file").write("foo")
     if (propertyFileContents.nonEmpty) {
       (inputDir / "application.properties").write(propertyFileContents)
     }
     outputFile = File.newTemporaryFile()
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
-    cpg = new JavaSrc2Cpg().createCpg(config).get
 
+    (inputDir / "GeneralConfig.java").write(codeFileContents)
+    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+
+    cpg = new JavaSrc2Cpg().createCpg(config).get
     new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
+
     super.beforeAll()
   }
 

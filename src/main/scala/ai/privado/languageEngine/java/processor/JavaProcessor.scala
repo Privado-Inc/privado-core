@@ -23,16 +23,19 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.audit.DataElementDiscovery
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
+import ai.privado.exporter.ExcelExporter
 import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{
   cpgOutputFileName,
+  outputAuditFileName,
   outputDirectoryName,
   outputFileName,
   outputIntermediateFileName,
@@ -57,7 +60,7 @@ import scala.util.{Failure, Success, Try}
 import io.joern.x2cpg.utils.ExternalCommand
 import better.files.File
 
-import java.nio.file.{Files, Paths}
+import scala.collection.mutable.ListBuffer
 
 object JavaProcessor {
 
@@ -93,12 +96,13 @@ object JavaProcessor {
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          cpg.runTagger(processedRules)
+          val taggerCache = new TaggerCache
+          cpg.runTagger(processedRules, taggerCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow
+          val dataflowMap = cpg.dataflow(ScanProcessor.config)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(
@@ -106,7 +110,39 @@ object JavaProcessor {
           )
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
+          val errorMsg = new ListBuffer[String]()
           // Exporting Results
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              errorMsg += err
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+              )
+              logger.debug(
+                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+              )
+          }
+
+          // Exporting the Audit report
+          if (ScanProcessor.config.generateAuditReport) {
+            ExcelExporter.auditExport(
+              outputAuditFileName,
+              DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache),
+              sourceRepoLocation
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
+          }
+
+          // Exporting the Intermediate report
           if (ScanProcessor.config.testOutput) {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
@@ -115,28 +151,19 @@ object JavaProcessor {
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
-                Left(err)
+                errorMsg += err
               case Right(_) =>
                 println(
                   s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
-                Right(())
             }
           }
 
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
-            case Left(err) =>
-              MetricHandler.otherErrorsOrWarnings.addOne(err)
-              Left(err)
-            case Right(_) =>
-              println(
-                s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
-              )
-              logger.debug(
-                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-              )
-              Right(())
-          }
+          // Check if any of the export failed
+          if (errorMsg.toList.isEmpty)
+            Right(())
+          else
+            Left(errorMsg.toList.mkString("\n"))
         } finally {
           cpg.close()
           import java.io.File

@@ -23,26 +23,12 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, sinkProcessing}
-import ai.privado.model.exporter.{
-  DataFlowSubCategoryModel,
-  SinkModel,
-  SinkProcessingModel,
-  SourceModel,
-  SourceProcessingModel
-}
-import ai.privado.model.{Constants, InternalTag, PolicyThreatType}
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.exporter.{
-  DataFlowPathIntermediateModel,
-  DataFlowSourceIntermediateModel,
-  DataFlowSubCategoryModel,
-  DataFlowSubCategoryPathExcerptModel
-}
-import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
+import ai.privado.model.exporter.DataFlowSubCategoryModel
+import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.exporter.DataFlowSourceIntermediateModel
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
@@ -65,6 +51,7 @@ import ExecutionContext.Implicits.global
 import duration._
 import scala.language.postfixOps
 import scala.util.{Failure, Success}
+import io.shiftleft.semanticcpg.language._
 
 object JSONExporter {
 
@@ -74,12 +61,13 @@ object JSONExporter {
     cpg: Cpg,
     outputFileName: String,
     repoPath: String,
-    dataflows: Map[String, Path]
+    dataflows: Map[String, Path],
+    taggerCache: TaggerCache = new TaggerCache()
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg)
     val sinkExporter            = new SinkExporter(cpg)
-    val dataflowExporter        = new DataflowExporter(cpg, dataflows)
+    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
     val collectionExporter      = new CollectionExporter(cpg)
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()
@@ -91,6 +79,7 @@ object JSONExporter {
       output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
       output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
       output.addOne(Constants.repoName                     -> AppCache.repoName.asJson)
+      output.addOne(Constants.language                     -> AppCache.repoLanguage.toString.asJson)
       output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
 
@@ -266,7 +255,7 @@ object JSONExporter {
     repoPath: String,
     dataflows: List[DataFlowSourceIntermediateModel]
   ): Either[String, Unit] = {
-    logger.info("Initialed the Intermediate exporter engine")
+    logger.info("Initiated the Intermediate exporter engine")
     val output = mutable.LinkedHashMap[String, Json]()
     try {
       output.addOne(Constants.dataFlow -> dataflows.asJson)

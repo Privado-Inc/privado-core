@@ -33,6 +33,8 @@ import io.joern.javasrc2cpg.Config
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
@@ -56,11 +58,20 @@ object PythonProcessor {
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
           new PythonTypeRecovery(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
           new PythonTypeHintCallLinker(cpg).createAndApply()
           new PythonNaiveCallLinker(cpg).createAndApply()
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+
+          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
+          new PythonPropertyFilePass(cpg, sourceRepoLocation).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
@@ -76,7 +87,7 @@ object PythonProcessor {
           )
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow
+          val dataflowMap = cpg.dataflow(ScanProcessor.config)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")

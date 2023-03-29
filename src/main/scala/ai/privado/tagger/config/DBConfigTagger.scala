@@ -55,6 +55,16 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
         parsePropForSpringJDBCAndJPA(dbUrl)
       } else if (dbUrl.value.contains("mongodb")) {
         parsePropForSpringDataMongo(dbUrl)
+      } else if (
+        dbUrl.name.contains("neo4j.host")
+        && dbUrl.value.matches("(localhost|[^{]*\\..*\\.[^}]*)")
+        // The regex above is an attempt to match actual database host rather than the test ones or invalid ones
+        // It is supposed to match -> `123456789.databases.neo4j.io`, `neo4j.hosted.amazonaws.com`
+        // rather than `{$neo4j.host}` or empty values in config
+      ) {
+        parsePropForNeo4jNativeDriver(dbUrl)
+      } else if (dbUrl.name.contains("neo4j.driver.uri")) {
+        parsePropForNeo4jSpringBootDriver(dbUrl)
       }
     } catch {
       case e: Exception => logger.debug("Exception while processing db config: " + e)
@@ -184,6 +194,49 @@ class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg
     DatabaseDetailsCache.addDatabaseDetails(
       DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
       "Storages.SpringFramework.Jooq"
+    )
+  }
+
+  private def parsePropForNeo4jNativeDriver(dbUrl: JavaProperty): Unit = {
+    val dbVendor   = "bolt"
+    val dbLocation = dbUrl.value
+    val dbName     = "Neo4j Graph Database"
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
+      "Storages.Neo4jGraphDatabase"
+    )
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+      "Storages.Neo4jGraphDatabase.Read"
+    )
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+      "Storages.Neo4jGraphDatabase.Write"
+    )
+  }
+
+  private def parsePropForNeo4jSpringBootDriver(dbUrl: JavaProperty): Unit = {
+    val dbVendor   = dbUrl.value.split(":")(0)
+    val dbLocation = dbUrl.value.split("/")(2)
+    // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
+    val dbName = "Neo4j Graph Database"
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
+      "Storages.Neo4jGraphDatabase"
+    )
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+      "Storages.Neo4jGraphDatabase.Read"
+    )
+
+    DatabaseDetailsCache.addDatabaseDetails(
+      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+      "Storages.Neo4jGraphDatabase.Write"
     )
   }
 

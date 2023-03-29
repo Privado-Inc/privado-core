@@ -22,20 +22,16 @@
 
 package ai.privado.utility
 
-import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.entrypoint.ScanProcessor
-import ai.privado.exporter.ConsoleExporter.logger
+import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
-import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.DefaultSemantics.{javaFlows, operatorFlows}
-import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -47,7 +43,6 @@ import java.net.URL
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
-import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
 
@@ -83,6 +78,7 @@ object Utilities {
     node: CfgNode,
     databaseDetails: DatabaseDetails
   ): Unit = {
+
     val storeForTagHelper = storeForTag(builder, node) _
     storeForTagHelper(Constants.dbName, databaseDetails.dbName)
     storeForTagHelper(Constants.dbVendor, databaseDetails.dbVendor)
@@ -114,81 +110,6 @@ object Utilities {
       // storing by catLevelTwo and nodeType to get id
       storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
-  }
-
-  /** Utility to get the default semantics for dataflow queries
-    * @return
-    */
-  def getDefaultSemantics: Semantics = {
-    DefaultSemantics()
-  }
-
-  /** Utility to get the semantics (default + custom) using cpg for dataflow queries
-    *
-    * @param cpg
-    *   \- cpg for adding customSemantics
-    * @return
-    */
-  def getSemantics(cpg: Cpg): Semantics = {
-    val customSinkSemantics = cpg.call
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-      .methodFullName
-      .dedup
-      .l
-      .map(generateSemanticForTaint(_, -1))
-
-    val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
-
-    var customNonTaintDefaultSemantics   = List[String]()
-    var specialNonTaintDefaultSemantics  = List[String]()
-    var customStringSemantics            = List[String]()
-    var customNonPersonalMemberSemantics = List[String]()
-
-    if (!ScanProcessor.config.disableRunTimeSemantics) {
-      customNonTaintDefaultSemantics = nonTaintingMethods
-        .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
-        .fullName
-        .l
-        .map(generateNonTaintSemantic)
-
-      specialNonTaintDefaultSemantics = nonTaintingMethods
-        .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
-        .fullName
-        .l
-        .map(generateSemanticForTaint(_, 0))
-
-      customStringSemantics = cpg.method
-        .filter(_.isExternal)
-        .where(_.callIn)
-        .fullName(".*:java.lang.String\\(.*")
-        .fullNameNot(".*\\.set[A-Za-z_]*:.*")
-        .fullName
-        .dedup
-        .l
-        .map(generateSemanticForTaint(_, -1))
-
-      customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
-    }
-    val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic)
-
-    logger.debug("\nCustom Non taint default semantics")
-    customNonTaintDefaultSemantics.foreach(logger.debug)
-    logger.debug("\nCustom specialNonTaintDefaultSemantics semantics")
-    specialNonTaintDefaultSemantics.foreach(logger.debug)
-    logger.debug("\nCustom customStringSemantics semantics")
-    customStringSemantics.foreach(logger.debug)
-    logger.debug("\nCustom customNonPersonalMemberSemantics semantics")
-    customNonPersonalMemberSemantics.foreach(logger.debug)
-    logger.debug("\nCustom customSinkSemantics semantics")
-    customSinkSemantics.foreach(logger.debug)
-    logger.debug("\nCustom semanticFromConfig semantics")
-    semanticFromConfig.foreach(logger.debug)
-
-    val list =
-      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
-    val parsed         = new Parser().parse(list.mkString("\n"))
-    val finalSemantics = getDefaultSemantics.elements ++ parsed
-    Semantics.fromList(finalSemantics)
   }
 
   /** Utility to filter rules by catLevelOne
@@ -323,38 +244,6 @@ object Utilities {
   def getSHA256Hash(value: String): String =
     String.format("%032x", new BigInteger(1, MessageDigest.getInstance("SHA-256").digest(value.getBytes("UTF-8"))))
 
-  /** Generate semantics for tainting passed argument based on the number of parameter in method signature
-    * @param methodName
-    *   \- complete signature of method
-    * @return
-    *   \- semantic string
-    */
-  private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
-    var parameterSemantics = ""
-    var parameterNumber    = 2
-    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
-      parameterNumber = 7
-    } else {
-      parameterNumber = methodName.count(_.equals(','))
-    }
-    for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$toTaint "
-    "\"" + methodName + "\" " + parameterSemantics.trim
-  }
-
-  /** Generate Semantic string based on input Semantic
-    * @param semantic
-    *   \- semantic object containing semantic information
-    * @return
-    */
-  private def generateSemantic(semantic: Semantic) = {
-    if (semantic.signature.nonEmpty) {
-      val generatedSemantic = "\"" + semantic.signature.trim + "\" " + semantic.flow
-      Some(generatedSemantic.trim)
-    } else
-      None
-  }
-
   /** Returns only rules which belong to the correponding passed language along with Default and Unknown
     * @param rules
     * @param lang
@@ -397,65 +286,6 @@ object Utilities {
     Traversal(node).file.name.headOption.getOrElse(Constants.EMPTY)
   }
 
-  /** Returns the Semantics for functions with void return type Default behavior is not propagating the taint
-    * @param String
-    *   methodFullName
-    * @return
-    *   String
-    */
-  private def generateNonTaintSemantic(methodFullName: String): String = {
-    "\"" + methodFullName + "\" "
-  }
-
-  /** Generates Semantics for non Personal member
-    * @param cpg
-    * @return
-    *   non-tainting semantic rule
-    */
-  def generateNonPersonalMemberSemantics(cpg: Cpg): List[String] = {
-
-    val semanticList = ListBuffer[String]()
-
-    TaggerCache.typeDeclMemberCache.keys.foreach(typeDeclValue => {
-      val typeDeclNode = cpg.typeDecl.where(_.fullName(typeDeclValue)).l
-      // Need to considers members of classes which inherits via extends/implements, as hence are also a member
-      val inheritedMembers =
-        typeDeclNode.inheritsFromTypeFullName
-          .flatMap(inheritFullName => cpg.typeDecl.fullName(inheritFullName).member.name.toSet)
-          .toSet
-      val allMembers         = typeDeclNode.member.name.toSet ++ inheritedMembers
-      val personalMembers    = TaggerCache.typeDeclMemberCache(typeDeclValue).values.name.toSet
-      val nonPersonalMembers = allMembers.diff(personalMembers)
-
-      val nonPersonalMembersRegex = nonPersonalMembers.mkString("|")
-      if (nonPersonalMembersRegex.nonEmpty) {
-        // Below same regex is repeated in IdentifierNonMemberTagger-->runOnPart
-        val nonPersonalMethodFullNames = typeDeclNode.method.block.astChildren.isReturn
-          .code(s"return (?i)(this.)?($nonPersonalMembersRegex)(;)?")
-          .method
-          .callIn
-          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
-          .methodFullName
-          .dedup
-          .l ++ cpg.identifier
-          .typeFullName(typeDeclValue)
-          .astParent
-          .isCall
-          .name(s"(?i)(get|is)($nonPersonalMembersRegex)")
-          .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
-          .methodFullName
-          .dedup
-          .l
-
-        nonPersonalMethodFullNames.dedup.foreach(methodName => {
-          semanticList.addOne(generateNonTaintSemantic(methodName))
-        })
-
-      }
-    })
-    semanticList.toList
-  }
-
   /** Returns a domain for a given url string
     * @param urlString
     * @return
@@ -472,5 +302,16 @@ object Utilities {
         urlString
     }
 
+  }
+
+  def getDomainFromTemplates(templateStr: String): String = {
+    val regex =
+      """(http:|https:){0,1}\/\/(www.){0,1}([\w_\-]+(?:(?:\.[\w_\-]+)+))([\w.,@?^=%&:\/~+#\-]*[\w@?^=%&\/~+#\-])""".r
+    Try(regex.findFirstMatchIn(templateStr).map(_.group(3))) match {
+      case Success(url) => if (url == None) "uknown-domain" else url.get
+      case Failure(e) =>
+        logger.debug("Exception : ", e)
+        "uknown-domain"
+    }
   }
 }
