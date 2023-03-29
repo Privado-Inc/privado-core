@@ -29,18 +29,11 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
-import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
+import ai.privado.languageEngine.java.passes.config.{ConfigurationFilePass, PropertiesFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  storages
-}
+import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, storages}
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
@@ -54,6 +47,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.java.language.configuration.{NodeStarters, StepsForConfiguration}
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -76,6 +70,19 @@ object JavaProcessor {
         try {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+          new ConfigurationFilePass(cpg, sourceRepoLocation).createAndApply()
+//          val configurationFileList = cpg.configuration.file.l
+//          configurationFileList.foreach(file => {
+//            println(file.name)
+//          })
+//
+//          println("eee")
+//
+//          val dependencies = cpg.configuration.dependencies.l
+//
+//          dependencies.foreach(dependency => {
+//            println(dependency.groupid)
+//          })
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
