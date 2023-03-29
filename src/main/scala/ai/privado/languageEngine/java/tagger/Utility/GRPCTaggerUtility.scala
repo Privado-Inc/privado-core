@@ -35,8 +35,6 @@ object GRPCTaggerUtility {
     val anyType       = "ANY"
     var grpcSinkCalls = ListBuffer[Call]()
 
-    println(grpcEndpoints.length)
-
     grpcEndpoints.foreach(endpoint => {
       // Detecting gRPC API sink calls. These sink calls have the same name as function calls inside of onNext functions
       // To identify correct sinks, this filter makes sure sink call's parent is NOT `onNext`
@@ -50,14 +48,10 @@ object GRPCTaggerUtility {
         )
         .l
 
-      println(sinks.length)
-
       // Detecting `onNext` call inside of gRPC endpoint method
       // `onNext` takes on argument, this should be the call that satisfies gRPC/proto file contract
       // Get full type name of arguments that the server/endpoint will process
       val endpointParamTypes = endpoint.parameter.typeFullName.l
-
-      println(endpointParamTypes.length)
 
       sinks.foreach(sink => {
         // Get full type name of arguments going inside gRPC sink call
