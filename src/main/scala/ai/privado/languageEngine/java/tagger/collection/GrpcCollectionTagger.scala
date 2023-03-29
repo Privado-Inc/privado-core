@@ -53,11 +53,14 @@ class GrpcCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
     GRPC collection point since it handles the request
      */
 
-    val grpcCollectionMethods = cpg.call
-      .name("onCompleted")
-      .filter(_.argument.size == 1)
-      .where(_.argument.typ.fullName(".*StreamObserver.*"))
-      .method
+    val grpcCollectionMethods = cpg.method
+      .where(_.parameter.typeFullName("(?i)(.*)(StreamObserver)(.*)"))
+      .where(
+        _.call
+          .name("onCompleted")
+          .filter(_.argument.size == 1)
+          .where(_.argument.typ.fullName("(?i)(.*)(StreamObserver)(.*)"))
+      )
       .l
 
     val methodFullNamesCombined = grpcCollectionMethods.map(sink => sink.fullName).mkString("(", "|", ")")
