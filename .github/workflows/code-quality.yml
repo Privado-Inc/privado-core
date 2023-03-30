@@ -1,4 +1,4 @@
-name: Check Code Format 
+name: Check Code Quality
 
 on:
   push:
@@ -20,4 +20,21 @@ jobs:
       - name: Check formatting
         run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
+        if: ${{ failure() }}
+
+  unit-test:
+    needs: formatting
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Run unit test
+        run: sbt ++2.13.8 test test:test
+      - run: echo "Previous step failed because unit test failed."
         if: ${{ failure() }}

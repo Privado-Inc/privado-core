@@ -17,6 +17,7 @@ class PythonDBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaPropert
   }
 
   override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
+
     try {
       if (dbUrl.value.contains("dynamodb")) {
         parsePropForDynamoDB(dbUrl)

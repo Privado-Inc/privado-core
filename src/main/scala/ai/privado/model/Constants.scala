@@ -91,6 +91,7 @@ object Constants {
   val outputIntermediateFileName   = "intermediate.json"
   val privadoLanguageEngineVersion = "privadoLanguageEngineVersion"
   val cpgOutputFileName            = "cpg.bin"
+  val outputAuditFileName          = "audit-report.xlsx"
 
   // database details
   val dbName      = "dbName"
