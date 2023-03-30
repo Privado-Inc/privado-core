@@ -58,6 +58,38 @@ object Utility {
       .l
   }
 
+  /** For a given Type declaration full name, and the member name regex, look for all the methods whose name matches the
+    * memberRegex provided and return the call nodes for them
+    * @param cpg
+    * @param typeDeclFullName
+    * @param regexString
+    * @param returnType
+    * @return
+    */
+  def getCallsMatchingNameRegex(
+    cpg: Cpg,
+    typeDeclFullName: String,
+    regexString: String,
+    returnType: String = "void"
+  ): List[Call] = {
+    implicit val resolver: ICallResolver = NoResolve
+
+    val setterRegex = s"(?i)set$regexString"
+    cpg.typeDecl
+      .where(_.fullName(typeDeclFullName))
+      .method
+      .callIn
+      .typeFullName(returnType)
+      .name(setterRegex)
+      .l ++ cpg.identifier
+      .typeFullName(typeDeclFullName)
+      .astParent
+      .isCall
+      .typeFullName(returnType)
+      .name(setterRegex)
+      .l
+  }
+
   /** For a given Type declaration full name, and the member name regex, look for all the field access operation where
     * the identifier is of type (typeFullName) and is operating on the memberRegex like code
     *

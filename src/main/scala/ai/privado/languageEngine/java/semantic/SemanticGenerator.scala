@@ -140,6 +140,26 @@ object SemanticGenerator {
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
+  /** Generate semantics for personal setters to taint the calling object based on the number of parameter in method
+    * signature
+    * @param methodName
+    *   \- complete signature of method
+    * @return
+    *   \- semantic string
+    */
+  private def generateSetterSemantic(methodName: String) = {
+    var parameterSemantics = "0->0 "
+    var parameterNumber    = 2
+    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
+      parameterNumber = 7
+    } else {
+      parameterNumber = methodName.count(_.equals(','))
+    }
+    for (i <- 1 to (parameterNumber + 1))
+      parameterSemantics += s"$i->$i $i->0 "
+    "\"" + methodName + "\" " + parameterSemantics.trim
+  }
+
   /** Generate Semantic string based on input Semantic
     * @param semantic
     *   \- semantic object containing semantic information
@@ -170,14 +190,33 @@ object SemanticGenerator {
     */
   def generateNonPersonalMemberSemantics(cpg: Cpg): List[String] = {
 
-    val nonPersonalMethodFullNames = cpg.tag
+    val nonPersonalGetterSemantics = cpg.tag
       .where(_.nameExact(InternalTag.INSENSITIVE_METHOD_RETURN.toString))
       .call
       .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
       .methodFullName
       .dedup
+      .map(methodName => generateNonTaintSemantic(methodName))
       .l
 
-    nonPersonalMethodFullNames.map(methodName => generateNonTaintSemantic(methodName)).sorted
+    val nonPersonalSetterMethodFullNames =
+      cpg.tag
+        .where(_.nameExact(InternalTag.INSENSITIVE_SETTER.toString))
+        .call
+        .whereNot(_.nameExact(InternalTag.SENSITIVE_SETTER.toString))
+        .methodFullName
+        .dedup
+        .map(methodName => generateNonTaintSemantic(methodName))
+        .l
+
+    val personalSetterMethodFullNames =
+      cpg.tag
+        .where(_.nameExact(InternalTag.SENSITIVE_SETTER.toString))
+        .call
+        .methodFullName
+        .dedup
+        .map(methodName => generateSetterSemantic(methodName))
+        .l
+    (nonPersonalGetterSemantics ::: nonPersonalSetterMethodFullNames ::: personalSetterMethodFullNames).sorted
   }
 }
