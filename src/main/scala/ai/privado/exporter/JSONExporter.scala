@@ -83,87 +83,33 @@ object JSONExporter {
       output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
 
-      val sources = Future(
-        sourceExporter.getSources
-      ) // Future creates a thread and starts resolving the function call asynchronously
-      val processing      = Future(sourceExporter.getProcessing)
-      val sinks           = Future(sinkExporter.getSinks)
-      val processingSinks = Future(sinkExporter.getProcessing)
-      val probableSinks   = Future(sinkExporter.getProbableSinks)
-      val collections     = Future(collectionExporter.getCollections)
-      val violations      = Future(policyAndThreatExporter.getViolations(repoPath))
+      val sources = sourceExporter.getSources
+      output.addOne(Constants.sources -> sources.asJson)
+      logger.info("Completed sources export.")
 
-      // Called when the asynchronous call is completed
-      sources.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.sources -> value.asJson)
-          logger.info("Completed sources export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
+      val processing = sourceExporter.getProcessing
+      output.addOne(Constants.processing -> processing.asJson)
+      logger.info("Completed processing export.")
 
-      sinks.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.sinks -> value.asJson)
-          logger.info("Completed sinks export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
+      val sinks = sinkExporter.getSinks
+      output.addOne(Constants.sinks -> sinks.asJson)
+      logger.info("Completed sinks export.")
 
-      processing.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.processing -> value.asJson)
-          logger.info("Completed processing export.")
+      val processingSinks = sinkExporter.getProcessing
+      output.addOne(Constants.sinkProcessing -> processingSinks.asJson)
+      logger.info("Completed sinks export.")
 
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
+      val probableSinks = sinkExporter.getProbableSinks
+      output.addOne(Constants.probableSinks -> probableSinks.asJson)
+      logger.info("Completed probable sinks export.")
 
-      collections.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.collections -> value.asJson)
-          logger.info("Completed collections export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
+      val collections = collectionExporter.getCollections
+      output.addOne(Constants.collections -> collections.asJson)
+      logger.info("Completed collections export.")
 
-      probableSinks.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.probableSinks -> value.asJson)
-          logger.info("Completed probable sinks export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      processingSinks.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.sinkProcessing -> value.asJson)
-          logger.info("Completed sinks export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      violations.onComplete({
-        case Success(value) => {
-          output.addOne("violations" -> value.asJson)
-          logger.info("Completed violation export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
+      val violations = policyAndThreatExporter.getViolations(repoPath)
+      output.addOne("violations" -> processingSinks.asJson)
+      logger.info("Completed violation export.")
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       RuleCache.getRule.sinks.foreach(sinkRule => {
@@ -184,15 +130,13 @@ object JSONExporter {
 
       logger.info("Completed Collections Exporting")
 
-      val violationResult = Await.result(violations, 10 seconds);
-
-      MetricHandler.metricsData("policyViolations") = violationResult.size.asJson
-      violationResult.foreach(violation => {
+      MetricHandler.metricsData("policyViolations") = violations.size.asJson
+      violations.foreach(violation => {
         MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
       })
 
       //  Compliance Violations
-      val complianceViolations = violationResult.filter(violation =>
+      val complianceViolations = violations.filter(violation =>
         violation.policyDetails match {
           case Some(policyDetail) => policyDetail.policyType.equals(PolicyThreatType.COMPLIANCE.toString)
           case None               => false
@@ -206,10 +150,10 @@ object JSONExporter {
 
       ConsoleExporter.exportConsoleSummary(
         dataflowsOutput,
-        Await.result(sources, 10 seconds),
-        Await.result(sinks, 10 seconds),
-        Await.result(processing, 10 seconds),
-        Await.result(collections, 10 seconds),
+        sources,
+        sinks,
+        processing,
+        collections,
         complianceViolations.size
       )
 
