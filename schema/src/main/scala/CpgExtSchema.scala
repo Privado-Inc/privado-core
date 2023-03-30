@@ -92,14 +92,14 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addProperty(name = "version", valueType = ValueType.String)
     .mandatory("")
 
-  val configuration = builder
-    .addNodeType("JAVA_CONFIGURATION")
+  val module = builder
+    .addNodeType("MODULE")
     .addProperty(groupId)
     .addProperty(artifactId)
     .addProperty(configVersion)
 
   val dependency = builder
-    .addNodeType("JAVA_DEPENDENCY")
+    .addNodeType("MODULE_DEPENDENCY")
     .addProperty(groupId)
     .addProperty(artifactId)
     .addProperty(configVersion)
@@ -107,8 +107,9 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val dependencies = builder
     .addEdgeType("DEPENDENCIES")
 
-  configuration.addOutEdge(edge = dependencies, inNode = dependency)
-  configuration.addOutEdge(edge = sourceFile, inNode = file)
+  module.addOutEdge(edge = dependencies, inNode = dependency)
+  module.addOutEdge(edge = sourceFile, inNode = file)
+  dependency.addOutEdge(edge = sourceFile, inNode = file)
 }
 
 object CpgExtSchema {

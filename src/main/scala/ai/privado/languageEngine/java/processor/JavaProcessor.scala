@@ -29,7 +29,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
-import ai.privado.languageEngine.java.passes.config.{ConfigurationFilePass, PropertiesFilePass}
+import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -47,7 +47,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.language.configuration.{NodeStarters, StepsForConfiguration}
+import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -70,7 +70,7 @@ object JavaProcessor {
         try {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
-          new ConfigurationFilePass(cpg, sourceRepoLocation).createAndApply()
+          new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
 //          val configurationFileList = cpg.configuration.file.l
 //          configurationFileList.foreach(file => {
 //            println(file.name)
