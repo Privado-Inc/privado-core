@@ -95,7 +95,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
         typeDeclValEntry._2.foreach(typeDeclMember => {
-          val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
+          val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>").replaceAll(":<module>.", ":<module>.*")
 
           // updating cache
           taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
@@ -104,7 +104,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           // Note: Partially Matching the typeFullName with typeDecl fullName
           // typeFullName: /models.py:<module>.Profile.Profile<body>
           // typeDeclVal: models.py:<module>.Profile
-          val impactedObjects = cpg.identifier.where(_.typeFullName("\\/" + typeDeclVal + ".*"))
+          val impactedObjects = cpg.identifier.where(_.typeFullName(".*" + typeDeclVal + ".*"))
           impactedObjects
             .whereNot(_.code("this|self|cls"))
             .foreach(impactedObject => {
