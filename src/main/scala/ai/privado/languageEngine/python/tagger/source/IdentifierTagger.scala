@@ -23,14 +23,20 @@
 
 package ai.privado.languageEngine.python.tagger.source
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+import java.util.UUID
+
+class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE: String = UUID.randomUUID.toString
+  lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE: String     = UUID.randomUUID.toString
 
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
 
@@ -48,12 +54,6 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
     regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
-    })
-
-    val regexMatchingMembers = cpg.member.name(rulePattern).l
-    regexMatchingMembers.foreach(member => {
-      storeForTag(builder, member)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
-      addRuleTags(builder, member, ruleInfo)
     })
 
     //    Example: row_vehicle['VEHICLE_REGISTRATION_NUMBER']
@@ -74,5 +74,72 @@ class IdentifierTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) 
       addRuleTags(builder, iaCall, ruleInfo)
     })
 
+    // ----------------------------------------------------
+    // Second Level derivation Implementation
+    // ----------------------------------------------------
+    // Step 1.0
+    val regexMatchingMembers = cpg.member.name(rulePattern).l
+    regexMatchingMembers.foreach(member => {
+      storeForTag(builder, member)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
+      addRuleTags(builder, member, ruleInfo)
+    })
+
+    // Step 2.0
+    // If anything inside members is PII mark cpg.typeDecl.l as SENSITIVE_CLASS
+    val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
+      .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
+      .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(rulePattern).l))
+      .l
+
+    typeDeclWithMemberNameHavingMemberName
+      .distinctBy(_._1.fullName)
+      .foreach(typeDeclValEntry => {
+        typeDeclValEntry._2.foreach(typeDeclMember => {
+          val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
+
+          // updating cache
+          taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+          val typeDeclMemberName = typeDeclMember.name
+
+          // Note: Partially Matching the typeFullName with typeDecl fullName
+          // typeFullName: /models.py:<module>.Profile.Profile<body>
+          // typeDeclVal: models.py:<module>.Profile
+          val impactedObjects = cpg.identifier.where(_.typeFullName("\\/" + typeDeclVal + ".*"))
+          impactedObjects
+            .whereNot(_.code("this|self|cls"))
+            .foreach(impactedObject => {
+              if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+                storeForTag(builder, impactedObject)(
+                  InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                  ruleInfo.id
+                )
+                storeForTag(builder, impactedObject)(
+                  Constants.id,
+                  Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                )
+                storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+              }
+              storeForTag(builder, impactedObject)(
+                Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+                ruleInfo.id
+              )
+              // Tag for storing memberName in derived Objects -> user --> (email, password)
+              storeForTag(builder, impactedObject)(
+                ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+                typeDeclMemberName
+              )
+            })
+
+          // To Mark all field Access and getters
+          // tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
+        })
+      })
+
+    // Step 3.0
+    // Get list of cpg.typeDecl.fullName after removing <meta>
+
+    // Step 4.0
+    // Validate all cpg.identifier.typeFullName matching against the list we build in 3rd stage.
+    // Matched identifiers will be marked as sources.
   }
 }

@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.semantic.Language._
@@ -33,8 +33,8 @@ import io.joern.javasrc2cpg.Config
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+
 import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
@@ -81,7 +81,8 @@ object PythonProcessor {
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          cpg.runTagger(processedRules)
+          val taggerCache = new TaggerCache
+          cpg.runTagger(processedRules, taggerCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -110,7 +111,7 @@ object PythonProcessor {
                 Right(())
             }
           }
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               Left(err)
