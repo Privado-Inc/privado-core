@@ -20,7 +20,9 @@ object module {
     def dependencies: Traversal[ModuleDependency] = trav.out(EdgeTypes.DEPENDENCIES).cast[ModuleDependency]
   }
 
-  implicit class StepsForDependency(val traversal: Traversal[io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency]) extends AnyVal {
+  implicit class StepsForDependency(
+    val traversal: Traversal[io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency]
+  ) extends AnyVal {
 
     def file: Traversal[File] = traversal.out(EdgeTypes.SOURCE_FILE).cast[File]
 

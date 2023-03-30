@@ -33,7 +33,14 @@ import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesF
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, storages}
+import ai.privado.model.Constants.{
+  cpgOutputFileName,
+  outputAuditFileName,
+  outputDirectoryName,
+  outputFileName,
+  outputIntermediateFileName,
+  storages
+}
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
