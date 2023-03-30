@@ -78,18 +78,6 @@ object JavaProcessor {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
           new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
-//          val configurationFileList = cpg.configuration.file.l
-//          configurationFileList.foreach(file => {
-//            println(file.name)
-//          })
-//
-//          println("eee")
-//
-//          val dependencies = cpg.configuration.dependencies.l
-//
-//          dependencies.foreach(dependency => {
-//            println(dependency.groupid)
-//          })
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
