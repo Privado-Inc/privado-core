@@ -52,7 +52,9 @@ class JSAPITagger(cpg: Cpg) extends APITagger(cpg) {
       else {
         val domain = getDomainFromTemplates(scriptTag.code)
         newRuleIdToUse = ruleInfo.id + "." + domain
-        RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+        RuleCache.setRuleInfo(
+          ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, domains = List(domain).toArray)
+        )
         addRuleTags(builder, scriptTag, ruleInfo, Some(newRuleIdToUse))
       }
       storeForTag(builder, scriptTag)(Constants.apiUrl + newRuleIdToUse, scriptTag.code)
