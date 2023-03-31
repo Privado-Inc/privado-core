@@ -110,9 +110,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --GrpcCollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    // TODO: Remove after debugging
-    println(cpg.method.where(_.call.name("onCompleted")).tag.toJsonPretty)
-
     logger.info("Done with tagging")
 
     cpg.tag
