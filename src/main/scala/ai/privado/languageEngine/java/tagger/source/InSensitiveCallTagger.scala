@@ -37,25 +37,31 @@ class InSensitiveCallTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoin
 
   override def runOnPart(builder: DiffGraphBuilder, typeDeclFullName: String): Unit = {
 
-    val (_, nonPersonalMembers)       = getPersonalNonPersonalMembers(cpg, typeDeclFullName, taggerCache)
-    val nonPersonalMembersRegexString = nonPersonalMembers.mkString("(", "|", ")")
+    val (personalMembers, nonPersonalMembers) = getPersonalNonPersonalMembers(cpg, typeDeclFullName, taggerCache)
+    val nonPersonalMembersRegexString         = nonPersonalMembers.mkString("(", "|", ")")
+    val personalMembersRegexString            = s".*${personalMembers.mkString("(", "|", ")")}.*"
     if (nonPersonalMembers.nonEmpty) {
-      val impactedCalls = getCallsMatchingReturnRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString)
-
-      impactedCalls.dedup.foreach(
+      getCallsMatchingReturnRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).dedup.foreach(
         storeForTag(builder, _)(InternalTag.INSENSITIVE_METHOD_RETURN.toString, "Data.Sensitive.NonPersonal.Method")
       )
+
+      getCallsMatchingNameRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).dedup.foreach(
+        storeForTag(builder, _)(InternalTag.INSENSITIVE_SETTER.toString)
+      )
+
+      getFieldAccessCallsMatchingRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).foreach(impactedAccess => {
+        if (impactedAccess.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedAccess)(
+            InternalTag.INSENSITIVE_FIELD_ACCESS.toString,
+            "Data.Sensitive.NonPersonal.MemberAccess"
+          )
+        }
+      })
     }
 
-    val impactedFieldAccess = getFieldAccessCallsMatchingRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString)
-
-    impactedFieldAccess.foreach(impactedAccess => {
-      if (impactedAccess.tag.nameExact(Constants.id).l.isEmpty) {
-        storeForTag(builder, impactedAccess)(
-          InternalTag.INSENSITIVE_FIELD_ACCESS.toString,
-          "Data.Sensitive.NonPersonal.MemberAccess"
-        )
-      }
-    })
+    if (personalMembers.nonEmpty)
+      getCallsMatchingNameRegex(cpg, typeDeclFullName, personalMembersRegexString).dedup.foreach(
+        storeForTag(builder, _)(InternalTag.SENSITIVE_SETTER.toString)
+      )
   }
 }
