@@ -31,6 +31,7 @@ import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
 
 import scala.collection.immutable.HashMap
 
@@ -53,15 +54,7 @@ class GrpcCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
     GRPC collection point since it handles the request
      */
 
-    val grpcCollectionMethods = cpg.method
-      .where(_.parameter.typeFullName("(?i)(.*)(StreamObserver)(.*)"))
-      .where(
-        _.call
-          .name("onCompleted")
-          .filter(_.argument.size == 1)
-          .where(_.argument.typ.fullName("(?i)(.*)(StreamObserver)(.*)"))
-      )
-      .l
+    val grpcCollectionMethods = GRPCTaggerUtility.getGrpcEndpoints(cpg)
 
     val methodFullNamesCombined = grpcCollectionMethods.map(sink => sink.fullName).mkString("(", "|", ")")
 
