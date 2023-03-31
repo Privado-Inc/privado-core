@@ -76,23 +76,7 @@ class GrpcCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
       Array[String]()
     )
 
-    // Tag parameters same way we do while tagging collections
-    val grpcCollectionPoints = Traversal(grpcCollectionMethods).flatMap(collectionMethod => {
-      sourceRuleInfos.flatMap(sourceRule => {
-        val parameters =
-          collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("this")).l
-        if (parameters.isEmpty) {
-          None
-        } else {
-          parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
-          Some(collectionMethod)
-        }
-      })
-    })
-
-    grpcCollectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, ruleInfo)
-      storeForTag(builder, collectionPoint)(InternalTag.COLLECTION_METHOD_ENDPOINT.toString, collectionPoint.name)
-    })
+    CollectionUtility.tagDirectSources(builder, grpcCollectionMethods, sourceRuleInfos, ruleInfo, returnByName = true)
+    CollectionUtility.tagDerivedSources(cpg, builder, grpcCollectionMethods, ruleInfo, returnByName = true)
   }
 }
