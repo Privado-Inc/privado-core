@@ -26,10 +26,11 @@ package ai.privado.languageEngine.java.tagger
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
+import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger}
 import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, RuleInfo}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.RegularSinkTagger

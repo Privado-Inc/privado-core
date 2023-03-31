@@ -25,6 +25,7 @@ package ai.privado.languageEngine.java.tagger.sink
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
@@ -90,9 +91,10 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   }
 
   val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
+  val grpcSinks                  = GRPCTaggerUtility.getGrpcSinks(cpg)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    RuleCache.getRule.sinks
+    RuleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toArray
   }
@@ -130,7 +132,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis,
+          apis ++ grpcSinks,
           builder,
           ruleInfo,
           ScanProcessor.config.enableAPIDisplay
@@ -141,14 +143,19 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
-          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks,
+          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks,
           builder,
           ruleInfo
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
-        sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, feignAPISinks, builder, ruleInfo)
+        sinkTagger(
+          apiInternalSources ++ propertySources ++ identifierSource,
+          feignAPISinks ++ grpcSinks,
+          builder,
+          ruleInfo
+        )
     }
   }
 
