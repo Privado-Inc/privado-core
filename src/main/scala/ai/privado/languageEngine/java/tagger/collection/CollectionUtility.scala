@@ -12,7 +12,15 @@ import scala.util.{Failure, Success, Try}
 import scala.collection.mutable
 
 object CollectionUtility {
-  def tagDirectSources(builder: DiffGraphBuilder, collectionMethods: List[Method], sourceRuleInfos: List[RuleInfo], collectionRuleInfo: RuleInfo, returnByName: Boolean = false, methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](), classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()) = {
+  def tagDirectSources(
+    builder: DiffGraphBuilder,
+    collectionMethods: List[Method],
+    sourceRuleInfos: List[RuleInfo],
+    collectionRuleInfo: RuleInfo,
+    returnByName: Boolean = false,
+    methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](),
+    classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
+  ) = {
     val collectionPoints = Traversal(collectionMethods).flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
         val parameters =
@@ -28,7 +36,15 @@ object CollectionUtility {
     tagMethodEndpoints(builder, collectionPoints.l, collectionRuleInfo, returnByName, methodUrlMap, classUrlMap)
   }
 
-  def tagDerivedSources(cpg: Cpg, builder: DiffGraphBuilder, collectionMethods: List[Method], collectionRuleInfo: RuleInfo, returnByName: Boolean = false, methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](), classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()) = {
+  def tagDerivedSources(
+    cpg: Cpg,
+    builder: DiffGraphBuilder,
+    collectionMethods: List[Method],
+    collectionRuleInfo: RuleInfo,
+    returnByName: Boolean = false,
+    methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](),
+    classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
+  ) = {
     // Implementation to also mark the collection points which use derived type declaration as there parameters
     val derivedTypeDecl = (getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString) ++
       getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString) ++
@@ -56,10 +72,24 @@ object CollectionUtility {
       }
     })
 
-    tagMethodEndpoints(builder, collectionPointsFromDerivedTypeDecl.l, collectionRuleInfo, returnByName, methodUrlMap, classUrlMap)
+    tagMethodEndpoints(
+      builder,
+      collectionPointsFromDerivedTypeDecl.l,
+      collectionRuleInfo,
+      returnByName,
+      methodUrlMap,
+      classUrlMap
+    )
   }
 
-  private def tagMethodEndpoints(builder: DiffGraphBuilder, collectionPoints: List[Method], collectionRuleInfo: RuleInfo, returnByName: Boolean, methodUrlMap: mutable.HashMap[Long, String], classUrlMap: mutable.HashMap[Long, String]) = {
+  private def tagMethodEndpoints(
+    builder: DiffGraphBuilder,
+    collectionPoints: List[Method],
+    collectionRuleInfo: RuleInfo,
+    returnByName: Boolean,
+    methodUrlMap: mutable.HashMap[Long, String],
+    classUrlMap: mutable.HashMap[Long, String]
+  ) = {
     collectionPoints.foreach(collectionPoint => {
       addRuleTags(builder, collectionPoint, collectionRuleInfo)
       storeForTag(builder, collectionPoint)(
@@ -73,7 +103,12 @@ object CollectionUtility {
     cpg.identifier.where(_.tag.name(objectName)).typeFullName.dedup.l
   }
 
-  private def getFinalEndPoint(collectionPoint: Method, returnByName: Boolean, methodUrlMap: mutable.HashMap[Long, String], classUrlMap: mutable.HashMap[Long, String]): String = {
+  private def getFinalEndPoint(
+    collectionPoint: Method,
+    returnByName: Boolean,
+    methodUrlMap: mutable.HashMap[Long, String],
+    classUrlMap: mutable.HashMap[Long, String]
+  ): String = {
     if (returnByName) {
       collectionPoint.name
     } else {

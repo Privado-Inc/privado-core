@@ -66,8 +66,22 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       .method
       .l
 
-    CollectionUtility.tagDirectSources(builder, collectionMethodsCache, sourceRuleInfos, ruleInfo, methodUrlMap = methodUrlMap, classUrlMap = classUrlMap)
-    CollectionUtility.tagDerivedSources(cpg, builder, collectionMethodsCache, ruleInfo, methodUrlMap = methodUrlMap, classUrlMap = classUrlMap)
+    CollectionUtility.tagDirectSources(
+      builder,
+      collectionMethodsCache,
+      sourceRuleInfos,
+      ruleInfo,
+      methodUrlMap = methodUrlMap,
+      classUrlMap = classUrlMap
+    )
+    CollectionUtility.tagDerivedSources(
+      cpg,
+      builder,
+      collectionMethodsCache,
+      ruleInfo,
+      methodUrlMap = methodUrlMap,
+      classUrlMap = classUrlMap
+    )
   }
 
   /** Returns rest Url for this annotation
