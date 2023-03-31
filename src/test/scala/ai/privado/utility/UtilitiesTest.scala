@@ -73,7 +73,7 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         strategy="lazyOnload"
         />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "uknown-domain"
+      domain shouldBe "unknown-domain"
     }
   }
 }
