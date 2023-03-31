@@ -43,7 +43,11 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern = ruleInfo.combinedRulePattern
 
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
+    val regexMatchingIdentifiers = cpg
+      .identifier(rulePattern)
+      // TODO: Fix below check, isImport not working something .whereNot(_.astSiblings.l.name("import")) will work.
+      .whereNot(_.astSiblings.isImport)
+      .l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo)
@@ -68,24 +72,36 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
-    val indexAccessCalls = indexAccessLiterals.astParent.isCall.l
+    val indexAccessCalls = indexAccessLiterals.astParent.isCall.whereNot(_.name("__(iter|next)__")).l
     indexAccessCalls.foreach(iaCall => {
       storeForTag(builder, iaCall)(InternalTag.INDEX_ACCESS_CALL.toString)
       addRuleTags(builder, iaCall, ruleInfo)
     })
 
-    // ----------------------------------------------------
-    // Second Level derivation Implementation
-    // ----------------------------------------------------
-    // Step 1.0
     val regexMatchingMembers = cpg.member.name(rulePattern).l
     regexMatchingMembers.foreach(member => {
       storeForTag(builder, member)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
       addRuleTags(builder, member, ruleInfo)
     })
 
-    // Step 2.0
-    // If anything inside members is PII mark cpg.typeDecl.l as SENSITIVE_CLASS
+    // ----------------------------------------------------
+    // Second Level derivation Implementation
+    // ----------------------------------------------------
+    // Step 1: Tag the class object instances which has member PIIs
+    tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
+
+    // Step 2: Tag the inherited object instances which has member PIIs from extended class
+    // TODO: tagObjectOfTypeDeclExtendingType(builder, rulePattern, ruleInfo)
+
+  }
+
+  /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent
+    */
+  private def tagObjectOfTypeDeclHavingMemberName(
+    builder: DiffGraphBuilder,
+    rulePattern: String,
+    ruleInfo: RuleInfo
+  ): Unit = {
     val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
       .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
       .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(rulePattern).l))
@@ -134,12 +150,5 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           // tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
         })
       })
-
-    // Step 3.0
-    // Get list of cpg.typeDecl.fullName after removing <meta>
-
-    // Step 4.0
-    // Validate all cpg.identifier.typeFullName matching against the list we build in 3rd stage.
-    // Matched identifiers will be marked as sources.
   }
 }
