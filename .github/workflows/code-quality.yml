@@ -18,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: print
-        run: echo "ankit k"
+        run: echo "ankit ku"
 
       - name: Check formatting
         run: sbt ++2.13.8 scalafmtCheck test:scalafmtCheck
