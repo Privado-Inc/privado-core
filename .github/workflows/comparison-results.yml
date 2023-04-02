@@ -18,6 +18,9 @@ jobs:
           distribution: 'temurin'
           java-version: '18'
 
+      - name: print
+        run: echo "ankit"
+
       - name: Export Java Home Path
         run: export PATH=$JAVA_HOME/bin:$PATH
 
