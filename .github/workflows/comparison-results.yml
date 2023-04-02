@@ -19,7 +19,7 @@ jobs:
           java-version: '18'
 
       - name: print
-        run: echo "ankit kumar anand"
+        run: echo "ankit kumar anand kumar"
 
       - name: Export Java Home Path
         run: export PATH=$JAVA_HOME/bin:$PATH
