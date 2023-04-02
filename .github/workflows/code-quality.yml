@@ -1,7 +1,7 @@
 name: Check Code Quality
 
 on:
-  push:
+  pull_request_target:
     branches:
       - "**"
 
