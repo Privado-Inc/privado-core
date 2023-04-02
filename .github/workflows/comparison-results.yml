@@ -2,7 +2,7 @@ name: Monitoring Stability and Comparing Results
 
 # Triggers when a pull_request is triggered
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - "**"
 
