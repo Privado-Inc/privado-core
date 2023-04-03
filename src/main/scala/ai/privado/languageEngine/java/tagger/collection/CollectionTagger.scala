@@ -47,16 +47,6 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
 
     val methodUrlMap = mutable.HashMap[Long, String]()
     val classUrlMap  = mutable.HashMap[Long, String]()
-    def getFinalEndPoint(collectionPoint: Method): String = {
-
-      val methodUrl = methodUrlMap.getOrElse(collectionPoint.id(), "")
-      Try(classUrlMap.getOrElse(collectionPoint.typeDecl.head.id(), "")) match {
-        case Success(classUrl) => classUrl + methodUrl
-        case Failure(e) =>
-          logger.debug("Exception : ", e)
-          methodUrl
-      }
-    }
 
     // A cached method so that we are not computing again
     val combinedRulePatterns = ruleInfo.combinedRulePattern
@@ -76,66 +66,22 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       .method
       .l
 
-    val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
-      sourceRuleInfos.flatMap(sourceRule => {
-        val parameters =
-          collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("this")).l
-        if (parameters.isEmpty) {
-          None
-        } else {
-          parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
-          Some(collectionMethod)
-        }
-      })
-    })
-
-    collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, ruleInfo)
-      storeForTag(builder, collectionPoint)(
-        InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
-        getFinalEndPoint(collectionPoint)
-      )
-    })
-
-    // Implementation to also mark the collection points which use derived type declaration as there parameters
-    val derivedTypeDecl = (getAllDerivedTypeDecl(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString) ++
-      getAllDerivedTypeDecl(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString) ++
-      getAllDerivedTypeDecl(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).distinct
-
-    val collectionPointsFromDerivedTypeDecl = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
-      val parameters =
-        collectionMethod.parameter.where(_.typeFullName.filter(fullName => derivedTypeDecl.contains(fullName)))
-      if (parameters.isEmpty) {
-        None
-      } else {
-        parameters.foreach(parameter => {
-          val derivedReferencingIdentifier = parameter.referencingIdentifiers
-            .whereNot(_.code("this"))
-            .where(_.tag.name(Constants.privadoDerived + ".*"))
-            .l
-          if (derivedReferencingIdentifier.nonEmpty) {
-            Try(derivedReferencingIdentifier.head.tag.name(Constants.privadoDerived + ".*")) match {
-              case Success(refIdentifierTags) =>
-                refIdentifierTags.foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
-              case Failure(e) => logger.debug("Exception when reading referencing identifier information : ", e)
-            }
-          }
-        })
-        collectionMethod
-      }
-    })
-
-    collectionPointsFromDerivedTypeDecl.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, ruleInfo)
-      storeForTag(builder, collectionPoint)(
-        InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
-        getFinalEndPoint(collectionPoint)
-      )
-    })
-  }
-
-  private def getAllDerivedTypeDecl(objectName: String) = {
-    cpg.identifier.where(_.tag.name(objectName)).typeFullName.dedup.l
+    CollectionUtility.tagDirectSources(
+      builder,
+      collectionMethodsCache,
+      sourceRuleInfos,
+      ruleInfo,
+      methodUrlMap = methodUrlMap,
+      classUrlMap = classUrlMap
+    )
+    CollectionUtility.tagDerivedSources(
+      cpg,
+      builder,
+      collectionMethodsCache,
+      ruleInfo,
+      methodUrlMap = methodUrlMap,
+      classUrlMap = classUrlMap
+    )
   }
 
   /** Returns rest Url for this annotation

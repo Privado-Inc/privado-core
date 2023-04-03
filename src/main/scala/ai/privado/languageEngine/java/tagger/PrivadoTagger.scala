@@ -27,7 +27,7 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
-import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger}
 import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.model.{ConfigAndRules, RuleInfo}
@@ -103,6 +103,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(
       s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
+
+    println(s"${Calendar.getInstance().getTime} - --GrpcCollectionTagger invoked...")
+    new GrpcCollectionTagger(cpg, sourceRules).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --GrpcCollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
     logger.info("Done with tagging")
 
     cpg.tag
