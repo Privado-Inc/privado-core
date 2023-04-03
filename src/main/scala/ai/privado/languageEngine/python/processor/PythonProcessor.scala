@@ -16,7 +16,7 @@ import io.joern.pysrc2cpg.{
   Py2CpgOnFileSystemConfig,
   PythonNaiveCallLinker,
   PythonTypeHintCallLinker,
-  PythonTypeRecovery
+  PythonTypeRecoveryPass
 }
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
@@ -57,7 +57,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
-          new PythonTypeRecovery(cpg).createAndApply()
+          new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
