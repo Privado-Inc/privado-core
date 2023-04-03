@@ -1,41 +1,32 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputIntermediateFileName}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
-import ai.privado.entrypoint.ScanProcessor.config
-import io.joern.pysrc2cpg.{
-  ImportsPass,
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonNaiveCallLinker,
-  PythonTypeHintCallLinker,
-  PythonTypeRecovery
-}
-import io.shiftleft.codepropertygraph
-import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
+import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import ai.privado.model.Language
-import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.javasrc2cpg.Config
+import io.joern.pysrc2cpg._
+import io.joern.x2cpg.X2Cpg
+import io.shiftleft.codepropertygraph
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-
-import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
-import java.nio.file.{Files, Paths}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -81,7 +72,8 @@ object PythonProcessor {
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          cpg.runTagger(processedRules)
+          val taggerCache = new TaggerCache
+          cpg.runTagger(processedRules, taggerCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -110,7 +102,7 @@ object PythonProcessor {
                 Right(())
             }
           }
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               Left(err)

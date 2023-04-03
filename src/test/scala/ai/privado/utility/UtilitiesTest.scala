@@ -39,7 +39,8 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       strategy="lazyOnload"
     />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "c.amazon-adsystem.com"
+      domain._2 shouldBe "c.amazon-adsystem.com"
+      domain._1 shouldBe "https://c.amazon-adsystem.com/aax2/apstag.js"
     }
     "domain extratcion sample two" in {
       val code =
@@ -50,7 +51,8 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         strategy="lazyOnload"
       />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "googletagservices.com"
+      domain._2 shouldBe "googletagservices.com"
+      domain._1 shouldBe "https://www.googletagservices.com/tag/js/gpt.js"
     }
     "domain extratcion sample three" in {
       val code =
@@ -61,7 +63,8 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     strategy="lazyOnload"
   />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "googletagservices.com"
+      domain._2 shouldBe "googletagservices.com"
+      domain._1 shouldBe "//www.googletagservices.com/tag/js/gpt.js"
     }
 
     "domain extratcion sample four" in {
@@ -73,7 +76,8 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         strategy="lazyOnload"
         />"""
       val domain = Utilities.getDomainFromTemplates(code)
-      domain shouldBe "uknown-domain"
+      domain._2 shouldBe "unknown-domain"
+      domain._1 shouldBe "unknown-domain"
     }
   }
 }

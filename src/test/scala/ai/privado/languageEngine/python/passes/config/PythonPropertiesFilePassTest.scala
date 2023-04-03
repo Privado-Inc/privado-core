@@ -3,18 +3,10 @@ package ai.privado.languageEngine.python.passes.config
 import ai.privado.languageEngine.java.language._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.pysrc2cpg.{
-  ImportsPass,
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonNaiveCallLinker,
-  PythonTypeHintCallLinker,
-  PythonTypeRecovery
-}
+import io.joern.pysrc2cpg._
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers

@@ -310,14 +310,15 @@ object Utilities {
       domain
   }
 
-  def getDomainFromTemplates(templateStr: String): String = {
+  def getDomainFromTemplates(templateStr: String): (String, String) = {
     val regex =
       """(http:|https:){0,1}\/\/(www.){0,1}([\w_\-]+(?:(?:\.[\w_\-]+)+))([\w.,@?^=%&:\/~+#\-]*[\w@?^=%&\/~+#\-])""".r
-    Try(regex.findFirstMatchIn(templateStr).map(_.group(3))) match {
-      case Success(url) => if (url == None) "uknown-domain" else url.get
+    Try(regex.findFirstMatchIn(templateStr).headOption.get) match {
+      case Success(matched) =>
+        if (matched == None) ("unknown-domain", "unknown-domain") else (matched.matched, matched.group(3))
       case Failure(e) =>
         logger.debug("Exception : ", e)
-        "uknown-domain"
+        ("unknown-domain", "unknown-domain")
     }
   }
 }

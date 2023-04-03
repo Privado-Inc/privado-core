@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
 import ai.privado.languageEngine.python.tagger.sink.PythonAPITagger
@@ -21,7 +21,7 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
+  override def runTagger(rules: ConfigAndRules, taggerCache: TaggerCache): Traversal[Tag] = {
 
     logger.info("Starting tagging")
 
@@ -31,7 +31,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
-    new IdentifierTagger(cpg).createAndApply()
+    new IdentifierTagger(cpg, taggerCache).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
