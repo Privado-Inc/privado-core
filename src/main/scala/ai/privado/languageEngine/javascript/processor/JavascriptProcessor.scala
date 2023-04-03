@@ -67,7 +67,6 @@ object JavascriptProcessor {
     xtocpg match {
       case Success(cpg) =>
         logger.info("Applying default overlays")
-        logger.info("Enhancing Javascript graph")
         logger.debug("Running custom passes")
         new MethodFullNameStyleDep(cpg).createAndApply()
         println("done with MethodFullNameStyleDep")
