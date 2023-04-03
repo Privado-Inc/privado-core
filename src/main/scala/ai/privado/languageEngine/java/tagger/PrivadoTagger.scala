@@ -26,11 +26,10 @@ package ai.privado.languageEngine.java.tagger
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
-import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
-import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger}
+import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
 import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
-import ai.privado.model.{ConfigAndRules, RuleInfo}
+import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.RegularSinkTagger
@@ -98,10 +97,15 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     }
 
     println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
-    val collectionTagger = new CollectionTagger(cpg, sourceRules)
     new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
+    println(s"${Calendar.getInstance().getTime} - --SOAPCollectionTagger invoked...")
+    new SOAPCollectionTagger(cpg, sourceRules).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --SOAPCollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --GrpcCollectionTagger invoked...")

@@ -54,13 +54,16 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
       .foreach(classAnnotation => {
-        classUrlMap.addOne(classAnnotation.typeDecl.head.id() -> getCollectionUrl(classAnnotation))
+        classUrlMap
+          .addOne(classAnnotation.typeDecl.head.id() -> CollectionUtility.getUrlFromAnnotation(classAnnotation))
       })
     val collectionMethodsCache = cpg.annotation
       .name(combinedRulePatterns)
       .filter(_.method.nonEmpty)
       .map(matchedAnnotation => {
-        methodUrlMap.addOne(matchedAnnotation.method.head.id() -> getCollectionUrl(matchedAnnotation))
+        methodUrlMap.addOne(
+          matchedAnnotation.method.head.id() -> CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        )
         matchedAnnotation
       })
       .method
@@ -84,24 +87,4 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
     )
   }
 
-  /** Returns rest Url for this annotation
-    * @param parameterIn
-    * @return
-    */
-  private def getCollectionUrl(annotation: Annotation) = {
-    Try(annotation.parameterAssign.order(1).astChildren.order(2).l.head) match {
-      case Success(url) => url.code
-      case Failure(_) =>
-        Try(annotation.parameterAssign.order(1).head) match {
-          case Success(url) => url.code
-          case Failure(_) =>
-            Try(annotation) match {
-              case Success(url) => url.code
-              case Failure(e) =>
-                logger.debug("Exception : ", e)
-                ""
-            }
-        }
-    }
-  }
 }
