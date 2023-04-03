@@ -86,7 +86,7 @@ object CommandConstants {
   val TEST_OUTPUT                                  = "test-output"
   val TEST_OUTPUT_ABBR                             = "tout"
   val GENERATE_AUDIT_REPORT                        = "generate-audit-report"
-  val GENERATE_AUDIT_REPORT_ABBR           = "gar"
+  val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
 }
 
 object CommandParser {
