@@ -9,7 +9,7 @@ import io.joern.pysrc2cpg.{
   Py2CpgOnFileSystemConfig,
   PythonNaiveCallLinker,
   PythonTypeHintCallLinker,
-  PythonTypeRecovery
+  PythonTypeRecoveryPass
 }
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -312,7 +312,7 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     // Apply default overlays
     X2Cpg.applyDefaultOverlays(cpg)
     new ImportsPass(cpg).createAndApply()
-    new PythonTypeRecovery(cpg).createAndApply()
+    new PythonTypeRecoveryPass(cpg).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new PythonNaiveCallLinker(cpg).createAndApply()
 
