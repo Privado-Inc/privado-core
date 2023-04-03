@@ -4,7 +4,7 @@ set -o pipefail
 set -o nounset
 
 # extract joern_version from build.sbt - parsing just like in project/Versions.scala
-readonly JOERN_VERSION=$(grep 'val joernVersion = "' build.sbt | sed 's/.*"\(.*\)"/\1/')
+readonly JOERN_VERSION=$(grep 'val joernVersion' build.sbt | sed 's/.*"\(.*\)"/\1/')
 
 # get script location, use as a root dir for this script
 if [ "$(uname)" = 'Darwin' ]; then
@@ -53,8 +53,9 @@ if [ ! -d "${JOERN_INSTALL}" ]; then
   check_installed "curl"
 
   # Fetch installer
-  echo "https://github.com/ShiftLeftSecurity/joern/releases/download/v$JOERN_VERSION/joern-install.sh"
-  curl -L "https://github.com/ShiftLeftSecurity/joern/releases/download/v$JOERN_VERSION/joern-install.sh" -o "$SCRIPT_ABS_DIR/joern-install.sh"
+
+  echo "https://github.com/joernio/joern/releases/download/v$JOERN_VERSION/joern-install.sh"
+  curl -L "https://github.com/joernio/joern/releases/download/v$JOERN_VERSION/joern-install.sh" -o "$SCRIPT_ABS_DIR/joern-install.sh"
 
   # Install into `joern-inst`
   chmod +x $SCRIPT_ABS_DIR/joern-install.sh
