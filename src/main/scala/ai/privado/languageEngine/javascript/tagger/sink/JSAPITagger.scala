@@ -47,15 +47,15 @@ class JSAPITagger(cpg: Cpg) extends APITagger(cpg) {
       cpg.templateDom.name("JSXElement").code("(?i)[\\\"]*<script.*" + ruleInfo.combinedRulePattern + ".*").l
     scriptTags.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
+      val domain         = getDomainFromTemplates(scriptTag.code)
       if (ruleInfo.id.equals(Constants.internalAPIRuleId))
         addRuleTags(builder, scriptTag, ruleInfo)
       else {
-        val domain = getDomainFromTemplates(scriptTag.code)
-        newRuleIdToUse = ruleInfo.id + "." + domain
-        RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+        newRuleIdToUse = ruleInfo.id + "." + domain._2
+        RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
         addRuleTags(builder, scriptTag, ruleInfo, Some(newRuleIdToUse))
       }
-      storeForTag(builder, scriptTag)(Constants.apiUrl + newRuleIdToUse, scriptTag.code)
+      storeForTag(builder, scriptTag)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
   }
 }
