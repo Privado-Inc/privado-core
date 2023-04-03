@@ -18,6 +18,9 @@ jobs:
           distribution: 'temurin'
           java-version: '18'
 
+      - name: workflow Test
+        run: echo "Testing comparison report"
+
       - name: Export Java Home Path
         run: export PATH=$JAVA_HOME/bin:$PATH
 
