@@ -44,7 +44,6 @@ object GRPCTaggerUtility {
         .whereNot(
           _.repeat(_.astParent.isCall)(_.emit)
             .name(onNext)
-            .filter(_.argument.size == 1)
             .where(_.argument.typ.fullName(StreamObserverPattern))
         )
         .l
@@ -85,7 +84,6 @@ object GRPCTaggerUtility {
         .whereNot(
           _.repeat(_.astParent.isCall)(_.emit)
             .name(onNext)
-            .filter(_.argument.size == 1)
             .where(_.argument.typ.fullName(StreamObserverPattern))
         )
         .l
