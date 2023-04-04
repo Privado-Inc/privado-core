@@ -42,7 +42,7 @@ object GRPCTaggerUtility {
       val sinks = cpg
         .call(endpoint.name)
         .whereNot(
-          _.astParent.isCall
+          _.repeat(_.astParent.isCall)(_.emit)
             .name(onNext)
             .filter(_.argument.size == 1)
             .where(_.argument.typ.fullName(StreamObserverPattern))
@@ -83,7 +83,7 @@ object GRPCTaggerUtility {
         .where(_.argument.isCall.typeFullName(stubPattern))
         .whereNot(_.name(filterNotPattern))
         .whereNot(
-          _.astParent.isCall
+          _.repeat(_.astParent.isCall)(_.emit)
             .name(onNext)
             .filter(_.argument.size == 1)
             .where(_.argument.typ.fullName(StreamObserverPattern))
