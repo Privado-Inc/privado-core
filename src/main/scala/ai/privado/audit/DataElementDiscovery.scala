@@ -266,4 +266,3 @@ object DataElementDiscovery {
 
   case class CollectionMethodInfo(var methodName: String, var endpoint: String)
 }
-
