@@ -45,8 +45,8 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
     val regexMatchingIdentifiers = cpg
       .identifier(rulePattern)
-      // TODO: Fix below check, isImport not working something .whereNot(_.astSiblings.l.name("import")) will work.
       .whereNot(_.astSiblings.isImport)
+      .whereNot(_.astSiblings.isCall.name("import"))
       .l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
@@ -72,7 +72,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
-    val indexAccessCalls = indexAccessLiterals.astParent.isCall.whereNot(_.name("__(iter|next)__")).l
+    val indexAccessCalls = indexAccessLiterals.astParent.isCall.whereNot(_.name("__(iter|next)__|print")).l
     indexAccessCalls.foreach(iaCall => {
       storeForTag(builder, iaCall)(InternalTag.INDEX_ACCESS_CALL.toString)
       addRuleTags(builder, iaCall, ruleInfo)
@@ -85,12 +85,15 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     })
 
     // ----------------------------------------------------
-    // Second Level derivation Implementation
+    // Step 1: First Level derivation Implementation
     // ----------------------------------------------------
-    // Step 1: Tag the class object instances which has member PIIs
+    // Tag the class object instances which has member PIIs
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
 
-    // Step 2: Tag the inherited object instances which has member PIIs from extended class
+    // ----------------------------------------------------
+    // Step 2: Second Level derivation Implementation
+    // ----------------------------------------------------
+    // Tag the inherited object instances which has member PIIs from extended class
     // TODO: tagObjectOfTypeDeclExtendingType(builder, rulePattern, ruleInfo)
 
   }
@@ -111,18 +114,24 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
         typeDeclValEntry._2.foreach(typeDeclMember => {
-          val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>").replaceAll(":<module>.", ":<module>.*")
+          var typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
 
           // updating cache
           taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+          typeDeclVal = typeDeclVal.replaceAll(":<module>.", ":<module>.*")
+
           val typeDeclMemberName = typeDeclMember.name
 
           // Note: Partially Matching the typeFullName with typeDecl fullName
-          // typeFullName: /models.py:<module>.Profile.Profile<body>
+          // typeFullName: models.py:<module>.Profile.Profile<body>
           // typeDeclVal: models.py:<module>.Profile
-          val impactedObjects = cpg.identifier.where(_.typeFullName(".*" + typeDeclVal + ".*"))
-          impactedObjects
+          val impactedObjects = cpg.identifier
+            .where(_.typeFullName(".*" + typeDeclVal + ".*"))
+            .whereNot(_.astSiblings.isImport)
+            .whereNot(_.astSiblings.isCall.name("import"))
             .whereNot(_.code("this|self|cls"))
+
+          impactedObjects
             .foreach(impactedObject => {
               if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
                 storeForTag(builder, impactedObject)(

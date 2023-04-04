@@ -24,9 +24,11 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.semantic.Language.finder
+import io.shiftleft.codepropertygraph.generated.Languages
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.dump
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -45,13 +47,23 @@ object ExporterUtility {
     sourceId: String = "",
     taggerCache: TaggerCache = new TaggerCache()
   ): List[DataFlowSubCategoryPathExcerptModel] = {
+    val lang     = MetricHandler.metricsData("language")
+    val isPython = lang.toString().contains(Languages.PYTHONSRC)
+
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
       val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList)
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
-        val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        var typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+
+        // Temporary fix for python to match the typeFullName
+        if (isPython) {
+          typeFullName = typeFullName.stripSuffix(".<init>")
+          // println("typeFullName for match: ", typeFullName)
+        }
+
         // Going 1 level deep for derived sources to add extra nodes
         taggerCache.typeDeclMemberCache
           .getOrElse(typeFullName, mutable.HashMap[String, mutable.HashSet[Member]]())
@@ -59,7 +71,15 @@ object ExporterUtility {
           case Some(members) =>
             // Picking up only the head as any path to base is sufficient
             val member             = members.head
-            val typeFullNameLevel2 = member.typeFullName
+            var typeFullNameLevel2 = member.typeFullName // java.lang.string
+
+            // Temporary fix for python to match the typeFullName
+            if (isPython) {
+              typeFullNameLevel2 = typeFullNameLevel2.stripSuffix(".<init>")
+              // println("typeFullNameLevel2 for match: ", typeFullNameLevel2)
+              // println("Going 1 Level: ", member.name, member.lineNumber, member.code)
+            }
+
             taggerCache.typeDeclMemberCache
               .getOrElse(typeFullNameLevel2, mutable.HashMap[String, mutable.HashSet[Member]]())
               .get(sourceId) match {

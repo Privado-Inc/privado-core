@@ -47,12 +47,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
-    new CustomInheritTagger(cpg).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --CustomInheritTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
-
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
     println(
