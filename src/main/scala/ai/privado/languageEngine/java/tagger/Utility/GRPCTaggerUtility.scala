@@ -82,6 +82,12 @@ object GRPCTaggerUtility {
         .filter(_.argument.size == 2)
         .where(_.argument.isCall.typeFullName(stubPattern))
         .whereNot(_.name(filterNotPattern))
+        .whereNot(
+          _.astParent.isCall
+            .name(onNext)
+            .filter(_.argument.size == 1)
+            .where(_.argument.typ.fullName(StreamObserverPattern))
+        )
         .l
     grpcSinkCalls = grpcSinkCalls ++ independentSinkCalls
 
