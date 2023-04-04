@@ -1,8 +1,9 @@
 package ai.privado.audit
 
 import ai.privado.cache.TaggerCache
+import ai.privado.model.InternalTag
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Member, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{Member, MethodParameterIn, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -83,16 +84,19 @@ object DataElementDiscovery {
   }
 
   // Get list of member variable present in given class
-  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): mutable.Map[String, List[Member]] = {
+  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): mutable.Map[TypeDecl, List[Member]] = {
     logger.info("Process Member Name from cpg")
-    val memberInfoMap = mutable.Map[String, List[Member]]()
+    val memberInfoMap = mutable.Map[TypeDecl, List[Member]]()
 
     xtocpg match {
       case Success(cpg) => {
         classNameSet.foreach(className => {
           // Get member variable of class and put it into map
-          val memberInfo = cpg.typeDecl.filter(_.order > 0).where(_.fullName(className)).member.toList
-          memberInfoMap.put(className, memberInfo)
+          val classInfo = cpg.typeDecl.filter(_.order > 0).where(_.fullName(className)).l
+          if (classInfo.nonEmpty) {
+            val memberInfo = classInfo.head.member.toList
+            memberInfoMap.put(classInfo.head, memberInfo)
+          }
         })
       }
       case Failure(exception) => {
@@ -126,11 +130,42 @@ object DataElementDiscovery {
     collectionInputList.toList
   }
 
+  def getCollectionMethodInfo(xtocpg: Try[Cpg]): Map[String, CollectionMethodInfo] = {
+    // className -> (MethodName, Endpoint)
+    val collectionMethodInfoMap = new mutable.HashMap[String, CollectionMethodInfo]()
+    xtocpg match {
+      case Success(cpg) => {
+        val parameterList = cpg.parameter.where(_.tag).l
+        parameterList.foreach(parameter => {
+
+          // Get complete Endpoint path
+          val endpointTag = parameter.method.tag.where(_.name(InternalTag.COLLECTION_METHOD_ENDPOINT.toString)).head
+          // Append endpoint and method name when Method parameter having same type
+          if (!collectionMethodInfoMap.contains(parameter.typeFullName)) {
+            collectionMethodInfoMap
+              .put(parameter.typeFullName, CollectionMethodInfo(parameter.method.name, endpointTag.value))
+          } else {
+            val collectionMethodInfo = collectionMethodInfoMap(parameter.typeFullName)
+            collectionMethodInfo.endpoint = s"${collectionMethodInfo.endpoint}\n${endpointTag.value}"
+            collectionMethodInfo.methodName = s"${collectionMethodInfo.methodName}\n${parameter.method.name}"
+          }
+        })
+      }
+      case Failure(exception) => {
+        println("Failed to process collection method info from cpg")
+        logger.debug("Failed to process collection method info from cpg", exception)
+        println(exception.printStackTrace())
+      }
+    }
+    collectionMethodInfoMap.toMap
+  }
+
   def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
     logger.info("Initiated the audit engine")
-    val classNameRuleList   = getSourceUsingRules(xtocpg)
-    val collectionInputList = getCollectionInputList(xtocpg)
-    val derivedClassName    = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
+    val classNameRuleList    = getSourceUsingRules(xtocpg)
+    val collectionInputList  = getCollectionInputList(xtocpg)
+    val collectionMethodInfo = getCollectionMethodInfo(xtocpg)
+    val derivedClassName     = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
     val memberInfo =
       getMemberUsingClassName(xtocpg, (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet)
     val workbookResult      = new ListBuffer[List[String]]()
@@ -151,33 +186,71 @@ object DataElementDiscovery {
     }
 
     // Header List
-    workbookResult += List("Class", "Member", "Tagged", "Source Rule ID", "Input to Collection")
+    workbookResult += List(
+      "Class",
+      "File Name",
+      "Member",
+      "Member Type",
+      "Tagged",
+      "Source Rule ID",
+      "Input to Collection",
+      "Collection Endpoint path",
+      "Collection Method Full Name"
+    )
 
     // Construct the excel sheet and fill the data
     try {
       memberInfo.foreach {
         case (key, value) => {
-          val isCollectionInput = if (collectionInputList.contains(key)) "YES" else "NO"
-          if (taggedMemberInfo.contains(key)) {
-            workbookResult += List(key, "--", "YES", "", isCollectionInput)
-            val ruleMemberInfo = taggedMemberInfo.getOrElse(key, new mutable.HashMap[String, String])
+          val isCollectionInput = if (collectionInputList.contains(key.fullName)) "YES" else "NO"
+          val collectionMethodName =
+            if (collectionMethodInfo.contains(key.fullName)) collectionMethodInfo(key.fullName).methodName else "--"
+          val collectionEndPointPath =
+            if (collectionMethodInfo.contains(key.fullName)) collectionMethodInfo(key.fullName).endpoint else "--"
+          if (taggedMemberInfo.contains(key.fullName)) {
+            workbookResult += List(
+              key.fullName,
+              key.file.head.name,
+              "--",
+              "--",
+              "YES",
+              "--",
+              isCollectionInput,
+              collectionEndPointPath,
+              collectionMethodName
+            )
+            val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
             value.foreach(member => {
               if (ruleMemberInfo.contains(member.name)) {
                 workbookResult += List(
                   "",
+                  "",
                   member.name,
+                  member.typeFullName,
                   "YES",
                   ruleMemberInfo.getOrElse(member.name, "Default value"),
+                  "",
+                  "",
                   ""
                 )
               } else {
-                workbookResult += List("", member.name, "NO", "--", "")
+                workbookResult += List("", "", member.name, member.typeFullName, "NO", "--", "", "", "")
               }
             })
           } else {
-            workbookResult += List(key, "--", "NO", "", isCollectionInput)
+            workbookResult += List(
+              key.fullName,
+              key.file.head.name,
+              "--",
+              "--",
+              "NO",
+              "--",
+              isCollectionInput,
+              collectionEndPointPath,
+              collectionMethodName
+            )
             value.foreach(member => {
-              workbookResult += List("", member.name, "NO", "--", "")
+              workbookResult += List("", "", member.name, member.typeFullName, "NO", "--", "", "", "")
             })
           }
         }
@@ -190,4 +263,7 @@ object DataElementDiscovery {
     }
     workbookResult.toList
   }
+
+  case class CollectionMethodInfo(var methodName: String, var endpoint: String)
 }
+

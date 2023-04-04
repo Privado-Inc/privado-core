@@ -3,6 +3,7 @@ import ai.privado.audit.DataElementDiscovery
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -64,10 +65,19 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
 
-      memberMap(classList.head).size shouldBe 1
-      memberMap(classList.head).head.name shouldBe ("firstName")
-      memberMap(classList(1)).size shouldBe 1
-      memberMap(classList(1)).head.name shouldBe ("accountNo")
+      val classMemberMap = new mutable.HashMap[String, List[Member]]()
+
+      memberMap.foreach { case (key, value) =>
+        classMemberMap.put(key.fullName, value)
+      }
+
+      classMemberMap.keys.toList should contain("com.test.privado.Entity.User")
+      classMemberMap("com.test.privado.Entity.User").size shouldBe 1
+      classMemberMap("com.test.privado.Entity.User").head.name should equal("firstName")
+
+      classMemberMap.keys.toList should contain("com.test.privado.Entity.Account")
+      classMemberMap("com.test.privado.Entity.Account").size shouldBe 1
+      classMemberMap("com.test.privado.Entity.Account").head.name should equal("accountNo")
     }
 
     "Test Collection discovery" in {
@@ -86,14 +96,18 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val memberList       = new ListBuffer[String]()
       val sourceRuleIdMap  = new mutable.HashMap[String, String]()
       val collectionTagMap = new mutable.HashMap[String, String]()
+      val endpointMap      = new mutable.HashMap[String, String]()
+      val methodNameMap    = new mutable.HashMap[String, String]()
 
       val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
 
       workbookList.foreach(row => {
         classNameList += row.head
-        memberList += row(1)
-        sourceRuleIdMap.put(row(1), row(3))
-        collectionTagMap.put(row.head, row(4))
+        memberList += row(2)
+        sourceRuleIdMap.put(row(2), row(5))
+        collectionTagMap.put(row.head, row(6))
+        endpointMap.put(row.head, row(7))
+        methodNameMap.put(row.head, row(8))
       })
 
       // Validate class name in result
@@ -118,6 +132,12 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       // validate collection Tag in result
       collectionTagMap("com.test.privado.Entity.User").toString should equal("YES")
+
+      // validate collection endpoint in result
+      endpointMap("com.test.privado.Entity.User").toString should equal("/user/add")
+
+      // validate collection method name in result
+      methodNameMap("com.test.privado.Entity.User").toString should equal("userHandler")
     }
   }
 }
