@@ -43,7 +43,15 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
       | @PostMapping("/signup")
       |	public UserProfileD signup(@RequestBody String firstName) {
       | }
-      | 
+      |
+      | @PostMapping(value = "/signin")
+      |	public UserProfileD signin(@RequestBody String firstName) {
+      | }
+      |
+      | @PostMapping
+      |	public UserProfileD sample3(@RequestBody String firstName) {
+      | }
+      |
       |}
       |
       |
@@ -51,13 +59,19 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
 
   "Get Url for annotation" should {
     "give url for sample1" in {
-      CollectionUtility.getUrlFromAnnotation(cpg.annotation.name("RequestMapping").head) shouldBe "/api/public/user"
+      CollectionUtility.getUrlFromAnnotation(cpg.typeDecl.annotation.head) shouldBe "/api/public/user"
     }
   }
 
   "Get Url for annotation" should {
     "give url for sample2" in {
-      CollectionUtility.getUrlFromAnnotation(cpg.annotation.name("PostMapping").head) shouldBe "/signup"
+      CollectionUtility.getUrlFromAnnotation(cpg.method("signup").annotation.head) shouldBe "/signup"
+    }
+  }
+
+  "Get Url for annotation" should {
+    "give url for sample3" in {
+      CollectionUtility.getUrlFromAnnotation(cpg.method("sample3").annotation.head) shouldBe "sample3"
     }
   }
 }
