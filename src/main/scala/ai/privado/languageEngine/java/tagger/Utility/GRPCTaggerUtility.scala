@@ -30,10 +30,11 @@ object GRPCTaggerUtility {
   def getGrpcSinkCalls(cpg: Cpg, grpcEndpoints: List[Method]): List[Call] = {
     // `onNext` is always called inside of gRPC service methods
     // This `onNext` always has a StreamObserver in signature and takes only one argument
-    val onNext        = "onNext"
-    val stubPattern   = "(?i)(.*)(stub)(.*)"
-    val anyType       = "ANY"
-    var grpcSinkCalls = ListBuffer[Call]()
+    val onNext           = "onNext"
+    val stubPattern      = "(?i)(.*)(stub)(.*)"
+    val anyType          = "ANY"
+    val filterNotPattern = "(?i)(.*)(operator)(.*)"
+    var grpcSinkCalls    = ListBuffer[Call]()
 
     grpcEndpoints.foreach(endpoint => {
       // Detecting gRPC API sink calls. These sink calls have the same name as function calls inside of onNext functions
@@ -41,9 +42,8 @@ object GRPCTaggerUtility {
       val sinks = cpg
         .call(endpoint.name)
         .whereNot(
-          _.astParent.isCall
+          _.repeat(_.astParent.isCall)(_.emit)
             .name(onNext)
-            .filter(_.argument.size == 1)
             .where(_.argument.typ.fullName(StreamObserverPattern))
         )
         .l
@@ -75,6 +75,19 @@ object GRPCTaggerUtility {
         }
       })
     })
+
+    val independentSinkCalls =
+      cpg.call
+        .filter(_.argument.size == 2)
+        .where(_.argument.isCall.typeFullName(stubPattern))
+        .whereNot(_.name(filterNotPattern))
+        .whereNot(
+          _.repeat(_.astParent.isCall)(_.emit)
+            .name(onNext)
+            .where(_.argument.typ.fullName(StreamObserverPattern))
+        )
+        .l
+    grpcSinkCalls = grpcSinkCalls ++ independentSinkCalls
 
     return grpcSinkCalls.dedup.l
   }
