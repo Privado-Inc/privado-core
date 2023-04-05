@@ -47,7 +47,8 @@ case class PrivadoInput(
   upload: Boolean = false,
   enableJS: Boolean = false,
   testOutput: Boolean = false,
-  showUnresolvedFunctionsReport: Boolean = false
+  showUnresolvedFunctionsReport: Boolean = false,
+  generateAuditReport: Boolean = false
 )
 
 object CommandConstants {
@@ -84,6 +85,8 @@ object CommandConstants {
   val UNRESOLVED_REPORT_ABBR                       = "ur"
   val TEST_OUTPUT                                  = "test-output"
   val TEST_OUTPUT_ABBR                             = "tout"
+  val GENERATE_AUDIT_REPORT                        = "generate-audit-report"
+  val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
 }
 
 object CommandParser {
@@ -193,6 +196,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(testOutput = true))
               .text("Export the intermediate flow output"),
+            opt[Unit](CommandConstants.GENERATE_AUDIT_REPORT)
+              .abbr(CommandConstants.GENERATE_AUDIT_REPORT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(generateAuditReport = true))
+              .text("Export the audit report"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

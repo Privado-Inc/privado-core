@@ -21,34 +21,40 @@
  *
  */
 
-package ai.privado.languageEngine.javascript.tagger.sink
+package ai.privado.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{NodeType, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities.addRuleTags
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.{ConcurrentWriterCpgPass, ForkJoinParallelCpgPass}
+import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.utility.Utilities._
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+class LogShareSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  val logSharingThirdPartySinkId = "ThirdParties.SDK.Sentry"
+  val higherOrderLeakgeSinkId    = "Leakages.Log.(Error|Exception)"
 
-class RegularSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  lazy val cacheCall = cpg.call
-    .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
-    .whereNot(_.method.name(".*<meta.*>$"))
-    .l
+  val callNodeTaggedWithErrorOrExceptionLog: List[Call] = {
+
+    if (cpg.call.tag.nameExact(Constants.id).valueExact(logSharingThirdPartySinkId).nonEmpty) {
+      cpg.call
+        .where(
+          _.tag
+            .nameExact(Constants.id)
+            .value(higherOrderLeakgeSinkId)
+        )
+        .l
+    } else
+      List.empty
+  }
 
   override def generateParts(): Array[RuleInfo] = {
     RuleCache.getRule.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .filter(rule => rule.id.equals(logSharingThirdPartySinkId))
       .toArray
   }
-
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
-
-    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
+    callNodeTaggedWithErrorOrExceptionLog.foreach(sink => addRuleTags(builder, sink, ruleInfo))
   }
 }

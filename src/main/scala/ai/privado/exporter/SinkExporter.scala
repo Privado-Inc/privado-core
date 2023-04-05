@@ -177,6 +177,10 @@ class SinkExporter(cpg: Cpg) {
         cpg.call
           .where(filterSink)
           .map(item => item.tag.l)
+          .l ++
+        cpg.templateDom
+          .where(filterSink)
+          .map(item => item.tag.l)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).map(item => item.tag.l).l
     sinks
   }
@@ -193,6 +197,9 @@ class SinkExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSink)
+          .l ++
+        cpg.templateDom
+          .where(filterSink)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l
     sinks
   }
@@ -204,13 +211,23 @@ class SinkExporter(cpg: Cpg) {
           val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sinkId)
           val apiUrl = {
             if (rule.nodeType == NodeType.API) {
-              cpg.call
+              var apiurls = cpg.call
                 .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
                 .tag
                 .nameExact(Constants.apiUrl + rule.id)
                 .value
                 .dedup
                 .toArray
+              if (apiurls != null && apiurls.isEmpty) {
+                apiurls = cpg.templateDom
+                  .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
+                  .tag
+                  .nameExact(Constants.apiUrl + rule.id)
+                  .value
+                  .dedup
+                  .toArray
+              }
+              apiurls
             } else
               Array[String]()
           }

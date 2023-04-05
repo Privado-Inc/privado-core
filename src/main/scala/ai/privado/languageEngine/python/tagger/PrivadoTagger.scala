@@ -1,15 +1,15 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
-import ai.privado.languageEngine.python.tagger.sink.PythonAPITagger
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.python.tagger.sink.PythonAPITagger
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
-import ai.privado.model.{ConfigAndRules, NodeType}
+import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.config.{DBConfigTagger, PythonDBConfigTagger}
-import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
+import ai.privado.tagger.config.PythonDBConfigTagger
+import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -21,7 +21,7 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
+  override def runTagger(rules: ConfigAndRules, taggerCache: TaggerCache): Traversal[Tag] = {
 
     logger.info("Starting tagging")
 
@@ -31,7 +31,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
-    new IdentifierTagger(cpg).createAndApply()
+    new IdentifierTagger(cpg, taggerCache).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
@@ -55,6 +55,12 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
+    println(s"${Calendar.getInstance().getTime} - --Log Share SinkTagger invoked...")
+    new LogShareSinkTagger(cpg).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
