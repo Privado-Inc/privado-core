@@ -145,7 +145,7 @@ object JavascriptProcessor {
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
     val maybeCpg = new JsSrc2Cpg() createCpgWithOverlays (cpgconfig)
-    println("done with base CPG")
+    println(s"${Calendar.getInstance().getTime} - done with base CPG")
     val xtocpg = maybeCpg.map { cpg =>
       new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
       println("done with OssDataFlow")
