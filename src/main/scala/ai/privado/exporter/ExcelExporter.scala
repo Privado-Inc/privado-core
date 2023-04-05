@@ -1,5 +1,6 @@
 package ai.privado.exporter
 
+import ai.privado.audit.AuditReportConstants
 import ai.privado.model.Constants.outputDirectoryName
 import better.files.File
 import org.apache.poi.ss.usermodel.{Cell, FillPatternType, IndexedColors, Row, Sheet, Workbook}
@@ -17,7 +18,7 @@ object ExcelExporter {
     logger.info("Initiated the Audit exporter engine")
     try {
       val workbook: Workbook = new XSSFWorkbook()
-      val sheet: Sheet       = workbook.createSheet("Element-Discovery")
+      val sheet: Sheet       = workbook.createSheet(AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME)
 
       // Iterate over the data and write it to the sheet
       for ((rowValues, rowIndex) <- output.zipWithIndex) {
@@ -52,7 +53,7 @@ object ExcelExporter {
 
   private def changeTaggedBackgroundColour(workbook: Workbook, columnList: List[Integer]) = {
 
-    val sheet = workbook.getSheet("Element-Discovery")
+    val sheet = workbook.getSheet(AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME)
 
     val greenCellStyle: XSSFCellStyle = workbook.createCellStyle().asInstanceOf[XSSFCellStyle]
     val greenColor: XSSFColor         = new XSSFColor(IndexedColors.LIGHT_GREEN, null)
@@ -64,7 +65,7 @@ object ExcelExporter {
       val row = rowIterator.next()
       columnList.foreach(columnNo => {
         val cell = row.getCell(columnNo)
-        if (cell != null && cell.getStringCellValue == "YES") {
+        if (cell != null && cell.getStringCellValue == AuditReportConstants.AUDIT_CHECKED_VALUE) {
           cell.setCellStyle(greenCellStyle)
         }
       })

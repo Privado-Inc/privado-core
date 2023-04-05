@@ -3,7 +3,7 @@ package ai.privado.audit
 import ai.privado.cache.TaggerCache
 import ai.privado.model.InternalTag
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Member, MethodParameterIn, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -15,8 +15,6 @@ object DataElementDiscovery {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val excludeClassNameRegex = "^(.*)(Controller|Service|Impl|Helper|Util|Processor|Dao)$"
-
   // Get list of Class Name having getter and setter method
   def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
     logger.info("Process Class Name from cpg")
@@ -26,11 +24,11 @@ object DataElementDiscovery {
         // Get DTO/Entity Class name
         val typeDeclList = cpg.typeDecl
           .filter(_.order > 0)
-          .whereNot(_.name(excludeClassNameRegex))
+          .whereNot(_.name(AuditReportConstants.ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX))
           .or(
-            _.where(_.method.name("^(get|set).*")),
-            _.where(_.method.name("^(hascode|equals)")),
-            _.where(_.annotation.name(".*(Getter|Setter).*"))
+            _.where(_.method.name(AuditReportConstants.ELEMENT_DISCOVERY_GET_SET_METHOD_REGEX)),
+            _.where(_.method.name(AuditReportConstants.ELEMENT_DISCOVERY_OVERRIDE_METHOD_REGEX)),
+            _.where(_.annotation.name(AuditReportConstants.ELEMENT_DISCOVERY_GETTER_SETTER_REGEX))
           )
           .toList
         typeDeclList.foreach(node => {
@@ -69,7 +67,7 @@ object DataElementDiscovery {
           val typeDeclList = cpg.typeDecl
             .filter(_.order > 0)
             .where(_.fullName(pattern))
-            .whereNot(_.name(excludeClassNameRegex))
+            .whereNot(_.name(AuditReportConstants.ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX))
             .toList
           typeDeclList.foreach(typeDecl => derivedClassName += typeDecl.fullName)
         })
@@ -186,15 +184,15 @@ object DataElementDiscovery {
 
     // Header List
     workbookResult += List(
-      "Class",
-      "File Name",
-      "Member",
-      "Member Type",
-      "Tagged",
-      "Source Rule ID",
-      "Input to Collection",
-      "Collection Endpoint path",
-      "Collection Method Full Name"
+      AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
+      AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
+      AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
     )
 
     // Construct the excel sheet and fill the data
@@ -208,10 +206,10 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  "--",
-                  "--",
-                  "YES",
-                  "--",
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_CHECKED_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
                   info.methodDetail
@@ -221,13 +219,13 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                "--",
-                "--",
-                "YES",
-                "--",
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_CHECKED_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
-                "--",
-                "--"
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
               )
             }
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
@@ -238,11 +236,11 @@ object DataElementDiscovery {
                   key.file.head.name,
                   member.name,
                   member.typeFullName,
-                  "YES",
+                  AuditReportConstants.AUDIT_CHECKED_VALUE,
                   ruleMemberInfo.getOrElse(member.name, "Default value"),
-                  "",
-                  "",
-                  ""
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
                 )
               } else {
                 workbookResult += List(
@@ -250,11 +248,11 @@ object DataElementDiscovery {
                   key.file.head.name,
                   member.name,
                   member.typeFullName,
-                  "NO",
-                  "--",
-                  "",
-                  "",
-                  ""
+                  AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
                 )
               }
             })
@@ -264,10 +262,10 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  "--",
-                  "--",
-                  "NO",
-                  "--",
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
                   info.methodDetail
@@ -277,13 +275,13 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                "--",
-                "--",
-                "NO",
-                "--",
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
-                "--",
-                "--"
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
               )
             }
             value.foreach(member => {
@@ -292,11 +290,11 @@ object DataElementDiscovery {
                 key.file.head.name,
                 member.name,
                 member.typeFullName,
-                "NO",
-                "--",
-                "",
-                "",
-                ""
+                AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
               )
             })
           }
