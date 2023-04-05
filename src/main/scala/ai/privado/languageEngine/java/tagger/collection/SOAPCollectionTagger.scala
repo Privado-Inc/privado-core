@@ -59,8 +59,7 @@ class SOAPCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
       Array[String]()
     )
 
-    val classUrlMap  = mutable.HashMap[Long, String]()
-    val methodUrlMap = mutable.HashMap[Long, String]()
+    val classUrlMap = mutable.HashMap[Long, String]()
 
     cpg.annotation
       .name(ruleInfo.combinedRulePattern)
@@ -70,27 +69,13 @@ class SOAPCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
           .addOne(classAnnotation.typeDecl.head.id() -> ("/" + CollectionUtility.getUrlFromAnnotation(classAnnotation)))
       })
 
-    soapCollectionMethods.annotation
-      .name("WebMethod")
-      .foreach(methodAnnotation => {
-        methodUrlMap
-          .addOne(methodAnnotation.method.head.id() -> ("/" + CollectionUtility.getUrlFromAnnotation(methodAnnotation)))
-      })
     CollectionUtility.tagDirectSources(
       builder,
       soapCollectionMethods,
       sourceRuleInfos,
       ruleInfo,
-      classUrlMap = classUrlMap,
-      methodUrlMap = methodUrlMap
+      classUrlMap = classUrlMap
     )
-    CollectionUtility.tagDerivedSources(
-      cpg,
-      builder,
-      soapCollectionMethods,
-      ruleInfo,
-      classUrlMap = classUrlMap,
-      methodUrlMap = methodUrlMap
-    )
+    CollectionUtility.tagDerivedSources(cpg, builder, soapCollectionMethods, ruleInfo, classUrlMap = classUrlMap)
   }
 }

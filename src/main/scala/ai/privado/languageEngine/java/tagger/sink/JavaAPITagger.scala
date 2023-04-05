@@ -23,7 +23,7 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language._
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
@@ -53,7 +53,7 @@ object APITaggerVersionJava extends Enumeration {
   val SkipTagger, V1Tagger, V2Tagger = Value
 }
 
-class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger                             = LoggerFactory.getLogger(this.getClass)
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
@@ -136,7 +136,7 @@ class JavaAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
           apis,
           builder,
           ruleInfo,
-          ScanProcessor.config.enableAPIDisplay
+          privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
