@@ -6,7 +6,6 @@ import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
 import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
@@ -29,6 +28,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     testClassMap.put("Salary", AuditTestClassData.salaryLombok)
     testClassMap.put("AddressController", AuditTestClassData.addressController)
     testClassMap.put("Invoice", AuditTestClassData.invoice)
+    testClassMap.put("AdminDao", AuditTestClassData.adminDao)
     testClassMap.toMap
   }
 
@@ -44,6 +44,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should not contain ("com.test.privado.Controller.AddressController")
       classNameList should not contain ("com.test.privado.Controller.UserController")
       classNameList should not contain ("com.test.privado.Entity.Address")
+      classNameList should not contain ("com.test.privado.Dao.AdminDao")
     }
 
     "Test discovery of class Name in package from class name" in {
@@ -58,6 +59,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       discoveryList should contain("com.test.privado.Entity.Address")
       discoveryList should not contain ("com.test.privado.Controller.AddressController")
       discoveryList should not contain ("com.test.privado.Controller.UserController")
+      discoveryList should not contain ("com.test.privado.Dao.AdminDao")
     }
 
     "Test class member variable" in {
@@ -89,11 +91,12 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       collectionList should not contain ("com.test.privado.Entity.Address")
       collectionList should not contain ("com.test.privado.Controller.AddressController")
       collectionList should not contain ("com.test.privado.Controller.UserController")
+      collectionList should not contain ("com.test.privado.Dao.AdminDao")
     }
 
     "Test final discovery result" in {
-      val classNameList    = new ListBuffer[String]()
-      val memberList       = new ListBuffer[String]()
+      val classNameList    = new mutable.HashSet[String]()
+      val memberList       = new mutable.HashSet[String]()
       val sourceRuleIdMap  = new mutable.HashMap[String, String]()
       val collectionTagMap = new mutable.HashMap[String, String]()
       val endpointMap      = new mutable.HashMap[String, String]()
@@ -105,9 +108,9 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         classNameList += row.head
         memberList += row(2)
         sourceRuleIdMap.put(row(2), row(5))
-        collectionTagMap.put(row.head, row(6))
-        endpointMap.put(row.head, row(7))
-        methodNameMap.put(row.head, row(8))
+        if (!collectionTagMap.contains(row.head)) collectionTagMap.put(row.head, row(6))
+        if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(7))
+        if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(8))
       })
 
       // Validate class name in result
@@ -118,6 +121,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should contain("com.test.privado.Entity.Address")
       classNameList should not contain ("com.test.privado.Controller.UserController")
       classNameList should not contain ("com.test.privado.Controller.AddressController")
+      classNameList should not contain ("com.test.privado.Dao.AdminDao")
 
       // Validate class member in result
       memberList should contain("houseNo")
@@ -137,7 +141,9 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       endpointMap("com.test.privado.Entity.User").toString should equal("/user/add")
 
       // validate collection method name in result
-      methodNameMap("com.test.privado.Entity.User").toString should equal("userHandler")
+      methodNameMap("com.test.privado.Entity.User").toString should equal(
+        "public String userHandler(@RequestBody User user)"
+      )
     }
   }
 }

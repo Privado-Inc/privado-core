@@ -15,7 +15,7 @@ object DataElementDiscovery {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  private val excludeClassNameRegex = "^(.*)(Controller|Service|Impl|Helper|Util|Processor)$"
+  private val excludeClassNameRegex = "^(.*)(Controller|Service|Impl|Helper|Util|Processor|Dao)$"
 
   // Get list of Class Name having getter and setter method
   def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
@@ -130,9 +130,9 @@ object DataElementDiscovery {
     collectionInputList.toList
   }
 
-  def getCollectionMethodInfo(xtocpg: Try[Cpg]): Map[String, CollectionMethodInfo] = {
+  def getCollectionMethodInfo(xtocpg: Try[Cpg]): Map[String, ListBuffer[CollectionMethodInfo]] = {
     // className -> (MethodName, Endpoint)
-    val collectionMethodInfoMap = new mutable.HashMap[String, CollectionMethodInfo]()
+    val collectionMethodInfoMap = new mutable.HashMap[String, ListBuffer[CollectionMethodInfo]]()
     xtocpg match {
       case Success(cpg) => {
         val parameterList = cpg.parameter.where(_.tag).l
@@ -143,12 +143,11 @@ object DataElementDiscovery {
           // Append endpoint and method name when Method parameter having same type
           if (!collectionMethodInfoMap.contains(parameter.typeFullName)) {
             collectionMethodInfoMap
-              .put(parameter.typeFullName, CollectionMethodInfo(parameter.method.name, endpointTag.value))
-          } else {
-            val collectionMethodInfo = collectionMethodInfoMap(parameter.typeFullName)
-            collectionMethodInfo.endpoint = s"${collectionMethodInfo.endpoint}\n${endpointTag.value}"
-            collectionMethodInfo.methodName = s"${collectionMethodInfo.methodName}\n${parameter.method.name}"
+              .put(parameter.typeFullName, new ListBuffer[CollectionMethodInfo])
           }
+
+          val collectionMethodInfo = collectionMethodInfoMap(parameter.typeFullName)
+          collectionMethodInfo += CollectionMethodInfo(parameter.method.code, endpointTag.value)
         })
       }
       case Failure(exception) => {
@@ -203,28 +202,40 @@ object DataElementDiscovery {
       memberInfo.foreach {
         case (key, value) => {
           val isCollectionInput = if (collectionInputList.contains(key.fullName)) "YES" else "NO"
-          val collectionMethodName =
-            if (collectionMethodInfo.contains(key.fullName)) collectionMethodInfo(key.fullName).methodName else "--"
-          val collectionEndPointPath =
-            if (collectionMethodInfo.contains(key.fullName)) collectionMethodInfo(key.fullName).endpoint else "--"
           if (taggedMemberInfo.contains(key.fullName)) {
-            workbookResult += List(
-              key.fullName,
-              key.file.head.name,
-              "--",
-              "--",
-              "YES",
-              "--",
-              isCollectionInput,
-              collectionEndPointPath,
-              collectionMethodName
-            )
+            if (collectionMethodInfo.contains(key.fullName)) {
+              collectionMethodInfo(key.fullName).foreach(info => {
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  "--",
+                  "--",
+                  "YES",
+                  "--",
+                  isCollectionInput,
+                  info.endpoint,
+                  info.methodDetail
+                )
+              })
+            } else {
+              workbookResult += List(
+                key.fullName,
+                key.file.head.name,
+                "--",
+                "--",
+                "YES",
+                "--",
+                isCollectionInput,
+                "--",
+                "--"
+              )
+            }
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
             value.foreach(member => {
               if (ruleMemberInfo.contains(member.name)) {
                 workbookResult += List(
-                  "",
-                  "",
+                  key.fullName,
+                  key.file.head.name,
                   member.name,
                   member.typeFullName,
                   "YES",
@@ -234,23 +245,59 @@ object DataElementDiscovery {
                   ""
                 )
               } else {
-                workbookResult += List("", "", member.name, member.typeFullName, "NO", "--", "", "", "")
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  member.name,
+                  member.typeFullName,
+                  "NO",
+                  "--",
+                  "",
+                  "",
+                  ""
+                )
               }
             })
           } else {
-            workbookResult += List(
-              key.fullName,
-              key.file.head.name,
-              "--",
-              "--",
-              "NO",
-              "--",
-              isCollectionInput,
-              collectionEndPointPath,
-              collectionMethodName
-            )
+            if (collectionMethodInfo.contains(key.fullName)) {
+              collectionMethodInfo(key.fullName).foreach(info => {
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  "--",
+                  "--",
+                  "NO",
+                  "--",
+                  isCollectionInput,
+                  info.endpoint,
+                  info.methodDetail
+                )
+              })
+            } else {
+              workbookResult += List(
+                key.fullName,
+                key.file.head.name,
+                "--",
+                "--",
+                "NO",
+                "--",
+                isCollectionInput,
+                "--",
+                "--"
+              )
+            }
             value.foreach(member => {
-              workbookResult += List("", "", member.name, member.typeFullName, "NO", "--", "", "", "")
+              workbookResult += List(
+                key.fullName,
+                key.file.head.name,
+                member.name,
+                member.typeFullName,
+                "NO",
+                "--",
+                "",
+                "",
+                ""
+              )
             })
           }
         }
@@ -264,5 +311,5 @@ object DataElementDiscovery {
     workbookResult.toList
   }
 
-  case class CollectionMethodInfo(var methodName: String, var endpoint: String)
+  case class CollectionMethodInfo(var methodDetail: String, var endpoint: String)
 }
