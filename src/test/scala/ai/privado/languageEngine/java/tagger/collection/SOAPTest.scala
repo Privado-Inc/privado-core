@@ -21,9 +21,9 @@
  *
  */
 
-package ai.privado.languageEngine.java
+package ai.privado.languageEngine.java.tagger.collection
 
-import ai.privado.languageEngine.java.tagger.collection.SOAPCollectionTagger
+import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
 import ai.privado.model.Constants
 import io.shiftleft.semanticcpg.language._
