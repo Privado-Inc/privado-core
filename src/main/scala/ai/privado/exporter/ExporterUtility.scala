@@ -59,10 +59,7 @@ object ExporterUtility {
         var typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
 
         // Temporary fix for python to match the typeFullName
-        if (isPython) {
-          typeFullName = typeFullName.stripSuffix(".<init>")
-          // println("typeFullName for match: ", typeFullName)
-        }
+        typeFullName = updateTypeFullNameForPython(typeFullName, isPython)
 
         // Going 1 level deep for derived sources to add extra nodes
         taggerCache.typeDeclMemberCache
@@ -74,11 +71,7 @@ object ExporterUtility {
             var typeFullNameLevel2 = member.typeFullName // java.lang.string
 
             // Temporary fix for python to match the typeFullName
-            if (isPython) {
-              typeFullNameLevel2 = typeFullNameLevel2.stripSuffix(".<init>")
-              // println("typeFullNameLevel2 for match: ", typeFullNameLevel2)
-              // println("Going 1 Level: ", member.name, member.lineNumber, member.code)
-            }
+            typeFullNameLevel2 = updateTypeFullNameForPython(typeFullNameLevel2, isPython)
 
             taggerCache.typeDeclMemberCache
               .getOrElse(typeFullNameLevel2, mutable.HashMap[String, mutable.HashSet[Member]]())
@@ -241,6 +234,23 @@ object ExporterUtility {
     */
   private def generateDSExtendsMsg(typeDeclName: String, typeDeclFullName: String): String = {
     s"'$typeDeclName' class is inherited by '$typeDeclFullName' class"
+  }
+
+  private def updateTypeFullNameForPython(typeFullName: String, isPython: Boolean): String = {
+    var updatedTypeFullName = typeFullName
+    val pattern1            = "(.+)\\.<init>".r
+    val pattern2            = "(.+)\\.\\w+<body>.*".r
+    val pattern3            = "(.+)<meta>.*".r
+
+    if (isPython) {
+      typeFullName match {
+        case pattern1(str) => updatedTypeFullName = str
+        case pattern2(str) => updatedTypeFullName = str
+        case pattern3(str) => updatedTypeFullName = str
+        case _             => updatedTypeFullName = typeFullName
+      }
+    }
+    updatedTypeFullName
   }
 
 }

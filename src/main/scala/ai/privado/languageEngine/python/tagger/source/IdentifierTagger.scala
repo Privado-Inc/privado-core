@@ -118,7 +118,6 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
           // updating cache
           taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
-          typeDeclVal = typeDeclVal.replaceAll(":<module>.", ":<module>.*")
 
           val typeDeclMemberName = typeDeclMember.name
 
