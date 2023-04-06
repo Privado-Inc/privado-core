@@ -10,11 +10,16 @@ import org.apache.maven.model.Model
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 
 import java.io.{File, FileReader}
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Try
 
 class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
+
+  private val dependenciesModuleMap = new mutable.HashMap[String, List[NewModuleDependency]]()
+
+  private val subModuleParentMap = new mutable.HashMap[String, String]()
 
   override def generateParts(): Array[String] =
     ModuleFiles(projectRoot, Set(".xml", ".gradle")).toArray
@@ -37,6 +42,7 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgP
           builder
         )
       })
+      ProcessMavenParentModule(model, subModuleParentMap)
     } else {
       val buildGradleInfo = parseBuildGradle(file)
       moduleNode = addGradleModuleNode(buildGradleInfo.get, builder)
@@ -44,6 +50,9 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgP
         dependencyList += addDependencyNode(dependency.groupId, dependency.artifactId, dependency.version, builder)
       })
     }
+
+    // Store module dependencies info in Map
+    dependenciesModuleMap.put(s"${moduleNode.groupid}-${moduleNode.artifactid.getOrElse("")}", dependencyList.toList)
 
     builder.addEdge(moduleNode, fileNode, EdgeTypes.SOURCE_FILE)
     dependencyList.foreach(dependency => {
@@ -118,5 +127,14 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgP
       .toList
 
     BuildGradleInfo(version, group, dependencies)
+  }
+
+  private def ProcessMavenParentModule(model: Model, subModuleParentMap: mutable.HashMap[String, String]): Unit = {
+    val parentInfo = model.getParent
+    if (parentInfo == null) {
+      subModuleParentMap.put(s"${model.getGroupId}-${model.getArtifactId}", null)
+    } else {
+      subModuleParentMap.put(s"${model.getGroupId}-${model.getArtifactId}", s"${parentInfo.getGroupId}-${parentInfo.getArtifactId}")
+    }
   }
 }
