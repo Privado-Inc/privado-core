@@ -10,6 +10,9 @@ object AuditReportConstants {
 
   val AUDIT_NOT_CHECKED_VALUE = "NO"
 
+  val AUDIT_BUILT_IN_CLASS_REGEX =
+    "\\b((int|byte|short|long|float|double|boolean|char)|((java\\.|javax\\.|org\\.|com\\.sun\\.|com\\.oracle\\.)([A-Z][a-zA-Z0-9_]*(\\.[A-Z][a-zA-Z0-9_]*)*)))\\b"
+
   val ELEMENT_DISCOVERY_CLASS_NAME = "Class"
 
   val ELEMENT_DISCOVERY_FILE_NAME = "File Name"

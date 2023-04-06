@@ -1,7 +1,7 @@
 package ai.privado.audit
 
 import ai.privado.cache.TaggerCache
-import ai.privado.model.InternalTag
+import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.semanticcpg.language._
@@ -82,19 +82,16 @@ object DataElementDiscovery {
   }
 
   // Get list of member variable present in given class
-  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): mutable.Map[TypeDecl, List[Member]] = {
+  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): Map[TypeDecl, List[Member]] = {
     logger.info("Process Member Name from cpg")
-    val memberInfoMap = mutable.Map[TypeDecl, List[Member]]()
+    val memberInfoMap = mutable.HashMap[TypeDecl, List[Member]]()
 
     xtocpg match {
       case Success(cpg) => {
         classNameSet.foreach(className => {
-          // Get member variable of class and put it into map
-          val classInfo = cpg.typeDecl.filter(_.order > 0).where(_.fullName(className)).l
-          if (classInfo.nonEmpty) {
-            val memberInfo = classInfo.head.member.toList
-            memberInfoMap.put(classInfo.head, memberInfo)
-          }
+          cpg.typeDecl
+            .where(_.fullName(className))
+            .foreach(typeDeclNode => memberInfoMap.put(typeDeclNode, typeDeclNode.member.l))
         })
       }
       case Failure(exception) => {
@@ -104,7 +101,7 @@ object DataElementDiscovery {
       }
     }
     logger.info("Successfully Processed member name from cpg")
-    memberInfoMap
+    memberInfoMap.toMap
   }
 
   // Get Collection Input Class Name
@@ -114,7 +111,11 @@ object DataElementDiscovery {
     xtocpg match {
       case Success(cpg) => {
         // Get tagged collection input list
-        val parameterList = cpg.parameter.where(_.tag).l
+        val parameterList = cpg.parameter
+          .where(_.method.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .whereNot(_.typeFullName(AuditReportConstants.AUDIT_BUILT_IN_CLASS_REGEX))
+          .whereNot(_.typeFullName(AuditReportConstants.ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX))
+          .l
         parameterList.foreach(parameter => {
           collectionInputList += parameter.typeFullName
         })
@@ -133,7 +134,11 @@ object DataElementDiscovery {
     val collectionMethodInfoMap = new mutable.HashMap[String, ListBuffer[CollectionMethodInfo]]()
     xtocpg match {
       case Success(cpg) => {
-        val parameterList = cpg.parameter.where(_.tag).l
+        val parameterList = cpg.parameter
+          .where(_.method.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .whereNot(_.typeFullName(AuditReportConstants.AUDIT_BUILT_IN_CLASS_REGEX))
+          .whereNot(_.typeFullName(AuditReportConstants.ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX))
+          .l
         parameterList.foreach(parameter => {
 
           // Get complete Endpoint path
