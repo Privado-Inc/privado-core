@@ -100,7 +100,9 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           // updating cache
           taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
           val typeDeclMemberName = typeDeclMember.name
-          val impactedObjects    = cpg.identifier.where(_.typeFullName(typeDeclVal))
+          // Have started tagging Parameters as well, as in collection points sometimes there is no referencing Identifier present for a local
+          val impactedObjects =
+            cpg.identifier.where(_.typeFullName(typeDeclVal)).l ::: cpg.parameter.where(_.typeFullName(typeDeclVal)).l
           impactedObjects
             .whereNot(_.code("this"))
             .foreach(impactedObject => {
@@ -156,7 +158,11 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       val typeDeclVal    = typeDeclTuple._2
       val typeDeclMember = typeDeclTuple._1
       taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
-      val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
+      val impactedObjects =
+        cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this")).l ::: cpg.parameter
+          .where(_.typeFullName(typeDeclVal))
+          .whereNot(_.code("this"))
+          .l
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
@@ -215,7 +221,11 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
         .typeDeclExtendingTypeDeclCache(typeDeclVal)
         .addOne(ruleInfo.id -> cpg.typeDecl.where(_.fullNameExact(typeDeclName)).head)
 
-      val impactedObjects = cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this"))
+      val impactedObjects =
+        cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this")).l ::: cpg.parameter
+          .where(_.typeFullName(typeDeclVal))
+          .whereNot(_.code("this"))
+          .l
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)

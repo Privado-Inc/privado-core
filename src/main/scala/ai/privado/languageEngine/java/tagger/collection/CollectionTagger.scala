@@ -24,19 +24,13 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
-import ai.privado.utility.Utilities._
+import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Method}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -54,13 +48,16 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
       .foreach(classAnnotation => {
-        classUrlMap.addOne(classAnnotation.typeDecl.head.id() -> getCollectionUrl(classAnnotation))
+        classUrlMap
+          .addOne(classAnnotation.typeDecl.head.id() -> CollectionUtility.getUrlFromAnnotation(classAnnotation))
       })
     val collectionMethodsCache = cpg.annotation
       .name(combinedRulePatterns)
       .filter(_.method.nonEmpty)
       .map(matchedAnnotation => {
-        methodUrlMap.addOne(matchedAnnotation.method.head.id() -> getCollectionUrl(matchedAnnotation))
+        methodUrlMap.addOne(
+          matchedAnnotation.method.head.id() -> CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        )
         matchedAnnotation
       })
       .method
@@ -84,24 +81,4 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
     )
   }
 
-  /** Returns rest Url for this annotation
-    * @param parameterIn
-    * @return
-    */
-  private def getCollectionUrl(annotation: Annotation) = {
-    Try(annotation.parameterAssign.order(1).astChildren.order(2).l.head) match {
-      case Success(url) => url.code
-      case Failure(_) =>
-        Try(annotation.parameterAssign.order(1).head) match {
-          case Success(url) => url.code
-          case Failure(_) =>
-            Try(annotation) match {
-              case Success(url) => url.code
-              case Failure(e) =>
-                logger.debug("Exception : ", e)
-                ""
-            }
-        }
-    }
-  }
 }
