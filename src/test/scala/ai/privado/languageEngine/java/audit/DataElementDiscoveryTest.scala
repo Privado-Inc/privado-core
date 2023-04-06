@@ -3,9 +3,9 @@ import ai.privado.audit.DataElementDiscovery
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
@@ -28,6 +28,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     testClassMap.put("Salary", AuditTestClassData.salaryLombok)
     testClassMap.put("AddressController", AuditTestClassData.addressController)
     testClassMap.put("Invoice", AuditTestClassData.invoice)
+    testClassMap.put("AdminDao", AuditTestClassData.adminDao)
     testClassMap.toMap
   }
 
@@ -43,6 +44,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should not contain ("com.test.privado.Controller.AddressController")
       classNameList should not contain ("com.test.privado.Controller.UserController")
       classNameList should not contain ("com.test.privado.Entity.Address")
+      classNameList should not contain ("com.test.privado.Dao.AdminDao")
     }
 
     "Test discovery of class Name in package from class name" in {
@@ -57,6 +59,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       discoveryList should contain("com.test.privado.Entity.Address")
       discoveryList should not contain ("com.test.privado.Controller.AddressController")
       discoveryList should not contain ("com.test.privado.Controller.UserController")
+      discoveryList should not contain ("com.test.privado.Dao.AdminDao")
     }
 
     "Test class member variable" in {
@@ -64,10 +67,19 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
 
-      memberMap(classList.head).size shouldBe 1
-      memberMap(classList.head).head.name shouldBe ("firstName")
-      memberMap(classList(1)).size shouldBe 1
-      memberMap(classList(1)).head.name shouldBe ("accountNo")
+      val classMemberMap = new mutable.HashMap[String, List[Member]]()
+
+      memberMap.foreach { case (key, value) =>
+        classMemberMap.put(key.fullName, value)
+      }
+
+      classMemberMap.keys.toList should contain("com.test.privado.Entity.User")
+      classMemberMap("com.test.privado.Entity.User").size shouldBe 1
+      classMemberMap("com.test.privado.Entity.User").head.name should equal("firstName")
+
+      classMemberMap.keys.toList should contain("com.test.privado.Entity.Account")
+      classMemberMap("com.test.privado.Entity.Account").size shouldBe 1
+      classMemberMap("com.test.privado.Entity.Account").head.name should equal("accountNo")
     }
 
     "Test Collection discovery" in {
@@ -79,21 +91,26 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       collectionList should not contain ("com.test.privado.Entity.Address")
       collectionList should not contain ("com.test.privado.Controller.AddressController")
       collectionList should not contain ("com.test.privado.Controller.UserController")
+      collectionList should not contain ("com.test.privado.Dao.AdminDao")
     }
 
     "Test final discovery result" in {
-      val classNameList    = new ListBuffer[String]()
-      val memberList       = new ListBuffer[String]()
+      val classNameList    = new mutable.HashSet[String]()
+      val memberList       = new mutable.HashSet[String]()
       val sourceRuleIdMap  = new mutable.HashMap[String, String]()
       val collectionTagMap = new mutable.HashMap[String, String]()
+      val endpointMap      = new mutable.HashMap[String, String]()
+      val methodNameMap    = new mutable.HashMap[String, String]()
 
       val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
 
       workbookList.foreach(row => {
         classNameList += row.head
-        memberList += row(1)
-        sourceRuleIdMap.put(row(1), row(3))
-        collectionTagMap.put(row.head, row(4))
+        memberList += row(2)
+        sourceRuleIdMap.put(row(2), row(5))
+        if (!collectionTagMap.contains(row.head)) collectionTagMap.put(row.head, row(6))
+        if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(7))
+        if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(8))
       })
 
       // Validate class name in result
@@ -104,6 +121,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should contain("com.test.privado.Entity.Address")
       classNameList should not contain ("com.test.privado.Controller.UserController")
       classNameList should not contain ("com.test.privado.Controller.AddressController")
+      classNameList should not contain ("com.test.privado.Dao.AdminDao")
 
       // Validate class member in result
       memberList should contain("houseNo")
@@ -118,6 +136,14 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       // validate collection Tag in result
       collectionTagMap("com.test.privado.Entity.User").toString should equal("YES")
+
+      // validate collection endpoint in result
+      endpointMap("com.test.privado.Entity.User").toString should equal("/user/add")
+
+      // validate collection method name in result
+      methodNameMap("com.test.privado.Entity.User").toString should equal(
+        "public String userHandler(@RequestBody User user)"
+      )
     }
   }
 }

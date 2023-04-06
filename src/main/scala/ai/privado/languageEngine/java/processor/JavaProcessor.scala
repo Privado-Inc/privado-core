@@ -97,7 +97,7 @@ object JavaProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(processedRules, taggerCache)
+          cpg.runTagger(processedRules, taggerCache, ScanProcessor.config)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
