@@ -106,4 +106,18 @@ object AuditTestClassData {
       |    }
       |}
       |""".stripMargin
+
+  val adminDao =
+    """
+      |package com.test.privado.Dao;
+      |
+      |public class AdminDao {
+      |
+      |   public String adminName;
+      |
+      |   public String getAdminName() {
+      |     return adminName;
+      |   }
+      |}
+      |""".stripMargin
 }
