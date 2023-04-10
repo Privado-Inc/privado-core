@@ -27,10 +27,12 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
 import java.util.UUID
+import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
@@ -90,12 +92,6 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     // Tag the class object instances which has member PIIs
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
 
-    // ----------------------------------------------------
-    // Step 2: Second Level derivation Implementation
-    // ----------------------------------------------------
-    // Tag the inherited object instances which has member PIIs from extended class
-    // TODO: tagObjectOfTypeDeclExtendingType(builder, rulePattern, ruleInfo)
-
   }
 
   /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent
@@ -114,7 +110,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
         typeDeclValEntry._2.foreach(typeDeclMember => {
-          var typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
+          val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
 
           // updating cache
           taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
@@ -158,5 +154,78 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           // tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
         })
       })
+
+    // ----------------------------------------------------
+    // Step 2: Second Level derivation Implementation
+    // ----------------------------------------------------
+    // Tag the inherited object instances which has member PIIs from extended class
+    typeDeclWithMemberNameHavingMemberName
+      .distinctBy(_._1.fullName)
+      .foreach(typeDeclValEntry => {
+        val typeDeclName = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
+        tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
+      })
+  }
+
+  /** Tag identifier of all the typeDeclaration who inherits from the type -> typeDeclName in argument Represent Step
+    */
+  private def tagObjectOfTypeDeclExtendingType(
+    builder: DiffGraphBuilder,
+    typeDeclVal: String,
+    ruleInfo: RuleInfo
+  ): Unit = {
+    val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
+
+    typeDeclsExtendingTypeName.foreach(typeDecl => {
+      taggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
+
+      taggerCache
+        .typeDeclMemberCache(typeDeclVal)
+        .filter(_._1.equals(ruleInfo.id))
+        .foreach(entrySet => {
+          val sourceRuleId = entrySet._1
+          entrySet._2.foreach(taggerCache.addItemToTypeDeclMemberCache(typeDecl.fullName, sourceRuleId, _))
+        })
+    })
+
+    typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
+
+      if (!taggerCache.typeDeclExtendingTypeDeclCache.contains(typeDeclVal))
+        taggerCache.typeDeclExtendingTypeDeclCache.addOne(typeDeclVal -> mutable.HashMap[String, TypeDecl]())
+      taggerCache
+        .typeDeclExtendingTypeDeclCache(typeDeclVal)
+        .addOne(ruleInfo.id -> cpg.typeDecl.where(_.fullNameExact(typeDeclVal)).head)
+
+      val impactedObjects =
+        cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this|self|cls")).l ::: cpg.parameter
+          .where(_.typeFullName(typeDeclVal))
+          .whereNot(_.code("this|self|cls"))
+          .l
+      impactedObjects.foreach(impactedObject => {
+        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
+          storeForTag(builder, impactedObject)(
+            Constants.id,
+            Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
+          )
+          storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+        }
+        storeForTag(builder, impactedObject)(
+          Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
+          ruleInfo.id
+        )
+        // Tag for storing memberName in derived Objects -> patient (patient extends user) --> (email, password)
+        taggerCache
+          .typeDeclMemberCache(typeDeclVal)(ruleInfo.id)
+          .name
+          .foreach(memberName =>
+            storeForTag(builder, impactedObject)(
+              ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
+              memberName
+            )
+          )
+
+      })
+    })
   }
 }
