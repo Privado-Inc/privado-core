@@ -55,6 +55,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
+import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -78,6 +79,7 @@ object JavaProcessor {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
           new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
+          new DependenciesNodePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )

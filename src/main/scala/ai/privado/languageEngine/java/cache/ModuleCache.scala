@@ -1,46 +1,65 @@
 package ai.privado.languageEngine.java.cache
 
-import io.shiftleft.codepropertygraph.generated.nodes.NewModuleDependency
+import io.shiftleft.codepropertygraph.generated.nodes.{NewModule, NewModuleDependency}
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 
 object ModuleCache {
 
-  private val dependenciesModuleMap = new mutable.HashMap[String, List[NewModuleDependency]]()
+  private val dependenciesModuleMap = new mutable.HashMap[String, mutable.Set[NewModuleDependency]]()
 
   private val subModuleParentMap = new mutable.HashMap[String, String]()
 
-  private val subModuleChildMap = new mutable.HashMap[String, ListBuffer[String]]()
+  private val subModuleChildMap = new mutable.HashMap[String, mutable.HashSet[String]]()
 
-  def processDependencies(): Unit = {
+  private val rootDependencyList = new mutable.HashSet[String]()
 
-    val moduleProcessorQueue = mutable.Queue[String]()
+  private val moduleNameMap = new mutable.HashMap[String, NewModule]()
 
-    moduleProcessorQueue.enqueue(getParentAndReverse())
+  def addDependenciesModule(moduleName: String, dependency: mutable.Set[NewModuleDependency]): Unit =
+    dependenciesModuleMap.put(moduleName, dependency)
 
-    while(moduleProcessorQueue.nonEmpty) {
+  def getDependencyModuleList(moduleName: String): Set[NewModuleDependency] = dependenciesModuleMap(moduleName).toSet
 
-      val currentModule = moduleProcessorQueue.dequeue()
+  def getChildList(parentName: String): List[String] =
+    if (subModuleChildMap.contains(parentName)) subModuleChildMap(parentName).toList else List.empty
 
+  def getRootDependenciesList: Set[String] = rootDependencyList.toSet
+
+  def addSubModuleParent(childModuleName: String, parentModuleName: String): Unit =
+    subModuleParentMap.put(childModuleName, parentModuleName)
+
+  def addModule(moduleName: String, module: NewModule) = moduleNameMap.put(moduleName, module)
+
+  def getModule(moduleName: String): NewModule = moduleNameMap.getOrElse(moduleName, null)
+
+  def convertToParentChildMap: Unit = {
+    for ((child, parent) <- subModuleParentMap) {
+      if (subModuleParentMap(child) != null) {
+        if (!subModuleChildMap.contains(parent)) {
+          subModuleChildMap.put(parent, new mutable.HashSet[String]())
+        }
+        subModuleChildMap(parent) += child
+      }
     }
   }
 
-  private def getParentAndReverse(): String = {
-    var rootModuleFile = ""
-
-    subModuleParentMap.foreach{
-      case (key, value) => {
-        if (value == null) {
-          rootModuleFile = key
-        } else {
-          if (!subModuleChildMap.contains(value)) {
-            subModuleChildMap.put(value, new ListBuffer[String])
-          }
-          subModuleChildMap(value) += key
-        }
+  def processRootDependency: Unit = {
+    for ((child, parent) <- subModuleParentMap) {
+      if (parent == null) {
+        rootDependencyList += child
       }
     }
-    rootModuleFile
+    val newParentMap = subModuleParentMap.collect { case (key, value) if value != null => key -> value }
+    val rootNode     = newParentMap.values.toSet.diff(newParentMap.keySet)
+    rootNode.foreach(node => rootDependencyList.add(node))
+  }
+
+  def inheritParentDependenciesFromChild(childName: String): Unit = {
+    if (subModuleParentMap.contains(childName)) {
+      if (dependenciesModuleMap.contains(subModuleParentMap(childName))) {
+        dependenciesModuleMap(childName) ++= dependenciesModuleMap(subModuleParentMap(childName))
+      }
+    }
   }
 }

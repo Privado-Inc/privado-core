@@ -1,10 +1,11 @@
 package ai.privado.languageEngine.java.passes.config
 
+import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModule, NewModuleDependency}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.{ConcurrentWriterCpgPass}
 import overflowdb.BatchedUpdate
 import org.apache.maven.model.Model
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
@@ -15,11 +16,7 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Try
 
-class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
-
-  private val dependenciesModuleMap = new mutable.HashMap[String, List[NewModuleDependency]]()
-
-  private val subModuleParentMap = new mutable.HashMap[String, String]()
+class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ConcurrentWriterCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     ModuleFiles(projectRoot, Set(".xml", ".gradle")).toArray
@@ -27,7 +24,7 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgP
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
     val fileNode              = addFileNode(file, builder)
     var moduleNode: NewModule = null
-    val dependencyList        = ListBuffer[NewModuleDependency]()
+    val dependencyList        = mutable.Set[NewModuleDependency]()
 
     if (file.contains("pom.xml")) {
       val reader = new MavenXpp3Reader()
@@ -42,25 +39,25 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgP
           builder
         )
       })
-      ProcessMavenParentModule(model, subModuleParentMap)
+      processMavenParentModule(model)
     } else {
       val buildGradleInfo = parseBuildGradle(file)
       moduleNode = addGradleModuleNode(buildGradleInfo.get, builder)
       buildGradleInfo.get.dependencies.foreach(dependency => {
         dependencyList += addDependencyNode(dependency.groupId, dependency.artifactId, dependency.version, builder)
       })
+      processGradleParentModule(moduleNode.artifactid)
     }
 
     // Store module dependencies info in Map
-    dependenciesModuleMap.put(s"${moduleNode.groupid}-${moduleNode.artifactid.getOrElse("")}", dependencyList.toList)
+    ModuleCache.addDependenciesModule(moduleNode.artifactid, dependencyList)
+    ModuleCache.addModule(moduleNode.artifactid, moduleNode)
 
     builder.addEdge(moduleNode, fileNode, EdgeTypes.SOURCE_FILE)
     dependencyList.foreach(dependency => {
-      builder.addEdge(moduleNode, dependency, EdgeTypes.DEPENDENCIES)
       builder.addEdge(dependency, fileNode, EdgeTypes.SOURCE_FILE)
     })
   }
-
   private def addGradleModuleNode(buildGradleInfo: BuildGradleInfo, builder: DiffGraphBuilder): NewModule = {
     val moduleNode = NewModule().groupid(buildGradleInfo.group).version(buildGradleInfo.version)
     builder.addNode(moduleNode)
@@ -129,12 +126,16 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgP
     BuildGradleInfo(version, group, dependencies)
   }
 
-  private def ProcessMavenParentModule(model: Model, subModuleParentMap: mutable.HashMap[String, String]): Unit = {
+  private def processMavenParentModule(model: Model): Unit = {
     val parentInfo = model.getParent
     if (parentInfo == null) {
-      subModuleParentMap.put(s"${model.getGroupId}-${model.getArtifactId}", null)
+      ModuleCache.addSubModuleParent(model.getArtifactId, null)
     } else {
-      subModuleParentMap.put(s"${model.getGroupId}-${model.getArtifactId}", s"${parentInfo.getGroupId}-${parentInfo.getArtifactId}")
+      ModuleCache.addSubModuleParent(model.getArtifactId, parentInfo.getArtifactId)
     }
+  }
+
+  private def processGradleParentModule(childArtifactName: String): Unit = {
+    ModuleCache.addSubModuleParent(childArtifactName, null)
   }
 }

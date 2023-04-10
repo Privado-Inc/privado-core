@@ -2,11 +2,13 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForDependency, StepsForModule}
+import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{Dependency, Module, ModuleDependency}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -20,7 +22,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
   private def getContent(): Map[String, String] = {
     val testModuleMap = mutable.HashMap[String, String]()
 
-    val firstContent =
+    val parentPom =
       """ <project xmlns="http://maven.apache.org/POM/4.0.0"
         |         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         |         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
@@ -48,72 +50,230 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
         |</project>
         |""".stripMargin
 
-    testModuleMap.put("pom.xml", firstContent)
+    val firstChildPom =
+      """
+        |<project xmlns="http://maven.apache.org/POM/4.0.0"
+        |         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        |         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+        |         http://maven.apache.org/maven-v4_0_0.xsd">
+        |
+        |  <modelVersion>3.0.0</modelVersion>
+        |  <groupId>com.child</groupId>
+        |  <artifactId>child-module</artifactId>
+        |  <version>2.0.0</version>
+        |
+        |  <parent>
+        |    <groupId>com.example</groupId>
+        |    <artifactId>my-java-project</artifactId>
+        |    <version>1.0.0</version>
+        |  </parent>
+        |
+        |  <dependencies>
+        |    <dependency>
+        |      <groupId>org.apache.commons</groupId>
+        |      <artifactId>commons-lang3</artifactId>
+        |      <version>3.12.0</version>
+        |    </dependency>
+        |  </dependencies>
+        |
+        |</project>
+        |""".stripMargin
+
+    val secondChildPom =
+      """
+        <project xmlns="http://maven.apache.org/POM/4.0.0"
+        |         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        |         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+        |         http://maven.apache.org/maven-v4_0_0.xsd">
+        |
+        |  <modelVersion>3.0.0</modelVersion>
+        |  <groupId>com.sub-child</groupId>
+        |  <artifactId>sub-child-module</artifactId>
+        |  <version>2.0.0</version>
+        |
+        |  <parent>
+        |    <groupId>com.child</groupId>
+        |    <artifactId>child-module</artifactId>
+        |    <version>2.0.0</version>
+        |  </parent>
+        |
+        |  <dependencies>
+        |    <dependency>
+        |      <groupId>com.ibeetl</groupId>
+        |      <artifactId>sql-springboot-starter</artifactId>
+        |      <version>3.22.0</version>
+        |    </dependency>
+        |  </dependencies>
+        |
+        |</project>
+        |""".stripMargin
+
+    testModuleMap.put("project/pom.xml", parentPom)
+    testModuleMap.put("project/child-module/pom.xml", firstChildPom)
+    testModuleMap.put("project/child-module/child-module/pom.xml", secondChildPom)
     testModuleMap.toMap
   }
 
   "MavenModuleInfoPass" should {
     "Test pom file Detection" in {
-      val pomFile = cpg.module.file.l
+      val pomFiles = cpg.module.file.l
 
-      pomFile.size shouldBe 1
-      pomFile.head.name.contains("pom.xml") shouldBe true
+      pomFiles.size shouldBe 3
     }
 
     "Test pom.xml content" in {
-      val pomFile = cpg.module.l
+      val moduleMap = new mutable.HashMap[String, Module]()
+      val pomFiles  = cpg.module.l
 
-      pomFile.size shouldBe 1
-      pomFile.head.groupid shouldBe "com.example"
-      pomFile.head.artifactid.get shouldBe "my-java-project"
-      pomFile.head.version shouldBe "1.0.0"
+      pomFiles.foreach(file => {
+        moduleMap.put(file.groupid, file)
+      })
+
+      // Test parent POM
+      moduleMap.contains("com.example") shouldBe true
+      moduleMap("com.example").artifactid shouldBe ("my-java-project")
+      moduleMap("com.example").version shouldBe ("1.0.0")
+
+      // Test child POM
+      moduleMap.contains("com.child") shouldBe true
+      moduleMap("com.child").artifactid shouldBe ("child-module")
+      moduleMap("com.child").version shouldBe ("2.0.0")
+
+      // Test child of child POM
+      moduleMap.contains("com.sub-child") shouldBe true
+      moduleMap("com.sub-child").artifactid shouldBe ("sub-child-module")
+      moduleMap("com.sub-child").version shouldBe ("2.0.0")
+
     }
   }
 
   "MavenModuleDependencyPass" should {
     "Test Maven Dependency List" in {
-      val dependencyGroupIdList    = new ListBuffer[String]()
-      val dependencyArtifactIdList = new ListBuffer[String]()
-      val dependencyVersionList    = new ListBuffer[String]()
+      val dependencyGroupIdSet    = new mutable.HashSet[String]()
+      val dependencyArtifactIdSet = new mutable.HashSet[String]()
+      val dependencyVersionSet    = new mutable.HashSet[String]()
+      val dependencySet           = new mutable.HashSet[ModuleDependency]()
 
       val dependencies = cpg.module.dependencies.l
 
       dependencies.foreach(dependency => {
+        dependencyGroupIdSet += dependency.groupid
+        dependencyArtifactIdSet += dependency.artifactid
+        dependencyVersionSet += dependency.version
+        dependencySet += dependency
+      })
+
+      dependencySet.size shouldBe 4
+
+      // Test Dependency groupId
+      dependencyGroupIdSet should contain("org.springframework")
+      dependencyGroupIdSet should contain("junit")
+      dependencyGroupIdSet should contain("org.apache.commons")
+      dependencyGroupIdSet should contain("com.ibeetl")
+
+      // Test Dependency artifactId
+      dependencyArtifactIdSet should contain("spring-core")
+      dependencyArtifactIdSet should contain("junit")
+      dependencyArtifactIdSet should contain("commons-lang3")
+      dependencyArtifactIdSet should contain("sql-springboot-starter")
+
+      // Test Dependency Versions
+      dependencyVersionSet should contain("5.3.9")
+      dependencyVersionSet should contain("4.13.2")
+      dependencyVersionSet should contain("3.12.0")
+      dependencyVersionSet should contain("3.22.0")
+
+    }
+
+    "Test child module list with filter" in {
+      val childModule = cpg.module.filter(m => m.groupid matches ("com.child")).l
+
+      childModule.size shouldBe 1
+    }
+
+    "Test child module Dependency list" in {
+      val dependencyGroupIdList    = new mutable.HashSet[String]()
+      val dependencyArtifactIdList = new mutable.HashSet[String]()
+      val dependencyVersionList    = new mutable.HashSet[String]()
+
+      val childModuleDependencies = cpg.module.filter(m => m.groupid matches ("com.child")).dependencies.l
+
+      childModuleDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
-        dependencyArtifactIdList += dependency.artifactid.get
+        dependencyArtifactIdList += dependency.artifactid
         dependencyVersionList += dependency.version
       })
 
-      dependencies.size shouldBe 2
+      childModuleDependencies.size shouldBe 3
 
       // Test Dependency groupId
       dependencyGroupIdList should contain("org.springframework")
       dependencyGroupIdList should contain("junit")
+      dependencyGroupIdList should contain("org.apache.commons")
+      dependencyGroupIdList should not contain ("com.ibeetl")
 
       // Test Dependency artifactId
       dependencyArtifactIdList should contain("spring-core")
       dependencyArtifactIdList should contain("junit")
+      dependencyArtifactIdList should contain("commons-lang3")
+      dependencyArtifactIdList should not contain ("sql-springboot-starter")
 
       // Test Dependency Versions
       dependencyVersionList should contain("5.3.9")
       dependencyVersionList should contain("4.13.2")
+      dependencyVersionList should contain("3.12.0")
+      dependencyVersionList should not contain ("3.22.0")
+    }
 
+    "Test child of child POM Dependency" in {
+      val dependencyGroupIdList    = new mutable.HashSet[String]()
+      val dependencyArtifactIdList = new mutable.HashSet[String]()
+      val dependencyVersionList    = new mutable.HashSet[String]()
+
+      val childModuleDependencies = cpg.module.filter(m => m.groupid matches ("com.sub-child")).dependencies.l
+
+      childModuleDependencies.foreach(dependency => {
+        dependencyGroupIdList += dependency.groupid
+        dependencyArtifactIdList += dependency.artifactid
+        dependencyVersionList += dependency.version
+      })
+
+      childModuleDependencies.size shouldBe 4
+
+      // Test Dependency groupId
+      dependencyGroupIdList should contain("org.springframework")
+      dependencyGroupIdList should contain("junit")
+      dependencyGroupIdList should contain("org.apache.commons")
+      dependencyGroupIdList should contain("com.ibeetl")
+
+      // Test Dependency artifactId
+      dependencyArtifactIdList should contain("spring-core")
+      dependencyArtifactIdList should contain("junit")
+      dependencyArtifactIdList should contain("commons-lang3")
+      dependencyArtifactIdList should contain("sql-springboot-starter")
+
+      // Test Dependency Versions
+      dependencyVersionList should contain("5.3.9")
+      dependencyVersionList should contain("4.13.2")
+      dependencyVersionList should contain("3.12.0")
+      dependencyVersionList should contain("3.22.0")
     }
 
     "Test Maven Dependency with filter" in {
-      val dependencyGroupIdList    = new ListBuffer[String]()
-      val dependencyArtifactIdList = new ListBuffer[String]()
-      val dependencyVersionList    = new ListBuffer[String]()
+      val dependencyGroupIdList    = new mutable.HashSet[String]()
+      val dependencyArtifactIdList = new mutable.HashSet[String]()
+      val dependencyVersionList    = new mutable.HashSet[String]()
 
       val filteredDependencies = cpg.module.dependencies.filter(d => d.groupid matches ("org.springframework")).l
 
       filteredDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
-        dependencyArtifactIdList += dependency.artifactid.get
+        dependencyArtifactIdList += dependency.artifactid
         dependencyVersionList += dependency.version
       })
 
-      filteredDependencies.size shouldBe 1
+      // because All three module have this dependency
+      filteredDependencies.size shouldBe 3
 
       // Test Dependency groupId
       dependencyGroupIdList should contain("org.springframework")
@@ -129,9 +289,14 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
     }
 
     "Test Maven Dependency File List" in {
+      val fileSet  = new mutable.HashSet[io.shiftleft.codepropertygraph.generated.nodes.File]()
       val fileList = cpg.module.dependencies.file.l
 
-      fileList.head.name.contains("pom.xml") shouldBe true
+      fileList.foreach(file => {
+        fileSet += file
+      })
+
+      fileSet.size shouldBe 3
     }
   }
 }
@@ -206,7 +371,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
 
       dependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
-        dependencyArtifactIdList += dependency.artifactid.get
+        dependencyArtifactIdList += dependency.artifactid
         dependencyVersionList += dependency.version
       })
 
@@ -236,7 +401,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
 
       filteredDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
-        dependencyArtifactIdList += dependency.artifactid.get
+        dependencyArtifactIdList += dependency.artifactid
         dependencyVersionList += dependency.version
       })
 
@@ -275,6 +440,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
+    (inputDir / "project/child-module/child-module").createDirectoryIfNotExists()
     for ((fileName, content) <- moduleFileMap) {
       (inputDir / fileName).write(content)
     }
@@ -290,6 +456,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
     cpg = xtocpg.get
     RuleCache.setRule(rule)
     new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
+    new DependenciesNodePass(cpg).createAndApply()
 
     super.beforeAll()
   }

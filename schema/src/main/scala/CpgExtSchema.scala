@@ -87,6 +87,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   val artifactId = builder
     .addProperty(name = "artifactId", valueType = ValueType.String)
+    .mandatory("")
 
   val configVersion = builder
     .addProperty(name = "version", valueType = ValueType.String)
