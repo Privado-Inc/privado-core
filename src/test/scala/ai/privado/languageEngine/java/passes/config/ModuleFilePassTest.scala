@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForDependency, StepsForModule}
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
@@ -18,6 +19,17 @@ import scala.collection.mutable.ListBuffer
 
 class ModuleMavenTest extends ModuleFilePassTestBase {
   override val moduleFileMap: Map[String, String] = getContent()
+
+  override def beforeAll() = {
+    super.beforeAll()
+    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
+    new DependenciesNodePass(cpg).createAndApply()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    ModuleCache.cleanCache()
+  }
 
   private def getContent(): Map[String, String] = {
     val testModuleMap = mutable.HashMap[String, String]()
@@ -304,6 +316,17 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
 class ModuleGradleTest extends ModuleFilePassTestBase {
   override val moduleFileMap: Map[String, String] = getContent()
 
+  override def beforeAll() = {
+    super.beforeAll()
+    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
+    new DependenciesNodePass(cpg).createAndApply()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    ModuleCache.cleanCache()
+  }
+
   def getContent(): Map[String, String] = {
     val testModuleMap = mutable.HashMap[String, String]()
 
@@ -455,8 +478,6 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
 
     cpg = xtocpg.get
     RuleCache.setRule(rule)
-    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
-    new DependenciesNodePass(cpg).createAndApply()
 
     super.beforeAll()
   }

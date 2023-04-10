@@ -14,15 +14,31 @@ object DependencyReport {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def processDependencyAudit(xtocpg: Try[Cpg]): List[List[String]]  = {
-    val workflowResult = new ListBuffer[List[String]]()
-    val dependencies = getDependencyList(xtocpg)
+  def processDependencyAudit(xtocpg: Try[Cpg]): List[List[String]] = {
+    val workbookResult = new ListBuffer[List[String]]()
+    val dependencies   = getDependencyList(xtocpg)
 
     dependencies.foreach(dependency => {
-      workflowResult += List(s"${dependency.groupid}-${dependency.artifactid}-${dependency.version}", dependency.file.head.name)
+      workbookResult += List(
+        dependency.file.head.name,
+        s"${dependency.groupid}.${dependency.artifactid}",
+        dependency.artifactid,
+        "--",
+        "--",
+        "--"
+      )
     })
 
-    workflowResult.toList
+    List(
+      List(
+        AuditReportConstants.DEPENDENCY_FILE_PATH_NAME,
+        AuditReportConstants.DEPENDENCY_LIBRARY_NAME,
+        AuditReportConstants.DEPENDENCY_ARTIFACT_NAME,
+        AuditReportConstants.DEPENDENCY_PROCESSED_NAME,
+        AuditReportConstants.DEPENDENCY_CATEGORY_NAME,
+        AuditReportConstants.DEPENDENCY_MATCHING_RULE_NAME
+      )
+    ) ++ workbookResult.groupBy(_.head).values.flatMap(identity).toList
   }
 
   def getDependencyList(xtocpg: Try[Cpg]): Set[ModuleDependency] = {

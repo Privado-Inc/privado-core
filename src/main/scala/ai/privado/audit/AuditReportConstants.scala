@@ -2,7 +2,9 @@ package ai.privado.audit
 
 object AuditReportConstants {
 
-  val AUDIT_ELEMENT_DISCOVERY_SHEET_NAME = "Element-Discovery"
+  val AUDIT_ELEMENT_DISCOVERY_SHEET_NAME = "Element-Discovery Audit"
+
+  val AUDIT_DEPENDENCY_SHEET_NAME = "Dependency Audit"
 
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
@@ -38,5 +40,17 @@ object AuditReportConstants {
   val ELEMENT_DISCOVERY_OVERRIDE_METHOD_REGEX = "^(hascode|equals)"
 
   val ELEMENT_DISCOVERY_GETTER_SETTER_REGEX = ".*(Getter|Setter).*"
+
+  val DEPENDENCY_LIBRARY_NAME = "Library ( GroupId - ArtifactId)"
+
+  val DEPENDENCY_ARTIFACT_NAME = "ArtifactID"
+
+  val DEPENDENCY_FILE_PATH_NAME = "File Path"
+
+  val DEPENDENCY_PROCESSED_NAME = "Being processed"
+
+  val DEPENDENCY_CATEGORY_NAME = "Category"
+
+  val DEPENDENCY_MATCHING_RULE_NAME = "Matching rule Id"
 
 }

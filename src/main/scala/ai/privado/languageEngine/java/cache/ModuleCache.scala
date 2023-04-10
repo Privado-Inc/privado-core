@@ -19,7 +19,8 @@ object ModuleCache {
   def addDependenciesModule(moduleName: String, dependency: mutable.Set[NewModuleDependency]): Unit =
     dependenciesModuleMap.put(moduleName, dependency)
 
-  def getDependencyModuleList(moduleName: String): Set[NewModuleDependency] = dependenciesModuleMap(moduleName).toSet
+  def getDependencyModuleList(moduleName: String): Set[NewModuleDependency] =
+    if (dependenciesModuleMap.contains(moduleName)) dependenciesModuleMap(moduleName).toSet else mutable.Set.empty.toSet
 
   def getChildList(parentName: String): List[String] =
     if (subModuleChildMap.contains(parentName)) subModuleChildMap(parentName).toList else List.empty
@@ -61,5 +62,14 @@ object ModuleCache {
         dependenciesModuleMap(childName) ++= dependenciesModuleMap(subModuleParentMap(childName))
       }
     }
+  }
+
+  // This function is mainly for Testing purposes only
+  def cleanCache(): Unit = {
+    dependenciesModuleMap.clear()
+    subModuleParentMap.clear()
+    subModuleChildMap.clear()
+    rootDependencyList.clear()
+    moduleNameMap.clear()
   }
 }

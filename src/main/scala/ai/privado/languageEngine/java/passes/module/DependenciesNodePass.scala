@@ -43,7 +43,7 @@ class DependenciesNodePass(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  private def addDependenciesToBuilder(builder: BatchedUpdate.DiffGraphBuilder, currentModule: String) = {
+  private def addDependenciesToBuilder(builder: BatchedUpdate.DiffGraphBuilder, currentModule: String): Unit = {
     val module = ModuleCache.getModule(currentModule)
     ModuleCache
       .getDependencyModuleList(currentModule)

@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.audit.DataElementDiscovery
+import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
@@ -54,7 +54,6 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 
 import java.util.Calendar
@@ -133,7 +132,7 @@ object JavaProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
