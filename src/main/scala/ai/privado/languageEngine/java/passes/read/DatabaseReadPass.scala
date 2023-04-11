@@ -18,7 +18,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.util.control.Breaks._
 
-class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
 
@@ -31,34 +31,20 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 //    cpg.identifier.typeFullName("(java.sql.Connection.prepareStatement|java.sql.PreparedStatement).*").l
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    val readSinks = RuleCache.getAllRuleInfo
-      .filter(rule => rule.catLevelTwo.equals(Constants.storages))
-      .filter(rule => rule.id.matches(".*Read(?:AndWrite)?$"))
-    Array(readSinks.head)
-  }
-
-  override def runOnPart(builder: DiffGraphBuilder, rule: RuleInfo): Unit = {
-    val sqlQueryStatementNodes = cpg.literal
+    cpg.literal
       .code(".*SELECT.*")
       .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(Operators.addition))))
       .isCall
       .argument
       .code(".*SELECT.*")
-      .l
-    sqlQueryStatementNodes.map(node => getDBReadForNode(node, builder))
+      .toArray
   }
 
-  def extractSQLForConcatenatedString(sqlQuery: String): String = {
-    val query = sqlQuery
-      .split("\\\"\\s*\\+\\s*\\\"")
-      .map(_.stripMargin)
-      .mkString("")
-
-    val pattern = "(?i)SELECT\\s(.*?)\\sFROM\\s(.*?)(`.*?`|\".*?\"|'.*?'|\\w+)".r
-    pattern.findFirstIn(query).getOrElse("")
+  override def runOnPart(builder: DiffGraphBuilder, node: Expression): Unit = {
+    getDBReadForNode(builder, node)
   }
 
-  def getDBReadForNode(node: Expression, builder: DiffGraphBuilder) = {
+  def getDBReadForNode(builder: DiffGraphBuilder, node: Expression) = {
     val query  = extractSQLForConcatenatedString(node.code)
     val result = SQLParser.parseSQL(query)
 
@@ -69,40 +55,18 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       case Some(value) =>
         val ruleIds = sensitiveClassesWithMatchedRules(value).keys
         if (columns.length == 1 && columns(0) == "*") {
-          ruleIds.map(ruleId => addTagsToNode("*", ruleId, node, builder))
+          ruleIds.map(ruleId => addTagsToNode(ruleId, node, builder))
         } else {
           ruleIds.map(ruleId => {
             matchColumnNameWithRules(ruleId, columns) match {
-              case Some(column) =>
-                println(column, ruleId)
-                addTagsToNode(column, ruleId, node, builder)
-              case _ => ()
+              case Some(_) => addTagsToNode(ruleId, node, builder)
+              case _       => ()
             }
           })
         }
       case None => ()
     }
   }
-
-//  def findSQLQueryFromReferenceNode(node: Declaration) = {
-//    node match {
-//      case local: Local =>
-//        findQueryFromLocalNode(local)
-//      case methodParamIn: MethodParameterIn =>
-//        methodParamIn.astParent.ast.isCall
-//          .name(Operators.assignment)
-//          .argument
-//          .where(_.argumentIndex(2))
-//          .code
-//          .filter(query => query.matches("(?i)^\"select.*"))
-//      //          || query.startsWith("\"delete")
-//      case _ =>
-//        logger.warn("Unable to match the Declaration node to Local or MethodParamIn Type", node.toString)
-//        val traversal: Traversal[String] = Traversal.empty[String]
-//        traversal
-//    }
-//
-//  }
 
   def matchColumnNameWithRules(ruleId: String, columns: Array[String]): Option[String] = {
     val pattern                       = RuleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
@@ -122,15 +86,14 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     storeForTag(builder, node)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
     addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
   }
+  def extractSQLForConcatenatedString(sqlQuery: String): String = {
+    val query = sqlQuery
+      .split("\\\"\\s*\\+\\s*\\\"")
+      .map(_.stripMargin)
+      .mkString("")
 
-//  def findQueryFromLocalNode(localNode: Local) = {
-//    localNode.astParent.ast.isCall
-//      .name(Operators.assignment)
-//      .where(_.lineNumber(localNode.lineNumber.get))
-//      .argument
-//      .where(_.argumentIndex(2))
-//      .code
-//      .filter(query => query.matches("(?i)^\"select.*"))
-//  }
+    val pattern = "(?i)SELECT\\s(.*?)\\sFROM\\s(.*?)(`.*?`|\".*?\"|'.*?'|\\w+)".r
+    pattern.findFirstIn(query).getOrElse("")
+  }
 
 }
