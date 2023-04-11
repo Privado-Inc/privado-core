@@ -112,8 +112,11 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
         typeDeclValEntry._2.foreach(typeDeclMember => {
           val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
 
-          // updating cache
-          taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+          // Don't add ScoutSuite/core/rule.py:<module> this kind of entries
+          if (!typeDeclVal.endsWith("<module>")) {
+            // updating cache
+            taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+          }
 
           val typeDeclMemberName = typeDeclMember.name
 
@@ -197,10 +200,16 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
         .addOne(ruleInfo.id -> cpg.typeDecl.where(_.fullNameExact(typeDeclVal)).head)
 
       val impactedObjects =
-        cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this|self|cls")).l ::: cpg.parameter
+        cpg.identifier
           .where(_.typeFullName(typeDeclVal))
+          .whereNot(_.astSiblings.isImport)
+          .whereNot(_.astSiblings.isCall.name("import"))
           .whereNot(_.code("this|self|cls"))
-          .l
+          .l :::
+          cpg.parameter
+            .where(_.typeFullName(typeDeclVal))
+            .whereNot(_.code("this|self|cls"))
+            .l
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
