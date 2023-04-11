@@ -150,7 +150,7 @@ class Dataflow(cpg: Cpg) {
         .toMap
 
       // Setting cache
-      DataFlowCache.dataflowsMapByType = dataflowMapByPathId
+      DataFlowCache.dataflowsMapByType ++= dataflowMapByPathId
 
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
       DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig)
@@ -163,11 +163,16 @@ class Dataflow(cpg: Cpg) {
       val dataflowFromCache = DataFlowCache.getDataflow
       println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
-      dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
+
+      dataflowFromCache
+        .map(_.pathId)
+        .toSet
+        .map((pathId: String) => (pathId, DataFlowCache.dataflowsMapByType(pathId)))
+        .toMap
     }
   }
 
-  private def getSources: List[AstNode] = {
+  def getSources: List[AstNode] = {
     def filterSources(traversal: Traversal[AstNode]) = {
       traversal.tag
         .nameExact(Constants.catLevelOne)
