@@ -88,10 +88,11 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
         val dataElementSinks =
           Dataflow
             .getSources(cpg)
+            .filterNot(_.isMember)
             .map(_.asInstanceOf[CfgNode])
             .l
         implicit val engineContext: EngineContext =
-          EngineContext(semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config), config = EngineConfig(4))
+          EngineContext(config = EngineConfig(4))
         val readFlow = dataElementSinks.reachableByFlows(node).l
         if (readFlow.nonEmpty) {
           // As a flow is present from Select query to a Data element we can say, the data element is read from the query
