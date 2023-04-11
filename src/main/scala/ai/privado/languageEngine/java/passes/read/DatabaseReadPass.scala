@@ -2,8 +2,9 @@ package ai.privado.languageEngine.java.passes.read
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.model.{Constants, DataFlowPathModel, RuleInfo}
+import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, RuleInfo}
 import ai.privado.utility.SQLParser
+import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -37,11 +38,14 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
   }
 
   override def runOnPart(builder: DiffGraphBuilder, rule: RuleInfo): Unit = {
-
-//    TODO check if flow logic can be used to identify query to execute nodes
-    val sqlQueryStatementStringNodes = cpg.identifier.typeFullName("java.lang.String").code("(sql|query).*").l
-    val sqlQueryLocalRefNode         = sqlQueryStatementStringNodes.refsTo.dedup.l
-    sqlQueryLocalRefNode.map(node => getDBReadForNode(node, builder))
+    val sqlQueryStatementNodes = cpg.literal
+      .code(".*SELECT.*")
+      .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(Operators.addition))))
+      .isCall
+      .argument
+      .code(".*SELECT.*")
+      .l
+    sqlQueryStatementNodes.map(node => getDBReadForNode(node, builder))
   }
 
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
@@ -54,91 +58,79 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     pattern.findFirstIn(query).getOrElse("")
   }
 
-  def getDBReadForNode(node: Declaration, builder: DiffGraphBuilder) = {
-    val sqlQuery = findSQLQueryFromReferenceNode(node)
+  def getDBReadForNode(node: Expression, builder: DiffGraphBuilder) = {
+    val query  = extractSQLForConcatenatedString(node.code)
+    val result = SQLParser.parseSQL(query)
 
-    if (sqlQuery.nonEmpty) {
-      val query  = extractSQLForConcatenatedString(sqlQuery.head)
-      val result = SQLParser.parseSQL(query)
+    val tableName = s"(?i).*${result._1}.*".r
+    val columns   = result._2
 
-      val tableName = s"(?i).*${result._1}.*".r
-      val columns   = result._2
-
-      sensitiveClasses.find(s => s.matches(tableName.regex)) match {
-        case Some(value) =>
-          val ruleIds = sensitiveClassesWithMatchedRules(value).keys
-          if (columns.length == 1 && columns(0) == "*") {
-            ruleIds.map(ruleId => addReadFlowToExport("*", ruleId, node, builder))
-          } else {
-            ruleIds.map(ruleId => {
-              matchColumnNameWithRules(ruleId, columns) match {
-                case Some(column) => addReadFlowToExport(column, ruleId, node, builder)
-                case _            => ()
-              }
-            })
-          }
-        case None => ()
-      }
+    sensitiveClasses.find(s => s.matches(tableName.regex)) match {
+      case Some(value) =>
+        val ruleIds = sensitiveClassesWithMatchedRules(value).keys
+        if (columns.length == 1 && columns(0) == "*") {
+          ruleIds.map(ruleId => addTagsToNode("*", ruleId, node, builder))
+        } else {
+          ruleIds.map(ruleId => {
+            matchColumnNameWithRules(ruleId, columns) match {
+              case Some(column) =>
+                println(column, ruleId)
+                addTagsToNode(column, ruleId, node, builder)
+              case _ => ()
+            }
+          })
+        }
+      case None => ()
     }
   }
 
-  def findSQLQueryFromReferenceNode(node: Declaration) = {
-    node match {
-      case local: Local =>
-        findQueryFromLocalNode(local)
-      case methodParamIn: MethodParameterIn =>
-        methodParamIn.astParent.ast.isCall
-          .name(Operators.assignment)
-          .argument
-          .where(_.argumentIndex(2))
-          .code
-          .filter(query => query.matches("(?i)^\"select.*"))
-      //          || query.startsWith("\"delete")
-      case _ =>
-        logger.warn("Unable to match the Declaration node to Local or MethodParamIn Type", node.toString)
-        val traversal: Traversal[String] = Traversal.empty[String]
-        traversal
-    }
-
-  }
+//  def findSQLQueryFromReferenceNode(node: Declaration) = {
+//    node match {
+//      case local: Local =>
+//        findQueryFromLocalNode(local)
+//      case methodParamIn: MethodParameterIn =>
+//        methodParamIn.astParent.ast.isCall
+//          .name(Operators.assignment)
+//          .argument
+//          .where(_.argumentIndex(2))
+//          .code
+//          .filter(query => query.matches("(?i)^\"select.*"))
+//      //          || query.startsWith("\"delete")
+//      case _ =>
+//        logger.warn("Unable to match the Declaration node to Local or MethodParamIn Type", node.toString)
+//        val traversal: Traversal[String] = Traversal.empty[String]
+//        traversal
+//    }
+//
+//  }
 
   def matchColumnNameWithRules(ruleId: String, columns: Array[String]): Option[String] = {
-    val pattern               = RuleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
-    var matchedColumn: String = None.toString
+    val pattern                       = RuleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
+    var matchedColumn: Option[String] = None
     breakable {
       columns.foreach(column => {
         if (pattern.matches(column)) {
-          matchedColumn = column
+          matchedColumn = Some(column)
           break()
         }
       })
     }
-    if (matchedColumn.nonEmpty) {
-      Some(matchedColumn)
-    } else {
-      None
-    }
+    matchedColumn
   }
 
-//  TODO add PrepareStatement or Execute node for flow if possible
-  def addReadFlowToExport(column: String, ruleId: String, node: Declaration, builder: DiffGraphBuilder) = {
-    val elements = List(node).asInstanceOf[List[AstNode]]
-    val path     = Path(elements)
-    val pathId   = DuplicateFlowProcessor.calculatePathId(path)
-    DataFlowCache.dataflowsMapByType = DataFlowCache.dataflowsMapByType.updated(pathId.get, path)
-    val dataflowModel =
-      DataFlowPathModel(ruleId, "Storages.SpringFramework.Jdbc.Read", "storages", "REGULAR", pathId.get)
-    DataFlowCache.setDataflow(dataflowModel)
+  def addTagsToNode(ruleId: String, node: Expression, builder: DiffGraphBuilder) = {
+    storeForTag(builder, node)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+    addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
   }
 
-  def findQueryFromLocalNode(localNode: Local) = {
-    localNode.astParent.ast.isCall
-      .name(Operators.assignment)
-      .where(_.lineNumber(localNode.lineNumber.get))
-      .argument
-      .where(_.argumentIndex(2))
-      .code
-      .filter(query => query.matches("(?i)^\"select.*"))
-  }
+//  def findQueryFromLocalNode(localNode: Local) = {
+//    localNode.astParent.ast.isCall
+//      .name(Operators.assignment)
+//      .where(_.lineNumber(localNode.lineNumber.get))
+//      .argument
+//      .where(_.argumentIndex(2))
+//      .code
+//      .filter(query => query.matches("(?i)^\"select.*"))
+//  }
 
 }
