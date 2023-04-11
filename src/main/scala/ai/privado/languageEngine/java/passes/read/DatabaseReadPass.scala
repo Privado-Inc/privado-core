@@ -88,7 +88,6 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
         val dataElementSinks =
           Dataflow
             .getSources(cpg)
-            .where(_.file.nameExact(node.file.name.headOption.getOrElse("")))
             .map(_.asInstanceOf[CfgNode])
             .l
         implicit val engineContext: EngineContext =
