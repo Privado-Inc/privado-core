@@ -1,18 +1,12 @@
 package ai.privado.languageEngine.java.passes.read
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
-import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, RuleInfo}
+import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.model.InternalTag
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
-import io.joern.dataflowengineoss.language._
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -21,30 +15,27 @@ import scala.util.control.Breaks._
 class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
+  val selectRegexPattern               = "(?i).*select.*"
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
-//  val preparedStatementCalls =
-//    cpg.call.methodFullName("java.sql.Connection.prepareStatement.*").asInstanceOf[Traversal[CfgNode]].l
-//
-//  val preparedStatementIdentifiers =
-//    cpg.identifier.typeFullName("(java.sql.Connection.prepareStatement|java.sql.PreparedStatement).*").l
-
   override def generateParts(): Array[_ <: AnyRef] = {
+//    CPG query to fetch the Literal with SQL string
+//    'Repeat until' is used to combine multiline SQL queries into one
     cpg.literal
-      .code(".*SELECT.*")
+      .code(selectRegexPattern)
       .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(Operators.addition))))
       .isCall
       .argument
-      .code(".*SELECT.*")
+      .code(selectRegexPattern)
       .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, node: Expression): Unit = {
-    getDBReadForNode(builder, node)
+    processDBReadNode(builder, node)
   }
 
-  def getDBReadForNode(builder: DiffGraphBuilder, node: Expression) = {
+  def processDBReadNode(builder: DiffGraphBuilder, node: Expression) = {
     val query  = extractSQLForConcatenatedString(node.code)
     val result = SQLParser.parseSQL(query)
 
@@ -88,11 +79,12 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
   }
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
     val query = sqlQuery
-      .split("\\\"\\s*\\+\\s*\\\"")
+      .split("\\\"\\s*\\+\\s*\\\"") // Splitting the query on '+' operator and joining back to form complete query
       .map(_.stripMargin)
       .mkString("")
 
-    val pattern = "(?i)SELECT\\s(.*?)\\sFROM\\s(.*?)(`.*?`|\".*?\"|'.*?'|\\w+)".r
+    val pattern =
+      "(?i)SELECT\\s(.*?)\\sFROM\\s(.*?)(`.*?`|\".*?\"|'.*?'|\\w+)".r // Pattern to fetch the SELECT statement from the query
     pattern.findFirstIn(query).getOrElse("")
   }
 
