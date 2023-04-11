@@ -39,4 +39,26 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_GETTER_SETTER_REGEX = ".*(Getter|Setter).*"
 
+  val DATA_FLOW_SOURCE_NAME = "Source"
+
+  val DATA_FLOW_SINK_NAME = "Sink"
+
+  val DATA_FLOW_FLOW_NAME = "Flow Id"
+
+  val DATA_FLOW_SHORT_FLOW_NAME = "Short Flow"
+
+  val DATA_FLOW_JOERN_OUTPUT_NAME = "Joern Output"
+
+  val DATA_FLOW_SEMANTIC_FILTER_NAME = "Semantic Filter"
+
+  val DATA_FLOW_FILTER_1_NAME = "Filter 1"
+
+  val DATA_FLOW_FILTER_2_NAME = "Filter 2"
+
+  val DATA_FLOW_DEDUP_1_NAME = "Dedup 1"
+
+  val DATA_FLOW_DEDUP_2_NAME = "Dedup 2"
+
+  val DATA_FLOW_FINAL_RESULT_NAME = "Final Result"
+
 }

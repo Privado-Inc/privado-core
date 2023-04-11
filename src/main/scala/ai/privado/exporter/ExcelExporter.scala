@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.audit.AuditReportConstants
+import ai.privado.audit.{AuditReportConstants, DataFlowReport}
 import ai.privado.model.Constants.outputDirectoryName
 import better.files.File
 import org.apache.poi.ss.usermodel.{Cell, FillPatternType, IndexedColors, Row, Sheet, Workbook}
@@ -23,6 +23,16 @@ object ExcelExporter {
       // Iterate over the data and write it to the sheet
       for ((rowValues, rowIndex) <- output.zipWithIndex) {
         val row: Row = sheet.createRow(rowIndex)
+        rowValues.zipWithIndex.foreach { case (cellValue, cellIndex) =>
+          val cell: Cell = row.createCell(cellIndex)
+          cell.setCellValue(cellValue)
+        }
+      }
+
+      val dd = workbook.createSheet("Data Flow Report")
+
+      for ((rowValues, rowIndex) <- DataFlowReport.processDataFlowAudit().zipWithIndex) {
+        val row: Row = dd.createRow(rowIndex)
         rowValues.zipWithIndex.foreach { case (cellValue, cellIndex) =>
           val cell: Cell = row.createCell(cellIndex)
           cell.setCellValue(cellValue)
