@@ -3,15 +3,18 @@ package ai.privado.languageEngine.java.tagger.collection
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Method}
 import io.shiftleft.semanticcpg.language._
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
-import scala.util.{Failure, Success, Try}
 
+import scala.util.{Failure, Success, Try}
 import scala.collection.mutable
 
 object CollectionUtility {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
   def tagDirectSources(
     builder: DiffGraphBuilder,
     collectionMethods: List[Method],
@@ -48,26 +51,22 @@ object CollectionUtility {
     // Implementation to also mark the collection points which use derived type declaration as there parameters
     val derivedTypeDecl = (getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString) ++
       getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString) ++
-      getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).distinct
+      getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).toSet
 
-    val collectionPointsFromDerivedTypeDecl = Traversal(collectionMethods).flatMap(collectionMethod => {
+    val collectionPointsFromDerivedTypeDecl = collectionMethods.flatMap(collectionMethod => {
       val parameters =
         collectionMethod.parameter.where(_.typeFullName.filter(fullName => derivedTypeDecl.contains(fullName)))
       if (parameters.isEmpty) {
         None
       } else {
-        parameters.foreach(parameter => {
-          val derivedReferencingIdentifier = parameter.referencingIdentifiers
-            .whereNot(_.code("this"))
-            .where(_.tag.name(Constants.privadoDerived + ".*"))
-            .l
-          if (derivedReferencingIdentifier.nonEmpty) {
-            Try(derivedReferencingIdentifier.head.tag.name(Constants.privadoDerived + ".*")) match {
-              case Success(refIdentifierTags) =>
-                refIdentifierTags.foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
-            }
-          }
-        })
+        // Have removed the earlier code, where we were fetching all the referencing identifiers of parameter and then tagging, because we were missing on cases where the parameter is not used in the code
+        parameters
+          .whereNot(_.code("this"))
+          .foreach(parameter => {
+            parameter.tag
+              .name(Constants.privadoDerived + ".*")
+              .foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
+          })
         collectionMethod
       }
     })
@@ -118,6 +117,32 @@ object CollectionUtility {
         case Failure(e) =>
           methodUrl
       }
+    }
+  }
+
+  /** This function gets the URL from an Annotation object. It will first look for the URL in the parameterAssign node
+    * order 1, then if that fails it will look for the URL in the parameterAssign node order 2, then if that fails it
+    * will look for the URL in the typeDecl node, and finally if that fails it will look for the URL in the method node.
+    * If none of these succeed, it will return an empty string.
+    * @param parameterIn
+    * @return
+    */
+  def getUrlFromAnnotation(annotation: Annotation): String = {
+    annotation.parameterAssign.order(1).astChildren.order(2).l.headOption match {
+      case Some(url) => url.code
+      case None =>
+        annotation.parameterAssign.order(1).headOption match {
+          case Some(url) => url.code
+          case None =>
+            annotation.typeDecl.headOption match {
+              case Some(typeDeclNode) => typeDeclNode.name
+              case None =>
+                annotation.method.headOption match {
+                  case Some(methodNode) => methodNode.name
+                  case None             => ""
+                }
+            }
+        }
     }
   }
 }
