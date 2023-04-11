@@ -54,8 +54,8 @@ class Dataflow(cpg: Cpg) {
   def dataflow(privadoScanConfig: PrivadoInput): Map[String, Path] = {
 
     logger.info("Generating dataflow")
-    val sources = getSources
-    val sinks   = getSinks
+    val sources = Dataflow.getSources(cpg)
+    val sinks   = Dataflow.getSinks(cpg)
 
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
@@ -172,12 +172,16 @@ class Dataflow(cpg: Cpg) {
     }
   }
 
-  def getSources: List[AstNode] = {
+}
+
+object Dataflow {
+  def getSources(cpg: Cpg): List[AstNode] = {
     def filterSources(traversal: Traversal[AstNode]) = {
       traversal.tag
         .nameExact(Constants.catLevelOne)
         .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
     }
+
     cpg.literal
       .where(filterSources)
       .l ++ cpg.identifier
@@ -187,8 +191,7 @@ class Dataflow(cpg: Cpg) {
       .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
   }
 
-  private def getSinks: List[CfgNode] = {
+  private def getSinks(cpg: Cpg): List[CfgNode] = {
     cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
   }
-
 }
