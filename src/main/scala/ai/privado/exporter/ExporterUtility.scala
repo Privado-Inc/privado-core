@@ -23,9 +23,10 @@
 
 package ai.privado.exporter
 
+import ai.privado.cache
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -47,8 +48,8 @@ object ExporterUtility {
     sourceId: String = "",
     taggerCache: TaggerCache = new TaggerCache()
   ): List[DataFlowSubCategoryPathExcerptModel] = {
-    val lang     = MetricHandler.metricsData("language")
-    val isPython = lang.toString().contains(Languages.PYTHONSRC)
+    val lang     = AppCache.repoLanguage
+    val isPython = lang == Language.PYTHON
 
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
