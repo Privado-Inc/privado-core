@@ -144,17 +144,17 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       // Test parent POM
       moduleMap.contains("com.example") shouldBe true
       moduleMap("com.example").artifactid shouldBe ("my-java-project")
-      moduleMap("com.example").version shouldBe ("1.0.0")
+      moduleMap("com.example").version.getOrElse("") shouldBe ("1.0.0")
 
       // Test child POM
       moduleMap.contains("com.child") shouldBe true
       moduleMap("com.child").artifactid shouldBe ("child-module")
-      moduleMap("com.child").version shouldBe ("2.0.0")
+      moduleMap("com.child").version.getOrElse("") shouldBe ("2.0.0")
 
       // Test child of child POM
       moduleMap.contains("com.sub-child") shouldBe true
       moduleMap("com.sub-child").artifactid shouldBe ("sub-child-module")
-      moduleMap("com.sub-child").version shouldBe ("2.0.0")
+      moduleMap("com.sub-child").version.getOrElse("") shouldBe ("2.0.0")
 
     }
   }
@@ -171,7 +171,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       dependencies.foreach(dependency => {
         dependencyGroupIdSet += dependency.groupid
         dependencyArtifactIdSet += dependency.artifactid
-        dependencyVersionSet += dependency.version
+        dependencyVersionSet += dependency.version.getOrElse("")
         dependencySet += dependency
       })
 
@@ -213,7 +213,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       childModuleDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
         dependencyArtifactIdList += dependency.artifactid
-        dependencyVersionList += dependency.version
+        dependencyVersionList += dependency.version.getOrElse("")
       })
 
       childModuleDependencies.size shouldBe 3
@@ -247,7 +247,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       childModuleDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
         dependencyArtifactIdList += dependency.artifactid
-        dependencyVersionList += dependency.version
+        dependencyVersionList += dependency.version.getOrElse("")
       })
 
       childModuleDependencies.size shouldBe 4
@@ -281,7 +281,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       filteredDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
         dependencyArtifactIdList += dependency.artifactid
-        dependencyVersionList += dependency.version
+        dependencyVersionList += dependency.version.getOrElse("")
       })
 
       // because All three module have this dependency
@@ -380,7 +380,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
 
       buildGradleFile.size shouldBe 1
       buildGradleFile.head.groupid shouldBe "com.test"
-      buildGradleFile.head.version shouldBe "0.0.1-SNAPSHOT"
+      buildGradleFile.head.version.getOrElse("") shouldBe "0.0.1-SNAPSHOT"
     }
   }
 
@@ -395,7 +395,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
       dependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
         dependencyArtifactIdList += dependency.artifactid
-        dependencyVersionList += dependency.version
+        dependencyVersionList += dependency.version.getOrElse("")
       })
 
       dependencies.size shouldBe 3
@@ -425,7 +425,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
       filteredDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
         dependencyArtifactIdList += dependency.artifactid
-        dependencyVersionList += dependency.version
+        dependencyVersionList += dependency.version.getOrElse("")
       })
 
       filteredDependencies.size shouldBe 1
