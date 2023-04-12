@@ -132,12 +132,114 @@ class JavaSQLDatabaseReadTest extends DatabaseReadPassTestBase {
 
     "Tag the SQL query with source node id" in {
       cpg.tag.name("id").value("Data.Sensitive.FirstName").size shouldNot (equal(0))
-      codeFileContents.format()
     }
   }
 
 }
+class JavaSQLDatabaseReadVariableTest extends DatabaseReadPassTestBase {
+  override val codeFileContents: String = s"""
+                                             |import java.sql.Connection;
+                                             |import java.sql.DriverManager;
+                                             |import java.sql.PreparedStatement;
+                                             |import java.sql.ResultSet;
+                                             |import java.sql.SQLException;
+                                             |
+                                             |public class User {
+                                             |    private int id;
+                                             |    private String username;
+                                             |    private String password;
+                                             |    private String email;
+                                             |
+                                             |    // Constructor
+                                             |    public User(int id, String username, String password, String email) {
+                                             |        this.id = id;
+                                             |        this.username = username;
+                                             |        this.password = password;
+                                             |        this.email = email;
+                                             |    }
+                                             |
+                                             |    // Getters and setters
+                                             |    public int getId() {
+                                             |        return id;
+                                             |    }
+                                             |
+                                             |    public void setId(int id) {
+                                             |        this.id = id;
+                                             |    }
+                                             |
+                                             |    public String getUsername() {
+                                             |        return username;
+                                             |    }
+                                             |
+                                             |    public void setUsername(String username) {
+                                             |        this.username = username;
+                                             |    }
+                                             |
+                                             |    public String getPassword() {
+                                             |        return password;
+                                             |    }
+                                             |
+                                             |    public void setPassword(String password) {
+                                             |        this.password = password;
+                                             |    }
+                                             |
+                                             |    public String getEmail() {
+                                             |        return email;
+                                             |    }
+                                             |
+                                             |    public void setEmail(String email) {
+                                             |        this.email = email;
+                                             |    }
+                                             |
+                                             |    // Method to read a user from the database by ID
+                                             |    public static User getUserById(int id) throws SQLException {
+                                             |        Connection conn = null;
+                                             |        PreparedStatement stmt = null;
+                                             |        ResultSet rs = null;
+                                             |        User user = null;
+                                             |
+                                             |        try {
+                                             |            // Connect to the database
+                                             |            conn = DriverManager.getConnection("jdbc:mysql://localhost/mydatabase", "username", "password");
+                                             |
+                                             |            // Prepare the SQL statement
+                                             |            String query = "SELECT lastName, firstName,email from user where (lower(firstName) like lower(?) or lower(lastName) "
+                                             |                    + "like lower(?) or lower(email) like lower(?)) and userType = 0";
+                                             |            stmt = conn.prepareStatement("SELECT firstName, lastName FROM users WHERE id = ?");
+                                             |            stmt.setInt(1, id);
+                                             |
+                                             |            // Execute the query and get the result set
+                                             |            rs = stmt.executeQuery();
+                                             |
+                                             |            // If a user with the given ID exists, create a User object and populate its fields
+                                             |            if (rs.next()) {
+                                             |                user = new User(rs.getInt("id"), rs.getString("username"), rs.getString("password"), rs.getString("email"));
+                                             |            }
+                                             |        } catch (SQLException e) {
+                                             |            e.printStackTrace();
+                                             |        } finally {
+                                             |            // Close the database resources
+                                             |            if (rs != null) rs.close();
+                                             |            if (stmt != null) stmt.close();
+                                             |            if (conn != null) conn.close();
+                                             |        }
+                                             |
+                                             |        return user;
+                                             |    }
+                                             |}
+                                             |""".stripMargin
 
+  "DatabaseReadPass" should {
+    "Tag the multi-line SQL Query as param" in {
+      cpg.tag.name(InternalTag.VARIABLE_REGEX_LITERAL.toString).size shouldNot (equal(0))
+    }
+
+    "Parse the query properly and tag with Source ID" in {
+      cpg.tag.name("id").value("Data.Sensitive.FirstName").size shouldNot (equal(0))
+    }
+  }
+
+}
 abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg: Cpg = _
