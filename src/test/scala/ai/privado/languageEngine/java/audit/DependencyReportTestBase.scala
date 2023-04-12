@@ -10,17 +10,20 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg: Cpg = _
   val javaFileContentMap: Map[String, String]
   var inputDir: File  = _
   var outputDir: File = _
+
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
+    (inputDir / "project").createDirectoryIfNotExists()
     for ((key, content) <- javaFileContentMap) {
-      (inputDir / s"$key.java").write(content)
+      (inputDir / key).write(content)
     }
+
     outputDir = File.newTemporaryDirectory()
 
     val config  = Config(inputPath = inputDir.toString(), outputPath = outputDir.toString(), fetchDependencies = true)
@@ -85,5 +88,4 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
     ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
-
 }
