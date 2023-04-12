@@ -112,7 +112,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       // Below filter is to remove the member which are methods (getXXX)
-      .filter(_._2.typeFullName.toString().contains(".*"))
+      .filter(_._2.dynamicTypeHintFullName.filter(dyTHFN => !dyTHFN.contains(".*<metaClassAdapter>")).size == 0)
       .foreach(typeDeclValEntry => {
         typeDeclValEntry._2.foreach(typeDeclMember => {
           val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
@@ -171,7 +171,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       // Below filter is to remove the member which are methods (getXXX)
-      .filter(_._2.typeFullName.toString().contains(".*"))
+      .filter(_._2.dynamicTypeHintFullName.filter(dyTHFN => !dyTHFN.contains(".*<metaClassAdapter>")).size == 0)
       .foreach(typeDeclValEntry => {
         val typeDeclName = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
         tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
