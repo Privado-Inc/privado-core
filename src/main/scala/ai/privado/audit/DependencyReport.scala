@@ -23,9 +23,9 @@ object DependencyReport {
         dependency.file.head.name,
         s"${dependency.groupid}.${dependency.artifactid}",
         dependency.artifactid,
-        "--",
-        "--",
-        "--"
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
       )
     })
 

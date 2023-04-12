@@ -20,6 +20,7 @@
  * For more information, contact support@privado.ai
  */
 
+import Constants.CpgSchemaConstants
 import io.shiftleft.codepropertygraph.schema._
 import overflowdb.schema.EdgeType.Cardinality
 import overflowdb.schema.Property.ValueType
@@ -35,25 +36,25 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   // Add node types, edge types, and properties here
 
   val myProperty = builder
-    .addProperty(name = "MYPROPERTY", valueType = ValueType.String)
-    .mandatory("")
+    .addProperty(name = CpgSchemaConstants.MY_PROPERTY_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
   val myNodeType = builder
-    .addNodeType("MYNODETYPE")
+    .addNodeType(CpgSchemaConstants.MY_NODE_TYPE_NAME)
     .addProperty(myProperty)
 
   val myPwdProperty = builder
-    .addProperty(name = "PASSWORD", valueType = ValueType.String)
-    .mandatory("")
+    .addProperty(name = CpgSchemaConstants.MY_PASSWORD_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
   val myAwsKeysProperty = builder
-    .addProperty(name = "AWS_KEYS", valueType = ValueType.String)
-    .mandatory("")
+    .addProperty(name = CpgSchemaConstants.AWS_KEYS_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
-  val myEdge = builder.addEdgeType("IS_CREDENTIAL").protoId(9999)
+  val myEdge = builder.addEdgeType(CpgSchemaConstants.IS_CREDENTIAL_NAME).protoId(9999)
 
   val myCredNodeType = builder
-    .addNodeType("CREDENTIALS")
+    .addNodeType(CpgSchemaConstants.CREDENTIAL_NODE_NAME)
     .addProperty(myPwdProperty)
     .addProperty(myAwsKeysProperty)
     .addProperty(code)
@@ -63,15 +64,15 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   // Node and edge types for `.properties` files
 
   val property = builder
-    .addNodeType("JAVA_PROPERTY")
+    .addNodeType(CpgSchemaConstants.JAVA_PROPERTY_NODE_NAME)
     .addProperty(name)
     .addProperty(value)
 
   val isUsedAt = builder
-    .addEdgeType("IS_USED_AT")
+    .addEdgeType(CpgSchemaConstants.IS_USED_AT_EDGE_NAME)
 
   val originalProperty = builder
-    .addEdgeType("ORIGINAL_PROPERTY")
+    .addEdgeType(CpgSchemaConstants.ORIGINAL_PROPERTY_EDGE_NAME)
 
   property.addOutEdge(edge = sourceFile, inNode = file)
   property.addOutEdge(edge = isUsedAt, inNode = literal)
@@ -82,31 +83,30 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   methodParameterIn.addOutEdge(edge = originalProperty, inNode = property)
 
   val groupId = builder
-    .addProperty(name = "groupId", valueType = ValueType.String)
-    .mandatory("")
+    .addProperty(name = CpgSchemaConstants.MODULE_GROUP_ID_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
   val artifactId = builder
-    .addProperty(name = "artifactId", valueType = ValueType.String)
-    .mandatory("")
+    .addProperty(name = CpgSchemaConstants.MODULE_ARTIFACT_ID_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
   val configVersion = builder
-    .addProperty(name = "version", valueType = ValueType.String)
-    .mandatory("")
+    .addProperty(name = CpgSchemaConstants.MODULE_CONFIG_VERSION_NAME, valueType = ValueType.String)
 
   val module = builder
-    .addNodeType("MODULE")
+    .addNodeType(CpgSchemaConstants.MODULE_NODE_NAME)
     .addProperty(groupId)
     .addProperty(artifactId)
     .addProperty(configVersion)
 
   val dependency = builder
-    .addNodeType("MODULE_DEPENDENCY")
+    .addNodeType(CpgSchemaConstants.MODULE_DEPENDENCY_NODE_NAME)
     .addProperty(groupId)
     .addProperty(artifactId)
     .addProperty(configVersion)
 
   val dependencies = builder
-    .addEdgeType("DEPENDENCIES")
+    .addEdgeType(CpgSchemaConstants.MODULE_DEPENDENCY_EDGE_NAME)
 
   module.addOutEdge(edge = dependencies, inNode = dependency)
   module.addOutEdge(edge = sourceFile, inNode = file)
@@ -114,7 +114,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 }
 
 object CpgExtSchema {
-  val builder   = new SchemaBuilder(domainShortName = "Cpg", basePackage = "io.shiftleft.codepropertygraph.generated")
+  val builder   = new SchemaBuilder(domainShortName = CpgSchemaConstants.CPG_DOMAIN_SHORT_NAME, basePackage = CpgSchemaConstants.CPG_BASE_PACKAGE_NAME)
   val cpgSchema = new CpgSchema(builder)
   val cpgExtSchema = new CpgExtSchema(builder, cpgSchema)
   val instance     = builder.build

@@ -77,8 +77,6 @@ object JavaProcessor {
         try {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
-          new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
-          new DependenciesNodePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -130,6 +128,9 @@ object JavaProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
+            new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
+            new DependenciesNodePass(cpg).createAndApply()
+
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache),
