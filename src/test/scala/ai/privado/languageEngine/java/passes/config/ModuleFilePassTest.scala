@@ -22,13 +22,9 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
 
   override def beforeAll() = {
     super.beforeAll()
-    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
-    new DependenciesNodePass(cpg).createAndApply()
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    ModuleCache.cleanCache()
+    val moduleCache: ModuleCache = new ModuleCache()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache).createAndApply()
+    new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 
   private def getContent(): Map[String, String] = {
@@ -318,13 +314,9 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
 
   override def beforeAll() = {
     super.beforeAll()
-    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
-    new DependenciesNodePass(cpg).createAndApply()
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    ModuleCache.cleanCache()
+    val moduleCache: ModuleCache = new ModuleCache()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache).createAndApply()
+    new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 
   def getContent(): Map[String, String] = {

@@ -29,18 +29,12 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
+import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  storages
-}
+import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, storages}
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
@@ -128,8 +122,9 @@ object JavaProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
-            new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
-            new DependenciesNodePass(cpg).createAndApply()
+            val moduleCache: ModuleCache = new ModuleCache()
+            new ModuleFilePass(cpg, sourceRepoLocation, moduleCache).createAndApply()
+            new DependenciesNodePass(cpg, moduleCache).createAndApply()
 
             ExcelExporter.auditExport(
               outputAuditFileName,
