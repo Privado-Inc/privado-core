@@ -106,62 +106,68 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
   ): Unit = {
     val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
       .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
-      .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(rulePattern).l))
+      .map(typeDeclNode =>
+        (
+          typeDeclNode,
+          typeDeclNode.member
+            .name(rulePattern)
+            .filter(m => !m.dynamicTypeHintFullName.exists(_.matches(".*<metaClassAdapter>")))
+        )
+      )
       .l
 
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
-      // Below filter is to remove the member which are methods (getXXX)
-      .filter(_._2.dynamicTypeHintFullName.filter(dyTHFN => !dyTHFN.contains(".*<metaClassAdapter>")).size == 0)
       .foreach(typeDeclValEntry => {
-        typeDeclValEntry._2.foreach(typeDeclMember => {
-          val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
+        typeDeclValEntry._2
+          .foreach(typeDeclMember => {
+            val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
 
-          // Don't add ScoutSuite/core/rule.py:<module> this kind of entries
-          if (!typeDeclVal.endsWith("<module>")) {
-            // updating cache
-            taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
-          }
+            // Don't add ScoutSuite/core/rule.py:<module> this kind of entries
+            if (!typeDeclVal.endsWith("<module>")) {
+              // updating cache
+              taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, ruleInfo.id, typeDeclMember)
+            }
 
-          val typeDeclMemberName = typeDeclMember.name
+            val typeDeclMemberName = typeDeclMember.name
 
-          // Note: Partially Matching the typeFullName with typeDecl fullName
-          // typeFullName: models.py:<module>.Profile.Profile<body>
-          // typeDeclVal: models.py:<module>.Profile
-          val impactedObjects = cpg.identifier
-            .where(_.typeFullName(".*" + typeDeclVal + ".*"))
-            .whereNot(_.astSiblings.isImport)
-            .whereNot(_.astSiblings.isCall.name("import"))
-            .whereNot(_.method.name(".*<meta.*>$"))
-            .whereNot(_.code("this|self|cls"))
+            // Note: Partially Matching the typeFullName with typeDecl fullName
+            // typeFullName: models.py:<module>.Profile.Profile<body>
+            // typeDeclVal: models.py:<module>.Profile
+            val impactedObjects = cpg.identifier
+              .where(_.typeFullName(".*" + typeDeclVal + ".*"))
+              .whereNot(_.astSiblings.isImport)
+              .whereNot(_.astSiblings.isCall.name("import"))
+              .whereNot(_.method.name(".*<meta.*>$"))
+              .whereNot(_.code("this|self|cls"))
 
-          impactedObjects
-            .foreach(impactedObject => {
-              if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+            impactedObjects
+              .foreach(impactedObject => {
+                if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+                  storeForTag(builder, impactedObject)(
+                    InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                    ruleInfo.id
+                  )
+                  storeForTag(builder, impactedObject)(
+                    Constants.id,
+                    Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                  )
+                  storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+                }
                 storeForTag(builder, impactedObject)(
-                  InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                  Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
                   ruleInfo.id
                 )
+                // Tag for storing memberName in derived Objects -> user --> (email, password)
                 storeForTag(builder, impactedObject)(
-                  Constants.id,
-                  Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                  ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+                  typeDeclMemberName
                 )
-                storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-              }
-              storeForTag(builder, impactedObject)(
-                Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-                ruleInfo.id
-              )
-              // Tag for storing memberName in derived Objects -> user --> (email, password)
-              storeForTag(builder, impactedObject)(
-                ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-                typeDeclMemberName
-              )
-            })
+              })
 
-          // To Mark all field Access and getters
-          // tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
-        })
+            // To Mark all field Access and getters
+            // tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
+          })
       })
 
     // ----------------------------------------------------
@@ -170,8 +176,6 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     // Tag the inherited object instances which has member PIIs from extended class
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
-      // Below filter is to remove the member which are methods (getXXX)
-      .filter(_._2.dynamicTypeHintFullName.filter(dyTHFN => !dyTHFN.contains(".*<metaClassAdapter>")).size == 0)
       .foreach(typeDeclValEntry => {
         val typeDeclName = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
         tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
