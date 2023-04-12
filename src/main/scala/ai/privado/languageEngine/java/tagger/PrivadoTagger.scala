@@ -26,6 +26,7 @@ package ai.privado.languageEngine.java.tagger
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
+import ai.privado.languageEngine.java.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
 import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
@@ -99,6 +100,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
         s"${TimeMetric.getNewTime()} - --CustomInheritTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
       )
     }
+    println(s"${Calendar.getInstance().getTime} - --Database Read Pass INVOKED...")
+    new DatabaseReadPass(cpg, taggerCache).createAndApply()
 
     println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
     new CollectionTagger(cpg, RuleCache.getRule.sources).createAndApply()
