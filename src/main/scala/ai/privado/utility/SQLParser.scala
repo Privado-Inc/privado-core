@@ -18,14 +18,14 @@ object SQLParser {
         val plainSelect = select.getSelectBody.asInstanceOf[PlainSelect]
         val columns     = plainSelect.getSelectItems.toArray.map(_.toString)
         val table       = plainSelect.getFromItem.asInstanceOf[Table].toString
-        (table, columns)
+        Some(table, columns)
       } else {
-        (None, Array(""))
+        None
       }
     } catch {
       case ex: JSQLParserException =>
         logger.warn("Failed to parse the SQL query ", sqlQuery)
-        (None, Array(""))
+        None
     }
 
   }
