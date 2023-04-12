@@ -16,7 +16,8 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Try
 
-class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache) extends ConcurrentWriterCpgPass[String](cpg) {
+class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache)
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     ModuleFiles(projectRoot, Set(".xml", ".gradle")).toArray
