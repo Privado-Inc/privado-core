@@ -74,7 +74,10 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
       .whereNot(_.code(".*\\s.*"))
       .l
-    val indexAccessCalls = indexAccessLiterals.astParent.isCall.whereNot(_.name("__(iter|next)__|print")).l
+    val indexAccessCalls = indexAccessLiterals.astParent.isCall
+      .whereNot(_.method.name(".*<meta.*>$"))
+      .whereNot(_.name("__(iter|next)__|print"))
+      .l
     indexAccessCalls.foreach(iaCall => {
       storeForTag(builder, iaCall)(InternalTag.INDEX_ACCESS_CALL.toString)
       addRuleTags(builder, iaCall, ruleInfo)
@@ -108,6 +111,8 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
+      // Below filter is to remove the member which are methods (getXXX)
+      .filter(_._2.typeFullName.toString().contains(".*"))
       .foreach(typeDeclValEntry => {
         typeDeclValEntry._2.foreach(typeDeclMember => {
           val typeDeclVal = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
@@ -127,6 +132,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
             .where(_.typeFullName(".*" + typeDeclVal + ".*"))
             .whereNot(_.astSiblings.isImport)
             .whereNot(_.astSiblings.isCall.name("import"))
+            .whereNot(_.method.name(".*<meta.*>$"))
             .whereNot(_.code("this|self|cls"))
 
           impactedObjects
@@ -164,6 +170,8 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     // Tag the inherited object instances which has member PIIs from extended class
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
+      // Below filter is to remove the member which are methods (getXXX)
+      .filter(_._2.typeFullName.toString().contains(".*"))
       .foreach(typeDeclValEntry => {
         val typeDeclName = typeDeclValEntry._1.fullName.stripSuffix("<meta>")
         tagObjectOfTypeDeclExtendingType(builder, typeDeclName, ruleInfo)
