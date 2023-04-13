@@ -120,4 +120,33 @@ object AuditTestClassData {
       |   }
       |}
       |""".stripMargin
+
+  val parentPOMFile =
+    """
+      |<project xmlns="http://maven.apache.org/POM/4.0.0"
+      |         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      |         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+      |         http://maven.apache.org/maven-v4_0_0.xsd">
+      |
+      |  <modelVersion>4.0.0</modelVersion>
+      |  <groupId>com.example</groupId>
+      |  <artifactId>my-java-project</artifactId>
+      |  <version>1.0.0</version>
+      |
+      |  <dependencies>
+      |    <dependency>
+      |      <groupId>org.springframework</groupId>
+      |      <artifactId>spring-core</artifactId>
+      |      <version>5.3.9</version>
+      |    </dependency>
+      |    <dependency>
+      |      <groupId>junit</groupId>
+      |      <artifactId>junit</artifactId>
+      |      <version>4.13.2</version>
+      |      <scope>test</scope>
+      |    </dependency>
+      |  </dependencies>
+      |
+      |</project>
+      |""".stripMargin
 }

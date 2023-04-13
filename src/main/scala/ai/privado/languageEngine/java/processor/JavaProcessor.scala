@@ -23,13 +23,14 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.audit.DataElementDiscovery
+import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
-import ai.privado.languageEngine.java.passes.config.PropertiesFilePass
+import ai.privado.languageEngine.java.cache.ModuleCache
+import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -54,6 +55,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -127,9 +129,13 @@ object JavaProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
+            val moduleCache: ModuleCache = new ModuleCache()
+            new ModuleFilePass(cpg, sourceRepoLocation, moduleCache).createAndApply()
+            new DependenciesNodePass(cpg, moduleCache).createAndApply()
+
             ExcelExporter.auditExport(
               outputAuditFileName,
-              DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
