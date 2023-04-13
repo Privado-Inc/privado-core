@@ -39,6 +39,7 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
     val generalLiterals = cpg
       .call("(?:add|get|put|pop).*")
+      .whereNot(_.method.name(".*<meta.*>$"))
       .argument
       .where(_.argumentIndex(1))
       .isLiteral
@@ -48,6 +49,7 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
     val sqlQueryLiterals = cpg
       .call("(?:sql|query|select|find|execute|hasattr)")
+      .whereNot(_.method.name(".*<meta.*>$"))
       .argument
       .isLiteral
       .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
