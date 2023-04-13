@@ -104,16 +104,17 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     rulePattern: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
+    val typeDeclWithMemberNameHavingMemberName = cpg
+      .typeDecl(".*<meta>")
       .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
-      .map(typeDeclNode =>
+      .map(typeDeclNode => {
         (
           typeDeclNode,
           typeDeclNode.member
             .name(rulePattern)
             .filter(m => !m.dynamicTypeHintFullName.exists(_.matches(".*<metaClassAdapter>")))
         )
-      )
+      })
       .l
 
     typeDeclWithMemberNameHavingMemberName
@@ -189,7 +190,8 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     typeDeclVal: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
+    val typeDeclsExtendingTypeName =
+      cpg.typeDecl(".*<meta>").filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
 
     typeDeclsExtendingTypeName.foreach(typeDecl => {
       taggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
