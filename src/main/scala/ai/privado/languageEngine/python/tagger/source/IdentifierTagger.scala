@@ -141,6 +141,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
               .whereNot(_.astSiblings.isCall.name("import"))
               .whereNot(_.method.name(".*<meta.*>$"))
               .whereNot(_.code("this|self|cls"))
+              .l ::: cpg.parameter.where(_.typeFullName(".*" + typeDeclVal + ".*")).l
 
             impactedObjects
               .foreach(impactedObject => {
@@ -215,13 +216,13 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
       val impactedObjects =
         cpg.identifier
-          .where(_.typeFullName(typeDeclVal))
+          .where(_.typeFullName(".*" + typeDeclVal + ".*"))
           .whereNot(_.astSiblings.isImport)
           .whereNot(_.astSiblings.isCall.name("import"))
           .whereNot(_.code("this|self|cls"))
           .l :::
           cpg.parameter
-            .where(_.typeFullName(typeDeclVal))
+            .where(_.typeFullName(".*" + typeDeclVal + ".*"))
             .whereNot(_.code("this|self|cls"))
             .l
       impactedObjects.foreach(impactedObject => {
