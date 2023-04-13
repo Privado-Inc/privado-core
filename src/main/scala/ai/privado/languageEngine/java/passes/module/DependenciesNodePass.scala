@@ -7,12 +7,12 @@ import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 
-class DependenciesNodePass(cpg: Cpg) extends CpgPass(cpg) {
+class DependenciesNodePass(cpg: Cpg, moduleCache: ModuleCache) extends CpgPass(cpg) {
 
   override def init(): Unit = {
     super.init()
-    ModuleCache.convertToParentChildMap
-    ModuleCache.processRootDependency
+    moduleCache.convertToParentChildMap
+    moduleCache.processRootDependency
   }
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
@@ -23,7 +23,7 @@ class DependenciesNodePass(cpg: Cpg) extends CpgPass(cpg) {
 
     val moduleProcessorQueue = mutable.Queue[String]()
 
-    val childInfo = ModuleCache.getRootDependenciesList
+    val childInfo = moduleCache.getRootDependenciesList
     childInfo.foreach(child => {
       moduleProcessorQueue.enqueue(child)
     })
@@ -32,20 +32,20 @@ class DependenciesNodePass(cpg: Cpg) extends CpgPass(cpg) {
 
       val currentModule = moduleProcessorQueue.dequeue()
 
-      ModuleCache
+      moduleCache
         .getChildList(currentModule)
         .foreach(module => {
           moduleProcessorQueue.enqueue(module)
         })
 
-      ModuleCache.inheritParentDependenciesFromChild(currentModule)
+      moduleCache.inheritParentDependenciesFromChild(currentModule)
       addDependenciesToBuilder(builder, currentModule)
     }
   }
 
   private def addDependenciesToBuilder(builder: BatchedUpdate.DiffGraphBuilder, currentModule: String): Unit = {
-    val module = ModuleCache.getModule(currentModule)
-    ModuleCache
+    val module = moduleCache.getModule(currentModule)
+    moduleCache
       .getDependencyModuleList(currentModule)
       .foreach(dependency => {
         builder.addEdge(module, dependency, EdgeTypes.DEPENDENCIES)

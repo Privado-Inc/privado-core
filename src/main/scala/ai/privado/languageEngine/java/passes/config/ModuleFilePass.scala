@@ -16,7 +16,8 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Try
 
-class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ConcurrentWriterCpgPass[String](cpg) {
+class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache)
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     ModuleFiles(projectRoot, Set(".xml", ".gradle")).toArray
@@ -50,8 +51,8 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ConcurrentWriterCpgP
     }
 
     // Store module dependencies info in Map
-    ModuleCache.addDependenciesModule(moduleNode.artifactid, dependencyList)
-    ModuleCache.addModule(moduleNode.artifactid, moduleNode)
+    moduleCache.addDependenciesModule(moduleNode.artifactid, dependencyList)
+    moduleCache.addModule(moduleNode.artifactid, moduleNode)
 
     builder.addEdge(moduleNode, fileNode, EdgeTypes.SOURCE_FILE)
     dependencyList.foreach(dependency => {
@@ -129,13 +130,13 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String) extends ConcurrentWriterCpgP
   private def processMavenParentModule(model: Model): Unit = {
     val parentInfo = model.getParent
     if (parentInfo == null) {
-      ModuleCache.addSubModuleParent(model.getArtifactId, null)
+      moduleCache.addSubModuleParent(model.getArtifactId, null)
     } else {
-      ModuleCache.addSubModuleParent(model.getArtifactId, parentInfo.getArtifactId)
+      moduleCache.addSubModuleParent(model.getArtifactId, parentInfo.getArtifactId)
     }
   }
 
   private def processGradleParentModule(childArtifactName: String): Unit = {
-    ModuleCache.addSubModuleParent(childArtifactName, null)
+    moduleCache.addSubModuleParent(childArtifactName, null)
   }
 }
