@@ -46,7 +46,17 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
         methodUrlMap.addOne(
           // we only get methodFullName here from the call node, so we have to get the relevant method for key
           cpg.method.fullNameExact(m.methodFullName).l.head.id() ->
-            getRoute(m.astParent.astParent.where(_.isCall).head.asInstanceOf[Call].argument.isCall.code.head)
+            getRoute(
+              m.astParent.astParent
+                .where(_.isCall)
+                .head
+                .asInstanceOf[Call]
+                .argument
+                .isCall
+                .code
+                .headOption
+                .getOrElse("")
+            )
         )
         cpg.method.fullNameExact(m.methodFullName).l
       }
