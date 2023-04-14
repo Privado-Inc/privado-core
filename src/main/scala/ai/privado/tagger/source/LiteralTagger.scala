@@ -52,9 +52,10 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     // Step 1.2
     // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
+    val rulePattern = ruleInfo.combinedRulePattern
     val impactedLiteral =
-      impactedLiteralCached.code("(?:\"|'|`)(" + ruleInfo + ")(?:\"|'|`)").l ::: sqlBigQueryLiteralCached
-        .code("(?:\"|'|`|\"\"\")(.*\\s" + ruleInfo + "\\s.*)(?:\"|'|`|\"\"\")")
+      impactedLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l ::: sqlBigQueryLiteralCached
+        .code("(?:\"|'|`|\"\"\")(.*\\s" + rulePattern + "\\s.*)(?:\"|'|`|\"\"\")")
         .l
 
     impactedLiteral.foreach(literal => {
