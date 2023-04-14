@@ -48,7 +48,8 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime,
   "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
-  "org.apache.maven"                 % "maven-model"             % "3.9.0"
+  "org.apache.maven"                 % "maven-model"             % "3.9.0",
+  "org.jooq"                         % "jooq"                    % "3.16.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

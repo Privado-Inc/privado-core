@@ -13,6 +13,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import org.slf4j.{Logger, LoggerFactory}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.language._
+import net.sf.jsqlparser.parser.{CCJSqlParser, CCJSqlParserUtil}
+import net.sf.jsqlparser.statement.Statement
+
+import java.io.{FileReader, InputStreamReader, StringReader}
+import scala.collection.mutable.ListBuffer
+import scala.io.Source.fromFile
 
 class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
@@ -39,13 +45,13 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
   def processDBReadNode(builder: DiffGraphBuilder, node: Expression) = {
     val query  = extractSQLForConcatenatedString(node.code)
-    val result = SQLParser.parseSQL(query)
+    val result = SQLParser.parseSqlQuery(query)
 
     result match {
       case Some(value) =>
         // Match classes which end with tableName
-        val tableName = s"(?i).*${value._1}".r
-        val columns   = value._2
+        val tableName = s"(?i).*${value._2}".r
+        val columns   = value._3
 
         val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(tableName.regex)) match {
           case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
@@ -103,7 +109,7 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     * @param columns
     * @return
     */
-  def isColumnNameMatchingWithRule(ruleId: String, columns: Array[String]): Boolean = {
+  def isColumnNameMatchingWithRule(ruleId: String, columns: List[String]): Boolean = {
     val pattern = RuleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
     columns.map(pattern.matches).foldLeft(false)(_ || _)
   }
@@ -124,3 +130,29 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
   }
 
 }
+
+/*
+object sqlTest extends App {
+
+  import org.jooq.SQLDialect
+  import org.jooq.impl.DSL
+  import scala.jdk.CollectionConverters._
+
+  val sqlFilePath      = "/Users/khemrajrathore/Privado/joern-testing/ISIDrone/ISIDrone/sample.sql"
+  val sqlFile          = fromFile(sqlFilePath)
+  val parsedStatements = DSL.using(SQLDialect.DEFAULT).parser.parse(sqlFile.mkString).asScala.toList
+  val queries          = parsedStatements.collect { case q: org.jooq.Query => q }
+  val sqlQueries       = queries.map(_.getSQL())
+
+  println(sqlQueries)
+  sqlQueries.foreach(query => {
+    println(query)
+    SQLParser.parseSqlQuery(query) match {
+      case Some((queryName, tableName, columns)) => println(queryName, tableName, columns.mkString(" "))
+      case None                                  =>
+    }
+  })
+  sqlFile.close()
+}
+
+ */

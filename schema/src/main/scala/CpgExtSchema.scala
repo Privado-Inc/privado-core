@@ -63,6 +63,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Node and edge types for `.properties` files
 
+  // Adding Property Node start
   val property = builder
     .addNodeType(CpgSchemaConstants.JAVA_PROPERTY_NODE_NAME)
     .addProperty(name)
@@ -81,6 +82,30 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   member.addOutEdge(edge = originalProperty, inNode = property)
   literal.addOutEdge(edge = originalProperty, inNode = property)
   methodParameterIn.addOutEdge(edge = originalProperty, inNode = property)
+
+  // Adding Property Node End
+
+  // Adding SQL query node Start
+
+  // TODO facing issue so will fix this up later
+  /*
+  val sqlQueryColumn = builder
+    .addProperty(name = CpgSchemaConstants.SQL_QUERY_COLUMN_NAME, valueType = ValueType.List)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+
+
+   */
+  val sqlQueryNode = builder
+    .addNodeType(CpgSchemaConstants.SQL_QUERY_NODE_NAME)
+    .addProperty(name)
+    .addProperty(value)
+    .addProperty(fullName)
+    .addProperty(lineNumber)
+  // .addProperty(sqlQueryColumn)
+  sqlQueryNode.addOutEdge(edge = sourceFile, inNode = file)
+  // sqlQueryNode.addOutEdge(edge = nodeLabel, inNode = tag)
+
+  // Adding SQL query node End
 
   val groupId = builder
     .addProperty(name = CpgSchemaConstants.MODULE_GROUP_ID_NAME, valueType = ValueType.String)
@@ -114,8 +139,11 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 }
 
 object CpgExtSchema {
-  val builder   = new SchemaBuilder(domainShortName = CpgSchemaConstants.CPG_DOMAIN_SHORT_NAME, basePackage = CpgSchemaConstants.CPG_BASE_PACKAGE_NAME)
-  val cpgSchema = new CpgSchema(builder)
+  val builder = new SchemaBuilder(
+    domainShortName = CpgSchemaConstants.CPG_DOMAIN_SHORT_NAME,
+    basePackage = CpgSchemaConstants.CPG_BASE_PACKAGE_NAME
+  )
+  val cpgSchema    = new CpgSchema(builder)
   val cpgExtSchema = new CpgExtSchema(builder, cpgSchema)
   val instance     = builder.build
 }

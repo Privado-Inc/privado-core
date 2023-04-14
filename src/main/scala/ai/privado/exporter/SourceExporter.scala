@@ -23,9 +23,14 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, SqlQueryNodeCache}
 import ai.privado.entrypoint.ScanProcessor
-import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{
+  DataFlowSubCategoryPathExcerptModel,
+  DataFlowSubCategoryPathModel,
+  SourceModel,
+  SourceProcessingModel
+}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
@@ -71,6 +76,26 @@ class SourceExporter(cpg: Cpg) {
       source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
       source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
     })
+    val sqlNodes = SqlQueryNodeCache.nodes
+      .map(sqlQueryNodeEntry => {
+        SourceProcessingModel(
+          sqlQueryNodeEntry._1,
+          sqlQueryNodeEntry._2
+            .map(sqlQueryNode => {
+              val fileName = sqlQueryNode.file.name.headOption.getOrElse("")
+              DataFlowSubCategoryPathExcerptModel(
+                sqlQueryNode.fullName,
+                sqlQueryNode.lineNumber.get,
+                3,
+                fileName,
+                sqlQueryNode.fullName
+              )
+            })
+            .toList
+        )
+      })
+      .l
+
     processingMap
       .map(entrySet =>
         SourceProcessingModel(
@@ -87,7 +112,7 @@ class SourceExporter(cpg: Cpg) {
             })
         )
       )
-      .toList
+      .toList ++ sqlNodes
   }
 
   /** Fetch all the sources tag
@@ -165,11 +190,12 @@ class SourceExporter(cpg: Cpg) {
       } else
         None
     }
-    sources
+
+    (sources
       .flatMap(source => getSources(source))
       .flatten
       .filter(_.nonEmpty)
-      .toSet
+      .toList ++ SqlQueryNodeCache.nodes.keys.l).toSet
       .flatMap(source => convertSource(source))
       .toList
   }

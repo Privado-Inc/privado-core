@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, SqlQueryNodeCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.semantic.Language._
@@ -35,6 +35,7 @@ import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import ai.privado.passes.SQLParser
 import io.joern.x2cpg.passes.base.AstLinkerPass
 
 import java.nio.file.{Files, Paths}
@@ -82,6 +83,12 @@ object PythonProcessor {
           new PythonPropertyFilePass(cpg, sourceRepoLocation).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
+          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+          new SQLParser(cpg, sourceRepoLocation).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           // Unresolved function report
@@ -139,7 +146,6 @@ object PythonProcessor {
               logger.debug(s"size of code : ${codelist.size}")
               codelist.foreach(item => logger.debug(item._1, item._2))
               logger.debug("Above we printed methodFullName")
-
               Right(())
           }
 
