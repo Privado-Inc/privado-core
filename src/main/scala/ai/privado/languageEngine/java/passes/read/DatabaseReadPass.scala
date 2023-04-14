@@ -14,10 +14,12 @@ import org.slf4j.{Logger, LoggerFactory}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.language._
 
-class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[Expression](cpg) {
+class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache, classTableMapping: Map[String, TypeDecl])
+    extends ForkJoinParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
-  val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
-  val selectRegexPattern               = "(?i).*select.*"
+  val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys.l
+  val selectRegexPattern               = "(?i)(\")?\\s{0,5}select\\s+.*"
+  val fromRegexPattern                 = "(?i)(\")?\\s{0,5}from\\s+.*"
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -25,11 +27,11 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 //    CPG query to fetch the Literal with SQL string
 //    'Repeat until' is used to combine multiline SQL queries into one
     cpg.literal
-      .code(selectRegexPattern)
+      .or(_.code(selectRegexPattern), _.code(fromRegexPattern))
       .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(Operators.addition))))
       .isCall
       .argument
-      .code(selectRegexPattern)
+      .or(_.code(selectRegexPattern), _.code(fromRegexPattern))
       .toArray
   }
 
@@ -43,13 +45,19 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
     result match {
       case Some(value) =>
-        // Match classes which end with tableName
-        val tableName = s"(?i).*${value._1}".r
-        val columns   = value._2
+        // Match classes which end with tableNameRegex
+        val tableName      = value._1.toLowerCase
+        val tableNameRegex = s"(?i).*$tableName".r
+        val columns        = value._2
 
-        val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(tableName.regex)) match {
-          case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
-          case None        => List.empty
+        val sensitiveMemberRuleIds = {
+          if (classTableMapping.contains(tableName) && sensitiveClasses.contains(classTableMapping(tableName).fullName))
+            sensitiveClassesWithMatchedRules(classTableMapping(tableName).fullName).keys.l
+          else
+            sensitiveClasses.find(s => s.matches(tableNameRegex.regex)) match {
+              case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
+              case None        => List.empty
+            }
         }
 
         if (columns.length == 1 && columns(0) == "*") {
@@ -113,10 +121,16 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
   }
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
-    val query = sqlQuery
+    var query = sqlQuery
+      .stripPrefix("\"")
+      .stripSuffix("\"")
       .split("\\\"\\s*\\+\\s*\\\"") // Splitting the query on '+' operator and joining back to form complete query
       .map(_.stripMargin)
       .mkString("")
+
+    // Add `select *` to queries which are `from users`
+    if (query.matches(fromRegexPattern))
+      query = "select * " + query
 
     val pattern =
       "(?i)SELECT\\s(.*?)\\sFROM\\s(.*?)(`.*?`|\".*?\"|'.*?'|\\w+)".r // Pattern to fetch the SELECT statement from the query
