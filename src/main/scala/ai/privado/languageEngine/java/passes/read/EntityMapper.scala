@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.passes.read
 
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.AnnotationLiteral
+import io.shiftleft.codepropertygraph.generated.nodes.{AnnotationLiteral, AnnotationParameterAssign, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 
 object EntityMapper {
@@ -42,9 +42,10 @@ object EntityMapper {
     * 4. Finally, the resulting list of tuples is returned.
     *
     * @param cpg
-    * @return
+    * @returns
+    *   A mapping of tableName => TypeDeclNode
     */
-  def getClassTableMapping(cpg: Cpg) = {
+  def getClassTableMapping(cpg: Cpg): Map[String, TypeDecl] = {
 
     //  @Entity
     //  @Table(name = "student")
@@ -63,6 +64,31 @@ object EntityMapper {
       })
       .toMap
 
+  }
+
+  def getNamedQueryMapping(cpg: Cpg) = {
+    cpg.annotation
+      .name("NamedQuery")
+      .flatMap(namedQuery => {
+        val namedQueryMap = namedQuery.ast
+          .collectAll[AnnotationParameterAssign]
+          .flatMap(item => {
+            val key   = item.astChildren.order(1).code.headOption.getOrElse("")
+            val value = item.astChildren.order(2).code.headOption.getOrElse("")
+            if (key.nonEmpty && value.nonEmpty)
+              Some((key, value))
+            else
+              None
+          })
+          .toMap
+        val namedQueryName  = namedQueryMap.getOrElse("name", "")
+        val namedQueryQuery = namedQueryMap.getOrElse("query", "")
+        if (namedQueryName.nonEmpty && namedQueryQuery.nonEmpty)
+          Some((namedQueryName, namedQueryQuery))
+        else
+          None
+      })
+      .toMap
   }
 
 }
