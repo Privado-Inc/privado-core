@@ -28,15 +28,14 @@ import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlQueryNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.utils.IOUtils
-import org.jooq.SQLDialect
-import org.jooq.impl.DSL
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import java.nio.file.Paths
+import scala.collection.mutable
 import scala.io.Source
-import scala.jdk.CollectionConverters._
 class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
+
+  val logger = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[_ <: AnyRef] =
     getSQLFiles(projectRoot, Set(".sql")).toArray
 
@@ -49,37 +48,49 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
 
   def getSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder) = {
 
-    val sqlFile          = Source.fromFile(sqlFileName)
-    val parsedStatements = DSL.using(SQLDialect.DEFAULT).parser.parse(sqlFile.mkString).asScala.toList
-    val queries          = parsedStatements.collect { case q: org.jooq.Query => q }
-    val sqlQueries       = queries.map(_.getSQL())
+    val sqlFile      = Source.fromFile(sqlFileName)
+    var lineNumber   = 0
+    var queryBuilder = new StringBuilder()
+    val sqlQueries   = mutable.ListBuffer[(String, Int)]()
+    for (line <- sqlFile.getLines()) {
+      lineNumber += 1
 
+      if (line.trim().nonEmpty && !line.trim().startsWith("-")) {
+        queryBuilder.append(line)
+
+        if (line.trim().endsWith(";")) {
+          try {
+            val query = queryBuilder.toString().trim()
+            queryBuilder = new StringBuilder()
+            sqlQueries.addOne(query, lineNumber)
+          } catch {
+            case e: Exception =>
+              logger.debug(s"Error on line $lineNumber: ${e.getMessage}")
+          }
+        }
+      }
+    }
     sqlFile.close()
-    val lines = IOUtils.readLinesInFile(Paths.get(sqlFileName)).toList
 
-    sqlQueries.flatMap(query => {
-      SQLParser.parseSqlQuery(query) match {
-        case Some((queryName, tableName, columns)) =>
-          // Have added tableName in name key
-          // Have added columns in value key
-          val fileLineNumber = -1
-          // findMatchingIndices(lines, query).headOption.getOrElse(-1)
-          val sqlQueryNode =
-            NewSqlQueryNode().name(tableName).fullName(query).value(columns.mkString(",")).lineNumber(fileLineNumber)
-          builder.addNode(sqlQueryNode)
-          Some(sqlQueryNode)
-        case None => None
-      }
-    })
+    sqlQueries
+      .flatMap(queryWthLine => {
 
-  }
+        val query           = queryWthLine._1
+        val queryLineNumber = queryWthLine._2
+        SQLParser.parseSqlQuery(query) match {
+          case Some((queryName, tableName, columns)) =>
+            // Have added tableName in name key
+            // Have added columns in value key
+            // findMatchingIndices(lines, query).headOption.getOrElse(-1)
+            val sqlQueryNode =
+              NewSqlQueryNode().name(tableName).fullName(query).value(columns.mkString(",")).lineNumber(queryLineNumber)
+            builder.addNode(sqlQueryNode)
+            Some(sqlQueryNode)
+          case None => None
+        }
+      })
+      .toList
 
-  def findMatchingIndices(strings: List[String], search: String): List[Int] = {
-    strings.zipWithIndex
-      .filter { case (string, index) =>
-        search == string
-      }
-      .map { case (string, index) => index }
   }
 
   private def getSQLFiles(projectRoot: String, extensions: Set[String]): List[String] = {

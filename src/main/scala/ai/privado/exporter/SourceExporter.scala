@@ -88,7 +88,7 @@ class SourceExporter(cpg: Cpg) {
                 sqlQueryNode.lineNumber.get,
                 3,
                 fileName,
-                sqlQueryNode.fullName
+                Utilities.dump(fileName, sqlQueryNode.lineNumber)
               )
             })
             .toList
