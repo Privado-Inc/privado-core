@@ -141,7 +141,10 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
               .whereNot(_.astSiblings.isCall.name("import"))
               .whereNot(_.method.name(".*<meta.*>$"))
               .whereNot(_.code("this|self|cls"))
-              .l ::: cpg.parameter.where(_.typeFullName(".*" + typeDeclVal + ".*")).l
+              .l ::: cpg.parameter
+              .filter(n => typeDeclVal.matches(".*" + n.typeFullName))
+              .whereNot(_.code("this|self|cls"))
+              .l
 
             impactedObjects
               .foreach(impactedObject => {
@@ -220,11 +223,10 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           .whereNot(_.astSiblings.isImport)
           .whereNot(_.astSiblings.isCall.name("import"))
           .whereNot(_.code("this|self|cls"))
-          .l :::
-          cpg.parameter
-            .where(_.typeFullName(".*" + typeDeclVal + ".*"))
-            .whereNot(_.code("this|self|cls"))
-            .l
+          .l ::: cpg.parameter
+          .filter(n => typeDeclVal.matches(".*" + n.typeFullName))
+          .whereNot(_.code("this|self|cls"))
+          .l
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
           storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)

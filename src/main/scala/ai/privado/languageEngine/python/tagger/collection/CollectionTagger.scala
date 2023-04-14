@@ -119,10 +119,10 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).toSet
 
     val collectionPointsFromDerivedTypeDecl = collectionMethods.flatMap(collectionMethod => {
-      val parameters = collectionMethod.parameter.l
-      collectionMethod.local.where(_.typeFullName.filter(fullName => {
-        !derivedTypeDecl.contains(fullName)
-      }))
+      var parameters = collectionMethod.parameter.l
+      parameters = collectionMethod.parameter
+        .where(_.typeFullName.filter(fullName => !derivedTypeDecl.contains(fullName)))
+        .l
 
       if (parameters.isEmpty) {
         None
