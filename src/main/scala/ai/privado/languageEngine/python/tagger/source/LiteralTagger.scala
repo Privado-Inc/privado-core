@@ -25,40 +25,39 @@ package ai.privado.languageEngine.python.tagger.source
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  // Step 1.2
+  // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
+  private lazy val generalLiteralCached = cpg.literal
+    .whereNot(_.code(".*\\s.*"))
+    .where(_.inCall.name("(?:add|get|put|pop).*"))
+    .l
 
+  private lazy val sqlQueryLiteralCached = cpg.literal
+    .whereNot(_.code(".*\\s.*"))
+    .where(_.inCall.name("(?:sql|query|select|find|execute|hasattr)"))
+    .l
+
+  private lazy val sqlBigQueryLiteralCached = cpg.literal
+    .where(_.code(".*(?i)(CREATE|DELETE|ALTER|INSERT|SELECT|UPDATE).*"))
+    .where(_.inCall.name(Operators.assignment))
+    .l
+
+  private lazy val impactedLiteralCached =
+    (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern = ruleInfo.combinedRulePattern
-    // Step 1.2
-    // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
-    val generalLiterals = cpg
-      .call("(?:add|get|put|pop).*")
-      .whereNot(_.method.name(".*<meta.*>$"))
-      .argument
-      .where(_.argumentIndex(1))
-      .isLiteral
-      .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
-      .whereNot(_.code(".*\\s.*"))
-      .l
+    val impactedLiteral =
+      impactedLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l ::: sqlBigQueryLiteralCached
+        .code("(?:\"|'|`|\"\"\")(.*\\s" + rulePattern + "\\s.*)(?:\"|'|`|\"\"\")")
+        .l
 
-    val sqlQueryLiterals = cpg
-      .call("(?:sql|query|select|find|execute|hasattr)")
-      .whereNot(_.method.name(".*<meta.*>$"))
-      .argument
-      .isLiteral
-      .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
-      .whereNot(_.code(".*\\s.*"))
-      .l
-
-    val literals = generalLiterals ++ sqlQueryLiterals
-
-    literals.foreach(literal => {
+    impactedLiteral.foreach(literal => {
       storeForTag(builder, literal)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
       addRuleTags(builder, literal, ruleInfo)
     })
