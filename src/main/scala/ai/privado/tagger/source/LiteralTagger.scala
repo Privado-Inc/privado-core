@@ -25,26 +25,40 @@ package ai.privado.tagger.source
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
+  private lazy val generalLiteralCached = cpg.literal
+    .whereNot(_.code(".*\\s.*"))
+    .where(_.inCall.name("(?:add|get|put|pop).*"))
+    .l
+
+  private lazy val sqlQueryLiteralCached = cpg.literal
+    .whereNot(_.code(".*\\s.*"))
+    .where(_.inCall.name("(?:sql|query|select|find|execute|hasattr)"))
+    .l
+
+  private lazy val sqlBigQueryLiteralCached = cpg.literal
+    .where(_.code(".*(?i)(CREATE|DELETE|ALTER|INSERT|SELECT|UPDATE).*"))
+    .where(_.inCall.name(Operators.assignment))
+    .l
+
+  private lazy val impactedLiteralCached =
+    (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     // Step 1.2
     // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
-    val literals = cpg
-      .call("(?:add|get|put|pop).*")
-      .argument
-      .where(_.argumentIndex(1))
-      .isLiteral
-      .code("\"(" + ruleInfo.combinedRulePattern + ")\"")
-      .whereNot(_.code(".*\\s.*"))
-      .l
-    literals.foreach(literal => {
+    val rulePattern = ruleInfo.combinedRulePattern
+    val impactedLiteral =
+      impactedLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l ::: sqlBigQueryLiteralCached
+        .code("(?:\"|'|`|\"\"\")(.*\\s" + rulePattern + "\\s.*)(?:\"|'|`|\"\"\")")
+        .l
+
+    impactedLiteral.foreach(literal => {
       storeForTag(builder, literal)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
       addRuleTags(builder, literal, ruleInfo)
     })
