@@ -172,6 +172,38 @@ object StorageInheritRule {
       "storages",
       Language.JAVA,
       Array[String]()
+    ),
+    RuleInfo(
+      "Storages.Framework.Tortoise.Read",
+      "Tortoise(Read)",
+      "",
+      Array[String]("tortoise.github.io"),
+      List[String]("(?i)tortoise/models.py:<module>.Model", "(filter|all|first)"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.PYTHON,
+      Array[String]()
+    ),
+    RuleInfo(
+      "Storages.Framework.Tortoise.Write",
+      "Tortoise(Write)",
+      "",
+      Array[String]("tortoise.github.io"),
+      List[String]("(?i)tortoise/models.py:<module>.Model", "(create|get_or_create)"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.PYTHON,
+      Array[String]()
     )
   )
 }

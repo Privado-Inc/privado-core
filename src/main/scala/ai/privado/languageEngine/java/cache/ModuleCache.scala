@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewModule, NewModuleDepen
 
 import scala.collection.mutable
 
-object ModuleCache {
+class ModuleCache {
 
   private val dependenciesModuleMap = new mutable.HashMap[String, mutable.Set[NewModuleDependency]]()
 
@@ -62,14 +62,5 @@ object ModuleCache {
         dependenciesModuleMap(childName) ++= dependenciesModuleMap(subModuleParentMap(childName))
       }
     }
-  }
-
-  // This function is mainly for Testing purposes only
-  def cleanCache(): Unit = {
-    dependenciesModuleMap.clear()
-    subModuleParentMap.clear()
-    subModuleChildMap.clear()
-    rootDependencyList.clear()
-    moduleNameMap.clear()
   }
 }

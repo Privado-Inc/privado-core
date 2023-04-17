@@ -276,8 +276,26 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
         Array()
       )
     )
+    val collectionRule = List(
+      RuleInfo(
+        "Collections.Annotation.Spring",
+        "Spring Web Interface Annotation",
+        "",
+        Array(),
+        List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
+        false,
+        "",
+        Map(),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.COLLECTIONS,
+        "",
+        Language.JAVA,
+        Array()
+      )
+    )
     val rule: ConfigAndRules =
-      ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List())
+      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
     RuleCache.setRule(rule)
     new IdentifierTagger(cpg, taggerCache).createAndApply()
     new DatabaseReadPass(cpg, taggerCache).createAndApply()

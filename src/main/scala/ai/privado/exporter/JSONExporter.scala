@@ -204,6 +204,9 @@ object JSONExporter {
       logger.debug("------------ Probable Sink Dependencies ---------------")
       logger.debug(s"$probableSinks")
 
+      // We need to wait till this get completed before moving ahead to export the result
+      Await.result(processingSinks, Duration.Inf)
+
       ConsoleExporter.exportConsoleSummary(
         dataflowsOutput,
         Await.result(sources, Duration.Inf),

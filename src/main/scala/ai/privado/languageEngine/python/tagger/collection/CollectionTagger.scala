@@ -8,23 +8,18 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger       = LoggerFactory.getLogger(this.getClass)
+  private val methodUrlMap = mutable.HashMap[Long, String]()
+  private val classUrlMap  = mutable.HashMap[Long, String]()
 
   override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-
-    val methodUrlMap = mutable.HashMap[Long, String]()
-    def getFinalEndPoint(collectionPoint: Method): String = {
-      methodUrlMap.getOrElse(collectionPoint.id(), "")
-    }
+  override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
 
     // TODO: Currently matches basic stuff like "/user/id", "/" etc. Possibly improve
     val urlPattern = ".*(\\\"|')(\\/.*?)(\\\"|').*"
@@ -51,7 +46,17 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
         methodUrlMap.addOne(
           // we only get methodFullName here from the call node, so we have to get the relevant method for key
           cpg.method.fullNameExact(m.methodFullName).l.head.id() ->
-            getRoute(m.astParent.astParent.where(_.isCall).head.asInstanceOf[Call].argument.isCall.code.head)
+            getRoute(
+              m.astParent.astParent
+                .where(_.isCall)
+                .head
+                .asInstanceOf[Call]
+                .argument
+                .isCall
+                .code
+                .headOption
+                .getOrElse("")
+            )
         )
         cpg.method.fullNameExact(m.methodFullName).l
       }
@@ -73,23 +78,32 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
 
     collectionMethodsCache = collectionMethodsCache ::: djangoCollectionMethods.toList
 
-    val collectionPoints = Traversal(collectionMethodsCache).flatMap(collectionMethod => {
+    tagDirectSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+    tagDerivedSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+  }
+
+  def tagDirectSources(
+    cpg: Cpg,
+    builder: DiffGraphBuilder,
+    collectionMethods: List[Method],
+    collectionRuleInfo: RuleInfo
+  ): Unit = {
+    val collectionPoints = collectionMethods.flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
+        val parameters = collectionMethod.parameter
+        val locals     = collectionMethod.local
+        val literals   = collectionMethod.call("(?:get).*").argument.isLiteral
 
         // TODO: handle cases where `request.args.get('id', None)` used directly in handler block without method param
-        val parameters =
-          collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("self")).l
-        val matchingLocals = collectionMethod.local.code(sourceRule.combinedRulePattern).l
-        val matchingLiterals = collectionMethod
-          .call("(?:get).*")
-          .argument
-          .isLiteral
+        val matchingParameters = parameters.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("self")).l
+        val matchingLocals     = locals.code(sourceRule.combinedRulePattern).l
+        val matchingLiterals = literals
           .code("(\"|')(" + sourceRule.combinedRulePattern + ")(\"|')")
           .whereNot(_.code(".*\\s.*"))
           .l
 
-        if (!(parameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
-          parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
+        if (!(matchingParameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
+          matchingParameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
           matchingLocals.foreach(local => storeForTag(builder, local)(Constants.id, sourceRule.id))
           matchingLiterals.foreach(literal => storeForTag(builder, literal)(Constants.id, sourceRule.id))
           Some(collectionMethod)
@@ -100,14 +114,74 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       })
     })
 
-    collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, ruleInfo)
-      storeForTag(builder, collectionPoint)(
-        InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
-        getFinalEndPoint(collectionPoint)
-      )
+    tagMethodEndpoints(builder, collectionPoints.l, collectionRuleInfo)
+  }
+
+  def tagDerivedSources(
+    cpg: Cpg,
+    builder: DiffGraphBuilder,
+    collectionMethods: List[Method],
+    collectionRuleInfo: RuleInfo
+  ): Unit = {
+    // Implementation to also mark the collection points which use derived type declaration as there parameters
+    val derivedTypeDecl = (getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString) ++
+      getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString) ++
+      getAllDerivedTypeDecl(cpg, InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)).toSet
+
+    val collectionPointsFromDerivedTypeDecl = collectionMethods.flatMap(collectionMethod => {
+      var parameters = collectionMethod.parameter.l
+      parameters = collectionMethod.parameter
+        .where(_.typeFullName.filter(fullName => !derivedTypeDecl.contains(fullName)))
+        .l
+
+      if (parameters.isEmpty) {
+        None
+      } else {
+        // Have removed the earlier code, where we were fetching all the referencing identifiers of parameter and then tagging, because we were missing on cases where the parameter is not used in the code
+        parameters
+          .whereNot(_.code("this"))
+          .foreach(parameter => {
+            parameter.tag
+              .name(Constants.privadoDerived + ".*")
+              .foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
+          })
+        collectionMethod
+      }
     })
 
+    tagMethodEndpoints(builder, collectionPointsFromDerivedTypeDecl.l, collectionRuleInfo)
+  }
+
+  private def tagMethodEndpoints(
+    builder: DiffGraphBuilder,
+    collectionPoints: List[Method],
+    collectionRuleInfo: RuleInfo,
+    returnByName: Boolean = false
+  ) = {
+    collectionPoints.foreach(collectionPoint => {
+      addRuleTags(builder, collectionPoint, collectionRuleInfo)
+      storeForTag(builder, collectionPoint)(
+        InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
+        getFinalEndPoint(collectionPoint, returnByName)
+      )
+    })
+  }
+
+  private def getAllDerivedTypeDecl(cpg: Cpg, objectName: String) = {
+    cpg.identifier.where(_.tag.name(objectName)).typeFullName.dedup.l
+  }
+
+  private def getFinalEndPoint(collectionPoint: Method, returnByName: Boolean): String = {
+    if (returnByName) {
+      collectionPoint.name
+    } else {
+      val methodUrl = methodUrlMap.getOrElse(collectionPoint.id(), "")
+      Try(classUrlMap.getOrElse(collectionPoint.typeDecl.head.id(), "")) match {
+        case Success(classUrl) => classUrl + methodUrl
+        case Failure(e) =>
+          methodUrl
+      }
+    }
   }
 
   /** Returns the route extracted from the code
