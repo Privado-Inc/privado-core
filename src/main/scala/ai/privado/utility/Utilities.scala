@@ -309,7 +309,7 @@ object Utilities {
       """(http:|https:){0,1}\/\/(www.){0,1}([\w_\-]+(?:(?:\.[\w_\-]+)+))([\w.,@?^=%&:\/~+#\-]*[\w@?^=%&\/~+#\-])""".r
     Try(regex.findFirstMatchIn(templateStr).headOption.get) match {
       case Success(matched) =>
-        if (matched == None) ("unknown-domain", "unknown-domain") else (matched.matched, matched.group(3))
+        (matched.matched, matched.group(3))
       case Failure(e) =>
         logger.debug("Exception : ", e)
         ("unknown-domain", "unknown-domain")
