@@ -182,7 +182,12 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message)
+      val excerpt = {
+        if (node.isInstanceOf[SqlQueryNode])
+          dump(absoluteFileName, node.lineNumber, message, excerptStartLine = -1, excerptEndLine = 9)
+        else
+          dump(absoluteFileName, node.lineNumber, message)
+      }
       // Get the actual filename
       val actualFileName = {
         if (AppCache.isLombokPresent)
