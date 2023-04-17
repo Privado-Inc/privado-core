@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{RuleCache, SqlQueryNodeCache}
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.exporter.{
   DataFlowSubCategoryPathExcerptModel,
@@ -46,6 +46,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   StoredNode,
   Tag
 }
+import ai.privado.semantic.Language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -76,26 +77,6 @@ class SourceExporter(cpg: Cpg) {
       source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
       source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
     })
-    val sqlNodes = SqlQueryNodeCache.nodes
-      .map(sqlQueryNodeEntry => {
-        SourceProcessingModel(
-          sqlQueryNodeEntry._1,
-          sqlQueryNodeEntry._2
-            .map(sqlQueryNode => {
-              val fileName = sqlQueryNode.file.name.headOption.getOrElse("")
-              DataFlowSubCategoryPathExcerptModel(
-                sqlQueryNode.fullName,
-                sqlQueryNode.lineNumber.get,
-                3,
-                fileName,
-                Utilities.dump(fileName, sqlQueryNode.lineNumber)
-              )
-            })
-            .toList
-        )
-      })
-      .l
-
     processingMap
       .map(entrySet =>
         SourceProcessingModel(
@@ -112,7 +93,7 @@ class SourceExporter(cpg: Cpg) {
             })
         )
       )
-      .toList ++ sqlNodes
+      .toList
   }
 
   /** Fetch all the sources tag
@@ -135,7 +116,10 @@ class SourceExporter(cpg: Cpg) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l ++ cpg.sqlQuery
+          .where(filterSource)
+          .map(item => item.tag.l)
+          .l
     sources
   }
 
@@ -156,7 +140,11 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member
+          .where(filterSource)
+          .l ++ cpg.sqlQuery
+          .where(filterSource)
+          .l
     sources
   }
 
@@ -191,11 +179,11 @@ class SourceExporter(cpg: Cpg) {
         None
     }
 
-    (sources
+    sources
       .flatMap(source => getSources(source))
       .flatten
       .filter(_.nonEmpty)
-      .toList ++ SqlQueryNodeCache.nodes.keys.l).toSet
+      .toSet
       .flatMap(source => convertSource(source))
       .toList
   }

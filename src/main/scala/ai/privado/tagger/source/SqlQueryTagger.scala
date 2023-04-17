@@ -23,14 +23,13 @@
 
 package ai.privado.tagger.source
 
-import ai.privado.cache.{RuleCache, SqlQueryNodeCache}
+import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import ai.privado.semantic.Language._
-import io.shiftleft.codepropertygraph.generated.nodes.SqlQueryNode
+import ai.privado.utility.Utilities.{storeForTag, addRuleTags}
 
-import scala.collection.mutable.ListBuffer
 class SqlQueryTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   override def generateParts(): Array[_ <: AnyRef] = RuleCache.getRule.sources.toArray
 
@@ -41,9 +40,8 @@ class SqlQueryTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         columns.map(_.matches(ruleInfo.combinedRulePattern)).foldLeft(false)(_ || _)
       })
       .foreach(queryNode => {
-        if (!SqlQueryNodeCache.nodes.contains(ruleInfo.id))
-          SqlQueryNodeCache.nodes(ruleInfo.id) = ListBuffer[SqlQueryNode]()
-        SqlQueryNodeCache.nodes(ruleInfo.id).addOne(queryNode)
+        storeForTag(builder, queryNode)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+        addRuleTags(builder, queryNode, ruleInfo)
       })
   }
 }

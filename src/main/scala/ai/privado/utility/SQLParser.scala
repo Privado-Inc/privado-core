@@ -58,6 +58,9 @@ object SQLParser {
       case _: JSQLParserException =>
         logger.debug("Failed to parse the SQL query ", sqlQuery)
         None
+      case _: Exception =>
+        logger.debug("Failed to parse the SQL query ", sqlQuery)
+        None
     }
   }
 

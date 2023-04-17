@@ -121,20 +121,26 @@ object Utilities {
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
     * that line.
     */
-  def dump(filename: String, lineToHighlight: Option[Integer], message: String = ""): String = {
+  def dump(
+    filename: String,
+    lineToHighlight: Option[Integer],
+    message: String = "",
+    excerptStartLine: Int = -5,
+    excerptEndLine: Int = 5
+  ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
       if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
         val startLine: Integer = {
           if (lineToHighlight.isDefined)
-            Math.max(1, lineToHighlight.get - 5)
+            Math.max(1, lineToHighlight.get + excerptStartLine)
           else
             0
         }
         val endLine: Integer = {
           if (lineToHighlight.isDefined)
-            Math.min(lines.length, lineToHighlight.get + 5)
+            Math.min(lines.length, lineToHighlight.get + excerptEndLine)
           else
             0
         }

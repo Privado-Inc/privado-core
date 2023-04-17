@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache, SqlQueryNodeCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.semantic.Language._
@@ -37,6 +37,7 @@ import scala.util.{Failure, Success, Try}
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import ai.privado.passes.SQLParser
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import java.nio.file.{Files, Paths}
 

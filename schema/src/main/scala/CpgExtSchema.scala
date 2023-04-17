@@ -27,11 +27,14 @@ import overflowdb.schema.Property.ValueType
 import overflowdb.schema.SchemaBuilder
 
 class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
+
+  // Use these imports to leverage the existing edges, nodes, classes etc
   import cpgSchema.ast._
   import cpgSchema.base._
   import cpgSchema.fs._
   import cpgSchema.method._
   import cpgSchema.typeSchema._
+  import cpgSchema.tagsAndLocation._
 
   // Add node types, edge types, and properties here
 
@@ -100,10 +103,10 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addProperty(name)
     .addProperty(value)
     .addProperty(fullName)
-    .addProperty(lineNumber)
+    .extendz(astNode) // We are extending the new node from AstNode
   // .addProperty(sqlQueryColumn)
   sqlQueryNode.addOutEdge(edge = sourceFile, inNode = file)
-  // sqlQueryNode.addOutEdge(edge = nodeLabel, inNode = tag)
+  sqlQueryNode.addOutEdge(edge = taggedBy, inNode = tag)
 
   // Adding SQL query node End
 

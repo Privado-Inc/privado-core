@@ -50,6 +50,7 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
 
     val sqlFile      = Source.fromFile(sqlFileName)
     var lineNumber   = 0
+    var queryLen     = 0
     var queryBuilder = new StringBuilder()
     val sqlQueries   = mutable.ListBuffer[(String, Int)]()
     for (line <- sqlFile.getLines()) {
@@ -57,12 +58,14 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
 
       if (line.trim().nonEmpty && !line.trim().startsWith("-")) {
         queryBuilder.append(line)
+        queryLen += 1
 
         if (line.trim().endsWith(";")) {
           try {
             val query = queryBuilder.toString().trim()
             queryBuilder = new StringBuilder()
-            sqlQueries.addOne(query, lineNumber)
+            sqlQueries.addOne(query, lineNumber - queryLen + 1)
+            queryLen = 0
           } catch {
             case e: Exception =>
               logger.debug(s"Error on line $lineNumber: ${e.getMessage}")
@@ -83,7 +86,12 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
             // Have added columns in value key
             // findMatchingIndices(lines, query).headOption.getOrElse(-1)
             val sqlQueryNode =
-              NewSqlQueryNode().name(tableName).fullName(query).value(columns.mkString(",")).lineNumber(queryLineNumber)
+              NewSqlQueryNode()
+                .code(query)
+                .name(tableName)
+                .fullName(query)
+                .value(columns.mkString(","))
+                .lineNumber(queryLineNumber)
             builder.addNode(sqlQueryNode)
             Some(sqlQueryNode)
           case None => None
