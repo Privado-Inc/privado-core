@@ -80,21 +80,27 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
 
         val query           = queryWthLine._1
         val queryLineNumber = queryWthLine._2
-        SQLParser.parseSqlQuery(query) match {
-          case Some((queryName, tableName, columns)) =>
-            // Have added tableName in name key
-            // Have added columns in value key
-            // findMatchingIndices(lines, query).headOption.getOrElse(-1)
-            val sqlQueryNode =
-              NewSqlQueryNode()
-                .code(query)
-                .name(tableName)
-                .fullName(query)
-                .value(columns.mkString(","))
-                .lineNumber(queryLineNumber)
-            builder.addNode(sqlQueryNode)
-            Some(sqlQueryNode)
-          case None => None
+        try {
+          SQLParser.parseSqlQuery(query) match {
+            case Some((queryName, tableName, columns)) =>
+              // Have added tableName in name key
+              // Have added columns in value key
+              // findMatchingIndices(lines, query).headOption.getOrElse(-1)
+              val sqlQueryNode =
+                NewSqlQueryNode()
+                  .code(query)
+                  .name(tableName)
+                  .fullName(query)
+                  .value(columns.mkString(","))
+                  .lineNumber(queryLineNumber)
+              builder.addNode(sqlQueryNode)
+              Some(sqlQueryNode)
+            case None => None
+          }
+        } catch {
+          case ex: Exception =>
+            logger.debug(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
+            None
         }
       })
       .toList
