@@ -29,7 +29,7 @@ import ai.privado.model.InternalTag
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities._
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Expression, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{AnnotationLiteral, AstNode, CfgNode, TypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -46,11 +46,45 @@ object DatabaseReadUtility {
     taggerCache: TaggerCache,
     classTableMapping: Map[String, TypeDecl],
     cpg: Cpg,
-    node: Expression
+    node: AstNode
   ) = {
+
+    val queryCode = node.code
+    val referencingQueryNodes = {
+      if (node.isInstanceOf[AnnotationLiteral]) {
+        /*
+        Get the name of the namedQuery and use it to fetch the callNode which is used to make the namedQueryCall
+        Ex - @Entity
+        @Table(name = "student")
+
+        //Using @NamedQuery for single JPQL or HQL
+        @NamedQuery(name = "GET_STUDENTS_COUNT", query = "select count(1) from Student")
+        class Student {}
+
+        List<Long> totalStudents = session.createNamedQuery("GET_STUDENTS_COUNT", Long.class).getResultList();
+         */
+        val nameOfNamedQuery = node.astParent.astSiblings
+          .where(_.astChildren.order(1).code("name"))
+          .astChildren
+          .collectAll[AnnotationLiteral]
+          .code
+          .headOption
+          .getOrElse("")
+        if (nameOfNamedQuery.nonEmpty) {
+          cpg.method
+            .fullName("org.hibernate.*create.*Query:.*")
+            .callIn
+            .where(_.argument.code("(\"){0,1}" + nameOfNamedQuery + "(\"){0,1}"))
+            .l
+        } else
+          List()
+      } else
+        List(node)
+    }
+
     val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
     val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys.l
-    val query                            = extractSQLForConcatenatedString(node.code)
+    val query                            = extractSQLForConcatenatedString(queryCode)
     val result                           = SQLParser.parseSQL(query)
 
     result match {
@@ -72,7 +106,7 @@ object DatabaseReadUtility {
 
         if (columns.length == 1 && columns(0) == "*") {
           if (sensitiveMemberRuleIds.nonEmpty)
-            sensitiveMemberRuleIds.foreach(ruleId => addTagsToNode(ruleId, node, builder))
+            sensitiveMemberRuleIds.foreach(ruleId => addTagsToNode(ruleId, referencingQueryNodes, builder))
           else {
             /* Run dataflow and verify the data-elements read from the call,
                 Ex - resultSet = statement.executeQuery("SELECT * FROM mytable");
@@ -92,24 +126,24 @@ object DatabaseReadUtility {
                 .l
             implicit val engineContext: EngineContext =
               EngineContext(config = EngineConfig(4))
-            val readFlow = dataElementSinks.reachableByFlows(node).l
+            val readFlow = dataElementSinks.reachableByFlows(referencingQueryNodes).l
             if (readFlow.nonEmpty) {
               // As a flow is present from Select query to a Data element we can say, the data element is read from the query
               readFlow
                 .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
                 .value
-                .foreach(ruleId => addTagsToNode(ruleId, node, builder))
+                .foreach(ruleId => addTagsToNode(ruleId, referencingQueryNodes, builder))
             }
           }
         } else {
           if (sensitiveMemberRuleIds.nonEmpty)
             sensitiveMemberRuleIds
               .filter(ruleId => isColumnNameMatchingWithRule(ruleId, columns))
-              .foreach(ruleId => addTagsToNode(ruleId, node, builder))
+              .foreach(ruleId => addTagsToNode(ruleId, referencingQueryNodes, builder))
           else
             RuleCache.getRule.sources
               .filter(rule => isColumnNameMatchingWithRule(rule.id, columns))
-              .foreach(rule => addTagsToNode(rule.id, node, builder))
+              .foreach(rule => addTagsToNode(rule.id, referencingQueryNodes, builder))
         }
       case None => ()
     }
@@ -127,9 +161,11 @@ object DatabaseReadUtility {
     columns.map(pattern.matches).foldLeft(false)(_ || _)
   }
 
-  def addTagsToNode(ruleId: String, node: Expression, builder: DiffGraphBuilder) = {
-    storeForTag(builder, node)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-    addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
+  def addTagsToNode(ruleId: String, nodes: List[AstNode], builder: DiffGraphBuilder) = {
+    nodes.foreach(node => {
+      storeForTag(builder, node)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+      addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
+    })
   }
 
   def extractSQLForConcatenatedString(sqlQuery: String): String = {

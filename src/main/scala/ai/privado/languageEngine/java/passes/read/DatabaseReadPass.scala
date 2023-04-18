@@ -13,7 +13,7 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache, classTableMapping: Ma
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[_ <: AnyRef] = {
+  override def generateParts(): Array[Expression] = {
 //    CPG query to fetch the Literal with SQL string
 //    'Repeat until' is used to combine multiline SQL queries into one
     cpg.literal
@@ -21,6 +21,9 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache, classTableMapping: Ma
       .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(Operators.addition))))
       .isCall
       .argument
+      .or(_.code(selectRegexPattern), _.code(fromRegexPattern))
+      .toArray ++ cpg.annotation.ast
+      .collectAll[AnnotationLiteral]
       .or(_.code(selectRegexPattern), _.code(fromRegexPattern))
       .toArray
   }
