@@ -6,7 +6,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.3.598"
-val joernVersion      = "1.1.1556"
+val joernVersion      = "1.1.1590"
 val overflowdbVersion = "1.171"
 
 //External dependency versions
@@ -47,6 +47,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
   "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0"       % Runtime,
   "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
+  "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0"
 )
 

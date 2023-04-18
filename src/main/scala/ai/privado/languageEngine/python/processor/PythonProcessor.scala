@@ -21,6 +21,7 @@ import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import io.joern.pysrc2cpg.{
   ImportsPass,
+  InheritanceFullNamePass,
   Py2CpgOnFileSystem,
   Py2CpgOnFileSystemConfig,
   PythonNaiveCallLinker,
@@ -43,6 +44,7 @@ import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import io.joern.x2cpg.passes.base.AstLinkerPass
 
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
@@ -67,12 +69,21 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
+          new InheritanceFullNamePass(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           new PythonTypeHintCallLinker(cpg).createAndApply()
           new PythonNaiveCallLinker(cpg).createAndApply()
+
+          // Some of passes above create new methods, so, we
+          // need to run the ASTLinkerPass one more time
+          new AstLinkerPass(cpg).createAndApply()
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
