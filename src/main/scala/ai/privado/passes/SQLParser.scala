@@ -43,7 +43,6 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
     val fileNode      = addFileNode(file, builder)
     val sqlQueryNodes = getSqlQueryNodes(file, builder)
     sqlQueryNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
-
   }
 
   def getSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder) = {
@@ -53,11 +52,12 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
     var queryLen     = 0
     var queryBuilder = new StringBuilder()
     val sqlQueries   = mutable.ListBuffer[(String, Int)]()
+    val results      = mutable.ListBuffer[NewSqlQueryNode]()
     for (line <- sqlFile.getLines()) {
       lineNumber += 1
 
       if (line.trim().nonEmpty && !line.trim().startsWith("-")) {
-        queryBuilder.append(line)
+        queryBuilder.append(line + " ")
         queryLen += 1
 
         if (line.trim().endsWith(";")) {
@@ -76,34 +76,41 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
     sqlFile.close()
 
     sqlQueries
-      .flatMap(queryWthLine => {
-
+      .map(queryWthLine => {
         val query           = queryWthLine._1
         val queryLineNumber = queryWthLine._2
         try {
           SQLParser.parseSqlQuery(query) match {
-            case Some((queryName, tableName, columns)) =>
+            case Some(parsedQueryList) =>
               // Have added tableName in name key
               // Have added columns in value key
               // findMatchingIndices(lines, query).headOption.getOrElse(-1)
-              val sqlQueryNode =
-                NewSqlQueryNode()
-                  .code(query)
-                  .name(tableName)
-                  .fullName(query)
-                  .value(columns.mkString(","))
-                  .lineNumber(queryLineNumber)
-              builder.addNode(sqlQueryNode)
-              Some(sqlQueryNode)
-            case None => None
+              val res = parsedQueryList.map { case (_, tableName, columns) =>
+                val columnList = columns.mkString(",")
+                val sqlQueryNode =
+                  NewSqlQueryNode()
+                    .code(query)
+                    .name(tableName)
+                    .fullName(query)
+                    .value(columnList)
+                    .lineNumber(queryLineNumber)
+
+                results.append(sqlQueryNode)
+                builder.addNode(sqlQueryNode)
+                sqlQueryNode
+              }
+              Some(res)
+            case None =>
+              logger.debug("Failed to parse: ", sqlFileName, " : ", queryLineNumber)
+              None
           }
         } catch {
           case ex: Exception =>
-            logger.debug(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
+            println(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
             None
         }
       })
-      .toList
+    results.toList
 
   }
 
