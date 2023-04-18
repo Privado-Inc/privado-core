@@ -9,6 +9,7 @@ import scala.util.Try
 
 object AuditReportEntryPoint {
 
+  // Audit report generation for java
   def getAuditWorkbook(xtocpg: Try[Cpg], taggerCache: TaggerCache): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
@@ -26,6 +27,19 @@ object AuditReportEntryPoint {
       AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
       DependencyReport.processDependencyAudit(xtocpg)
     )
+
+    // Set Data Flow report into Sheet
+    createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
+
+    workbook
+  }
+
+  // Audit report generation for Python and javaScript
+  def getAuditWorkbook(): Workbook = {
+    val workbook: Workbook = new XSSFWorkbook()
+
+    // Set Data Flow report into Sheet
+    createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
 
     workbook
   }

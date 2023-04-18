@@ -6,6 +6,8 @@ object AuditReportConstants {
 
   val AUDIT_DEPENDENCY_SHEET_NAME = "Dependency Audit"
 
+  val AUDIT_DATA_FLOW_SHEET_NAME = "Data Flow Audit"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
@@ -53,13 +55,13 @@ object AuditReportConstants {
 
   val DATA_FLOW_SEMANTIC_FILTER_NAME = "Semantic Filter"
 
-  val DATA_FLOW_FILTER_1_NAME = "Filter 1"
+  val DATA_FLOW_FILTER_1_NAME = "FP - this Filtering"
 
-  val DATA_FLOW_FILTER_2_NAME = "Filter 2"
+  val DATA_FLOW_FILTER_2_NAME = "FP - Separation b/w Data Elements"
 
-  val DATA_FLOW_DEDUP_1_NAME = "Dedup 1"
+  val DATA_FLOW_DEDUP_1_NAME = "Deduplication of Sub Flow (subset)"
 
-  val DATA_FLOW_DEDUP_2_NAME = "Dedup 2"
+  val DATA_FLOW_DEDUP_2_NAME = "Grouping by Same Line No. "
 
   val DATA_FLOW_FINAL_RESULT_NAME = "Final Result"
 

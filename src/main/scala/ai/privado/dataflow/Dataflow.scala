@@ -23,7 +23,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
@@ -97,7 +97,9 @@ class Dataflow(cpg: Cpg) {
          */
       }
 
-      if (ScanProcessor.config.testOutput) {
+      AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig)
+
+      if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
         // Fetching the sourceId, sinkId and path Info
         dataflowPathsUnfiltered.map(path => {
@@ -163,6 +165,7 @@ class Dataflow(cpg: Cpg) {
       val dataflowFromCache = DataFlowCache.getDataflow
       println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
+      AuditCache.addIntoFinalPath(dataflowFromCache)
       dataflowFromCache.map(_.pathId).toSet.map((pathId: String) => (pathId, dataflowMapByPathId(pathId))).toMap
     }
   }

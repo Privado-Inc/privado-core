@@ -22,7 +22,8 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.cache.AuditCache.SourcePathInfo
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType}
@@ -337,6 +338,7 @@ object DuplicateFlowProcessor {
             )
         }
         sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
+          AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(pathSourceId, sinkId, sinkPathId))
           if (ScanProcessor.config.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA)
             DataFlowCache.setDataflow(
               DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)

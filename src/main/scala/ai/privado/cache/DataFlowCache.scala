@@ -129,6 +129,8 @@ object DataFlowCache {
 
     }
 
+    AuditCache.addIntoBeforeFirstDedup(dataflow)
+
     val filteredSourceIdMap = dataflow.map(entrySet => {
       val sourceId        = entrySet._1
       val allPathIds      = entrySet._2.values.flatten.map(_.pathId).toSet
@@ -143,6 +145,9 @@ object DataFlowCache {
     for (dataflowKey: String <- dataflow.keys) {
       dataflow.remove(dataflowKey)
     }
+
+    AuditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
+
     filteredSourceIdMap.foreach(sourceMap => {
       sourceMap._2.foreach(fileLineNoEntry => {
         fileLineNoEntry._2.foreach(dfpm => addToMap(dfpm))

@@ -147,7 +147,7 @@ object JavaProcessor {
           }
 
           // Exporting the Intermediate report
-          if (ScanProcessor.config.testOutput) {
+          if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
