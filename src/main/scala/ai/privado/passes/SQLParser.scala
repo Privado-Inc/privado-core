@@ -43,7 +43,6 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
     val fileNode      = addFileNode(file, builder)
     val sqlQueryNodes = getSqlQueryNodes(file, builder)
     sqlQueryNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
-
   }
 
   def getSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder) = {
@@ -78,7 +77,7 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
 
     sqlQueries
       .map(queryWthLine => {
-        val query           = queryWthLine._1.replaceAll("(?i)QUALIFY", "WHERE")
+        val query           = queryWthLine._1
         val queryLineNumber = queryWthLine._2
         try {
           SQLParser.parseSqlQuery(query) match {
