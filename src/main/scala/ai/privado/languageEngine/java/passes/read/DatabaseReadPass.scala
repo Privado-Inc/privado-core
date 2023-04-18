@@ -51,9 +51,7 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       case Some(value) =>
         value.foreach { case (_, tableName: String, columns: List[String]) =>
           // Match classes which end with tableName
-          val tableNameWithReg = s"(?i).*${tableName}".r
-
-          val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(tableNameWithReg.regex)) match {
+          val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(s"(?i).*${tableName}")) match {
             case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
             case None        => List.empty
           }

@@ -81,12 +81,12 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
         val queryLineNumber = queryWthLine._2
         try {
           SQLParser.parseSqlQuery(query) match {
-            case Some(tmp) =>
+            case Some(parsedQueryList) =>
               // Have added tableName in name key
               // Have added columns in value key
               // findMatchingIndices(lines, query).headOption.getOrElse(-1)
-              val res = tmp.map { case (_, tableName, columns) =>
-                val columnList = columns.mkString(", ")
+              val res = parsedQueryList.map { case (_, tableName, columns) =>
+                val columnList = columns.mkString(",")
                 val sqlQueryNode =
                   NewSqlQueryNode()
                     .code(query)

@@ -44,6 +44,17 @@ object SQLParser {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
+  def getColumns(plainSelect: PlainSelect): List[String] = {
+    plainSelect.getSelectItems.flatMap { case item: SelectItem =>
+      item.toString match {
+        case f: String if f.contains("(") =>
+          val function = CCJSqlParserUtil.parseExpression(f).asInstanceOf[Function]
+          function.getParameters.getExpressions.map(_.toString)
+        case _ => List(item.toString)
+      }
+    }.toList
+  }
+
   def parseSqlQuery(sqlQuery: String): Option[List[(String, String, List[String])]] = {
     try {
       val cleanedSql           = SqlCleaner.clean(sqlQuery)
@@ -53,33 +64,20 @@ object SQLParser {
           selectStmt.getSelectBody match {
             case plainSelect: PlainSelect =>
               val tableName: String = plainSelect.getFromItem.toString
-              val columns: List[String] =
-                plainSelect.getSelectItems.flatMap { case item: SelectItem =>
-                  item.toString match {
-                    case f: String if f.contains("(") =>
-                      val function = CCJSqlParserUtil.parseExpression(f).asInstanceOf[Function]
-                      function.getParameters.getExpressions.toString.map(_.toString)
-                    case _ => List(item.toString)
-                  }
-                }.toList
-              Some(List(("SELECT", tableName, columns)))
+              Some(List(("SELECT", tableName, getColumns(plainSelect))))
 
+            /*
+            Example of SetOperation SQL Queries:
+              -- SELECT column_name FROM table1
+              -- UNION|INTERSECT
+                -- SELECT column_name FROM table2;
+             */
             case setOpList: SetOperationList =>
               val selectStmts = setOpList.getSelects.toList
               val tableNameColumnListMap = selectStmts.map { stmt =>
                 val plainSelect = stmt.asInstanceOf[PlainSelect]
                 val tableName   = plainSelect.getFromItem.toString
-                (
-                  tableName,
-                  plainSelect.getSelectItems.flatMap { case item: SelectItem =>
-                    item.toString match {
-                      case f: String if f.contains("(") =>
-                        val function = CCJSqlParserUtil.parseExpression(f).asInstanceOf[Function]
-                        function.getParameters.getExpressions.toString.map(_.toString)
-                      case _ => List(item.toString)
-                    }
-                  }.toList
-                )
+                (tableName, getColumns(plainSelect))
               }
 
               // Merge all column lists into a single list of unique columns
