@@ -28,6 +28,7 @@ import ai.privado.cache.{AppCache, DataFlowCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
@@ -119,8 +120,9 @@ object JavascriptProcessor {
 
         // Exporting the Audit report
         if (ScanProcessor.config.generateAuditReport) {
-          new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
-          new DependenciesNodePass(cpg).createAndApply()
+          val moduleCache: ModuleCache = new ModuleCache()
+          new ModuleFilePass(cpg, sourceRepoLocation, moduleCache).createAndApply()
+          new DependenciesNodePass(cpg, moduleCache).createAndApply()
 
           ExcelExporter.auditExport(
             outputAuditFileName,

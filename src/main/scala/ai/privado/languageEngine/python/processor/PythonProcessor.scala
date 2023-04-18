@@ -17,6 +17,7 @@ import ai.privado.model.Constants.{
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import io.joern.pysrc2cpg.{
@@ -140,8 +141,9 @@ object PythonProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
-            new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
-            new DependenciesNodePass(cpg).createAndApply()
+            val moduleCache: ModuleCache = new ModuleCache()
+            new ModuleFilePass(cpg, sourceRepoLocation, moduleCache).createAndApply()
+            new DependenciesNodePass(cpg, moduleCache).createAndApply()
 
             ExcelExporter.auditExport(
               outputAuditFileName,
