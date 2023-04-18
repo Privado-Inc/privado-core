@@ -2,6 +2,7 @@ package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
+import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.sink.PythonAPITagger
@@ -47,6 +48,15 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
+    // Custom Rule tagging
+    // Adding custom rule to cache
+    StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
+    println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
+    new CustomInheritTagger(cpg).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --CustomInheritTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
     println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg).createAndApply()
     println(
@@ -66,7 +76,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     )
 
     logger.info("Done with tagging")
-
     cpg.tag
   }
 
