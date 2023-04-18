@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.java.threatEngine
 
+import ai.privado.cache.RuleCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.ViolationModel
 import ai.privado.model.PolicyOrThreat
@@ -33,7 +34,7 @@ import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
-class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: String) {
+class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: String, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -66,7 +67,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
     val violationResponse = threatId match {
       case "Threats.Collection.isKeyboardCacheUsed" if isAndroidRepo =>
-        KeyboardCache.getViolations(repoPath) match {
+        KeyboardCache.getViolations(ruleCache, repoPath) match {
           case Success(res) => Some(res)
           case Failure(_)   => None
         }
@@ -90,7 +91,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
         }
 
       case "Threats.Collection.isInputMasked" if isAndroidRepo =>
-        SensitiveInputMask.getViolations(cpg, repoPath) match {
+        SensitiveInputMask.getViolations(cpg, ruleCache, repoPath) match {
           case Success(res) => Some(res)
           case Failure(_)   => None
         }
@@ -111,7 +112,7 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
         Some(
           ViolationModel(
             threatId,
-            ExporterUtility.getPolicyInfoForExporting(threatId),
+            ExporterUtility.getPolicyInfoForExporting(ruleCache, threatId),
             None, {
               if (occurrences.nonEmpty) Some(occurrences) else None
             }
@@ -132,12 +133,12 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
     val violationResponse = threatId match {
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
-        DataLeakageToNotifications.getViolations(threat, cpg, dataflows) match {
+        DataLeakageToNotifications.getViolations(threat, cpg, dataflows, ruleCache) match {
           case Success(res) => Some(res)
           case Failure(_)   => None
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
-        DataLeakageToLogs.getViolations(threat, cpg, dataflows) match {
+        DataLeakageToLogs.getViolations(threat, cpg, dataflows, ruleCache) match {
           case Success(res) => Some(res)
           case Failure(_)   => None
         }
@@ -148,13 +149,20 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
 
     violationResponse match {
       case Some((isThreat, dataflows)) if isThreat =>
-        Some(ViolationModel(threatId, ExporterUtility.getPolicyInfoForExporting(threatId), Some(dataflows), None))
+        Some(
+          ViolationModel(
+            threatId,
+            ExporterUtility.getPolicyInfoForExporting(ruleCache, threatId),
+            Some(dataflows),
+            None
+          )
+        )
       case _ => None
     }
   }
 
   private def getAndroidManifestFile(repoPath: String): (Boolean, String) = {
-    val manifestFile = getAllFilesRecursively(repoPath, Set(".xml")) match {
+    val manifestFile = getAllFilesRecursively(repoPath, Set(".xml"), ruleCache) match {
       case Some(sourceFileNames) => {
         sourceFileNames.find(_.endsWith("AndroidManifest.xml"))
       }

@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger.sink
 
-import ai.privado.cache.DatabaseDetailsCache
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities._
@@ -33,7 +33,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class CustomInheritTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
@@ -48,7 +48,7 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
-        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
+        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo, ruleCache))
       })
     }
   }

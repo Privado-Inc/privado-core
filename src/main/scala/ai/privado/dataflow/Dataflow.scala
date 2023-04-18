@@ -23,7 +23,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
@@ -44,16 +44,19 @@ import scala.util.{Failure, Success}
 class Dataflow(cpg: Cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
-  implicit val engineContext: EngineContext =
-    EngineContext(semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config), config = EngineConfig(4))
 
   /** Compute the flow of data from tagged Sources to Sinks
     * @return
     *   \- Map of PathId -> Path corresponding to source to sink path
     */
-  def dataflow(privadoScanConfig: PrivadoInput): Map[String, Path] = {
+  def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Map[String, Path] = {
 
     logger.info("Generating dataflow")
+    implicit val engineContext: EngineContext =
+      EngineContext(
+        semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config, ruleCache),
+        config = EngineConfig(4)
+      )
     val sources = Dataflow.getSources(cpg)
     val sinks   = Dataflow.getSinks(cpg)
 
@@ -155,7 +158,7 @@ class Dataflow(cpg: Cpg) {
       DataFlowCache.dataflowsMapByType ++= dataflowMapByPathId
 
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
-      DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig)
+      DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig, ruleCache)
       println(
         s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
             .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"

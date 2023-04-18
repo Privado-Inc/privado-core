@@ -36,14 +36,15 @@ import ai.privado.languageEngine.java.tagger.source.Utility._
 import java.util.UUID
 import scala.collection.mutable
 
-class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
+    extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   implicit val resolver: ICallResolver                              = NoResolve
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE: String = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE: String     = UUID.randomUUID.toString
 
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
+  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
@@ -52,14 +53,14 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     val regexMatchingIdentifiers =
       cpg.identifier(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase))
     regexMatchingIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, identifier, ruleInfo)
+      storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
 
     val regexMatchingMembers = cpg.member.name(rulePattern).l
     regexMatchingMembers.foreach(member => {
-      storeForTag(builder, member)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
-      addRuleTags(builder, member, ruleInfo)
+      storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
+      addRuleTags(builder, member, ruleInfo, ruleCache)
     })
 
     val regexMatchingFieldIdentifiersIdentifiers =
@@ -72,8 +73,8 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
         .isCall
         .l
     regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
-      storeForTag(builder, identifier)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-      addRuleTags(builder, identifier, ruleInfo)
+      storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
 
     // Step 2.1 --> contains step 2.2, 2.3
@@ -107,22 +108,22 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
             .whereNot(_.code("this"))
             .foreach(impactedObject => {
               if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-                storeForTag(builder, impactedObject)(
+                storeForTag(builder, impactedObject, ruleCache)(
                   InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
                   ruleInfo.id
                 )
-                storeForTag(builder, impactedObject)(
+                storeForTag(builder, impactedObject, ruleCache)(
                   Constants.id,
                   Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
                 )
-                storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+                storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
               }
-              storeForTag(builder, impactedObject)(
+              storeForTag(builder, impactedObject, ruleCache)(
                 Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
                 ruleInfo.id
               )
               // Tag for storing memberName in derived Objects -> user --> (email, password)
-              storeForTag(builder, impactedObject)(
+              storeForTag(builder, impactedObject, ruleCache)(
                 ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
                 typeDeclMemberName
               )
@@ -165,14 +166,14 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           .l
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
-          storeForTag(builder, impactedObject)(
+          storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
+          storeForTag(builder, impactedObject, ruleCache)(
             Constants.id,
             Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
           )
-          storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+          storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
         }
-        storeForTag(builder, impactedObject)(
+        storeForTag(builder, impactedObject, ruleCache)(
           Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE,
           ruleInfo.id
         )
@@ -228,14 +229,14 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           .l
       impactedObjects.foreach(impactedObject => {
         if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
-          storeForTag(builder, impactedObject)(
+          storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
+          storeForTag(builder, impactedObject, ruleCache)(
             Constants.id,
             Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
           )
-          storeForTag(builder, impactedObject)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+          storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
         }
-        storeForTag(builder, impactedObject)(
+        storeForTag(builder, impactedObject, ruleCache)(
           Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
           ruleInfo.id
         )
@@ -244,7 +245,7 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
           .typeDeclMemberCache(typeDeclName)(ruleInfo.id)
           .name
           .foreach(memberName =>
-            storeForTag(builder, impactedObject)(
+            storeForTag(builder, impactedObject, ruleCache)(
               ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
               memberName
             )
@@ -270,13 +271,13 @@ class IdentifierTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
       .filterNot(item => item.code.equals(item.code.toUpperCase))
 
     impactedGetters.foreach(impactedGetter => {
-      storeForTag(builder, impactedGetter)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
-      addRuleTags(builder, impactedGetter, ruleInfo)
+      storeForTag(builder, impactedGetter, ruleCache)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
+      addRuleTags(builder, impactedGetter, ruleInfo, ruleCache)
     })
 
     val impactedReturnMethods = getCallsMatchingReturnRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
     impactedReturnMethods
-      .foreach(storeForTag(builder, _)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id))
+      .foreach(storeForTag(builder, _, ruleCache)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id))
 
   }
 }

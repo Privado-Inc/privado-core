@@ -246,6 +246,7 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
   val codeFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
+  val ruleCache        = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -296,9 +297,9 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
     )
     val rule: ConfigAndRules =
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
-    RuleCache.setRule(rule)
-    new IdentifierTagger(cpg, taggerCache).createAndApply()
-    new DatabaseReadPass(cpg, taggerCache).createAndApply()
+    ruleCache.setRule(rule)
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new DatabaseReadPass(cpg, ruleCache, taggerCache).createAndApply()
     super.beforeAll()
   }
 

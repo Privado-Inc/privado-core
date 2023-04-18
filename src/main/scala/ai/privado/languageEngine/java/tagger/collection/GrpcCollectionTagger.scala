@@ -24,18 +24,15 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
-import ai.privado.utility.Utilities._
+import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
 
 import scala.collection.immutable.HashMap
 
-class GrpcCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends CpgPass(cpg) {
+class GrpcCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends CpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def run(builder: DiffGraphBuilder): Unit = {
@@ -76,7 +73,14 @@ class GrpcCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
       Array[String]()
     )
 
-    CollectionUtility.tagDirectSources(builder, grpcCollectionMethods, sourceRuleInfos, ruleInfo, returnByName = true)
-    CollectionUtility.tagDerivedSources(cpg, builder, grpcCollectionMethods, ruleInfo, returnByName = true)
+    CollectionUtility.tagDirectSources(
+      builder,
+      grpcCollectionMethods,
+      ruleCache.getRule.sources,
+      ruleInfo,
+      ruleCache,
+      returnByName = true
+    )
+    CollectionUtility.tagDerivedSources(cpg, builder, grpcCollectionMethods, ruleInfo, ruleCache, returnByName = true)
   }
 }

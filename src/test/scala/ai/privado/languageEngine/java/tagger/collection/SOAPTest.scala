@@ -32,8 +32,8 @@ class SOAPTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, taggerCache).createAndApply()
-    new SOAPCollectionTagger(cpg, sourceRule).createAndApply()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 
   }
 

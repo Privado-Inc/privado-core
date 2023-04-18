@@ -23,7 +23,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
   override def beforeAll() = {
     super.beforeAll()
     val moduleCache: ModuleCache = new ModuleCache()
-    new ModuleFilePass(cpg, inputDir.toString(), moduleCache).createAndApply()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
     new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 
@@ -315,7 +315,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
   override def beforeAll() = {
     super.beforeAll()
     val moduleCache: ModuleCache = new ModuleCache()
-    new ModuleFilePass(cpg, inputDir.toString(), moduleCache).createAndApply()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
     new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 
@@ -452,6 +452,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
   var inputDir: File  = _
   var outputDir: File = _
   val moduleFileMap: Map[String, String]
+  val ruleCache = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -469,7 +470,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
     }
 
     cpg = xtocpg.get
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
 
     super.beforeAll()
   }

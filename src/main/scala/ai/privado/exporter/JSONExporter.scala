@@ -62,14 +62,15 @@ object JSONExporter {
     outputFileName: String,
     repoPath: String,
     dataflows: Map[String, Path],
+    ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache()
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
-    val sourceExporter          = new SourceExporter(cpg)
-    val sinkExporter            = new SinkExporter(cpg)
+    val sourceExporter          = new SourceExporter(cpg, ruleCache)
+    val sinkExporter            = new SinkExporter(cpg, ruleCache)
     val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
-    val collectionExporter      = new CollectionExporter(cpg)
-    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, dataflows)
+    val collectionExporter      = new CollectionExporter(cpg, ruleCache)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
 
@@ -166,7 +167,7 @@ object JSONExporter {
       })
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-      RuleCache.getRule.sinks.foreach(sinkRule => {
+      ruleCache.getRule.sinks.foreach(sinkRule => {
         if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
           sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
         sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
@@ -175,7 +176,9 @@ object JSONExporter {
       val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
       sinkSubCategories.foreach(sinkSubTypeEntry => {
         dataflowsOutput.addOne(
-          sinkSubTypeEntry._1 -> dataflowExporter.getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet).toList
+          sinkSubTypeEntry._1 -> dataflowExporter
+            .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache)
+            .toList
         )
       })
 
@@ -199,7 +202,7 @@ object JSONExporter {
         }
       )
       logger.debug("------------ Sink Skip List ---------------")
-      val skipRules = RuleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.combinedRulePattern)
+      val skipRules = ruleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.combinedRulePattern)
       logger.debug(s"$skipRules")
       logger.debug("------------ Probable Sink Dependencies ---------------")
       logger.debug(s"$probableSinks")
