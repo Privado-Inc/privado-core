@@ -10,6 +10,7 @@ import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, Literal
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.PythonDBConfigTagger
 import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
+import ai.privado.tagger.source.SqlQueryTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -35,6 +36,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
+
+    println(s"${Calendar.getInstance().getTime} - --SqlQueryTagger invoked...")
+    new SqlQueryTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --SqlQueryTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
     println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
     new PythonAPITagger(cpg, ruleCache).createAndApply()
     println(

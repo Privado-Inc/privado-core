@@ -56,6 +56,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
+import ai.privado.passes.SQLParser
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -80,6 +81,11 @@ object JavaProcessor {
           new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           logger.info("Applying data flow overlay")
           val context = new LayerCreatorContext(cpg)

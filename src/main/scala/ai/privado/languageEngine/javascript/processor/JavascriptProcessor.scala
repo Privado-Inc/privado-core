@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
@@ -39,6 +39,7 @@ import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outpu
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
+import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -68,6 +69,12 @@ object JavascriptProcessor {
         new MethodFullName(cpg).createAndApply()
         new MethodFullNameFromIdentifier(cpg).createAndApply()
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
+
+        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {

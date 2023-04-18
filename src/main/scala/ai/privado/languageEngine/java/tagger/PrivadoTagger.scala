@@ -33,7 +33,7 @@ import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensiti
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.LiteralTagger
+import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -58,7 +58,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(
       s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
-
+    println(s"${Calendar.getInstance().getTime} - --SqlQueryTagger invoked...")
+    new SqlQueryTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --SqlQueryTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     println(
