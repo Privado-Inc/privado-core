@@ -50,7 +50,7 @@ object SemanticGenerator {
     *   \- cpg for adding customSemantics
     * @return
     */
-  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput): Semantics = {
+  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
     val lang = AppCache.repoLanguage
     if (lang != Language.JAVA) {
       getDefaultSemantics
@@ -98,7 +98,7 @@ object SemanticGenerator {
 
         customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
       }
-      val semanticFromConfig = RuleCache.getRule.semantics.flatMap(generateSemantic).sorted
+      val semanticFromConfig = ruleCache.getRule.semantics.flatMap(generateSemantic).sorted
 
       logger.debug("\nCustom Non taint default semantics")
       customNonTaintDefaultSemantics.foreach(logger.debug)

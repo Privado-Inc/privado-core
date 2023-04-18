@@ -12,12 +12,12 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger       = LoggerFactory.getLogger(this.getClass)
   private val methodUrlMap = mutable.HashMap[Long, String]()
   private val classUrlMap  = mutable.HashMap[Long, String]()
 
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray
+  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.collections.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
 
@@ -89,7 +89,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
     collectionRuleInfo: RuleInfo
   ): Unit = {
     val collectionPoints = collectionMethods.flatMap(collectionMethod => {
-      sourceRuleInfos.flatMap(sourceRule => {
+      ruleCache.getRule.sources.flatMap(sourceRule => {
         val parameters = collectionMethod.parameter
         val locals     = collectionMethod.local
         val literals   = collectionMethod.call("(?:get).*").argument.isLiteral
@@ -103,9 +103,11 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
           .l
 
         if (!(matchingParameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
-          matchingParameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
-          matchingLocals.foreach(local => storeForTag(builder, local)(Constants.id, sourceRule.id))
-          matchingLiterals.foreach(literal => storeForTag(builder, literal)(Constants.id, sourceRule.id))
+          matchingParameters.foreach(parameter =>
+            storeForTag(builder, parameter, ruleCache)(Constants.id, sourceRule.id)
+          )
+          matchingLocals.foreach(local => storeForTag(builder, local, ruleCache)(Constants.id, sourceRule.id))
+          matchingLiterals.foreach(literal => storeForTag(builder, literal, ruleCache)(Constants.id, sourceRule.id))
           Some(collectionMethod)
         } else {
           None
@@ -143,7 +145,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
           .foreach(parameter => {
             parameter.tag
               .name(Constants.privadoDerived + ".*")
-              .foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
+              .foreach(refTag => storeForTag(builder, parameter, ruleCache)(refTag.name, refTag.value))
           })
         collectionMethod
       }
@@ -159,8 +161,8 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
     returnByName: Boolean = false
   ) = {
     collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, collectionRuleInfo)
-      storeForTag(builder, collectionPoint)(
+      addRuleTags(builder, collectionPoint, collectionRuleInfo, ruleCache)
+      storeForTag(builder, collectionPoint, ruleCache)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
         getFinalEndPoint(collectionPoint, returnByName)
       )

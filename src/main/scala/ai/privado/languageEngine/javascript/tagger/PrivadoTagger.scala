@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.{ConfigAndRules, NodeType}
@@ -40,18 +41,18 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(rules: ConfigAndRules): Traversal[Tag] = {
+  override def runTagger(ruleCache: RuleCache): Traversal[Tag] = {
 
     logger.info("Starting tagging")
 
     println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
-    new LiteralTagger(cpg).createAndApply()
+    new LiteralTagger(cpg, ruleCache).createAndApply()
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
-    new IdentifierTagger(cpg).createAndApply()
+    new IdentifierTagger(cpg, ruleCache).createAndApply()
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
-    new RegularSinkTagger(cpg).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache).createAndApply()
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
-    new JSAPITagger(cpg).createAndApply()
+    new JSAPITagger(cpg, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
 

@@ -77,47 +77,49 @@ object SensitiveInputMask {
     *   Path to repo
     * @return
     */
-  def getViolations(cpg: Cpg, repoPath: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
-    val occurrenceList = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
-    getAllFilesRecursively(repoPath, Set(".xml")) match {
-      case Some(sourceFileNames) =>
-        sourceFileNames.foreach(sourceFile => {
-          val xml: Elem     = XML.loadFile(sourceFile)
-          val editTextNodes = xml \\ INPUT_KEY
-          if (editTextNodes.nonEmpty) {
-            editTextNodes.foreach {
-              case editText: Elem =>
-                // check if EditText represents a sensitive rule
-                if (isInputSensitiveById(editText.attributes, RuleCache.getRule.sources)) {
-                  // check if input is not masked
-                  if (!isInputMasked(editText.attributes)) {
-                    // get values - these are confirmed to exist at this point
-                    val idAttribute        = editText.attributes.filter(_.key == INPUT_ID_ATTRIBUTE).value.head
-                    val inputTypeAttribute = editText.attributes.filter(_.key == INPUT_TYPE_ATTRIBUTE)
-                    // text is default value in absence of attribute - also unmasked
-                    val inputTypeValue = if (inputTypeAttribute.nonEmpty) inputTypeAttribute.value.head.text else "text"
+  def getViolations(cpg: Cpg, ruleCache: RuleCache, repoPath: String): Try[(Boolean, List[ViolationProcessingModel])] =
+    Try {
+      val occurrenceList = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
+      getAllFilesRecursively(repoPath, Set(".xml"), ruleCache) match {
+        case Some(sourceFileNames) =>
+          sourceFileNames.foreach(sourceFile => {
+            val xml: Elem     = XML.loadFile(sourceFile)
+            val editTextNodes = xml \\ INPUT_KEY
+            if (editTextNodes.nonEmpty) {
+              editTextNodes.foreach {
+                case editText: Elem =>
+                  // check if EditText represents a sensitive rule
+                  if (isInputSensitiveById(editText.attributes, ruleCache.getRule.sources)) {
+                    // check if input is not masked
+                    if (!isInputMasked(editText.attributes)) {
+                      // get values - these are confirmed to exist at this point
+                      val idAttribute        = editText.attributes.filter(_.key == INPUT_ID_ATTRIBUTE).value.head
+                      val inputTypeAttribute = editText.attributes.filter(_.key == INPUT_TYPE_ATTRIBUTE)
+                      // text is default value in absence of attribute - also unmasked
+                      val inputTypeValue =
+                        if (inputTypeAttribute.nonEmpty) inputTypeAttribute.value.head.text else "text"
 
-                    val occurrenceOutput =
-                      getOccurrenceObject(
-                        s"${INPUT_ID_ATTRIBUTE}=\"${idAttribute.text}\"",
-                        s"${INPUT_TYPE_ATTRIBUTE}=\"${inputTypeValue}\"",
-                        sourceFile
-                      )
-                    occurrenceList.append(occurrenceOutput)
+                      val occurrenceOutput =
+                        getOccurrenceObject(
+                          s"${INPUT_ID_ATTRIBUTE}=\"${idAttribute.text}\"",
+                          s"${INPUT_TYPE_ATTRIBUTE}=\"${inputTypeValue}\"",
+                          sourceFile
+                        )
+                      occurrenceList.append(occurrenceOutput)
+                    }
                   }
-                }
-              case _ => // Node not found
+                case _ => // Node not found
+              }
             }
-          }
-        })
-      case None => // repo is not correct
+          })
+        case None => // repo is not correct
+      }
+
+      val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList.toList)
+
+      // threat exists if occurrences are non-empty
+      (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
     }
-
-    val sanitizedOccurrenceList = transformOccurrenceList(occurrenceList.toList)
-
-    // threat exists if occurrences are non-empty
-    (sanitizedOccurrenceList.nonEmpty, sanitizedOccurrenceList)
-  }
 
   /** Checks if the field id is sensitive
     * @param attributes

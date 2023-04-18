@@ -1,5 +1,7 @@
 package ai.privado.utility
 
+import ai.privado.cache.RuleCache
+
 import scala.util.control.Breaks._
 import java.nio.charset.MalformedInputException
 import scala.io.Source
@@ -85,8 +87,8 @@ object ImportUtility {
     return uniqueImports;
   }
 
-  def getAllImportsFromProject(dirpath: String, language: Language.Value): mutable.Set[String] = {
-    val files                           = Utilities.getAllFilesRecursively(dirpath, Set("." + language.toString())).get
+  def getAllImportsFromProject(dirpath: String, language: Language.Value, ruleCache: RuleCache): mutable.Set[String] = {
+    val files = Utilities.getAllFilesRecursively(dirpath, Set("." + language.toString()), ruleCache).get
     val allImports: mutable.Set[String] = mutable.Set[String]()
     // .par used to convert list to a parallel operational list
     for (file <- files.par) {

@@ -50,9 +50,11 @@ object APITaggerUtility {
     apis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
     showAPI: Boolean = true
   ): Unit = {
-    val filteredSourceNode = apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node)))
+    val filteredSourceNode =
+      apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode).l
@@ -67,29 +69,29 @@ object APITaggerUtility {
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id
         if (ruleInfo.id.equals(Constants.internalAPIRuleId))
-          addRuleTags(builder, apiNode, ruleInfo)
+          addRuleTags(builder, apiNode, ruleInfo, ruleCache)
         else {
           val domain = getDomainFromString(literalCode)
           newRuleIdToUse = ruleInfo.id + "." + domain
-          RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
-          addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+          addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
-        storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, literalCode)
+        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, literalCode)
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
       if (showAPI && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
         val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
         apiNodesWithoutLiteralPath.foreach(apiNode => {
-          addRuleTags(builder, apiNode, ruleInfo)
-          storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
+          addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
         })
       }
     } // Add url as 'API' for non Internal api nodes, for cases where there is no http literal present in source code
     else if (showAPI && filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
       apis.foreach(apiNode => {
-        addRuleTags(builder, apiNode, ruleInfo)
-        storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
+        addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
       })
     }
   }

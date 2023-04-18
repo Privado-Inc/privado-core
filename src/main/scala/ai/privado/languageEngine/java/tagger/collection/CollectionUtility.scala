@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.java.tagger.collection
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -20,6 +21,7 @@ object CollectionUtility {
     collectionMethods: List[Method],
     sourceRuleInfos: List[RuleInfo],
     collectionRuleInfo: RuleInfo,
+    ruleCache: RuleCache,
     returnByName: Boolean = false,
     methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](),
     classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
@@ -31,12 +33,20 @@ object CollectionUtility {
         if (parameters.isEmpty) {
           None
         } else {
-          parameters.foreach(parameter => storeForTag(builder, parameter)(Constants.id, sourceRule.id))
+          parameters.foreach(parameter => storeForTag(builder, parameter, ruleCache)(Constants.id, sourceRule.id))
           Some(collectionMethod)
         }
       })
     })
-    tagMethodEndpoints(builder, collectionPoints.l, collectionRuleInfo, returnByName, methodUrlMap, classUrlMap)
+    tagMethodEndpoints(
+      builder,
+      collectionPoints.l,
+      collectionRuleInfo,
+      ruleCache,
+      returnByName,
+      methodUrlMap,
+      classUrlMap
+    )
   }
 
   def tagDerivedSources(
@@ -44,6 +54,7 @@ object CollectionUtility {
     builder: DiffGraphBuilder,
     collectionMethods: List[Method],
     collectionRuleInfo: RuleInfo,
+    ruleCache: RuleCache,
     returnByName: Boolean = false,
     methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](),
     classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
@@ -65,7 +76,7 @@ object CollectionUtility {
           .foreach(parameter => {
             parameter.tag
               .name(Constants.privadoDerived + ".*")
-              .foreach(refTag => storeForTag(builder, parameter)(refTag.name, refTag.value))
+              .foreach(refTag => storeForTag(builder, parameter, ruleCache)(refTag.name, refTag.value))
           })
         collectionMethod
       }
@@ -75,6 +86,7 @@ object CollectionUtility {
       builder,
       collectionPointsFromDerivedTypeDecl.l,
       collectionRuleInfo,
+      ruleCache,
       returnByName,
       methodUrlMap,
       classUrlMap
@@ -85,13 +97,14 @@ object CollectionUtility {
     builder: DiffGraphBuilder,
     collectionPoints: List[Method],
     collectionRuleInfo: RuleInfo,
+    ruleCache: RuleCache,
     returnByName: Boolean,
     methodUrlMap: mutable.HashMap[Long, String],
     classUrlMap: mutable.HashMap[Long, String]
   ) = {
     collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, collectionRuleInfo)
-      storeForTag(builder, collectionPoint)(
+      addRuleTags(builder, collectionPoint, collectionRuleInfo, ruleCache)
+      storeForTag(builder, collectionPoint, ruleCache)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
         getFinalEndPoint(collectionPoint, returnByName, methodUrlMap, classUrlMap)
       )

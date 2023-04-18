@@ -194,16 +194,16 @@ object ExporterUtility {
     }
   }
 
-  def getRuleInfoForExporting(ruleId: String): RuleInfo = {
-    RuleCache.getRuleInfo(ruleId) match {
+  def getRuleInfoForExporting(ruleCache: RuleCache, ruleId: String): RuleInfo = {
+    ruleCache.getRuleInfo(ruleId) match {
       case Some(rule) =>
         RuleInfo(rule.id, rule.name, rule.category, rule.domains, rule.sensitivity, rule.isSensitive, rule.tags)
       case None => RuleInfo("", "", "", Array[String](), "", isSensitive = false, Map[String, String]())
     }
   }
 
-  def getPolicyInfoForExporting(policyOrThreatId: String): Option[ViolationPolicyDetailsModel] = {
-    RuleCache.getPolicyOrThreat(policyOrThreatId) match {
+  def getPolicyInfoForExporting(ruleCache: RuleCache, policyOrThreatId: String): Option[ViolationPolicyDetailsModel] = {
+    ruleCache.getPolicyOrThreat(policyOrThreatId) match {
       case Some(policyOrThreat) =>
         Some(
           ViolationPolicyDetailsModel(

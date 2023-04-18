@@ -38,6 +38,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
   val javaFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
+  val ruleCache        = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -48,7 +49,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     cpg = new JavaSrc2Cpg().createCpg(config).get
 
     // Caching Rule
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
     AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }

@@ -16,6 +16,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
   val javaFileContentMap: Map[String, String]
   var inputDir: File  = _
   var outputDir: File = _
+  val ruleCache       = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -35,7 +36,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
 
     cpg = xtocpg.get
 
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 

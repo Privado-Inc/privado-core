@@ -14,7 +14,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.language._
 
-class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[Expression](cpg) {
+class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
+    extends ForkJoinParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
   val selectRegexPattern               = "(?i).*select.*"
@@ -89,7 +90,7 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
               .filter(ruleId => isColumnNameMatchingWithRule(ruleId, columns))
               .foreach(ruleId => addTagsToNode(ruleId, node, builder))
           else
-            RuleCache.getRule.sources
+            ruleCache.getRule.sources
               .filter(rule => isColumnNameMatchingWithRule(rule.id, columns))
               .foreach(rule => addTagsToNode(rule.id, node, builder))
         }
@@ -104,13 +105,13 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     * @return
     */
   def isColumnNameMatchingWithRule(ruleId: String, columns: Array[String]): Boolean = {
-    val pattern = RuleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
+    val pattern = ruleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
     columns.map(pattern.matches).foldLeft(false)(_ || _)
   }
 
   def addTagsToNode(ruleId: String, node: Expression, builder: DiffGraphBuilder) = {
-    storeForTag(builder, node)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-    addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
+    storeForTag(builder, node, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+    addRuleTags(builder, node, ruleCache.getRuleInfo(ruleId).get, ruleCache)
   }
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
     val query = sqlQuery

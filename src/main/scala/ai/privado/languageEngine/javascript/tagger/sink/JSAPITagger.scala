@@ -24,20 +24,13 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.sink.APITagger
-import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
-import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, getDomainFromTemplates, storeForTag}
-import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import ai.privado.utility.Utilities.{addRuleTags, getDomainFromTemplates, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-import scala.collection.mutable.HashMap
-
-class JSAPITagger(cpg: Cpg) extends APITagger(cpg) {
+class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
@@ -49,13 +42,13 @@ class JSAPITagger(cpg: Cpg) extends APITagger(cpg) {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
       if (ruleInfo.id.equals(Constants.internalAPIRuleId))
-        addRuleTags(builder, scriptTag, ruleInfo)
+        addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
       else {
         newRuleIdToUse = ruleInfo.id + "." + domain._2
-        RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
-        addRuleTags(builder, scriptTag, ruleInfo, Some(newRuleIdToUse))
+        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+        addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
       }
-      storeForTag(builder, scriptTag)(Constants.apiUrl + newRuleIdToUse, domain._1)
+      storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
   }
 }
