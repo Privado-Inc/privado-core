@@ -2,6 +2,7 @@ package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
+import ai.privado.languageEngine.java.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
@@ -42,6 +43,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
+    println(s"${Calendar.getInstance().getTime} - --Database Read Pass INVOKED...")
+    new DatabaseReadPass(cpg, taggerCache).createAndApply()
+
     println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
     new PythonDBConfigTagger(cpg).createAndApply()
     println(
@@ -51,6 +55,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     // Custom Rule tagging
     // Adding custom rule to cache
     StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
+    StorageInheritRule.rules.foreach(RuleCache.addStorageRuleInfo)
     println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
     new CustomInheritTagger(cpg).createAndApply()
     println(

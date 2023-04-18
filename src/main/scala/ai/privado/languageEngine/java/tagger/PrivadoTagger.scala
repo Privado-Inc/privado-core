@@ -94,6 +94,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
+      StorageInheritRule.rules.foreach(RuleCache.addStorageRuleInfo)
       println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
       new CustomInheritTagger(cpg).createAndApply()
       println(
