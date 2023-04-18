@@ -21,9 +21,9 @@
  *
  */
 
-package ai.privado.languageEngine.java.tagger.sink
+package ai.privado.tagger.sink
 
-import ai.privado.cache.{RuleCache}
+import ai.privado.cache.RuleCache
 import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg

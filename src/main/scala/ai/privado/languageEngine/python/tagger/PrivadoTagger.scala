@@ -4,14 +4,13 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.java.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
-import ai.privado.languageEngine.java.tagger.sink.CustomInheritTagger
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.sink.PythonAPITagger
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.PythonDBConfigTagger
-import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
+import ai.privado.tagger.sink.{CustomInheritTagger, LogShareSinkTagger, RegularSinkTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
