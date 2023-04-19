@@ -36,6 +36,7 @@ class RuleCache {
   private val policyOrThreatMap = mutable.HashMap[String, PolicyOrThreat]()
   val internalRules             = mutable.HashMap[String, Int]()
   val internalPolicies          = mutable.Set[String]()
+  private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
@@ -49,6 +50,10 @@ class RuleCache {
   def getRule: ConfigAndRules = rule
 
   def setRuleInfo(ruleInfo: RuleInfo): Unit = ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+
+  def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
+
+  def getStorageRuleInfo(): List[RuleInfo] = storageRuleInfo.toList
 
   def getRuleInfo(ruleId: String): Option[RuleInfo] = ruleInfoMap.get(ruleId)
 
