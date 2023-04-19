@@ -22,13 +22,9 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
 
   override def beforeAll() = {
     super.beforeAll()
-    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
-    new DependenciesNodePass(cpg).createAndApply()
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    ModuleCache.cleanCache()
+    val moduleCache: ModuleCache = new ModuleCache()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
+    new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 
   private def getContent(): Map[String, String] = {
@@ -318,13 +314,9 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
 
   override def beforeAll() = {
     super.beforeAll()
-    new ModuleFilePass(cpg, inputDir.toString()).createAndApply()
-    new DependenciesNodePass(cpg).createAndApply()
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-    ModuleCache.cleanCache()
+    val moduleCache: ModuleCache = new ModuleCache()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
+    new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 
   def getContent(): Map[String, String] = {
@@ -460,6 +452,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
   var inputDir: File  = _
   var outputDir: File = _
   val moduleFileMap: Map[String, String]
+  val ruleCache = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -477,7 +470,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
     }
 
     cpg = xtocpg.get
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
 
     super.beforeAll()
   }

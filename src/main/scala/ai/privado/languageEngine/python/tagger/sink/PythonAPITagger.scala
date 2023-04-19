@@ -37,11 +37,11 @@ import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 
-class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
-  lazy val APISINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.apiSinks)
+  lazy val APISINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
   val apis = cacheCall.name(APISINKS_REGEX).l
 
@@ -49,10 +49,10 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   implicit val engineContext: EngineContext =
     EngineContext(semantics = SemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
-  val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
+  val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    RuleCache.getRule.sinks
+    ruleCache.getRule.sinks
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toArray
   }
@@ -61,7 +61,7 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
     val apiInternalSources = cpg.literal.code("(?:\"|'){0,1}(" + ruleInfo.combinedRulePattern + ")(?:\"|'){0,1}").l
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     // Support to use `identifier` in API's
-    val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
     val identifierSource = {
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
         cpg.identifier(identifierRegex).l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
@@ -75,7 +75,8 @@ class PythonAPITagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
       apiInternalSources ++ propertySources ++ identifierSource,
       apis.methodFullName(commonHttpPackages).l,
       builder,
-      ruleInfo
+      ruleInfo,
+      ruleCache
     )
   }
 

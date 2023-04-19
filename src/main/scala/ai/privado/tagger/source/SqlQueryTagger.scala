@@ -21,40 +21,27 @@
  *
  */
 
-package ai.privado.tagger.sink
+package ai.privado.tagger.source
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, RuleInfo}
-import ai.privado.utility.Utilities._
+import ai.privado.model.{InternalTag, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import ai.privado.semantic.Language._
+import ai.privado.utility.Utilities.{storeForTag, addRuleTags}
 
-class LogShareSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  val logSharingThirdPartySinkId = "ThirdParties.SDK.Sentry"
-  val higherOrderLeakgeSinkId    = "Leakages.Log.(Error|Exception)"
+class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  override def generateParts(): Array[_ <: AnyRef] = ruleCache.getRule.sources.toArray
 
-  val callNodeTaggedWithErrorOrExceptionLog: List[Call] = {
-
-    if (cpg.call.tag.nameExact(Constants.id).valueExact(logSharingThirdPartySinkId).nonEmpty) {
-      cpg.call
-        .where(
-          _.tag
-            .nameExact(Constants.id)
-            .value(higherOrderLeakgeSinkId)
-        )
-        .l
-    } else
-      List.empty
-  }
-
-  override def generateParts(): Array[RuleInfo] = {
-    ruleCache.getRule.sinks
-      .filter(rule => rule.id.equals(logSharingThirdPartySinkId))
-      .toArray
-  }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    callNodeTaggedWithErrorOrExceptionLog.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
+    cpg.sqlQuery
+      .filter(queryNode => {
+        val columns = queryNode.value.split(",").toList
+        columns.map(_.matches(ruleInfo.combinedRulePattern)).foldLeft(false)(_ || _)
+      })
+      .foreach(queryNode => {
+        storeForTag(builder, queryNode, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+        addRuleTags(builder, queryNode, ruleInfo, ruleCache)
+      })
   }
 }

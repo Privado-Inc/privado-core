@@ -23,7 +23,7 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.language._
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
@@ -53,15 +53,16 @@ object APITaggerVersionJava extends Enumeration {
   val SkipTagger, V1Tagger, V2Tagger = Value
 }
 
-class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
+    extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger                             = LoggerFactory.getLogger(this.getClass)
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
 
-  val COMMON_IGNORED_SINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.ignoredSinks)
+  val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
 
-  lazy val APISINKS_REGEX = RuleCache.getSystemConfigByKey(Constants.apiSinks)
+  lazy val APISINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
   internalMethodCall.foreach((method) => {
     val key     = method.split("[.:]").take(2).mkString(".")
@@ -90,12 +91,12 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
       APITaggerVersionJava.V2Tagger
   }
 
-  val commonHttpPackages: String = RuleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
+  val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
   val grpcSinks                  = GRPCTaggerUtility.getGrpcSinks(cpg)
   val soapSinks                  = SOAPTaggerUtility.getAPICallNodes(cpg)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    RuleCache.getAllRuleInfo
+    ruleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toArray
   }
@@ -105,7 +106,7 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
 
     // Support to use `identifier` in API's
-    val identifierRegex = RuleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
     val identifierSource = {
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
         cpg.identifier(identifierRegex).l ++ cpg.member
@@ -118,7 +119,7 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
     // To handle feign implementation, run if feign found in any of the imports
     val feignAPISinks = {
       if (isPackageInImport(".*(?i)feign.*".r))
-        new FeignAPI(cpg).tagFeignAPIWithDomainAndReturnWithoutDomainAPISinks(
+        new FeignAPI(cpg, ruleCache).tagFeignAPIWithDomainAndReturnWithoutDomainAPISinks(
           builder,
           ruleInfo,
           apiInternalSources ++ propertySources ++ identifierSource
@@ -136,13 +137,15 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
           apis,
           builder,
           ruleInfo,
+          ruleCache,
           privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource,
           feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
-          ruleInfo
+          ruleInfo,
+          ruleCache
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
@@ -151,7 +154,8 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
           apiInternalSources ++ propertySources ++ identifierSource,
           apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
-          ruleInfo
+          ruleInfo,
+          ruleCache
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
@@ -160,7 +164,8 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
           apiInternalSources ++ propertySources ++ identifierSource,
           feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
-          ruleInfo
+          ruleInfo,
+          ruleCache
         )
     }
   }
@@ -170,5 +175,9 @@ class JavaAPITagger(cpg: Cpg, privadoInputConfig: PrivadoInput) extends ForkJoin
     * @return
     */
   private def isPackageInImport(packageRegex: Regex): Boolean =
-    ImportUtility.getAllImportsFromProject(AppCache.scanPath, Language.JAVA).par.map(packageRegex.findFirstIn).nonEmpty
+    ImportUtility
+      .getAllImportsFromProject(AppCache.scanPath, Language.JAVA, ruleCache)
+      .par
+      .map(packageRegex.findFirstIn)
+      .nonEmpty
 }

@@ -1,11 +1,11 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
+import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputIntermediateFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
@@ -35,7 +35,9 @@ import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import ai.privado.passes.SQLParser
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import java.nio.file.{Files, Paths}
 
@@ -44,7 +46,7 @@ object PythonProcessor {
 
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
-    processedRules: ConfigAndRules,
+    ruleCache: RuleCache,
     sourceRepoLocation: String
   ): Either[String, Unit] = {
     xtocpg match {
@@ -79,9 +81,15 @@ object PythonProcessor {
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PythonPropertyFilePass(cpg, sourceRepoLocation).createAndApply()
+          new PythonPropertyFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
+          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           // Unresolved function report
@@ -93,13 +101,13 @@ object PythonProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(processedRules, taggerCache)
+          cpg.runTagger(ruleCache, taggerCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
@@ -122,7 +130,7 @@ object PythonProcessor {
                 Right(())
             }
           }
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               Left(err)
@@ -139,7 +147,6 @@ object PythonProcessor {
               logger.debug(s"size of code : ${codelist.size}")
               codelist.foreach(item => logger.debug(item._1, item._2))
               logger.debug("Above we printed methodFullName")
-
               Right(())
           }
 
@@ -167,11 +174,7 @@ object PythonProcessor {
     * @param lang
     * @return
     */
-  def createPythonCpg(
-    processedRules: ConfigAndRules,
-    sourceRepoLocation: String,
-    lang: String
-  ): Either[String, Unit] = {
+  def createPythonCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -191,7 +194,7 @@ object PythonProcessor {
       )
       cpg
     }
-    processCPG(xtocpg, processedRules, sourceRepoLocation)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation)
   }
 
 }

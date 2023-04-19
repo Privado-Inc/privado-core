@@ -30,15 +30,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
   override def generateParts(): Array[RuleInfo] = {
-    RuleCache.getRule.sinks
+    ruleCache.getRule.sinks
       .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
       .toArray
   }
@@ -48,9 +47,9 @@ class RegularSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg)
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
       if (databaseDetails.isDefined) {
-        sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
+        sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get, ruleCache))
       }
     }
-    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo))
+    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
   }
 }

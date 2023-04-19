@@ -28,14 +28,15 @@ import scala.collection.mutable
 
 /** Cache to store Rules specific things
   */
-object RuleCache {
 
+class RuleCache {
   private var rule: ConfigAndRules =
     ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List())
   private val ruleInfoMap       = mutable.HashMap[String, RuleInfo]()
   private val policyOrThreatMap = mutable.HashMap[String, PolicyOrThreat]()
   val internalRules             = mutable.HashMap[String, Int]()
   val internalPolicies          = mutable.Set[String]()
+  private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
@@ -49,6 +50,10 @@ object RuleCache {
   def getRule: ConfigAndRules = rule
 
   def setRuleInfo(ruleInfo: RuleInfo): Unit = ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+
+  def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
+
+  def getStorageRuleInfo(): List[RuleInfo] = storageRuleInfo.toList
 
   def getRuleInfo(ruleId: String): Option[RuleInfo] = ruleInfoMap.get(ruleId)
 

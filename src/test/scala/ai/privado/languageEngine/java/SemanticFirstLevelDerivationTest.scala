@@ -34,9 +34,9 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
   var semantics: Semantics            = Semantics.empty
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, taggerCache).createAndApply()
-    new InSensitiveCallTagger(cpg, taggerCache).createAndApply()
-    semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig)
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
+    semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
   }
   override val javaFileContents =
     """

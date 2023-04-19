@@ -35,13 +35,13 @@ import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String) {
+class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   val ALL_MATCH_REGEX                             = "**"
   val actionMap: Map[PolicyAction.Value, Boolean] = Map(PolicyAction.ALLOW -> false, PolicyAction.DENY -> true)
-  lazy val policies: List[PolicyOrThreat] = RuleCache.getAllPolicy.filter(policy => filterByRepoName(policy, repoName))
+  lazy val policies: List[PolicyOrThreat] = ruleCache.getAllPolicy.filter(policy => filterByRepoName(policy, repoName))
 
   // Map to contain sourceId -> List(pathIds)
   lazy val dataflowSourceIdMap: Map[String, List[String]] = getDataflowBySourceIdMapping

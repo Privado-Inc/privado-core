@@ -40,7 +40,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class FeignAPI(cpg: Cpg) {
+class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
 
   implicit val resolver: ICallResolver = NoResolve
   val FEIGN_CLIENT                     = "FeignClient"
@@ -184,8 +184,8 @@ class FeignAPI(cpg: Cpg) {
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
           if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
             apiCalls.foreach(apiNode => {
-              addRuleTags(builder, apiNode, ruleInfo)
-              storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, apiLiteral)
+              addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+              storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, apiLiteral)
             })
           }
         } else if (apiLiteral.startsWith("${") || apiLiteral.matches(ruleInfo.combinedRulePattern)) {
@@ -194,14 +194,14 @@ class FeignAPI(cpg: Cpg) {
           apiCalls.foreach(apiNode => {
             val domain         = getDomainFromString(apiLiteral)
             val newRuleIdToUse = ruleInfo.id + "." + domain
-            RuleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
-            addRuleTags(builder, apiNode, ruleInfo, Some(newRuleIdToUse))
-            storeForTag(builder, apiNode)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
+            ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+            addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+            storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
           })
         } else {
           apiCalls.foreach(apiNode => {
-            addRuleTags(builder, apiNode, ruleInfo)
-            storeForTag(builder, apiNode)(Constants.apiUrl + ruleInfo.id, Constants.API)
+            addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+            storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
           })
         }
       }

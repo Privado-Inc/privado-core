@@ -246,6 +246,7 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
   val codeFileContents: String
   var inputDir: File   = _
   var outputFile: File = _
+  val ruleCache        = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -276,11 +277,29 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
         Array()
       )
     )
+    val collectionRule = List(
+      RuleInfo(
+        "Collections.Annotation.Spring",
+        "Spring Web Interface Annotation",
+        "",
+        Array(),
+        List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
+        false,
+        "",
+        Map(),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.COLLECTIONS,
+        "",
+        Language.JAVA,
+        Array()
+      )
+    )
     val rule: ConfigAndRules =
-      ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List())
-    RuleCache.setRule(rule)
-    new IdentifierTagger(cpg, taggerCache).createAndApply()
-    new DatabaseReadPass(cpg, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
+      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+    ruleCache.setRule(rule)
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new DatabaseReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
     super.beforeAll()
   }
 

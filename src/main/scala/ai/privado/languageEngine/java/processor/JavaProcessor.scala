@@ -24,11 +24,12 @@
 package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
+import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
@@ -55,6 +56,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
+import ai.privado.passes.SQLParser
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -69,16 +71,21 @@ object JavaProcessor {
   private var cpgconfig = Config()
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
-    processedRules: ConfigAndRules,
+    ruleCache: RuleCache,
     sourceRepoLocation: String
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
         try {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PropertiesFilePass(cpg, sourceRepoLocation).createAndApply()
+          new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           logger.info("Applying data flow overlay")
           val context = new LayerCreatorContext(cpg)
@@ -98,12 +105,12 @@ object JavaProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(processedRules, taggerCache, ScanProcessor.config)
+          cpg.runTagger(ruleCache, taggerCache, ScanProcessor.config)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
           println(
@@ -113,7 +120,7 @@ object JavaProcessor {
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, taggerCache) match {
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
@@ -128,8 +135,9 @@ object JavaProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
-            new ModuleFilePass(cpg, sourceRepoLocation).createAndApply()
-            new DependenciesNodePass(cpg).createAndApply()
+            val moduleCache: ModuleCache = new ModuleCache()
+            new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
+            new DependenciesNodePass(cpg, moduleCache).createAndApply()
 
             ExcelExporter.auditExport(
               outputAuditFileName,
@@ -191,7 +199,7 @@ object JavaProcessor {
     * @param lang
     * @return
     */
-  def createJavaCpg(processedRules: ConfigAndRules, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+  def createJavaCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
@@ -238,7 +246,7 @@ object JavaProcessor {
       cpg
     }
 
-    val msg = processCPG(xtocpg, processedRules, sourceRepoLocation)
+    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation)
 
     // Delete the delomboked directory after scanning is completed
     if (AppCache.isLombokPresent) {

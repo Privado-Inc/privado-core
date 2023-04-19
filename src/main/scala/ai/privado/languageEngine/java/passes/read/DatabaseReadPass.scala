@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.passes.read
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.passes.read.DatabaseReadUtility.{fromRegexPattern, selectRegexPattern}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
@@ -8,8 +8,12 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
-class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache, classTableMapping: Map[String, TypeDecl])
-    extends ForkJoinParallelCpgPass[Expression](cpg) {
+class DatabaseReadPass(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  taggerCache: TaggerCache,
+  classTableMapping: Map[String, TypeDecl]
+) extends ForkJoinParallelCpgPass[Expression](cpg) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -29,6 +33,6 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache, classTableMapping: Ma
   }
 
   override def runOnPart(builder: DiffGraphBuilder, node: Expression): Unit = {
-    DatabaseReadUtility.processDBReadNode(builder, taggerCache, classTableMapping, cpg, node)
+    DatabaseReadUtility.processDBReadNode(builder, ruleCache, taggerCache, classTableMapping, cpg, node)
   }
 }

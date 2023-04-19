@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.java.passes.config
 
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language._
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import better.files.File
@@ -42,7 +43,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Literal,
   MethodParameterIn
 }
-import java.nio.file.{Paths, Files}
+
+import java.nio.file.{Files, Paths}
 
 class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
@@ -249,7 +251,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
 
     cpg = new JavaSrc2Cpg().createCpg(config).get
-    new PropertiesFilePass(cpg, inputDir.toString).createAndApply()
+    new PropertiesFilePass(cpg, inputDir.toString, new RuleCache()).createAndApply()
 
     super.beforeAll()
   }
