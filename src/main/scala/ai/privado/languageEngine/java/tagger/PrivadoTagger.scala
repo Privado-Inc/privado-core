@@ -28,13 +28,14 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
-import ai.privado.languageEngine.java.tagger.sink.{CustomInheritTagger, JavaAPITagger}
+import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.model.ConfigAndRules
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
-import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.tagger.sink.{CustomInheritTagger, RegularSinkTagger}
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -98,6 +99,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(RuleCache.setRuleInfo)
+      StorageInheritRule.rules.foreach(RuleCache.addStorageRuleInfo)
       println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
       new CustomInheritTagger(cpg).createAndApply()
       println(
