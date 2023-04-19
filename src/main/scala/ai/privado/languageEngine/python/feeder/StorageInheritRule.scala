@@ -93,38 +93,6 @@ object StorageInheritRule {
       "storages",
       Language.PYTHON,
       Array[String]()
-    ),
-    RuleInfo(
-      "Storages.Framework.DjangoDB.Write",
-      "DjangoDB(Write)",
-      "",
-      Array[String]("djangoproject.com"),
-      List[String]("(?i)django/db/models.py:<module>.Model", "(save|create)"),
-      false,
-      "",
-      HashMap[String, String](),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "storages",
-      Language.PYTHON,
-      Array[String]()
-    ),
-    RuleInfo(
-      "Storages.Framework.DjangoDB.Read",
-      "DjangoDB(Read)",
-      "",
-      Array[String]("djangoproject.com"),
-      List[String]("(?i)django/db/models.py:<module>.Model", "(filter|get)"),
-      false,
-      "",
-      HashMap[String, String](),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "storages",
-      Language.PYTHON,
-      Array[String]()
     )
   )
 }
