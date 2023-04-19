@@ -21,10 +21,9 @@
  *
  */
 
-package ai.privado.languageEngine.java.tagger.sink
+package ai.privado.tagger.sink
 
-import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.languageEngine.java.feeder.StorageInheritRule
+import ai.privado.cache.RuleCache
 import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -36,7 +35,7 @@ import org.slf4j.LoggerFactory
 class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
+  override def generateParts(): Array[RuleInfo] = RuleCache.getStorageRuleInfo().toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
