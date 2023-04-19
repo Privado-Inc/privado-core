@@ -45,9 +45,11 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
     // public interface BillableUsageRepository extends EnrichmentRepository<BillableUsageEntity>
     // EnrichmentRepository extends JPARepository
     val typeDeclNode = typeDeclNodeL1 ++ getImpactedTypeDeclNode(typeDeclNodeL1.fullName.mkString("(", "|", ")"))
+
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
+
         callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
       })
     }

@@ -191,7 +191,7 @@ object Dataflow {
       .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
   }
 
-  private def getSinks(cpg: Cpg): List[CfgNode] = {
+  def getSinks(cpg: Cpg): List[CfgNode] = {
     cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
   }
 }
