@@ -27,11 +27,14 @@ import overflowdb.schema.Property.ValueType
 import overflowdb.schema.SchemaBuilder
 
 class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
+
+  // Use these imports to leverage the existing edges, nodes, classes etc
   import cpgSchema.ast._
   import cpgSchema.base._
   import cpgSchema.fs._
   import cpgSchema.method._
   import cpgSchema.typeSchema._
+  import cpgSchema.tagsAndLocation._
 
   // Add node types, edge types, and properties here
 
@@ -63,6 +66,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Node and edge types for `.properties` files
 
+  // Adding Property Node start
   val property = builder
     .addNodeType(CpgSchemaConstants.JAVA_PROPERTY_NODE_NAME)
     .addProperty(name)
@@ -81,6 +85,30 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   member.addOutEdge(edge = originalProperty, inNode = property)
   literal.addOutEdge(edge = originalProperty, inNode = property)
   methodParameterIn.addOutEdge(edge = originalProperty, inNode = property)
+
+  // Adding Property Node End
+
+  // Adding SQL query node Start
+
+  // TODO facing issue so will fix this up later
+  /*
+  val sqlQueryColumn = builder
+    .addProperty(name = CpgSchemaConstants.SQL_QUERY_COLUMN_NAME, valueType = ValueType.List)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+
+
+   */
+  val sqlQueryNode = builder
+    .addNodeType(CpgSchemaConstants.SQL_QUERY_NODE_NAME)
+    .addProperty(name)
+    .addProperty(value)
+    .addProperty(fullName)
+    .extendz(astNode) // We are extending the new node from AstNode
+  // .addProperty(sqlQueryColumn)
+  sqlQueryNode.addOutEdge(edge = sourceFile, inNode = file)
+  sqlQueryNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  // Adding SQL query node End
 
   val groupId = builder
     .addProperty(name = CpgSchemaConstants.MODULE_GROUP_ID_NAME, valueType = ValueType.String)
@@ -114,8 +142,11 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 }
 
 object CpgExtSchema {
-  val builder   = new SchemaBuilder(domainShortName = CpgSchemaConstants.CPG_DOMAIN_SHORT_NAME, basePackage = CpgSchemaConstants.CPG_BASE_PACKAGE_NAME)
-  val cpgSchema = new CpgSchema(builder)
+  val builder = new SchemaBuilder(
+    domainShortName = CpgSchemaConstants.CPG_DOMAIN_SHORT_NAME,
+    basePackage = CpgSchemaConstants.CPG_BASE_PACKAGE_NAME
+  )
+  val cpgSchema    = new CpgSchema(builder)
   val cpgExtSchema = new CpgExtSchema(builder, cpgSchema)
   val instance     = builder.build
 }

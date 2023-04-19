@@ -48,20 +48,6 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
-
-        if (
-          callNodes != null & ruleInfo.id
-            .matches(
-              "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.AmazonDynamoDB.*|Storages.Postgres.*|Storages.MongoDB.*|Storages.Neo4jGraphDatabase.*"
-            )
-        ) {
-          val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
-          logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")
-          if (databaseDetails.isDefined) {
-            logger.debug("adding database details")
-            callNodes.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
-          }
-        }
         callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
       })
     }

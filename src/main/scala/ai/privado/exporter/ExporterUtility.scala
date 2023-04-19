@@ -23,10 +23,13 @@
 
 package ai.privado.exporter
 
+import ai.privado.cache
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.metric.MetricHandler
+import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, RuleInfo, ViolationPolicyDetailsModel}
 import ai.privado.semantic.Language.finder
+import io.shiftleft.codepropertygraph.generated.Languages
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.dump
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -45,13 +48,20 @@ object ExporterUtility {
     sourceId: String = "",
     taggerCache: TaggerCache = new TaggerCache()
   ): List[DataFlowSubCategoryPathExcerptModel] = {
+    val lang     = AppCache.repoLanguage
+    val isPython = lang == Language.PYTHON
+
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
       val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList)
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
-        val typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        var typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+
+        // Temporary fix for python to match the typeFullName
+        typeFullName = updateTypeFullNameForPython(typeFullName, isPython)
+
         // Going 1 level deep for derived sources to add extra nodes
         taggerCache.typeDeclMemberCache
           .getOrElse(typeFullName, mutable.HashMap[String, mutable.HashSet[Member]]())
@@ -59,7 +69,11 @@ object ExporterUtility {
           case Some(members) =>
             // Picking up only the head as any path to base is sufficient
             val member             = members.head
-            val typeFullNameLevel2 = member.typeFullName
+            var typeFullNameLevel2 = member.typeFullName // java.lang.string
+
+            // Temporary fix for python to match the typeFullName
+            typeFullNameLevel2 = updateTypeFullNameForPython(typeFullNameLevel2, isPython)
+
             taggerCache.typeDeclMemberCache
               .getOrElse(typeFullNameLevel2, mutable.HashMap[String, mutable.HashSet[Member]]())
               .get(sourceId) match {
@@ -168,7 +182,12 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message)
+      val excerpt = {
+        if (node.isInstanceOf[SqlQueryNode])
+          dump(absoluteFileName, node.lineNumber, message, excerptStartLine = -1, excerptEndLine = 9)
+        else
+          dump(absoluteFileName, node.lineNumber, message)
+      }
       // Get the actual filename
       val actualFileName = {
         if (AppCache.isLombokPresent)
@@ -221,6 +240,23 @@ object ExporterUtility {
     */
   private def generateDSExtendsMsg(typeDeclName: String, typeDeclFullName: String): String = {
     s"'$typeDeclName' class is inherited by '$typeDeclFullName' class"
+  }
+
+  private def updateTypeFullNameForPython(typeFullName: String, isPython: Boolean): String = {
+    var updatedTypeFullName = typeFullName
+    val pattern1            = "(.+)\\.<init>".r
+    val pattern2            = "(.+)\\.\\w+<body>.*".r
+    val pattern3            = "(.+)<meta>.*".r
+
+    if (isPython) {
+      typeFullName match {
+        case pattern1(str) => updatedTypeFullName = str
+        case pattern2(str) => updatedTypeFullName = str
+        case pattern3(str) => updatedTypeFullName = str
+        case _             => updatedTypeFullName = typeFullName
+      }
+    }
+    updatedTypeFullName
   }
 
 }
