@@ -25,7 +25,12 @@ package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor
-import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{
+  DataFlowSubCategoryPathExcerptModel,
+  DataFlowSubCategoryPathModel,
+  SourceModel,
+  SourceProcessingModel
+}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
@@ -41,6 +46,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   StoredNode,
   Tag
 }
+import ai.privado.semantic.Language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
@@ -110,7 +116,10 @@ class SourceExporter(cpg: Cpg) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l ++ cpg.sqlQuery
+          .where(filterSource)
+          .map(item => item.tag.l)
+          .l
     sources
   }
 
@@ -131,7 +140,11 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member
+          .where(filterSource)
+          .l ++ cpg.sqlQuery
+          .where(filterSource)
+          .l
     sources
   }
 
@@ -165,6 +178,7 @@ class SourceExporter(cpg: Cpg) {
       } else
         None
     }
+
     sources
       .flatMap(source => getSources(source))
       .flatten

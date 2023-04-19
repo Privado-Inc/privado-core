@@ -49,7 +49,6 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
-
         callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
       })
     }
