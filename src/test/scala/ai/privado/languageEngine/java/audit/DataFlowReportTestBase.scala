@@ -16,6 +16,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
   val javaFileContentMap: Map[String, String]
   var inputDir: File  = _
   var outputDir: File = _
+  val ruleCache: RuleCache = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -34,7 +35,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
 
     cpg = xtocpg.get
 
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 

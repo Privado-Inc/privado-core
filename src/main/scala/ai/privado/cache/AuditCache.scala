@@ -42,7 +42,7 @@ object AuditCache {
 
   def getPathFromId(pathId: String): Path = dataflowMapByPathId(pathId)
 
-  def addIntoBeforeFirstFiltering(dataflowPathsUnfiltered: List[Path], privadoScanConfig: PrivadoInput): Unit = {
+  def addIntoBeforeFirstFiltering(dataflowPathsUnfiltered: List[Path], privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
 
     dataflowMapByPathId = dataflowPathsUnfiltered
       .flatMap(dataflow => {
@@ -58,7 +58,7 @@ object AuditCache {
     this.dataflowMapByPathId = dataflowMapByPathId
 
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-    RuleCache.getRule.sinks.foreach(sinkRule => {
+    ruleCache.getRule.sinks.foreach(sinkRule => {
       if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
         sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
       sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)

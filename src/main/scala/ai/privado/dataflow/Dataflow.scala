@@ -23,7 +23,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, AuditCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
@@ -100,7 +100,7 @@ class Dataflow(cpg: Cpg) {
          */
       }
 
-      AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig)
+      AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
 
       if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()

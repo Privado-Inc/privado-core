@@ -31,11 +31,7 @@ import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
+import ai.privado.languageEngine.javascript.passes.methodfullname.{MethodFullName, MethodFullNameForEmptyNodes, MethodFullNameFromIdentifier}
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
@@ -103,7 +99,7 @@ object JavascriptProcessor {
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         val errorMsg = new ListBuffer[String]()
-        // Exporting Results
+        // Exporting
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
