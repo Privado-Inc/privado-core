@@ -16,7 +16,7 @@ class DependencyReportTest extends DependencyReportTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     val moduleCache: ModuleCache = new ModuleCache()
-    new ModuleFilePass(cpg, inputDir.toString(), moduleCache).createAndApply()
+    new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
     new DependenciesNodePass(cpg, moduleCache).createAndApply()
   }
 

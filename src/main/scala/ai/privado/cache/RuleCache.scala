@@ -28,8 +28,8 @@ import scala.collection.mutable
 
 /** Cache to store Rules specific things
   */
-object RuleCache {
 
+class RuleCache {
   private var rule: ConfigAndRules =
     ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List())
   private val ruleInfoMap       = mutable.HashMap[String, RuleInfo]()

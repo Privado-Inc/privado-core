@@ -29,7 +29,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   private lazy val generalLiteralCached = cpg.literal
     .whereNot(_.code(".*\\s.*"))
@@ -48,7 +48,7 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 
   private lazy val impactedLiteralCached =
     (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.sources.toArray
+  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     // Step 1.2
     // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
@@ -59,8 +59,8 @@ class LiteralTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         .l
 
     impactedLiteral.foreach(literal => {
-      storeForTag(builder, literal)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-      addRuleTags(builder, literal, ruleInfo)
+      storeForTag(builder, literal, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+      addRuleTags(builder, literal, ruleInfo, ruleCache)
     })
   }
 }

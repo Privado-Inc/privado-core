@@ -52,7 +52,7 @@ import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
-class SourceExporter(cpg: Cpg) {
+class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   lazy val sourcesTagList: List[List[Tag]] = getSourcesTagList
   lazy val sourcesList: List[AstNode]      = getSourcesList
@@ -150,9 +150,9 @@ class SourceExporter(cpg: Cpg) {
 
   private def convertSourcesList(sources: List[List[Tag]]): List[SourceModel] = {
     def convertSource(sourceId: String) = {
-      RuleCache.getRuleInfo(sourceId) match {
+      ruleCache.getRuleInfo(sourceId) match {
         case Some(rule) =>
-          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sourceId)
+          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(ruleCache, sourceId)
           Some(
             SourceModel(
               rule.catLevelOne.label,

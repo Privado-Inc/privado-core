@@ -40,6 +40,7 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
   var inputDir: File   = _
   var outputFile: File = _
   val rule: ConfigAndRules
+  val ruleCache = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -51,7 +52,7 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
     cpg = new JsSrc2Cpg().createCpg(config).get
 
     // Caching Rule
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 

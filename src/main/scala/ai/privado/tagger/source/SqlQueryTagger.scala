@@ -30,8 +30,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.{storeForTag, addRuleTags}
 
-class SqlQueryTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  override def generateParts(): Array[_ <: AnyRef] = RuleCache.getRule.sources.toArray
+class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  override def generateParts(): Array[_ <: AnyRef] = ruleCache.getRule.sources.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     cpg.sqlQuery
@@ -40,8 +40,8 @@ class SqlQueryTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
         columns.map(_.matches(ruleInfo.combinedRulePattern)).foldLeft(false)(_ || _)
       })
       .foreach(queryNode => {
-        storeForTag(builder, queryNode)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-        addRuleTags(builder, queryNode, ruleInfo)
+        storeForTag(builder, queryNode, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+        addRuleTags(builder, queryNode, ruleInfo, ruleCache)
       })
   }
 }
