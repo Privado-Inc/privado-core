@@ -36,11 +36,11 @@ import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
 import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
-import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import java.util.Calendar
@@ -130,9 +130,9 @@ object RubyProcessor {
 
     // Need to convert path to absolute path as ruby cpg needs abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
-    val cpgconfig =
-      Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
-    val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
+
+    val config = Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
+    val xtocpg = new RubySrc2Cpg().createCpg(config)
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
   }
 

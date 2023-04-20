@@ -26,6 +26,7 @@ import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
+import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
 import ai.privado.model._
@@ -321,7 +322,7 @@ object ScanProcessor extends CommandProcessor {
                 PythonProcessor.createPythonCpg(getProcessedRule(Language.PYTHON), sourceRepoLocation, lang)
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
-                PythonProcessor.createPythonCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
+                RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
