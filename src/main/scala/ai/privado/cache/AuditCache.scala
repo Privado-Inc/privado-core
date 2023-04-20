@@ -42,7 +42,11 @@ object AuditCache {
 
   def getPathFromId(pathId: String): Path = dataflowMapByPathId(pathId)
 
-  def addIntoBeforeFirstFiltering(dataflowPathsUnfiltered: List[Path], privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
+  def addIntoBeforeFirstFiltering(
+    dataflowPathsUnfiltered: List[Path],
+    privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache
+  ): Unit = {
 
     dataflowMapByPathId = dataflowPathsUnfiltered
       .flatMap(dataflow => {

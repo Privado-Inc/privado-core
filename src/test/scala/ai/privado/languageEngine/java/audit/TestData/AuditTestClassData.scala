@@ -149,4 +149,40 @@ object AuditTestClassData {
       |
       |</project>
       |""".stripMargin
+
+  val person =
+    """
+      |package com.test.privado.audit;
+      |
+      |public class Person {
+      |   public String firstName;
+      |   public String password;
+      |
+      |   public Person(String firstName, String password) {
+      |     this.firstName = firstName;
+      |     this.password = password;
+      |   }
+      |
+      |   public String getFirstName() {return firstName;}
+      |   public String getPassword() {return password;}
+      |}
+      |""".stripMargin
+
+  val filter2File =
+    """package com.test.privado.audit;
+      |
+      |import org.apache.logging.log4j.Logger;
+      |
+      |public class Filter2File {
+      |
+      |   private static final Logger logger = LogManager.getLogger("HelloWorld");
+      |
+      |   public void process() {
+      |     Person person1 = new Person("name", "password");
+      |     String firstName = person1.getFirstName();
+      |
+      |     logger.info(firstName);
+      |   }
+      |}
+      |""".stripMargin
 }

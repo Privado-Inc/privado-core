@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.audit
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -14,8 +14,8 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
 
   var cpg: Cpg = _
   val javaFileContentMap: Map[String, String]
-  var inputDir: File  = _
-  var outputDir: File = _
+  var inputDir: File       = _
+  var outputDir: File      = _
   val ruleCache: RuleCache = new RuleCache()
 
   override def beforeAll(): Unit = {
@@ -36,6 +36,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
     cpg = xtocpg.get
 
     ruleCache.setRule(rule)
+    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 
@@ -53,6 +54,22 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
       "",
       Array(),
       List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVA,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.AccountData.AccountPassword",
+      "AccountPassword",
+      "",
+      Array(),
+      List("(?i).*password.*"),
       false,
       "",
       Map(),
@@ -84,8 +101,29 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
     )
   )
 
+  val sinkRule = List(
+    RuleInfo(
+      "Leakages.Log.Info",
+      "Log Info",
+      "",
+      Array(),
+      List(
+        "(?i)(?:org.slf4j.Logger|org.apache.logging.log4j|org.tinylog.Logger|java.util.logging|ch.qos.logback|timber.log.Timber|android.util.Log).*(info|[.]i[:]).*"
+      ),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
+
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 
