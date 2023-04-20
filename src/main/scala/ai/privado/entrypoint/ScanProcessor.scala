@@ -140,6 +140,7 @@ object ScanProcessor extends CommandProcessor {
                           x.copy(
                             file = fullPath,
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                            catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             nodeType = NodeType.REGULAR
                           )

@@ -35,7 +35,8 @@ import scala.collection.mutable
 class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray
+  override def generateParts(): Array[RuleInfo] =
+    RuleCache.getRule.collections.filter(_.catLevelTwo == "annotations").toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 

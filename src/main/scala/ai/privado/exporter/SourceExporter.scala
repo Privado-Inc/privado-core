@@ -110,6 +110,10 @@ class SourceExporter(cpg: Cpg) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
+          .l ++
+        cpg.templateDom
+          .where(filterSource)
+          .map(item => item.tag.l)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l
     sources
   }
@@ -130,6 +134,9 @@ class SourceExporter(cpg: Cpg) {
           .where(filterSource)
           .l ++
         cpg.call
+          .where(filterSource)
+          .l ++
+        cpg.templateDom
           .where(filterSource)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l
     sources
