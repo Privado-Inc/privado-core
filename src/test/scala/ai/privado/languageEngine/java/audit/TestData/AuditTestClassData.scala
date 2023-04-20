@@ -185,4 +185,54 @@ object AuditTestClassData {
       |   }
       |}
       |""".stripMargin
+
+  val teacher =
+    """
+      |package com.test.privado.audit;
+      |
+      |public class Teacher {
+      |   public String firstName;
+      |   public String password;
+      |
+      |   public Teacher(String firstName, String password) {
+      |     this.firstName = firstName;
+      |     this.password = password;
+      |   }
+      |
+      |   public String getFirstName() {return firstName;}
+      |   public String getPassword() {return password;}
+      |}
+      |""".stripMargin
+
+  val dedup2File =
+    """package com.test.privado.audit;
+      |
+      |import org.apache.logging.log4j.Logger;
+      |
+      |public class Dedup2File {
+      |
+      |   private static final Logger logger = LogManager.getLogger("HelloWorld");
+      |
+      |   public void process1() {
+      |
+      |     Teacher teacher1 = new Teacher("personName", "Password");
+      |     String firstName1 = teacher1.getFirstName();
+      |     firstName1 = firstName1 + "value";
+      |
+      |     logFirstName(firstName1);
+      |   }
+      |
+      |   public void process2() {
+      |     Teacher teacher2 = new Teacher("NewPersonName", "NewPassword");
+      |     String firstName2 = teacher2.getFirstName();
+      |
+      |     logFirstName(firstName2);
+      |   }
+      |
+      |   public void logFirstName(String name) {
+      |     logger.info(name);
+      |   }
+      |}
+      |
+      |""".stripMargin
 }

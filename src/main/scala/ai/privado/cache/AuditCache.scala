@@ -166,7 +166,7 @@ object AuditCache {
     })
   }
 
-  def checkFlowExistinSecondDedup(sourcePathInfo: SourcePathInfo): Boolean =
+  def checkFlowExistInSecondDedup(sourcePathInfo: SourcePathInfo): Boolean =
     flowPathBeforeSecondDedup.contains(sourcePathInfo)
 
   def addIntoFinalPath(dataFlowPathModel: List[DataFlowPathModel]): Unit = {

@@ -12,7 +12,7 @@ object DataFlowReport {
     AuditCache.getFlowBeforeFirstFiltering.foreach(flow => {
       val existInSecondFiltering = if (AuditCache.checkFlowExistInSecondFiltering(flow)) "YES" else "--"
       val existInFirstDedup      = if (AuditCache.checkFlowExistInFirstDedup(flow)) "YES" else "--"
-      val existInSecondDedup     = if (AuditCache.checkFlowExistinSecondDedup(flow)) "YES" else "--"
+      val existInSecondDedup     = if (AuditCache.checkFlowExistInSecondDedup(flow)) "YES" else "--"
       val existInFinal           = if (AuditCache.checkFlowExistInFinal(flow)) "YES" else "--"
       workbookResult += List(
         flow.sourceId,
