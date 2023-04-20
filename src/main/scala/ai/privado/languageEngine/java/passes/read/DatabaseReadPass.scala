@@ -27,7 +27,7 @@ class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 //    'Repeat until' is used to combine multiline SQL queries into one
     cpg.literal
       .code(selectRegexPattern)
-      .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(Operators.addition))))
+      .repeat(_.astParent)(_.until(_.isCall.whereNot(_.name(s"${Operators.addition}|<operator>.stringExpressionList"))))
       .isCall
       .argument
       .code(selectRegexPattern)
@@ -115,12 +115,12 @@ class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   }
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
     val query = sqlQuery
-      .split("\\\"\\s*\\+\\s*\\\"") // Splitting the query on '+' operator and joining back to form complete query
+      .split("\\|\\+|\\\"|\n") // Splitting the query on '+' operator and joining back to form complete query
       .map(_.stripMargin)
       .mkString("")
 
     val pattern =
-      "(?i)SELECT\\s(.*?)\\sFROM\\s(.*?)(`.*?`|\".*?\"|'.*?'|\\w+)".r // Pattern to fetch the SELECT statement from the query
+      "(?i)SELECT\\s+(.*)\\sFROM.+".r // Pattern to fetch the SELECT statement from the query
     pattern.findFirstIn(query).getOrElse("")
   }
 
