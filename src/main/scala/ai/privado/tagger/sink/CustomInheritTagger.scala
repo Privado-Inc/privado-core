@@ -21,10 +21,9 @@
  *
  */
 
-package ai.privado.languageEngine.java.tagger.sink
+package ai.privado.tagger.sink
 
-import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.languageEngine.java.feeder.StorageInheritRule
+import ai.privado.cache.RuleCache
 import ai.privado.model.RuleInfo
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -33,10 +32,10 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class CustomInheritTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[RuleInfo] = StorageInheritRule.rules.toArray
+  override def generateParts(): Array[RuleInfo] = ruleCache.getStorageRuleInfo().toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
@@ -48,21 +47,7 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
-
-        if (
-          callNodes != null & ruleInfo.id
-            .matches(
-              "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.AmazonDynamoDB.*|Storages.Postgres.*|Storages.MongoDB.*|Storages.Neo4jGraphDatabase.*"
-            )
-        ) {
-          val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
-          logger.debug(s"Rule id: ${ruleInfo.id}, DB details ${databaseDetails}")
-          if (databaseDetails.isDefined) {
-            logger.debug("adding database details")
-            callNodes.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get))
-          }
-        }
-        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
+        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo, ruleCache))
       })
     }
   }

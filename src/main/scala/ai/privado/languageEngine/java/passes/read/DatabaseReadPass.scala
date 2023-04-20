@@ -14,7 +14,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.language._
 
-class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[Expression](cpg) {
+class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
+    extends ForkJoinParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
   val selectRegexPattern               = "(?i).*select.*"
@@ -39,61 +40,61 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
 
   def processDBReadNode(builder: DiffGraphBuilder, node: Expression) = {
     val query  = extractSQLForConcatenatedString(node.code)
-    val result = SQLParser.parseSQL(query)
+    val result = SQLParser.parseSqlQuery(query)
 
     result match {
       case Some(value) =>
-        // Match classes which end with tableName
-        val tableName = s"(?i).*${value._1}".r
-        val columns   = value._2
-
-        val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(tableName.regex)) match {
-          case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
-          case None        => List.empty
-        }
-
-        if (columns.length == 1 && columns(0) == "*") {
-          if (sensitiveMemberRuleIds.nonEmpty)
-            sensitiveMemberRuleIds.foreach(ruleId => addTagsToNode(ruleId, node, builder))
-          else {
-            /* Run dataflow and verify the data-elements read from the call,
-                Ex - resultSet = statement.executeQuery("SELECT * FROM mytable");
-                // Loop through the result set and print out each row
-                while (resultSet.next()) {
-                    int id = resultSet.getInt("id");
-                    String firstName = resultSet.getString("name");
-                    int age = resultSet.getInt("age");
-                    System.out.println("ID: " + id + ", Name: " + firstName + ", Age: " + age)
-                }
-             */
-            val dataElementSinks =
-              Dataflow
-                .getSources(cpg)
-                .filterNot(_.isMember)
-                .map(_.asInstanceOf[CfgNode])
-                .l
-            implicit val engineContext: EngineContext =
-              EngineContext(config = EngineConfig(4))
-            val readFlow = dataElementSinks.reachableByFlows(node).l
-            if (readFlow.nonEmpty) {
-              // As a flow is present from Select query to a Data element we can say, the data element is read from the query
-              readFlow
-                .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
-                .value
-                .foreach(ruleId => addTagsToNode(ruleId, node, builder))
-            }
+        value.foreach { case (_, tableName: String, columns: List[String]) =>
+          // Match classes which end with tableName
+          val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(s"(?i).*${tableName}")) match {
+            case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
+            case None        => List.empty
           }
-        } else {
-          if (sensitiveMemberRuleIds.nonEmpty)
-            sensitiveMemberRuleIds
-              .filter(ruleId => isColumnNameMatchingWithRule(ruleId, columns))
-              .foreach(ruleId => addTagsToNode(ruleId, node, builder))
-          else
-            RuleCache.getRule.sources
-              .filter(rule => isColumnNameMatchingWithRule(rule.id, columns))
-              .foreach(rule => addTagsToNode(rule.id, node, builder))
+
+          if (columns.length == 1 && columns(0) == "*") {
+            if (sensitiveMemberRuleIds.nonEmpty)
+              sensitiveMemberRuleIds.foreach(ruleId => addTagsToNode(ruleId, node, builder))
+            else {
+              /* Run dataflow and verify the data-elements read from the call,
+                    Ex - resultSet = statement.executeQuery("SELECT * FROM mytable");
+                    // Loop through the result set and print out each row
+                    while (resultSet.next()) {
+                        int id = resultSet.getInt("id");
+                        String firstName = resultSet.getString("name");
+                        int age = resultSet.getInt("age");
+                        System.out.println("ID: " + id + ", Name: " + firstName + ", Age: " + age)
+                    }
+               */
+              val dataElementSinks =
+                Dataflow
+                  .getSources(cpg)
+                  .filterNot(_.isMember)
+                  .map(_.asInstanceOf[CfgNode])
+                  .l
+              implicit val engineContext: EngineContext =
+                EngineContext(config = EngineConfig(4))
+              val readFlow = dataElementSinks.reachableByFlows(node).l
+              if (readFlow.nonEmpty) {
+                // As a flow is present from Select query to a Data element we can say, the data element is read from the query
+                readFlow
+                  .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
+                  .value
+                  .foreach(ruleId => addTagsToNode(ruleId, node, builder))
+              }
+            }
+          } else {
+            if (sensitiveMemberRuleIds.nonEmpty)
+              sensitiveMemberRuleIds
+                .filter(ruleId => isColumnNameMatchingWithRule(ruleId, columns))
+                .foreach(ruleId => addTagsToNode(ruleId, node, builder))
+            else
+              ruleCache.getRule.sources
+                .filter(rule => isColumnNameMatchingWithRule(rule.id, columns))
+                .foreach(rule => addTagsToNode(rule.id, node, builder))
+
+          }
         }
-      case None => ()
+      case None =>
     }
 
   }
@@ -103,14 +104,14 @@ class DatabaseReadPass(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParal
     * @param columns
     * @return
     */
-  def isColumnNameMatchingWithRule(ruleId: String, columns: Array[String]): Boolean = {
-    val pattern = RuleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
+  def isColumnNameMatchingWithRule(ruleId: String, columns: List[String]): Boolean = {
+    val pattern = ruleCache.getRuleInfo(ruleId).get.combinedRulePattern.r
     columns.map(pattern.matches).foldLeft(false)(_ || _)
   }
 
   def addTagsToNode(ruleId: String, node: Expression, builder: DiffGraphBuilder) = {
-    storeForTag(builder, node)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-    addRuleTags(builder, node, RuleCache.getRuleInfo(ruleId).get)
+    storeForTag(builder, node, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+    addRuleTags(builder, node, ruleCache.getRuleInfo(ruleId).get, ruleCache)
   }
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
     val query = sqlQuery

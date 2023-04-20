@@ -31,11 +31,11 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] =
-    RuleCache.getRule.collections.filter(_.catLevelTwo == "webforms").toArray
+    ruleCache.getRule.collections.filter(_.catLevelTwo == "webforms").toArray
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
 
@@ -43,7 +43,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       * <TextBox label="Email" type="email" name="email" onChange={handleChange} /> <TextBox label="Message" multiline
       * rows={4} name="message" onChange={handleChange} /> <Button type="submit">Submit</Button> </form> );
       */
-    sourceRuleInfos.foreach(sourceRule => {
+    ruleCache.getRule.sources.foreach(sourceRule => {
       val rule =
         s"${collectionRuleInfo.patterns.head}.*name=(?:\"|\')(${sourceRule.patterns.head})(?:\"|\').*"
       cpg.templateDom
@@ -62,11 +62,11 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
         .code(rule)
         .foreach(element => {
           if (element.name == "JSXOpeningElement") {
-            storeForTag(builder, element)(Constants.collectionSource, sourceRule.id)
-            addRuleTags(builder, element, collectionRuleInfo)
+            storeForTag(builder, element, ruleCache)(Constants.collectionSource, sourceRule.id)
+            addRuleTags(builder, element, collectionRuleInfo, ruleCache)
           } else if (element.name == "JSXElement") {
             println(element.code)
-            addRuleTags(builder, element, sourceRule)
+            addRuleTags(builder, element, sourceRule, ruleCache)
           }
         })
     })

@@ -57,9 +57,9 @@ object KeyboardCache {
     *   \- path of repo
     * @return
     */
-  def getViolations(repoPath: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(ruleCache: RuleCache, repoPath: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     val occurrenceList = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
-    getAllFilesRecursively(repoPath, Set(".xml")) match {
+    getAllFilesRecursively(repoPath, Set(".xml"), ruleCache) match {
       case Some(sourceFileNames) =>
         sourceFileNames.foreach(sourceFile => {
           val xml: Elem = XML.loadFile(sourceFile)
@@ -67,7 +67,7 @@ object KeyboardCache {
           if (editText.nonEmpty) {
             editText.foreach {
               case Elem(prefix, label, attributes, scope, child @ _*) =>
-                if (isSensitiveInputTypePresent(attributes) || isSensitiveId(attributes, RuleCache.getRule.sources)) {
+                if (isSensitiveInputTypePresent(attributes) || isSensitiveId(attributes, ruleCache.getRule.sources)) {
                   if (!isTextNoSuggestionsInInputTypePresent(attributes)) {
                     val idAttribute = attributes.filter(attribute => attribute.prefixedKey == ID).value.head
                     val occurrenceOutput =

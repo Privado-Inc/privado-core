@@ -23,6 +23,7 @@
 
 package ai.privado.exporter
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.exporter.{
   CollectionModel,
   CollectionOccurrenceDetailModel,
@@ -40,7 +41,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-class CollectionExporter(cpg: Cpg) {
+class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -79,7 +80,7 @@ class CollectionExporter(cpg: Cpg) {
       mapper(literalId).append(node)
     }
 
-    val ruleInfo = ExporterUtility.getRuleInfoForExporting(collectionId)
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
     CollectionModel(
       collectionId,
       ruleInfo.name,
@@ -166,7 +167,7 @@ class CollectionExporter(cpg: Cpg) {
       mapper(literalId).append(node)
     }
 
-    val ruleInfo = ExporterUtility.getRuleInfoForExporting(collectionId)
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
     CollectionModel(
       collectionId,
       ruleInfo.name,

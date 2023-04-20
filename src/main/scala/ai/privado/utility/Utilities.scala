@@ -29,9 +29,8 @@ import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag, SqlQueryNode}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -54,12 +53,12 @@ object Utilities {
 
   /** Utility to add a single tag to a object
     */
-  def storeForTag(
-    builder: BatchedUpdate.DiffGraphBuilder,
-    node: AstNode
-  )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
+  def storeForTag(builder: BatchedUpdate.DiffGraphBuilder, node: AstNode, ruleCache: RuleCache)(
+    tagName: String,
+    tagValue: String = ""
+  ): BatchedUpdate.DiffGraphBuilder = {
     val fileName = getFileNameForNode(node)
-    if (isFileProcessable(fileName)) {
+    if (isFileProcessable(fileName, ruleCache)) {
       builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
     }
     builder
@@ -76,10 +75,11 @@ object Utilities {
   def addDatabaseDetailTags(
     builder: BatchedUpdate.DiffGraphBuilder,
     node: CfgNode,
-    databaseDetails: DatabaseDetails
+    databaseDetails: DatabaseDetails,
+    ruleCache: RuleCache
   ): Unit = {
 
-    val storeForTagHelper = storeForTag(builder, node) _
+    val storeForTagHelper = storeForTag(builder, node, ruleCache) _
     storeForTagHelper(Constants.dbName, databaseDetails.dbName)
     storeForTagHelper(Constants.dbVendor, databaseDetails.dbVendor)
     storeForTagHelper(Constants.dbLocation, databaseDetails.dbLocation)
@@ -92,18 +92,19 @@ object Utilities {
     builder: BatchedUpdate.DiffGraphBuilder,
     node: AstNode,
     ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
     ruleId: Option[String] = None
   ): Unit = {
     val fileName = getFileNameForNode(node)
-    if (isFileProcessable(fileName)) {
-      val storeForTagHelper = storeForTag(builder, node) _
+    if (isFileProcessable(fileName, ruleCache)) {
+      val storeForTagHelper = storeForTag(builder, node, ruleCache) _
       storeForTagHelper(Constants.id, ruleId.getOrElse(ruleInfo.id))
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
       MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
-      RuleCache.internalRules.get(ruleInfo.id) match {
+      ruleCache.internalRules.get(ruleInfo.id) match {
         case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
         case _       => ()
       }
@@ -121,20 +122,26 @@ object Utilities {
     * `lineToHighlight` is defined, then a line containing an arrow (as a source code comment) is included right before
     * that line.
     */
-  def dump(filename: String, lineToHighlight: Option[Integer], message: String = ""): String = {
+  def dump(
+    filename: String,
+    lineToHighlight: Option[Integer],
+    message: String = "",
+    excerptStartLine: Int = -5,
+    excerptEndLine: Int = 5
+  ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
       if (!filename.equals("<empty>")) {
         val lines = IOUtils.readLinesInFile(Paths.get(filename))
         val startLine: Integer = {
           if (lineToHighlight.isDefined)
-            Math.max(1, lineToHighlight.get - 5)
+            Math.max(1, lineToHighlight.get + excerptStartLine)
           else
             0
         }
         val endLine: Integer = {
           if (lineToHighlight.isDefined)
-            Math.min(lines.length, lineToHighlight.get + 5)
+            Math.min(lines.length, lineToHighlight.get + excerptEndLine)
           else
             0
         }
@@ -190,8 +197,8 @@ object Utilities {
     * @param filePath
     * @return
     */
-  def isFileProcessable(filePath: String): Boolean = {
-    RuleCache.getRule.exclusions
+  def isFileProcessable(filePath: String, ruleCache: RuleCache): Boolean = {
+    ruleCache.getRule.exclusions
       .flatMap(exclusionRule => {
         Try(!filePath.matches(exclusionRule.combinedRulePattern)) match {
           case Success(result) => Some(result)
@@ -206,8 +213,8 @@ object Utilities {
     * @param sinkName
     * @return
     */
-  def isPrivacySink(sinkName: String): Boolean = {
-    RuleCache.getRule.sinkSkipList
+  def isPrivacySink(sinkName: String, ruleCache: RuleCache): Boolean = {
+    ruleCache.getRule.sinkSkipList
       .flatMap(sinkSkipRule => {
         Try(!sinkName.matches(sinkSkipRule.combinedRulePattern)) match {
           case Success(result) => Some(result)
@@ -222,10 +229,14 @@ object Utilities {
     * @param extension
     * @return
     */
-  def getAllFilesRecursively(folderPath: String, extensions: Set[String]): Option[List[String]] = {
+  def getAllFilesRecursively(
+    folderPath: String,
+    extensions: Set[String],
+    ruleCache: RuleCache
+  ): Option[List[String]] = {
     try {
       if (File(folderPath).isDirectory)
-        Some(SourceFiles.determine(Set(folderPath), extensions).filter(isFileProcessable))
+        Some(SourceFiles.determine(Set(folderPath), extensions).filter(isFileProcessable(_, ruleCache)))
       else
         None
     } catch {

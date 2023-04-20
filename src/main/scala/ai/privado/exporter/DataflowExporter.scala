@@ -45,7 +45,11 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  def getFlowByType(sinkSubCategory: String, sinkNodeTypes: Set[String]): Set[DataFlowSubCategoryModel] = {
+  def getFlowByType(
+    sinkSubCategory: String,
+    sinkNodeTypes: Set[String],
+    ruleCache: RuleCache
+  ): Set[DataFlowSubCategoryModel] = {
     val dataflowModelFilteredByType = DataFlowCache.getDataflow.filter(dataflowModel =>
       dataflowModel.sinkSubCategory.equals(sinkSubCategory) && sinkNodeTypes.contains(dataflowModel.sinkNodeType)
     )
@@ -54,7 +58,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
       .map(dataflowBySourceEntrySet => {
         DataFlowSubCategoryModel(
           dataflowBySourceEntrySet._1,
-          convertSourceModelList(dataflowBySourceEntrySet._1, dataflowBySourceEntrySet._2, sinkSubCategory)
+          convertSourceModelList(dataflowBySourceEntrySet._1, dataflowBySourceEntrySet._2, sinkSubCategory, ruleCache)
         )
       })
       .toSet
@@ -63,19 +67,20 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
   def convertSourceModelList(
     sourceId: String,
     sourceModelList: List[DataFlowPathModel],
-    sinkSubCategory: String
+    sinkSubCategory: String,
+    ruleCache: RuleCache
   ): List[DataFlowSubCategorySinkModel] = {
     def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String]) = {
       val sinkIdAfterSplit = sinkId.split("#_#")
 
       // Special case for API type of nodes
-      val apiUrl = RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
+      val apiUrl = ruleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
         case Some(rule) if rule.nodeType.equals(NodeType.API) & sinkIdAfterSplit.size >= 2 =>
           sinkIdAfterSplit(1).split(",").toList
         case _ => List[String]()
       }
 
-      val databaseDetails = RuleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
+      val databaseDetails = ruleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
         case Some(rule)
             if rule.id.matches(
               "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.AmazonDynamoDB.*|Storages.Postgres.*|Storages.MongoDB.*|Storages.Neo4jGraphDatabase.*"
@@ -84,7 +89,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
         case _ => Option.empty[DatabaseDetails]
       }
 
-      val ruleInfo = ExporterUtility.getRuleInfoForExporting(sinkIdAfterSplit(0))
+      val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, sinkIdAfterSplit(0))
       DataFlowSubCategorySinkModel(
         sinkSubCategory,
         ruleInfo.id,

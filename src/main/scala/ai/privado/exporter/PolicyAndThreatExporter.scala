@@ -34,20 +34,20 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
+class PolicyAndThreatExporter(cpg: Cpg, ruleCache: RuleCache, dataflows: Map[String, Path]) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getViolations(repoPath: String): List[ViolationModel] = {
-    val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName)
-    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath)
+    val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName, ruleCache)
+    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache)
 
     try {
-      threatExecutor.getProcessingViolations(RuleCache.getAllThreat) ++ policyExecutor.getProcessingViolations
+      threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations
         .filter(entrySet => entrySet._2.nonEmpty)
         .map(policyViolationEntrySet =>
           convertProcessingPolicyViolation(policyViolationEntrySet._1, policyViolationEntrySet._2)
-        ) ++ threatExecutor.getDataflowViolations(RuleCache.getAllThreat) ++ policyExecutor.getDataflowViolations
+        ) ++ threatExecutor.getDataflowViolations(ruleCache.getAllThreat) ++ policyExecutor.getDataflowViolations
         .filter(entrySet => entrySet._2.nonEmpty)
         .map(policyViolationEntrySet =>
           convertDataflowPolicyViolation(policyViolationEntrySet._1, policyViolationEntrySet._2)
@@ -62,7 +62,7 @@ class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
   def convertProcessingPolicyViolation(policyId: String, sourceNodes: List[(String, CfgNode)]): ViolationModel = {
     ViolationModel(
       policyId,
-      ExporterUtility.getPolicyInfoForExporting(policyId),
+      ExporterUtility.getPolicyInfoForExporting(ruleCache, policyId),
       None,
       Some(sourceNodes.map(sourceNode => convertProcessingSources(sourceNode)))
     )
@@ -82,7 +82,12 @@ class PolicyAndThreatExporter(cpg: Cpg, dataflows: Map[String, Path]) {
     policyId: String,
     violatingFlows: mutable.HashSet[ViolationDataFlowModel]
   ) = {
-    ViolationModel(policyId, ExporterUtility.getPolicyInfoForExporting(policyId), Some(violatingFlows.toList), None)
+    ViolationModel(
+      policyId,
+      ExporterUtility.getPolicyInfoForExporting(ruleCache, policyId),
+      Some(violatingFlows.toList),
+      None
+    )
   }
 
 }

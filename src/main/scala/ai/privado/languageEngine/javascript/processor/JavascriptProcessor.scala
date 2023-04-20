@@ -23,8 +23,8 @@
 
 package ai.privado.languageEngine.javascript.processor
 
-import ai.privado.cache.AppCache
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
@@ -34,11 +34,12 @@ import ai.privado.languageEngine.javascript.passes.methodfullname.{
 }
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
+import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
+import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -50,7 +51,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import java.nio.file.{Files, Paths}
 
 object JavascriptProcessor {
 
@@ -58,7 +58,7 @@ object JavascriptProcessor {
 
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
-    processedRules: ConfigAndRules,
+    ruleCache: RuleCache,
     sourceRepoLocation: String
   ): Either[String, Unit] = {
     xtocpg match {
@@ -70,6 +70,12 @@ object JavascriptProcessor {
         new MethodFullNameFromIdentifier(cpg).createAndApply()
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
 
+        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
           val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
@@ -79,14 +85,14 @@ object JavascriptProcessor {
 
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(processedRules)
+        cpg.runTagger(ruleCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow(ScanProcessor.config)
+        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
         println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap) match {
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             Left(err)
@@ -121,11 +127,7 @@ object JavascriptProcessor {
     * @param lang
     * @return
     */
-  def createJavaScriptCpg(
-    processedRules: ConfigAndRules,
-    sourceRepoLocation: String,
-    lang: String
-  ): Either[String, Unit] = {
+  def createJavaScriptCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -139,7 +141,7 @@ object JavascriptProcessor {
     val cpgconfig =
       Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, processedRules, sourceRepoLocation)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation)
   }
 
 }

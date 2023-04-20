@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.java.passes.config
 
+import ai.privado.cache.RuleCache
 import ai.privado.utility.Utilities
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
@@ -42,7 +43,8 @@ import scala.xml._
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
-class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
+class PropertiesFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -268,7 +270,7 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallel
   private def propertiesFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .filter(Utilities.isFileProcessable)
+      .filter(Utilities.isFileProcessable(_, ruleCache))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {

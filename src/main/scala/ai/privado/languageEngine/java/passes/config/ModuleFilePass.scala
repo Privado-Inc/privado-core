@@ -1,11 +1,12 @@
 package ai.privado.languageEngine.java.passes.config
 
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModule, NewModuleDependency}
-import io.shiftleft.passes.{ConcurrentWriterCpgPass}
+import io.shiftleft.passes.ConcurrentWriterCpgPass
 import overflowdb.BatchedUpdate
 import org.apache.maven.model.Model
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
@@ -16,7 +17,7 @@ import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Try
 
-class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache)
+class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache, ruleCache: RuleCache)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
@@ -74,7 +75,7 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache)
   private def ModuleFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     val filePath = SourceFiles
       .determine(Set(projectRoot), extensions)
-      .filter(Utilities.isFileProcessable)
+      .filter(Utilities.isFileProcessable(_, ruleCache))
 
     val moduleFile = ListBuffer[String]()
     filePath.foreach(path => {

@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger.source
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{Constants, InternalTag}
 import ai.privado.utility.Utilities.storeForTag
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -31,7 +31,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import ai.privado.languageEngine.java.tagger.source.Utility._
 
-class InSensitiveCallTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoinParallelCpgPass[String](cpg) {
+class InSensitiveCallTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] = taggerCache.typeDeclMemberCache.keys.toArray
 
@@ -42,16 +43,19 @@ class InSensitiveCallTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoin
     val personalMembersRegexString            = s".*${personalMembers.mkString("(", "|", ")")}.*"
     if (nonPersonalMembers.nonEmpty) {
       getCallsMatchingReturnRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).dedup.foreach(
-        storeForTag(builder, _)(InternalTag.INSENSITIVE_METHOD_RETURN.toString, "Data.Sensitive.NonPersonal.Method")
+        storeForTag(builder, _, ruleCache)(
+          InternalTag.INSENSITIVE_METHOD_RETURN.toString,
+          "Data.Sensitive.NonPersonal.Method"
+        )
       )
 
       getCallsMatchingNameRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).dedup.foreach(
-        storeForTag(builder, _)(InternalTag.INSENSITIVE_SETTER.toString)
+        storeForTag(builder, _, ruleCache)(InternalTag.INSENSITIVE_SETTER.toString)
       )
 
       getFieldAccessCallsMatchingRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).foreach(impactedAccess => {
         if (impactedAccess.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedAccess)(
+          storeForTag(builder, impactedAccess, ruleCache)(
             InternalTag.INSENSITIVE_FIELD_ACCESS.toString,
             "Data.Sensitive.NonPersonal.MemberAccess"
           )
@@ -61,7 +65,7 @@ class InSensitiveCallTagger(cpg: Cpg, taggerCache: TaggerCache) extends ForkJoin
 
     if (personalMembers.nonEmpty)
       getCallsMatchingNameRegex(cpg, typeDeclFullName, personalMembersRegexString).dedup.foreach(
-        storeForTag(builder, _)(InternalTag.SENSITIVE_SETTER.toString)
+        storeForTag(builder, _, ruleCache)(InternalTag.SENSITIVE_SETTER.toString)
       )
   }
 }

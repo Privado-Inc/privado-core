@@ -25,7 +25,12 @@ package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor
-import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{
+  DataFlowSubCategoryPathExcerptModel,
+  DataFlowSubCategoryPathModel,
+  SourceModel,
+  SourceProcessingModel
+}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
@@ -41,12 +46,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   StoredNode,
   Tag
 }
+import ai.privado.semantic.Language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
-class SourceExporter(cpg: Cpg) {
+class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   lazy val sourcesTagList: List[List[Tag]] = getSourcesTagList
   lazy val sourcesList: List[AstNode]      = getSourcesList
@@ -114,7 +120,10 @@ class SourceExporter(cpg: Cpg) {
         cpg.templateDom
           .where(filterSource)
           .map(item => item.tag.l)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l ++ cpg.sqlQuery
+          .where(filterSource)
+          .map(item => item.tag.l)
+          .l
     sources
   }
 
@@ -138,15 +147,17 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.templateDom
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l ++ cpg.sqlQuery
+          .where(filterSource)
+          .l
     sources
   }
 
   private def convertSourcesList(sources: List[List[Tag]]): List[SourceModel] = {
     def convertSource(sourceId: String) = {
-      RuleCache.getRuleInfo(sourceId) match {
+      ruleCache.getRuleInfo(sourceId) match {
         case Some(rule) =>
-          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sourceId)
+          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(ruleCache, sourceId)
           Some(
             SourceModel(
               rule.catLevelOne.label,
@@ -172,6 +183,7 @@ class SourceExporter(cpg: Cpg) {
       } else
         None
     }
+
     sources
       .flatMap(source => getSources(source))
       .flatten
