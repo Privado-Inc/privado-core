@@ -120,4 +120,12 @@ object Constants {
   val apiSinks          = "apiSinks"
   val apiHttpLibraries  = "apiHttpLibraries"
   val apiIdentifier     = "apiIdentifier"
+
+  // TemplatedDom
+
+  val jsxOpenElement = "JSXOpeningElement"
+  val jsxElement     = "JSXElement"
+
+  val annotations = "annotations"
+  val default     = "default"
 }

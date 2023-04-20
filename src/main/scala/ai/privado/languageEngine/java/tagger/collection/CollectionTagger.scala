@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.RuleInfo
+import ai.privado.model.{Constants, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -36,7 +36,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] =
-    ruleCache.getRule.collections.filter(_.catLevelTwo == "annotations").toArray
+    ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 

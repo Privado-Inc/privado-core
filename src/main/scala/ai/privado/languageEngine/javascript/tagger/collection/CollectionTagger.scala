@@ -45,7 +45,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
       */
     ruleCache.getRule.sources.foreach(sourceRule => {
       val rule =
-        s"${collectionRuleInfo.patterns.head}.*name=(?:\"|\')(${sourceRule.patterns.head})(?:\"|\').*"
+        s"${collectionRuleInfo.combinedRulePattern}.*name=(?:\"|\')(${sourceRule.combinedRulePattern})(?:\"|\').*"
       cpg.templateDom
         // Each HTML element/template element translates into multiple CPG nodes.
         // Like
@@ -58,14 +58,13 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
         // In order to tackle this situation. I decided to use JSXOpeningElement to tag the collection rule (privado.json -> collection section)
         // and JSXElement to tag source rule information (privado.json -> source and processing section)
         //
-        .name("JSXOpeningElement|JSXElement")
+        .name(s"${Constants.jsxOpenElement}|${Constants.jsxElement}")
         .code(rule)
         .foreach(element => {
-          if (element.name == "JSXOpeningElement") {
+          if (element.name == Constants.jsxOpenElement) {
             storeForTag(builder, element, ruleCache)(Constants.collectionSource, sourceRule.id)
             addRuleTags(builder, element, collectionRuleInfo, ruleCache)
-          } else if (element.name == "JSXElement") {
-            println(element.code)
+          } else if (element.name == Constants.jsxElement) {
             addRuleTags(builder, element, sourceRule, ruleCache)
           }
         })
