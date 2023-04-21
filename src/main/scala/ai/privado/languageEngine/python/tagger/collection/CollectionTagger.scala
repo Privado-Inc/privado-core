@@ -17,7 +17,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
   private val methodUrlMap = mutable.HashMap[Long, String]()
   private val classUrlMap  = mutable.HashMap[Long, String]()
 
-  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.collections.toArray
+  override def generateParts(): Array[RuleInfo] =
+    ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
 

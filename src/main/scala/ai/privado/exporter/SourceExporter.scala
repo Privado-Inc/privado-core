@@ -116,6 +116,10 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
+          .l ++
+        cpg.templateDom
+          .where(filterSource)
+          .map(item => item.tag.l)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l ++ cpg.sqlQuery
           .where(filterSource)
           .map(item => item.tag.l)
@@ -140,9 +144,10 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member
+          .l ++
+        cpg.templateDom
           .where(filterSource)
-          .l ++ cpg.sqlQuery
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l ++ cpg.sqlQuery
           .where(filterSource)
           .l
     sources
