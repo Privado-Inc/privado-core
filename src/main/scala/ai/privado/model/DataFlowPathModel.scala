@@ -27,5 +27,6 @@ case class DataFlowPathModel(
   sinkId: String,
   sinkSubCategory: String,
   sinkNodeType: String,
-  pathId: String
+  pathId: String,
+  applyDedup: Boolean = true // applyDedup if set true means, this object be considered for deduplication
 )

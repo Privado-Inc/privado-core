@@ -140,6 +140,7 @@ object ScanProcessor extends CommandProcessor {
                           x.copy(
                             file = fullPath,
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                            catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             nodeType = NodeType.REGULAR
                           )
@@ -207,11 +208,11 @@ object ScanProcessor extends CommandProcessor {
     parsedRules
   }
 
-  def processRules(lang: Language): ConfigAndRules = {
+  def processRules(lang: Language, ruleCache: RuleCache): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
-      RuleCache.setInternalRules(internalConfigAndRules)
+      ruleCache.setInternalRules(internalConfigAndRules)
 
       try {
         AppCache.privadoVersionMain = File((s"${config.internalConfigPath.head}/version.txt")).contentAsString
@@ -260,8 +261,8 @@ object ScanProcessor extends CommandProcessor {
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
 
-    RuleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
-    RuleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
+    ruleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
+    ruleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
     MetricHandler.metricsData("noOfRulesUsed") = {
       Json.fromInt(
         mergedRules.sources.size +
@@ -284,17 +285,17 @@ object ScanProcessor extends CommandProcessor {
     processCpg()
   }
 
-  /** Helper function to process rule for a language and cache the result in ruleCache
+  /** Helper function to process rule for a language
     * @param lang
     * @return
-    *   rule
+    *   processed rules
     */
-  def processAndCacheRule(lang: Language): ConfigAndRules = {
+  def getProcessedRule(lang: Language): RuleCache = {
     AppCache.repoLanguage = lang // we are caching the repo language here, and we will use this to get the repo's lang
-    val processedRules = processRules(lang)
-    logger.info("Caching rules")
-    RuleCache.setRule(processedRules)
-    processedRules
+    val ruleCache      = new RuleCache()
+    val processedRules = processRules(lang, ruleCache)
+    ruleCache.setRule(processedRules)
+    ruleCache
   }
 
   private def processCpg() = {
@@ -312,24 +313,20 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(processAndCacheRule(Language.JAVA), sourceRepoLocation, language)
+                JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, language)
               case language if language == Languages.JSSRC && config.enableJS =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(
-                  processAndCacheRule(Language.JAVASCRIPT),
-                  sourceRepoLocation,
-                  lang
-                )
+                JavascriptProcessor.createJavaScriptCpg(getProcessedRule(Language.JAVASCRIPT), sourceRepoLocation, lang)
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
-                PythonProcessor.createPythonCpg(processAndCacheRule(Language.PYTHON), sourceRepoLocation, lang)
+                PythonProcessor.createPythonCpg(getProcessedRule(Language.PYTHON), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
                     s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
-                  JavaProcessor.createJavaCpg(processAndCacheRule(Language.JAVA), sourceRepoLocation, lang)
+                  JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
                 } else {
                   println(s"As of now we only support privacy code scanning for 'Java' code base.")
                   println(s"We detected this code base of '${lang}'.")

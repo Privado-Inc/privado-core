@@ -32,10 +32,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+abstract class CustomInheritTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(getClass)
-
-  override def generateParts(): Array[RuleInfo] = RuleCache.getStorageRuleInfo().toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
@@ -47,7 +45,7 @@ class CustomInheritTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cp
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
-        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo))
+        callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo, ruleCache))
       })
     }
   }

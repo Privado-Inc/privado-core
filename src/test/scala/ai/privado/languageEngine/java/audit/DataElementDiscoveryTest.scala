@@ -12,8 +12,8 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, taggerCache).createAndApply()
-    new CollectionTagger(cpg, sourceRule).createAndApply()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new CollectionTagger(cpg, ruleCache).createAndApply()
   }
 
   override val javaFileContentMap: Map[String, String] = getContent()

@@ -162,11 +162,12 @@ object DuplicateFlowProcessor {
     */
   def filterIrrelevantFlowsAndStoreInCache(
     dataflowMapByPathId: Map[String, Path],
-    privadoScanConfig: PrivadoInput
+    privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache
   ): Unit = {
 
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-    RuleCache.getRule.sinks.foreach(sinkRule => {
+    ruleCache.getRule.sinks.foreach(sinkRule => {
       if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
         sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
       sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
@@ -177,7 +178,8 @@ object DuplicateFlowProcessor {
         dataflowMapByPathId,
         sinkSubTypeEntry._1,
         sinkSubTypeEntry._2.toSet,
-        privadoScanConfig
+        privadoScanConfig,
+        ruleCache
       )
     )
   }
@@ -194,7 +196,8 @@ object DuplicateFlowProcessor {
     dataflowMapByPathId: Map[String, Path],
     sinkSubCategory: String,
     sinkNodetypes: Set[String],
-    privadoScanConfig: PrivadoInput
+    privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache
   ): Unit = {
     val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
       dataflowEntrySet._2.elements.last
@@ -226,7 +229,14 @@ object DuplicateFlowProcessor {
     })
 
     dataflowsMapBySourceId.foreach(flow => {
-      filterSinkListAndStoreInCache(flow._1, flow._2.toList, dataflowsMapByType, sinkSubCategory, sinkNodetypes)
+      filterSinkListAndStoreInCache(
+        flow._1,
+        flow._2.toList,
+        dataflowsMapByType,
+        sinkSubCategory,
+        sinkNodetypes,
+        ruleCache
+      )
     })
   }
 
@@ -247,7 +257,8 @@ object DuplicateFlowProcessor {
     sinkPathIds: List[String],
     dataflowsMapByType: Map[String, Path],
     dataflowSinkType: String,
-    dataflowNodeTypes: Set[String]
+    dataflowNodeTypes: Set[String],
+    ruleCache: RuleCache
   ) = {
 
     def addToCache(sinkPathId: String, dataflowNodeType: String) = {
@@ -329,7 +340,8 @@ object DuplicateFlowProcessor {
               sinkPathId,
               dataflowsMapByType(sinkPathId),
               dataflowSinkType,
-              dataflowNodeType
+              dataflowNodeType,
+              ruleCache
             )
           )
             DataFlowCache.setDataflow(
@@ -369,7 +381,8 @@ object DuplicateFlowProcessor {
     pathId: String,
     path: Path,
     dataflowSinkType: String,
-    dataflowNodeType: String
+    dataflowNodeType: String,
+    ruleCache: RuleCache
   ): Boolean = {
 
     var isCorrect = true // By default we set it to true, mark it false if matches some condition
@@ -389,7 +402,8 @@ object DuplicateFlowProcessor {
                 disallowedMemberNameList.append(memberName)
                 !(isArgumentMatchingMemberName(sinkArguments, memberName) || isArgumentMatchingMemberPattern(
                   sinkArguments,
-                  memberRuleId
+                  memberRuleId,
+                  ruleCache
                 ))
               case None => true
             }
@@ -406,7 +420,8 @@ object DuplicateFlowProcessor {
                   allowedMemberName = memberName
                   isArgumentMatchingMemberName(sinkArguments, memberName) || isArgumentMatchingMemberPattern(
                     sinkArguments,
-                    memberRuleId
+                    memberRuleId,
+                    ruleCache
                   )
                 case None => false
               }
@@ -471,10 +486,14 @@ object DuplicateFlowProcessor {
     * @param memberRuleId
     * @return
     */
-  private def isArgumentMatchingMemberPattern(sinkArgument: List[String], memberRuleId: String): Boolean = {
+  private def isArgumentMatchingMemberPattern(
+    sinkArgument: List[String],
+    memberRuleId: String,
+    ruleCache: RuleCache
+  ): Boolean = {
     Try(
       sinkArgument
-        .map(argument => argument.matches(RuleCache.getRuleInfo(memberRuleId).get.combinedRulePattern))
+        .map(argument => argument.matches(ruleCache.getRuleInfo(memberRuleId).get.combinedRulePattern))
         .foldLeft(false)((a, b) => a || b)
     ) match {
       case Success(result) => result

@@ -23,6 +23,7 @@
 
 package ai.privado.passes
 
+import ai.privado.cache.RuleCache
 import ai.privado.utility.{SQLParser, Utilities}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -33,7 +34,7 @@ import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 import scala.io.Source
-class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
+class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[_ <: AnyRef] =
@@ -117,7 +118,7 @@ class SQLParser(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[S
   private def getSQLFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .filter(Utilities.isFileProcessable)
+      .filter(Utilities.isFileProcessable(_, ruleCache))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {

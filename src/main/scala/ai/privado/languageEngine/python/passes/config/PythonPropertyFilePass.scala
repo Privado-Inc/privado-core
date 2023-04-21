@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.python.passes.config
 
+import ai.privado.cache.RuleCache
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -17,7 +18,8 @@ import com.typesafe.config._
 import java.io.File
 import scala.io.Source
 
-class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinParallelCpgPass[String](cpg) {
+class PythonPropertyFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
+    extends ForkJoinParallelCpgPass[String](cpg) {
   override def generateParts(): Array[String] = {
     configFiles(projectRoot, Set(".ini", ".env", ".conf")).toArray
   }
@@ -118,7 +120,7 @@ class PythonPropertyFilePass(cpg: Cpg, projectRoot: String) extends ForkJoinPara
     SourceFiles
       .determine(Set(projectRoot), extensions)
       .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
-      .filter(Utilities.isFileProcessable)
+      .filter(Utilities.isFileProcessable(_, ruleCache))
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {

@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.RuleInfo
+import ai.privado.model.{Constants, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -32,10 +32,11 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def generateParts(): Array[RuleInfo] = RuleCache.getRule.collections.toArray
+  override def generateParts(): Array[RuleInfo] =
+    ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
@@ -66,8 +67,9 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
     CollectionUtility.tagDirectSources(
       builder,
       collectionMethodsCache,
-      sourceRuleInfos,
+      ruleCache.getRule.sources,
       ruleInfo,
+      ruleCache,
       methodUrlMap = methodUrlMap,
       classUrlMap = classUrlMap
     )
@@ -76,6 +78,7 @@ class CollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends ForkJo
       builder,
       collectionMethodsCache,
       ruleInfo,
+      ruleCache,
       methodUrlMap = methodUrlMap,
       classUrlMap = classUrlMap
     )

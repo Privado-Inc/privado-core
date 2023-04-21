@@ -16,6 +16,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
   val javaFileContentMap: Map[String, String]
   var inputDir: File  = _
   var outputDir: File = _
+  val ruleCache       = new RuleCache()
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     for ((key, content) <- javaFileContentMap) {
@@ -32,7 +33,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
 
     cpg = xtocpg.get
 
-    RuleCache.setRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 
@@ -75,7 +76,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
       NodeType.REGULAR,
       "",
       CatLevelOne.COLLECTIONS,
-      "",
+      catLevelTwo = "annotations",
       Language.JAVA,
       Array()
     )

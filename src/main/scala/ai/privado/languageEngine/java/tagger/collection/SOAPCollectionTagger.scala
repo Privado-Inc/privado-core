@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger.collection
 
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.Utility.SOAPTaggerUtility
 import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -33,7 +34,7 @@ import io.shiftleft.semanticcpg.language._
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
 
-class SOAPCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends CpgPass(cpg) {
+class SOAPCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends CpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def run(builder: DiffGraphBuilder): Unit = {
@@ -72,10 +73,18 @@ class SOAPCollectionTagger(cpg: Cpg, sourceRuleInfos: List[RuleInfo]) extends Cp
     CollectionUtility.tagDirectSources(
       builder,
       soapCollectionMethods,
-      sourceRuleInfos,
+      ruleCache.getRule.sources,
       ruleInfo,
+      ruleCache,
       classUrlMap = classUrlMap
     )
-    CollectionUtility.tagDerivedSources(cpg, builder, soapCollectionMethods, ruleInfo, classUrlMap = classUrlMap)
+    CollectionUtility.tagDerivedSources(
+      cpg,
+      builder,
+      soapCollectionMethods,
+      ruleInfo,
+      ruleCache,
+      classUrlMap = classUrlMap
+    )
   }
 }

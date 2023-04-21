@@ -31,7 +31,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class LogShareSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class LogShareSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   val logSharingThirdPartySinkId = "ThirdParties.SDK.Sentry"
   val higherOrderLeakgeSinkId    = "Leakages.Log.(Error|Exception)"
 
@@ -50,11 +50,11 @@ class LogShareSinkTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[RuleInfo](cpg
   }
 
   override def generateParts(): Array[RuleInfo] = {
-    RuleCache.getRule.sinks
+    ruleCache.getRule.sinks
       .filter(rule => rule.id.equals(logSharingThirdPartySinkId))
       .toArray
   }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    callNodeTaggedWithErrorOrExceptionLog.foreach(sink => addRuleTags(builder, sink, ruleInfo))
+    callNodeTaggedWithErrorOrExceptionLog.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
   }
 }

@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SinkExporter(cpg: Cpg) {
+class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   lazy val sinkTagList: List[List[Tag]] = getSinkTagList
   lazy val sinkList: List[CfgNode]      = getSinkList
@@ -98,7 +98,7 @@ class SinkExporter(cpg: Cpg) {
       */
     val filteredTPs = dependenciesTPs
       .filter(str => !taggedSinkMethods.contains(str))
-      .filter((str) => isPrivacySink(str))
+      .filter((str) => isPrivacySink(str, ruleCache))
       .filter((str) => !str.endsWith(".println"))
       .map((str) => {
         try {
@@ -206,9 +206,9 @@ class SinkExporter(cpg: Cpg) {
 
   private def convertSinkList(sinks: List[List[Tag]]) = {
     def convertSink(sinkId: String) = {
-      RuleCache.getRuleInfo(sinkId) match {
+      ruleCache.getRuleInfo(sinkId) match {
         case Some(rule) =>
-          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sinkId)
+          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(ruleCache, sinkId)
           val apiUrl = {
             if (rule.nodeType == NodeType.API) {
               var apiurls = cpg.call

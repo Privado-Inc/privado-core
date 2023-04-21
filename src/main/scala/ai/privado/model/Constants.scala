@@ -24,19 +24,20 @@ package ai.privado.model
 
 object Constants {
   // RuleInfo
-  val id             = "id"
-  val name           = "name"
-  val category       = "category"
-  val domains        = "domains"
-  val nodeType       = "nodeType"
-  val catLevelOne    = "catLevelOne"
-  val catLevelTwo    = "catLevelTwo"
-  val sensitivity    = "sensitivity"
-  val isSensitive    = "isSensitive"
-  val patterns       = "patterns"
-  val privadoDerived = "privadoDerived"
-  val underScore     = "_"
-  val apiUrl         = "apiUrl"
+  val id               = "id"
+  val name             = "name"
+  val category         = "category"
+  val domains          = "domains"
+  val nodeType         = "nodeType"
+  val catLevelOne      = "catLevelOne"
+  val catLevelTwo      = "catLevelTwo"
+  val sensitivity      = "sensitivity"
+  val isSensitive      = "isSensitive"
+  val patterns         = "patterns"
+  val privadoDerived   = "privadoDerived"
+  val underScore       = "_"
+  val apiUrl           = "apiUrl"
+  val collectionSource = "collectionSource"
 
   // semantic
   val signature = "signature"
@@ -119,4 +120,12 @@ object Constants {
   val apiSinks          = "apiSinks"
   val apiHttpLibraries  = "apiHttpLibraries"
   val apiIdentifier     = "apiIdentifier"
+
+  // TemplatedDom
+
+  val jsxOpenElement = "JSXOpeningElement"
+  val jsxElement     = "JSXElement"
+
+  val annotations = "annotations"
+  val default     = "default"
 }

@@ -52,7 +52,7 @@ import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
-class SourceExporter(cpg: Cpg) {
+class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   lazy val sourcesTagList: List[List[Tag]] = getSourcesTagList
   lazy val sourcesList: List[AstNode]      = getSourcesList
@@ -116,6 +116,10 @@ class SourceExporter(cpg: Cpg) {
         cpg.call
           .where(filterSource)
           .map(item => item.tag.l)
+          .l ++
+        cpg.templateDom
+          .where(filterSource)
+          .map(item => item.tag.l)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l ++ cpg.sqlQuery
           .where(filterSource)
           .map(item => item.tag.l)
@@ -140,9 +144,10 @@ class SourceExporter(cpg: Cpg) {
           .l ++
         cpg.call
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member
+          .l ++
+        cpg.templateDom
           .where(filterSource)
-          .l ++ cpg.sqlQuery
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l ++ cpg.sqlQuery
           .where(filterSource)
           .l
     sources
@@ -150,9 +155,9 @@ class SourceExporter(cpg: Cpg) {
 
   private def convertSourcesList(sources: List[List[Tag]]): List[SourceModel] = {
     def convertSource(sourceId: String) = {
-      RuleCache.getRuleInfo(sourceId) match {
+      ruleCache.getRuleInfo(sourceId) match {
         case Some(rule) =>
-          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(sourceId)
+          val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(ruleCache, sourceId)
           Some(
             SourceModel(
               rule.catLevelOne.label,
