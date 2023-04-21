@@ -100,7 +100,9 @@ class Dataflow(cpg: Cpg) {
          */
       }
 
-      AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
+      if (privadoScanConfig.generateAuditReport) {
+        AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
+      }
 
       if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()

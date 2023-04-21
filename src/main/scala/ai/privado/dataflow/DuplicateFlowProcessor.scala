@@ -22,9 +22,9 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.AuditCache.{SourcePathInfo, dataflowMapByPathId}
+import ai.privado.cache.AuditCache.SourcePathInfo
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType}
 import io.joern.dataflowengineoss.language.Path
@@ -170,10 +170,12 @@ object DuplicateFlowProcessor {
     val expendedSourceSinkInfo = processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache)
 
     expendedSourceSinkInfo.foreach(flow => {
-      AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
+      if (privadoScanConfig.generateAuditReport) {
+        AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
+      }
       filterFlowsOverlappingWithOtherDataElement(
         flow.pathSourceId,
-        flow.dataflowsMapByType,
+        getDataflowsMapByType(dataflowMapByPathId, flow.dataflowSinkType),
         flow.dataflowSinkType,
         flow.dataflowNodeType,
         ruleCache,
@@ -188,7 +190,6 @@ object DuplicateFlowProcessor {
     sinkId: String,
     dataflowSinkType: String,
     dataflowNodeType: String,
-    dataflowsMapByType: Map[String, Path],
     sinkPathId: String
   )
 
@@ -208,7 +209,7 @@ object DuplicateFlowProcessor {
     val expendedSourceSinkInfo = new ListBuffer[ExpendedSourceSinkInfo]()
 
     sinkSubCategories.foreach(sinkSubTypeEntry => {
-      filterFlowsBySubCategoryNodeType(
+      expendFlowsBySubCategoryNodeType(
         dataflowMapByPathId,
         sinkSubTypeEntry._1,
         sinkSubTypeEntry._2.toSet,
@@ -221,6 +222,14 @@ object DuplicateFlowProcessor {
     expendedSourceSinkInfo.toList
   }
 
+  def getDataflowsMapByType(dataflowMapByPathId: Map[String, Path], sinkSubCategory: String): Map[String, Path] = {
+    dataflowMapByPathId.filter(dataflowEntrySet =>
+      dataflowEntrySet._2.elements.last
+        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
+        .nonEmpty
+    )
+  }
+
   /** Helper function to filter flows by sub-category and node type and store
     *
     * @param dataflowMapByPathId
@@ -231,7 +240,7 @@ object DuplicateFlowProcessor {
     *   \- REGULAR, API etc
     */
 
-  private def filterFlowsBySubCategoryNodeType(
+  private def expendFlowsBySubCategoryNodeType(
     dataflowMapByPathId: Map[String, Path],
     sinkSubCategory: String,
     sinkNodetypes: Set[String],
@@ -240,11 +249,7 @@ object DuplicateFlowProcessor {
     isStoreMatricData: Boolean
   ): Unit = {
 
-    val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
-      dataflowEntrySet._2.elements.last
-        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
-        .nonEmpty
-    )
+    val dataflowsMapByType = getDataflowsMapByType(dataflowMapByPathId, sinkSubCategory)
 
     // Metric for sinkSubCategory size
     if (isStoreMatricData) {
@@ -273,7 +278,7 @@ object DuplicateFlowProcessor {
     })
 
     dataflowsMapBySourceId.foreach(flow => {
-      filterSinkListAndStore(
+      expendSinkListAndStore(
         flow._1,
         flow._2.toList,
         dataflowsMapByType,
@@ -287,7 +292,7 @@ object DuplicateFlowProcessor {
   /** Helper function to return list of extended source sink data
     */
 
-  private def filterSinkListAndStore(
+  private def expendSinkListAndStore(
     pathSourceId: String,
     sinkPathIds: List[String],
     dataflowsMapByType: Map[String, Path],
@@ -306,7 +311,6 @@ object DuplicateFlowProcessor {
             sinkId,
             dataflowSinkType,
             dataflowNodeType,
-            dataflowsMapByType,
             sinkPathId
           )
         })

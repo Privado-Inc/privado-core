@@ -129,7 +129,9 @@ object DataFlowCache {
 
     }
 
-    AuditCache.addIntoBeforeFirstDedup(dataflow)
+    if (ScanProcessor.config.generateAuditReport) {
+      AuditCache.addIntoBeforeFirstDedup(dataflow)
+    }
 
     val filteredSourceIdMap = dataflow.map(entrySet => {
       val sourceId        = entrySet._1
@@ -146,7 +148,9 @@ object DataFlowCache {
       dataflow.remove(dataflowKey)
     }
 
-    AuditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
+    if (ScanProcessor.config.generateAuditReport) {
+      AuditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
+    }
 
     filteredSourceIdMap.foreach(sourceMap => {
       sourceMap._2.foreach(fileLineNoEntry => {

@@ -47,7 +47,7 @@ object AuditCache {
     ruleCache: RuleCache
   ): Unit = {
 
-    dataflowMapByPathId = getCalculatePathIdAndStorePath(dataflowPathsUnfiltered)
+    dataflowMapByPathId = getDataflowPathAndIdMap(dataflowPathsUnfiltered)
 
     val expendedSourceSinkInfo =
       DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache, false)
@@ -57,7 +57,7 @@ object AuditCache {
     })
   }
 
-  private def getCalculatePathIdAndStorePath(dataflowPathsUnfiltered: List[Path]): Map[String, Path] = {
+  private def getDataflowPathAndIdMap(dataflowPathsUnfiltered: List[Path]): Map[String, Path] = {
 
     dataflowMapByPathId = dataflowPathsUnfiltered
       .flatMap(dataflow => {

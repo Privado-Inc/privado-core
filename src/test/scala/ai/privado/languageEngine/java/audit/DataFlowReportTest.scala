@@ -20,7 +20,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val privadoInput = PrivadoInput()
+    val privadoInput = PrivadoInput(generateAuditReport = true)
 
     // TODO Instead of assigning config directly need to pass instance.
     ScanProcessor.config = privadoInput
