@@ -52,7 +52,8 @@ object DataFlowCache {
       else
         List()
     }
-    dataflow.flatMap(_._2).flatMap(_._2).toList ::: extraFlows
+
+    dataflow.flatMap(_._2.values.flatMap(_.toList)).toList ::: extraFlows
   }
 
   var intermediateDataFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
