@@ -8,7 +8,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
-class DatabaseReadPass(
+class DatabaseQueryReadPass(
   cpg: Cpg,
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
@@ -26,7 +26,7 @@ class DatabaseReadPass(
       .isCall
       .argument
       .or(_.code(selectRegexPattern), _.code(fromRegexPattern))
-      .toArray ++ cpg.annotation.ast
+      .toArray ++ cpg.annotation.ast // This query is to match the query present in NamedQuery annotation in hibernate
       .collectAll[AnnotationLiteral]
       .or(_.code(selectRegexPattern), _.code(fromRegexPattern))
       .toArray

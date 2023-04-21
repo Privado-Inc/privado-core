@@ -25,12 +25,10 @@ package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoSimplePass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
 

@@ -39,7 +39,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 object DatabaseReadUtility {
 
   val selectRegexPattern = "(?i)(\")?\\s{0,5}select\\s+.*"
-  val fromRegexPattern   = "(?i)(\")?\\s{0,5}from\\s+.*"
+  val fromRegexPattern   = "(?i)(\")?\\s{0,5}from\\s+[a-zA-Z.]{3,}\\s+.*"
 
   def processDBReadNode(
     builder: DiffGraphBuilder,

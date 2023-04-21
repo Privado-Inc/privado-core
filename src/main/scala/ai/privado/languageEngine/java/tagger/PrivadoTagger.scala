@@ -26,7 +26,7 @@ package ai.privado.languageEngine.java.tagger
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
-import ai.privado.languageEngine.java.passes.read.{DatabaseReadPass, EntityMapper}
+import ai.privado.languageEngine.java.passes.read.{DatabaseQueryReadPass, DatabaseRepositoryReadPass, EntityMapper}
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
 import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
@@ -34,7 +34,6 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.config.DBConfigTagger
 import ai.privado.tagger.sink.{CustomInheritTagger, RegularSinkTagger}
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
-
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -105,10 +104,16 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       )
     }
 
-    println(s"${Calendar.getInstance().getTime} - --Database Read Pass invoked...")
-    new DatabaseReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
+    println(s"${Calendar.getInstance().getTime} - --Database Query Read Pass invoked...")
+    new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --Database Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --Database Query Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
+    println(s"${Calendar.getInstance().getTime} - --Database Repository Read Pass invoked...")
+    new DatabaseRepositoryReadPass(cpg, taggerCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --Database Repository Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
