@@ -54,7 +54,7 @@ class Dataflow(cpg: Cpg) {
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
       EngineContext(
-        semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config, ruleCache),
+        semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache),
         config = EngineConfig(4)
       )
     val sources = Dataflow.getSources(cpg)
@@ -102,7 +102,7 @@ class Dataflow(cpg: Cpg) {
 
       AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
 
-      if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
+      if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
         // Fetching the sourceId, sinkId and path Info
         dataflowPathsUnfiltered.map(path => {
@@ -132,7 +132,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
-        if (ScanProcessor.config.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
+        if (privadoScanConfig.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered

@@ -48,6 +48,33 @@ object AuditCache {
     ruleCache: RuleCache
   ): Unit = {
 
+    dataflowMapByPathId = getCalculatePathIdAndStorePath(dataflowPathsUnfiltered)
+
+    val sinkSubCategories = DuplicateFlowProcessor.getSinkSubCategories(ruleCache)
+
+    sinkSubCategories.foreach(sinkSubTypeEntry => {
+      val dataflowsMapByType = DuplicateFlowProcessor.getDataflowMapByType(dataflowMapByPathId, sinkSubTypeEntry._1)
+      val dataflowsMapBySourceId =
+        DuplicateFlowProcessor.filterFlowsBySubCategoryNodeType(dataflowsMapByType, privadoScanConfig)
+
+      dataflowsMapBySourceId.foreach(flow => {
+        flow._2.foreach(sinkPathId => {
+          sinkSubTypeEntry._2.foreach(dataflowNodeType => {
+            val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
+              .filter(node => node.name.equals(sinkSubTypeEntry._1 + dataflowNodeType))
+            if (sinkCatLevelTwoCustomTag.nonEmpty) {
+              sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
+                addIntoBeforeFirstFiltering(SourcePathInfo(flow._1, sinkId, sinkPathId))
+              })
+            }
+          })
+        })
+      })
+    })
+  }
+
+  private def getCalculatePathIdAndStorePath(dataflowPathsUnfiltered: List[Path]): Map[String, Path] = {
+
     dataflowMapByPathId = dataflowPathsUnfiltered
       .flatMap(dataflow => {
         DuplicateFlowProcessor.calculatePathId(dataflow) match {
@@ -59,78 +86,7 @@ object AuditCache {
       })
       .toMap
 
-    this.dataflowMapByPathId = dataflowMapByPathId
-
-    val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-    ruleCache.getRule.sinks.foreach(sinkRule => {
-      if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
-        sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
-      sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
-    })
-
-    sinkSubCategories.foreach(sinkSubTypeEntry => {
-      val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
-        dataflowEntrySet._2.elements.last
-          .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubTypeEntry._1))
-          .nonEmpty
-      )
-
-      // Store sourceId -> List[PathIds] Paths which have sourceId as the source
-      val dataflowsMapBySourceId = mutable.HashMap[String, ListBuffer[String]]()
-      dataflowsMapByType.foreach(entrySet => {
-        def addToMap(sourceId: String) = {
-          if (!dataflowsMapBySourceId.contains(sourceId))
-            dataflowsMapBySourceId.addOne(sourceId, ListBuffer())
-          dataflowsMapBySourceId(sourceId) += entrySet._1
-        }
-
-        val source = entrySet._2.elements.head
-        try {
-          source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-          if (privadoScanConfig.disable2ndLevelClosure)
-            source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
-          else
-            source.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString).value.foreach(addToMap)
-        } catch {
-          case e: Exception => logger.debug("Exception while fetching sourceId in dataflow : ", e)
-        }
-      })
-
-      dataflowsMapBySourceId.foreach(flow => {
-        processSinkListAndStoreInCache(
-          flow._1,
-          flow._2.toList,
-          dataflowsMapByType,
-          sinkSubTypeEntry._1,
-          sinkSubTypeEntry._2.toSet
-        )
-      })
-    })
-  }
-
-  private def processSinkListAndStoreInCache(
-    pathSourceId: String,
-    sinkPathIds: List[String],
-    dataflowsMapByType: Map[String, Path],
-    dataflowSinkType: String,
-    dataflowNodeTypes: Set[String]
-  ): Unit = {
-
-    def addToCache(sinkPathId: String, dataflowNodeType: String): Unit = {
-      val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
-        .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
-      if (sinkCatLevelTwoCustomTag.nonEmpty) {
-        sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
-          addIntoBeforeFirstFiltering(SourcePathInfo(pathSourceId, sinkId, sinkPathId))
-        })
-      }
-    }
-
-    sinkPathIds.foreach(sinkPathId => {
-      dataflowNodeTypes.foreach(dataflowNodeTypes => {
-        addToCache(sinkPathId, dataflowNodeTypes)
-      })
-    })
+    dataflowMapByPathId
   }
 
   def addIntoBeforeFirstDedup(

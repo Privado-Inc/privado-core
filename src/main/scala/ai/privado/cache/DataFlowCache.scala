@@ -23,13 +23,8 @@
 package ai.privado.cache
 
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
-import ai.privado.model.exporter.{
-  DataFlowPathIntermediateModel,
-  DataFlowSinkIntermediateModel,
-  DataFlowSourceIntermediateModel,
-  DataFlowSubCategoryPathIntermediateModel
-}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.model.exporter.{DataFlowPathIntermediateModel, DataFlowSinkIntermediateModel, DataFlowSourceIntermediateModel, DataFlowSubCategoryPathIntermediateModel}
 import ai.privado.model.DataFlowPathModel
 import ai.privado.semantic.Language.finder
 import io.joern.dataflowengineoss.language.Path

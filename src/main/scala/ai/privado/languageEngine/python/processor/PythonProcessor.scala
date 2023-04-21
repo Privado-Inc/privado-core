@@ -148,10 +148,6 @@ object PythonProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
-            val moduleCache: ModuleCache = new ModuleCache()
-            new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
-            new DependenciesNodePass(cpg, moduleCache).createAndApply()
-
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint.getAuditWorkbook(),

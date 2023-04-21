@@ -20,29 +20,9 @@ class DataFlowReportTest extends DataFlowReportTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val privadoInput = PrivadoInput(
-      Set.empty,
-      Set.empty,
-      Set.empty,
-      Set.empty,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false,
-      false
-    )
+    val privadoInput = PrivadoInput()
 
+    // TODO Instead of assigning config directly need to pass instance.
     ScanProcessor.config = privadoInput
 
     val context = new LayerCreatorContext(cpg)

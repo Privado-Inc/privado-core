@@ -22,7 +22,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.AuditCache.SourcePathInfo
+import ai.privado.cache.AuditCache.{SourcePathInfo, dataflowMapByPathId}
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
@@ -167,46 +167,49 @@ object DuplicateFlowProcessor {
     ruleCache: RuleCache
   ): Unit = {
 
-    val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-    ruleCache.getRule.sinks.foreach(sinkRule => {
-      if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
-        sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
-      sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
-    })
+    val sinkSubCategories = getSinkSubCategories(ruleCache)
 
-    sinkSubCategories.foreach(sinkSubTypeEntry =>
-      filterFlowsBySubCategoryNodeTypeAndStoreInCache(
-        dataflowMapByPathId,
-        sinkSubTypeEntry._1,
-        sinkSubTypeEntry._2.toSet,
-        privadoScanConfig,
-        ruleCache
-      )
-    )
+    sinkSubCategories.foreach(sinkSubTypeEntry => {
+      val dataflowsMapByType = getDataflowMapByType(dataflowMapByPathId, sinkSubTypeEntry._1)
+
+      // Metric for sinkSubCategory size
+      MetricHandler.flowCategoryData(sinkSubTypeEntry._1) = dataflowsMapByType.size
+
+      val dataflowsMapBySourceId = filterFlowsBySubCategoryNodeType(dataflowsMapByType, privadoScanConfig)
+
+      dataflowsMapBySourceId.foreach(flow => {
+        filterSinkListAndStoreInCache(
+          flow._1,
+          flow._2.toList,
+          dataflowsMapByType,
+          sinkSubTypeEntry._1,
+          sinkSubTypeEntry._2.toSet,
+          ruleCache,
+          privadoScanConfig
+        )
+      })
+    })
   }
 
-  /** Helper function to filter flows by sub-category and node type and store in cache
-    * @param dataflowMapByPathId
-    *   \- map containing pathId -> path
-    * @param sinkSubCategory
-    *   \- sinkSubCategory - Ex - leakages, third-parties
-    * @param sinkNodetypes
-    *   \- REGULAR, API etc
-    */
-  private def filterFlowsBySubCategoryNodeTypeAndStoreInCache(
-    dataflowMapByPathId: Map[String, Path],
-    sinkSubCategory: String,
-    sinkNodetypes: Set[String],
-    privadoScanConfig: PrivadoInput,
-    ruleCache: RuleCache
-  ): Unit = {
+  def getDataflowMapByType(dataflowMapByPathId: Map[String, Path], sinkSubType: String): Map[String, Path] = {
     val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
       dataflowEntrySet._2.elements.last
-        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
+        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubType))
         .nonEmpty
     )
-    // Metric for sinkSubCategory size
-    MetricHandler.flowCategoryData(sinkSubCategory) = dataflowsMapByType.size
+
+    dataflowsMapByType
+  }
+
+  /** Helper function to filter flows by sub-category and node type
+    *
+    * @param dataflowMapByPathId
+    *   \- map containing pathId -> path
+    */
+  def filterFlowsBySubCategoryNodeType(
+    dataflowsMapByType: Map[String, Path],
+    privadoScanConfig: PrivadoInput
+  ): mutable.HashMap[String, ListBuffer[String]] = {
 
     // Store sourceId -> List[PathIds] Paths which have sourceId as the source
     val dataflowsMapBySourceId = mutable.HashMap[String, ListBuffer[String]]()
@@ -229,16 +232,18 @@ object DuplicateFlowProcessor {
       }
     })
 
-    dataflowsMapBySourceId.foreach(flow => {
-      filterSinkListAndStoreInCache(
-        flow._1,
-        flow._2.toList,
-        dataflowsMapByType,
-        sinkSubCategory,
-        sinkNodetypes,
-        ruleCache
-      )
+    dataflowsMapBySourceId
+  }
+
+  def getSinkSubCategories(ruleCache: RuleCache): mutable.HashMap[String, mutable.Set[String]] = {
+    val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
+    ruleCache.getRule.sinks.foreach(sinkRule => {
+      if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
+        sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
+      sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
     })
+
+    sinkSubCategories
   }
 
   /** Helper function to filter all sink flows for a given sourceID
@@ -259,7 +264,8 @@ object DuplicateFlowProcessor {
     dataflowsMapByType: Map[String, Path],
     dataflowSinkType: String,
     dataflowNodeTypes: Set[String],
-    ruleCache: RuleCache
+    ruleCache: RuleCache,
+    privadoScanConfig: PrivadoInput
   ) = {
 
     def addToCache(sinkPathId: String, dataflowNodeType: String) = {
@@ -351,7 +357,7 @@ object DuplicateFlowProcessor {
         }
         sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
           AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(pathSourceId, sinkId, sinkPathId))
-          if (ScanProcessor.config.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA)
+          if (privadoScanConfig.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA)
             DataFlowCache.setDataflow(
               DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
             )
