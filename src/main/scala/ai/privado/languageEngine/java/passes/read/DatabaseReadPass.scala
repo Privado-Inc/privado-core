@@ -115,7 +115,9 @@ class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   }
   def extractSQLForConcatenatedString(sqlQuery: String): String = {
     val query = sqlQuery
-      .split("\\|\\+|\\\"|\n") // Splitting the query on '+' operator and joining back to form complete query
+      .split(
+        "\\|\\+|\\\"|\n|\\{|\\}"
+      ) // Splitting the query on '+', '\"', '{' amd '}' operator and joining back to form complete query
       .map(_.stripMargin)
       .mkString("")
 
