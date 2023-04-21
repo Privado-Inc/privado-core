@@ -52,9 +52,9 @@ object AuditCache {
     val expendedSourceSinkInfo =
       DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache, false)
 
-      expendedSourceSinkInfo.foreach(flowInfo => {
-        addIntoBeforeFirstFiltering(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
-      })
+    expendedSourceSinkInfo.foreach(flowInfo => {
+      addIntoBeforeFirstFiltering(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
+    })
   }
 
   private def getCalculatePathIdAndStorePath(dataflowPathsUnfiltered: List[Path]): Map[String, Path] = {

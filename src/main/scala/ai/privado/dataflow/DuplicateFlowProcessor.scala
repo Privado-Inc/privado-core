@@ -222,14 +222,14 @@ object DuplicateFlowProcessor {
   }
 
   /** Helper function to filter flows by sub-category and node type and store
-   *
-   * @param dataflowMapByPathId
-   * \- map containing pathId -> path
-   * @param sinkSubCategory
-   * \- sinkSubCategory - Ex - leakages, third-parties
-   * @param sinkNodetypes
-   * \- REGULAR, API etc
-   */
+    *
+    * @param dataflowMapByPathId
+    *   \- map containing pathId -> path
+    * @param sinkSubCategory
+    *   \- sinkSubCategory - Ex - leakages, third-parties
+    * @param sinkNodetypes
+    *   \- REGULAR, API etc
+    */
 
   private def filterFlowsBySubCategoryNodeType(
     dataflowMapByPathId: Map[String, Path],
@@ -284,9 +284,8 @@ object DuplicateFlowProcessor {
     })
   }
 
-  /**
-   * Helper function to return list of extended source sink data
-   */
+  /** Helper function to return list of extended source sink data
+    */
 
   private def filterSinkListAndStore(
     pathSourceId: String,
