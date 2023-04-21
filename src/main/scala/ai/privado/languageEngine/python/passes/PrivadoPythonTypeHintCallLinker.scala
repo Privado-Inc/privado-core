@@ -9,10 +9,10 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 class PrivadoPythonTypeHintCallLinker(cpg: Cpg) extends PythonTypeHintCallLinker(cpg) {
 
   override protected def linkCallsToCallees(
-                                             callerAndCallees: List[(Call, Seq[String])],
-                                             methodMap: Map[String, MethodBase],
-                                             builder: DiffGraphBuilder
-                                           ): Unit = {
+    callerAndCallees: List[(Call, Seq[String])],
+    methodMap: Map[String, MethodBase],
+    builder: DiffGraphBuilder
+  ): Unit = {
     // Link edges to method nodes
     callerAndCallees.foreach { case (call, methodNames) =>
       methodNames
