@@ -25,7 +25,7 @@ object SqlCleaner {
 
   private def removeComments(sql: String): String = {
     // Replace /* ... */ style comments
-    var cleanedSql = sql.replaceAll("/\\*.*?\\*/", "")
+    var cleanedSql = sql.replaceAll("/\\*.*?\\*/", "").trim
 
     // Replace -- style comments
     cleanedSql = cleanedSql.replaceAll("--.*", "")
