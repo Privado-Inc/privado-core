@@ -6,6 +6,8 @@ object AuditReportConstants {
 
   val AUDIT_DEPENDENCY_SHEET_NAME = "Dependency Audit"
 
+  val AUDIT_DATA_FLOW_SHEET_NAME = "Data Flow Audit"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
@@ -40,6 +42,28 @@ object AuditReportConstants {
   val ELEMENT_DISCOVERY_OVERRIDE_METHOD_REGEX = "^(hascode|equals)"
 
   val ELEMENT_DISCOVERY_GETTER_SETTER_REGEX = ".*(Getter|Setter).*"
+
+  val DATA_FLOW_SOURCE_NAME = "Source"
+
+  val DATA_FLOW_SINK_NAME = "Sink"
+
+  val DATA_FLOW_FLOW_NAME = "Flow Id"
+
+  val DATA_FLOW_SHORT_FLOW_NAME = "Short Flow"
+
+  val DATA_FLOW_JOERN_OUTPUT_NAME = "Joern Output"
+
+  val DATA_FLOW_SEMANTIC_FILTER_NAME = "Semantic Filter"
+
+  val DATA_FLOW_FILTER_1_NAME = "FP - this Filtering"
+
+  val DATA_FLOW_FILTER_2_NAME = "FP - Separation b/w Data Elements"
+
+  val DATA_FLOW_DEDUP_1_NAME = "Deduplication of Sub Flow (subset)"
+
+  val DATA_FLOW_DEDUP_2_NAME = "Grouping by Same Line No. "
+
+  val DATA_FLOW_FINAL_RESULT_NAME = "Final Result"
 
   val DEPENDENCY_LIBRARY_NAME = "Library ( GroupId - ArtifactId)"
 

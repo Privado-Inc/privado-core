@@ -22,8 +22,9 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.cache.AuditCache.SourcePathInfo
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType}
 import io.joern.dataflowengineoss.language.Path
@@ -166,6 +167,50 @@ object DuplicateFlowProcessor {
     ruleCache: RuleCache
   ): Unit = {
 
+    val expendedSourceSinkInfo = processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache)
+
+    expendedSourceSinkInfo.foreach(flow => {
+      if (privadoScanConfig.generateAuditReport) {
+        AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
+      }
+      if (privadoScanConfig.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA) {
+        DataFlowCache.setDataflow(
+          DataFlowPathModel(
+            flow.pathSourceId,
+            flow.sinkId,
+            flow.dataflowSinkType,
+            flow.dataflowNodeType,
+            flow.sinkPathId
+          )
+        )
+      } else {
+        filterFlowsOverlappingWithOtherDataElement(
+          flow.pathSourceId,
+          getDataflowsMapByType(dataflowMapByPathId, flow.dataflowSinkType),
+          flow.dataflowSinkType,
+          flow.dataflowNodeType,
+          ruleCache,
+          flow.sinkId,
+          flow.sinkPathId
+        )
+      }
+    })
+  }
+
+  case class ExpendedSourceSinkInfo(
+    pathSourceId: String,
+    sinkId: String,
+    dataflowSinkType: String,
+    dataflowNodeType: String,
+    sinkPathId: String
+  )
+
+  def processExpendedSourceSinkData(
+    dataflowMapByPathId: Map[String, Path],
+    privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache,
+    isStoreMatricData: Boolean = true
+  ): List[ExpendedSourceSinkInfo] = {
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
     ruleCache.getRule.sinks.foreach(sinkRule => {
       if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
@@ -173,18 +218,32 @@ object DuplicateFlowProcessor {
       sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
     })
 
-    sinkSubCategories.foreach(sinkSubTypeEntry =>
-      filterFlowsBySubCategoryNodeTypeAndStoreInCache(
+    val expendedSourceSinkInfo = new ListBuffer[ExpendedSourceSinkInfo]()
+
+    sinkSubCategories.foreach(sinkSubTypeEntry => {
+      expendFlowsBySubCategoryNodeType(
         dataflowMapByPathId,
         sinkSubTypeEntry._1,
         sinkSubTypeEntry._2.toSet,
         privadoScanConfig,
-        ruleCache
+        expendedSourceSinkInfo,
+        isStoreMatricData
       )
+    })
+
+    expendedSourceSinkInfo.toList
+  }
+
+  def getDataflowsMapByType(dataflowMapByPathId: Map[String, Path], sinkSubCategory: String): Map[String, Path] = {
+    dataflowMapByPathId.filter(dataflowEntrySet =>
+      dataflowEntrySet._2.elements.last
+        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
+        .nonEmpty
     )
   }
 
-  /** Helper function to filter flows by sub-category and node type and store in cache
+  /** Helper function to filter flows by sub-category and node type and store
+    *
     * @param dataflowMapByPathId
     *   \- map containing pathId -> path
     * @param sinkSubCategory
@@ -192,20 +251,22 @@ object DuplicateFlowProcessor {
     * @param sinkNodetypes
     *   \- REGULAR, API etc
     */
-  private def filterFlowsBySubCategoryNodeTypeAndStoreInCache(
+
+  private def expendFlowsBySubCategoryNodeType(
     dataflowMapByPathId: Map[String, Path],
     sinkSubCategory: String,
     sinkNodetypes: Set[String],
     privadoScanConfig: PrivadoInput,
-    ruleCache: RuleCache
+    expendedSourceSinkInfo: ListBuffer[ExpendedSourceSinkInfo],
+    isStoreMatricData: Boolean
   ): Unit = {
-    val dataflowsMapByType = dataflowMapByPathId.filter(dataflowEntrySet =>
-      dataflowEntrySet._2.elements.last
-        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
-        .nonEmpty
-    )
+
+    val dataflowsMapByType = getDataflowsMapByType(dataflowMapByPathId, sinkSubCategory)
+
     // Metric for sinkSubCategory size
-    MetricHandler.flowCategoryData(sinkSubCategory) = dataflowsMapByType.size
+    if (isStoreMatricData) {
+      MetricHandler.flowCategoryData(sinkSubCategory) = dataflowsMapByType.size
+    }
 
     // Store sourceId -> List[PathIds] Paths which have sourceId as the source
     val dataflowsMapBySourceId = mutable.HashMap[String, ListBuffer[String]]()
@@ -229,143 +290,141 @@ object DuplicateFlowProcessor {
     })
 
     dataflowsMapBySourceId.foreach(flow => {
-      filterSinkListAndStoreInCache(
+      expendSinkListAndStore(
         flow._1,
         flow._2.toList,
         dataflowsMapByType,
         sinkSubCategory,
         sinkNodetypes,
-        ruleCache
+        expendedSourceSinkInfo
       )
     })
   }
 
-  /** Helper function to filter all sink flows for a given sourceID
-    * @param pathSourceId
-    *   \- sourceId of the path
-    * @param sinkPathIds
-    *   \- path ids of all flows for the corresponding sourceID
-    * @param dataflowsMapByType
-    *   \- Map containing pathId -> path
-    * @param dataflowSinkType
-    *   \- Ex - leakages, third-parties
-    * @param dataflowNodeTypes
-    *   \- REGULAR, API etc
+  /** Helper function to return list of extended source sink data
     */
-  private def filterSinkListAndStoreInCache(
+
+  private def expendSinkListAndStore(
     pathSourceId: String,
     sinkPathIds: List[String],
     dataflowsMapByType: Map[String, Path],
     dataflowSinkType: String,
     dataflowNodeTypes: Set[String],
-    ruleCache: RuleCache
-  ) = {
+    expendedSourceSinkInfo: ListBuffer[ExpendedSourceSinkInfo]
+  ): Unit = {
 
-    def addToCache(sinkPathId: String, dataflowNodeType: String) = {
+    def addToResult(sinkPathId: String, dataflowNodeType: String): Unit = {
       val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
         .filter(node => node.name.equals(dataflowSinkType + dataflowNodeType))
       if (sinkCatLevelTwoCustomTag.nonEmpty) {
-        def filterFlowsOverlappingWithOtherDataElement(sinkId: String) = {
-          // Logic to filter flows which are interfering with the current source item
-          // Ex - If traversing flow for email, discard flow which uses password
-
-          // approach 2.1
-          val matchedDataElement = mutable.HashSet[String]()
-          breakable {
-            dataflowsMapByType(sinkPathId).elements.reverse
-              .foreach(pathItem => {
-                val matchRes = pathItem.tag
-                  .where(_.value("Data.Sensitive.*"))
-                  .value
-                  .l
-                if (matchRes.nonEmpty) {
-                  matchedDataElement.addAll(matchRes)
-                  break()
-                }
-              })
-          }
-
-          val isFpByApproach1 = !matchedDataElement.contains(pathSourceId)
-
-          // approach 2.2
-          val sinkNode  = dataflowsMapByType(sinkPathId).elements.isCall.last
-          val arguments = sinkNode.argument.filter(_.argumentIndex > 0).l
-
-          val identifierArguments       = arguments.isIdentifier.l
-          var callArguments             = arguments.isCall.l
-          val identifierInCallArguments = mutable.HashSet[Identifier]()
-          var recCnt                    = 0
-          var callArgumentForIdentifier = arguments.isCall.l
-          while (callArgumentForIdentifier.argument.isIdentifier.nonEmpty && recCnt < 3) {
-            identifierInCallArguments.addAll(callArgumentForIdentifier.argument.isIdentifier.toSet)
-            callArgumentForIdentifier = callArgumentForIdentifier.argument.isCall.l
-            recCnt += 1
-          }
-          val isDerivedSourcePresent = (identifierInCallArguments ++ identifierArguments.toSet).tag
-            .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name))
-            .nonEmpty
-
-          val identifierMatchedDataElement =
-            identifierArguments.tag.where(_.value("Data.Sensitive.*")).value.toSet
-
-          val callMatchedDataElement = mutable.HashSet[String]()
-          recCnt = 0
-          while (callArguments.nonEmpty && recCnt < 3) {
-            callMatchedDataElement.addAll(callArguments.tag.where(_.value("Data.Sensitive.*")).value.l)
-            callArguments = callArguments.argument.isCall.l
-            recCnt += 1
-          }
-          val finalMatchedDataElement = identifierMatchedDataElement ++ callMatchedDataElement
-
-          val isFpByApproach2 = !finalMatchedDataElement
-            .contains(pathSourceId)
-
-          if (isFpByApproach1 && isFpByApproach2) {
-            logger.debug(
-              s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${matchedDataElement
-                  .mkString(" || ")}, identifier matched Data Elements :" +
-                s" ${identifierMatchedDataElement.mkString(" || ")}, call matched Data Elements : ${callMatchedDataElement} Sink type : ${dataflowSinkType} Derived source was present : ${isDerivedSourcePresent}"
-            )
-            logger.debug(
-              s"Derived sources are : ${(identifierInCallArguments ++ identifierArguments.toSet).code.mkString("|||")}"
-            )
-            logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
-            logger.debug("----------------------------")
-            AppCache.fpByOverlappingDE += 1
-            AppCache.fpMap.put(dataflowSinkType, AppCache.fpMap.getOrElse(dataflowSinkType, 0) + 1)
-          } // Add this to Cache
-          else if (
-            isCorrectDataSourceConsumedInSink(
-              pathSourceId,
-              sinkPathId,
-              dataflowsMapByType(sinkPathId),
-              dataflowSinkType,
-              dataflowNodeType,
-              ruleCache
-            )
-          )
-            DataFlowCache.setDataflow(
-              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-            )
-        }
         sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
-          if (ScanProcessor.config.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA)
-            DataFlowCache.setDataflow(
-              DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId)
-            )
-          else
-            filterFlowsOverlappingWithOtherDataElement(sinkId)
-          AppCache.totalMap.put(dataflowSinkType, AppCache.totalMap.getOrElse(dataflowSinkType, 0) + 1)
+          expendedSourceSinkInfo += ExpendedSourceSinkInfo(
+            pathSourceId,
+            sinkId,
+            dataflowSinkType,
+            dataflowNodeType,
+            sinkPathId
+          )
         })
       }
     }
 
     sinkPathIds.foreach(sinkPathId => {
       dataflowNodeTypes.foreach(dataflowNodeType => {
-        // Add this to Cache
-        addToCache(sinkPathId, dataflowNodeType)
+        // Add to Result
+        addToResult(sinkPathId, dataflowNodeType)
       })
     })
+  }
+
+  private def filterFlowsOverlappingWithOtherDataElement(
+    pathSourceId: String,
+    dataflowsMapByType: Map[String, Path],
+    dataflowSinkType: String,
+    dataflowNodeType: String,
+    ruleCache: RuleCache,
+    sinkId: String,
+    sinkPathId: String
+  ) = {
+    // Logic to filter flows which are interfering with the current source item
+    // Ex - If traversing flow for email, discard flow which uses password
+
+    // approach 2.1
+    val matchedDataElement = mutable.HashSet[String]()
+    breakable {
+      dataflowsMapByType(sinkPathId).elements.reverse
+        .foreach(pathItem => {
+          val matchRes = pathItem.tag
+            .where(_.value("Data.Sensitive.*"))
+            .value
+            .l
+          if (matchRes.nonEmpty) {
+            matchedDataElement.addAll(matchRes)
+            break()
+          }
+        })
+    }
+
+    val isFpByApproach1 = !matchedDataElement.contains(pathSourceId)
+
+    // approach 2.2
+    val sinkNode  = dataflowsMapByType(sinkPathId).elements.isCall.last
+    val arguments = sinkNode.argument.filter(_.argumentIndex > 0).l
+
+    val identifierArguments       = arguments.isIdentifier.l
+    var callArguments             = arguments.isCall.l
+    val identifierInCallArguments = mutable.HashSet[Identifier]()
+    var recCnt                    = 0
+    var callArgumentForIdentifier = arguments.isCall.l
+    while (callArgumentForIdentifier.argument.isIdentifier.nonEmpty && recCnt < 3) {
+      identifierInCallArguments.addAll(callArgumentForIdentifier.argument.isIdentifier.toSet)
+      callArgumentForIdentifier = callArgumentForIdentifier.argument.isCall.l
+      recCnt += 1
+    }
+    val isDerivedSourcePresent = (identifierInCallArguments ++ identifierArguments.toSet).tag
+      .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name))
+      .nonEmpty
+
+    val identifierMatchedDataElement =
+      identifierArguments.tag.where(_.value("Data.Sensitive.*")).value.toSet
+
+    val callMatchedDataElement = mutable.HashSet[String]()
+    recCnt = 0
+    while (callArguments.nonEmpty && recCnt < 3) {
+      callMatchedDataElement.addAll(callArguments.tag.where(_.value("Data.Sensitive.*")).value.l)
+      callArguments = callArguments.argument.isCall.l
+      recCnt += 1
+    }
+    val finalMatchedDataElement = identifierMatchedDataElement ++ callMatchedDataElement
+
+    val isFpByApproach2 = !finalMatchedDataElement
+      .contains(pathSourceId)
+
+    if (isFpByApproach1 && isFpByApproach2) {
+      logger.debug(
+        s"Discarding the flow for sourceId : $pathSourceId, other matched Data Elements : ${matchedDataElement
+            .mkString(" || ")}, identifier matched Data Elements :" +
+          s" ${identifierMatchedDataElement.mkString(" || ")}, call matched Data Elements : ${callMatchedDataElement} Sink type : ${dataflowSinkType} Derived source was present : ${isDerivedSourcePresent}"
+      )
+      logger.debug(
+        s"Derived sources are : ${(identifierInCallArguments ++ identifierArguments.toSet).code.mkString("|||")}"
+      )
+      logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
+      logger.debug("----------------------------")
+      AppCache.fpByOverlappingDE += 1
+      AppCache.fpMap.put(dataflowSinkType, AppCache.fpMap.getOrElse(dataflowSinkType, 0) + 1)
+    } // Add this to Cache
+    else if (
+      isCorrectDataSourceConsumedInSink(
+        pathSourceId,
+        sinkPathId,
+        dataflowsMapByType(sinkPathId),
+        dataflowSinkType,
+        dataflowNodeType,
+        ruleCache
+      )
+    )
+      DataFlowCache.setDataflow(DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId))
   }
 
   /** Check to classify if correct path Source Id is getting consumed in sink for derived sources

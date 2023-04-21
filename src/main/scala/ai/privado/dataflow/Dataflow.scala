@@ -23,7 +23,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, AuditCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
@@ -54,7 +54,7 @@ class Dataflow(cpg: Cpg) {
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
       EngineContext(
-        semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config, ruleCache),
+        semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache),
         config = EngineConfig(4)
       )
     val sources = Dataflow.getSources(cpg)
@@ -100,7 +100,11 @@ class Dataflow(cpg: Cpg) {
          */
       }
 
-      if (ScanProcessor.config.testOutput) {
+      if (privadoScanConfig.generateAuditReport) {
+        AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
+      }
+
+      if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
         // Fetching the sourceId, sinkId and path Info
         dataflowPathsUnfiltered.map(path => {
@@ -130,7 +134,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
-        if (ScanProcessor.config.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
+        if (privadoScanConfig.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered
@@ -166,7 +170,7 @@ class Dataflow(cpg: Cpg) {
       val dataflowFromCache = DataFlowCache.getDataflow
       println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
-
+      AuditCache.addIntoFinalPath(dataflowFromCache)
       dataflowFromCache
         .map(_.pathId)
         .toSet
