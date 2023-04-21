@@ -46,9 +46,13 @@ object DataFlowCache {
   val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
 
   lazy val finalDataflow: List[DataFlowPathModel] = {
-    if (!ScanProcessor.config.disableDeDuplication)
-      setDataflowWithdedup()
-    dataflow.values.flatMap(_.values).flatten.toList
+    val extraFlows = {
+      if (!ScanProcessor.config.disableDeDuplication)
+        setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse()
+      else
+        List()
+    }
+    dataflow.flatMap(_._2).flatMap(_._2).toList ::: extraFlows
   }
 
   var intermediateDataFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
@@ -92,7 +96,7 @@ object DataFlowCache {
     intermediateSourceResult.toList
   }
 
-  private def setDataflowWithdedup(): Unit = {
+  private def setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse() = {
 
     println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
     def addToMap(dataFlowPathModel: DataFlowPathModel): Unit = {
@@ -130,24 +134,25 @@ object DataFlowCache {
     }
 
     val filteredSourceIdMap = dataflow.map(entrySet => {
-      val sourceId        = entrySet._1
-      val allPathIds      = entrySet._2.values.flatten.map(_.pathId).toSet
-      val filteredPathIds = DuplicateFlowProcessor.pathIdsPerSourceIdAfterDedup(allPathIds)
+      val sourceId = entrySet._1
+      // Consider only the flows for which applyDedup is true
+      val pathIdsWithAppyDedupTrue = entrySet._2.values.flatMap(_.filter(_.applyDedup).map(_.pathId).toList).toSet
+      val filteredPathIds          = DuplicateFlowProcessor.pathIdsPerSourceIdAfterDedup(pathIdsWithAppyDedupTrue)
 
       val filteredFileLineNumberMap = entrySet._2.map(fileLineNoEntry => {
         (fileLineNoEntry._1, fileLineNoEntry._2.filter(dfpm => filteredPathIds.contains(dfpm.pathId)))
       })
       (sourceId, filteredFileLineNumberMap)
     })
-
-    for (dataflowKey: String <- dataflow.keys) {
-      dataflow.remove(dataflowKey)
-    }
+    val flowsWithAppyDataflowFalse = dataflow.flatMap(_._2.values.flatMap(_.filterNot(_.applyDedup).toList)).toList
+    // clear the content and set fresh content
+    dataflow.clear()
     filteredSourceIdMap.foreach(sourceMap => {
       sourceMap._2.foreach(fileLineNoEntry => {
         fileLineNoEntry._2.foreach(dfpm => addToMap(dfpm))
       })
     })
+    flowsWithAppyDataflowFalse
   }
 
 }
