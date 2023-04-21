@@ -2,9 +2,8 @@ package ai.privado.cache
 
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{Constants, DataFlowPathModel, InternalTag}
+import ai.privado.model.DataFlowPathModel
 import io.joern.dataflowengineoss.language.Path
-import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -50,27 +49,12 @@ object AuditCache {
 
     dataflowMapByPathId = getCalculatePathIdAndStorePath(dataflowPathsUnfiltered)
 
-    val sinkSubCategories = DuplicateFlowProcessor.getSinkSubCategories(ruleCache)
+    val expendedSourceSinkInfo =
+      DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache, false)
 
-    sinkSubCategories.foreach(sinkSubTypeEntry => {
-      val dataflowsMapByType = DuplicateFlowProcessor.getDataflowMapByType(dataflowMapByPathId, sinkSubTypeEntry._1)
-      val dataflowsMapBySourceId =
-        DuplicateFlowProcessor.filterFlowsBySubCategoryNodeType(dataflowsMapByType, privadoScanConfig)
-
-      dataflowsMapBySourceId.foreach(flow => {
-        flow._2.foreach(sinkPathId => {
-          sinkSubTypeEntry._2.foreach(dataflowNodeType => {
-            val sinkCatLevelTwoCustomTag = dataflowsMapByType(sinkPathId).elements.last.tag
-              .filter(node => node.name.equals(sinkSubTypeEntry._1 + dataflowNodeType))
-            if (sinkCatLevelTwoCustomTag.nonEmpty) {
-              sinkCatLevelTwoCustomTag.value.foreach(sinkId => {
-                addIntoBeforeFirstFiltering(SourcePathInfo(flow._1, sinkId, sinkPathId))
-              })
-            }
-          })
-        })
+      expendedSourceSinkInfo.foreach(flowInfo => {
+        addIntoBeforeFirstFiltering(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
       })
-    })
   }
 
   private def getCalculatePathIdAndStorePath(dataflowPathsUnfiltered: List[Path]): Map[String, Path] = {
