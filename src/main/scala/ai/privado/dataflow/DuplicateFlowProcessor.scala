@@ -173,15 +173,27 @@ object DuplicateFlowProcessor {
       if (privadoScanConfig.generateAuditReport) {
         AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
       }
-      filterFlowsOverlappingWithOtherDataElement(
-        flow.pathSourceId,
-        getDataflowsMapByType(dataflowMapByPathId, flow.dataflowSinkType),
-        flow.dataflowSinkType,
-        flow.dataflowNodeType,
-        ruleCache,
-        flow.sinkId,
-        flow.sinkPathId
-      )
+      if (privadoScanConfig.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA) {
+        DataFlowCache.setDataflow(
+          DataFlowPathModel(
+            flow.pathSourceId,
+            flow.sinkId,
+            flow.dataflowSinkType,
+            flow.dataflowNodeType,
+            flow.sinkPathId
+          )
+        )
+      } else {
+        filterFlowsOverlappingWithOtherDataElement(
+          flow.pathSourceId,
+          getDataflowsMapByType(dataflowMapByPathId, flow.dataflowSinkType),
+          flow.dataflowSinkType,
+          flow.dataflowNodeType,
+          ruleCache,
+          flow.sinkId,
+          flow.sinkPathId
+        )
+      }
     })
   }
 
