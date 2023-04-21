@@ -32,7 +32,7 @@ import ai.privado.model.exporter.{
 }
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Literal, Local, Method, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -48,6 +48,50 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
   /** Processes collection points and return final output
     */
   def getCollections: List[CollectionModel] = {
+    getCollectionsByMethods ++ getCollectionsByTemplateDom
+  }
+
+  def getCollectionsByTemplateDom: List[CollectionModel] = {
+    val collectionMapByCollectionId = cpg.templateDom
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+      .l
+      .groupBy(collectionTemplateDom => collectionTemplateDom.tag.nameExact(Constants.id).value.head)
+
+    collectionMapByCollectionId.map(entrySet => processByCollectionIdForTemplateDom(entrySet._1, entrySet._2)).toList
+  }
+
+  private def processByCollectionIdForTemplateDom(collectionId: String, collectionTemplateDoms: List[TemplateDom]) = {
+
+    val collectionTemplateDomMapById = mutable.HashMap[String, ListBuffer[TemplateDom]]()
+    collectionTemplateDoms.foreach(templateDom => {
+      try {
+        templateDom.tag
+          .nameExact(Constants.collectionSource)
+          .value
+          .foreach(x => addToMap(x, collectionTemplateDomMapById, templateDom))
+      } catch {
+        case e: Exception => logger.debug("Exception : ", e)
+      }
+    })
+
+    def addToMap[T](literalId: String, mapper: mutable.HashMap[String, ListBuffer[T]], node: T): Unit = {
+      if (!mapper.contains(literalId))
+        mapper(literalId) = ListBuffer()
+      mapper(literalId).append(node)
+    }
+
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
+    CollectionModel(
+      collectionId,
+      ruleInfo.name,
+      ruleInfo.isSensitive,
+      collectionTemplateDomMapById
+        .map(entrySet => processByTemplatedDomId(entrySet._1, entrySet._2.toList))
+        .toList
+    )
+  }
+
+  def getCollectionsByMethods: List[CollectionModel] = {
     val collectionMapByCollectionId = cpg.method
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
       .l
@@ -172,6 +216,33 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       )
     )
 
+  }
+
+  def processByTemplatedDomId(
+    templatedDomId: String,
+    methodLocalOccurrences: List[TemplateDom]
+  ): CollectionOccurrenceDetailModel = {
+
+    CollectionOccurrenceDetailModel(
+      templatedDomId,
+      methodLocalOccurrences
+        .flatMap(templateDom => {
+          ExporterUtility.convertIndividualPathElement(templateDom) match {
+            case Some(pathElement) =>
+              Some(
+                CollectionOccurrenceModel(
+                  templateDom.file.name.headOption.getOrElse(""),
+                  pathElement.sample,
+                  pathElement.lineNumber,
+                  pathElement.columnNumber,
+                  pathElement.fileName,
+                  pathElement.excerpt
+                )
+              )
+            case None => None
+          }
+        })
+    )
   }
 
   def processByLocalVariableId(
