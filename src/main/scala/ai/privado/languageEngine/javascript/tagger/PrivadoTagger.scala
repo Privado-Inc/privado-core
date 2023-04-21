@@ -24,6 +24,7 @@
 package ai.privado.languageEngine.javascript.tagger
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
@@ -60,7 +61,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
     new JSAPITagger(cpg, ruleCache).createAndApply()
-
+    println(s"${Calendar.getInstance().getTime} - CollectionTagger invoked...")
+    new CollectionTagger(cpg, ruleCache).createAndApply()
     logger.info("Done with tagging")
 
     cpg.tag

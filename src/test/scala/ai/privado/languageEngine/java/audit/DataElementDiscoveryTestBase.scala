@@ -76,7 +76,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
       NodeType.REGULAR,
       "",
       CatLevelOne.COLLECTIONS,
-      "",
+      catLevelTwo = "annotations",
       Language.JAVA,
       Array()
     )
