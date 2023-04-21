@@ -2,7 +2,7 @@ package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
-import ai.privado.languageEngine.java.passes.read.DatabaseReadPass
+import ai.privado.languageEngine.java.passes.read.DatabaseQueryReadPass
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.sink.{InheritMethodTagger, PythonAPITagger}
