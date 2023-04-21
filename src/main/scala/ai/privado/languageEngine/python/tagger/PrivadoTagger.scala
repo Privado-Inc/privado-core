@@ -83,9 +83,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
-    println(s"${Calendar.getInstance().getTime} - --Database Read Pass INVOKED...")
+    println(s"${Calendar.getInstance().getTime} - --Database Read Pass is invoked...")
     new DatabaseReadPass(cpg, ruleCache, taggerCache).createAndApply()
-
+    println(
+      s"${TimeMetric.getNewTime()} - --Database Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     logger.info("Done with tagging")
     cpg.tag
   }
