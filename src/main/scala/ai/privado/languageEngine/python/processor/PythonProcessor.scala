@@ -1,17 +1,27 @@
 package ai.privado.languageEngine.python.processor
 
+import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
-import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputIntermediateFileName}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
+import ai.privado.model.Constants.{
+  cpgOutputFileName,
+  outputAuditFileName,
+  outputDirectoryName,
+  outputFileName,
+  outputIntermediateFileName
+}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.languageEngine.java.cache.ModuleCache
+import ai.privado.languageEngine.java.passes.config.ModuleFilePass
+import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import io.joern.pysrc2cpg.{
   ImportsPass,
   InheritanceFullNamePass,
@@ -41,6 +51,7 @@ import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import java.nio.file.{Files, Paths}
+import scala.collection.mutable.ListBuffer
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -114,27 +125,12 @@ object PythonProcessor {
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
+          val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          if (ScanProcessor.config.testOutput) {
-            JSONExporter.IntermediateFileExport(
-              outputIntermediateFileName,
-              sourceRepoLocation,
-              DataFlowCache.getIntermediateDataFlow()
-            ) match {
-              case Left(err) =>
-                MetricHandler.otherErrorsOrWarnings.addOne(err)
-                Left(err)
-              case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
-                )
-                Right(())
-            }
-          }
           JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
-              Left(err)
+              errorMsg += err
             case Right(_) =>
               println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
               logger.debug(
@@ -151,6 +147,45 @@ object PythonProcessor {
               Right(())
           }
 
+          // Exporting the Audit report
+          if (ScanProcessor.config.generateAuditReport) {
+            ExcelExporter.auditExport(
+              outputAuditFileName,
+              AuditReportEntryPoint.getAuditWorkbook(),
+              sourceRepoLocation
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
+          }
+
+          // Exporting the Intermediate report
+          if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
+            JSONExporter.IntermediateFileExport(
+              outputIntermediateFileName,
+              sourceRepoLocation,
+              DataFlowCache.getIntermediateDataFlow()
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                )
+            }
+          }
+
+          // Check if any of the export failed
+          if (errorMsg.toList.isEmpty)
+            Right(())
+          else
+            Left(errorMsg.toList.mkString("\n"))
         } finally {
           cpg.close()
           import java.io.File

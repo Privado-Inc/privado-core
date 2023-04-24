@@ -299,7 +299,7 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
     ruleCache.setRule(rule)
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new DatabaseReadPass(cpg, ruleCache, taggerCache).createAndApply()
+    new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
     super.beforeAll()
   }
 

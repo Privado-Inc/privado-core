@@ -2,8 +2,9 @@ package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
-import ai.privado.languageEngine.java.passes.read.DatabaseReadPass
+import ai.privado.languageEngine.java.passes.read.DatabaseQueryReadPass
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
+import ai.privado.languageEngine.python.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.sink.{InheritMethodTagger, PythonAPITagger}
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
@@ -82,6 +83,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
+    println(s"${Calendar.getInstance().getTime} - --Database Read Pass is invoked...")
+    new DatabaseReadPass(cpg, ruleCache, taggerCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --Database Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     logger.info("Done with tagging")
     cpg.tag
   }
