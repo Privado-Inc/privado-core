@@ -23,7 +23,7 @@
 package ai.privado.cache
 
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{
   DataFlowPathIntermediateModel,
   DataFlowSinkIntermediateModel,
@@ -134,6 +134,10 @@ object DataFlowCache {
 
     }
 
+    if (ScanProcessor.config.generateAuditReport) {
+      AuditCache.addIntoBeforeFirstDedup(dataflow)
+    }
+
     val filteredSourceIdMap = dataflow.map(entrySet => {
       val sourceId = entrySet._1
       // Consider only the flows for which applyDedup is true
@@ -148,6 +152,11 @@ object DataFlowCache {
     val flowsWithAppyDataflowFalse = dataflow.flatMap(_._2.values.flatMap(_.filterNot(_.applyDedup).toList)).toList
     // clear the content and set fresh content
     dataflow.clear()
+
+    if (ScanProcessor.config.generateAuditReport) {
+      AuditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
+    }
+
     filteredSourceIdMap.foreach(sourceMap => {
       sourceMap._2.foreach(fileLineNoEntry => {
         fileLineNoEntry._2.foreach(dfpm => addToMap(dfpm))
