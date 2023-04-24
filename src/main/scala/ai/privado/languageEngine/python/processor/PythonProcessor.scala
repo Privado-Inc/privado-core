@@ -3,6 +3,8 @@ package ai.privado.languageEngine.python.processor
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
+import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -44,7 +46,6 @@ import io.joern.javasrc2cpg.Config
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
 import ai.privado.passes.SQLParser
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
@@ -81,7 +82,7 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-          new PythonTypeHintCallLinker(cpg).createAndApply()
+          new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
           new PythonNaiveCallLinker(cpg).createAndApply()
 
           // Some of passes above create new methods, so, we
