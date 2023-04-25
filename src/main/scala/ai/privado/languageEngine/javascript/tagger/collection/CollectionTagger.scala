@@ -45,7 +45,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
       */
     ruleCache.getRule.sources.foreach(sourceRule => {
       val rule =
-        s"${collectionRuleInfo.combinedRulePattern}.*name=(?:\"|\')(${sourceRule.combinedRulePattern})(?:\"|\').*"
+        s"${collectionRuleInfo.combinedRulePattern}.*(?:name|id)=(?:\"|\')(${sourceRule.combinedRulePattern})(?:\"|\').*"
       cpg.templateDom
         // Each HTML element/template element translates into multiple CPG nodes.
         // Like
