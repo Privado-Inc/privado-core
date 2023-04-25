@@ -31,21 +31,26 @@ import com.gargoylesoftware.htmlunit.html._
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTemplateDom}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.tools.nsc.io.JFile
 
 class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[String](cpg) {
+  private val logger = LoggerFactory.getLogger(this.getClass)
   override def generateParts(): Array[String] =
     Utilities.getSourceFilesWithGivenExtension(projectRoot, Set(".html", ".hbs"), ruleCache).toArray
 
   def importHtmlNodes(htmlFilePath: String, fileNode: NewFile, builder: DiffGraphBuilder): Unit = {
-    // TODO: Add file error handler
-    val htmlFile                 = new JFile(htmlFilePath)
-    val webClient                = new WebClient()
-    val page: HtmlPage           = webClient.getPage(htmlFile.toURI.toURL)
-    val htmlElement: HtmlElement = page.getFirstByXPath("//*")
-    processElement(builder, htmlElement, fileNode)
+    try {
+      val htmlFile                 = new JFile(htmlFilePath)
+      val webClient                = new WebClient()
+      val page: HtmlPage           = webClient.getPage(htmlFile.toURI.toURL)
+      val htmlElement: HtmlElement = page.getFirstByXPath("//*")
+      processElement(builder, htmlElement, fileNode)
+    } catch {
+      case _: Throwable => logger.debug(s"Some error while parsing HTML file -> ${htmlFilePath}")
+    }
   }
 
   private def processAttributes(

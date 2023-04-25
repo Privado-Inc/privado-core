@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.javascript.tagger.collection
+package ai.privado.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
@@ -31,7 +31,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class WebFormsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] =
@@ -58,13 +58,15 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
         // In order to tackle this situation. I decided to use JSXOpeningElement to tag the collection rule (privado.json -> collection section)
         // and JSXElement to tag source rule information (privado.json -> source and processing section)
         //
-        .name(s"${Constants.jsxOpenElement}|${Constants.jsxElement}")
+        .name(
+          s"${Constants.jsxOpenElement}|${Constants.jsxElement}|${Constants.HTMLOpenElement}|${Constants.HTMLElement}"
+        )
         .code(rule)
         .foreach(element => {
-          if (element.name == Constants.jsxOpenElement) {
+          if (element.name == Constants.jsxOpenElement || element.name == Constants.HTMLOpenElement) {
             storeForTag(builder, element, ruleCache)(Constants.collectionSource, sourceRule.id)
             addRuleTags(builder, element, collectionRuleInfo, ruleCache)
-          } else if (element.name == Constants.jsxElement) {
+          } else if (element.name == Constants.jsxElement || element.name == Constants.HTMLElement) {
             addRuleTags(builder, element, sourceRule, ruleCache)
           }
         })
