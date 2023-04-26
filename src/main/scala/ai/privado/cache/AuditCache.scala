@@ -81,16 +81,22 @@ object AuditCache {
     ruleCache: RuleCache
   ): Unit = {
 
+    val dataflowMap = getDataflowPathAndIdMap(dataflowPathsUnfiltered)
+
+    // Make before and after semantic flow info equal, as semantic filter not enabled
+    if (!privadoScanConfig.enableAuditSemanticsFilter) {
+      dataflowMapByPathId = dataflowMap
+    }
+
     val expendedSourceSinkInfo =
-      DuplicateFlowProcessor.processExpendedSourceSinkData(
-        getDataflowPathAndIdMap(dataflowPathsUnfiltered),
-        privadoScanConfig,
-        ruleCache,
-        false
-      )
+      DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMap, privadoScanConfig, ruleCache, false)
 
     expendedSourceSinkInfo.foreach(flowInfo => {
       addIntoBeforeFirstFiltering(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
+      // Add only when semantic filter not enabled
+      if (!privadoScanConfig.enableAuditSemanticsFilter) {
+        addIntoBeforeSemantics(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
+      }
     })
   }
 

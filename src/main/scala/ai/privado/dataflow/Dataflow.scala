@@ -51,7 +51,7 @@ class Dataflow(cpg: Cpg) {
     */
   def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Map[String, Path] = {
 
-    if (privadoScanConfig.generateAuditReport) {
+    if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
       AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
     }
 
