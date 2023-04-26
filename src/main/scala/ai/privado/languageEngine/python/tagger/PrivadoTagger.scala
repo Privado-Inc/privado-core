@@ -9,6 +9,7 @@ import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.sink.{InheritMethodTagger, PythonAPITagger}
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
+import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.config.PythonDBConfigTagger
 import ai.privado.tagger.sink.{CustomInheritTagger, LogShareSinkTagger, RegularSinkTagger}
 import ai.privado.tagger.source.SqlQueryTagger
@@ -87,6 +88,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new DatabaseReadPass(cpg, ruleCache, taggerCache).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --Database Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+    println(s"${Calendar.getInstance().getTime} - --WebFormsCollectionTagger invoked...")
+    new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --WebFormsCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     logger.info("Done with tagging")
     cpg.tag

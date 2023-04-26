@@ -126,6 +126,11 @@ object Constants {
   val jsxOpenElement = "JSXOpeningElement"
   val jsxElement     = "JSXElement"
 
+  val HTMLElement          = "HTMLElement"
+  val HTMLOpenElement      = "HTMLOpenElement"
+  val HTMLClosingElement   = "HTMLClosingElement"
+  val HTMLElementAttribute = "HTMLElementAttribute"
+
   val annotations = "annotations"
   val default     = "default"
 }
