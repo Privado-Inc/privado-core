@@ -26,8 +26,8 @@ package ai.privado.passes
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
 import ai.privado.utility.Utilities
-import com.gargoylesoftware.htmlunit.WebClient
 import com.gargoylesoftware.htmlunit.html._
+import com.gargoylesoftware.htmlunit.{BrowserVersion, WebClient}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTemplateDom}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -51,8 +51,7 @@ import scala.tools.nsc.io.JFile
   * @param ruleCache
   */
 class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[String](cpg) {
-  private val logger    = LoggerFactory.getLogger(this.getClass)
-  private val webClient = new WebClient()
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Search for .html and .hbs files and generate tasks to process each file separately in its own thread
     * @return
@@ -70,6 +69,7 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
     * @param htmlFilePath
     */
   override def runOnPart(builder: DiffGraphBuilder, htmlFilePath: String): Unit = {
+    logger.trace(s"processing file ->>> ${htmlFilePath}")
     val fileNode = Utilities.addFileNode(htmlFilePath, builder)
     importHtmlNodes(htmlFilePath, fileNode, builder)
   }
@@ -82,10 +82,13 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
     */
   def importHtmlNodes(htmlFilePath: String, fileNode: NewFile, builder: DiffGraphBuilder): Unit = {
     try {
+      val webClient = new WebClient(
+        new BrowserVersion.BrowserVersionBuilder(BrowserVersion.CHROME).setOnLine(false).build()
+      )
       val htmlFile                 = new JFile(htmlFilePath)
       val page: HtmlPage           = webClient.getPage(htmlFile.toURI.toURL)
       val htmlElement: HtmlElement = page.getFirstByXPath("//*")
-      processElement(builder, htmlElement, fileNode)
+      processElement(builder, htmlElement, fileNode, htmlFilePath)
     } catch {
       case _: Throwable => logger.debug(s"Some error while parsing HTML file -> ${htmlFilePath}")
     }
@@ -101,10 +104,16 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
     * @param element
     * @param fileNode
     */
-  private def processElement(builder: DiffGraphBuilder, element: DomElement, fileNode: NewFile): Unit = {
+  private def processElement(
+    builder: DiffGraphBuilder,
+    element: DomElement,
+    fileNode: NewFile,
+    htmlFilePath: String
+  ): Unit = {
     val (elementAttributesStr, attributeNodes) = processAttributes(builder, element, fileNode)
     val (openElementStr, openElement)          = processOpenElement(builder, element, fileNode, elementAttributesStr)
     val (closingElementStr, closingElement)    = processClosingElement(builder, element, fileNode)
+    logger.trace(s"processing element for file -> ${htmlFilePath}  ->>> ${openElementStr} ${closingElementStr}")
     val htmlElement = createTemplateDomNode(
       Constants.HTMLElement,
       s"${openElementStr} ${closingElementStr}",
@@ -113,7 +122,7 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
     )
     Utilities.addNodeWithFileEdge(builder, htmlElement, fileNode)
     element.getChildElements.forEach(element => {
-      processElement(builder, element, fileNode)
+      processElement(builder, element, fileNode, htmlFilePath)
     })
   }
 
