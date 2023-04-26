@@ -52,7 +52,7 @@ object SemanticGenerator {
     */
   def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
     val lang = AppCache.repoLanguage
-    if (lang != Language.JAVA) {
+    if (!(lang == Language.JAVA || lang == Language.PYTHON)) {
       getDefaultSemantics
     } else {
       val customSinkSemantics = cpg.call
