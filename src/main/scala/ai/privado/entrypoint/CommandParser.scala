@@ -48,7 +48,8 @@ case class PrivadoInput(
   enableJS: Boolean = false,
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
-  generateAuditReport: Boolean = false
+  generateAuditReport: Boolean = false,
+  enableAuditSemanticsFilter: Boolean = false
 )
 
 object CommandConstants {
@@ -87,6 +88,8 @@ object CommandConstants {
   val TEST_OUTPUT_ABBR                             = "tout"
   val GENERATE_AUDIT_REPORT                        = "generate-audit-report"
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
+  val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
+  val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
 }
 
 object CommandParser {
@@ -201,6 +204,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(generateAuditReport = true))
               .text("Export the audit report"),
+            opt[Unit](CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER)
+              .abbr(CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER_ABBR)
+              .optional()
+              .action((_, c) => c.copy(enableAuditSemanticsFilter = true))
+              .text("Enable semantic filter in dataflow audit report"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
