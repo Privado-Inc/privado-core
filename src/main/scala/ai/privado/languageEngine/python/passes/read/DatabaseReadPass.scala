@@ -3,6 +3,7 @@ package ai.privado.languageEngine.python.passes.read
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.InternalTag
+import ai.privado.model.sql.SQLQuery
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language._
@@ -43,8 +44,10 @@ class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
     result match {
       case Some(value) =>
-        value.foreach { case (_, tableName: String, columns: List[String]) =>
+        value.foreach { case queryModel: SQLQuery =>
           // Match classes which end with tableName
+          val tableName = queryModel.table.name
+          val columns   = queryModel.column.map(_.name)
           val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(s"(?i).*${tableName}")) match {
             case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
             case None        => List.empty
