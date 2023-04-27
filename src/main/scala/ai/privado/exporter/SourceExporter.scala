@@ -100,7 +100,9 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++
         cpg.templateDom
           .where(filterSource)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member.where(filterSource).l ++ cpg.sqlQuery
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).l ++ cpg.member
+          .where(filterSource)
+          .l ++ cpg.sqlColumn
           .where(filterSource)
           .l
     sources

@@ -26,6 +26,7 @@ package ai.privado.languageEngine.java.passes.read
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.InternalTag
+import ai.privado.model.sql.{SQLQuery, SQLTable}
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities._
 import io.joern.dataflowengineoss.queryengine.EngineContext
@@ -90,8 +91,10 @@ object DatabaseReadUtility {
 
     result match {
       case Some(value) =>
-        value.foreach { case (_, tableName: String, columns: List[String]) =>
+        value.foreach { case queryModel: SQLQuery =>
           // Match classes which end with tableNameRegex
+          val tableName = queryModel.table.name
+          val columns   = queryModel.column.map(_.name)
 
           val sensitiveMemberRuleIds = {
             if (
