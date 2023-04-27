@@ -46,7 +46,7 @@ import io.joern.javasrc2cpg.Config
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import ai.privado.passes.SQLParser
+import ai.privado.passes.{HTMLParserPass, SQLParser}
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
@@ -77,7 +77,11 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-
+          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"

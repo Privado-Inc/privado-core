@@ -31,8 +31,9 @@ import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcC
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.tagger.PrivadoBaseTagger
+import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.config.DBConfigTagger
-import ai.privado.tagger.sink.{CustomInheritTagger, RegularSinkTagger}
+import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -72,7 +73,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(s"${Calendar.getInstance().getTime} - --InSensitive call tagger invoked...")
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --InSensitive call tagger is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --InSensitive call tagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
@@ -106,13 +107,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(s"${Calendar.getInstance().getTime} - --Database Query Read Pass invoked...")
     new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --Database Query Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --Database Query Read Pass is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --Database Repository Read Pass invoked...")
     new DatabaseRepositoryReadPass(cpg, taggerCache).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --Database Repository Read Pass is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --Database Repository Read Pass is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
@@ -124,15 +125,19 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     println(s"${Calendar.getInstance().getTime} - --SOAPCollectionTagger invoked...")
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --SOAPCollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --SOAPCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
 
     println(s"${Calendar.getInstance().getTime} - --GrpcCollectionTagger invoked...")
     new GrpcCollectionTagger(cpg, ruleCache).createAndApply()
     println(
-      s"${TimeMetric.getNewTime()} - --GrpcCollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - --GrpcCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
-
+    println(s"${Calendar.getInstance().getTime} - --WebFormsCollectionTagger invoked...")
+    new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --WebFormsCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     logger.info("Done with tagging")
 
     cpg.tag

@@ -33,9 +33,9 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   import cpgSchema.base._
   import cpgSchema.fs._
   import cpgSchema.method._
-  import cpgSchema.typeSchema._
   import cpgSchema.tagsAndLocation._
-
+  import cpgSchema.typeSchema._
+  import cpgSchema.hidden._
   // Add node types, edge types, and properties here
 
   val myProperty = builder
@@ -139,6 +139,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   module.addOutEdge(edge = dependencies, inNode = dependency)
   module.addOutEdge(edge = sourceFile, inNode = file)
   dependency.addOutEdge(edge = sourceFile, inNode = file)
+  templateDOM.addOutEdge(edge = sourceFile, inNode = file)
 }
 
 object CpgExtSchema {
