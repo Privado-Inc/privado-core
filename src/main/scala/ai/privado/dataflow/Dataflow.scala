@@ -186,6 +186,14 @@ class Dataflow(cpg: Cpg) {
 }
 
 object Dataflow {
+
+  def dataflowForSourceSinkPair(sources: List[AstNode], sinks: List[CfgNode]): List[Path] = {
+    implicit val engineContext: EngineContext = {
+      EngineContext(config = EngineConfig(4))
+    }
+    sinks.reachableByFlows(sources).l
+  }
+
   def getSources(cpg: Cpg): List[AstNode] = {
     def filterSources(traversal: Traversal[AstNode]) = {
       traversal.tag

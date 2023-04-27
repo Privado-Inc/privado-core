@@ -25,27 +25,11 @@ package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.ScanProcessor
-import ai.privado.model.exporter.{
-  DataFlowSubCategoryPathExcerptModel,
-  DataFlowSubCategoryPathModel,
-  SourceModel,
-  SourceProcessingModel
-}
+import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import ai.privado.semantic.Language.finder
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CfgNode,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  MethodParameterIn,
-  StoredNode,
-  Tag
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
 import ai.privado.semantic.Language._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
@@ -54,8 +38,8 @@ import scala.collection.mutable
 
 class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
 
-  lazy val sourcesTagList: List[List[Tag]] = getSourcesTagList
   lazy val sourcesList: List[AstNode]      = getSourcesList
+  lazy val sourcesTagList: List[List[Tag]] = sourcesList.map(_.tag.l)
 
   /** Fetch and Convert sources to desired output
     */
@@ -94,37 +78,6 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
         )
       )
       .toList
-  }
-
-  /** Fetch all the sources tag
-    */
-  private def getSourcesTagList = {
-    def filterSource(traversal: Traversal[StoredNode]) = {
-      traversal.tag
-        .nameExact(Constants.catLevelOne)
-        .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
-    }
-    val sources =
-      cpg.identifier
-        .where(filterSource)
-        .map(item => item.tag.l)
-        .l ++
-        cpg.literal
-          .where(filterSource)
-          .map(item => item.tag.l)
-          .l ++
-        cpg.call
-          .where(filterSource)
-          .map(item => item.tag.l)
-          .l ++
-        cpg.templateDom
-          .where(filterSource)
-          .map(item => item.tag.l)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSource).map(item => item.tag.l).l ++ cpg.sqlQuery
-          .where(filterSource)
-          .map(item => item.tag.l)
-          .l
-    sources
   }
 
   /** Fetch all the sources node
@@ -178,18 +131,13 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
       val node = nodeList
         .filterNot(node => InternalTag.valuesAsString.contains(node.name))
         .filter(node => node.name.equals(Constants.id) || node.name.startsWith(Constants.privadoDerived))
-      if (node.nonEmpty) {
-        Some(node.value.toSet)
-      } else
-        None
+      node.value.toSet
     }
 
     sources
-      .flatMap(source => getSources(source))
-      .flatten
-      .filter(_.nonEmpty)
+      .flatMap(getSources)
       .toSet
-      .flatMap(source => convertSource(source))
+      .flatMap(convertSource)
       .toList
   }
 
