@@ -31,11 +31,8 @@ import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
+import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
+import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
@@ -53,6 +50,7 @@ import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
+import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
@@ -75,17 +73,24 @@ object JavascriptProcessor {
     xtocpg match {
       case Success(cpg) =>
         logger.info("Applying default overlays")
+        logger.info("=====================")
+        println(
+          s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+
+        // Apply default overlays
+        X2Cpg.applyDefaultOverlays(cpg)
+        new ImportsPass(cpg).createAndApply()
+
+        new JavaScriptTypeRecoveryPass(cpg).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+        new JavaScriptTypeHintCallLinker(cpg).createAndApply()
+        new PythonNaiveCallLinker(cpg).createAndApply()
+
         logger.info("Enhancing Javascript graph")
         logger.debug("Running custom passes")
-        new MethodFullName(cpg).createAndApply()
-        new MethodFullNameFromIdentifier(cpg).createAndApply()
-        new MethodFullNameForEmptyNodes(cpg).createAndApply()
-
-        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
-        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
@@ -94,12 +99,20 @@ object JavascriptProcessor {
         }
         logger.info("=====================")
 
+        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         cpg.runTagger(ruleCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
-        println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
+        println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
+            .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+        println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         val errorMsg = new ListBuffer[String]()
