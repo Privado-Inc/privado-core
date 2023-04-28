@@ -24,10 +24,11 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.utility.{SQLParser, Utilities}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlQueryNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -41,24 +42,22 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends For
     getSQLFiles(projectRoot, Set(".sql")).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
-    val fileNode      = addFileNode(file, builder)
-    val sqlQueryNodes = getSqlQueryNodes(file, builder)
-    sqlQueryNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
+    val fileNode = addFileNode(file, builder)
+    buildAndAddSqlQueryNodes(file, builder, fileNode)
   }
 
-  def getSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder) = {
+  private def buildAndAddSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = {
 
     val sqlFile      = Source.fromFile(sqlFileName)
     var lineNumber   = 0
     var queryLen     = 0
     var queryBuilder = new StringBuilder()
     val sqlQueries   = mutable.ListBuffer[(String, Int)]()
-    val results      = mutable.ListBuffer[NewSqlQueryNode]()
     for (line <- sqlFile.getLines()) {
       lineNumber += 1
 
-      if (line.trim().nonEmpty && !line.trim().startsWith("-")) {
-        queryBuilder.append(line + " ")
+      if (line.trim().nonEmpty && !line.trim().startsWith("--")) {
+        queryBuilder.append(line + "\n")
         queryLen += 1
 
         if (line.trim().endsWith(";")) {
@@ -77,30 +76,22 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends For
     sqlFile.close()
 
     sqlQueries
-      .map(queryWthLine => {
+      .foreach(queryWthLine => {
         val query           = queryWthLine._1
         val queryLineNumber = queryWthLine._2
         try {
           SQLParser.parseSqlQuery(query) match {
             case Some(parsedQueryList) =>
-              // Have added tableName in name key
-              // Have added columns in value key
-              // findMatchingIndices(lines, query).headOption.getOrElse(-1)
-              val res = parsedQueryList.map { case (_, tableName, columns) =>
-                val columnList = columns.mkString(",")
-                val sqlQueryNode =
-                  NewSqlQueryNode()
-                    .code(query)
-                    .name(tableName)
-                    .fullName(query)
-                    .value(columnList)
-                    .lineNumber(queryLineNumber)
-
-                results.append(sqlQueryNode)
-                builder.addNode(sqlQueryNode)
-                sqlQueryNode
+              parsedQueryList.zipWithIndex.foreach { case (parsedQueryItem: SQLQuery, queryOrder) =>
+                buildAndReturnIndividualQueryNode(
+                  builder,
+                  fileNode,
+                  parsedQueryItem,
+                  query,
+                  queryLineNumber,
+                  queryOrder
+                )
               }
-              Some(res)
             case None =>
               logger.debug("Failed to parse: ", sqlFileName, " : ", queryLineNumber)
               None
@@ -111,8 +102,43 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends For
             None
         }
       })
-    results.toList
 
+  }
+
+  private def buildAndReturnIndividualQueryNode(
+    builder: DiffGraphBuilder,
+    fileNode: NewFile,
+    queryModel: SQLQuery,
+    query: String,
+    queryLineNumber: Int,
+    queryOrder: Int
+  ): Unit = {
+    // Have added tableName in name key
+    // Have added columns in value key
+
+    val queryNode = NewSqlQueryNode().name(queryModel.queryType).code(query).lineNumber(queryLineNumber)
+
+    val tableNode = NewSqlTableNode()
+      .name(queryModel.table.name)
+      .code(query)
+      .lineNumber(queryLineNumber + queryModel.table.lineNumber - 1)
+      .columnNumber(queryModel.table.columnNumber)
+      .order(queryOrder)
+
+    builder.addEdge(queryNode, tableNode, EdgeTypes.AST)
+    builder.addEdge(queryNode, fileNode, EdgeTypes.SOURCE_FILE)
+    builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
+
+    queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
+      val columnNode = NewSqlColumnNode()
+        .name(queryColumn.name)
+        .code(queryColumn.name)
+        .lineNumber(queryLineNumber + queryColumn.lineNumber - 1)
+        .columnNumber(queryColumn.columnNumber)
+        .order(columnIndex)
+      builder.addEdge(tableNode, columnNode, EdgeTypes.AST)
+      builder.addEdge(columnNode, fileNode, EdgeTypes.SOURCE_FILE)
+    }
   }
 
   private def getSQLFiles(projectRoot: String, extensions: Set[String]): List[String] = {

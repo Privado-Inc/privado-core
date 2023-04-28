@@ -21,25 +21,24 @@
  *
  */
 
-package ai.privado.tagger.source
+package ai.privado.model.sql
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
-import ai.privado.semantic.Language._
-import ai.privado.utility.Utilities.{storeForTag, addRuleTags}
-import io.shiftleft.semanticcpg.language._
+import ai.privado.model.sql.SQLQueryType.SQLQueryType
 
-class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
-  override def generateParts(): Array[_ <: AnyRef] = ruleCache.getRule.sources.toArray
+case class SQLTable(name: String, lineNumber: Int, columnNumber: Int)
 
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    cpg.sqlColumn
-      .name(ruleInfo.combinedRulePattern)
-      .foreach(columnNode => {
-        storeForTag(builder, columnNode, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-        addRuleTags(builder, columnNode, ruleInfo, ruleCache)
-      })
-  }
+case class SQLColumn(name: String, lineNumber: Int, columnNumber: Int)
+
+case class SQLQuery(queryType: SQLQueryType, table: SQLTable, column: List[SQLColumn])
+
+object SQLQueryType extends Enumeration {
+  type SQLQueryType = String
+
+  val SELECT = "SELECT"
+  val INSERT = "INSERT"
+  val UPDATE = "UPDATE"
+  val DELETE = "DELETE"
+  val DROP   = "DROP"
+  val CREATE = "CREATE"
+
 }
