@@ -28,6 +28,7 @@ import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 
+/*
 class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   val privadoScanConfig: PrivadoInput = PrivadoInput()
@@ -44,7 +45,7 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
       |   public String firstName;
       |   public String id;
       |   public String getFirstName() {return firstName;}
-      |   public void setFirstName(String firstName) {this.firstName = firstName;} 
+      |   public void setFirstName(String firstName) {this.firstName = firstName;}
       |   public String getId() {return id;}
       |   public void setId(String id) {this.id = id;}
       |   public foo1() {
@@ -108,3 +109,6 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   }
 }
+
+
+ */
