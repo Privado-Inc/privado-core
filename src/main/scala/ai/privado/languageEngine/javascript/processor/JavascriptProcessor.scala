@@ -25,28 +25,18 @@ package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.ModuleFilePass
-import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
 import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName
-}
+import ai.privado.model.Constants._
+import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
-import ai.privado.model.Language
-import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -57,9 +47,9 @@ import better.files.File
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import java.util.Calendar
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import scala.collection.mutable.ListBuffer
 
 object JavascriptProcessor {
 
@@ -72,6 +62,7 @@ object JavascriptProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
+        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
         logger.info("Applying default overlays")
         logger.info("=====================")
         println(
