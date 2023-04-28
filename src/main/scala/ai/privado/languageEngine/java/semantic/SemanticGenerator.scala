@@ -136,7 +136,7 @@ object SemanticGenerator {
       parameterNumber = methodName.count(_.equals(','))
     }
     for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$toTaint "
+      parameterSemantics += s"$i->$toTaint $i->$i "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
@@ -180,7 +180,7 @@ object SemanticGenerator {
     *   String
     */
   private def generateNonTaintSemantic(methodFullName: String): String = {
-    "\"" + methodFullName + "\" "
+    "\"" + methodFullName + "\" 0->0 1->1 2->2 3->3 4->4 5->5 6->6 7->7"
   }
 
   /** Generates Semantics for non Personal member
