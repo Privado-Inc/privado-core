@@ -1,10 +1,14 @@
 package ai.privado.cache
 
-import ai.privado.dataflow.DuplicateFlowProcessor
+import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.model.DataFlowPathModel
 import io.joern.dataflowengineoss.language.Path
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
+import io.joern.dataflowengineoss.language._
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -26,9 +30,18 @@ object AuditCache {
 
   private var dataflowMapByPathId: Map[String, Path] = null
 
+  private val flowPathBeforeSemantics: mutable.Set[SourcePathInfo] = new mutable.HashSet[SourcePathInfo]()
+
+  def addIntoBeforeSemantics(sourcePathInfo: SourcePathInfo): Unit = flowPathBeforeSemantics += sourcePathInfo
+
+  def getFlowBeforeSemantics: Set[SourcePathInfo] = flowPathBeforeSemantics.toSet
+
   def getFlowBeforeFirstFiltering: Set[SourcePathInfo] = flowPathBeforeFirstFiltering.toSet
 
   def addIntoBeforeFirstFiltering(sourcePathInfo: SourcePathInfo): Unit = flowPathBeforeFirstFiltering += sourcePathInfo
+
+  def checkFlowExistInFirstFiltering(sourcePathInfo: SourcePathInfo): Boolean =
+    if (flowPathBeforeFirstFiltering.contains(sourcePathInfo)) true else false
 
   def addIntoBeforeSecondFiltering(sourcePathInfo: SourcePathInfo): Unit =
     flowPathBeforeSecondFiltering += sourcePathInfo
@@ -41,25 +54,55 @@ object AuditCache {
 
   def getPathFromId(pathId: String): Path = dataflowMapByPathId(pathId)
 
+  def addIntoBeforeSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
+    val newPrivadoScanConfig = PrivadoInput(disableRunTimeSemantics = true)
+    val engineContext: EngineContext = EngineContext(
+      semantics = SemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
+      config = EngineConfig(4)
+    )
+    val sources = Dataflow.getSources(cpg)
+    val sinks   = Dataflow.getSinks(cpg)
+
+    val unfilteredPostSemanticsFlow = sinks.reachableByFlows(sources)(engineContext).l
+
+    dataflowMapByPathId = getDataflowPathAndIdMap(unfilteredPostSemanticsFlow)
+
+    val expendedSourceSinkInfo =
+      DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache, false)
+
+    expendedSourceSinkInfo.foreach(flowInfo => {
+      addIntoBeforeSemantics(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
+    })
+  }
+
   def addIntoBeforeFirstFiltering(
     dataflowPathsUnfiltered: List[Path],
     privadoScanConfig: PrivadoInput,
     ruleCache: RuleCache
   ): Unit = {
 
-    dataflowMapByPathId = getDataflowPathAndIdMap(dataflowPathsUnfiltered)
+    val dataflowMap = getDataflowPathAndIdMap(dataflowPathsUnfiltered)
+
+    // Make before and after semantic flow info equal, as semantic filter not enabled
+    if (!privadoScanConfig.enableAuditSemanticsFilter) {
+      dataflowMapByPathId = dataflowMap
+    }
 
     val expendedSourceSinkInfo =
-      DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache, false)
+      DuplicateFlowProcessor.processExpendedSourceSinkData(dataflowMap, privadoScanConfig, ruleCache, false)
 
     expendedSourceSinkInfo.foreach(flowInfo => {
       addIntoBeforeFirstFiltering(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
+      // Add only when semantic filter not enabled
+      if (!privadoScanConfig.enableAuditSemanticsFilter) {
+        addIntoBeforeSemantics(SourcePathInfo(flowInfo.pathSourceId, flowInfo.sinkId, flowInfo.sinkPathId))
+      }
     })
   }
 
   private def getDataflowPathAndIdMap(dataflowPathsUnfiltered: List[Path]): Map[String, Path] = {
 
-    dataflowMapByPathId = dataflowPathsUnfiltered
+    val dataflowMapByPathId = dataflowPathsUnfiltered
       .flatMap(dataflow => {
         DuplicateFlowProcessor.calculatePathId(dataflow) match {
           case Success(pathId) => Some(pathId, dataflow)
