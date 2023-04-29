@@ -26,8 +26,8 @@ package ai.privado.languageEngine.java.tagger.source
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{Member, Return, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
@@ -77,12 +77,24 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
 
-    // Step 2.1 --> contains step 2.2, 2.3
-    tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
+    // Step 2.1
+    tagMatchingGetters(builder, rulePattern, ruleInfo)
 
+    // Step 2.2 --> contains step 2.3, 2.4
+    tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
   }
 
-  /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
+  /** Tag return object of regex matching method Step 2.1
+    */
+  private def tagMatchingGetters(builder: BatchedUpdate.DiffGraphBuilder, rulePattern: String, ruleInfo: RuleInfo):  Unit = {
+    val callInMatches = cpg.method("get"+rulePattern).callIn.l
+    callInMatches.foreach(callInMatch => {
+      storeForTag(builder, callInMatch)(InternalTag.VARIABLE_REGEX_CALL_IN.toString)
+      addRuleTags(builder, callInMatch, ruleInfo)
+    })
+  }
+
+  /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.2
     */
   private def tagObjectOfTypeDeclHavingMemberName(
     builder: BatchedUpdate.DiffGraphBuilder,
