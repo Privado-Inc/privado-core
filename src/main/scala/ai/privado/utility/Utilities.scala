@@ -268,13 +268,16 @@ object Utilities {
     def getSystemConfigByLang(rule: SystemConfig) =
       rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
 
-    val sources      = rules.sources.filter(getRuleByLang)
-    val sinks        = rules.sinks.filter(getRuleByLang)
-    val collections  = rules.collections.filter(getRuleByLang)
-    val exclusions   = rules.exclusions.filter(getRuleByLang)
-    val semantics    = rules.semantics.filter(getSemanticRuleByLang)
-    val sinkSkipList = rules.sinkSkipList.filter(getRuleByLang)
-    val systemConfig = rules.systemConfig.filter(getSystemConfigByLang)
+    val sources         = rules.sources.filter(getRuleByLang)
+    val sinks           = rules.sinks.filter(getRuleByLang)
+    val collections     = rules.collections.filter(getRuleByLang)
+    val exclusions      = rules.exclusions.filter(getRuleByLang)
+    val semantics       = rules.semantics.filter(getSemanticRuleByLang)
+    val sinkSkipList    = rules.sinkSkipList.filter(getRuleByLang)
+    val systemConfig    = rules.systemConfig.filter(getSystemConfigByLang)
+    val auditCollection = rules.auditCollection.filter(getRuleByLang)
+    val auditWebClient  = rules.auditWebClient.filter(getRuleByLang)
+    val auditUtility    = rules.auditUtility.filter(getRuleByLang)
 
     ConfigAndRules(
       sources,
@@ -285,7 +288,10 @@ object Utilities {
       exclusions,
       semantics,
       sinkSkipList,
-      systemConfig
+      systemConfig,
+      auditCollection,
+      auditWebClient,
+      auditUtility
     )
   }
 

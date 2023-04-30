@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.java.cache
 
+import ai.privado.audit.AuditReportConstants
 import ai.privado.model.RuleInfo
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 
@@ -17,7 +18,7 @@ object DependencyModuleCache {
     if (dependencyRuleSet.exists(_.moduleDependency == moduleDependency)) {
       dependencyRuleSet.filter(_.moduleDependency == moduleDependency).head.category
     } else {
-      "NA"
+      AuditReportConstants.DEPENDENCY_UNKNOWN_LIBRARY_NAME
     }
   }
 
@@ -25,11 +26,7 @@ object DependencyModuleCache {
     if (dependencyRuleSet.exists(_.moduleDependency == moduleDependency)) {
       dependencyRuleSet.filter(_.moduleDependency == moduleDependency).head.ruleInfo.id
     } else {
-      "--"
+      AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
     }
-  }
-
-  def check() = {
-    println(dependencyRuleSet.size)
   }
 }

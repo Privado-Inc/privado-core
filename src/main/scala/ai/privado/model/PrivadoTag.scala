@@ -142,10 +142,13 @@ object PolicyThreatType extends Enumeration {
 object ConfigRuleType extends Enumeration {
   type ConfigRuleType = Value
 
-  val EXCLUSIONS     = Value("exclusions")
-  val SEMANTICS      = Value("semantics")
-  val SINK_SKIP_LIST = Value("sinkSkipList")
-  val SYSTEM_CONFIG  = Value("systemConfig")
+  val EXCLUSIONS       = Value("exclusions")
+  val SEMANTICS        = Value("semantics")
+  val SINK_SKIP_LIST   = Value("sinkSkipList")
+  val SYSTEM_CONFIG    = Value("systemConfig")
+  val AUDIT_COLLECTION = Value("auditCollection")
+  val AUDIT_WEB_CLIENT = Value("auditWebClient")
+  val AUDIT_UTILITY    = Value("auditUtility")
 
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)

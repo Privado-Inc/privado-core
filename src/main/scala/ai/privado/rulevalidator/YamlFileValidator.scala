@@ -42,6 +42,12 @@ object YamlFileValidator {
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinkSkipList.json")).mkString
   private val SYSTEM_CONFIG =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}systemConfig.json")).mkString
+  private val AUDIT_COLLECTION =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}auditCollection.json")).mkString
+  private val AUDIT_WEB_CLIENT =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}auditWebClient.json")).mkString
+  private val AUDIT_UTILITY =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}auditUtility.json")).mkString
   val mapper = new ObjectMapper(new YAMLFactory())
 
   val factory: JsonSchemaFactory = JsonSchemaFactory
@@ -189,10 +195,13 @@ object YamlFileValidator {
     val configTypeKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
     ConfigRuleType.withNameDefaultHandler(configTypeKey) match {
-      case ConfigRuleType.SEMANTICS      => Right(ConfigRuleType.SEMANTICS.toString, SEMANTICS)
-      case ConfigRuleType.EXCLUSIONS     => Right(ConfigRuleType.EXCLUSIONS.toString, EXCLUSIONS)
-      case ConfigRuleType.SINK_SKIP_LIST => Right(ConfigRuleType.SINK_SKIP_LIST.toString, SINK_SKIP_LIST)
-      case ConfigRuleType.SYSTEM_CONFIG  => Right(ConfigRuleType.SYSTEM_CONFIG.toString, SYSTEM_CONFIG)
+      case ConfigRuleType.SEMANTICS        => Right(ConfigRuleType.SEMANTICS.toString, SEMANTICS)
+      case ConfigRuleType.EXCLUSIONS       => Right(ConfigRuleType.EXCLUSIONS.toString, EXCLUSIONS)
+      case ConfigRuleType.SINK_SKIP_LIST   => Right(ConfigRuleType.SINK_SKIP_LIST.toString, SINK_SKIP_LIST)
+      case ConfigRuleType.SYSTEM_CONFIG    => Right(ConfigRuleType.SYSTEM_CONFIG.toString, SYSTEM_CONFIG)
+      case ConfigRuleType.AUDIT_COLLECTION => Right(ConfigRuleType.AUDIT_COLLECTION.toString, AUDIT_COLLECTION)
+      case ConfigRuleType.AUDIT_WEB_CLIENT => Right(ConfigRuleType.AUDIT_WEB_CLIENT.toString, AUDIT_WEB_CLIENT)
+      case ConfigRuleType.AUDIT_UTILITY    => Right(ConfigRuleType.AUDIT_UTILITY.toString, AUDIT_UTILITY)
 
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)

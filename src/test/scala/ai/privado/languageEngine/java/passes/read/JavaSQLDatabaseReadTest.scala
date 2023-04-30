@@ -296,7 +296,20 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
       )
     )
     val rule: ConfigAndRules =
-      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+      ConfigAndRules(
+        sourceRule,
+        List(),
+        collectionRule,
+        List(),
+        List(),
+        List(),
+        List(),
+        List(),
+        List(),
+        List(),
+        List(),
+        List()
+      )
     ruleCache.setRule(rule)
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()

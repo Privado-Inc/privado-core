@@ -2,10 +2,9 @@ package ai.privado.audit
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.cache.DependencyModuleCache
-import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForDependency, StepsForModule}
+import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
 import ai.privado.languageEngine.java.passes.module.DependencyCategoryPass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.edges.DependencyModule
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
@@ -18,18 +17,21 @@ object DependencyReport {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def processDependencyAudit(xtocpg: Try[Cpg], ruleCache: RuleCache): List[List[String]] = {
+  def processDependencyAudit(
+    xtocpg: Try[Cpg],
+    ruleCache: RuleCache,
+    dependencies: Set[ModuleDependency]
+  ): List[List[String]] = {
     val workbookResult = new ListBuffer[List[String]]()
-    val dependencies   = getDependencyList(xtocpg)
     new DependencyCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
-
     dependencies.foreach(dependency => {
+      val category = getDependencyCategory(dependency)
       workbookResult += List(
         dependency.file.head.name,
         s"${dependency.groupid}.${dependency.artifactid}",
         dependency.artifactid,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        getDependencyCategory(dependency),
+        isDependencyProcessed(category),
+        category,
         DependencyModuleCache.getDependencyRuleIfExist(dependency)
       )
     })
@@ -67,22 +69,29 @@ object DependencyReport {
 
   private def getDependencyCategory(moduleDependency: ModuleDependency): String = {
     if (checkIfDependencyIsInternalLibrary(moduleDependency)) {
-      "INTERNAL LIBRARY"
-    } else if (DependencyModuleCache.checkIfDependencyRuleExist(moduleDependency) == "third_parties") {
-      "KNOWN THIRD PARTY"
-    } else if (DependencyModuleCache.checkIfDependencyRuleExist(moduleDependency) == "storages") {
-      "STORAGES"
-    } else if (DependencyModuleCache.checkIfDependencyRuleExist(moduleDependency) == "leakages") {
-      "LEAKAGES"
+      AuditReportConstants.DEPENDENCY_INTERNAL_LIBRARY_NAME
     } else {
-      "UNKNOWN LIBRARY"
+      DependencyModuleCache.checkIfDependencyRuleExist(moduleDependency)
     }
   }
 
   private def checkIfDependencyIsInternalLibrary(moduleDependency: ModuleDependency): Boolean = {
-    val moduleGroupId = moduleDependency.dependencyModuleOut.head.groupid
+    val moduleGroupId     = moduleDependency.dependencyModuleOut.head.groupid
     val dependencyGroupId = moduleDependency.groupid
 
     if (moduleGroupId == null || dependencyGroupId == null) false else dependencyGroupId.contains(moduleGroupId)
+  }
+
+  private def isDependencyProcessed(category: String): String = {
+    category match {
+      case AuditReportConstants.DEPENDENCY_INTERNAL_LIBRARY_NAME         => AuditReportConstants.AUDIT_NOT_CHECKED_VALUE
+      case AuditReportConstants.DEPENDENCY_KNOW_THIRD_PARTY_LIBRARY_NAME => AuditReportConstants.AUDIT_CHECKED_VALUE
+      case AuditReportConstants.DEPENDENCY_STORAGE_LIBRARY_NAME          => AuditReportConstants.AUDIT_CHECKED_VALUE
+      case AuditReportConstants.DEPENDENCY_COLLECTION_LIBRARY_NAME       => AuditReportConstants.AUDIT_CHECKED_VALUE
+      case AuditReportConstants.DEPENDENCY_WEB_CLIENT_LIBRARY_NAME       => AuditReportConstants.AUDIT_CHECKED_VALUE
+      case AuditReportConstants.DEPENDENCY_UTILITY_LIBRARY_NAME          => AuditReportConstants.AUDIT_NOT_CHECKED_VALUE
+      case AuditReportConstants.DEPENDENCY_UNKNOWN_LIBRARY_NAME          => AuditReportConstants.AUDIT_NOT_CHECKED_VALUE
+      case _                                                             => AuditReportConstants.AUDIT_NOT_CHECKED_VALUE
+    }
   }
 }

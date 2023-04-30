@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -85,8 +85,78 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
     )
   )
 
+  val auditCollectionRule = List(
+    RuleInfo(
+      "AuditCollection.SpringWebMVC",
+      "Spring Web MVC",
+      "",
+      Array(),
+      List("^org\\.elasticsearch\\.client$"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.UNKNOWN,
+      Constants.auditCollection,
+      Language.JAVA,
+      Array()
+    )
+  )
+
+  val auditWebClientRule = List(
+    RuleInfo(
+      "AuditWebClient.http4k",
+      "Http client",
+      "",
+      Array(),
+      List("^org\\.http4k$"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.UNKNOWN,
+      Constants.auditWebClient,
+      Language.JAVA,
+      Array()
+    )
+  )
+
+  val auditUtility = List(
+    RuleInfo(
+      "AuditUtility.Github",
+      "Github Utility",
+      "",
+      Array(),
+      List("^com\\.github\\.scala-incubator\\.io$"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.UNKNOWN,
+      Constants.auditUtility,
+      Language.JAVA,
+      Array()
+    )
+  )
+
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+    ConfigAndRules(
+      sourceRule,
+      List(),
+      collectionRule,
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      auditCollectionRule,
+      auditWebClientRule,
+      auditUtility
+    )
 
   val taggerCache = new TaggerCache()
 }
