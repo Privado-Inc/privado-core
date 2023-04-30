@@ -250,4 +250,32 @@ object AuditTestClassData {
       |}
       |
       |""".stripMargin
+
+  val userSemantic =
+    """
+      |package com.test.privado.audit;
+      |
+      |import org.apache.logging.log4j.Logger;
+      |
+      |public class BaseClass {
+      |   private static final Logger logger = LogManager.getLogger("HelloWorld");
+      |   public String firstName;
+      |   public String id;
+      |   public String getFirstName() {return firstName;}
+      |   public void setFirstName(String firstName) {this.firstName = firstName;}
+      |   public String getId() {return id;}
+      |   public void setId(String id) {this.id = id;}
+      |   public foo1() {
+      |     BaseClass b = new BaseClass();
+      |     b.setFirstName("Alex");
+      |     b.setId("101");
+      |     String newValue1 = b.getFirstName();
+      |     String newValue2 = b.getId();
+      |
+      |     logger.info(newValue1);
+      |     logger.info(newValue2);
+      |   }
+      |}
+      |
+      |""".stripMargin
 }
