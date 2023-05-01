@@ -164,12 +164,19 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   private def loadAndConvertYMLtoProperties(file: String): List[(String, String)] = {
     parser.parse(better.files.File(file).contentAsString) match {
       case Right(json) => {
-        JsonFlattener
-          .flattenAsMap(json.toString)
-          .asScala
-          .toList
-          .collect(p => (p._1, p._2.toString))
-          .toList
+        try {
+          JsonFlattener
+            .flattenAsMap(json.toString)
+            .asScala
+            .toList
+            .collect(p => (p._1, p._2.toString))
+            .toList
+        } catch {
+          case e: Throwable =>
+            logger.trace(s"Error while creating properties node for file $file")
+            logger.debug(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
+            List[("", "")]()
+        }
       }
       case Left(error) => {
         List[("", "")]()

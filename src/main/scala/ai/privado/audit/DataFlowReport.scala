@@ -9,7 +9,8 @@ object DataFlowReport {
   def processDataFlowAudit(): List[List[String]] = {
     val workbookResult = ListBuffer[List[String]]()
 
-    AuditCache.getFlowBeforeFirstFiltering.foreach(flow => {
+    AuditCache.getFlowBeforeSemantics.foreach(flow => {
+      val existInFirstFiltering  = if (AuditCache.checkFlowExistInFirstFiltering(flow)) "YES" else "--"
       val existInSecondFiltering = if (AuditCache.checkFlowExistInSecondFiltering(flow)) "YES" else "--"
       val existInFirstDedup      = if (AuditCache.checkFlowExistInFirstDedup(flow)) "YES" else "--"
       val existInSecondDedup     = if (AuditCache.checkFlowExistInSecondDedup(flow)) "YES" else "--"
@@ -20,8 +21,8 @@ object DataFlowReport {
         flow.pathId,
         getShortPath(flow.pathId),
         AuditReportConstants.AUDIT_CHECKED_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
         AuditReportConstants.AUDIT_CHECKED_VALUE,
+        existInFirstFiltering,
         existInSecondFiltering,
         existInFirstDedup,
         existInSecondDedup,

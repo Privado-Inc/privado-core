@@ -33,9 +33,9 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   import cpgSchema.base._
   import cpgSchema.fs._
   import cpgSchema.method._
-  import cpgSchema.typeSchema._
   import cpgSchema.tagsAndLocation._
-
+  import cpgSchema.typeSchema._
+  import cpgSchema.hidden._
   // Add node types, edge types, and properties here
 
   val myProperty = builder
@@ -90,23 +90,32 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Adding SQL query node Start
 
-  // TODO facing issue so will fix this up later
-  /*
-  val sqlQueryColumn = builder
-    .addProperty(name = CpgSchemaConstants.SQL_QUERY_COLUMN_NAME, valueType = ValueType.List)
-    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+  val sqlColumnNode = builder
+    .addNodeType(CpgSchemaConstants.SQL_COLUMN_NODE_NAME)
+    .addProperty(name)
+    .extendz(astNode)
 
+  val sqlTableNode = builder
+    .addNodeType(CpgSchemaConstants.SQL_TABLE_NODE_NAME)
+    .addProperty(name)
+    .extendz(astNode)
 
-   */
   val sqlQueryNode = builder
     .addNodeType(CpgSchemaConstants.SQL_QUERY_NODE_NAME)
     .addProperty(name)
-    .addProperty(value)
-    .addProperty(fullName)
     .extendz(astNode) // We are extending the new node from AstNode
-  // .addProperty(sqlQueryColumn)
+
+  sqlColumnNode.addOutEdge(edge = sourceFile, inNode = file)
+  sqlColumnNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  sqlTableNode.addOutEdge(edge = sourceFile, inNode = file)
+  sqlTableNode.addOutEdge(edge = taggedBy, inNode = tag)
+
   sqlQueryNode.addOutEdge(edge = sourceFile, inNode = file)
   sqlQueryNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  sqlQueryNode.addOutEdge(edge = ast, inNode = sqlTableNode)
+  sqlTableNode.addOutEdge(edge = ast, inNode = sqlColumnNode)
 
   // Adding SQL query node End
 
@@ -139,6 +148,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   module.addOutEdge(edge = dependencies, inNode = dependency)
   module.addOutEdge(edge = sourceFile, inNode = file)
   dependency.addOutEdge(edge = sourceFile, inNode = file)
+  templateDOM.addOutEdge(edge = sourceFile, inNode = file)
 }
 
 object CpgExtSchema {

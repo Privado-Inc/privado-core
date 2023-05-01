@@ -116,6 +116,7 @@ object Constants {
 
   // Rule ids
   val internalAPIRuleId = "Sinks.API.InternalAPI"
+  val jmsConsumerRuleId = "Messaging.Service.JMS.Consumer"
   val ignoredSinks      = "ignoredSinks"
   val apiSinks          = "apiSinks"
   val apiHttpLibraries  = "apiHttpLibraries"
@@ -125,6 +126,11 @@ object Constants {
 
   val jsxOpenElement = "JSXOpeningElement"
   val jsxElement     = "JSXElement"
+
+  val HTMLElement          = "HTMLElement"
+  val HTMLOpenElement      = "HTMLOpenElement"
+  val HTMLClosingElement   = "HTMLClosingElement"
+  val HTMLElementAttribute = "HTMLElementAttribute"
 
   val annotations = "annotations"
   val default     = "default"
