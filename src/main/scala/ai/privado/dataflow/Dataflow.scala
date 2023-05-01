@@ -51,6 +51,10 @@ class Dataflow(cpg: Cpg) {
     */
   def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Map[String, Path] = {
 
+    if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
+      AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
+    }
+
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
       EngineContext(
@@ -182,6 +186,14 @@ class Dataflow(cpg: Cpg) {
 }
 
 object Dataflow {
+
+  def dataflowForSourceSinkPair(sources: List[AstNode], sinks: List[CfgNode]): List[Path] = {
+    implicit val engineContext: EngineContext = {
+      EngineContext(config = EngineConfig(4))
+    }
+    sinks.reachableByFlows(sources).l
+  }
+
   def getSources(cpg: Cpg): List[AstNode] = {
     def filterSources(traversal: Traversal[AstNode]) = {
       traversal.tag
@@ -198,7 +210,7 @@ object Dataflow {
       .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
   }
 
-  private def getSinks(cpg: Cpg): List[CfgNode] = {
+  def getSinks(cpg: Cpg): List[CfgNode] = {
     cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
   }
 }
