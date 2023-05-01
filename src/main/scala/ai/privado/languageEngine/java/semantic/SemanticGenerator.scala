@@ -25,7 +25,8 @@ package ai.privado.languageEngine.java.semantic
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{CatLevelOne, Constants, InternalTag, Semantic, Language}
+import ai.privado.languageEngine.python.passes
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, Semantic}
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -52,7 +53,10 @@ object SemanticGenerator {
     */
   def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
     val lang = AppCache.repoLanguage
-    if (!(lang == Language.JAVA || lang == Language.PYTHON)) {
+
+    if (lang == Language.PYTHON)
+      return passes.SemanticGenerator.getSemantics(cpg, ruleCache)
+    if (!(lang == Language.JAVA)) {
       getDefaultSemantics
     } else {
       val customSinkSemantics = cpg.call
@@ -60,7 +64,7 @@ object SemanticGenerator {
         .methodFullName
         .dedup
         .l
-        .map(generateSemanticForTaint(_, cpg, -1))
+        .map(generateSemanticForTaint(_, -1))
         .sorted
 
       val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
@@ -70,7 +74,7 @@ object SemanticGenerator {
       var customStringSemantics            = List[String]()
       var customNonPersonalMemberSemantics = List[String]()
 
-      if (1 == 0 && !privadoScanConfig.disableRunTimeSemantics) {
+      if (!privadoScanConfig.disableRunTimeSemantics) {
         customNonTaintDefaultSemantics = nonTaintingMethods
           .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
           .fullName
@@ -82,7 +86,7 @@ object SemanticGenerator {
           .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
           .fullName
           .l
-          .map(generateSemanticForTaint(_, cpg, 0))
+          .map(generateSemanticForTaint(_, 0))
           .sorted
 
         customStringSemantics = cpg.method
@@ -93,7 +97,7 @@ object SemanticGenerator {
           .fullName
           .dedup
           .l
-          .map(generateSemanticForTaint(_, cpg, -1))
+          .map(generateSemanticForTaint(_, -1))
           .sorted
 
         customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
@@ -127,14 +131,13 @@ object SemanticGenerator {
     * @return
     *   \- semantic string
     */
-  private def generateSemanticForTaint(methodName: String, cpg: Cpg, toTaint: Int) = {
+  private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
     var parameterSemantics = ""
     var parameterNumber    = 2
     if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
       parameterNumber = 7
     } else {
-      val numberOfArguments = cpg.call.where(_.methodFullNameExact(methodName)).head.argumentIndex
-      parameterNumber = if (numberOfArguments <= 1) 2 else numberOfArguments
+      parameterNumber = methodName.count(_.equals(','))
     }
     for (i <- 0 to (parameterNumber + 1))
       parameterSemantics += s"$i->$toTaint "
