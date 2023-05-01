@@ -133,7 +133,8 @@ object SemanticGenerator {
     if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
       parameterNumber = 7
     } else {
-      parameterNumber = cpg.call.where(_.methodFullNameExact(methodName)).head.argumentIndex
+      val numberOfArguments = cpg.call.where(_.methodFullNameExact(methodName)).head.argumentIndex
+      parameterNumber = if (numberOfArguments <= 1) 2 else numberOfArguments
     }
     for (i <- 0 to (parameterNumber + 1))
       parameterSemantics += s"$i->$toTaint "
