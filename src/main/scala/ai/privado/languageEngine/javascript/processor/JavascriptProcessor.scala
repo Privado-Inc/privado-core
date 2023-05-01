@@ -28,6 +28,7 @@ import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.javascript.passes.config.PropertiesFilePass
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
   MethodFullName,
   MethodFullNameForEmptyNodes,
@@ -71,6 +72,12 @@ object JavascriptProcessor {
         new MethodFullName(cpg).createAndApply()
         new MethodFullNameFromIdentifier(cpg).createAndApply()
         new MethodFullNameForEmptyNodes(cpg).createAndApply()
+
+        println(s"${Calendar.getInstance().getTime} - Properties file pass")
+        new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - Properties file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
 
         println(s"${Calendar.getInstance().getTime} - SQL parser pass")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
