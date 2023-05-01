@@ -60,7 +60,7 @@ object SemanticGenerator {
         .methodFullName
         .dedup
         .l
-        .map(generateSemanticForTaint(_, -1))
+        .map(generateSemanticForTaint(_, cpg, -1))
         .sorted
 
       val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
@@ -70,7 +70,7 @@ object SemanticGenerator {
       var customStringSemantics            = List[String]()
       var customNonPersonalMemberSemantics = List[String]()
 
-      if (!privadoScanConfig.disableRunTimeSemantics) {
+      if (1 == 0 && !privadoScanConfig.disableRunTimeSemantics) {
         customNonTaintDefaultSemantics = nonTaintingMethods
           .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
           .fullName
@@ -82,7 +82,7 @@ object SemanticGenerator {
           .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
           .fullName
           .l
-          .map(generateSemanticForTaint(_, 0))
+          .map(generateSemanticForTaint(_, cpg, 0))
           .sorted
 
         customStringSemantics = cpg.method
@@ -93,7 +93,7 @@ object SemanticGenerator {
           .fullName
           .dedup
           .l
-          .map(generateSemanticForTaint(_, -1))
+          .map(generateSemanticForTaint(_, cpg, -1))
           .sorted
 
         customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
@@ -127,13 +127,13 @@ object SemanticGenerator {
     * @return
     *   \- semantic string
     */
-  private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
+  private def generateSemanticForTaint(methodName: String, cpg: Cpg, toTaint: Int) = {
     var parameterSemantics = ""
     var parameterNumber    = 2
     if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
       parameterNumber = 7
     } else {
-      parameterNumber = methodName.count(_.equals(','))
+      parameterNumber = cpg.call.where(_.methodFullNameExact(methodName)).head.argumentIndex
     }
     for (i <- 0 to (parameterNumber + 1))
       parameterSemantics += s"$i->$toTaint "
