@@ -105,8 +105,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     rulePattern: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclWithMemberNameHavingMemberName = cpg
-      .typeDecl(".*<meta>")
+    val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
       .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
       .map(typeDeclNode => {
         (
@@ -199,7 +198,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     ruleInfo: RuleInfo
   ): Unit = {
     val typeDeclsExtendingTypeName =
-      cpg.typeDecl(".*<meta>").filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
+      cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
 
     typeDeclsExtendingTypeName.foreach(typeDecl => {
       taggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
