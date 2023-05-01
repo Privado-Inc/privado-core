@@ -77,11 +77,11 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+//          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+//          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+//          println(
+//            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+//          )
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
