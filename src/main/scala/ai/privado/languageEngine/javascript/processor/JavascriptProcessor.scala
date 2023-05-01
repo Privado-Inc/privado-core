@@ -28,6 +28,7 @@ import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
 import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
@@ -44,7 +45,9 @@ import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -62,26 +65,37 @@ object JavascriptProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
-        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        logger.info("Applying default overlays")
+        // Apply default overlays
+        X2Cpg.applyDefaultOverlays(cpg)
+        new ImportsPass(cpg).createAndApply()
+
+        logger.info("Applying data flow overlay")
+        val context = new LayerCreatorContext(cpg)
+        val options = new OssDataFlowOptions()
+        new OssDataFlow(options).run(context)
         logger.info("=====================")
         println(
           s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )
 
-        // Apply default overlays
-        X2Cpg.applyDefaultOverlays(cpg)
-        new ImportsPass(cpg).createAndApply()
-
         new JavaScriptTypeRecoveryPass(cpg).createAndApply()
         println(
-          s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )
         new JavaScriptTypeHintCallLinker(cpg).createAndApply()
         new PythonNaiveCallLinker(cpg).createAndApply()
 
-        logger.info("Enhancing Javascript graph")
-        logger.debug("Running custom passes")
+        println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+
+        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
@@ -89,12 +103,6 @@ object JavascriptProcessor {
           UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
         }
         logger.info("=====================")
-
-        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
-        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
 
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")

@@ -48,7 +48,14 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     println(s"${Calendar.getInstance().getTime} - LiteralTagger invoked...")
     new LiteralTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
+    println(
+      s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
 
     new IdentifierTagger(cpg, ruleCache).createAndApply()
 
@@ -59,10 +66,21 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     )
     println(s"${Calendar.getInstance().getTime} - RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
     println(s"${Calendar.getInstance().getTime} - APITagger invoked...")
     new JSAPITagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
+
     println(s"${Calendar.getInstance().getTime} - WebFormsCollectionTagger invoked...")
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+    println(
+      s"${TimeMetric.getNewTime()} - --WebFormsCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     logger.info("Done with tagging")
 
     cpg.tag
