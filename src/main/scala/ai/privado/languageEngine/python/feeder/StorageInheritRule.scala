@@ -99,7 +99,10 @@ object StorageInheritRule {
       "SQLAlchemy(Read)",
       "",
       Array[String]("sqlalchemy.org"),
-      List[String]("(?i)(sqlalchemy/.*/declarative.py:<module>.)?declarative_base.<returnValue>", ".*(all|get|one)"),
+      List[String](
+        "(?i)(sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>|sqlalchemy/orm.py:<module>.sessionmaker.<returnValue>)",
+        ".*(all|get|one)"
+      ),
       false,
       "",
       HashMap[String, String](),
@@ -115,7 +118,10 @@ object StorageInheritRule {
       "SQLAlchemy(Write)",
       "",
       Array[String]("sqlalchemy.org"),
-      List[String]("(?i)(sqlalchemy/.*/declarative.py:<module>.)?declarative_base.<returnValue>", ".*(add_columns)"),
+      List[String](
+          "(?i)(sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>|sqlalchemy/orm.py:<module>.sessionmaker.<returnValue>)",
+        ".*(add_columns)"
+      ),
       false,
       "",
       HashMap[String, String](),
