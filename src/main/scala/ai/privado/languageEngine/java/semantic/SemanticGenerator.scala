@@ -128,26 +128,6 @@ object SemanticGenerator {
     *   \- semantic string
     */
   private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
-    var parameterSemantics = ""
-    var parameterNumber    = 2
-    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
-      parameterNumber = 7
-    } else {
-      parameterNumber = methodName.count(_.equals(','))
-    }
-    for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$toTaint $i->$i "
-    "\"" + methodName + "\" " + parameterSemantics.trim
-  }
-
-  /** Generate semantics for personal setters to taint the calling object based on the number of parameter in method
-    * signature
-    * @param methodName
-    *   \- complete signature of method
-    * @return
-    *   \- semantic string
-    */
-  private def generateSetterSemantic(methodName: String) = {
     var parameterSemantics = "0->0 "
     var parameterNumber    = 2
     if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
@@ -156,7 +136,7 @@ object SemanticGenerator {
       parameterNumber = methodName.count(_.equals(','))
     }
     for (i <- 1 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$i $i->0 "
+      parameterSemantics += s"$i->$toTaint $i->$i "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
@@ -215,7 +195,7 @@ object SemanticGenerator {
         .call
         .methodFullName
         .dedup
-        .map(methodName => generateSetterSemantic(methodName))
+        .map(methodName => generateSemanticForTaint(methodName, 0))
         .l
     (nonPersonalGetterSemantics ::: nonPersonalSetterMethodFullNames ::: personalSetterMethodFullNames).sorted
   }
