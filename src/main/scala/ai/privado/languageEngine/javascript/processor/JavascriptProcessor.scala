@@ -28,11 +28,8 @@ import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
+import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
+import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants._
@@ -41,12 +38,15 @@ import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.utility.Utilities.createCpgFolder
-import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language._
+import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language._
+import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -64,18 +64,36 @@ object JavascriptProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
+        // Apply default overlays
+        X2Cpg.applyDefaultOverlays(cpg)
+        new ImportsPass(cpg).createAndApply()
+
+        logger.info("Applying data flow overlay")
+        val context = new LayerCreatorContext(cpg)
+        val options = new OssDataFlowOptions()
+        new OssDataFlow(options).run(context)
+        logger.info("=====================")
+        println(
+          s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+
+        new JavaScriptTypeRecoveryPass(cpg).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+        new JavaScriptTypeHintCallLinker(cpg).createAndApply()
+        new PythonNaiveCallLinker(cpg).createAndApply()
+
+        println(s"${Calendar.getInstance().getTime} - HTML parser pass")
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        logger.info("Applying default overlays")
-        logger.info("Enhancing Javascript graph")
-        logger.debug("Running custom passes")
-        new MethodFullName(cpg).createAndApply()
-        new MethodFullNameFromIdentifier(cpg).createAndApply()
-        new MethodFullNameForEmptyNodes(cpg).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
 
         println(s"${Calendar.getInstance().getTime} - SQL parser pass")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
         println(
-          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )
 
         // Unresolved function report
@@ -90,7 +108,9 @@ object JavascriptProcessor {
         cpg.runTagger(ruleCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
-        println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
+        println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
+            .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+        println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         val errorMsg = new ListBuffer[String]()
