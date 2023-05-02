@@ -1,8 +1,7 @@
 package ai.privado.languageEngine.python.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{CatLevelOne, Constants, Semantic}
+import ai.privado.model.{Constants, Semantic}
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -23,33 +22,33 @@ object SemanticGenerator {
   }
 
   def getSemantics(cpg: Cpg, ruleCache: RuleCache): Semantics = {
-    val customSinkSemantics = cpg.call
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+    val leakageSinkSemantics = cpg.call
+      .where(_.tag.nameExact(Constants.id).value("Leakages.*"))
       .l
-      .map(call => generateSemanticForTaint(call.methodFullName, -1, call.code))
+      .map(call => generateOneToOneSemanticForTaint(call.methodFullName, call.code))
       .dedup
       .sorted
 
     val semanticFromConfig = ruleCache.getRule.semantics.flatMap(generateSemantic).sorted
 
     logger.debug("\nCustom customSinkSemantics semantics")
-    customSinkSemantics.foreach(logger.debug)
+    leakageSinkSemantics.foreach(logger.debug)
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
 
-    val list           = customSinkSemantics ++ semanticFromConfig
+    val list           = leakageSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
     val finalSemantics = SemanticGenerator.getDefaultSemantics.elements ++ parsed
     Semantics.fromList(finalSemantics)
   }
 
-  private def generateSemanticForTaint(methodName: String, toTaint: Int, code: String) = {
+  private def generateOneToOneSemanticForTaint(methodName: String, code: String) = {
     var parameterNumber = code.count(_.equals(','))
-    if (parameterNumber <= 1)
-      parameterNumber = 2
+    if (parameterNumber <= 2)
+      parameterNumber = 5
     var parameterSemantics = ""
-    for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$toTaint "
+    for (i <- 1 to (parameterNumber))
+      parameterSemantics += s"$i->$i "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
