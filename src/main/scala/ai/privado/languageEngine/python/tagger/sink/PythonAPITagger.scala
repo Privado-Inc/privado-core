@@ -24,7 +24,7 @@ package ai.privado.languageEngine.python.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
-import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, NodeType, RuleInfo}
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
@@ -48,7 +48,7 @@ class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCp
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = SemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
+    EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
   val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {

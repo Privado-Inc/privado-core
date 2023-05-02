@@ -23,11 +23,12 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, AuditCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.model.exporter.DataFlowPathIntermediateModel
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
+import ai.privado.semantic.SemanticGenerator
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -35,7 +36,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.model.exporter.DataFlowPathIntermediateModel
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
