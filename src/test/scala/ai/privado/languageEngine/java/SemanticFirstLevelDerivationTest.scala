@@ -74,15 +74,8 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   "Semantic generated for 1st Level derivation" should {
     "have non-personal semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(
-        FlowSemantic("User.getAmount:int()", List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "User.getId:java.lang.String()",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.getAmount:int()", List((0, 0)))) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.getId:java.lang.String()", List((0, 0)))) shouldBe true
     }
 
     "not have personal semantics for 2nd Level class by extends" in {
@@ -90,12 +83,7 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have non-personal semantics for 1st Level class" in {
-      semantics.elements.contains(
-        FlowSemantic(
-          "BaseClass.getId:java.lang.String()",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("BaseClass.getId:java.lang.String()", List((0, 0)))) shouldBe true
     }
 
     "not have personal semantics for 1st Level class" in {
@@ -103,15 +91,8 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have setters semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(
-        FlowSemantic("User.setAmount:void(int)", List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "User.setId:void(java.lang.String)",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.setAmount:void(int)", List((0, 0), (1, 1)))) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.setId:void(java.lang.String)", List((0, 0), (1, 1)))) shouldBe true
       semantics.elements.contains(
         FlowSemantic("User.setFirstName:void(java.lang.String)", List((0, 0), (1, 0), (1, 1)))
       ) shouldBe true
@@ -119,10 +100,7 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
     "have setters semantics for 1st Level class" in {
       semantics.elements.contains(
-        FlowSemantic(
-          "BaseClass.setId:void(java.lang.String)",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
+        FlowSemantic("BaseClass.setId:void(java.lang.String)", List((0, 0), (1, 1)))
       ) shouldBe true
       semantics.elements.contains(
         FlowSemantic("BaseClass.setFirstName:void(java.lang.String)", List((0, 0), (1, 0), (1, 1)))

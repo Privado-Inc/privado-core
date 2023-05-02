@@ -94,15 +94,8 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
 
   "Semantic generated for 2nd Level derivation" should {
     "have non-personal semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(
-        FlowSemantic("User.getAmount:int()", List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "User.getId:java.lang.String()",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.getAmount:int()", List((0, 0)))) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.getId:java.lang.String()", List((0, 0)))) shouldBe true
     }
 
     "not have personal semantics for 2nd Level class by extends" in {
@@ -110,12 +103,7 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have non-personal semantics for 1st Level class" in {
-      semantics.elements.contains(
-        FlowSemantic(
-          "BaseClass.getId:java.lang.String()",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("BaseClass.getId:java.lang.String()", List((0, 0)))) shouldBe true
     }
 
     "not have personal semantics for 1st Level class" in {
@@ -123,12 +111,7 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have non-personal semantics for 2nd Level class by member" in {
-      semantics.elements.contains(
-        FlowSemantic(
-          "Customer.getType:java.lang.String()",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("Customer.getType:java.lang.String()", List((0, 0)))) shouldBe true
     }
 
     "not have personal semantics for 2nd Level class by member" in {
@@ -136,15 +119,8 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have setters semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(
-        FlowSemantic("User.setAmount:void(int)", List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "User.setId:void(java.lang.String)",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
-      ) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.setAmount:void(int)", List((0, 0), (1, 1)))) shouldBe true
+      semantics.elements.contains(FlowSemantic("User.setId:void(java.lang.String)", List((0, 0), (1, 1)))) shouldBe true
       semantics.elements.contains(
         FlowSemantic("User.setFirstName:void(java.lang.String)", List((0, 0), (1, 0), (1, 1)))
       ) shouldBe true
@@ -152,10 +128,7 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
 
     "have setters semantics for 1st Level class" in {
       semantics.elements.contains(
-        FlowSemantic(
-          "BaseClass.setId:void(java.lang.String)",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
+        FlowSemantic("BaseClass.setId:void(java.lang.String)", List((0, 0), (1, 1)))
       ) shouldBe true
       semantics.elements.contains(
         FlowSemantic("BaseClass.setFirstName:void(java.lang.String)", List((0, 0), (1, 0), (1, 1)))
@@ -164,10 +137,7 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
 
     "have setters semantics for 2nd Level class by member" in {
       semantics.elements.contains(
-        FlowSemantic(
-          "Customer.setType:void(java.lang.String)",
-          List((0, 0), (1, 1), (2, 2), (3, 3), (4, 4), (5, 5), (6, 6), (7, 7))
-        )
+        FlowSemantic("Customer.setType:void(java.lang.String)", List((0, 0), (1, 1)))
       ) shouldBe true
       semantics.elements.contains(
         FlowSemantic("Customer.setBaseClass:void(BaseClass)", List((0, 0), (1, 0), (1, 1)))
