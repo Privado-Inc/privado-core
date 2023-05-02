@@ -26,6 +26,7 @@ package ai.privado.languageEngine.java.tagger.collection
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.Utility.SOAPTaggerUtility
 import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 import org.slf4j.LoggerFactory
@@ -34,7 +35,7 @@ import io.shiftleft.semanticcpg.language._
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
 
-class SOAPCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends CpgPass(cpg) {
+class SOAPCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def run(builder: DiffGraphBuilder): Unit = {

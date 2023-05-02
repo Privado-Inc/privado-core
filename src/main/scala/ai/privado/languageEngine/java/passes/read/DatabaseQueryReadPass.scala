@@ -2,9 +2,9 @@ package ai.privado.languageEngine.java.passes.read
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.passes.read.DatabaseReadUtility.{fromRegexPattern, selectRegexPattern}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -13,7 +13,7 @@ class DatabaseQueryReadPass(
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
   classTableMapping: Map[String, TypeDecl]
-) extends ForkJoinParallelCpgPass[Expression](cpg) {
+) extends PrivadoParallelCpgPass[Expression](cpg) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
 

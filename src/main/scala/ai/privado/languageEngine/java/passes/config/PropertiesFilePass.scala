@@ -24,13 +24,13 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, MethodParameterIn, NewFile, NewJavaProperty}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
@@ -44,7 +44,7 @@ import scala.xml._
 /** This pass creates a graph layer for Java `.properties` files.
   */
 class PropertiesFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+    extends PrivadoParallelCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

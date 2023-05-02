@@ -23,8 +23,8 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, AuditCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
@@ -161,7 +161,9 @@ class Dataflow(cpg: Cpg) {
         .toMap
 
       // Setting cache
-      DataFlowCache.dataflowsMapByType ++= dataflowMapByPathId
+      dataflowMapByPathId.foreach(item => {
+        DataFlowCache.dataflowsMapByType.put(item._1, item._2)
+      })
 
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
       DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig, ruleCache)
@@ -169,18 +171,18 @@ class Dataflow(cpg: Cpg) {
         s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
             .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
       )
-      // Need to return the filtered result
-      println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
-      val dataflowFromCache = DataFlowCache.getDataflow
-      println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
-      AuditCache.addIntoFinalPath(dataflowFromCache)
-      dataflowFromCache
-        .map(_.pathId)
-        .toSet
-        .map((pathId: String) => (pathId, DataFlowCache.dataflowsMapByType(pathId)))
-        .toMap
     }
+    // Need to return the filtered result
+    println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
+    val dataflowFromCache = DataFlowCache.getDataflow
+    println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
+        .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
+    AuditCache.addIntoFinalPath(dataflowFromCache)
+    dataflowFromCache
+      .map(_.pathId)
+      .toSet
+      .map((pathId: String) => (pathId, DataFlowCache.dataflowsMapByType.get(pathId)))
+      .toMap
   }
 
 }
