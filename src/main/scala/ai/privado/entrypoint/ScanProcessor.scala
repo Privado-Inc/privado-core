@@ -58,8 +58,6 @@ object ScanProcessor extends CommandProcessor {
       List[Semantic](),
       List[RuleInfo](),
       List[SystemConfig](),
-      List[RuleInfo](),
-      List[RuleInfo](),
       List[RuleInfo]()
     )
 
@@ -177,32 +175,12 @@ object ScanProcessor extends CommandProcessor {
                           )
                         )
                         .filter(filterSystemConfigByLang),
-                      auditCollection = configAndRules.auditCollection
+                      auditConfig = configAndRules.auditConfig
                         .map(x =>
                           x.copy(
                             file = fullPath,
                             categoryTree = pathTree,
-                            catLevelTwo = pathTree.apply(1),
-                            language = Language.withNameWithDefault(pathTree.last)
-                          )
-                        )
-                        .filter(filterByLang),
-                      auditWebClient = configAndRules.auditWebClient
-                        .map(x =>
-                          x.copy(
-                            file = fullPath,
-                            categoryTree = pathTree,
-                            catLevelTwo = pathTree.apply(1),
-                            language = Language.withNameWithDefault(pathTree.last)
-                          )
-                        )
-                        .filter(filterByLang),
-                      auditUtility = configAndRules.auditUtility
-                        .map(x =>
-                          x.copy(
-                            file = fullPath,
-                            categoryTree = pathTree,
-                            catLevelTwo = pathTree.apply(1),
+                            catLevelTwo = pathTree.apply(2),
                             language = Language.withNameWithDefault(pathTree.last)
                           )
                         )
@@ -230,9 +208,7 @@ object ScanProcessor extends CommandProcessor {
               semantics = a.semantics ++ b.semantics,
               sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
               systemConfig = a.systemConfig ++ b.systemConfig,
-              auditCollection = a.auditCollection ++ b.auditCollection,
-              auditWebClient = a.auditWebClient ++ b.auditWebClient,
-              auditUtility = a.auditUtility ++ b.auditUtility
+              auditConfig = a.auditConfig ++ b.auditConfig
             )
           )
       catch {
@@ -273,18 +249,16 @@ object ScanProcessor extends CommandProcessor {
      * In case of duplicates it will keep the elements from "externalRules.sources".
      * We don't know the internal logic. We came to this conclusion based on testing few samples.
      */
-    val exclusions      = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
-    val sources         = externalConfigAndRules.sources ++ internalConfigAndRules.sources
-    val sinks           = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
-    val collections     = externalConfigAndRules.collections ++ internalConfigAndRules.collections
-    val policies        = externalConfigAndRules.policies ++ internalConfigAndRules.policies
-    val threats         = externalConfigAndRules.threats ++ internalConfigAndRules.threats
-    val semantics       = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
-    val sinkSkipList    = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
-    val systemConfig    = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
-    val auditCollection = externalConfigAndRules.auditCollection ++ internalConfigAndRules.auditCollection
-    val auditWebClient  = externalConfigAndRules.auditWebClient ++ internalConfigAndRules.auditWebClient
-    val auditUtility    = externalConfigAndRules.auditUtility ++ internalConfigAndRules.auditUtility
+    val exclusions   = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
+    val sources      = externalConfigAndRules.sources ++ internalConfigAndRules.sources
+    val sinks        = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
+    val collections  = externalConfigAndRules.collections ++ internalConfigAndRules.collections
+    val policies     = externalConfigAndRules.policies ++ internalConfigAndRules.policies
+    val threats      = externalConfigAndRules.threats ++ internalConfigAndRules.threats
+    val semantics    = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
+    val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
+    val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
+    val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
@@ -296,9 +270,7 @@ object ScanProcessor extends CommandProcessor {
         semantics = semantics.distinctBy(_.signature),
         sinkSkipList = sinkSkipList.distinctBy(_.id),
         systemConfig = systemConfig,
-        auditCollection = auditCollection.distinctBy(_.id),
-        auditWebClient = auditWebClient.distinctBy(_.id),
-        auditUtility = auditUtility.distinctBy(_.id)
+        auditConfig = auditConfig.distinctBy(_.id)
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
@@ -312,9 +284,7 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.collections.size +
           mergedRules.policies.size +
           mergedRules.exclusions.size +
-          mergedRules.auditCollection.size +
-          mergedRules.auditWebClient.size +
-          mergedRules.auditUtility.size
+          mergedRules.auditConfig.size
       )
     }
 

@@ -21,7 +21,7 @@ class DependencyReportTest extends DependencyReportTestBase {
     new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
     new DependenciesNodePass(cpg, moduleCache).createAndApply()
     dependencies = DependencyReport.getDependencyList(Try(cpg))
-    new DependencyCategoryPass(cpg, ruleCache, dependencies.toList)
+    new DependencyCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
   }
 
   def getContent(): Map[String, String] = {
@@ -50,7 +50,7 @@ class DependencyReportTest extends DependencyReportTestBase {
 
   "Test final Result" in {
     val dependencySet  = new mutable.HashSet[String]()
-    val workbookResult = DependencyReport.processDependencyAudit(Try(cpg), ruleCache, dependencies)
+    val workbookResult = DependencyReport.processDependencyAudit(dependencies)
 
     workbookResult.size shouldBe 6
 
@@ -67,7 +67,7 @@ class DependencyReportTest extends DependencyReportTestBase {
     val dependencyProcessedMap = new mutable.HashMap[String, String]()
     val dependencyRuleMap      = new mutable.HashMap[String, String]()
 
-    val workflowResult = DependencyReport.processDependencyAudit(Try(cpg), ruleCache, dependencies)
+    val workflowResult = DependencyReport.processDependencyAudit(dependencies)
 
     workflowResult.foreach(row => {
       dependencyCategoryMap.put(row(1), row(4))

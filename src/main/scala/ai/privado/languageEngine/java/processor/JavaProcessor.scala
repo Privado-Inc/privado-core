@@ -149,7 +149,7 @@ object JavaProcessor {
 
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, ruleCache, dependencies),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies),
               sourceRepoLocation
             ) match {
               case Left(err) =>

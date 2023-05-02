@@ -17,13 +17,8 @@ object DependencyReport {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def processDependencyAudit(
-    xtocpg: Try[Cpg],
-    ruleCache: RuleCache,
-    dependencies: Set[ModuleDependency]
-  ): List[List[String]] = {
+  def processDependencyAudit(dependencies: Set[ModuleDependency]): List[List[String]] = {
     val workbookResult = new ListBuffer[List[String]]()
-    new DependencyCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
     dependencies.foreach(dependency => {
       val category = getDependencyCategory(dependency)
       workbookResult += List(

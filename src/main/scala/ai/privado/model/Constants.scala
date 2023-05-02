@@ -58,9 +58,10 @@ object Constants {
   val semantics       = "semantics"
   val sinkSkipList    = "sinkSkipList"
   val systemConfig    = "systemConfig"
-  val auditCollection = "auditCollection"
-  val auditWebClient  = "auditWebClient"
-  val auditUtility    = "auditUtility"
+  val auditConfig     = "auditConfig"
+  val auditCollection = "collections"
+  val auditWebClient  = "webClient"
+  val auditUtility    = "utility"
 
   val tags               = "tags"
   val description        = "description"

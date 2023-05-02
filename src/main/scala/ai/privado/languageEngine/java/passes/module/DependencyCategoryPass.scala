@@ -26,7 +26,7 @@ class DependencyCategoryPass(cpg: Cpg, ruleCache: RuleCache, moduleDependencies:
   }
 
   private def getAuditAllRules(ruleCache: RuleCache): Array[RuleInfo] = {
-    (ruleCache.getRule.sinks ++ ruleCache.getRule.auditCollection ++ ruleCache.getRule.auditWebClient ++ ruleCache.getRule.auditUtility).toArray
+    (ruleCache.getRule.sinks ++ ruleCache.getRule.auditConfig).toArray
   }
 
   private def getCategoryName(ruleInfo: RuleInfo): String = {
@@ -34,8 +34,8 @@ class DependencyCategoryPass(cpg: Cpg, ruleCache: RuleCache, moduleDependencies:
       case Constants.third_parties   => AuditReportConstants.DEPENDENCY_KNOW_THIRD_PARTY_LIBRARY_NAME
       case Constants.storages        => AuditReportConstants.DEPENDENCY_STORAGE_LIBRARY_NAME
       case Constants.leakages        => AuditReportConstants.DEPENDENCY_LEAKAGE_LIBRARY_NAME
-      case Constants.auditWebClient  => AuditReportConstants.DEPENDENCY_WEB_CLIENT_LIBRARY_NAME
       case Constants.auditCollection => AuditReportConstants.DEPENDENCY_COLLECTION_LIBRARY_NAME
+      case Constants.auditWebClient  => AuditReportConstants.DEPENDENCY_WEB_CLIENT_LIBRARY_NAME
       case Constants.auditUtility    => AuditReportConstants.DEPENDENCY_UTILITY_LIBRARY_NAME
       case _                         => AuditReportConstants.DEPENDENCY_UNKNOWN_LIBRARY_NAME
     }

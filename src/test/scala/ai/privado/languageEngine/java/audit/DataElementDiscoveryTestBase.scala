@@ -83,20 +83,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
   )
 
   val rule: ConfigAndRules =
-    ConfigAndRules(
-      sourceRule,
-      List(),
-      collectionRule,
-      List(),
-      List(),
-      List(),
-      List(),
-      List(),
-      List(),
-      List(),
-      List(),
-      List()
-    )
+    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 

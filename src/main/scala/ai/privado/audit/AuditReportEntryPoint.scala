@@ -11,12 +11,7 @@ import scala.util.Try
 object AuditReportEntryPoint {
 
   // Audit report generation for java
-  def getAuditWorkbook(
-    xtocpg: Try[Cpg],
-    taggerCache: TaggerCache,
-    ruleCache: RuleCache,
-    dependencies: Set[ModuleDependency]
-  ): Workbook = {
+  def getAuditWorkbook(xtocpg: Try[Cpg], taggerCache: TaggerCache, dependencies: Set[ModuleDependency]): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
     createSheet(
@@ -31,7 +26,7 @@ object AuditReportEntryPoint {
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
-      DependencyReport.processDependencyAudit(xtocpg, ruleCache, dependencies)
+      DependencyReport.processDependencyAudit(dependencies)
     )
 
     // Set Data Flow report into Sheet

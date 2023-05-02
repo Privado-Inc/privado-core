@@ -1,21 +1,21 @@
 {
   "definitions": {},
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/auditUtility.json",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/auditConfig.json",
   "title": "Root",
   "type": "object",
   "required": [
-    "auditUtility"
+    "auditConfig"
   ],
   "additionalProperties": false,
   "properties": {
-    "auditUtility": {
-      "$id": "#root/auditUtility",
-      "title": "auditUtility",
+    "auditConfig": {
+      "$id": "#root/auditConfig",
+      "title": "auditConfig",
       "type": "array",
       "default": [],
       "items":{
-        "$id": "#root/auditUtility/items",
+        "$id": "#root/auditConfig/items",
         "title": "Items",
         "type": "object",
         "required": [
@@ -26,32 +26,32 @@
         "additionalProperties": false,
         "properties": {
           "id": {
-            "$id": "#root/auditUtility/items/id",
+            "$id": "#root/auditConfig/items/id",
             "title": "Id",
             "type": "string",
             "default": "",
             "examples": [
-              "AuditUtility.Test"
+              "AuditConfig.Test"
             ],
             "pattern": "^.*$"
           },
           "name": {
-            "$id": "#root/auditUtility/items/name",
+            "$id": "#root/auditConfig/items/name",
             "title": "Name",
             "type": "string",
             "default": "",
             "examples": [
-              "Audit Utility dependency info"
+              "Audit config dependency info"
             ],
             "pattern": "^.*$"
           },
           "patterns": {
-            "$id": "#root/auditUtility/items/patterns",
+            "$id": "#root/auditConfig/items/patterns",
             "title": "Patterns",
             "type": "array",
             "default": [],
             "items":{
-              "$id": "#root/auditUtility/items/patterns/items",
+              "$id": "#root/auditConfig/items/patterns/items",
               "title": "Items",
               "type": "string",
               "format": "regex",

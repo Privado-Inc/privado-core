@@ -59,9 +59,7 @@ case class ConfigAndRules(
   semantics: List[Semantic],
   sinkSkipList: List[RuleInfo],
   systemConfig: List[SystemConfig],
-  auditCollection: List[RuleInfo],
-  auditWebClient: List[RuleInfo],
-  auditUtility: List[RuleInfo]
+  auditConfig: List[RuleInfo]
 )
 
 case class DataFlow(sources: List[String], sinks: List[String])
@@ -169,18 +167,16 @@ object CirceEnDe {
 
   implicit val decodeRules: Decoder[ConfigAndRules] = new Decoder[ConfigAndRules] {
     override def apply(c: HCursor): Result[ConfigAndRules] = {
-      val sources          = c.downField(Constants.sources).as[List[RuleInfo]]
-      val sinks            = c.downField(Constants.sinks).as[List[RuleInfo]]
-      val collections      = c.downField(Constants.collections).as[List[RuleInfo]]
-      val policies         = c.downField(Constants.policies).as[List[PolicyOrThreat]]
-      val exclusions       = c.downField(Constants.exclusions).as[List[RuleInfo]]
-      val threats          = c.downField(Constants.threats).as[List[PolicyOrThreat]]
-      val semantics        = c.downField(Constants.semantics).as[List[Semantic]]
-      val sinkSkipList     = c.downField(Constants.sinkSkipList).as[List[RuleInfo]]
-      val systemConfig     = c.downField(Constants.systemConfig).as[List[SystemConfig]]
-      val auditCollections = c.downField(Constants.auditCollection).as[List[RuleInfo]]
-      val auditWebClient   = c.downField(Constants.auditWebClient).as[List[RuleInfo]]
-      val auditUtility     = c.downField(Constants.auditUtility).as[List[RuleInfo]]
+      val sources      = c.downField(Constants.sources).as[List[RuleInfo]]
+      val sinks        = c.downField(Constants.sinks).as[List[RuleInfo]]
+      val collections  = c.downField(Constants.collections).as[List[RuleInfo]]
+      val policies     = c.downField(Constants.policies).as[List[PolicyOrThreat]]
+      val exclusions   = c.downField(Constants.exclusions).as[List[RuleInfo]]
+      val threats      = c.downField(Constants.threats).as[List[PolicyOrThreat]]
+      val semantics    = c.downField(Constants.semantics).as[List[Semantic]]
+      val sinkSkipList = c.downField(Constants.sinkSkipList).as[List[RuleInfo]]
+      val systemConfig = c.downField(Constants.systemConfig).as[List[SystemConfig]]
+      val auditConfig  = c.downField(Constants.auditConfig).as[List[RuleInfo]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -192,9 +188,7 @@ object CirceEnDe {
           semantics = semantics.getOrElse(List[Semantic]()),
           sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]()),
           systemConfig = systemConfig.getOrElse(List[SystemConfig]()),
-          auditCollection = auditCollections.getOrElse(List[RuleInfo]()),
-          auditWebClient = auditWebClient.getOrElse(List[RuleInfo]()),
-          auditUtility = auditUtility.getOrElse(List[RuleInfo]())
+          auditConfig = auditConfig.getOrElse(List[RuleInfo]())
         )
       )
     }

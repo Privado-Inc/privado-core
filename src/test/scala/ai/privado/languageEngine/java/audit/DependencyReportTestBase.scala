@@ -85,7 +85,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
     )
   )
 
-  val auditCollectionRule = List(
+  val auditConfigRule = List(
     RuleInfo(
       "AuditCollection.SpringWebMVC",
       "Spring Web MVC",
@@ -101,10 +101,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       Constants.auditCollection,
       Language.JAVA,
       Array()
-    )
-  )
-
-  val auditWebClientRule = List(
+    ),
     RuleInfo(
       "AuditWebClient.http4k",
       "Http client",
@@ -120,10 +117,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       Constants.auditWebClient,
       Language.JAVA,
       Array()
-    )
-  )
-
-  val auditUtility = List(
+    ),
     RuleInfo(
       "AuditUtility.Github",
       "Github Utility",
@@ -143,20 +137,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
   )
 
   val rule: ConfigAndRules =
-    ConfigAndRules(
-      sourceRule,
-      List(),
-      collectionRule,
-      List(),
-      List(),
-      List(),
-      List(),
-      List(),
-      List(),
-      auditCollectionRule,
-      auditWebClientRule,
-      auditUtility
-    )
+    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), auditConfigRule)
 
   val taggerCache = new TaggerCache()
 }
