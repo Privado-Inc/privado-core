@@ -45,7 +45,6 @@ case class PrivadoInput(
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
   upload: Boolean = false,
-  enableJS: Boolean = false,
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
@@ -81,7 +80,6 @@ object CommandConstants {
   val SKIP_UPLOAD                                  = "skip-upload"
   val SKIP_UPLOAD_ABBR                             = "su"
   val VALIDATE                                     = "validate"
-  val ENABLE_JS                                    = "enablejs"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
   val TEST_OUTPUT                                  = "test-output"
@@ -165,11 +163,6 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableAPIDisplay = true))
               .text("Enable api display"),
-            opt[Unit](CommandConstants.ENABLE_JS)
-              .abbr(CommandConstants.ENABLE_JS)
-              .optional()
-              .action((_, c) => c.copy(enableJS = true))
-              .text("enable javascript scan engine"),
             opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
               .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
               .optional()
