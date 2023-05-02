@@ -91,7 +91,6 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         .processDataFlowAudit()
         .foreach(row => {
           val sourcePathInfo = SourcePathInfo(row.head, row(1), row(3))
-
           workflowSemanticResult.put(sourcePathInfo, row(5))
           workflowFilter1Result.put(sourcePathInfo, row(6))
           workflowFilter2Result.put(sourcePathInfo, row(7))
@@ -105,14 +104,14 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> info(newValue2)"
+          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> newValue2 -> info(newValue2)"
         )
       ) shouldBe ("YES")
       workflowFilter1Result(
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> info(newValue2)"
+          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> newValue2 -> info(newValue2)"
         )
       ) shouldBe ("--")
 
@@ -145,14 +144,14 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> info(name)"
+          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> name -> info(name)"
         )
       ) shouldBe ("YES")
       workflowfinalResult(
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> info(name)"
+          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> name -> info(name)"
         )
       ) shouldBe ("--")
     }
