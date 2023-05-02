@@ -82,6 +82,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   property.addOutEdge(edge = isUsedAt, inNode = literal)
   property.addOutEdge(edge = isUsedAt, inNode = methodParameterIn)
   property.addOutEdge(edge = isUsedAt, inNode = member)
+  property.addOutEdge(edge = isUsedAt, inNode = callNode)
   member.addOutEdge(edge = originalProperty, inNode = property)
   literal.addOutEdge(edge = originalProperty, inNode = property)
   methodParameterIn.addOutEdge(edge = originalProperty, inNode = property)
@@ -149,6 +150,9 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   module.addOutEdge(edge = sourceFile, inNode = file)
   dependency.addOutEdge(edge = sourceFile, inNode = file)
   templateDOM.addOutEdge(edge = sourceFile, inNode = file)
+
+  callNode.addOutEdge(edge = originalProperty, inNode = property)
+
 }
 
 object CpgExtSchema {

@@ -4,10 +4,11 @@ import ai.privado.cache.RuleCache
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewJavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, NewFile, NewJavaProperty}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 import scala.io.Source
@@ -35,8 +36,8 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
     val fileNode      = addFileNode(file, builder)
     val propertyNodes = addPropertyNodesAndConnectToUsers(file, builder)
+    println(matchProcessEnvAssignmentCalls("PORT"))
     propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
-    println(file)
   }
 
   /** Returns a list of file paths that are config files, given a project root directory and a set of file extensions to
@@ -73,11 +74,38 @@ class PropertiesFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     } match {
       case Success(keyValuePairs) =>
         val propertyNodes = keyValuePairs.map(addPropertyNode(_, builder))
+
+        propertyNodes.foreach(node => {
+          connectEnvCallsToProperties(node, builder)
+        })
+
         propertyNodes
       case Failure(exception) =>
         logger.warn(exception.getMessage)
         List()
     }
+  }
+
+  /** Finds all assignment calls that assign a value to a property of the `process.env` object with the given
+    * `propertyName`.
+    *
+    * @param propertyName
+    *   the name of the property to match (without the "process.env." prefix).
+    * @return
+    *   a list of Call nodes representing the matching assignment calls.
+    */
+  private def matchProcessEnvAssignmentCalls(propertyName: String): List[Call] = {
+    // Match assignment calls on the right side for process.env.PROPERTY or process.env['PROPERTY']
+    // Example const dbName = process.env['DB_NAME']
+    val pattern = s".*process\\.env(\\.${propertyName}|\\[('|\")${propertyName}('|\")]).*"
+    cpg.call("<operator>.assignment").where(_.astChildren.code(pattern)).l
+  }
+
+  private def connectEnvCallsToProperties(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
+    matchProcessEnvAssignmentCalls(propertyNode.name.strip()).foreach(member => {
+      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
+      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+    })
   }
 
   private def obtainKeyValuePairs(file: String): List[(String, String)] = {
