@@ -32,7 +32,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-object SemanticGenerator {
+object JavaSemanticGenerator {
 
   implicit val resolver: ICallResolver = NoResolve
   private val logger                   = LoggerFactory.getLogger(getClass)
@@ -116,7 +116,7 @@ object SemanticGenerator {
       val list =
         customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
       val parsed         = new Parser().parse(list.mkString("\n"))
-      val finalSemantics = SemanticGenerator.getDefaultSemantics.elements ++ parsed
+      val finalSemantics = JavaSemanticGenerator.getDefaultSemantics.elements ++ parsed
       Semantics.fromList(finalSemantics)
     }
   }

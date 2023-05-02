@@ -26,7 +26,7 @@ package ai.privado.dataflow
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, AuditCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -58,7 +58,7 @@ class Dataflow(cpg: Cpg) {
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
       EngineContext(
-        semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache),
+        semantics = JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache),
         config = EngineConfig(4)
       )
     val sources = Dataflow.getSources(cpg)

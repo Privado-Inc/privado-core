@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java
 import ai.privado.cache.AppCache
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 
@@ -36,7 +36,7 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
     super.beforeAll()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
+    semantics = JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
   }
   override val javaFileContents =
     """
