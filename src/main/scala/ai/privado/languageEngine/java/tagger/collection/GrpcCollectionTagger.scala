@@ -26,13 +26,13 @@ package ai.privado.languageEngine.java.tagger.collection
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.CpgPass
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
+import ai.privado.tagger.PrivadoSimpleCpgPass
 
 import scala.collection.immutable.HashMap
 
-class GrpcCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends CpgPass(cpg) {
+class GrpcCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def run(builder: DiffGraphBuilder): Unit = {

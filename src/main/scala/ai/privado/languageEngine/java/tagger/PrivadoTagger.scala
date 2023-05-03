@@ -24,16 +24,16 @@
 package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.passes.read.{
   DatabaseQueryReadPass,
   DatabaseRepositoryReadPass,
   EntityMapper,
-  JMSConsumerReadPass
+  MessagingConsumerReadPass
 }
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
-import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JMSConsumerCustomTagger, JavaAPITagger}
+import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, MessagingConsumerCustomTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
@@ -46,8 +46,6 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
-import java.util.Calendar
-
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -59,102 +57,40 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --LiteralTagger invoked...")
     new LiteralTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --LiteralTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
-    println(s"${Calendar.getInstance().getTime} - --SqlQueryTagger invoked...")
+
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --SqlQueryTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
-    println(s"${Calendar.getInstance().getTime} - --IdentifierTagger invoked...")
+
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --InSensitive call tagger invoked...")
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --InSensitive call tagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
     new DBConfigTagger(cpg).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --RegularSinkTagger invoked...")
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --RegularSinkTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --APITagger invoked...")
     new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --APITagger is done in \t\t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
     // Custom Rule tagging
     if (!ScanProcessor.config.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
-      println(s"${Calendar.getInstance().getTime} - --CustomInheritTagger invoked...")
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
-      println(
-        s"${TimeMetric.getNewTime()} - --CustomInheritTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-      )
-
-      println(s"${Calendar.getInstance().getTime} - --JMSConsumerCustomTagger invoked...")
-      new JMSConsumerCustomTagger(cpg, ruleCache).createAndApply()
-      println(
-        s"${TimeMetric.getNewTime()} - --JMSConsumerCustomTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-      )
-
-      println(s"${Calendar.getInstance().getTime} - --JMSConsumerReadPass invoked...")
-      new JMSConsumerReadPass(cpg, taggerCache).createAndApply()
-      println(
-        s"${TimeMetric.getNewTime()} - --JMSConsumerReadPass is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-      )
+      new MessagingConsumerCustomTagger(cpg, ruleCache).createAndApply()
+      new MessagingConsumerReadPass(cpg, taggerCache).createAndApply()
     }
 
-    println(s"${Calendar.getInstance().getTime} - --Database Query Read Pass invoked...")
     new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --Database Query Read Pass is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --Database Repository Read Pass invoked...")
     new DatabaseRepositoryReadPass(cpg, taggerCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --Database Repository Read Pass is done in \t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --CollectionTagger invoked...")
     new CollectionTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --CollectionTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --SOAPCollectionTagger invoked...")
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --SOAPCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
 
-    println(s"${Calendar.getInstance().getTime} - --GrpcCollectionTagger invoked...")
     new GrpcCollectionTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --GrpcCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
-    println(s"${Calendar.getInstance().getTime} - --WebFormsCollectionTagger invoked...")
+
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --WebFormsCollectionTagger is done in \t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
+
     logger.info("Done with tagging")
 
     cpg.tag

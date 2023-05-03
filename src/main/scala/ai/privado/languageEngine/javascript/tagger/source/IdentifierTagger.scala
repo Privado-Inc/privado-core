@@ -25,12 +25,12 @@ package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
 
@@ -48,5 +48,27 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelC
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
+
+    //    Example: row_vehicle['VEHICLE_REGISTRATION_NUMBER']
+    //    Call("<operator>.indexAccess") // Tagging
+    //      [Arguments]
+    //      -Literal 'VEHICLE_REGISTRATION_NUMBER'
+    //      -Identifier row_vehicle
+    val indexAccessLiterals = cpg
+      .call("<operator>.indexAccess")
+      .argument
+      .isLiteral
+      .code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)")
+      .whereNot(_.code(".*\\s.*"))
+      .l
+    val indexAccessCalls = indexAccessLiterals.astParent.isCall
+      .whereNot(_.method.name(".*<meta.*>$"))
+      .whereNot(_.name("__(iter|next)__|print"))
+      .l
+    indexAccessCalls.foreach(iaCall => {
+      storeForTag(builder, iaCall, ruleCache)(InternalTag.INDEX_ACCESS_CALL.toString)
+      addRuleTags(builder, iaCall, ruleInfo, ruleCache)
+    })
+
   }
 }

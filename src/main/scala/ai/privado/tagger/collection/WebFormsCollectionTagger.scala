@@ -25,13 +25,13 @@ package ai.privado.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-class WebFormsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class WebFormsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] =

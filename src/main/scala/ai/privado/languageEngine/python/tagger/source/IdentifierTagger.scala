@@ -25,17 +25,17 @@ package ai.privado.languageEngine.python.tagger.source
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
 import java.util.UUID
 import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
-    extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE: String = UUID.randomUUID.toString
@@ -105,8 +105,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     rulePattern: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclWithMemberNameHavingMemberName = cpg
-      .typeDecl(".*<meta>")
+    val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
       .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
       .map(typeDeclNode => {
         (
@@ -199,7 +198,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     ruleInfo: RuleInfo
   ): Unit = {
     val typeDeclsExtendingTypeName =
-      cpg.typeDecl(".*<meta>").filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
+      cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclVal)).dedup.l
 
     typeDeclsExtendingTypeName.foreach(typeDecl => {
       taggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
