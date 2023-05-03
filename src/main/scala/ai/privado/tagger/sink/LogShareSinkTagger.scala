@@ -25,13 +25,13 @@ package ai.privado.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class LogShareSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class LogShareSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   val logSharingThirdPartySinkId = "ThirdParties.SDK.Sentry"
   val higherOrderLeakgeSinkId    = "Leakages.Log.(Error|Exception)"
 

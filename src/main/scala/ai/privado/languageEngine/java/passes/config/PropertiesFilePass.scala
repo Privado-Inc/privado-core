@@ -23,30 +23,25 @@
 
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.RuleCache
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AnnotationParameterAssign,
   JavaProperty,
   Literal,
   Member,
-  MethodParameterIn,
-  NewFile,
-  NewJavaProperty
+  MethodParameterIn
 }
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 import ai.privado.languageEngine.java.language.NodeStarters
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
 class PropertiesFilePass(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
   override def generateParts(): Array[_ <: AnyRef] =
     cpg.property.l.toArray.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
-
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
     connectProperties(property, builder)
   }

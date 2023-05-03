@@ -28,12 +28,12 @@ import ai.privado.languageEngine.java.language._
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.ImportUtility
 import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -54,7 +54,7 @@ object APITaggerVersionJava extends Enumeration {
 }
 
 class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
-    extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger                             = LoggerFactory.getLogger(this.getClass)
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l

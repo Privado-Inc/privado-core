@@ -48,7 +48,6 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
@@ -77,11 +76,9 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -103,11 +100,7 @@ object PythonProcessor {
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {

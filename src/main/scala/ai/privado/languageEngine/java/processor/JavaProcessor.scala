@@ -85,14 +85,9 @@ object JavaProcessor {
           )
           println(s"${Calendar.getInstance().getTime} - HTML parser pass")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
-          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
           logger.info("Applying data flow overlay")
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
@@ -243,11 +238,9 @@ object JavaProcessor {
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
-      println(s"${Calendar.getInstance().getTime} - Processing Logger Lombok pass")
+
       new LoggerLombokPass(cpg).createAndApply()
-      println(
-        s"${TimeMetric.getNewTime()} - Logger Lombok pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
+
       applyDefaultOverlays(cpg)
       cpg
     }

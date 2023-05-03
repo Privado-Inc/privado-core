@@ -25,49 +25,29 @@ package ai.privado.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
-import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.DefaultSemantics
 
-import scala.collection.mutable.HashMap
+class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+  val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
-  val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
-  val topMatch                   = HashMap[String, Integer]()
-  val COMMON_IGNORED_SINKS_REGEX = "(?i).*(?<=map|list|jsonobject|json|array|arrays).*(put:|get:).*"
+  val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
+  lazy val APISINKS_REGEX        = ruleCache.getSystemConfigByKey(Constants.apiSinks)
+  val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
-  internalMethodCall.foreach((method) => {
-    val key     = method.split("[.:]").take(2).mkString(".")
-    val currVal = topMatch.getOrElse(key, 0).asInstanceOf[Int]
-    topMatch(key) = (currVal + 1)
-  })
-  var APISINKS_IGNORE_REGEX = "^("
-  topMatch.foreach((mapEntry) => {
-    if (mapEntry == topMatch.last) {
-      APISINKS_IGNORE_REGEX += mapEntry._1 + ").*"
-    } else {
-      APISINKS_IGNORE_REGEX += mapEntry._1 + "|"
-    }
-  })
   val apis = cacheCall
     .name(APISINKS_REGEX)
-    .methodFullNameNot(APISINKS_IGNORE_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
+    .methodFullName(commonHttpPackages)
     .l
 
   implicit val engineContext: EngineContext = EngineContext(semantics = DefaultSemantics(), config = EngineConfig(4))
-
-  lazy val APISINKS_REGEX =
-    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|" +
-      "sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject)"
-
-  lazy val APISINKSIGNORE_REGEX = "(?i)(json|map).*(put:|get:)"
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
@@ -77,6 +57,15 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    sinkTagger(apiInternalSources ++ propertySources, apis, builder, ruleInfo, ruleCache)
+    val identifierRegex    = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierSource = {
+      if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
+        cpg.identifier(identifierRegex).l ++ cpg.member
+          .name(identifierRegex)
+          .l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+      else
+        List()
+    }
+    sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, apis, builder, ruleInfo, ruleCache)
   }
 }

@@ -1,7 +1,5 @@
 package ai.privado.languageEngine.python.passes.config
 
-import ai.privado.cache.RuleCache
-
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal, Member}
 import io.shiftleft.passes.ForkJoinParallelCpgPass

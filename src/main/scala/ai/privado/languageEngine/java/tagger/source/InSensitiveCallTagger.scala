@@ -27,12 +27,12 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{Constants, InternalTag}
 import ai.privado.utility.Utilities.storeForTag
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import ai.privado.languageEngine.java.tagger.source.Utility._
+import ai.privado.tagger.PrivadoParallelCpgPass
 
 class InSensitiveCallTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+    extends PrivadoParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] = taggerCache.typeDeclMemberCache.keys.toArray
 
