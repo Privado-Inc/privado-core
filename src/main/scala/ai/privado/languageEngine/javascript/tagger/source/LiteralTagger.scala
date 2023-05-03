@@ -18,43 +18,34 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
- *
  */
 
-package ai.privado.tagger.sink
+package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language._
 
-class LogShareSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  val logSharingThirdPartySinkId = "ThirdParties.SDK.Sentry"
-  val higherOrderLeakgeSinkId    = "Leakages.Log.(Error|Exception)"
+class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+  // Step 1.2
+  // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
+  private lazy val generalLiteralCached = cpg.literal
+    .whereNot(_.code(".*\\s.*"))
+    .where(_.inCall.name("(?:add|get|put|pop).*"))
+    .l
 
-  val callNodeTaggedWithErrorOrExceptionLog: List[Call] = {
-
-    if (cpg.call.tag.nameExact(Constants.id).valueExact(logSharingThirdPartySinkId).nonEmpty) {
-      cpg.call
-        .where(
-          _.tag
-            .nameExact(Constants.id)
-            .value(higherOrderLeakgeSinkId)
-        )
-        .l
-    } else
-      List.empty
-  }
-
-  override def generateParts(): Array[RuleInfo] = {
-    ruleCache.getRule.sinks
-      .filter(rule => rule.id.equals(logSharingThirdPartySinkId))
-      .toArray
-  }
+  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    callNodeTaggedWithErrorOrExceptionLog.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
+    val rulePattern = ruleInfo.combinedRulePattern
+    val impactedLiteral =
+      generalLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l
+
+    impactedLiteral.foreach(literal => {
+      storeForTag(builder, literal, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
+      addRuleTags(builder, literal, ruleInfo, ruleCache)
+    })
   }
 }

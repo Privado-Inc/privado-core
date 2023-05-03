@@ -115,12 +115,13 @@ object Constants {
   val API      = "API"
 
   // Rule ids
-  val internalAPIRuleId = "Sinks.API.InternalAPI"
-  val jmsConsumerRuleId = "Messaging.Service.JMS.Consumer"
-  val ignoredSinks      = "ignoredSinks"
-  val apiSinks          = "apiSinks"
-  val apiHttpLibraries  = "apiHttpLibraries"
-  val apiIdentifier     = "apiIdentifier"
+  val internalAPIRuleId   = "Sinks.API.InternalAPI"
+  val jmsConsumerRuleId   = "Messaging.Service.JMS.Consumer"
+  val kafkaConsumerRuleId = "Messaging.Queue.Kafka.Consumer"
+  val ignoredSinks        = "ignoredSinks"
+  val apiSinks            = "apiSinks"
+  val apiHttpLibraries    = "apiHttpLibraries"
+  val apiIdentifier       = "apiIdentifier"
 
   // TemplatedDom
 

@@ -25,12 +25,15 @@ package ai.privado.languageEngine.java.semantic
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{CatLevelOne, Constants, InternalTag, Semantic, Language}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, Semantic}
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+
+import scala.collection.mutable
 
 object SemanticGenerator {
 
@@ -57,10 +60,10 @@ object SemanticGenerator {
     } else {
       val customSinkSemantics = cpg.call
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-        .methodFullName
+        .callee
+        .map(generateSemanticForTaint(_, -1))
         .dedup
         .l
-        .map(generateSemanticForTaint(_, -1))
         .sorted
 
       val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
@@ -73,16 +76,16 @@ object SemanticGenerator {
       if (!privadoScanConfig.disableRunTimeSemantics) {
         customNonTaintDefaultSemantics = nonTaintingMethods
           .fullNameNot(".*\\.(add|put|<init>|set|get|append|store|insert|update|merge).*")
-          .fullName
+          .map(generateSemanticForTaint(_))
+          .dedup
           .l
-          .map(generateNonTaintSemantic)
           .sorted
 
         specialNonTaintDefaultSemantics = nonTaintingMethods
           .fullName(".*\\.(add|put|set|get|append|store|insert|update|merge).*")
-          .fullName
-          .l
           .map(generateSemanticForTaint(_, 0))
+          .dedup
+          .l
           .sorted
 
         customStringSemantics = cpg.method
@@ -90,10 +93,9 @@ object SemanticGenerator {
           .where(_.callIn)
           .fullName(".*:java.lang.String\\(.*")
           .fullNameNot(".*\\.set[A-Za-z_]*:.*")
-          .fullName
+          .map(generateSemanticForTaint(_, -1))
           .dedup
           .l
-          .map(generateSemanticForTaint(_, -1))
           .sorted
 
         customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
@@ -122,42 +124,26 @@ object SemanticGenerator {
   }
 
   /** Generate semantics for tainting passed argument based on the number of parameter in method signature
-    * @param methodName
-    *   \- complete signature of method
+    * @param method
+    *   or call node \- complete signature of method
     * @return
     *   \- semantic string
     */
-  private def generateSemanticForTaint(methodName: String, toTaint: Int) = {
-    var parameterSemantics = ""
-    var parameterNumber    = 2
-    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
-      parameterNumber = 7
-    } else {
-      parameterNumber = methodName.count(_.equals(','))
+  private def generateSemanticForTaint(methodNode: AstNode, toTaint: Int = -2) = {
+    val (parameterSize, fullName) = {
+      methodNode match {
+        case method: Method => (method.parameter.size, method.fullName)
+        case call: Call     => (call.argument.size, call.methodFullName)
+        case _              => (0, "NA")
+      }
     }
-    for (i <- 0 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$toTaint "
-    "\"" + methodName + "\" " + parameterSemantics.trim
-  }
-
-  /** Generate semantics for personal setters to taint the calling object based on the number of parameter in method
-    * signature
-    * @param methodName
-    *   \- complete signature of method
-    * @return
-    *   \- semantic string
-    */
-  private def generateSetterSemantic(methodName: String) = {
-    var parameterSemantics = "0->0 "
-    var parameterNumber    = 2
-    if (methodName.matches(".*:<unresolvedSignature>\\(\\d+\\).*")) {
-      parameterNumber = 7
-    } else {
-      parameterNumber = methodName.count(_.equals(','))
+    val parameterSemantic = mutable.HashSet[String]()
+    for (i <- 0 until parameterSize) {
+      if (toTaint != -2)
+        parameterSemantic.add(s"$i->$toTaint")
+      parameterSemantic.add(s"$i->$i")
     }
-    for (i <- 1 to (parameterNumber + 1))
-      parameterSemantics += s"$i->$i $i->0 "
-    "\"" + methodName + "\" " + parameterSemantics.trim
+    "\"" + fullName + "\" " + parameterSemantic.toList.sorted.mkString(" ").trim
   }
 
   /** Generate Semantic string based on input Semantic
@@ -173,16 +159,6 @@ object SemanticGenerator {
       None
   }
 
-  /** Returns the Semantics for functions with void return type Default behavior is not propagating the taint
-    * @param String
-    *   methodFullName
-    * @return
-    *   String
-    */
-  private def generateNonTaintSemantic(methodFullName: String): String = {
-    "\"" + methodFullName + "\" "
-  }
-
   /** Generates Semantics for non Personal member
     * @param cpg
     * @return
@@ -194,9 +170,8 @@ object SemanticGenerator {
       .where(_.nameExact(InternalTag.INSENSITIVE_METHOD_RETURN.toString))
       .call
       .whereNot(_.tag.nameExact(InternalTag.SENSITIVE_METHOD_RETURN.toString))
-      .methodFullName
+      .map(generateSemanticForTaint(_))
       .dedup
-      .map(methodName => generateNonTaintSemantic(methodName))
       .l
 
     val nonPersonalSetterMethodFullNames =
@@ -204,18 +179,16 @@ object SemanticGenerator {
         .where(_.nameExact(InternalTag.INSENSITIVE_SETTER.toString))
         .call
         .whereNot(_.nameExact(InternalTag.SENSITIVE_SETTER.toString))
-        .methodFullName
+        .map(generateSemanticForTaint(_))
         .dedup
-        .map(methodName => generateNonTaintSemantic(methodName))
         .l
 
     val personalSetterMethodFullNames =
       cpg.tag
         .where(_.nameExact(InternalTag.SENSITIVE_SETTER.toString))
         .call
-        .methodFullName
+        .map(methodName => generateSemanticForTaint(methodName, 0))
         .dedup
-        .map(methodName => generateSetterSemantic(methodName))
         .l
     (nonPersonalGetterSemantics ::: nonPersonalSetterMethodFullNames ::: personalSetterMethodFullNames).sorted
   }
