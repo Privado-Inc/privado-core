@@ -6,7 +6,7 @@ import overflowdb.BatchedUpdate
 import ai.privado.cache.RuleCache
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, NewFile, Call}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Member, NewFile}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
@@ -19,18 +19,17 @@ import io.circe.parser._
 import io.circe._
 
 import scala.collection.mutable
-
 import com.typesafe.config._
 
 import scala.xml.XML
-
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
 import overflowdb.traversal._
 import ai.privado.model.Language
+import ai.privado.tagger.PrivadoParallelCpgPass
 
-class PropertyCollectorPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, language: Language.Value)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, language: Language.Value)
+    extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
 

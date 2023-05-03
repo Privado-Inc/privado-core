@@ -4,7 +4,7 @@ import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
-import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -17,7 +17,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName
 }
 import ai.privado.semantic.Language._
-import ai.privado.utility.{PropertyCollectorPass, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
@@ -93,12 +93,8 @@ object PythonProcessor {
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
-          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PropertyCollectorPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
-          new PythonPropertyFilePass(cpg).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+          new PythonPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 

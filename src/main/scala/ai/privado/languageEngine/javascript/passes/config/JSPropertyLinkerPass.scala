@@ -2,6 +2,7 @@ package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -12,7 +13,7 @@ import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 
-class PropertiesFilePass(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
+class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
   // TODO: Modify the regex to make it more comprehensive

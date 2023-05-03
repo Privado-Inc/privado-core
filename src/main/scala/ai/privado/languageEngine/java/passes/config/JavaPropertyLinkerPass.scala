@@ -35,11 +35,12 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
 import overflowdb.traversal._
 import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
-class PropertiesFilePass(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
+class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
   override def generateParts(): Array[_ <: AnyRef] =
     cpg.property.l.toArray.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {

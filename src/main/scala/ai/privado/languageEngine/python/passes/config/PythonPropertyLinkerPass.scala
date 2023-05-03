@@ -5,10 +5,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal, Me
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import overflowdb.BatchedUpdate
 import ai.privado.languageEngine.java.language.NodeStarters
-
+import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class PythonPropertyFilePass(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
+class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
   override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.l.toArray.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
   }

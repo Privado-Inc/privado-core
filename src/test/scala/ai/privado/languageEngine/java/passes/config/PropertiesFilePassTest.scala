@@ -25,9 +25,9 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language._
-import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.model.Language
-import ai.privado.utility.PropertyCollectorPass
+import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.console.cpgcreation.PythonSrcCpgGenerator
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -253,8 +253,8 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
 
     cpg = new JavaSrc2Cpg().createCpg(config).get
-    new PropertyCollectorPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
-    new PropertiesFilePass(cpg).createAndApply()
+    new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
+    new JavaPropertyLinkerPass(cpg).createAndApply()
 
     super.beforeAll()
   }

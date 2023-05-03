@@ -28,7 +28,7 @@ import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.javascript.passes.config.PropertiesFilePass
+import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
 import ai.privado.languageEngine.javascript.passes.methodfullname.{
   MethodFullName,
   MethodFullNameForEmptyNodes,
@@ -42,7 +42,7 @@ import ai.privado.model.Constants._
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
-import ai.privado.utility.{PropertyCollectorPass, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -92,12 +92,8 @@ object JavascriptProcessor {
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
-        println(s"${Calendar.getInstance().getTime} - Properties file pass")
-        new PropertyCollectorPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
-        new PropertiesFilePass(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Properties file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
+        new JSPropertyLinkerPass(cpg).createAndApply()
 
         println(s"${Calendar.getInstance().getTime} - SQL parser pass")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
