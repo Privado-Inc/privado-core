@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
@@ -42,7 +42,7 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(ruleCache: RuleCache): Traversal[Tag] = {
+  override def runTagger(ruleCache: RuleCache, taggerCache: TaggerCache): Traversal[Tag] = {
 
     logger.info("Starting tagging")
 
@@ -53,7 +53,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     )
 
     println(s"${Calendar.getInstance().getTime} - IdentifierTagger invoked...")
-    new IdentifierTagger(cpg, ruleCache).createAndApply()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     println(
       s"${TimeMetric.getNewTime()} - --IdentifierTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )

@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
@@ -105,7 +105,8 @@ object JavascriptProcessor {
 
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(ruleCache)
+        val taggerCache = new TaggerCache
+        cpg.runTagger(ruleCache, taggerCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
         println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
