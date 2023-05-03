@@ -39,10 +39,12 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
 
   val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
   lazy val APISINKS_REGEX        = ruleCache.getSystemConfigByKey(Constants.apiSinks)
+  val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   val apis = cacheCall
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
+    .methodFullName(commonHttpPackages)
     .l
 
   implicit val engineContext: EngineContext = EngineContext(semantics = DefaultSemantics(), config = EngineConfig(4))
@@ -55,6 +57,15 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
-    sinkTagger(apiInternalSources ++ propertySources, apis, builder, ruleInfo, ruleCache)
+    val identifierRegex    = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val identifierSource = {
+      if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
+        cpg.identifier(identifierRegex).l ++ cpg.member
+          .name(identifierRegex)
+          .l ++ cpg.property.filter(p => p.name matches (identifierRegex)).usedAt.l
+      else
+        List()
+    }
+    sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, apis, builder, ruleInfo, ruleCache)
   }
 }
