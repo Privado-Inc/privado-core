@@ -25,12 +25,12 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
 import com.gargoylesoftware.htmlunit.html._
 import com.gargoylesoftware.htmlunit.{BrowserVersion, WebClient}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTemplateDom}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -50,7 +50,7 @@ import scala.tools.nsc.io.JFile
   * @param projectRoot
   * @param ruleCache
   */
-class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[String](cpg) {
+class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Search for .html and .hbs files and generate tasks to process each file separately in its own thread

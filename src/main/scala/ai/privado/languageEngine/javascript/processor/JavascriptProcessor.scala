@@ -84,17 +84,9 @@ object JavascriptProcessor {
         new JavaScriptTypeHintCallLinker(cpg).createAndApply()
         new PythonNaiveCallLinker(cpg).createAndApply()
 
-        println(s"${Calendar.getInstance().getTime} - HTML parser pass")
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
 
-        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {

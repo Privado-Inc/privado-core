@@ -77,11 +77,9 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -96,17 +94,9 @@ object PythonProcessor {
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
-          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
           new PythonPropertyFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
 
-          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {

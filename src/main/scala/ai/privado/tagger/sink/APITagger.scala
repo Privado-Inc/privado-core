@@ -26,16 +26,16 @@ package ai.privado.tagger.sink
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.DefaultSemantics
 
 import scala.collection.mutable.HashMap
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   val cacheCall                  = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall         = cpg.method.dedup.isExternal(false).fullName.take(30).l
