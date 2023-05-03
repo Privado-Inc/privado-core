@@ -57,12 +57,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new JSAPITagger(cpg, ruleCache).createAndApply()
 
-    println(s"${Calendar.getInstance().getTime} - --DBConfigTagger invoked...")
     new JSDBConfigTagger(cpg).createAndApply()
-    println(
-      s"${TimeMetric.getNewTime()} - --DBConfigTagger is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
-
     println(s"${Calendar.getInstance().getTime} - WebFormsCollectionTagger invoked...")
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
