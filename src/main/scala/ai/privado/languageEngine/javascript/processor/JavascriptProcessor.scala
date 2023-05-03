@@ -95,7 +95,6 @@ object JavascriptProcessor {
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
         new JSPropertyLinkerPass(cpg).createAndApply()
 
-        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report

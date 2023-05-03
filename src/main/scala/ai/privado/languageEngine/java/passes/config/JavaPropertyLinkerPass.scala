@@ -42,7 +42,8 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
   */
 class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
   override def generateParts(): Array[_ <: AnyRef] =
-    cpg.property.l.toArray.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
+    cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
+
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
     connectProperties(property, builder)
   }

@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language._
 
 class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.property.l.toArray.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
+    cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
