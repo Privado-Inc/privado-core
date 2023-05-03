@@ -49,7 +49,7 @@ object ExporterUtility {
     taggerCache: TaggerCache = new TaggerCache()
   ): List[DataFlowSubCategoryPathExcerptModel] = {
     val lang     = AppCache.repoLanguage
-    val isPython = (lang == Language.PYTHON || lang == Language.JAVASCRIPT)
+    val isPython = lang == Language.PYTHON
 
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>

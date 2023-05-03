@@ -108,7 +108,7 @@ object JavascriptProcessor {
         MetricHandler.setScanStatus(true)
         val errorMsg = new ListBuffer[String]()
         // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             errorMsg += err

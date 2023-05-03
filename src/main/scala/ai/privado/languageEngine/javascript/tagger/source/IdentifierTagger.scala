@@ -111,7 +111,8 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       .foreach(typeDeclValEntry => {
         typeDeclValEntry._2
           .foreach(typeDeclMember => {
-            val typeDeclVal        = typeDeclValEntry._1.fullName
+            // Example: sample/inheritance/Musician.js::program:Musician -> Musician
+            val typeDeclVal        = extractTypeClassName(typeDeclValEntry._1.fullName)
             val typeDeclMemberName = typeDeclMember.name
 
             // updating cache
@@ -216,7 +217,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
           .whereNot(_.astSiblings.isCall.name("import"))
           .whereNot(_.code("this|self|cls"))
           .l ::: cpg.parameter
-          .filter(n => typeDeclVal.matches(".*" + n.typeFullName))
+          .filter(n => typeDeclVal.endsWith(n.typeFullName))
           .whereNot(_.code("this|self|cls"))
           .l
       impactedObjects.foreach(impactedObject => {
@@ -245,5 +246,12 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
       })
     })
+  }
+
+  private def extractTypeClassName(input: String): String = {
+    val parts              = input.split("/")
+    val fileNameAndProgram = parts(parts.length - 1).split("::")
+    val typeClassName      = fileNameAndProgram(1).split(":")(1)
+    typeClassName
   }
 }
