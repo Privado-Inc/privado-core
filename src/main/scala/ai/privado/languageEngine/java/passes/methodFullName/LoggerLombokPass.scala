@@ -23,15 +23,15 @@
 
 package ai.privado.languageEngine.java.passes.methodFullName
 
+import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+
 import scala.collection.immutable.HashMap
 
-class LoggerLombokPass(cpg: Cpg) extends CpgPass(cpg) {
+class LoggerLombokPass(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
   override def run(builder: DiffGraphBuilder): Unit = {
     val lombokLogger = cpg.annotation.name("CommonsLog|Flogger|Log|Log4j2|Slf4j").name.dedup.l
     if (lombokLogger.nonEmpty) {

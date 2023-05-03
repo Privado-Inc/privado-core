@@ -25,15 +25,16 @@ package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
+import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.CpgPass
 import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities.addRuleTags
 
-class JMSConsumerCustomTagger(cpg: Cpg, ruleCache: RuleCache) extends CpgPass(cpg) {
+class MessagingConsumerCustomTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
 
+    // JMS Rule Tagging
     ruleCache.getRuleInfo(Constants.jmsConsumerRuleId) match {
       case Some(jmsRule) =>
         /*
@@ -52,6 +53,13 @@ class JMSConsumerCustomTagger(cpg: Cpg, ruleCache: RuleCache) extends CpgPass(cp
         To tag methods which have Jmslistener annotation
          */
         cpg.annotation.name("JmsListener").method.foreach(addRuleTags(builder, _, jmsRule, ruleCache))
+      case None =>
+    }
+
+    // Kafka Rule Tagging
+    ruleCache.getRuleInfo(Constants.kafkaConsumerRuleId) match {
+      case Some(kafkaRule) =>
+        cpg.annotation.name("KafkaListener").method.foreach(addRuleTags(builder, _, kafkaRule, ruleCache))
       case None =>
     }
 

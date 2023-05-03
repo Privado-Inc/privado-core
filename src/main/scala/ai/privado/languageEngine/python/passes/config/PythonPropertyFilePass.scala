@@ -1,11 +1,11 @@
 package ai.privado.languageEngine.python.passes.config
 
 import ai.privado.cache.RuleCache
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, NewFile, NewJavaProperty}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -19,7 +19,7 @@ import java.io.File
 import scala.io.Source
 
 class PythonPropertyFilePass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
-    extends ForkJoinParallelCpgPass[String](cpg) {
+    extends PrivadoParallelCpgPass[String](cpg) {
   override def generateParts(): Array[String] = {
     configFiles(projectRoot, Set(".ini", ".env", ".conf")).toArray
   }

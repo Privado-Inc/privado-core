@@ -25,17 +25,17 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLParser, Utilities}
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 import scala.io.Source
-class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[String](cpg) {
+class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[_ <: AnyRef] =
