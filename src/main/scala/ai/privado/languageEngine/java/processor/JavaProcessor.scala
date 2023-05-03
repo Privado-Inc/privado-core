@@ -42,7 +42,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   storages
 }
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyCollectorPass, UnresolvedReportUtility}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
@@ -78,7 +78,8 @@ object JavaProcessor {
       case Success(cpg) => {
         try {
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new PropertyCollectorPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA).createAndApply()
+          new PropertiesFilePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )

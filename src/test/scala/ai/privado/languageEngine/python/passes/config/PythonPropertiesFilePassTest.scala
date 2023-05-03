@@ -2,6 +2,8 @@ package ai.privado.languageEngine.python.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language._
+import ai.privado.model.Language
+import ai.privado.utility.PropertyCollectorPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg.{
@@ -319,7 +321,8 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     // Apply OSS Dataflow overlay
     new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
-    new PythonPropertyFilePass(cpg, inputDir.toString(), new RuleCache).createAndApply()
+    new PropertyCollectorPass(cpg, inputDir.toString(), new RuleCache, Language.PYTHON).createAndApply()
+    new PythonPropertyFilePass(cpg).createAndApply()
     super.beforeAll()
   }
 

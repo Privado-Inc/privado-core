@@ -42,7 +42,7 @@ import ai.privado.model.Constants._
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyCollectorPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
@@ -97,7 +97,8 @@ object JavascriptProcessor {
         )
 
         println(s"${Calendar.getInstance().getTime} - Properties file pass")
-        new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        new PropertyCollectorPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
+        new PropertiesFilePass(cpg).createAndApply()
         println(
           s"${TimeMetric.getNewTime()} - Properties file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )

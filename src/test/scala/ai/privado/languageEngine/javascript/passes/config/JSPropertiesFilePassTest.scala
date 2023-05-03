@@ -2,6 +2,8 @@ package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language._
+import ai.privado.model.Language
+import ai.privado.utility.PropertyCollectorPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.Config
@@ -99,7 +101,8 @@ abstract class JSPropertiesFilePassTestBase(fileExtension: String)
     new ImportsPass(cpg).createAndApply()
     new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
-    new PropertiesFilePass(cpg, inputDir.toString, new RuleCache).createAndApply()
+    new PropertyCollectorPass(cpg, inputDir.toString(), new RuleCache, Language.JAVASCRIPT).createAndApply()
+    new PropertiesFilePass(cpg).createAndApply()
 
   }
 

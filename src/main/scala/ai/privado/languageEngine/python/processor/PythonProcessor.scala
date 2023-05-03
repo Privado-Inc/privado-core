@@ -17,7 +17,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName
 }
 import ai.privado.semantic.Language._
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyCollectorPass, UnresolvedReportUtility}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
@@ -97,7 +97,8 @@ object PythonProcessor {
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
           println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PythonPropertyFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new PropertyCollectorPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+          new PythonPropertyFilePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
