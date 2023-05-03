@@ -24,9 +24,19 @@ import com.typesafe.config._
 import scala.xml.XML
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
-import overflowdb.traversal._
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+
+object FileExtensions {
+  val PROPERTIES = ".properties"
+  val YAML       = ".yaml"
+  val YML        = ".yml"
+  val XML        = ".xml"
+  val JSON       = ".json"
+  val INI        = ".ini"
+  val ENV        = ".env"
+  val CONF       = ".conf"
+}
 
 class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, language: Language.Value)
     extends PrivadoParallelCpgPass[String](cpg) {
@@ -35,9 +45,15 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
   override def generateParts(): Array[String] = {
     language match {
-      case Language.JAVA       => { configFiles(projectRoot, Set(".properties", ".yml", ".yaml", ".xml")).toArray }
-      case Language.JAVASCRIPT => configFiles(projectRoot, Set(".json")).toArray
-      case Language.PYTHON     => configFiles(projectRoot, Set(".ini", ".env", ".conf")).toArray
+      case Language.JAVA => {
+        configFiles(
+          projectRoot,
+          Set(FileExtensions.PROPERTIES, FileExtensions.YAML, FileExtensions.YML, FileExtensions.XML)
+        ).toArray
+      }
+      case Language.JAVASCRIPT => configFiles(projectRoot, Set(FileExtensions.JSON)).toArray
+      case Language.PYTHON =>
+        configFiles(projectRoot, Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.CONF)).toArray
     }
   }
 
@@ -102,7 +118,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           case None        => logger.debug("")
         }
       }
-      case Left(parsingError) => println(parsingError)
+      case Left(parsingError) => logger.debug(parsingError.toString)
     }
 
     keyValuePairs.map { case (key: String, value: Json) =>
@@ -124,13 +140,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     envProps.asScala
       .map(prop => (prop._1, prop._2))
       .toList
-  }
-
-  private def matchProcessEnvAssignmentCalls(propertyName: String): List[Call] = {
-    // Match assignment calls on the right side for process.env.PROPERTY or process.env['PROPERTY']
-    // Example const dbName = process.env['DB_NAME']
-    val pattern = s".*process\\.env(\\.${propertyName}|\\[('|\")${propertyName}('|\")]).*"
-    cpg.call("<operator>.assignment").where(_.astChildren.code(pattern)).l
   }
 
   private def loadAndConvertYMLtoProperties(file: String): List[(String, String)] = {
@@ -219,12 +228,15 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           name.nonEmpty && value.nonEmpty // Filter out name, value pairs which could not be resolved
         }
     } catch {
-      case e: Throwable => println(e)
+      case e: Throwable => logger.debug(e.toString)
     }
 
     List[("", "")]()
 
   }
+
+  private def getMember(member: String, className: String) =
+    cpg.member.where(_.typeDecl.fullName(className)).where(_.name(member)).toList
 
   private def loadAndConvertXMLtoProperties(file: String, builder: DiffGraphBuilder): List[(String, String)] = {
     val properties  = new Properties();
@@ -252,87 +264,8 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     ""
   }
 
-  private def matchingLiteralsInGetPropertyCalls(propertyName: String): List[Literal] = cpg.literal
-    .codeExact("\"" + propertyName + "\"")
-    .where(_.inCall.name(".*getProperty"))
-    .l
-
-  private def connectAnnotatedParameters(
-    propertyNode: NewJavaProperty,
-    builder: BatchedUpdate.DiffGraphBuilder
-  ): Unit = {
-    val paramsAndValues = annotatedParameters()
-
-    paramsAndValues
-      .filter { case (_, value) => propertyNode.name == value }
-      .foreach { case (param, _) =>
-        builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
-        builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-      }
-
-    val membersAndValues = annotatedMembers()
-
-    membersAndValues
-      .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
-      .foreach { case (_, value) =>
-        builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
-        builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-      }
-  }
-
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
-  private def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
-    .fullName("org.springframework.*Value")
-    .where(_.parameter)
-    .where(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\""))
-    .map { x =>
-      val literalName = x.parameterAssign.code.head
-      val value       = literalName.slice(3, literalName.length - 2)
-      (x.start.parameter.head, value)
-    }
-    .l
-
-  /** List of all members annotated with Spring's `Value` annotation, along with the property name.
-    */
-  private def annotatedMembers() = cpg.annotation
-    .fullName(".*Value.*")
-    .where(_.member)
-    .filter(_.parameterAssign.l.length > 0)
-    .map { x => (x.parameterAssign.head, x.member.head) }
-    .l
-
-  private def getMember(member: String, className: String) =
-    cpg.member.where(_.typeDecl.fullName(className)).where(_.name(member)).toList
-
-  /** Matches the exact key of the propertyNode to its corresponding os.environ.get() calls.
-    */
-  private def matchEnvironGetCalls(propertyName: String): List[Literal] = {
-    cpg.literal
-      .codeExact("\"" + propertyName + "\"")
-      .where(_.inCall.methodFullName(".*\\(?environ\\)?\\.get"))
-      .l
-  }
-
-  private def matchDBConfigCalls(propertyNode: String): List[Member] = {
-    if (propertyNode.matches("(?i).*host.*")) {
-      cpg.member("host").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
-    } else if (
-      propertyNode.matches("(?i).*(url|uri).*") && (propertyNode.contains(".") || propertyNode.contains("__"))
-    ) {
-      cpg.member("url").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
-    } else if (propertyNode.matches("(?i).*(database|db).*")) {
-      cpg.member("database").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
-    } else if (propertyNode.matches("(?i).*(port).*")) {
-      cpg.member("port").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
-    } else if (propertyNode.matches("(?i).*(pass)word?.*")) {
-      cpg.member("password").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
-    } else if (propertyNode.matches("(?i).*(user)name?.*")) {
-      cpg.member("username").where(_.typeDecl.fullName(".*DatabaseConfiguration.*")).l
-    } else {
-      List[Member]()
-    }
-  }
 
   private def getAllProperties(config: Config): List[(String, String)] = {
     val entries = config.entrySet().asScala.toList
@@ -344,15 +277,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     val iniFormat   = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.PROPERTIES)
 
     getAllProperties(ConfigFactory.parseString(fileContent, iniFormat))
-  }
-
-  /** Create an edge between the literals in the db config members and the property nodes.
-    */
-  private def connectDBConfigMembers(propertyNode: NewJavaProperty, builder: DiffGraphBuilder): Unit = {
-    matchDBConfigCalls(propertyNode.name.strip()).foreach(member => {
-      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
-      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-    })
   }
 
   private def addPropertyNode(

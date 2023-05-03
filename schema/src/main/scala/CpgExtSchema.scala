@@ -79,7 +79,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val originalProperty = builder
     .addEdgeType(CpgSchemaConstants.ORIGINAL_PROPERTY_EDGE_NAME)
 
-  property.addOutEdge(edge = sourceFile, inNode = astNode)
+  property.addOutEdge(edge = sourceFile, inNode = file)
   property.addOutEdge(edge = isUsedAt, inNode = astNode)
 
   member.addOutEdge(edge = originalProperty, inNode = astNode)
