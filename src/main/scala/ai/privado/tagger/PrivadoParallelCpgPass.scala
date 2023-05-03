@@ -21,25 +21,26 @@
  *
  */
 
-package ai.privado.tagger.source
+package ai.privado.tagger
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.entrypoint.TimeMetric
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.semantic.Language._
-import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
-class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  override def generateParts(): Array[_ <: AnyRef] = ruleCache.getRule.sources.toArray
+abstract class PrivadoParallelCpgPass[T <: AnyRef](cpg: Cpg) extends ForkJoinParallelCpgPass[T](cpg) {
 
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    cpg.sqlColumn
-      .name(ruleInfo.combinedRulePattern)
-      .foreach(columnNode => {
-        storeForTag(builder, columnNode, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-        addRuleTags(builder, columnNode, ruleInfo, ruleCache)
-      })
+  override def createAndApply() = {
+    beforeExecution
+    super.createAndApply()
+    afterExecution
   }
+
+  private def beforeExecution = println(
+    s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --${getClass.getSimpleName} invoked..."
+  )
+
+  private def afterExecution = println(
+    s"${TimeMetric.getNewTime()} - --${getClass.getSimpleName} is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+  )
+
 }

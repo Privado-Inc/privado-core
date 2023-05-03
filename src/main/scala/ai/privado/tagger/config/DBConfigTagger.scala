@@ -24,14 +24,13 @@ package ai.privado.tagger.config
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
-import overflowdb.BatchedUpdate
 import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.DatabaseDetails
-import io.shiftleft.passes.{ForkJoinParallelCpgPass, SimpleCpgPass}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import org.slf4j.LoggerFactory
 
-class DBConfigTagger(cpg: Cpg) extends ForkJoinParallelCpgPass[JavaProperty](cpg) {
+class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

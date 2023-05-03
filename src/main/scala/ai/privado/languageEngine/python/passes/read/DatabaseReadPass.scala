@@ -4,18 +4,18 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.InternalTag
 import ai.privado.model.sql.SQLQuery
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
 
 class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
-    extends ForkJoinParallelCpgPass[Expression](cpg) {
+    extends PrivadoParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
   val selectRegexPattern               = "(?i).*select.*"
