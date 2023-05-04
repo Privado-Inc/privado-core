@@ -131,14 +131,6 @@ object PythonProcessor {
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
-              val codelist = cpg.call
-                .whereNot(_.methodFullName(Operators.ALL.asScala.toSeq: _*))
-                .map(item => (item.methodFullName, item.location.filename))
-                .dedup
-                .l
-              logger.debug(s"size of code : ${codelist.size}")
-              codelist.foreach(item => logger.debug(item._1, item._2))
-              logger.debug("Above we printed methodFullName")
               Right(())
           }
 
