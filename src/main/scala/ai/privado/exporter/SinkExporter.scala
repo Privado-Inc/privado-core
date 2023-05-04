@@ -49,8 +49,8 @@ import scala.collection.mutable
 
 class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
 
-  lazy val sinkTagList: List[List[Tag]] = getSinkTagList
   lazy val sinkList: List[CfgNode]      = getSinkList
+  lazy val sinkTagList: List[List[Tag]] = sinkList.map(_.tag.l)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -162,29 +162,6 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
       .whereNot(_.tag.where(_.nameExact(Constants.catLevelTwo).valueExact(Constants.leakages)))
   }
 
-  /** Fetch all the sink tag
-    */
-  private def getSinkTagList = {
-    val sinks =
-      cpg.identifier
-        .where(filterSink)
-        .map(item => item.tag.l)
-        .l ++
-        cpg.literal
-          .where(filterSink)
-          .map(item => item.tag.l)
-          .l ++
-        cpg.call
-          .where(filterSink)
-          .map(item => item.tag.l)
-          .l ++
-        cpg.templateDom
-          .where(filterSink)
-          .map(item => item.tag.l)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).map(item => item.tag.l).l
-    sinks
-  }
-
   /** Fetch all the sink node
     */
   private def getSinkList: List[CfgNode] = {
@@ -200,7 +177,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++
         cpg.templateDom
           .where(filterSink)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l
     sinks
   }
 

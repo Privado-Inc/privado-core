@@ -45,10 +45,10 @@ case class PrivadoInput(
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
   upload: Boolean = false,
-  enableJS: Boolean = false,
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
-  generateAuditReport: Boolean = false
+  generateAuditReport: Boolean = false,
+  enableAuditSemanticsFilter: Boolean = false
 )
 
 object CommandConstants {
@@ -80,13 +80,14 @@ object CommandConstants {
   val SKIP_UPLOAD                                  = "skip-upload"
   val SKIP_UPLOAD_ABBR                             = "su"
   val VALIDATE                                     = "validate"
-  val ENABLE_JS                                    = "enablejs"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
   val TEST_OUTPUT                                  = "test-output"
   val TEST_OUTPUT_ABBR                             = "tout"
   val GENERATE_AUDIT_REPORT                        = "generate-audit-report"
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
+  val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
+  val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
 }
 
 object CommandParser {
@@ -162,11 +163,6 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableAPIDisplay = true))
               .text("Enable api display"),
-            opt[Unit](CommandConstants.ENABLE_JS)
-              .abbr(CommandConstants.ENABLE_JS)
-              .optional()
-              .action((_, c) => c.copy(enableJS = true))
-              .text("enable javascript scan engine"),
             opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
               .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
               .optional()
@@ -201,6 +197,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(generateAuditReport = true))
               .text("Export the audit report"),
+            opt[Unit](CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER)
+              .abbr(CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER_ABBR)
+              .optional()
+              .action((_, c) => c.copy(enableAuditSemanticsFilter = true))
+              .text("Enable semantic filter in dataflow audit report"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

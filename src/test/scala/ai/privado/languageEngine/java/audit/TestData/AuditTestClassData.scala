@@ -149,4 +149,118 @@ object AuditTestClassData {
       |
       |</project>
       |""".stripMargin
+
+  val person =
+    """
+      |package com.test.privado.audit;
+      |
+      |public class Person {
+      |   public String firstName;
+      |   public String password;
+      |
+      |   public Person(String firstName, String password) {
+      |     this.firstName = firstName;
+      |     this.password = password;
+      |   }
+      |
+      |   public String getFirstName() {return firstName;}
+      |   public String getPassword() {return password;}
+      |}
+      |""".stripMargin
+
+  val filter2File =
+    """package com.test.privado.audit;
+      |
+      |import org.apache.logging.log4j.Logger;
+      |
+      |public class Filter2File {
+      |
+      |   private static final Logger logger = LogManager.getLogger("HelloWorld");
+      |
+      |   public void process() {
+      |     Person person1 = new Person("name", "password");
+      |     String firstName = person1.getFirstName();
+      |
+      |     logger.info(firstName);
+      |   }
+      |}
+      |""".stripMargin
+
+  val teacher =
+    """
+      |package com.test.privado.audit;
+      |
+      |public class Teacher {
+      |   public String firstName;
+      |   public String password;
+      |
+      |   public Teacher(String firstName, String password) {
+      |     this.firstName = firstName;
+      |     this.password = password;
+      |   }
+      |
+      |   public String getFirstName() {return firstName;}
+      |   public String getPassword() {return password;}
+      |}
+      |""".stripMargin
+
+  val dedup2File =
+    """package com.test.privado.audit;
+      |
+      |import org.apache.logging.log4j.Logger;
+      |
+      |public class Dedup2File {
+      |
+      |   private static final Logger logger = LogManager.getLogger("HelloWorld");
+      |
+      |   public void process1() {
+      |
+      |     Teacher teacher1 = new Teacher("personName", "Password");
+      |     String firstName1 = teacher1.getFirstName();
+      |     firstName1 = firstName1 + "value";
+      |
+      |     logFirstName(firstName1);
+      |   }
+      |
+      |   public void process2() {
+      |     Teacher teacher2 = new Teacher("NewPersonName", "NewPassword");
+      |     String firstName2 = teacher2.getFirstName();
+      |
+      |     logFirstName(firstName2);
+      |   }
+      |
+      |   public void logFirstName(String name) {
+      |     logger.info(name);
+      |   }
+      |}
+      |
+      |""".stripMargin
+
+  val userSemantic =
+    """
+      |package com.test.privado.audit;
+      |
+      |import org.apache.logging.log4j.Logger;
+      |
+      |public class BaseClass {
+      |   private static final Logger logger = LogManager.getLogger("HelloWorld");
+      |   public String firstName;
+      |   public String id;
+      |   public String getFirstName() {return firstName;}
+      |   public void setFirstName(String firstName) {this.firstName = firstName;}
+      |   public String getId() {return id;}
+      |   public void setId(String id) {this.id = id;}
+      |   public foo1() {
+      |     BaseClass b = new BaseClass();
+      |     b.setFirstName("Alex");
+      |     b.setId("101");
+      |     String newValue1 = b.getFirstName();
+      |     String newValue2 = b.getId();
+      |
+      |     logger.info(newValue1);
+      |     logger.info(newValue2);
+      |   }
+      |}
+      |
+      |""".stripMargin
 }

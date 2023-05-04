@@ -18,32 +18,27 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
 package ai.privado.tagger
 
-import ai.privado.metric.MetricHandler
-import ai.privado.model.RuleInfo
+import ai.privado.entrypoint.TimeMetric
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.SimpleCpgPass
-import org.slf4j.LoggerFactory
+import io.shiftleft.passes.CpgPass
 
-abstract class PrivadoSimplePass(cpg: Cpg) extends SimpleCpgPass(cpg) {
-
-  var ruleInfo: RuleInfo = null
-  val logger             = LoggerFactory.getLogger(getClass)
-
-  /** Helper function to set the rule and apply the pass
-    */
-  def setRuleAndApply(ruleInfo: RuleInfo) = {
-    try {
-      this.ruleInfo = ruleInfo
-      this.createAndApply()
-    } catch {
-      case ex: Exception => {
-        logger.error("Exception executing pass")
-        MetricHandler.scanProcessErrors.addOne(ex.toString)
-      }
-    }
+abstract class PrivadoSimpleCpgPass(cpg: Cpg) extends CpgPass(cpg) {
+  override def createAndApply() = {
+    beforeExecution
+    super.createAndApply()
+    afterExecution
   }
+
+  private def beforeExecution = println(
+    s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --${getClass.getSimpleName} invoked..."
+  )
+
+  private def afterExecution = println(
+    s"${TimeMetric.getNewTime()} - --${getClass.getSimpleName} is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+  )
 }

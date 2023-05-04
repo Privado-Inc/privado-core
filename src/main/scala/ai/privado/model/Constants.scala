@@ -24,19 +24,20 @@ package ai.privado.model
 
 object Constants {
   // RuleInfo
-  val id             = "id"
-  val name           = "name"
-  val category       = "category"
-  val domains        = "domains"
-  val nodeType       = "nodeType"
-  val catLevelOne    = "catLevelOne"
-  val catLevelTwo    = "catLevelTwo"
-  val sensitivity    = "sensitivity"
-  val isSensitive    = "isSensitive"
-  val patterns       = "patterns"
-  val privadoDerived = "privadoDerived"
-  val underScore     = "_"
-  val apiUrl         = "apiUrl"
+  val id               = "id"
+  val name             = "name"
+  val category         = "category"
+  val domains          = "domains"
+  val nodeType         = "nodeType"
+  val catLevelOne      = "catLevelOne"
+  val catLevelTwo      = "catLevelTwo"
+  val sensitivity      = "sensitivity"
+  val isSensitive      = "isSensitive"
+  val patterns         = "patterns"
+  val privadoDerived   = "privadoDerived"
+  val underScore       = "_"
+  val apiUrl           = "apiUrl"
+  val collectionSource = "collectionSource"
 
   // semantic
   val signature = "signature"
@@ -114,9 +115,24 @@ object Constants {
   val API      = "API"
 
   // Rule ids
-  val internalAPIRuleId = "Sinks.API.InternalAPI"
-  val ignoredSinks      = "ignoredSinks"
-  val apiSinks          = "apiSinks"
-  val apiHttpLibraries  = "apiHttpLibraries"
-  val apiIdentifier     = "apiIdentifier"
+  val internalAPIRuleId   = "Sinks.API.InternalAPI"
+  val jmsConsumerRuleId   = "Messaging.Service.JMS.Consumer"
+  val kafkaConsumerRuleId = "Messaging.Queue.Kafka.Consumer"
+  val ignoredSinks        = "ignoredSinks"
+  val apiSinks            = "apiSinks"
+  val apiHttpLibraries    = "apiHttpLibraries"
+  val apiIdentifier       = "apiIdentifier"
+
+  // TemplatedDom
+
+  val jsxOpenElement = "JSXOpeningElement"
+  val jsxElement     = "JSXElement"
+
+  val HTMLElement          = "HTMLElement"
+  val HTMLOpenElement      = "HTMLOpenElement"
+  val HTMLClosingElement   = "HTMLClosingElement"
+  val HTMLElementAttribute = "HTMLElementAttribute"
+
+  val annotations = "annotations"
+  val default     = "default"
 }

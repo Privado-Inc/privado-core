@@ -23,8 +23,8 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.SemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
@@ -51,10 +51,14 @@ class Dataflow(cpg: Cpg) {
     */
   def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Map[String, Path] = {
 
+    if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
+      AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
+    }
+
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
       EngineContext(
-        semantics = SemanticGenerator.getSemantics(cpg, ScanProcessor.config, ruleCache),
+        semantics = SemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache),
         config = EngineConfig(4)
       )
     val sources = Dataflow.getSources(cpg)
@@ -100,7 +104,11 @@ class Dataflow(cpg: Cpg) {
          */
       }
 
-      if (ScanProcessor.config.testOutput) {
+      if (privadoScanConfig.generateAuditReport) {
+        AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
+      }
+
+      if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
         val intermediateDataflow = ListBuffer[DataFlowPathIntermediateModel]()
         // Fetching the sourceId, sinkId and path Info
         dataflowPathsUnfiltered.map(path => {
@@ -130,7 +138,7 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
       val dataflowPaths = {
-        if (ScanProcessor.config.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
+        if (privadoScanConfig.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered
@@ -153,7 +161,9 @@ class Dataflow(cpg: Cpg) {
         .toMap
 
       // Setting cache
-      DataFlowCache.dataflowsMapByType ++= dataflowMapByPathId
+      dataflowMapByPathId.foreach(item => {
+        DataFlowCache.dataflowsMapByType.put(item._1, item._2)
+      })
 
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
       DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig, ruleCache)
@@ -161,23 +171,31 @@ class Dataflow(cpg: Cpg) {
         s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
             .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
       )
-      // Need to return the filtered result
-      println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
-      val dataflowFromCache = DataFlowCache.getDataflow
-      println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
-
-      dataflowFromCache
-        .map(_.pathId)
-        .toSet
-        .map((pathId: String) => (pathId, DataFlowCache.dataflowsMapByType(pathId)))
-        .toMap
     }
+    // Need to return the filtered result
+    println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
+    val dataflowFromCache = DataFlowCache.getDataflow
+    println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
+        .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
+    AuditCache.addIntoFinalPath(dataflowFromCache)
+    dataflowFromCache
+      .map(_.pathId)
+      .toSet
+      .map((pathId: String) => (pathId, DataFlowCache.dataflowsMapByType.get(pathId)))
+      .toMap
   }
 
 }
 
 object Dataflow {
+
+  def dataflowForSourceSinkPair(sources: List[AstNode], sinks: List[CfgNode]): List[Path] = {
+    implicit val engineContext: EngineContext = {
+      EngineContext(config = EngineConfig(4))
+    }
+    sinks.reachableByFlows(sources).l
+  }
+
   def getSources(cpg: Cpg): List[AstNode] = {
     def filterSources(traversal: Traversal[AstNode]) = {
       traversal.tag
@@ -194,7 +212,7 @@ object Dataflow {
       .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
   }
 
-  private def getSinks(cpg: Cpg): List[CfgNode] = {
+  def getSinks(cpg: Cpg): List[CfgNode] = {
     cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
   }
 }

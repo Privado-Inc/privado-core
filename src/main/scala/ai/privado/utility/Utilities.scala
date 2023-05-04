@@ -29,12 +29,12 @@ import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewTag, SqlQueryNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, SqlQueryNode}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
+import overflowdb.{BatchedUpdate, DetachedNodeData}
 import overflowdb.traversal.Traversal
 
 import java.math.BigInteger
@@ -315,15 +315,60 @@ object Utilities {
 
   }
 
+  /** Get the domains from complete script tag <Script id="googletag-script" data-testid="googletag-script"
+    * src="https://www.googletagservices.com/tag/js/gpt.js" strategy="lazyOnload" />
+    *
+    * @param templateStr
+    * @return
+    */
   def getDomainFromTemplates(templateStr: String): (String, String) = {
     val regex =
       """(http:|https:){0,1}\/\/(www.){0,1}([\w_\-]+(?:(?:\.[\w_\-]+)+))([\w.,@?^=%&:\/~+#\-]*[\w@?^=%&\/~+#\-])""".r
     Try(regex.findFirstMatchIn(templateStr).headOption.get) match {
       case Success(matched) =>
-        if (matched == None) ("unknown-domain", "unknown-domain") else (matched.matched, matched.group(3))
+        (matched.matched, matched.group(3))
       case Failure(e) =>
         logger.debug("Exception : ", e)
         ("unknown-domain", "unknown-domain")
     }
+  }
+
+  /** Get list of source files with given file extensions
+    *
+    * @param projectRoot
+    * @param extensions
+    * @param ruleCache
+    * @return
+    */
+  def getSourceFilesWithGivenExtension(
+    projectRoot: String,
+    extensions: Set[String],
+    ruleCache: RuleCache
+  ): List[String] = {
+    SourceFiles
+      .determine(Set(projectRoot), extensions)
+      .filter(Utilities.isFileProcessable(_, ruleCache))
+  }
+
+  /** Add new file node into CPG / Diff Graph
+    * @param fileName
+    * @param builder
+    * @return
+    */
+  def addFileNode(fileName: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+    val fileNode = NewFile().name(fileName)
+    builder.addNode(fileNode)
+    fileNode
+  }
+
+  /** Add new node to Diff graph builder as well as establish the edge between new node and file node.
+    *
+    * @param builder
+    * @param node
+    * @param fileNode
+    */
+  def addNodeWithFileEdge(builder: BatchedUpdate.DiffGraphBuilder, node: DetachedNodeData, fileNode: NewFile): Unit = {
+    builder.addNode(node)
+    builder.addEdge(node, fileNode, EdgeTypes.SOURCE_FILE)
   }
 }

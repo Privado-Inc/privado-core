@@ -23,32 +23,33 @@
 
 package ai.privado.languageEngine.javascript.processor
 
-import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.exporter.JSONExporter
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
+import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
+import ai.privado.model.Constants._
+import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
 import ai.privado.utility.UnresolvedReportUtility
-import ai.privado.model.Language
-import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
+import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
+import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -63,18 +64,29 @@ object JavascriptProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
-        logger.info("Applying default overlays")
-        logger.info("Enhancing Javascript graph")
-        logger.debug("Running custom passes")
-        new MethodFullName(cpg).createAndApply()
-        new MethodFullNameFromIdentifier(cpg).createAndApply()
-        new MethodFullNameForEmptyNodes(cpg).createAndApply()
+        // Apply default overlays
+        X2Cpg.applyDefaultOverlays(cpg)
+        new ImportsPass(cpg).createAndApply()
 
-        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
-        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        logger.info("Applying data flow overlay")
+        val context = new LayerCreatorContext(cpg)
+        val options = new OssDataFlowOptions()
+        new OssDataFlow(options).run(context)
+        logger.info("=====================")
         println(
-          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )
+
+        new JavaScriptTypeRecoveryPass(cpg).createAndApply()
+        println(
+          s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+        new JavaScriptTypeHintCallLinker(cpg).createAndApply()
+        new PythonNaiveCallLinker(cpg).createAndApply()
+
+        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+
+        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
@@ -88,14 +100,17 @@ object JavascriptProcessor {
         cpg.runTagger(ruleCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
-        println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
+        println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
+            .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+        println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
+        val errorMsg = new ListBuffer[String]()
         // Exporting
         JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
-            Left(err)
+            errorMsg += err
           case Right(_) =>
             println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
             logger.debug(
@@ -112,6 +127,46 @@ object JavascriptProcessor {
 
             Right(())
         }
+
+        // Exporting the Audit report
+        if (ScanProcessor.config.generateAuditReport) {
+          ExcelExporter.auditExport(
+            outputAuditFileName,
+            AuditReportEntryPoint.getAuditWorkbook(),
+            sourceRepoLocation
+          ) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              errorMsg += err
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+              )
+          }
+        }
+
+        // Exporting the Intermediate report
+        if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
+          JSONExporter.IntermediateFileExport(
+            outputIntermediateFileName,
+            sourceRepoLocation,
+            DataFlowCache.getIntermediateDataFlow()
+          ) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              errorMsg += err
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+              )
+          }
+        }
+
+        // Check if any of the export failed
+        if (errorMsg.toList.isEmpty)
+          Right(())
+        else
+          Left(errorMsg.toList.mkString("\n"))
 
       case Failure(exception) =>
         logger.error("Error while parsing the source code!")

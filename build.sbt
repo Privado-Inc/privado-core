@@ -7,7 +7,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 
 val cpgVersion        = "1.3.598"
 val joernVersion      = "1.1.1674"
-val overflowdbVersion = "1.171"
+val overflowdbVersion = "1.172"
 
 //External dependency versions
 val circeVersion   = "0.14.1"
@@ -50,7 +50,7 @@ libraryDependencies ++= Seq(
   "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
-  "org.jooq"                         % "jooq"                    % "3.16.0"
+  "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

@@ -141,6 +141,7 @@ object ScanProcessor extends CommandProcessor {
                           x.copy(
                             file = fullPath,
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
+                            catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             nodeType = NodeType.REGULAR
                           )
@@ -314,7 +315,7 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
                 JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, language)
-              case language if language == Languages.JSSRC && config.enableJS =>
+              case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(getProcessedRule(Language.JAVASCRIPT), sourceRepoLocation, lang)
               case language if language == Languages.PYTHONSRC =>

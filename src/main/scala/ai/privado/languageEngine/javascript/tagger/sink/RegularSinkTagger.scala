@@ -25,14 +25,14 @@ package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.addRuleTags
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   lazy val cacheCall = cpg.call
     .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
     .whereNot(_.method.name(".*<meta.*>$"))
