@@ -47,13 +47,21 @@ class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
     .where(_.inCall.name(Operators.assignment))
     .l
 
+    private lazy val secretsLiteralCached = cpg.literal
+    .where(
+      _.code(
+        "(.*(PASSWORD|AWS_ACCESS_KEY|refresh_token|access_token|client_secret).*)|(uri)|((xox[p|b|o|a]-[0-9]{12}-[0-9]{12}-[0-9]{12}-[a-z0-9]{32}))|(https://hooks.slack.com/services/T[a-zA-Z0-9_]{8}/B[a-zA-Z0-9_]{8}/[a-zA-Z0-9_]{24})|(sk_live_[0-9a-zA-Z]{24})|(s3.amazonaws.com)|((AKIA[0-9A-Z]{16}))|(amzn\\\\.mws\\\\.[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]\\{12)|(AIza[0-9A-Za-z\\\\-_]{35})|([s|S][e|E][c|C][r|R][e|E][t|T].*['|\\\"][0-9a-zA-Z]{32,45}['|\\\"])|(?i)(.*)(https)(.*)(s3)(.*)(pem|crt|cer)(.*)"
+      )
+    )
+    .l
+
   private lazy val impactedLiteralCached =
-    (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
+    (generalLiteralCached ::: sqlQueryLiteralCached ::: secretsLiteralCached).dedup.l
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern = ruleInfo.combinedRulePattern
     val impactedLiteral =
-      impactedLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l ::: sqlBigQueryLiteralCached
+      impactedLiteralCached.code("(?:\"|'|`)?(" + rulePattern + ")(?:\"|'|`)?").l ::: sqlBigQueryLiteralCached
         .code("(?:\"|'|`|\"\"\")(.*\\s" + rulePattern + "\\s.*)(?:\"|'|`|\"\"\")")
         .l
 
