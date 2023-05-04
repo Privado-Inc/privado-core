@@ -77,7 +77,6 @@ object PythonProcessor {
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new PythonTypeRecoveryPass(cpg).createAndApply()
