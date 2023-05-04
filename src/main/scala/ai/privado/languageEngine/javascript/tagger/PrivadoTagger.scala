@@ -30,6 +30,7 @@ import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, Lit
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
+import ai.privado.tagger.config.JSDBConfigTagger
 import ai.privado.tagger.source.SqlQueryTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -55,6 +56,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 
     new JSAPITagger(cpg, ruleCache).createAndApply()
+
+    new JSDBConfigTagger(cpg).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 

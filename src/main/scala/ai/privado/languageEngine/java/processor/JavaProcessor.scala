@@ -30,7 +30,7 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
+import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, JavaPropertyLinkerPass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -42,7 +42,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   storages
 }
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
@@ -78,8 +78,10 @@ object JavaProcessor {
       case Success(cpg) => {
         try {
 
-          new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA).createAndApply()
+          new JavaPropertyLinkerPass(cpg).createAndApply()
 
+          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
