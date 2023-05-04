@@ -48,7 +48,7 @@ object PythonSemanticGenerator {
       parameterNumber = 5
     var parameterSemantics = ""
     for (i <- 1 to (parameterNumber))
-      parameterSemantics += s"$i->$i "
+      parameterSemantics += s"$i->$i $i->-1 "
     "\"" + methodName + "\" " + parameterSemantics.trim
   }
 
