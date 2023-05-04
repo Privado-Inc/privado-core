@@ -25,12 +25,13 @@ package ai.privado.languageEngine.ruby.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
 
