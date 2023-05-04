@@ -93,6 +93,41 @@ object StorageInheritRule {
       "storages",
       Language.PYTHON,
       Array[String]()
+    ),
+    RuleInfo(
+      "Storages.Framework.SQLAlchemy.Read",
+      "SQLAlchemy(Read)",
+      "",
+      Array[String]("sqlalchemy.org"),
+      List[String](
+        "sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>",
+        ".*(all|get|one)"
+      ), // Matches class models with chained methods
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.PYTHON,
+      Array[String]()
+    ),
+    RuleInfo(
+      "Storages.Framework.SQLAlchemy.Write",
+      "SQLAlchemy(Write)",
+      "",
+      Array[String]("sqlalchemy.org"),
+      List[String]("sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>", ".*(add_columns)"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.PYTHON,
+      Array[String]()
     )
   )
 }
