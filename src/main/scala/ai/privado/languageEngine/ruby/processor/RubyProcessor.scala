@@ -62,17 +62,15 @@ object RubyProcessor {
         logger.info("Enhancing Ruby graph")
         logger.debug("Running custom passes")
 
-        println(s"${Calendar.getInstance().getTime} - SQL parser pass")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
 
+        /*
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
           val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
           UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
         }
+         */
         logger.info("=====================")
 
         // Run tagger
