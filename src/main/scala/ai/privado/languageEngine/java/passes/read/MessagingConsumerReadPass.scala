@@ -26,22 +26,19 @@ package ai.privado.languageEngine.java.passes.read
 import ai.privado.cache.{DataFlowCache, TaggerCache}
 import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
-import ai.privado.tagger.{PrivadoParallelCpgPass, PrivadoSimpleCpgPass}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 import io.shiftleft.semanticcpg.language._
 
-class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends PrivadoSimpleCpgPass(cpg) {
+class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends PrivadoParallelCpgPass[String](cpg) {
 
-  /*override def generateParts(): Array[String] =
+  override def generateParts(): Array[String] =
     List(Constants.jmsConsumerRuleId, Constants.kafkaConsumerRuleId).toArray
 
+  override def runOnPart(builder: DiffGraphBuilder, consumerRuleId: String): Unit = {
 
-   */
-  override def run(builder: DiffGraphBuilder): Unit = {
-
-    val consumerRuleId = Constants.kafkaConsumerRuleId
     generateReadFlowAndAddToDataflowCache(consumerRuleId)
   }
 
@@ -71,7 +68,7 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Priv
         })
     })
 
-    // Case when the method paraeter is not a derived source, but probably a String
+    // Case when the method parameter is not a derived source, but probably a String
 
     val dataflowSource = cpg.method
       .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
@@ -101,6 +98,42 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Priv
         case None =>
       }
     }
+
+    generateReadFlowAndAddToDataflowCachePOJO(consumerRuleId)
+  }
+
+  /** Helper function to solve cases like
+    *
+    * ConsumerRecords<String, Integer> records = consumer.poll(Duration.ofMillis(1000));
+    * StreamSupport.stream(records.spliterator(), false) .map(record -> {CountryPopulation cp = new
+    * CountryPopulation(record.key(), record.value()); cp;}) .forEach(countryPopulationConsumer);
+    *
+    * consumer.poll is the sink here, we are looking to identify the object cp of type CountryPopulation
+    * @param consumerRuleId
+    */
+  private def generateReadFlowAndAddToDataflowCachePOJO(consumerRuleId: String): Unit = {
+    val dataflowReadSource = cpg.call
+      .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
+      .where(_.tag.nameExact(Constants.id).valueExact(consumerRuleId))
+      .l
+    val dataflowReadSink = Dataflow
+      .getSources(cpg)
+      .filter(_.isInstanceOf[CfgNode])
+      .map(_.asInstanceOf[CfgNode])
+      .l
+
+    val dataflowReadFlows   = Dataflow.dataflowForSourceSinkPair(dataflowReadSource, dataflowReadSink)
+    val dataflowUniqueFlows = DuplicateFlowProcessor.getUniquePathsAfterDedup(dataflowReadFlows)
+    dataflowUniqueFlows
+      .foreach { flow =>
+        val sinkNode     = flow.elements.last
+        val sourceRuleId = sinkNode.tag.value("Data.Sensitive.*").value.headOption.getOrElse("")
+        if (sourceRuleId.nonEmpty) {
+          val path   = new Path(List(sinkNode))
+          val pathId = DuplicateFlowProcessor.calculatePathId(path).get
+          addToDataflowCache(consumerRuleId, sourceRuleId, path, pathId)
+        }
+      }
   }
 
   private def addToDataflowCache(consumerRuleId: String, sourceRuleId: String, flow: Path, pathId: String): Unit =
