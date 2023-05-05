@@ -62,7 +62,7 @@ trait SemanticGenerator {
       }
     }
     val parameterSemantic = mutable.HashSet[String]()
-    for (i <- 0 until parameterSize) {
+    for (i <- 0 to parameterSize) {
       if (toTaint != -2)
         parameterSemantic.add(s"$i->$toTaint")
       parameterSemantic.add(s"$i->$i")
