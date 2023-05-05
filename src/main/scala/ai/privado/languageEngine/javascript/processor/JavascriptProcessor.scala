@@ -34,7 +34,12 @@ import ai.privado.languageEngine.javascript.passes.methodfullname.{
   MethodFullNameForEmptyNodes,
   MethodFullNameFromIdentifier
 }
-import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
+import io.joern.jssrc2cpg.passes.{
+  ConstClosurePass,
+  ImportsPass,
+  JavaScriptTypeHintCallLinker,
+  JavaScriptTypeRecoveryPass
+}
 import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -72,7 +77,6 @@ object JavascriptProcessor {
       case Success(cpg) =>
         // Apply default overlays
         X2Cpg.applyDefaultOverlays(cpg)
-        new ImportsPass(cpg).createAndApply()
 
         logger.info("Applying data flow overlay")
         val context = new LayerCreatorContext(cpg)
@@ -83,6 +87,7 @@ object JavascriptProcessor {
           s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )
 
+        new ConstClosurePass(cpg)
         new JavaScriptTypeRecoveryPass(cpg).createAndApply()
         println(
           s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
