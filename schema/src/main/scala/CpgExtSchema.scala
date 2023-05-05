@@ -71,6 +71,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addNodeType(CpgSchemaConstants.JAVA_PROPERTY_NODE_NAME)
     .addProperty(name)
     .addProperty(value)
+    .extendz(astNode)
 
   val isUsedAt = builder
     .addEdgeType(CpgSchemaConstants.IS_USED_AT_EDGE_NAME)
@@ -79,12 +80,9 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addEdgeType(CpgSchemaConstants.ORIGINAL_PROPERTY_EDGE_NAME)
 
   property.addOutEdge(edge = sourceFile, inNode = file)
-  property.addOutEdge(edge = isUsedAt, inNode = literal)
-  property.addOutEdge(edge = isUsedAt, inNode = methodParameterIn)
-  property.addOutEdge(edge = isUsedAt, inNode = member)
-  member.addOutEdge(edge = originalProperty, inNode = property)
-  literal.addOutEdge(edge = originalProperty, inNode = property)
-  methodParameterIn.addOutEdge(edge = originalProperty, inNode = property)
+  property.addOutEdge(edge = isUsedAt, inNode = astNode)
+
+  astNode.addOutEdge(edge = originalProperty, inNode = property)
 
   // Adding Property Node End
 
@@ -149,6 +147,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   module.addOutEdge(edge = sourceFile, inNode = file)
   dependency.addOutEdge(edge = sourceFile, inNode = file)
   templateDOM.addOutEdge(edge = sourceFile, inNode = file)
+
 }
 
 object CpgExtSchema {

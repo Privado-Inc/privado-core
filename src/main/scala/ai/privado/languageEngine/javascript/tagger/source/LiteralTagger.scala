@@ -34,7 +34,7 @@ class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
   // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
   private lazy val generalLiteralCached = cpg.literal
     .whereNot(_.code(".*\\s.*"))
-    .where(_.inCall.name("(?:add|get|put|pop).*"))
+    .where(_.inCall.name("(?:add|get|push|pop).*"))
     .l
 
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
