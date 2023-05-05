@@ -140,7 +140,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           case e: Throwable =>
             logger.debug(s"Error splitting the required line. ${e.toString}")
         }
-
       })
 
     envProps.asScala

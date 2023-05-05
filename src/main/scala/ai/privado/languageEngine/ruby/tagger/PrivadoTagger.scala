@@ -21,17 +21,14 @@
  *
  */
 
-package ai.privado.languageEngine.javascript.tagger
+package ai.privado.languageEngine.ruby.tagger
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.TimeMetric
-import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
-import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
+import ai.privado.languageEngine.ruby.tagger.sink.RegularSinkTagger
+import ai.privado.languageEngine.ruby.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
-import ai.privado.tagger.collection.WebFormsCollectionTagger
-import ai.privado.tagger.config.JSDBConfigTagger
-import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language._
@@ -43,26 +40,13 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(ruleCache: RuleCache, taggerCache: TaggerCache): Traversal[Tag] = {
-
+  override def runTagger(ruleCache: RuleCache): Traversal[Tag] = {
     logger.info("Starting tagging")
-
     new LiteralTagger(cpg, ruleCache).createAndApply()
-
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-
+    new IdentifierTagger(cpg, ruleCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
-
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
-
-    new JSAPITagger(cpg, ruleCache).createAndApply()
-
-    new JSDBConfigTagger(cpg).createAndApply()
-
-    new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
-
     logger.info("Done with tagging")
-
     cpg.tag
   }
 

@@ -18,34 +18,36 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.languageEngine.javascript.tagger.source
+package ai.privado.languageEngine.ruby.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  // Step 1.2
-  // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
-  private lazy val generalLiteralCached = cpg.literal
-    .whereNot(_.code(".*\\s.*"))
-    .where(_.inCall.name("(?:add|get|push|pop).*"))
-    .l
+class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val rulePattern = ruleInfo.combinedRulePattern
-    val impactedLiteral =
-      generalLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l
 
-    impactedLiteral.foreach(literal => {
-      storeForTag(builder, literal, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-      addRuleTags(builder, literal, ruleInfo, ruleCache)
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    val rulePattern              = ruleInfo.combinedRulePattern
+    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
+    regexMatchingIdentifiers.foreach(identifier => {
+      storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo, ruleCache)
+    })
+
+    val regexMatchingFieldIdentifiersIdentifiers =
+      cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
+    regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
+      storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
   }
 }

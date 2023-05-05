@@ -5,8 +5,8 @@ ThisBuild / scalaVersion := "2.13.7"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.3.598"
-val joernVersion      = "1.1.1651"
+val cpgVersion        = "1.3.600"
+val joernVersion      = "1.1.1675"
 val overflowdbVersion = "1.172"
 
 //External dependency versions
@@ -25,6 +25,7 @@ libraryDependencies ++= Seq(
   "io.joern"                        %% "x2cpg"                   % Versions.joern,
   "io.joern"                        %% "javasrc2cpg"             % Versions.joern,
   "io.joern"                        %% "pysrc2cpg"               % Versions.joern,
+  "io.joern"                        %% "rubysrc2cpg"             % Versions.joern,
   "io.joern"                        %% "joern-cli"               % Versions.joern,
   "io.joern"                        %% "semanticcpg"             % Versions.joern,
   "io.joern"                        %% "semanticcpg"             % Versions.joern % Test classifier "tests",

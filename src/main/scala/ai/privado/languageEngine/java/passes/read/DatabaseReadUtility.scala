@@ -26,15 +26,12 @@ package ai.privado.languageEngine.java.passes.read
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.InternalTag
-import ai.privado.model.sql.{SQLQuery, SQLTable}
+import ai.privado.model.sql.SQLQuery
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities._
-import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.codepropertygraph.generated.nodes.{AnnotationLiteral, AstNode, CfgNode, TypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.queryengine.EngineConfig
-import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 object DatabaseReadUtility {
@@ -125,12 +122,11 @@ object DatabaseReadUtility {
               val dataElementSinks =
                 Dataflow
                   .getSources(cpg)
-                  .filterNot(_.isMember)
+                  .filter(_.isInstanceOf[CfgNode])
                   .map(_.asInstanceOf[CfgNode])
                   .l
-              implicit val engineContext: EngineContext =
-                EngineContext(config = EngineConfig(4))
-              val readFlow = dataElementSinks.reachableByFlows(referencingQueryNodes).l
+
+              val readFlow = Dataflow.dataflowForSourceSinkPair(referencingQueryNodes, dataElementSinks)
               if (readFlow.nonEmpty) {
                 // As a flow is present from Select query to a Data element we can say, the data element is read from the query
                 readFlow
