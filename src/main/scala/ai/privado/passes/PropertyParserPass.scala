@@ -317,7 +317,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           .map(f => {
             f.getAbsolutePath
           })
-          .filter(_.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh)$).*"))
+          .filter(_.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*"))
       )
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
   }
