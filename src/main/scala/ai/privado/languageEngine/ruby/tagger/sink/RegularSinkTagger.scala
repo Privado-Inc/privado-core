@@ -18,34 +18,35 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * For more information, contact support@privado.ai
+ *
  */
 
-package ai.privado.languageEngine.javascript.tagger.source
+package ai.privado.languageEngine.ruby.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import ai.privado.utility.Utilities.addRuleTags
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 
-class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  // Step 1.2
-  // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
-  private lazy val generalLiteralCached = cpg.literal
-    .whereNot(_.code(".*\\s.*"))
-    .where(_.inCall.name("(?:add|get|push|pop).*"))
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
+class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+  lazy val cacheCall = cpg.call
+    .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
+    .whereNot(_.method.name(".*<meta.*>$"))
     .l
 
-  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val rulePattern = ruleInfo.combinedRulePattern
-    val impactedLiteral =
-      generalLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l
+  override def generateParts(): Array[RuleInfo] = {
+    ruleCache.getRule.sinks
+      .filter(rule => rule.nodeType.equals(NodeType.REGULAR))
+      .toArray
+  }
 
-    impactedLiteral.foreach(literal => {
-      storeForTag(builder, literal, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
-      addRuleTags(builder, literal, ruleInfo, ruleCache)
-    })
+  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
+
+    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
   }
 }
