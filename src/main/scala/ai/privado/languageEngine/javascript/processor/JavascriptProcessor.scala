@@ -76,30 +76,11 @@ object JavascriptProcessor {
     xtocpg match {
       case Success(cpg) =>
         // Apply default overlays
-        X2Cpg.applyDefaultOverlays(cpg)
-
-        logger.info("Applying data flow overlay")
-        val context = new LayerCreatorContext(cpg)
-        val options = new OssDataFlowOptions()
-        new OssDataFlow(options).run(context)
-        logger.info("=====================")
-        println(
-          s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-
-        new ConstClosurePass(cpg)
-        new JavaScriptTypeRecoveryPass(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        new JavaScriptTypeHintCallLinker(cpg).createAndApply()
         new PythonNaiveCallLinker(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
         new JSPropertyLinkerPass(cpg).createAndApply()
-
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
