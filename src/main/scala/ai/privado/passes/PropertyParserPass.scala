@@ -312,7 +312,13 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
+      .concat(
+        getListOfFiles(projectRoot)
+          .map(f => {
+            f.getAbsolutePath
+          })
+          .filter(_.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh)$).*"))
+      )
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
   }
 
