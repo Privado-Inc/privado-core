@@ -29,17 +29,6 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
-import io.joern.jssrc2cpg.passes.{
-  ConstClosurePass,
-  ImportsPass,
-  JavaScriptTypeHintCallLinker,
-  JavaScriptTypeRecoveryPass
-}
 import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -51,13 +40,10 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
-import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
