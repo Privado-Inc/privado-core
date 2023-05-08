@@ -53,7 +53,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       }
       case Language.JAVASCRIPT => configFiles(projectRoot, Set(FileExtensions.JSON)).toArray
       case Language.PYTHON =>
-        configFiles(projectRoot, Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.CONF)).toArray
+        configFiles(
+          projectRoot,
+          Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+        ).toArray
     }
   }
 
