@@ -16,7 +16,8 @@ object PythonSemanticGenerator extends SemanticGenerator {
     val customSinkSemantics = getMaximumFlowSemantic(
       cpg.call
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-        .map(generateSemanticForTaint(_, -1))
+        .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.leakages))
+        .map(generateSemanticForTaint(_, -1, extraParameter = 1))
     )
 
     val semanticFromConfig = ruleCache.getRule.semantics.flatMap(generateSemantic).sorted

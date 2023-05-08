@@ -53,16 +53,16 @@ trait SemanticGenerator {
     * @return
     *   \- semantic string
     */
-  def generateSemanticForTaint(methodNode: AstNode, toTaint: Int = -2) = {
+  def generateSemanticForTaint(methodNode: AstNode, toTaint: Int = -2, extraParameter: Int = 0) = {
     val (parameterSize, fullName) = {
       methodNode match {
-        case method: Method => (method.parameter.size, method.fullName)
-        case call: Call     => (call.argument.size, call.methodFullName)
+        case method: Method => (method.parameter.size + extraParameter, method.fullName)
+        case call: Call     => (call.argument.size + extraParameter, call.methodFullName)
         case _              => (0, "NA")
       }
     }
     val parameterSemantic = mutable.HashSet[String]()
-    for (i <- 0 to parameterSize) {
+    for (i <- 0 until parameterSize) {
       if (toTaint != -2)
         parameterSemantic.add(s"$i->$toTaint")
       parameterSemantic.add(s"$i->$i")
