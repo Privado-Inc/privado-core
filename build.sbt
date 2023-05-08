@@ -50,7 +50,8 @@ libraryDependencies ++= Seq(
   "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
-  "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0"
+  "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0",
+  "com.iheart"                      %% "ficus"                   % "1.4.7" exclude ("com.typesafe", "config")
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

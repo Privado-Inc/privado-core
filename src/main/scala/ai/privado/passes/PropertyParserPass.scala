@@ -1,13 +1,12 @@
 package ai.privado.utility
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{MethodParameterIn, NewJavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewJavaProperty}
 import overflowdb.BatchedUpdate
 import ai.privado.cache.RuleCache
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Member, NewFile}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile}
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
@@ -20,12 +19,16 @@ import io.circe._
 
 import scala.collection.mutable
 import com.typesafe.config._
+import net.ceedubs.ficus.Ficus._
 
 import scala.xml.XML
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+
+import scala.util.Try
+import scala.util.matching.Regex
 
 object FileExtensions {
   val PROPERTIES = ".properties"
@@ -51,7 +54,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           Set(FileExtensions.PROPERTIES, FileExtensions.YAML, FileExtensions.YML, FileExtensions.XML)
         ).toArray
       }
-      case Language.JAVASCRIPT => configFiles(projectRoot, Set(FileExtensions.JSON)).toArray
+      case Language.JAVASCRIPT => configFiles(projectRoot, Set(FileExtensions.JSON, FileExtensions.CONF)).toArray
       case Language.PYTHON =>
         configFiles(projectRoot, Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.CONF)).toArray
     }
@@ -79,6 +82,9 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       getDotenvKeyValuePairs(file)
     } else if (file.endsWith(".json")) {
       getJSONKeyValuePairs(file)
+    } else if (file.endsWith(".conf")) {
+      confFileParser(file).foreach(println)
+      confFileParser(file)
     } else {
       loadFromProperties(file)
     }
@@ -186,6 +192,34 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     properties.load(inputStream)
     inputStream.close()
     propertiesToKeyValuePairs(properties)
+  }
+
+  private def confFileParser(file: String): List[(String, String)] = {
+    val config = ConfigFactory.parseFile(new File(file)).resolve()
+
+    try {
+      val baseCatalog      = config.getConfig("pipeline").getConfig("config")
+      val outputCatalogHRN = baseCatalog.getConfig("output-catalog")
+      val inputCatalogs    = baseCatalog.getConfig("input-catalogs")
+
+      inputCatalogs
+        .entrySet()
+        .asScala
+        .map(x => (s"input-catalogs.${x.getKey}", x.getValue.unwrapped().toString))
+        .concat(
+          outputCatalogHRN
+            .entrySet()
+            .asScala
+            .map(x => (s"output-catalog.${x.getKey}", x.getValue.unwrapped().toString))
+        )
+        .toList
+
+    } catch {
+      case e: Exception =>
+        logger.debug(s"Error parsing pipeline config file: ${e.getMessage}")
+        List[("", "")]()
+
+    }
   }
 
   // Used to extract (name, value) pairs from a bean config file
