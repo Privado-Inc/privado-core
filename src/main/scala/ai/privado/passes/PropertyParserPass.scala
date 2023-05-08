@@ -58,7 +58,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   }
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
-    println(file)
     val fileNode      = addFileNode(file, builder)
     val propertyNodes = obtainKeyValuePairs(file, builder).map(pair => addPropertyNode(pair, builder))
     propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
