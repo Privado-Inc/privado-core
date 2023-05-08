@@ -3,15 +3,13 @@ package ai.privado.exporter
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities.isPrivacySink
+import ai.privado.utility.Utilities.{getAllFilesRecursively, isPrivacySink}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import org.json4s._
-import org.json4s.native.JsonMethods._
-
-import java.io.File
+import io.circe.parser.{parse, _}
+import io.circe._
 
 class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -31,17 +29,16 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
 
   def getProbableSinkForJavascript(repoPath: String): List[String] = {
     // Set up a set to hold the unique dependencies
-    var uniqueDeps       = Set.empty[String]
-    val file             = new java.io.File(repoPath)
-    val packageJsonPaths = findAllPackageJsonFiles(file)
+    var uniqueDeps = Set.empty[String]
+    val packageJsonFilePaths =
+      getAllFilesRecursively(repoPath, Set(".json"), ruleCache)
+        .getOrElse(List.empty)
+        .filter(_.endsWith("package.json"))
 
-    for (path <- packageJsonPaths) {
-      val packageJsonStr   = scala.io.Source.fromFile(path).mkString
-      val packageJson      = parse(packageJsonStr)
-      implicit val formats = DefaultFormats
-      val dependencies = (packageJson \ "dependencies")
-        .extractOpt[Map[String, String]]
-        .getOrElse(Map.empty)
+    for (path <- packageJsonFilePaths) {
+      val packageJsonStr = scala.io.Source.fromFile(path).mkString
+      val json           = parse(packageJsonStr).getOrElse(Json.Null)
+      val dependencies   = json.hcursor.downField("dependencies").as[Map[String, String]].getOrElse(Map.empty)
       uniqueDeps ++= dependencies.keySet
     }
     uniqueDeps.toList
@@ -97,20 +94,6 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
     logger.debug("Filtered TPS: ", filteredTPs)
     logger.debug("Filtered TPs Count: ", filteredTPs.length)
     filteredTPs
-  }
-
-  def findAllPackageJsonFiles(dir: File): List[File] = {
-    if (dir.isDirectory) {
-      dir.listFiles
-        .filter(_.isFile)
-        .filter(_.getName == "package.json")
-        .toList ++ dir.listFiles
-        .filter(_.isDirectory)
-        .filter(_.getName != "node_modules")
-        .flatMap(findAllPackageJsonFiles)
-    } else {
-      List.empty
-    }
   }
 
 }
