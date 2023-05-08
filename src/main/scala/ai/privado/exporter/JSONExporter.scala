@@ -70,6 +70,7 @@ object JSONExporter {
     val sinkExporter            = new SinkExporter(cpg, ruleCache)
     val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
     val collectionExporter      = new CollectionExporter(cpg, ruleCache)
+    val probableSinkExporter    = new ProbableSinkExporter(cpg, ruleCache, repoPath)
     val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
@@ -83,6 +84,7 @@ object JSONExporter {
       output.addOne(Constants.language                     -> AppCache.repoLanguage.toString.asJson)
       output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
       output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
+      output.addOne(Constants.probableSinks                -> probableSinkExporter.getProbableSinks.asJson)
 
       val sources = Future(
         sourceExporter.getSources
@@ -90,7 +92,6 @@ object JSONExporter {
       val processing      = Future(sourceExporter.getProcessing)
       val sinks           = Future(sinkExporter.getSinks)
       val processingSinks = Future(sinkExporter.getProcessing)
-      val probableSinks   = Future(sinkExporter.getProbableSinks)
       val collections     = Future(collectionExporter.getCollections)
       val violations      = Future(policyAndThreatExporter.getViolations(repoPath))
 
@@ -130,16 +131,6 @@ object JSONExporter {
         case Success(value) => {
           output.addOne(Constants.collections -> value.asJson)
           logger.info("Completed collections export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      probableSinks.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.probableSinks -> value.asJson)
-          logger.info("Completed probable sinks export.")
         }
         case Failure(e) => {
           println(e)
@@ -201,11 +192,6 @@ object JSONExporter {
           case None               => false
         }
       )
-      logger.debug("------------ Sink Skip List ---------------")
-      val skipRules = ruleCache.getRule.sinkSkipList.map(sinkSkipRule => sinkSkipRule.combinedRulePattern)
-      logger.debug(s"$skipRules")
-      logger.debug("------------ Probable Sink Dependencies ---------------")
-      logger.debug(s"$probableSinks")
 
       // We need to wait till this get completed before moving ahead to export the result
       Await.result(processingSinks, Duration.Inf)
