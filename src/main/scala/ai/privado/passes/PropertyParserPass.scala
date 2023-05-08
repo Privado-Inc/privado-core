@@ -133,8 +133,13 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       .getLines()
       .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
       .foreach(line => {
-        val Array(key, value) = line.split("=", 2)
-        envProps.setProperty(key, value)
+        try {
+          val Array(key, value) = line.split("=", 2)
+          envProps.setProperty(key, value)
+        } catch {
+          case e: Throwable =>
+            logger.debug(s"Error splitting the required line. ${e.toString}")
+        }
       })
 
     envProps.asScala
@@ -307,8 +312,14 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
-      .filter(Utilities.isFileProcessable(_, ruleCache))
+      .concat(
+        getListOfFiles(projectRoot)
+          .map(f => {
+            f.getAbsolutePath
+          })
+          .filter(_.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*"))
+      )
+      .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
   }
 
 }

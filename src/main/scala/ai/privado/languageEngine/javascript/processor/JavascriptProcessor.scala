@@ -24,17 +24,11 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
-import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
 import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -46,13 +40,10 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
-import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -71,30 +62,11 @@ object JavascriptProcessor {
     xtocpg match {
       case Success(cpg) =>
         // Apply default overlays
-        X2Cpg.applyDefaultOverlays(cpg)
-        new ImportsPass(cpg).createAndApply()
-
-        logger.info("Applying data flow overlay")
-        val context = new LayerCreatorContext(cpg)
-        val options = new OssDataFlowOptions()
-        new OssDataFlow(options).run(context)
-        logger.info("=====================")
-        println(
-          s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-
-        new JavaScriptTypeRecoveryPass(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        new JavaScriptTypeHintCallLinker(cpg).createAndApply()
         new PythonNaiveCallLinker(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
         new JSPropertyLinkerPass(cpg).createAndApply()
-
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
@@ -106,7 +78,8 @@ object JavascriptProcessor {
 
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(ruleCache)
+        val taggerCache = new TaggerCache
+        cpg.runTagger(ruleCache, taggerCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
         println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
@@ -116,7 +89,7 @@ object JavascriptProcessor {
         MetricHandler.setScanStatus(true)
         val errorMsg = new ListBuffer[String]()
         // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
+        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             errorMsg += err

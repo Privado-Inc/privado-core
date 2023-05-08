@@ -92,6 +92,7 @@ object Language extends Enumeration {
   val JAVA       = Value("java")
   val JAVASCRIPT = Value("javascript")
   val PYTHON     = Value("python")
+  val RUBY       = Value("ruby")
   val DEFAULT    = Value("default")
   val UNKNOWN    = Value("unknown")
   def withNameWithDefault(name: String): Value = {
