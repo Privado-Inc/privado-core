@@ -58,6 +58,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   }
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
+    println(file)
     val fileNode      = addFileNode(file, builder)
     val propertyNodes = obtainKeyValuePairs(file, builder).map(pair => addPropertyNode(pair, builder))
     propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
@@ -128,19 +129,23 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
   private def getDotenvKeyValuePairs(file: String): List[(String, String)] = {
     val envProps = new Properties()
-    Source
-      .fromFile(file)
-      .getLines()
-      .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
-      .foreach(line => {
-        try {
-          val Array(key, value) = line.split("=", 2)
-          envProps.setProperty(key, value)
-        } catch {
-          case e: Throwable =>
-            logger.debug(s"Error splitting the required line. ${e.toString}")
-        }
-      })
+    try {
+      Source
+        .fromFile(file)
+        .getLines()
+        .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
+        .foreach(line => {
+          try {
+            val Array(key, value) = line.split("=", 2)
+            envProps.setProperty(key, value)
+          } catch {
+            case e: Throwable =>
+              logger.debug(s"Error splitting the required line. ${e.toString}")
+          }
+        })
+    } catch {
+      case e: Throwable => logger.debug("Input is not in the correct format")
+    }
 
     envProps.asScala
       .map(prop => (prop._1, prop._2))
