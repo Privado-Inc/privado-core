@@ -158,10 +158,17 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
             .flattenAsMap(json.toString)
             .asScala
             .toList
-            .collect(p => (p._1, p._2.toString))
-            .toList
+            .map(p => {
+              if (p._2 == null)
+                ("", "")
+              else
+                (p._1, p._2.asInstanceOf[String])
+            })
         } catch {
           case e: Throwable =>
+            println(s"Error while creating properties node for file $file")
+            println(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
+
             logger.trace(s"Error while creating properties node for file $file")
             logger.debug(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
             List[("", "")]()
