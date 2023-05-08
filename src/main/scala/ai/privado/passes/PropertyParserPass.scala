@@ -76,7 +76,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       loadAndConvertXMLtoProperties(file, builder)
     } else if (file.endsWith(".ini")) {
       parseINIFiles(file)
-    } else if (file.matches(".*(?i)env.*")) {
+    } else if (file.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*")) {
       getDotenvKeyValuePairs(file)
     } else if (file.endsWith(".json")) {
       getJSONKeyValuePairs(file)
