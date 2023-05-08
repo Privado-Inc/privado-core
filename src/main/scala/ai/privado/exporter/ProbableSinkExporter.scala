@@ -44,7 +44,6 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
         .getOrElse(Map.empty)
       uniqueDeps ++= dependencies.keySet
     }
-    println(uniqueDeps)
     uniqueDeps.toList
       .filter((str) => isPrivacySink(str, ruleCache))
   }
