@@ -27,6 +27,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.semantic.SemanticGenerator
+import ai.privado.utility.Utilities.semanticExporter
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -42,7 +43,7 @@ object JavaSemanticGenerator extends SemanticGenerator {
     *   \- cpg for adding customSemantics
     * @return
     */
-  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
+  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache, repoPath: String): Semantics = {
     val customSinkSemantics = getMaximumFlowSemantic(
       cpg.call
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
@@ -96,6 +97,26 @@ object JavaSemanticGenerator extends SemanticGenerator {
 
     val list =
       customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
+    semanticExporter(
+      repoPath,
+      headers = List(
+        "Custom Non taint default semantics",
+        "Custom specialNonTaintDefaultSemantics semantics",
+        "Custom customStringSemantics semantics",
+        "Custom customNonPersonalMemberSemantics semantics",
+        "Custom customSinkSemantics semantics",
+        "Custom semanticFromConfig semantics"
+      ),
+      List(
+        customNonTaintDefaultSemantics,
+        specialNonTaintDefaultSemantics,
+        customStringSemantics,
+        customNonPersonalMemberSemantics,
+        customSinkSemantics,
+        semanticFromConfig
+      )
+    )
+
     val parsed         = new Parser().parse(list.mkString("\n"))
     val finalSemantics = JavaSemanticGenerator.getDefaultSemantics.elements ++ parsed
     Semantics.fromList(finalSemantics)

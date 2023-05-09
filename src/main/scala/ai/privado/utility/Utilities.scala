@@ -37,8 +37,10 @@ import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 import overflowdb.traversal.Traversal
 
+import java.io.PrintWriter
 import java.math.BigInteger
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
@@ -370,5 +372,25 @@ object Utilities {
   def addNodeWithFileEdge(builder: BatchedUpdate.DiffGraphBuilder, node: DetachedNodeData, fileNode: NewFile): Unit = {
     builder.addNode(node)
     builder.addEdge(node, fileNode, EdgeTypes.SOURCE_FILE)
+  }
+
+  def semanticExporter(sourceRepoLocation: String, headers: List[String], semantics: List[Seq[String]]): Unit = {
+    if (headers.length != semantics.length) {
+      logger.debug(
+        "Semantic Exporter failed: Headers and semantics mismatch, please provide matching number of headers and semantics."
+      )
+      return;
+    }
+
+    new PrintWriter(s"${sourceRepoLocation}/$outputDirectoryName/${Constants.outputSemanticFileName}") {
+      for ((semanticArray, i) <- semantics.view.zipWithIndex) {
+        write(s"${headers(i)}\n")
+        for (semantic <- semanticArray) {
+          write(s"$semantic\n")
+        }
+        write("---------------------------------------------\n\n")
+      }
+      close()
+    }
   }
 }

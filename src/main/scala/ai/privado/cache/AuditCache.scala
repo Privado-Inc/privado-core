@@ -54,10 +54,15 @@ object AuditCache {
 
   def getPathFromId(pathId: String): Path = dataflowMapByPathId(pathId)
 
-  def addIntoBeforeSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
+  def addIntoBeforeSemantics(
+    cpg: Cpg,
+    privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache,
+    repoPath: String
+  ): Unit = {
     val newPrivadoScanConfig = PrivadoInput(disableRunTimeSemantics = true)
     val engineContext: EngineContext = EngineContext(
-      semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
+      semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache, repoPath),
       config = EngineConfig(4)
     )
     val sources = Dataflow.getSources(cpg)

@@ -81,7 +81,7 @@ object JavascriptProcessor {
         val taggerCache = new TaggerCache
         cpg.runTagger(ruleCache, taggerCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, sourceRepoLocation)
         println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
             .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
         println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
