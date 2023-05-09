@@ -31,7 +31,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache)
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, ".")
   }
 
   def getContent(): Map[String, String] = {

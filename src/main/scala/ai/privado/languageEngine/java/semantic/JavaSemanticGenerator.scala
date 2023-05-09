@@ -94,9 +94,6 @@ object JavaSemanticGenerator extends SemanticGenerator {
     customSinkSemantics.foreach(logger.debug)
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
-
-    val list =
-      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
     semanticExporter(
       repoPath,
       headers = List(
@@ -116,6 +113,8 @@ object JavaSemanticGenerator extends SemanticGenerator {
         semanticFromConfig
       )
     )
+    val list =
+      customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
 
     val parsed         = new Parser().parse(list.mkString("\n"))
     val finalSemantics = JavaSemanticGenerator.getDefaultSemantics.elements ++ parsed

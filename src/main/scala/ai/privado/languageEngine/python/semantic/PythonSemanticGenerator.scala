@@ -3,6 +3,7 @@ package ai.privado.languageEngine.python.semantic
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.semantic.SemanticGenerator
+import ai.privado.utility.Utilities.semanticExporter
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -12,7 +13,7 @@ object PythonSemanticGenerator extends SemanticGenerator {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def getSemantics(cpg: Cpg, ruleCache: RuleCache) = {
+  def getSemantics(cpg: Cpg, ruleCache: RuleCache, sourceRepoLocation: String) = {
     val customSinkSemantics = getMaximumFlowSemantic(
       cpg.call
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
@@ -26,6 +27,12 @@ object PythonSemanticGenerator extends SemanticGenerator {
     customSinkSemantics.foreach(logger.debug)
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
+
+    semanticExporter(
+      sourceRepoLocation,
+      List("Custom customSinkSemantics semantics", "Custom semanticFromConfig semantics"),
+      List(customSinkSemantics, semanticFromConfig)
+    )
 
     val list           = customSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
