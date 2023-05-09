@@ -166,9 +166,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
             })
         } catch {
           case e: Throwable =>
-            println(s"Error while creating properties node for file $file")
-            println(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
-
             logger.trace(s"Error while creating properties node for file $file")
             logger.debug(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
             List[("", "")]()
