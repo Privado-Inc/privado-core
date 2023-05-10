@@ -24,17 +24,15 @@
 package ai.privado.languageEngine.java.passes.read
 
 import ai.privado.cache.{DataFlowCache, TaggerCache}
-import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.model.{Constants, DataFlowPathModel, NodeType}
-import io.joern.dataflowengineoss.language.Path
+import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.passes.CpgPass
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends CpgPass(cpg) {
+class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends PrivadoSimpleCpgPass(cpg) {
 
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys.l
@@ -53,7 +51,7 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Cpg
             case Some(returnedFullName) =>
               sensitiveClasses.find(_.equals(returnedFullName)) match {
                 case Some(matchedTypeDeclFullName) =>
-                  addFlowToDataFlowCache(matchedTypeDeclFullName, callNode)
+                  addFlowToDataFlowCache(taggerCache, matchedTypeDeclFullName, callNode)
                 case None =>
                   // This case is to get the Returned object from the code
                   // Ex - Optional<UserE> resp = userr.findByEmail(login.getEmail());
@@ -64,7 +62,7 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Cpg
                         case Some(returnClassValue) =>
                           sensitiveClasses.find(_.endsWith("." + returnClassValue)) match {
                             case Some(matchedTypeDeclFullName) =>
-                              addFlowToDataFlowCache(matchedTypeDeclFullName, callNode)
+                              addFlowToDataFlowCache(taggerCache, matchedTypeDeclFullName, callNode)
                             case None =>
                           }
                         case None =>
@@ -80,42 +78,31 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Cpg
       })
   }
 
-  private def addFlowToDataFlowCache(matchedTypeDeclFullName: String, callNode: Call) = {
-    sensitiveClassesWithMatchedRules(matchedTypeDeclFullName)
-      .map(item => (item._1, item._2.head))
-      .foreach(sourceRuleIdMemberTuple => {
-        val sourceRuleId = sourceRuleIdMemberTuple._1
-        val memberNodes = {
-          val sourceMatchingMemberL1 = sourceRuleIdMemberTuple._2
-          if (
-            sensitiveClassesWithMatchedRules.contains(
-              sourceMatchingMemberL1.typeFullName
-            ) && sensitiveClassesWithMatchedRules(sourceMatchingMemberL1.typeFullName).contains(sourceRuleId)
-          ) {
-            List(
-              sensitiveClassesWithMatchedRules(sourceMatchingMemberL1.typeFullName)(sourceRuleId).head,
-              sourceMatchingMemberL1
+  private def addFlowToDataFlowCache(
+    taggerCache: TaggerCache,
+    matchedTypeDeclFullName: String,
+    callNode: AstNode
+  ): Unit = {
+    Utility
+      .appendExtraNodesAndRetunNewFlow(taggerCache, matchedTypeDeclFullName, callNode)
+      .foreach(entry => {
+        synchronized {
+          val (pathId, sourceRuleId, path) = entry
+          // We need to update the dataflowsMap and set new dataflow using setDataflow function
+          DataFlowCache.dataflowsMapByType.put(pathId, path)
+          DataFlowCache.setDataflow(
+            DataFlowPathModel(
+              sourceRuleId,
+              callNode.tag.nameExact(Constants.id).value(".*Read.*").value.head,
+              Constants.storages,
+              NodeType.REGULAR.toString,
+              pathId,
+              applyDedup = false
             )
-          } else
-            List(sourceMatchingMemberL1)
+          )
         }
 
-        val newPath: Path = new Path(memberNodes ::: List(callNode))
-        val pathId        = DuplicateFlowProcessor.calculatePathId(newPath).get
-
-        // We need to update the dataflowsMap and set new dataflow using setDataflow function
-        DataFlowCache.dataflowsMapByType ++= List((pathId, newPath)).toMap
-        DataFlowCache.setDataflow(
-          DataFlowPathModel(
-            sourceRuleId,
-            callNode.tag.nameExact(Constants.id).value(".*Read.*").value.head,
-            Constants.storages,
-            NodeType.REGULAR.toString,
-            pathId,
-            applyDedup = false
-          )
-        )
-
       })
+
   }
 }

@@ -26,12 +26,12 @@ package ai.privado.tagger.source
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import ai.privado.semantic.Language._
-import ai.privado.utility.Utilities.{storeForTag, addRuleTags}
+import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.semanticcpg.language._
 
-class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   override def generateParts(): Array[_ <: AnyRef] = ruleCache.getRule.sources.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {

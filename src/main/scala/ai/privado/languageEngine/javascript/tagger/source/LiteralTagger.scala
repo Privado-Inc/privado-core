@@ -24,17 +24,17 @@ package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
 
-class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
+class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   // Step 1.2
   // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
   private lazy val generalLiteralCached = cpg.literal
     .whereNot(_.code(".*\\s.*"))
-    .where(_.inCall.name("(?:add|get|put|pop).*"))
+    .where(_.inCall.name("(?:add|get|push|pop).*"))
     .l
 
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray

@@ -30,7 +30,7 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
+import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, JavaPropertyLinkerPass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -42,7 +42,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   storages
 }
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
@@ -77,21 +77,15 @@ object JavaProcessor {
     xtocpg match {
       case Success(cpg) => {
         try {
-          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA).createAndApply()
+          new JavaPropertyLinkerPass(cpg).createAndApply()
+
           println(s"${Calendar.getInstance().getTime} - HTML parser pass")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
-          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
+
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
           logger.info("Applying data flow overlay")
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
@@ -245,11 +239,9 @@ object JavaProcessor {
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
-      println(s"${Calendar.getInstance().getTime} - Processing Logger Lombok pass")
+
       new LoggerLombokPass(cpg).createAndApply()
-      println(
-        s"${TimeMetric.getNewTime()} - Logger Lombok pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
+
       applyDefaultOverlays(cpg)
       cpg
     }

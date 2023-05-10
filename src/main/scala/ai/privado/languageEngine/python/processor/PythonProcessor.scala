@@ -4,7 +4,7 @@ import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
-import ai.privado.languageEngine.python.passes.config.PythonPropertyFilePass
+import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -17,7 +17,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName
 }
 import ai.privado.semantic.Language._
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
@@ -48,7 +48,6 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 import java.nio.file.{Files, Paths}
 import scala.collection.mutable.ListBuffer
@@ -77,11 +76,9 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - HTML parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -96,17 +93,10 @@ object PythonProcessor {
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
-          println(s"${Calendar.getInstance().getTime} - Processing property files pass")
-          new PythonPropertyFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Property file pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+          new PythonPropertyLinkerPass(cpg).createAndApply()
 
-          println(s"${Calendar.getInstance().getTime} - SQL parser pass")
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - SQL parser pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
@@ -140,14 +130,6 @@ object PythonProcessor {
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
-              val codelist = cpg.call
-                .whereNot(_.methodFullName(Operators.ALL.asScala.toSeq: _*))
-                .map(item => (item.methodFullName, item.location.filename))
-                .dedup
-                .l
-              logger.debug(s"size of code : ${codelist.size}")
-              codelist.foreach(item => logger.debug(item._1, item._2))
-              logger.debug("Above we printed methodFullName")
               Right(())
           }
 
