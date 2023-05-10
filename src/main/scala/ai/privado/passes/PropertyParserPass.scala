@@ -75,7 +75,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       loadAndConvertXMLtoProperties(file, builder)
     } else if (file.endsWith(".ini")) {
       parseINIFiles(file)
-    } else if (file.matches(".*(?i)env.*")) {
+    } else if (file.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*")) {
       getDotenvKeyValuePairs(file)
     } else if (file.endsWith(".json")) {
       getJSONKeyValuePairs(file)
@@ -128,19 +128,23 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
   private def getDotenvKeyValuePairs(file: String): List[(String, String)] = {
     val envProps = new Properties()
-    Source
-      .fromFile(file)
-      .getLines()
-      .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
-      .foreach(line => {
-        try {
-          val Array(key, value) = line.split("=", 2)
-          envProps.setProperty(key, value)
-        } catch {
-          case e: Throwable =>
-            logger.debug(s"Error splitting the required line. ${e.toString}")
-        }
-      })
+    try {
+      Source
+        .fromFile(file)
+        .getLines()
+        .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
+        .foreach(line => {
+          try {
+            val Array(key, value) = line.split("=", 2)
+            envProps.setProperty(key, value)
+          } catch {
+            case e: Throwable =>
+              logger.debug(s"Error splitting the required line. ${e.toString}")
+          }
+        })
+    } catch {
+      case e: Throwable => logger.debug("Input is not in the correct format")
+    }
 
     envProps.asScala
       .map(prop => (prop._1, prop._2))
