@@ -94,25 +94,31 @@ object JavaSemanticGenerator extends SemanticGenerator {
     customSinkSemantics.foreach(logger.debug)
     logger.debug("\nCustom semanticFromConfig semantics")
     semanticFromConfig.foreach(logger.debug)
-    semanticExporter(
-      repoPath,
-      headers = List(
-        "Custom Non taint default semantics",
-        "Custom specialNonTaintDefaultSemantics semantics",
-        "Custom customStringSemantics semantics",
-        "Custom customNonPersonalMemberSemantics semantics",
-        "Custom customSinkSemantics semantics",
-        "Custom semanticFromConfig semantics"
-      ),
-      List(
-        customNonTaintDefaultSemantics,
-        specialNonTaintDefaultSemantics,
-        customStringSemantics,
-        customNonPersonalMemberSemantics,
-        customSinkSemantics,
-        semanticFromConfig
+
+    try {
+      semanticExporter(
+        repoPath,
+        headers = List(
+          "Custom Non taint default semantics",
+          "Custom specialNonTaintDefaultSemantics semantics",
+          "Custom customStringSemantics semantics",
+          "Custom customNonPersonalMemberSemantics semantics",
+          "Custom customSinkSemantics semantics",
+          "Custom semanticFromConfig semantics"
+        ),
+        List(
+          customNonTaintDefaultSemantics,
+          specialNonTaintDefaultSemantics,
+          customStringSemantics,
+          customNonPersonalMemberSemantics,
+          customSinkSemantics,
+          semanticFromConfig
+        )
       )
-    )
+    } catch {
+      case e: Exception => logger.debug(s"There was a problem exporting the semantics. ${e.getMessage}")
+    }
+
     val list =
       customNonTaintDefaultSemantics ++ specialNonTaintDefaultSemantics ++ customStringSemantics ++ customNonPersonalMemberSemantics ++ customSinkSemantics ++ semanticFromConfig
 
