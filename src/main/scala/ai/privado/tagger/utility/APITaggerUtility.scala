@@ -27,7 +27,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.NodeToProperty
-import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
@@ -43,7 +43,7 @@ import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 
 object APITaggerUtility {
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = SemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
+    EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
 
   def sinkTagger(
     apiInternalSinkPattern: List[AstNode],

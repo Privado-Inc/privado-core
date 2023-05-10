@@ -2,7 +2,7 @@ package ai.privado.cache
 
 import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.semantic.SemanticGenerator
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.DataFlowPathModel
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -57,7 +57,7 @@ object AuditCache {
   def addIntoBeforeSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
     val newPrivadoScanConfig = PrivadoInput(disableRunTimeSemantics = true)
     val engineContext: EngineContext = EngineContext(
-      semantics = SemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
+      semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
       config = EngineConfig(4)
     )
     val sources = Dataflow.getSources(cpg)
