@@ -53,7 +53,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       }
       case Language.JAVASCRIPT => configFiles(projectRoot, Set(FileExtensions.JSON)).toArray
       case Language.PYTHON =>
-        configFiles(projectRoot, Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.CONF)).toArray
+        configFiles(
+          projectRoot,
+          Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+        ).toArray
     }
   }
 
@@ -159,8 +162,12 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
             .flattenAsMap(json.toString)
             .asScala
             .toList
-            .collect(p => (p._1, p._2.toString))
-            .toList
+            .map(p => {
+              if (p._2 == null)
+                ("", "")
+              else
+                (p._1, p._2.asInstanceOf[String])
+            })
         } catch {
           case e: Throwable =>
             logger.trace(s"Error while creating properties node for file $file")
