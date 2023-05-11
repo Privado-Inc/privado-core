@@ -8,7 +8,8 @@ import scala.collection.mutable
 object DependencyModuleCache {
   case class RuleCategoryInfo(rule: String, category: String)
 
-  private val dependencyRuleMap: mutable.HashMap[ModuleDependency, mutable.HashSet[RuleCategoryInfo]] = new mutable.HashMap[ModuleDependency, mutable.HashSet[RuleCategoryInfo]]()
+  private val dependencyRuleMap: mutable.HashMap[ModuleDependency, mutable.HashSet[RuleCategoryInfo]] =
+    new mutable.HashMap[ModuleDependency, mutable.HashSet[RuleCategoryInfo]]()
 
   def addIntoDependencyRule(moduleDependency: ModuleDependency, ruleInfo: String, category: String): Unit = {
     if (dependencyRuleMap.contains(moduleDependency)) {
@@ -21,7 +22,12 @@ object DependencyModuleCache {
     if (dependencyRuleMap.contains(moduleDependency)) {
       dependencyRuleMap(moduleDependency).toSet
     } else {
-      Set(RuleCategoryInfo(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE, AuditReportConstants.DEPENDENCY_UNKNOWN_LIBRARY_NAME))
+      Set(
+        RuleCategoryInfo(
+          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+          AuditReportConstants.DEPENDENCY_UNKNOWN_LIBRARY_NAME
+        )
+      )
     }
   }
 }

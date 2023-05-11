@@ -65,7 +65,12 @@ object DependencyReport {
 
   private def getDependencyCategory(moduleDependency: ModuleDependency): Set[RuleCategoryInfo] = {
     if (checkIfDependencyIsInternalLibrary(moduleDependency)) {
-      Set(RuleCategoryInfo(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE, AuditReportConstants.DEPENDENCY_INTERNAL_LIBRARY_NAME))
+      Set(
+        RuleCategoryInfo(
+          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+          AuditReportConstants.DEPENDENCY_INTERNAL_LIBRARY_NAME
+        )
+      )
     } else {
       DependencyModuleCache.getRuleCategoryInfo(moduleDependency)
     }
