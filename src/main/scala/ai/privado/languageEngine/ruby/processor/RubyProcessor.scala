@@ -77,7 +77,7 @@ object RubyProcessor {
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         cpg.runTagger(ruleCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, sourceRepoLocation)
+        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
         println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)

@@ -9,7 +9,6 @@ import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.tagger.sink.RegularSinkTagger
-import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -18,8 +17,6 @@ import scala.collection.mutable
 class DataFlowReportTest extends DataFlowReportTestBase {
 
   override val javaFileContentMap: Map[String, String] = getContent()
-
-  var inputDirectory: File = File.newTemporaryDirectory()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -34,7 +31,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, inputDirectory.toString())
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache)
   }
 
   def getContent(): Map[String, String] = {

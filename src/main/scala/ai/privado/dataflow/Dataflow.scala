@@ -53,15 +53,15 @@ class Dataflow(cpg: Cpg) {
     * @return
     *   \- Map of PathId -> Path corresponding to source to sink path
     */
-  def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache, repoPath: String): Map[String, Path] = {
+  def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Map[String, Path] = {
 
     if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
-      AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache, repoPath)
+      AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
     }
 
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
-      EngineContext(semantics = getSemantics(cpg, privadoScanConfig, ruleCache, repoPath), config = EngineConfig(4))
+      EngineContext(semantics = getSemantics(cpg, privadoScanConfig, ruleCache), config = EngineConfig(4))
     val sources = Dataflow.getSources(cpg)
     val sinks   = Dataflow.getSinks(cpg)
 
@@ -186,7 +186,7 @@ class Dataflow(cpg: Cpg) {
       .toMap
   }
 
-  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache, repoPath: String): Semantics = {
+  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
     val lang = AppCache.repoLanguage
     lang match {
       case Language.JAVA   => JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
