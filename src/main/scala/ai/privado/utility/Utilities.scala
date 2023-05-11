@@ -374,23 +374,31 @@ object Utilities {
     builder.addEdge(node, fileNode, EdgeTypes.SOURCE_FILE)
   }
 
-  def semanticExporter(sourceRepoLocation: String, headers: List[String], semantics: List[Seq[String]]): Unit = {
-    if (headers.length != semantics.length) {
+  def semanticFileExporter(sourceRepoLocation: String, headerAndSemanticPairs: Map[String, Seq[String]]): Unit = {
+    if (headerAndSemanticPairs.keys.toList.length != headerAndSemanticPairs.values.toList.length) {
       logger.debug(
         "Semantic Exporter failed: Headers and semantics mismatch, please provide matching number of headers and semantics."
       )
       return;
     }
 
-    new PrintWriter(s"${sourceRepoLocation}/$outputDirectoryName/${Constants.outputSemanticFileName}") {
-      for ((semanticArray, i) <- semantics.view.zipWithIndex) {
-        write(s"${headers(i)}\n")
-        for (semantic <- semanticArray) {
-          write(s"$semantic\n")
-        }
-        write("---------------------------------------------\n\n")
+    var runTimeSemanticsString: String = ""
+    for ((header, semantics) <- headerAndSemanticPairs) {
+      runTimeSemanticsString += header + "\n"
+      for (semantic <- semantics) {
+        runTimeSemanticsString += semantic + "\n"
       }
-      close()
+      runTimeSemanticsString += "------------------------------------------\n"
     }
+
+    try {
+      new PrintWriter(s"${sourceRepoLocation}/$outputDirectoryName/${Constants.outputSemanticFileName}") {
+        write(runTimeSemanticsString)
+        close()
+      }
+    } catch {
+      case e: Throwable => logger.debug(e.getMessage)
+    }
+
   }
 }

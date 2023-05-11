@@ -62,7 +62,7 @@ object AuditCache {
   ): Unit = {
     val newPrivadoScanConfig = PrivadoInput(disableRunTimeSemantics = true)
     val engineContext: EngineContext = EngineContext(
-      semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache, repoPath),
+      semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
       config = EngineConfig(4)
     )
     val sources = Dataflow.getSources(cpg)
