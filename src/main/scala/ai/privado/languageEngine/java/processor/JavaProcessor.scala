@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
@@ -55,7 +55,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
+import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependenciesCategoryPass}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 
 import java.util.Calendar
@@ -137,10 +137,13 @@ object JavaProcessor {
             val moduleCache: ModuleCache = new ModuleCache()
             new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
             new DependenciesNodePass(cpg, moduleCache).createAndApply()
+            // Fetch all dependency after pass
+            val dependencies = DependencyReport.getDependencyList(xtocpg)
+            new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
 
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies),
               sourceRepoLocation
             ) match {
               case Left(err) =>

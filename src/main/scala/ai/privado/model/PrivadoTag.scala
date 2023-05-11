@@ -147,6 +147,7 @@ object ConfigRuleType extends Enumeration {
   val SEMANTICS      = Value("semantics")
   val SINK_SKIP_LIST = Value("sinkSkipList")
   val SYSTEM_CONFIG  = Value("systemConfig")
+  val AUDIT_CONFIG   = Value("auditConfig")
 
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)
