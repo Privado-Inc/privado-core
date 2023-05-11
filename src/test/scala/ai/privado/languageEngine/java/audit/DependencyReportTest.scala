@@ -4,7 +4,7 @@ import ai.privado.audit.{AuditReportConstants, DependencyReport}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
-import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependencyCategoryPass}
+import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependenciesCategoryPass}
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 
 import scala.collection.mutable
@@ -21,7 +21,7 @@ class DependencyReportTest extends DependencyReportTestBase {
     new ModuleFilePass(cpg, inputDir.toString(), moduleCache, ruleCache).createAndApply()
     new DependenciesNodePass(cpg, moduleCache).createAndApply()
     dependencies = DependencyReport.getDependencyList(Try(cpg))
-    new DependencyCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
+    new DependenciesCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
   }
 
   def getContent(): Map[String, String] = {

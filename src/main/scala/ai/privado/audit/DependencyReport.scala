@@ -1,9 +1,8 @@
 package ai.privado.audit
 
-import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.cache.DependencyModuleCache
+import ai.privado.languageEngine.java.cache.DependencyModuleCache.RuleCategoryInfo
 import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
-import ai.privado.languageEngine.java.passes.module.DependencyCategoryPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.semanticcpg.language._
@@ -20,15 +19,17 @@ object DependencyReport {
   def processDependencyAudit(dependencies: Set[ModuleDependency]): List[List[String]] = {
     val workbookResult = new ListBuffer[List[String]]()
     dependencies.foreach(dependency => {
-      val category = getDependencyCategory(dependency)
-      workbookResult += List(
-        dependency.file.head.name,
-        s"${dependency.groupid}.${dependency.artifactid}",
-        dependency.artifactid,
-        isDependencyProcessed(category),
-        category,
-        DependencyModuleCache.getDependencyRuleIfExist(dependency)
-      )
+      val categoryRuleList = getDependencyCategory(dependency)
+      categoryRuleList.foreach(categoryRule => {
+        workbookResult += List(
+          dependency.file.head.name,
+          s"${dependency.groupid}.${dependency.artifactid}",
+          dependency.artifactid,
+          isDependencyProcessed(categoryRule.category),
+          categoryRule.category,
+          categoryRule.rule
+        )
+      })
     })
 
     List(
@@ -62,11 +63,11 @@ object DependencyReport {
     dependencies.toSet
   }
 
-  private def getDependencyCategory(moduleDependency: ModuleDependency): String = {
+  private def getDependencyCategory(moduleDependency: ModuleDependency): Set[RuleCategoryInfo] = {
     if (checkIfDependencyIsInternalLibrary(moduleDependency)) {
-      AuditReportConstants.DEPENDENCY_INTERNAL_LIBRARY_NAME
+      Set(RuleCategoryInfo(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE, AuditReportConstants.DEPENDENCY_INTERNAL_LIBRARY_NAME))
     } else {
-      DependencyModuleCache.checkIfDependencyRuleExist(moduleDependency)
+      DependencyModuleCache.getRuleCategoryInfo(moduleDependency)
     }
   }
 

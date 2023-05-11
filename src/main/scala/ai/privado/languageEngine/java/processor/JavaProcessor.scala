@@ -55,7 +55,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependencyCategoryPass}
+import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependenciesCategoryPass}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 
 import java.util.Calendar
@@ -139,7 +139,7 @@ object JavaProcessor {
             new DependenciesNodePass(cpg, moduleCache).createAndApply()
             // Fetch all dependency after pass
             val dependencies = DependencyReport.getDependencyList(xtocpg)
-            new DependencyCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
+            new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
 
             ExcelExporter.auditExport(
               outputAuditFileName,

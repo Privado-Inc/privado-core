@@ -7,9 +7,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import ai.privado.languageEngine.java.cache.DependencyModuleCache
-import ai.privado.languageEngine.java.cache.DependencyModuleCache.DependencyRuleInfo
 
-class DependencyCategoryPass(cpg: Cpg, ruleCache: RuleCache, moduleDependencies: List[ModuleDependency])
+class DependenciesCategoryPass(cpg: Cpg, ruleCache: RuleCache, moduleDependencies: List[ModuleDependency])
     extends ForkJoinParallelCpgPass[RuleInfo](cpg) {
   override def generateParts(): Array[RuleInfo] = getAuditAllRules(ruleCache)
 
@@ -17,10 +16,9 @@ class DependencyCategoryPass(cpg: Cpg, ruleCache: RuleCache, moduleDependencies:
 
     val rulePattern = ruleInfo.combinedRulePattern
     moduleDependencies.foreach(moduleDependency => {
-      if (moduleDependency.groupid.matches(rulePattern)) {
-        DependencyModuleCache.addIntoDependencyRule(
-          DependencyRuleInfo(moduleDependency, ruleInfo, getCategoryName(ruleInfo))
-        )
+      val dependencyName = s"${moduleDependency.groupid}:${moduleDependency.artifactid}"
+      if (dependencyName.matches(rulePattern)) {
+        DependencyModuleCache.addIntoDependencyRule(moduleDependency, ruleInfo.id, getCategoryName(ruleInfo))
       }
     })
   }
