@@ -23,14 +23,14 @@
 
 package ai.privado.languageEngine.java.processor
 
-import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, PropertiesFilePass}
+import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, JavaPropertyLinkerPass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -42,7 +42,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   storages
 }
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
 import ai.privado.semantic.Language._
 import ai.privado.model.Language
@@ -55,7 +55,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
+import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependenciesCategoryPass}
 import ai.privado.passes.{HTMLParserPass, SQLParser}
 
 import java.util.Calendar
@@ -78,8 +78,10 @@ object JavaProcessor {
       case Success(cpg) => {
         try {
 
-          new PropertiesFilePass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA).createAndApply()
+          new JavaPropertyLinkerPass(cpg).createAndApply()
 
+          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -135,10 +137,13 @@ object JavaProcessor {
             val moduleCache: ModuleCache = new ModuleCache()
             new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
             new DependenciesNodePass(cpg, moduleCache).createAndApply()
+            // Fetch all dependency after pass
+            val dependencies = DependencyReport.getDependencyList(xtocpg)
+            new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
 
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies),
               sourceRepoLocation
             ) match {
               case Left(err) =>

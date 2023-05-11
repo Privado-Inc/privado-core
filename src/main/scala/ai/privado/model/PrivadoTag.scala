@@ -92,6 +92,7 @@ object Language extends Enumeration {
   val JAVA       = Value("java")
   val JAVASCRIPT = Value("javascript")
   val PYTHON     = Value("python")
+  val RUBY       = Value("ruby")
   val DEFAULT    = Value("default")
   val UNKNOWN    = Value("unknown")
   def withNameWithDefault(name: String): Value = {
@@ -146,6 +147,7 @@ object ConfigRuleType extends Enumeration {
   val SEMANTICS      = Value("semantics")
   val SINK_SKIP_LIST = Value("sinkSkipList")
   val SYSTEM_CONFIG  = Value("systemConfig")
+  val AUDIT_CONFIG   = Value("auditConfig")
 
   def withNameDefaultHandler(name: String): Value = {
     if (name != null)

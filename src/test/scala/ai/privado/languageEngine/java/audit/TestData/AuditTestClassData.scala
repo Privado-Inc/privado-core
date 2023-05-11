@@ -145,6 +145,21 @@ object AuditTestClassData {
       |      <version>4.13.2</version>
       |      <scope>test</scope>
       |    </dependency>
+      |    <dependency>
+      |     <groupId>org.elasticsearch.client</groupId>
+      |     <artifactId>rest</artifactId>
+      |     <version>5.5.3</version>
+      |    </dependency>
+      |    <dependency>
+      |     <groupId>org.http4k</groupId>
+      |     <artifactId>http4k-connect-core</artifactId>
+      |     <version>3.39.2.0</version>
+      |    </dependency>
+      |    <dependency>
+      |     <groupId>com.github.scala-incubator.io</groupId>
+      |     <artifactId>scala-io-file_2.11</artifactId>
+      |     <version>0.4.3-1</version>
+      |    </dependency>
       |  </dependencies>
       |
       |</project>

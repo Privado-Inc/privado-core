@@ -123,7 +123,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
   )
 
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 

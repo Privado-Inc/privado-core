@@ -220,7 +220,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
     val outputFile = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
-      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
@@ -239,7 +239,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
     val outputFile = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
-      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+      ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())

@@ -26,6 +26,7 @@ import ai.privado.cache.{AppCache, Environment, RuleCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
+import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
 import ai.privado.model._
@@ -57,7 +58,8 @@ object ScanProcessor extends CommandProcessor {
       List[RuleInfo](),
       List[Semantic](),
       List[RuleInfo](),
-      List[SystemConfig]()
+      List[SystemConfig](),
+      List[RuleInfo]()
     )
 
   def parseRules(rulesPath: String, lang: Language): ConfigAndRules = {
@@ -173,7 +175,17 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last)
                           )
                         )
-                        .filter(filterSystemConfigByLang)
+                        .filter(filterSystemConfigByLang),
+                      auditConfig = configAndRules.auditConfig
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            categoryTree = pathTree,
+                            catLevelTwo = pathTree.apply(2),
+                            language = Language.withNameWithDefault(pathTree.last)
+                          )
+                        )
+                        .filter(filterByLang)
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -196,7 +208,8 @@ object ScanProcessor extends CommandProcessor {
               threats = a.threats ++ b.threats,
               semantics = a.semantics ++ b.semantics,
               sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
-              systemConfig = a.systemConfig ++ b.systemConfig
+              systemConfig = a.systemConfig ++ b.systemConfig,
+              auditConfig = a.auditConfig ++ b.auditConfig
             )
           )
       catch {
@@ -246,6 +259,7 @@ object ScanProcessor extends CommandProcessor {
     val semantics    = externalConfigAndRules.semantics ++ internalConfigAndRules.semantics
     val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
+    val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
     val mergedRules =
       ConfigAndRules(
         sources = sources.distinctBy(_.id),
@@ -256,7 +270,8 @@ object ScanProcessor extends CommandProcessor {
         threats = threats.distinctBy(_.id),
         semantics = semantics.distinctBy(_.signature),
         sinkSkipList = sinkSkipList.distinctBy(_.id),
-        systemConfig = systemConfig
+        systemConfig = systemConfig,
+        auditConfig = auditConfig.distinctBy(_.id)
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
@@ -269,7 +284,8 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.sinks.size +
           mergedRules.collections.size +
           mergedRules.policies.size +
-          mergedRules.exclusions.size
+          mergedRules.exclusions.size +
+          mergedRules.auditConfig.size
       )
     }
 
@@ -320,6 +336,9 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
                 PythonProcessor.createPythonCpg(getProcessedRule(Language.PYTHON), sourceRepoLocation, lang)
+              case language if language == Languages.RUBYSRC =>
+                println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
+                RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
