@@ -53,7 +53,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       }
       case Language.JAVASCRIPT => configFiles(projectRoot, Set(FileExtensions.JSON)).toArray
       case Language.PYTHON =>
-        configFiles(projectRoot, Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.CONF)).toArray
+        configFiles(
+          projectRoot,
+          Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+        ).toArray
     }
   }
 
@@ -75,7 +78,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       loadAndConvertXMLtoProperties(file, builder)
     } else if (file.endsWith(".ini")) {
       parseINIFiles(file)
-    } else if (file.matches(".*(?i)env.*")) {
+    } else if (file.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*")) {
       getDotenvKeyValuePairs(file)
     } else if (file.endsWith(".json")) {
       getJSONKeyValuePairs(file)
@@ -128,19 +131,23 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
   private def getDotenvKeyValuePairs(file: String): List[(String, String)] = {
     val envProps = new Properties()
-    Source
-      .fromFile(file)
-      .getLines()
-      .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
-      .foreach(line => {
-        try {
-          val Array(key, value) = line.split("=", 2)
-          envProps.setProperty(key, value)
-        } catch {
-          case e: Throwable =>
-            logger.debug(s"Error splitting the required line. ${e.toString}")
-        }
-      })
+    try {
+      Source
+        .fromFile(file)
+        .getLines()
+        .filter(line => line.trim.nonEmpty && !line.startsWith("#"))
+        .foreach(line => {
+          try {
+            val Array(key, value) = line.split("=", 2)
+            envProps.setProperty(key, value)
+          } catch {
+            case e: Throwable =>
+              logger.debug(s"Error splitting the required line. ${e.toString}")
+          }
+        })
+    } catch {
+      case e: Throwable => logger.debug("Input is not in the correct format")
+    }
 
     envProps.asScala
       .map(prop => (prop._1, prop._2))
@@ -155,8 +162,12 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
             .flattenAsMap(json.toString)
             .asScala
             .toList
-            .collect(p => (p._1, p._2.toString))
-            .toList
+            .map(p => {
+              if (p._2 == null)
+                ("", "")
+              else
+                (p._1, p._2.asInstanceOf[String])
+            })
         } catch {
           case e: Throwable =>
             logger.trace(s"Error while creating properties node for file $file")
@@ -312,7 +323,13 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .concat(getListOfFiles(projectRoot).map(f => f.getAbsolutePath).filter(_.matches(".*\\.env.*")))
+      .concat(
+        getListOfFiles(projectRoot)
+          .map(f => {
+            f.getAbsolutePath
+          })
+          .filter(_.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*"))
+      )
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
   }
 

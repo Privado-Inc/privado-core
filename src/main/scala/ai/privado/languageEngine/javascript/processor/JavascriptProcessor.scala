@@ -29,12 +29,6 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
-import ai.privado.languageEngine.javascript.passes.methodfullname.{
-  MethodFullName,
-  MethodFullNameForEmptyNodes,
-  MethodFullNameFromIdentifier
-}
-import io.joern.jssrc2cpg.passes.{ImportsPass, JavaScriptTypeHintCallLinker, JavaScriptTypeRecoveryPass}
 import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -46,13 +40,10 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
-import io.joern.x2cpg.X2Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -71,30 +62,11 @@ object JavascriptProcessor {
     xtocpg match {
       case Success(cpg) =>
         // Apply default overlays
-        X2Cpg.applyDefaultOverlays(cpg)
-        new ImportsPass(cpg).createAndApply()
-
-        logger.info("Applying data flow overlay")
-        val context = new LayerCreatorContext(cpg)
-        val options = new OssDataFlowOptions()
-        new OssDataFlow(options).run(context)
-        logger.info("=====================")
-        println(
-          s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-
-        new JavaScriptTypeRecoveryPass(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Run JavascriptTypeRecovery done in \t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        new JavaScriptTypeHintCallLinker(cpg).createAndApply()
         new PythonNaiveCallLinker(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
         new JSPropertyLinkerPass(cpg).createAndApply()
-
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
