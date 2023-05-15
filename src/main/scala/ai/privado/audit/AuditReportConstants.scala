@@ -8,6 +8,8 @@ object AuditReportConstants {
 
   val AUDIT_DATA_FLOW_SHEET_NAME = "Data Flow Audit"
 
+  val AUDIT_UNRESOLVED_SHEET_NAME = "Unresolved Flow"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
