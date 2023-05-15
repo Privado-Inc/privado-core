@@ -58,6 +58,7 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache, ru
     builder.addEdge(moduleNode, fileNode, EdgeTypes.SOURCE_FILE)
     dependencyList.foreach(dependency => {
       builder.addEdge(dependency, fileNode, EdgeTypes.SOURCE_FILE)
+      builder.addEdge(dependency, moduleNode, EdgeTypes.DEPENDENCY_MODULE)
     })
   }
   private def addGradleModuleNode(buildGradleInfo: BuildGradleInfo, builder: DiffGraphBuilder): NewModule = {

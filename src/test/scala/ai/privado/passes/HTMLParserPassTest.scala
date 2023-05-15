@@ -202,8 +202,9 @@ class HTMLParserPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     (inputDir / "sample.html").write(code)
     val outputFile = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
-    val rule: ConfigAndRules = ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List())
-    val ruleCache            = new RuleCache()
+    val rule: ConfigAndRules =
+      ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List(), List())
+    val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
     val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
     val cpg    = X2Cpg.withNewEmptyCpg(outputFile.toString(), config)((cpg, config) => {}).get

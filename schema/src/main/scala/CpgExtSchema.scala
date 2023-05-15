@@ -143,9 +143,14 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val dependencies = builder
     .addEdgeType(CpgSchemaConstants.MODULE_DEPENDENCY_EDGE_NAME)
 
+  val dependencyModuleEdge = builder
+    .addEdgeType(CpgSchemaConstants.DEPENDENCY_MODULE_EDGE_NAME)
+
   module.addOutEdge(edge = dependencies, inNode = dependency)
   module.addOutEdge(edge = sourceFile, inNode = file)
   dependency.addOutEdge(edge = sourceFile, inNode = file)
+  dependency.addOutEdge(edge = dependencyModuleEdge, inNode = module)
+
   templateDOM.addOutEdge(edge = sourceFile, inNode = file)
 
 }

@@ -275,6 +275,7 @@ object Utilities {
     val semantics    = rules.semantics.filter(getSemanticRuleByLang)
     val sinkSkipList = rules.sinkSkipList.filter(getRuleByLang)
     val systemConfig = rules.systemConfig.filter(getSystemConfigByLang)
+    val auditConfig  = rules.auditConfig.filter(getRuleByLang)
 
     ConfigAndRules(
       sources,
@@ -285,7 +286,8 @@ object Utilities {
       exclusions,
       semantics,
       sinkSkipList,
-      systemConfig
+      systemConfig,
+      auditConfig
     )
   }
 
