@@ -103,7 +103,9 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have non-personal semantics for 1st Level class" in {
-      semantics.elements.contains(FlowSemantic("BaseClass.getId:java.lang.String()", List(ParamMapping(0, 0)))) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic("BaseClass.getId:java.lang.String()", List(ParamMapping(0, 0)))
+      ) shouldBe true
     }
 
     "not have personal semantics for 1st Level class" in {
@@ -111,7 +113,9 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have non-personal semantics for 2nd Level class by member" in {
-      semantics.elements.contains(FlowSemantic("Customer.getType:java.lang.String()", List(ParamMapping(0, 0)))) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic("Customer.getType:java.lang.String()", List(ParamMapping(0, 0)))
+      ) shouldBe true
     }
 
     "not have personal semantics for 2nd Level class by member" in {
@@ -119,10 +123,17 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
     }
 
     "have setters semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(FlowSemantic("User.setAmount:void(int)", List(ParamMapping(0, 0), ParamMapping(1, 1)))) shouldBe true
-      semantics.elements.contains(FlowSemantic("User.setId:void(java.lang.String)", List(ParamMapping(0, 0), ParamMapping(1, 1)))) shouldBe true
       semantics.elements.contains(
-        FlowSemantic("User.setFirstName:void(java.lang.String)", List(ParamMapping(0, 0), ParamMapping(1, 0), ParamMapping(1, 1)))
+        FlowSemantic("User.setAmount:void(int)", List(ParamMapping(0, 0), ParamMapping(1, 1)))
+      ) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic("User.setId:void(java.lang.String)", List(ParamMapping(0, 0), ParamMapping(1, 1)))
+      ) shouldBe true
+      semantics.elements.contains(
+        FlowSemantic(
+          "User.setFirstName:void(java.lang.String)",
+          List(ParamMapping(0, 0), ParamMapping(1, 0), ParamMapping(1, 1))
+        )
       ) shouldBe true
     }
 
@@ -131,7 +142,10 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
         FlowSemantic("BaseClass.setId:void(java.lang.String)", List(ParamMapping(0, 0), ParamMapping(1, 1)))
       ) shouldBe true
       semantics.elements.contains(
-        FlowSemantic("BaseClass.setFirstName:void(java.lang.String)", List(ParamMapping(0, 0), ParamMapping(1, 0), ParamMapping(1, 1)))
+        FlowSemantic(
+          "BaseClass.setFirstName:void(java.lang.String)",
+          List(ParamMapping(0, 0), ParamMapping(1, 0), ParamMapping(1, 1))
+        )
       ) shouldBe true
     }
 
@@ -140,7 +154,10 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
         FlowSemantic("Customer.setType:void(java.lang.String)", List(ParamMapping(0, 0), ParamMapping(1, 1)))
       ) shouldBe true
       semantics.elements.contains(
-        FlowSemantic("Customer.setBaseClass:void(BaseClass)", List(ParamMapping(0, 0), ParamMapping(1, 0), ParamMapping(1, 1)))
+        FlowSemantic(
+          "Customer.setBaseClass:void(BaseClass)",
+          List(ParamMapping(0, 0), ParamMapping(1, 0), ParamMapping(1, 1))
+        )
       ) shouldBe true
     }
   }
