@@ -44,4 +44,6 @@ object CpgSchemaConstants {
 
   val MANDATORY_EMPTY_VALUE = ""
 
+  val DEPENDENCY_MODULE_EDGE_NAME = "DEPENDENCY_MODULE"
+
 }

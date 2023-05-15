@@ -1,0 +1,69 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/auditConfig.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "auditConfig"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "auditConfig": {
+      "$id": "#root/auditConfig",
+      "title": "auditConfig",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/auditConfig/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/auditConfig/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "AuditConfig.Test"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/auditConfig/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Audit config dependency info"
+            ],
+            "pattern": "^.*$"
+          },
+          "patterns": {
+            "$id": "#root/auditConfig/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/auditConfig/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                ".*(SpringMVC).*"
+              ],
+              "pattern": "^.*$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

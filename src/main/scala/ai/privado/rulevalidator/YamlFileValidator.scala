@@ -42,6 +42,8 @@ object YamlFileValidator {
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinkSkipList.json")).mkString
   private val SYSTEM_CONFIG =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}systemConfig.json")).mkString
+  private val AUDIT_CONFIG =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}auditConfig.json")).mkString
   val mapper = new ObjectMapper(new YAMLFactory())
 
   val factory: JsonSchemaFactory = JsonSchemaFactory
@@ -193,6 +195,7 @@ object YamlFileValidator {
       case ConfigRuleType.EXCLUSIONS     => Right(ConfigRuleType.EXCLUSIONS.toString, EXCLUSIONS)
       case ConfigRuleType.SINK_SKIP_LIST => Right(ConfigRuleType.SINK_SKIP_LIST.toString, SINK_SKIP_LIST)
       case ConfigRuleType.SYSTEM_CONFIG  => Right(ConfigRuleType.SYSTEM_CONFIG.toString, SYSTEM_CONFIG)
+      case ConfigRuleType.AUDIT_CONFIG   => Right(ConfigRuleType.AUDIT_CONFIG.toString, AUDIT_CONFIG)
 
       case _ =>
         if (callerCommand == CommandConstants.VALIDATE) println(PRETTY_LINE_SEPARATOR)
