@@ -176,7 +176,7 @@ class Dataflow(cpg: Cpg) {
     val lang = AppCache.repoLanguage
     lang match {
       case Language.JAVA   => JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
-      case Language.PYTHON => PythonSemanticGenerator.getSemantics(cpg, ruleCache)
+      case Language.PYTHON => PythonSemanticGenerator.getSemantics(cpg, ruleCache, privadoScanConfig)
       case _               => JavaSemanticGenerator.getDefaultSemantics
     }
   }
