@@ -10,7 +10,7 @@ import scala.collection.mutable.ListBuffer
 
 object UnresolvedFlowReport {
   val workbookResult: ListBuffer[List[String]] = ListBuffer[List[String]]()
-  def processUnresolvedFlow() : List[List[String]]  = {
+  def processUnresolvedFlow(): List[List[String]] = {
     val expendedSourceSinkInfo = AuditCache.getUnfilteredFlow()
 
     expendedSourceSinkInfo.foreach(sourceSinkInfo => {
@@ -24,12 +24,12 @@ object UnresolvedFlowReport {
 
     List(
       List(
-        "Source",
-        "Sink",
-        "Flow Id",
-        "Code Snippet"
+        AuditReportConstants.DEPENDENCY_UNRESOLVED_SOURCE_NAME,
+        AuditReportConstants.DEPENDENCY_UNRESOLVED_SINK_NAME,
+        AuditReportConstants.DEPENDENCY_UNRESOLVED_FLOW_ID_NAME,
+        AuditReportConstants.DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME
       )
-    ) ++ workbookResult
+    ) ++ workbookResult.groupBy(_.head).values.flatMap(identity).toList
   }
 
   def getUnresolvedSink(cpg: Cpg): List[CfgNode] = {

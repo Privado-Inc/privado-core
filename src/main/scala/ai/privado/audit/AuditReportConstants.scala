@@ -94,4 +94,12 @@ object AuditReportConstants {
   val DEPENDENCY_UTILITY_LIBRARY_NAME = "Utility"
 
   val DEPENDENCY_UNKNOWN_LIBRARY_NAME = "Unknown"
+
+  val DEPENDENCY_UNRESOLVED_SOURCE_NAME = "Source"
+
+  val DEPENDENCY_UNRESOLVED_SINK_NAME = "Sink (methodFullName)"
+
+  val DEPENDENCY_UNRESOLVED_FLOW_ID_NAME = "flowId"
+
+  val DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME = "Code Snippet"
 }

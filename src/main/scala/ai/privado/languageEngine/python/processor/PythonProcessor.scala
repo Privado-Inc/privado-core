@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.python.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
@@ -14,7 +14,8 @@ import ai.privado.model.Constants.{
   outputAuditFileName,
   outputDirectoryName,
   outputFileName,
-  outputIntermediateFileName
+  outputIntermediateFileName,
+  outputUnresolvedFilename
 }
 import ai.privado.semantic.Language._
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -148,6 +149,21 @@ object PythonProcessor {
                   s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
+
+            // Exporting the Unresolved report
+            JSONExporter.UnresolvedFlowFileExport(
+              outputUnresolvedFilename,
+              sourceRepoLocation,
+              DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                )
+            }
           }
 
           // Exporting the Intermediate report
@@ -155,7 +171,7 @@ object PythonProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getIntermediateDataFlow()
+              DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)

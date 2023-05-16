@@ -33,7 +33,11 @@ object AuditReportEntryPoint {
     createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
 
     // Set Unresolved flow into Sheet
-    createSheet(workbook, AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME, UnresolvedFlowReport.processUnresolvedFlow())
+    createSheet(
+      workbook,
+      AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
+      UnresolvedFlowReport.processUnresolvedFlow()
+    )
 
     workbook
   }

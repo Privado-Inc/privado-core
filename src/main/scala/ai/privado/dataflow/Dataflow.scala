@@ -34,7 +34,7 @@ import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -214,8 +214,8 @@ object Dataflow {
     // Fetching the sourceId, sinkId and path Info
     val expendedFlow = ListBuffer[DataFlowPathIntermediateModel]()
     dataflowPathsUnfiltered.map(path => {
-      val paths = path.elements.map(node => ExporterUtility.convertIndividualPathElement(node))
-      val pathId = DuplicateFlowProcessor.calculatePathId(path)
+      val paths    = path.elements.map(node => ExporterUtility.convertIndividualPathElement(node))
+      val pathId   = DuplicateFlowProcessor.calculatePathId(path)
       var sourceId = ""
       if (path.elements.head.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name).nonEmpty) {
         sourceId = path.elements.head.tag
@@ -227,8 +227,11 @@ object Dataflow {
       } else {
         sourceId = Traversal(path.elements.head).isIdentifier.typeFullName.headOption.getOrElse("")
       }
-      val sinkId = path.elements.last.tag.nameExact(Constants.id).value.headOption.getOrElse("")
-
+      var sinkId = path.elements.last.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+      // fetch call node methodeFullName if tag not present
+      if (sinkId.isEmpty) {
+        sinkId = path.elements.last.asInstanceOf[Call].methodFullName
+      }
       expendedFlow += DataFlowPathIntermediateModel(sourceId, sinkId, pathId.getOrElse(""), paths)
     })
     expendedFlow.toList

@@ -33,9 +33,9 @@ object AuditCache {
 
   private val flowPathBeforeSemantics: mutable.Set[SourcePathInfo] = new mutable.HashSet[SourcePathInfo]()
 
-  private var unfilteredFlow: List[DataFlowPathIntermediateModel] = null
+  var unfilteredFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
 
-  def setUnfilteredFlow(flows: List[DataFlowPathIntermediateModel]) : Unit = unfilteredFlow = flows
+  def setUnfilteredFlow(flows: List[DataFlowPathIntermediateModel]): Unit = unfilteredFlow = flows
 
   def getUnfilteredFlow(): List[DataFlowPathIntermediateModel] = unfilteredFlow.toList
 

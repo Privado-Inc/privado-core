@@ -266,4 +266,28 @@ object JSONExporter {
         Left(ex.toString)
     }
   }
+
+  def UnresolvedFlowFileExport(
+    outputFileName: String,
+    repoPath: String,
+    dataflows: List[DataFlowSourceIntermediateModel]
+  ): Either[String, Unit] = {
+    logger.info("Initiated the Unresolved flow exporter engine")
+    val output = mutable.LinkedHashMap[String, Json]()
+    try {
+      output.addOne(Constants.dataFlow -> dataflows.asJson)
+      logger.info("Completed Unresolved Flow Exporting")
+
+      val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Unresolved flow Exporter engine")
+      Right(())
+    } catch {
+      case ex: Exception =>
+        println("Failed to export unresolved output")
+        logger.debug("Failed to export unresolved output", ex)
+        Left(ex.toString)
+    }
+  }
 }
