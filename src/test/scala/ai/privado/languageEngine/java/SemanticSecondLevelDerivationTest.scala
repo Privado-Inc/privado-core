@@ -32,6 +32,7 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
 
   val privadoScanConfig: PrivadoInput = PrivadoInput(disable2ndLevelClosure = true)
   var semantics: Semantics            = Semantics.empty
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
