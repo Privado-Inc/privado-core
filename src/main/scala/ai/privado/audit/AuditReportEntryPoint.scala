@@ -1,7 +1,8 @@
 package ai.privado.audit
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.{Cell, FillPatternType, IndexedColors, Row, Workbook}
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
 
@@ -10,7 +11,7 @@ import scala.util.Try
 object AuditReportEntryPoint {
 
   // Audit report generation for java
-  def getAuditWorkbook(xtocpg: Try[Cpg], taggerCache: TaggerCache): Workbook = {
+  def getAuditWorkbook(xtocpg: Try[Cpg], taggerCache: TaggerCache, dependencies: Set[ModuleDependency]): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
     createSheet(
@@ -25,7 +26,7 @@ object AuditReportEntryPoint {
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
-      DependencyReport.processDependencyAudit(xtocpg)
+      DependencyReport.processDependencyAudit(dependencies)
     )
 
     // Set Data Flow report into Sheet

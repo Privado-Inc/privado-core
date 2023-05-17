@@ -521,7 +521,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
   )
 
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 }

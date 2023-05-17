@@ -58,7 +58,8 @@ case class ConfigAndRules(
   exclusions: List[RuleInfo],
   semantics: List[Semantic],
   sinkSkipList: List[RuleInfo],
-  systemConfig: List[SystemConfig]
+  systemConfig: List[SystemConfig],
+  auditConfig: List[RuleInfo]
 )
 
 case class DataFlow(sources: List[String], sinks: List[String])
@@ -175,6 +176,7 @@ object CirceEnDe {
       val semantics    = c.downField(Constants.semantics).as[List[Semantic]]
       val sinkSkipList = c.downField(Constants.sinkSkipList).as[List[RuleInfo]]
       val systemConfig = c.downField(Constants.systemConfig).as[List[SystemConfig]]
+      val auditConfig  = c.downField(Constants.auditConfig).as[List[RuleInfo]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -185,7 +187,8 @@ object CirceEnDe {
           threats = threats.getOrElse(List[PolicyOrThreat]()),
           semantics = semantics.getOrElse(List[Semantic]()),
           sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]()),
-          systemConfig = systemConfig.getOrElse(List[SystemConfig]())
+          systemConfig = systemConfig.getOrElse(List[SystemConfig]()),
+          auditConfig = auditConfig.getOrElse(List[RuleInfo]())
         )
       )
     }
