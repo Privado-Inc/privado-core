@@ -8,6 +8,8 @@ object AuditReportConstants {
 
   val AUDIT_DATA_FLOW_SHEET_NAME = "Data Flow Audit"
 
+  val AUDIT_UNRESOLVED_SHEET_NAME = "Unresolved Flow"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
@@ -92,4 +94,12 @@ object AuditReportConstants {
   val DEPENDENCY_UTILITY_LIBRARY_NAME = "Utility"
 
   val DEPENDENCY_UNKNOWN_LIBRARY_NAME = "Unknown"
+
+  val DEPENDENCY_UNRESOLVED_SOURCE_NAME = "Source"
+
+  val DEPENDENCY_UNRESOLVED_SINK_NAME = "Sink (methodFullName)"
+
+  val DEPENDENCY_UNRESOLVED_FLOW_ID_NAME = "flowId"
+
+  val DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME = "Code Snippet"
 }

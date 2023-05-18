@@ -278,4 +278,25 @@ object AuditTestClassData {
       |}
       |
       |""".stripMargin
+
+  val unresolvedBaseClass =
+    """package com.test.privado.audit;
+      |
+      |import com.test.privado.audit.UnresolvedTeacherClass;
+      |import org.apache.logging.log4j.Logger;
+      |
+      |import java.util.Map;
+      |import java.util.ArrayList;
+      |
+      |public class UnresolvedBaseClass {
+      |
+      |   public void process1() {
+      |
+      |     String firstName = "name";
+      |     String first = UnresolvedTeacherClass.builder().firstName(firstName);
+      |   }
+      |
+      |}
+      |
+      |""".stripMargin
 }

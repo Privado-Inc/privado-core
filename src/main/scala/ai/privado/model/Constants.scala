@@ -98,6 +98,7 @@ object Constants {
   val cpgOutputFileName            = "cpg.bin"
   val outputAuditFileName          = "audit-report.xlsx"
   val outputSemanticFileName       = "semantic.txt"
+  val outputUnresolvedFilename     = "unresolved-flow.json"
 
   // database details
   val dbName      = "dbName"

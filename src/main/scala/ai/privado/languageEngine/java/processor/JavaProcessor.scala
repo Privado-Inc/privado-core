@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -40,6 +40,7 @@ import ai.privado.model.Constants.{
   outputDirectoryName,
   outputFileName,
   outputIntermediateFileName,
+  outputUnresolvedFilename,
   storages
 }
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -56,7 +57,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
-import ai.privado.passes.{HTMLParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.{HTMLParserPass, SQLParser}
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
@@ -154,6 +155,21 @@ object JavaProcessor {
                   s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
+
+            // Exporting the Unresolved report
+            JSONExporter.UnresolvedFlowFileExport(
+              outputUnresolvedFilename,
+              sourceRepoLocation,
+              DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                )
+            }
           }
 
           // Exporting the Intermediate report
@@ -161,7 +177,7 @@ object JavaProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getIntermediateDataFlow()
+              DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)

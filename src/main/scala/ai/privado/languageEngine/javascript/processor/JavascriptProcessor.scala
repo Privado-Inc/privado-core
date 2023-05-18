@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
@@ -132,7 +132,7 @@ object JavascriptProcessor {
           JSONExporter.IntermediateFileExport(
             outputIntermediateFileName,
             sourceRepoLocation,
-            DataFlowCache.getIntermediateDataFlow()
+            DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -140,6 +140,21 @@ object JavascriptProcessor {
             case Right(_) =>
               println(
                 s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+              )
+          }
+
+          // Exporting the Unresolved report
+          JSONExporter.UnresolvedFlowFileExport(
+            outputUnresolvedFilename,
+            sourceRepoLocation,
+            DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+          ) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              errorMsg += err
+            case Right(_) =>
+              println(
+                s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
               )
           }
         }
