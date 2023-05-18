@@ -46,7 +46,7 @@ import io.joern.javasrc2cpg.Config
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
+import ai.privado.passes.{HTMLParserPass, SQLParser, SQLPropertyPass}
 import io.joern.x2cpg.passes.base.AstLinkerPass
 
 import java.nio.file.{Files, Paths}
@@ -97,6 +97,7 @@ object PythonProcessor {
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {

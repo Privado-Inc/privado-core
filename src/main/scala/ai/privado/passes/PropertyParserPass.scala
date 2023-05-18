@@ -11,7 +11,7 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
-import java.io.File
+import java.io.{File, StringReader}
 import scala.io.Source
 import java.util.Properties
 import scala.jdk.CollectionConverters._
@@ -24,8 +24,13 @@ import com.typesafe.config._
 import scala.xml.XML
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
+import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
+
+import scala.jdk.CollectionConverters._
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+import org.yaml.snakeyaml.constructor.SafeConstructor
 
 object FileExtensions {
   val PROPERTIES = ".properties"
@@ -155,30 +160,37 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   }
 
   private def loadAndConvertYMLtoProperties(file: String): List[(String, String)] = {
-    parser.parse(better.files.File(file).contentAsString) match {
-      case Right(json) => {
-        try {
-          JsonFlattener
-            .flattenAsMap(json.toString)
-            .asScala
-            .toList
-            .map(p => {
-              if (p._2 == null)
-                ("", "")
-              else
-                (p._1, p._2.asInstanceOf[String])
-            })
-        } catch {
-          case e: Throwable =>
-            logger.trace(s"Error while creating properties node for file $file")
-            logger.debug(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
-            List[("", "")]()
-        }
-      }
-      case Left(error) => {
-        List[("", "")]()
+
+    val yamlContent = better.files.File(file).contentAsString // Read the YAML file content as a string
+
+    val yaml                           = new Yaml(new SafeConstructor())
+    val rootNode                       = yaml.compose(new StringReader(yamlContent))
+    var result: List[(String, String)] = List[(String, String)]()
+    processNode(rootNode, "")
+
+    def processNode(node: Node, path: String): Unit = {
+      node match {
+        case mappingNode: MappingNode =>
+          mappingNode.getValue.asScala.foreach { nodeTuple: NodeTuple =>
+            val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
+            val valueNode = nodeTuple.getValueNode
+            val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
+            processNode(valueNode, fullPath)
+          }
+        case sequenceNode: SequenceNode =>
+          sequenceNode.getValue.asScala.zipWithIndex.foreach { case (valueNode, index) =>
+            val fullPath = s"$path[$index]"
+            processNode(valueNode, fullPath)
+          }
+        case scalarNode: ScalarNode =>
+          val line   = scalarNode.getStartMark.getLine + 1
+          val column = scalarNode.getStartMark.getColumn + 1
+          val value  = scalarNode.getValue
+          result = result.appended((path, s"$value...$line...$column"))
       }
     }
+
+    result
   }
 
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
@@ -300,9 +312,22 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
-    val propertyNode = NewJavaProperty().name(key).value(value)
-    builder.addNode(propertyNode)
-    propertyNode
+    try {
+      val valueLineCol = value.split("\\.\\.\\.")
+      val propertyNode =
+        NewJavaProperty()
+          .name(key)
+          .value(valueLineCol(0))
+          .lineNumber(valueLineCol(1).toInt)
+          .columnNumber(valueLineCol(2).toInt)
+      builder.addNode(propertyNode)
+      propertyNode
+    } catch {
+      case e: Throwable =>
+        val propertyNode = NewJavaProperty().name(key).value(value)
+        builder.addNode(propertyNode)
+        propertyNode
+    }
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {

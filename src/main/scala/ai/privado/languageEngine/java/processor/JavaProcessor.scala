@@ -30,7 +30,7 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.ExcelExporter
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{ModuleFilePass, JavaPropertyLinkerPass}
+import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
@@ -55,8 +55,8 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.passes.module.{DependenciesNodePass, DependenciesCategoryPass}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
+import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
+import ai.privado.passes.{HTMLParserPass, SQLParser, SQLPropertyPass}
 
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}

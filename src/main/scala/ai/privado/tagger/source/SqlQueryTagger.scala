@@ -38,6 +38,7 @@ class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgP
     cpg.sqlColumn
       .name(ruleInfo.combinedRulePattern)
       .foreach(columnNode => {
+        println(columnNode.name)
         storeForTag(builder, columnNode, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
         addRuleTags(builder, columnNode, ruleInfo, ruleCache)
       })
