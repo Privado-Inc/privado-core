@@ -4,6 +4,7 @@ import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.DataFlowPathModel
+import ai.privado.model.exporter.DataFlowPathIntermediateModel
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -31,6 +32,12 @@ object AuditCache {
   private var dataflowMapByPathId: Map[String, Path] = null
 
   private val flowPathBeforeSemantics: mutable.Set[SourcePathInfo] = new mutable.HashSet[SourcePathInfo]()
+
+  var unfilteredFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
+
+  def setUnfilteredFlow(flows: List[DataFlowPathIntermediateModel]): Unit = unfilteredFlow = flows
+
+  def getUnfilteredFlow(): List[DataFlowPathIntermediateModel] = unfilteredFlow.toList
 
   def addIntoBeforeSemantics(sourcePathInfo: SourcePathInfo): Unit = flowPathBeforeSemantics += sourcePathInfo
 
