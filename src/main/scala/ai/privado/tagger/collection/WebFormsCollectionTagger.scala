@@ -45,7 +45,7 @@ class WebFormsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPa
       */
     ruleCache.getRule.sources.foreach(sourceRule => {
       val rule =
-        s"${collectionRuleInfo.combinedRulePattern}.*(?:name|id)=(?:\"|\')(${sourceRule.combinedRulePattern})(?:\"|\').*"
+        s"${collectionRuleInfo.combinedRulePattern}.*(?:name|id|label|value)=(?:\\{|t){0,2}(?:\"|\'|`)(${sourceRule.combinedRulePattern})(?:\"|\'|`).*"
       cpg.templateDom
         // Each HTML element/template element translates into multiple CPG nodes.
         // Like
