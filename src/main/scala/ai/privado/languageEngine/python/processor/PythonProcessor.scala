@@ -25,7 +25,7 @@ import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import io.joern.pysrc2cpg.{
   ImportsPass,
-  InheritanceFullNamePass,
+  PythonInheritanceNamePass,
   Py2CpgOnFileSystem,
   Py2CpgOnFileSystemConfig,
   PythonNaiveCallLinker,
@@ -73,7 +73,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
-          new InheritanceFullNamePass(cpg).createAndApply()
+          new PythonInheritanceNamePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
