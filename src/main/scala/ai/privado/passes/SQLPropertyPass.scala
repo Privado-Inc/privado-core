@@ -34,8 +34,6 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     val lineNumber   = property.lineNumber.getOrElse(-1).asInstanceOf[Int]
     val columnNumber = property.columnNumber.getOrElse(-1).asInstanceOf[Int]
 
-    println(query)
-
     try {
       SQLParser.parseSqlQuery(query) match {
         case Some(parsedQueryList) =>
@@ -50,13 +48,12 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             )
           }
         case None =>
-          println("failed")
-          logger.debug("Failed to parse")
+          logger.debug("Failed to parse query: There might be a problem with the syntax.")
           None
       }
     } catch {
       case ex: Exception =>
-        println(s"Error while parsing SQL query at line $lineNumber: ${ex.getMessage}")
+        logger.debug(s"Error while parsing SQL query at line $lineNumber: ${ex.getMessage}")
         None
     }
   }
