@@ -110,6 +110,8 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
         |      <label>
         |        Email:
         |        <input type="email" name="email" onChange={handleChange} />
+        |        <Input label={`Email Address`} placeholder={t`What happened?`} {...form.register('subject')} />
+        |        <TextArea label={t`emailId`} placeholder={t`How can we help?`} {...form.register('message')} />
         |      </label>
         |      <label>
         |        Message:
@@ -126,7 +128,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       val taggedJsxOpenElements = cpg.templateDom
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
         .l
-      taggedJsxOpenElements.size shouldBe 1
+      taggedJsxOpenElements.size shouldBe 3
       val jsxOpenElement = taggedJsxOpenElements.head.get()
       jsxOpenElement.tag.name(Constants.collectionSource).value.head shouldBe sourceId
       jsxOpenElement.name shouldBe Constants.jsxOpenElement
@@ -134,7 +136,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       val taggedJsxElements = cpg.templateDom
         .where(_.tag.nameExact(Constants.id).valueExact(sourceId))
         .l
-      taggedJsxElements.size shouldBe 1
+      taggedJsxElements.size shouldBe 3
       val jsxElement = taggedJsxElements.head.get()
       jsxElement.name shouldBe Constants.jsxElement
     }
