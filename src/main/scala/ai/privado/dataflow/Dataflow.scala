@@ -29,6 +29,7 @@ import ai.privado.dataflow.Dataflow.getExpendedFlowInfo
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
+import ai.privado.languageEngine.javascript.JavascriptSemanticGenerator
 import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
 import io.joern.dataflowengineoss.language._
@@ -175,9 +176,10 @@ class Dataflow(cpg: Cpg) {
   def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
     val lang = AppCache.repoLanguage
     lang match {
-      case Language.JAVA   => JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
-      case Language.PYTHON => PythonSemanticGenerator.getSemantics(cpg, ruleCache, privadoScanConfig)
-      case _               => JavaSemanticGenerator.getDefaultSemantics
+      case Language.JAVA       => JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
+      case Language.PYTHON     => PythonSemanticGenerator.getSemantics(cpg, ruleCache, privadoScanConfig)
+      case Language.JAVASCRIPT => JavascriptSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
+      case _                   => JavaSemanticGenerator.getDefaultSemantics
     }
   }
 
