@@ -32,7 +32,8 @@ import org.slf4j.LoggerFactory
 
 class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger               = LoggerFactory.getLogger(getClass)
+  private val cloudDomainRegexBase = ".*(amazonaws\\.com|orcalecloud\\.com|azure\\.com"
 
   override def generateParts(): Array[JavaProperty] = {
     // Spring Data JDBC
@@ -46,14 +47,16 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
 
   override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
     try {
-      if (dbUrl.value.contains("jdbc:h2")) {
+      if (dbUrl.value.contains("jdbc:h2") && dbUrl.value.matches(s"$cloudDomainRegexBase).*")) {
         parsePropForSpringJdbcAndJpaH2(dbUrl)
-      } else if (dbUrl.value.contains("jdbc:oracle")) {
+      } else if (dbUrl.value.contains("jdbc:oracle") && dbUrl.value.matches(s"$cloudDomainRegexBase).*")) {
         parsePropForSpringJdbcAndJpaOracle(dbUrl)
-      } else if (dbUrl.value.contains("jdbc:")) {
+      } else if (dbUrl.value.contains("jdbc:") && dbUrl.value.matches(s"$cloudDomainRegexBase).*")) {
         parsePropForSpringJDBCAndJPA(dbUrl)
-      } else if (dbUrl.value.contains("mongodb")) {
+      } else if (dbUrl.value.contains("mongodb") && dbUrl.value.matches(s"$cloudDomainRegexBase|mongodb\\.net).*")) {
         parsePropForSpringDataMongo(dbUrl)
+      } else if (dbUrl.value.contains("postgres:") && dbUrl.value.matches(s"$cloudDomainRegexBase).*")) {
+        parsePropForPostgreSQL(dbUrl)
       } else if (
         dbUrl.name.contains("neo4j.host")
         && dbUrl.value.matches("(localhost|[^{]*\\..*\\.[^}]*)")
@@ -68,6 +71,30 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
     } catch {
       case e: Exception => logger.debug("Exception while processing db config: " + e)
     }
+  }
+
+  private def parsePropForPostgreSQL(dbUrl: JavaProperty): Unit = {
+    // Example postgre URL: - postgresql://myuser:mypassword@10.0.0.1:5432/mydatabase
+
+    try {
+      val tokens     = dbUrl.value.split("@")
+      val dbLocation = tokens.last.split("/")(0)
+      val dbName     = dbUrl.value.split("/").last
+      val dbVendor   = "postgresql"
+
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        "Storages.Postgres.ReadAndWrite"
+      )
+
+      DatabaseDetailsCache.addDatabaseDetails(
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        "Storages.Postgres.Read"
+      )
+    } catch {
+      case e: Throwable => logger.debug("Error parsing details for postgre SQL")
+    }
+
   }
 
   private def parsePropForSpringJdbcAndJpaOracle(dbUrl: JavaProperty): Unit = {
@@ -149,7 +176,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
   }
 
   private def parsePropForSpringDataMongo(dbUrl: JavaProperty): Unit = {
-
+    println(dbUrl.name, dbUrl.value)
     val dbVendor   = dbUrl.value.split(":")(0).split("\\+")(0)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
