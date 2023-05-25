@@ -33,6 +33,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
+import org.apache.logging.log4j.core.net.Priority
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 import overflowdb.traversal.Traversal
@@ -46,6 +47,12 @@ import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
+
+object Priority extends Enumeration {
+  val HIGHEST = Value(1)
+  val MEDIUM  = Value(0)
+  val LOW     = Value(-1)
+}
 
 object Utilities {
 
@@ -403,4 +410,18 @@ object Utilities {
     }
 
   }
+
+  def databaseURLPriority(dbUrl: String): Priority.Value = {
+
+    val ipPortRegex      = "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,4})(:[0-9]{1,4})?$"
+    val cloudDomainRegex = ".*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*"
+
+    if (dbUrl.matches(cloudDomainRegex))
+      Priority.HIGHEST;
+    else if (dbUrl.matches(ipPortRegex))
+      Priority.MEDIUM;
+    else
+      Priority.LOW
+  }
+
 }
