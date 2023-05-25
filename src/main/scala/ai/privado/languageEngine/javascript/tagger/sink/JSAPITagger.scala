@@ -50,5 +50,41 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       }
       storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
+
+    // Identification of script tag generated dynamically in code
+    // const n = document.createElement("script");
+    // n.type = "text/javascript";
+    // n.async = !0;
+    // n.src = "https://cdn.segment.com/analytics.js/v1/" + t + "/analytics.min.js";
+    // Tag the respective templateDom node as API sink
+    val parentBlocksOfHTMLScriptElement = cpg
+      .call("<operator>.fieldAccess")
+      .code(".*\\.src.*")
+      .argument
+      .isIdentifier
+      .filter((i) => i.typeFullName.contains("HTMLScriptElement"))
+      .parentBlock
+      .id
+      .l
+
+    val scriptLinks =
+      cpg
+        .literal(".*" + ruleInfo.combinedRulePattern + ".*")
+        .filter((i) => parentBlocksOfHTMLScriptElement.indexOf(i.parentBlock.head.id) > -1)
+        .l
+
+    scriptLinks.foreach((link) => {
+      var newRuleIdToUse = ruleInfo.id
+      val domain         = getDomainFromTemplates(link.code)
+      val callTag        = link.astParent
+      if (ruleInfo.id.equals(Constants.internalAPIRuleId))
+        addRuleTags(builder, callTag, ruleInfo, ruleCache)
+      else {
+        newRuleIdToUse = ruleInfo.id + "." + domain._2
+        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+        addRuleTags(builder, callTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+      }
+      storeForTag(builder, callTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
+    })
   }
 }
