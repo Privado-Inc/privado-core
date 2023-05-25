@@ -49,7 +49,8 @@ import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
 
 object Priority extends Enumeration {
-  val HIGHEST = Value(1)
+  val HIGHEST = Value(2)
+  val HIGH    = Value(1)
   val MEDIUM  = Value(0)
   val LOW     = Value(-1)
 }
@@ -414,15 +415,16 @@ object Utilities {
   def databaseURLPriority(dbUrl: String): Priority.Value = {
     val ipPortRegex =
       "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,4})(:[0-9]{1,4})?$" // For database urls which contain an IP address
-    val cloudDomainRegex = ".*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*" // For cloud domains
+    val cloudDomainRegex =
+      ".*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*" // For cloud domains
 
-    // Priority - Cloud URLS > IP Urls > localhost or test urls
-    if (dbUrl.matches(cloudDomainRegex))
-      Priority.HIGHEST
-    else if (dbUrl.matches(ipPortRegex))
-      Priority.MEDIUM
-    else
-      Priority.LOW
+    val cloudDomainRegexProd = ".*(prd|prod).*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*"
+
+    // Priority - PROD URLS w/ cloud > Cloud URLS > IP Urls > localhost or test urls
+    if (dbUrl.matches(cloudDomainRegexProd)) Priority.HIGHEST
+    else if (dbUrl.matches(cloudDomainRegex)) Priority.HIGH
+    else if (dbUrl.matches(ipPortRegex)) Priority.MEDIUM
+    else Priority.LOW
   }
 
 }
