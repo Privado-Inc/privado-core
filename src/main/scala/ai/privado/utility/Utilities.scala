@@ -412,14 +412,15 @@ object Utilities {
   }
 
   def databaseURLPriority(dbUrl: String): Priority.Value = {
+    val ipPortRegex =
+      "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,4})(:[0-9]{1,4})?$" // For database urls which contain an IP address
+    val cloudDomainRegex = ".*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*" // For cloud domains
 
-    val ipPortRegex      = "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,4})(:[0-9]{1,4})?$"
-    val cloudDomainRegex = ".*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*"
-
+    // Priority - Cloud URLS > IP Urls > localhost or test urls
     if (dbUrl.matches(cloudDomainRegex))
-      Priority.HIGHEST;
+      Priority.HIGHEST
     else if (dbUrl.matches(ipPortRegex))
-      Priority.MEDIUM;
+      Priority.MEDIUM
     else
       Priority.LOW
   }

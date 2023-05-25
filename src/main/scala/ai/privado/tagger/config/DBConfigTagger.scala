@@ -35,6 +35,26 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  private def addDatabaseDetailsMultiple(
+    rules: List[(String, String)],
+    dbUrl: JavaProperty,
+    dbName: String,
+    dbLocation: String,
+    dbVendor: String
+  ): Unit = {
+    rules.foreach(rule => {
+      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+        if (
+          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
+            dbUrl.value
+          ) // Compare the priority of the database url with already present url in the database cache
+        ) {
+          DatabaseDetailsCache.removeDatabaseDetails(rule._2) // Remove if current url has higher priority
+        }
+      }
+      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
+    })
+  }
   override def generateParts(): Array[JavaProperty] = {
     // Spring Data JDBC
     // We are seeing duplicate values. NEED TO INVESTIGATE
@@ -93,18 +113,8 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
       dbName = tokens(5)
     }
 
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
-            dbUrl.value
-          )
-        ) {
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-        }
-      }
-      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
-    })
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForSpringJdbcAndJpaH2(dbUrl: JavaProperty): Unit = {
@@ -136,18 +146,8 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
       }
     }
 
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
-            dbUrl.value
-          )
-        ) {
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-        }
-      }
-      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
-    })
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForSpringDataMongo(dbUrl: JavaProperty): Unit = {
@@ -158,18 +158,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
-            dbUrl.value
-          )
-        ) {
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-        }
-      }
-      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
-    })
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
@@ -187,18 +176,8 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
-            dbUrl.value
-          )
-        ) {
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-        }
-      }
-      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
-    })
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForNeo4jNativeDriver(dbUrl: JavaProperty): Unit = {
@@ -211,18 +190,8 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
     val dbLocation = dbUrl.value
     val dbName     = "Neo4j Graph Database"
 
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
-            dbUrl.value
-          )
-        ) {
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-        }
-      }
-      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
-    })
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForNeo4jSpringBootDriver(dbUrl: JavaProperty): Unit = {
@@ -238,18 +207,8 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
     // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
     val dbName = "Neo4j Graph Database"
 
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
-            dbUrl.value
-          )
-        ) {
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-        }
-      }
-      DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
-    })
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
 }
