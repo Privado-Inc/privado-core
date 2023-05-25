@@ -71,9 +71,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
   })
 
   val APISINKS_IGNORE_REGEX = topMatch.keys.mkString("^(", "|", ").*")
-  val apis = cacheCall
+  var apis = cacheCall
     .name(APISINKS_REGEX)
-    .methodFullNameNot(APISINKS_IGNORE_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .l
 
@@ -81,6 +80,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
     case 0 =>
       if (isPackageInImport(commonHttpPackages.r)) {
         MetricHandler.metricsData("apiTaggerVersion") = Json.fromString(APITaggerVersionJava.V1Tagger.toString)
+        // filter out the internal package sinks to reduce False positives only for V1 tagger
+        apis = apis.methodFullNameNot(APISINKS_IGNORE_REGEX).l
         APITaggerVersionJava.V1Tagger
       } else {
         MetricHandler.metricsData("apiTaggerVersion") = Json.fromString(APITaggerVersionJava.SkipTagger.toString)
