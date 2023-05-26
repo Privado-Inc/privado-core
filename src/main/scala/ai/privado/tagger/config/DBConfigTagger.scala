@@ -27,50 +27,113 @@ import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.DatabaseDetails
-import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.tagger.{PrivadoParallelCpgPass, PrivadoSimpleCpgPass}
+import ai.privado.utility.Utilities.databaseURLPriority
 import org.slf4j.LoggerFactory
 
-class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
+class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[JavaProperty] = {
-    // Spring Data JDBC
-    // We are seeing duplicate values. NEED TO INVESTIGATE
-    // Let's deduplicate the properties for the time being
-    // Databases:
-    // val propertySinks = cpg.property.filter(p => p.value matches ("jdbc:.*://.*/.*|mongodb(\\+srv)?:.*")).l.groupBy(_.value).map(_._2.head)
-    // val propertySinks = cpg.property.filter(p => p.value matches (".*")).l.groupBy(_.value).map(_._2.head)
-    cpg.property.dedup.toArray
+  private def addDatabaseDetailsMultiple(
+    rules: List[(String, String)],
+    dbUrl: JavaProperty,
+    dbName: String,
+    dbLocation: String,
+    dbVendor: String
+  ): Unit = {
+    rules.foreach(rule => {
+      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+        if (
+          databaseURLPriority(DatabaseDetailsCache.getDatabaseDetails(rule._2).get.dbLocation) < databaseURLPriority(
+            dbUrl.value
+          ) // Compare the priority of the database url with already present url in the database cache
+        ) {
+          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
+          DatabaseDetailsCache.addDatabaseDetails(
+            DatabaseDetails(dbName, dbVendor, dbLocation, rule._1),
+            rule._2
+          ) // Remove if current url has higher priority
+        }
+      } else {
+        DatabaseDetailsCache.addDatabaseDetails(DatabaseDetails(dbName, dbVendor, dbLocation, rule._1), rule._2)
+      }
+    })
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
-    try {
-      if (dbUrl.value.contains("jdbc:h2")) {
-        parsePropForSpringJdbcAndJpaH2(dbUrl)
-      } else if (dbUrl.value.contains("jdbc:oracle")) {
-        parsePropForSpringJdbcAndJpaOracle(dbUrl)
-      } else if (dbUrl.value.contains("jdbc:")) {
-        parsePropForSpringJDBCAndJPA(dbUrl)
-      } else if (dbUrl.value.contains("mongodb")) {
-        parsePropForSpringDataMongo(dbUrl)
-      } else if (
-        dbUrl.name.contains("neo4j.host")
-        && dbUrl.value.matches("(localhost|[^{]*\\..*\\.[^}]*)")
-        // The regex above is an attempt to match actual database host rather than the test ones or invalid ones
-        // It is supposed to match -> `123456789.databases.neo4j.io`, `neo4j.hosted.amazonaws.com`
-        // rather than `{$neo4j.host}` or empty values in config
-      ) {
-        parsePropForNeo4jNativeDriver(dbUrl)
-      } else if (dbUrl.name.contains("neo4j.driver.uri")) {
-        parsePropForNeo4jSpringBootDriver(dbUrl)
+  override def run(builder: DiffGraphBuilder): Unit = {
+    cpg.property.dedup.toArray.foreach(dbUrl => {
+      try {
+        if (dbUrl.value.contains("jdbc:h2")) {
+          parsePropForSpringJdbcAndJpaH2(dbUrl)
+        } else if (dbUrl.value.contains("jdbc:oracle")) {
+          parsePropForSpringJdbcAndJpaOracle(dbUrl)
+        } else if (dbUrl.value.contains("jdbc:")) {
+          parsePropForSpringJDBCAndJPA(dbUrl)
+        } else if (dbUrl.value.contains("mongodb")) {
+          parsePropForSpringDataMongo(dbUrl)
+        } else if (
+          dbUrl.name.contains("neo4j.host")
+          && dbUrl.value.matches("(localhost|[^{]*\\..*\\.[^}]*)")
+          // The regex above is an attempt to match actual database host rather than the test ones or invalid ones
+          // It is supposed to match -> `123456789.databases.neo4j.io`, `neo4j.hosted.amazonaws.com`
+          // rather than `{$neo4j.host}` or empty values in config
+        ) {
+          parsePropForNeo4jNativeDriver(dbUrl)
+        } else if (dbUrl.name.contains("neo4j.driver.uri")) {
+          parsePropForNeo4jSpringBootDriver(dbUrl)
+        }
+      } catch {
+        case e: Exception => logger.debug("Exception while processing db config: " + e)
       }
-    } catch {
-      case e: Exception => logger.debug("Exception while processing db config: " + e)
-    }
+    })
+
   }
+//  override def generateParts(): Array[JavaProperty] = {
+//    // Spring Data JDBC
+//    // We are seeing duplicate values. NEED TO INVESTIGATE
+//    // Let's deduplicate the properties for the time being
+//    // Databases:
+//    // val propertySinks = cpg.property.filter(p => p.value matches ("jdbc:.*://.*/.*|mongodb(\\+srv)?:.*")).l.groupBy(_.value).map(_._2.head)
+//    // val propertySinks = cpg.property.filter(p => p.value matches (".*")).l.groupBy(_.value).map(_._2.head)
+//    cpg.property.dedup.toArray
+//  }
+//
+//  override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
+//    try {
+//      if (dbUrl.value.contains("jdbc:h2")) {
+//        parsePropForSpringJdbcAndJpaH2(dbUrl)
+//      } else if (dbUrl.value.contains("jdbc:oracle")) {
+//        parsePropForSpringJdbcAndJpaOracle(dbUrl)
+//      } else if (dbUrl.value.contains("jdbc:")) {
+//        parsePropForSpringJDBCAndJPA(dbUrl)
+//      } else if (dbUrl.value.contains("mongodb")) {
+//        parsePropForSpringDataMongo(dbUrl)
+//      } else if (
+//        dbUrl.name.contains("neo4j.host")
+//        && dbUrl.value.matches("(localhost|[^{]*\\..*\\.[^}]*)")
+//        // The regex above is an attempt to match actual database host rather than the test ones or invalid ones
+//        // It is supposed to match -> `123456789.databases.neo4j.io`, `neo4j.hosted.amazonaws.com`
+//        // rather than `{$neo4j.host}` or empty values in config
+//      ) {
+//        parsePropForNeo4jNativeDriver(dbUrl)
+//      } else if (dbUrl.name.contains("neo4j.driver.uri")) {
+//        parsePropForNeo4jSpringBootDriver(dbUrl)
+//      }
+//    } catch {
+//      case e: Exception => logger.debug("Exception while processing db config: " + e)
+//    }
+//  }
 
   private def parsePropForSpringJdbcAndJpaOracle(dbUrl: JavaProperty): Unit = {
+    val rules = List(
+      ("Write/Read", "Storages.SpringFramework.Jdbc"),
+      ("Write", "Storages.SpringFramework.Jdbc.Write"),
+      ("Read", "Storages.SpringFramework.Jdbc.Read"),
+      ("Read", "Sinks.Database.JPA.Read"),
+      ("Write", "Sinks.Database.JPA.Write")
+    )
+
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1).toString
     var dbLocation = ""
@@ -84,29 +147,19 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
       dbName = tokens(5)
     }
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
-      "Storages.SpringFramework.Jdbc"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.SpringFramework.Jdbc.Write"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.SpringFramework.Jdbc.Read"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Sinks.Database.JPA.Read"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Sinks.Database.JPA.Write"
-    )
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForSpringJdbcAndJpaH2(dbUrl: JavaProperty): Unit = {
+    val rules = List(
+      ("Write/Read", "Storages.SpringFramework.Jdbc"),
+      ("Write", "Storages.SpringFramework.Jdbc.Write"),
+      ("Read", "Storages.SpringFramework.Jdbc.Read"),
+      ("Read", "Sinks.Database.JPA.Read"),
+      ("Write", "Sinks.Database.JPA.Write")
+    )
+
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1)
     var dbLocation = ""
@@ -126,117 +179,70 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
         dbName = slashTokens(slashTokens.length - 1).split("\\?")(0).split(";")(0)
       }
     }
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
-      "Storages.SpringFramework.Jdbc"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.SpringFramework.Jdbc.Write"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.SpringFramework.Jdbc.Read"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Sinks.Database.JPA.Read"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Sinks.Database.JPA.Write"
-    )
+
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForSpringDataMongo(dbUrl: JavaProperty): Unit = {
+    val rules =
+      List(("Write", "Storages.MongoDB.SpringFramework.Write"), ("Read", "Storages.MongoDB.SpringFramework.Read"))
 
     val dbVendor   = dbUrl.value.split(":")(0).split("\\+")(0)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.MongoDB.SpringFramework.Write"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.MongoDB.SpringFramework.Read"
-    )
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForSpringJDBCAndJPA(dbUrl: JavaProperty): Unit = {
+    val rules = List(
+      ("Write/Read", "Storages.SpringFramework.Jdbc"),
+      ("Write", "Storages.SpringFramework.Jdbc.Write"),
+      ("Read", "Storages.SpringFramework.Jdbc.Read"),
+      ("Read", "Sinks.Database.JPA.Read"),
+      ("Write", "Sinks.Database.JPA.Write"),
+      ("Write/Read", "Storages.SpringFramework.Jooq")
+    )
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
-      "Storages.SpringFramework.Jdbc"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.SpringFramework.Jdbc.Write"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.SpringFramework.Jdbc.Read"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Sinks.Database.JPA.Read"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Sinks.Database.JPA.Write"
-    )
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
-      "Storages.SpringFramework.Jooq"
-    )
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+
   }
 
   private def parsePropForNeo4jNativeDriver(dbUrl: JavaProperty): Unit = {
+    val rules = List(
+      ("Write/Read", "Storages.Neo4jGraphDatabase"),
+      ("Read", "Storages.Neo4jGraphDatabase.Read"),
+      ("Write", "Storages.Neo4jGraphDatabase.Write")
+    )
     val dbVendor   = "bolt"
     val dbLocation = dbUrl.value
     val dbName     = "Neo4j Graph Database"
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
-      "Storages.Neo4jGraphDatabase"
-    )
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.Neo4jGraphDatabase.Read"
-    )
-
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.Neo4jGraphDatabase.Write"
-    )
   }
 
   private def parsePropForNeo4jSpringBootDriver(dbUrl: JavaProperty): Unit = {
+
+    val rules = List(
+      ("Write/Read", "Storages.Neo4jGraphDatabase"),
+      ("Read", "Storages.Neo4jGraphDatabase.Read"),
+      ("Write", "Storages.Neo4jGraphDatabase.Write")
+    )
+
     val dbVendor   = dbUrl.value.split(":")(0)
     val dbLocation = dbUrl.value.split("/")(2)
     // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
     val dbName = "Neo4j Graph Database"
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write/Read"),
-      "Storages.Neo4jGraphDatabase"
-    )
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
-      "Storages.Neo4jGraphDatabase.Read"
-    )
-
-    DatabaseDetailsCache.addDatabaseDetails(
-      DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
-      "Storages.Neo4jGraphDatabase.Write"
-    )
   }
 
 }

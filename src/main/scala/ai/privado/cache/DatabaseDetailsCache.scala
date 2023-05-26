@@ -36,4 +36,8 @@ object DatabaseDetailsCache {
     databaseDetailsMap.addOne(ruleId -> databaseDetails)
   def getDatabaseDetails(ruleId: String): Option[DatabaseDetails] = databaseDetailsMap.get(ruleId)
 
+  def removeDatabaseDetails(ruleId: String): Unit = {
+    databaseDetailsMap.remove(ruleId)
+  }
+
 }
