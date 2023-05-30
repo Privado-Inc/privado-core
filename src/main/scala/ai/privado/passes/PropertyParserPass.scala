@@ -214,11 +214,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   }
 
   private def confFileParser(file: String): List[(String, String, Int)] = {
-    val options        = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF).setOriginDescription(file)
-    val config: Config = ConfigFactory.parseFile(new File(file), options)
-
     try {
-      val propertyList = ListBuffer[(String, String, Int)]()
+      val options        = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF).setOriginDescription(file)
+      val config: Config = ConfigFactory.parseFile(new File(file), options)
+      val propertyList   = ListBuffer[(String, String, Int)]()
 
       def parseConfigNode(
         configNode: ConfigObject,
@@ -227,12 +226,13 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       ): Unit = {
         configNode.forEach { case (key, configValue) =>
           val lineNumber = configValue.origin().lineNumber()
-          if (configValue.isInstanceOf[ConfigObject]) {
-            parseConfigNode(configValue.asInstanceOf[ConfigObject], itemList, parentKey + "." + key)
-          } else {
-            val value   = configValue.unwrapped().toString
-            val itemKey = (parentKey + "." + key).stripPrefix(".")
-            itemList.addOne((itemKey, value, lineNumber))
+          configValue match {
+            case configObject: ConfigObject =>
+              parseConfigNode(configObject, itemList, parentKey + "." + key)
+            case _ =>
+              val value   = configValue.unwrapped().toString
+              val itemKey = (parentKey + "." + key).stripPrefix(".")
+              itemList.addOne((itemKey, value, lineNumber))
           }
         }
       }
