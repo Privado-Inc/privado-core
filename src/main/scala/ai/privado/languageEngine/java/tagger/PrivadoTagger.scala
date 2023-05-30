@@ -35,7 +35,6 @@ import ai.privado.languageEngine.java.passes.read.{
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
-import ai.privado.script.{ExternalScalaFileHelper, Input}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.config.DBConfigTagger
@@ -91,14 +90,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new GrpcCollectionTagger(cpg, ruleCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
-
-    val result = new ExternalScalaFileHelper()
-      .processExternalFile("/Users/khemrajrathore/Desktop/ExternalFile.scala", Input(10, 20))
-
-    result match {
-      case Right(value) => println(s"Value from the external function is ${value}")
-      case Left(value)  => println(value)
-    }
 
     logger.info("Done with tagging")
 

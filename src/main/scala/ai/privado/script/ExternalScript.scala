@@ -23,37 +23,49 @@
 
 package ai.privado.script
 
-import java.io.File
+import ai.privado.cache.RuleCache
+import ai.privado.model.Constants
+import io.circe.Json
+import io.shiftleft.codepropertygraph.Cpg
 
-import scala.io.Source
-import scala.reflect.runtime.currentMirror
+import java.io.File
+import scala.collection.mutable
+import scala.io.{BufferedSource, Source}
+import scala.reflect.runtime.{currentMirror, universe}
 import scala.tools.reflect.ToolBox
 
-abstract class ExternalProcessing {
-  def process(a: Int, b: Int): Int
+abstract class ExternalScript {
+  def process(cpg: Cpg, output: mutable.LinkedHashMap[String, Json]): Unit
 }
 
-case class Input(a: Int, b: Int)
+case class LoadExternalScript(filePath: String) {
+  val toolbox: ToolBox[universe.type] = currentMirror.mkToolBox()
+  val sourceFile: BufferedSource      = Source.fromFile(filePath)
+  private val fileContents =
+    try sourceFile.getLines().mkString("\n")
+    finally sourceFile.close()
 
-case class LoadExternalScalaFile(filePath: String) {
-  val toolbox      = currentMirror.mkToolBox()
-  val fileContents = Source.fromFile(filePath).getLines().mkString("\n")
-  val tree         = toolbox.parse(s"import ai.privado.script._;$fileContents")
-  val compiledCode = toolbox.compile(tree)
+  // The below package import should be similar to the pacakage where ExternalScript abstract case is present
+  private val tree         = toolbox.parse(s"import ai.privado.script._;\n$fileContents")
+  private val compiledCode = toolbox.compile(tree)
 
-  def getFileReference: ExternalProcessing = compiledCode().asInstanceOf[ExternalProcessing]
+  def getFileReference: ExternalScript = compiledCode().asInstanceOf[ExternalScript]
 }
 
-class ExternalScalaFileHelper {
-  def processExternalFile(filePath: String, data: Input): Either[String, Int] = {
+object ExternalScalaScriptRunner {
+  def postExportTrigger(cpg: Cpg, ruleCache: RuleCache, output: mutable.LinkedHashMap[String, Json]): Unit = {
     try {
+      val filePath = ruleCache.getSystemConfigByKey(Constants.postExportTrigger, raw = true)
       if (new File(filePath).exists()) {
-        val externalFile       = LoadExternalScalaFile(filePath)
+        println(s"Executing post export script")
+        val externalFile       = LoadExternalScript(filePath)
         val externalProcessing = externalFile.getFileReference
-        Right(externalProcessing.process(data.a, data.b))
-      } else Left("File doesn't exit")
+        externalProcessing.process(cpg, output)
+        println("Post export script execution completed")
+      } else if (filePath.nonEmpty)
+        println(s"External script file: $filePath doesn't exist")
     } catch {
-      case ex: Exception => Left(ex.getMessage)
+      case ex: Exception => println(ex.getMessage)
     }
   }
 }

@@ -52,7 +52,8 @@ libraryDependencies ++= Seq(
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
   "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0",
   "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
-  "org.scala-lang"                   % "scala-compiler"          % "2.13.8"
+  "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
+  "com.iheart"                      %% "ficus"                   % "1.4.7" exclude ("com.typesafe", "config")
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
