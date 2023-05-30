@@ -27,7 +27,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.sink.APITagger
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromTemplates, storeForTag}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 
 class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
@@ -37,7 +37,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
     // Tag the respective templateDom node as API sink
     val scriptTags =
-      cpg.templateDom.name("JSXElement").code("(?i)[\\\"]*<script.*" + ruleInfo.combinedRulePattern + ".*").l
+      cpg.templateDom.name(Constants.jsxElement).code("(?i)[\\\"]*<script.*" + ruleInfo.combinedRulePattern + ".*").l
     scriptTags.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
@@ -58,11 +58,11 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
     // n.src = "https://cdn.segment.com/analytics.js/v1/" + t + "/analytics.min.js";
     // Tag the respective templateDom node as API sink
     val parentBlocksOfHTMLScriptElement = cpg
-      .call("<operator>.fieldAccess")
+      .call(Operators.fieldAccess)
       .code(".*\\.src.*")
       .argument
       .isIdentifier
-      .filter((i) => i.typeFullName.contains("HTMLScriptElement"))
+      .filter((i) => i.typeFullName.contains(Constants.HTMLScriptElement))
       .parentBlock
       .id
       .l
