@@ -1,17 +1,11 @@
 package ai.privado.languageEngine.javascript.passes.config
 
-import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities
-import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, JavaProperty, NewFile, NewJavaProperty}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, JavaProperty}
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
-
-import java.io.File
 
 class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
@@ -44,8 +38,14 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
   private def matchProcessEnvAssignmentCalls(propertyName: String): List[Call] = {
     // Match assignment calls on the right side for process.env.PROPERTY or process.env['PROPERTY']
     // Example const dbName = process.env['DB_NAME']
-    val pattern = s".*process\\.env(\\.${propertyName}|\\[('|\")${propertyName}('|\")]).*"
-    cpg.call("<operator>.assignment").where(_.astChildren.code(pattern)).l
+    // conf.accontHost
+    if (propertyName.contains("**")) {
+      List()
+    } else {
+      val pattern =
+        s".*process\\.env(\\.${propertyName}|\\[('|`|\")${propertyName}('|`|\")]).*|.*(conf|Conf).*${propertyName}.*"
+      cpg.call("<operator>.(assignment|fieldAccess)").where(_.astChildren.code(pattern)).l
+    }
   }
 
   private def connectEnvCallsToProperties(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {

@@ -141,6 +141,7 @@ object Constants {
   val HTMLOpenElement      = "HTMLOpenElement"
   val HTMLClosingElement   = "HTMLClosingElement"
   val HTMLElementAttribute = "HTMLElementAttribute"
+  val HTMLScriptElement    = "HTMLScriptElement"
 
   val annotations = "annotations"
   val default     = "default"
