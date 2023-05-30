@@ -23,7 +23,8 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
-import ai.privado.model.exporter.ViolationDataFlowModel
+import ai.privado.exporter.ExporterUtility
+import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -62,7 +63,6 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
   def getDataflowViolations: Map[String, mutable.HashSet[ViolationDataFlowModel]] = {
-
     val dataflowResult = policies
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
       .toMap
@@ -80,6 +80,21 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
           violatingFlowList.add(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
         }
       })
+    })
+    violatingFlowList
+  }
+
+  def getViolatingOccurrencesForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationProcessingModel] = {
+    val violatingFlowList = mutable.HashSet[ViolationProcessingModel]()
+    getSourcesMatchingRegex(policy).foreach(sourceId => {
+      val sourceNode = getSourceNode(sourceId)
+      if (!sourceNode.isEmpty) {
+        sourceNode.foreach((sourceNode) => {
+          violatingFlowList.add(
+            ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get)
+          )
+        })
+      }
     })
     violatingFlowList
   }
