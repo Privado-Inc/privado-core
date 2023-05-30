@@ -90,10 +90,14 @@ class RuleCache {
     }
   }
 
-  def getSystemConfigByKey(key: String): String = {
-    if (rule.systemConfig.filter(config => config.key.equals(key)).nonEmpty)
-      rule.systemConfig.filter(config => config.key.equals(key)).map(config => config.value).mkString("(?i)(", "|", ")")
-    else {
+  def getSystemConfigByKey(key: String, raw: Boolean = false): String = {
+    if (rule.systemConfig.exists(config => config.key.equals(key))) {
+      val valueList = rule.systemConfig.filter(config => config.key.equals(key)).map(config => config.value)
+      if (raw)
+        valueList.mkString("")
+      else
+        valueList.mkString("(?i)(", "|", ")")
+    } else {
       key match {
         case Constants.ignoredSinks =>
           "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*"

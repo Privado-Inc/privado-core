@@ -129,6 +129,9 @@ object Constants {
   val apiHttpLibraries    = "apiHttpLibraries"
   val apiIdentifier       = "apiIdentifier"
 
+  // External script keys
+  val postExportTrigger = "postExportTrigger"
+
   // TemplatedDom
 
   val jsxOpenElement = "JSXOpeningElement"

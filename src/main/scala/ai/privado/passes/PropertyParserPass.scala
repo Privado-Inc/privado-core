@@ -1,13 +1,12 @@
 package ai.privado.utility
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{MethodParameterIn, NewJavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import overflowdb.BatchedUpdate
 import ai.privado.cache.RuleCache
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Member, NewFile}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
@@ -26,6 +25,8 @@ import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+
+import scala.collection.mutable.ListBuffer
 
 object FileExtensions {
   val PROPERTIES = ".properties"
@@ -48,7 +49,13 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       case Language.JAVA => {
         configFiles(
           projectRoot,
-          Set(FileExtensions.PROPERTIES, FileExtensions.YAML, FileExtensions.YML, FileExtensions.XML)
+          Set(
+            FileExtensions.PROPERTIES,
+            FileExtensions.YAML,
+            FileExtensions.YML,
+            FileExtensions.XML,
+            FileExtensions.CONF
+          )
         ).toArray
       }
       case Language.JAVASCRIPT =>
@@ -75,19 +82,22 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     "^(db|database|jdbc|mysql|postgres|oracle|sqlserver)_(connection_)?(host|port|name|user|password|uri|driver|ssl|pool_size|timeout|connection_string)$"
   private val apiConnectionRegex = ".*/(api|external)?(_|\\.)?(url|base(_|\\.)?path)/i"
 
-  private def obtainKeyValuePairs(file: String, builder: DiffGraphBuilder): List[(String, String)] = {
+  private def obtainKeyValuePairs(file: String, builder: DiffGraphBuilder): List[(String, String, Int)] = {
+    // Function return (key, value, lineNumber), for most parser we have not got the linenumber so returning -1 as default
     if (file.matches(""".*\.(?:yml|yaml)""")) {
-      loadAndConvertYMLtoProperties(file)
+      loadAndConvertYMLtoProperties(file).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".xml")) {
-      loadAndConvertXMLtoProperties(file, builder)
+      loadAndConvertXMLtoProperties(file, builder).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".ini")) {
-      parseINIFiles(file)
+      parseINIFiles(file).map(item => (item._1, item._2, -1))
     } else if (file.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*")) {
-      getDotenvKeyValuePairs(file)
+      getDotenvKeyValuePairs(file).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".json")) {
-      getJSONKeyValuePairs(file)
+      getJSONKeyValuePairs(file).map(item => (item._1, item._2, -1))
+    } else if (file.endsWith(".conf")) {
+      confFileParser(file)
     } else {
-      loadFromProperties(file)
+      loadFromProperties(file).map(item => (item._1, item._2, -1))
     }
   }
 
@@ -203,6 +213,39 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     propertiesToKeyValuePairs(properties)
   }
 
+  private def confFileParser(file: String): List[(String, String, Int)] = {
+    val options        = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.CONF).setOriginDescription(file)
+    val config: Config = ConfigFactory.parseFile(new File(file), options)
+
+    try {
+      val propertyList = ListBuffer[(String, String, Int)]()
+
+      def parseConfigNode(
+        configNode: ConfigObject,
+        itemList: ListBuffer[(String, String, Int)],
+        parentKey: String = ""
+      ): Unit = {
+        configNode.forEach { case (key, configValue) =>
+          val lineNumber = configValue.origin().lineNumber()
+          if (configValue.isInstanceOf[ConfigObject]) {
+            parseConfigNode(configValue.asInstanceOf[ConfigObject], itemList, parentKey + "." + key)
+          } else {
+            val value   = configValue.unwrapped().toString
+            val itemKey = (parentKey + "." + key).stripPrefix(".")
+            itemList.addOne((itemKey, value, lineNumber))
+          }
+        }
+      }
+
+      parseConfigNode(config.root(), propertyList, "")
+      propertyList.toList
+    } catch {
+      case e: Exception =>
+        logger.debug(s"Error parsing pipeline config file: ${e.getMessage}")
+        List[("", "", -1)]()
+    }
+  }
+
   // Used to extract (name, value) pairs from a bean config file
   private def XMLParserBean(xmlPath: String, builder: DiffGraphBuilder): List[(String, String)] = {
     try {
@@ -293,18 +336,22 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   }
 
   private def parseINIFiles(filePath: String): List[(String, String)] = {
-    val fileContent = Source.fromFile(filePath).getLines().mkString("\n")
-    val iniFormat   = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.PROPERTIES)
+    val sourceFile = Source.fromFile(filePath)
+    val fileContent =
+      try sourceFile.getLines().mkString("\n")
+      finally sourceFile.close()
+    val iniFormat = ConfigParseOptions.defaults().setSyntax(ConfigSyntax.PROPERTIES)
 
     getAllProperties(ConfigFactory.parseString(fileContent, iniFormat))
   }
 
   private def addPropertyNode(
-    keyValuePair: (String, String),
+    keyValuePair: (String, String, Int),
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
-    val (key, value) = keyValuePair
-    val propertyNode = NewJavaProperty().name(key).value(value)
+
+    val (key, value, lineNumber) = keyValuePair
+    val propertyNode             = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
     builder.addNode(propertyNode)
     propertyNode
   }
@@ -334,7 +381,9 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           })
           .filter(_.matches(".*\\.env(?!.*(?:.js|.py|.java|.sh|.ts)$).*"))
       )
+      .filter(file => !file.contains("delombok"))
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
+      .distinct
   }
 
 }
