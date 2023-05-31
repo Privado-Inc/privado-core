@@ -154,7 +154,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
       .toSet
   }
 
-  private def getSourceNode(sourceId: String): Option[(String, CfgNode)] = {
+  def getSourceNode(sourceId: String): Option[(String, CfgNode)] = {
     def filterBySource(tag: Traversal[Tag]): Traversal[Tag] =
       tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
     Try(cpg.tag.where(filterBySource).identifier.head) match {

@@ -35,10 +35,9 @@ object CookieConsentMgmtModule {
       val consentMgmtModulePresent      = cpg.call.methodFullName("(ngx-cookieconsent).*")
       val prebidNonStandardIntergration = cpg.call("__tcfapi")
       val prebidStandardIntegration     = cpg.call.methodFullName(".*pbjs.*setConfig")
-
-      println(
-        consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty
-      )
+//      println(
+//        consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty
+//      )
       // violation if empty
       (
         consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty,

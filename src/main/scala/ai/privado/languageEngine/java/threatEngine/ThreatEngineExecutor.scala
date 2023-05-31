@@ -105,7 +105,22 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
       case "Threats.CookieConsent.isCookieConsentMgmtModuleImplemented" =>
         CookieConsentMgmtModule.getViolations(threat, cpg, dataflows, ruleCache) match {
           case Success(res) => {
-            println(res._1, res._2)
+            Some(res)
+          }
+          case Failure(_) => None
+        }
+
+      case "Threats.Sharing.isParameterHardcoded" =>
+        DataMethodParameterHardcoded.getViolations(cpg) match {
+          case Success(res) => {
+            Some(res)
+          }
+          case Failure(_) => None
+        }
+
+      case "Threats.Leakage.CustomPrivacyLoggerMustbeUsed" =>
+        CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg, dataflows, ruleCache) match {
+          case Success(res) => {
             Some(res)
           }
           case Failure(_) => None
