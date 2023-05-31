@@ -69,11 +69,12 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
         }
       })
       .toSet
-    if (policy.dataFlow.sourceFilter.sensitivity.nonEmpty)
-      matchingSourceModels = matchingSourceModels.filter(_.sensitivity.equals(policy.dataFlow.sourceFilter.sensitivity))
+    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
+      matchingSourceModels =
+        matchingSourceModels.filter(_.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity))
 
-    if (policy.dataFlow.sourceFilter.isSensitive.isDefined)
-      matchingSourceModels = matchingSourceModels.filter(_.isSensitive == policy.dataFlow.sourceFilter.isSensitive.get)
+    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
+      matchingSourceModels = matchingSourceModels.filter(_.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get)
 
     matchingSourceModels.map(_.id)
   }
@@ -151,14 +152,14 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
       })
       .toSet
 
-    if (policy.dataFlow.sourceFilter.sensitivity.nonEmpty)
+    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
       matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.sensitivity.equals(policy.dataFlow.sourceFilter.sensitivity)
+        ruleCache.getRuleInfo(_).get.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity)
       )
 
-    if (policy.dataFlow.sourceFilter.isSensitive.isDefined)
+    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
       matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.isSensitive == policy.dataFlow.sourceFilter.isSensitive.get
+        ruleCache.getRuleInfo(_).get.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get
       )
 
     matchingSourceIds

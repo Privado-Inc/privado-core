@@ -64,7 +64,7 @@ case class ConfigAndRules(
 
 case class SourceFilter(isSensitive: Option[Boolean], sensitivity: String)
 
-case class DataFlow(sources: List[String], sourceFilter: SourceFilter, sinks: List[String])
+case class DataFlow(sources: List[String], sourceFilters: SourceFilter, sinks: List[String])
 
 case class PolicyOrThreat(
   id: String,
@@ -141,12 +141,12 @@ object CirceEnDe {
   implicit val decodeDataFlow: Decoder[DataFlow] = new Decoder[DataFlow] {
     override def apply(c: HCursor): Result[DataFlow] = {
       val sources      = c.downField(Constants.sources).as[List[String]]
-      val sourceFilter = c.downField(Constants.sourceFilter).as[SourceFilter]
+      val sourceFilter = c.downField(Constants.sourceFilters).as[SourceFilter]
       val sinks        = c.downField(Constants.sinks).as[List[String]]
       Right(
         DataFlow(
           sources = sources.getOrElse(List[String]()),
-          sourceFilter = sourceFilter.getOrElse(SourceFilter(None, "")),
+          sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "")),
           sinks = sinks.getOrElse(List[String]())
         )
       )

@@ -93,9 +93,9 @@
                   "pattern": "^.*$"
                 }
               },
-              "sourceFilter": {
-                "$id": "#root/policies/items/dataFlow/sourceFilter",
-                "title": "SourceFilter",
+              "sourceFilters": {
+                "$id": "#root/policies/items/dataFlow/sourceFilters",
+                "title": "SourceFilters",
                 "type": "object",
                 "default": null
               },
