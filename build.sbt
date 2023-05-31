@@ -1,17 +1,17 @@
-import sbt.{Credentials}
+import sbt.Credentials
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
-ThisBuild / scalaVersion := "2.13.7"
+ThisBuild / scalaVersion := "2.13.8"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.3.600"
-val joernVersion      = "1.1.1699"
-val overflowdbVersion = "1.172"
+val joernVersion      = "1.1.1738"
+val overflowdbVersion = "1.171"
 
 //External dependency versions
 val circeVersion   = "0.14.1"
-val jacksonVersion = "2.14.0"
+val jacksonVersion = "2.14.3"
 val mockitoVersion = "1.17.12"
 
 lazy val schema         = Projects.schema
@@ -51,7 +51,13 @@ libraryDependencies ++= Seq(
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
   "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0",
+<<<<<<< HEAD
   "org.yaml"                         % "snakeyaml"               % "1.29"
+=======
+  "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
+  "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
+  "com.iheart"                      %% "ficus"                   % "1.4.7" exclude ("com.typesafe", "config")
+>>>>>>> f07505a953bbe26e04bf676219e671b38b6e3782
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -105,12 +111,12 @@ cleanFiles ++= Seq(
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false
 
-val repoPass = sys.env.get("CODEARTIFACT_AUTH_TOKEN").getOrElse("")
-credentials += Credentials("privado/core", sys.env.get("CODE_ARTIFACT_URL").getOrElse(""), "aws", repoPass)
+val repoPass = sys.env.getOrElse("CODEARTIFACT_AUTH_TOKEN", "")
+credentials += Credentials("privado/core", sys.env.getOrElse("CODE_ARTIFACT_URL", ""), "aws", repoPass)
 publishMavenStyle := true
-resolvers += "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
+resolvers += "privado--core" at "https://" + sys.env.getOrElse("CODE_ARTIFACT_URL", "") + "/maven/core"
 ThisBuild / publishTo := Some(
-  "privado--core" at "https://" + sys.env.get("CODE_ARTIFACT_URL").getOrElse("") + "/maven/core"
+  "privado--core" at "https://" + sys.env.getOrElse("CODE_ARTIFACT_URL", "") + "/maven/core"
 )
 
 lazy val root = (project in file("."))
