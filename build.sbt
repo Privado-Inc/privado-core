@@ -51,13 +51,10 @@ libraryDependencies ++= Seq(
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
   "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0",
-<<<<<<< HEAD
-  "org.yaml"                         % "snakeyaml"               % "1.29"
-=======
+  "org.yaml"                         % "snakeyaml"               % "1.29",
   "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
   "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
   "com.iheart"                      %% "ficus"                   % "1.4.7" exclude ("com.typesafe", "config")
->>>>>>> f07505a953bbe26e04bf676219e671b38b6e3782
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
