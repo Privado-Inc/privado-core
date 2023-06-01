@@ -61,7 +61,5 @@ class PythonSemanticGeneratorTest extends AnyWordSpec with Matchers with BeforeA
     "generate semantic for function with 0 actual argument" in {
       generateSemanticForTaint(cpg.call("foo").head, -1).flow shouldBe "0->-1 0->0 1->-1 1->1"
     }
-
-    cpg.close()
   }
 }
