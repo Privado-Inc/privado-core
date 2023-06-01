@@ -59,21 +59,29 @@ object PythonSemanticGenerator extends SemanticGenerator {
   }
 
   def generateSemanticForTaint(callNode: Call, toTaint: Int): Semantic = {
-    val argumentList = callNode.argument.flatMap { arg =>
-      if (arg.argumentIndex != -1)
-        Some(arg.argumentIndex)
-      else if (arg.argumentName.isDefined)
+    val namedArgumentList = callNode.argument.flatMap { arg =>
+      if (arg.argumentName.isDefined)
         Some("\"" + arg.argumentName.get + "\"")
       else
         None
     }.l
     val parameterSemantic = mutable.HashSet[String]()
-    argumentList.map { item =>
+
+    namedArgumentList.map { item =>
       if (toTaint != -2)
         parameterSemantic.add(s"$item->$toTaint")
       parameterSemantic.add(s"$item->$item")
     }
-    Semantic(callNode.methodFullName, parameterSemantic.toList.sorted.mkString(" ").trim, "", UNKNOWN, Array())
+
+    val superSemantics = super.generateSemanticForTaint(callNode, toTaint, 1)
+
+    Semantic(
+      callNode.methodFullName,
+      superSemantics.flow + " " + parameterSemantic.toList.sorted.mkString(" ").trim,
+      "",
+      UNKNOWN,
+      Array()
+    )
   }
 
 }
