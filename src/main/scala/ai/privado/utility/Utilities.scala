@@ -424,15 +424,4 @@ object Utilities {
     else if (dbUrl.matches(ipPortRegex)) Priority.MEDIUM
     else Priority.LOW
   }
-
-  def cleanPropertyWithLineNumber(property: (String, String)): (String, String, Int) = {
-    // Property value with line number is of the type property_value...lineNumber...columnNumber
-    try {
-      val Array(propertyValue: String, lineNumber: String, columnNumber) = property._2.split("\\.\\.\\.")
-      (property._1, propertyValue, lineNumber.toInt)
-    } catch {
-      case e: Throwable => (property._1, property._2, -1)
-    }
-  }
-
 }
