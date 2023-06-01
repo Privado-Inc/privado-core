@@ -97,10 +97,10 @@ trait SemanticGenerator {
     * @return
     */
   def getMaximumFlowSemantic(semantics: Traversal[Semantic]): Seq[String] = {
-    semantics.l.par
+    semantics.l
       .groupBy(_.signature)
-      .map(_._2.sortBy(_.flow).last)
-      .flatMap(generateSemantic)
+      .map(item => (item._1, item._2.flatMap(sem => sem.flow.split(" ")).toSet.sorted.mkString(" ")))
+      .map(item => { "\"" + item._1 + "\" " + item._2 })
       .sorted
   }
 }

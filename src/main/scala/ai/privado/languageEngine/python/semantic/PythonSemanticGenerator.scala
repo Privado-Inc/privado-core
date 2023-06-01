@@ -20,8 +20,8 @@ object PythonSemanticGenerator extends SemanticGenerator {
 
   def getSemantics(
     cpg: Cpg,
-    ruleCache: RuleCache,
     privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache,
     exportRuntimeSemantics: Boolean = false
   ) = {
     val customSinkSemantics = getMaximumFlowSemantic(
