@@ -77,7 +77,7 @@ object PythonSemanticGenerator extends SemanticGenerator {
 
     Semantic(
       callNode.methodFullName,
-      superSemantics.flow + " " + parameterSemantic.toList.sorted.mkString(" ").trim,
+      (superSemantics.flow.trim + " " + parameterSemantic.toList.sorted.mkString(" ").trim).trim,
       "",
       UNKNOWN,
       Array()
