@@ -78,11 +78,13 @@ object DataFlowCache {
 
   def getDataflow: List[DataFlowPathModel] = finalDataflow
 
-  def getIntermediateDataFlow(): List[DataFlowSourceIntermediateModel] = {
+  def getIntermediateDataFlow(): List[DataFlowPathIntermediateModel] = intermediateDataFlow
+
+  def getJsonFormatDataFlow(dataFlows: List[DataFlowPathIntermediateModel]): List[DataFlowSourceIntermediateModel] = {
 
     // Translating into json output format structure
     val intermediateSourceResult     = ListBuffer[DataFlowSourceIntermediateModel]()
-    val intermediateDataFlowBySource = intermediateDataFlow.groupBy(_.sourceId)
+    val intermediateDataFlowBySource = dataFlows.groupBy(_.sourceId)
     intermediateDataFlowBySource.map(entrySet => {
       val intermediateDataFlowBySink = entrySet._2.groupBy(_.sinkId)
       val intermediateSinkResult     = ListBuffer[DataFlowSinkIntermediateModel]()

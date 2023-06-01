@@ -34,6 +34,7 @@ import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
 import ai.privado.model.exporter.CollectionEncoderDecoder._
 import ai.privado.model.exporter.SinkEncoderDecoder._
+import ai.privado.script.ExternalScalaScriptRunner
 import better.files.File
 import privado_core.BuildInfo
 import io.circe.Json
@@ -218,6 +219,11 @@ object JSONExporter {
       logger.info("Completed exporting policy violations")
       val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f               = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+
+      // Post export Trigger
+      ExternalScalaScriptRunner
+        .postExportTrigger(cpg, ruleCache, output)
+
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
@@ -263,6 +269,30 @@ object JSONExporter {
       case ex: Exception =>
         println("Failed to export intermediate output")
         logger.debug("Failed to export intermediate output", ex)
+        Left(ex.toString)
+    }
+  }
+
+  def UnresolvedFlowFileExport(
+    outputFileName: String,
+    repoPath: String,
+    dataflows: List[DataFlowSourceIntermediateModel]
+  ): Either[String, Unit] = {
+    logger.info("Initiated the Unresolved flow exporter engine")
+    val output = mutable.LinkedHashMap[String, Json]()
+    try {
+      output.addOne(Constants.dataFlow -> dataflows.asJson)
+      logger.info("Completed Unresolved Flow Exporting")
+
+      val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Unresolved flow Exporter engine")
+      Right(())
+    } catch {
+      case ex: Exception =>
+        println("Failed to export unresolved output")
+        logger.debug("Failed to export unresolved output", ex)
         Left(ex.toString)
     }
   }

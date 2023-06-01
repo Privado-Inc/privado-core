@@ -31,6 +31,7 @@ class SemanticFirstLevelDerivationTest extends JavaTaggingTestBase {
 
   val privadoScanConfig: PrivadoInput = PrivadoInput()
   var semantics: Semantics            = Semantics.empty
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()

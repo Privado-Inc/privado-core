@@ -1,56 +1,35 @@
 package ai.privado.languageEngine.python.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache._
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName
-}
+import ai.privado.model.Constants._
+import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
+import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.ModuleFilePass
-import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
-import io.joern.pysrc2cpg.{
-  ImportsPass,
-  InheritanceFullNamePass,
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonNaiveCallLinker,
-  PythonTypeHintCallLinker,
-  PythonTypeRecoveryPass
-}
-import io.shiftleft.codepropertygraph
-import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import ai.privado.model.Language
-import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.javasrc2cpg.Config
-
-import java.util.Calendar
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.{Failure, Success, Try}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
+import io.joern.pysrc2cpg._
+import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.shiftleft.codepropertygraph
+import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import org.slf4j.LoggerFactory
 
-import java.nio.file.{Files, Paths}
+import java.nio.file.Paths
+import java.util.Calendar
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -72,7 +51,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
-          new InheritanceFullNamePass(cpg).createAndApply()
+          new PythonInheritanceNamePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -148,6 +127,21 @@ object PythonProcessor {
                   s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
+
+            // Exporting the Unresolved report
+            JSONExporter.UnresolvedFlowFileExport(
+              outputUnresolvedFilename,
+              sourceRepoLocation,
+              DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                )
+            }
           }
 
           // Exporting the Intermediate report
@@ -155,7 +149,7 @@ object PythonProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getIntermediateDataFlow()
+              DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)

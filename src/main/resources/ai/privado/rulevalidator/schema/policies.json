@@ -93,6 +93,12 @@
                   "pattern": "^.*$"
                 }
               },
+              "sourceFilters": {
+                "$id": "#root/policies/items/dataFlow/sourceFilters",
+                "title": "SourceFilters",
+                "type": "object",
+                "default": null
+              },
               "sinks": {
                 "$id": "#root/policies/items/dataFlow/sinks",
                 "title": "Sinks",

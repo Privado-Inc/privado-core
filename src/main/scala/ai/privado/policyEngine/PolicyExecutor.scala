@@ -23,6 +23,7 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.exporter.SourceExporter
 import ai.privado.model.exporter.ViolationDataFlowModel
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
@@ -49,12 +50,43 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   // Map to contain sinkId -> List(pathIds)
   lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
+  val sourceExporter = new SourceExporter(cpg, ruleCache)
+
+  lazy val sourceExporterModel = sourceExporter.getSources
+
+  def getSourcesMatchingRegexForProcessing(policy: PolicyOrThreat) = {
+    var matchingSourceModels = policy.dataFlow.sources
+      .flatMap(policySourceRegex => {
+        if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
+          sourceExporterModel
+        } else {
+          sourceExporterModel.flatMap(sourceModelItem => {
+            if (sourceModelItem.id.matches(policySourceRegex))
+              Some(sourceModelItem)
+            else
+              None
+          })
+        }
+      })
+      .toSet
+    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
+      matchingSourceModels =
+        matchingSourceModels.filter(_.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity))
+
+    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
+      matchingSourceModels = matchingSourceModels.filter(_.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get)
+
+    matchingSourceModels.map(_.id)
+  }
+
   /** Processes Processing style of policy and returns affected SourceIds
     */
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
     val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
     val processingResult = processingTypePolicy
-      .map(policy => (policy.id, getSourcesMatchingRegex(policy).toList.flatMap(sourceId => getSourceNode(sourceId))))
+      .map(policy =>
+        (policy.id, getSourcesMatchingRegexForProcessing(policy).toList.flatMap(sourceId => getSourceNode(sourceId)))
+      )
       .toMap
     processingResult
   }
@@ -105,7 +137,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {
-    policy.dataFlow.sources
+    var matchingSourceIds = policy.dataFlow.sources
       .flatMap(policySourceRegex => {
         if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
           dataflowSourceIdMap.keys
@@ -119,6 +151,18 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
         }
       })
       .toSet
+
+    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
+      matchingSourceIds = matchingSourceIds.filter(
+        ruleCache.getRuleInfo(_).get.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity)
+      )
+
+    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
+      matchingSourceIds = matchingSourceIds.filter(
+        ruleCache.getRuleInfo(_).get.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get
+      )
+
+    matchingSourceIds
   }
 
   private def getSinksMatchingRegex(policy: PolicyOrThreat) = {

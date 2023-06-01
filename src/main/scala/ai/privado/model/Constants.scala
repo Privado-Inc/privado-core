@@ -87,6 +87,7 @@ object Constants {
   val language                     = "language"
   val gitMetaData                  = "gitMetaData"
   val sources                      = "sources"
+  val sourceFilters                = "sourceFilters"
   val localScanPath                = "localScanPath"
   val processing                   = "processing"
   val sinkProcessing               = "sinkProcessing"
@@ -97,6 +98,8 @@ object Constants {
   val privadoLanguageEngineVersion = "privadoLanguageEngineVersion"
   val cpgOutputFileName            = "cpg.bin"
   val outputAuditFileName          = "audit-report.xlsx"
+  val outputSemanticFileName       = "semantic.txt"
+  val outputUnresolvedFilename     = "unresolved-flow.json"
 
   // database details
   val dbName      = "dbName"
@@ -127,6 +130,9 @@ object Constants {
   val apiHttpLibraries    = "apiHttpLibraries"
   val apiIdentifier       = "apiIdentifier"
 
+  // External script keys
+  val postExportTrigger = "postExportTrigger"
+
   // TemplatedDom
 
   val jsxOpenElement = "JSXOpeningElement"
@@ -136,6 +142,7 @@ object Constants {
   val HTMLOpenElement      = "HTMLOpenElement"
   val HTMLClosingElement   = "HTMLClosingElement"
   val HTMLElementAttribute = "HTMLElementAttribute"
+  val HTMLScriptElement    = "HTMLScriptElement"
 
   val annotations = "annotations"
   val default     = "default"
