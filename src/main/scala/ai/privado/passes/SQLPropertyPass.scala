@@ -21,8 +21,9 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
   val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[_ <: AnyRef] =
+  override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.l.filter(prop => prop.name.matches("(?i)query")).toArray
+  }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
     addSqlNodes(builder, property)
@@ -33,7 +34,6 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     val query        = property.value
     val lineNumber   = property.lineNumber.getOrElse(-1).asInstanceOf[Int]
     val columnNumber = property.columnNumber.getOrElse(-1).asInstanceOf[Int]
-
     try {
       SQLParser.parseSqlQuery(query) match {
         case Some(parsedQueryList) =>
@@ -43,11 +43,12 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
               property.sourceFileOut.head,
               parsedQueryItem,
               query,
-              property.lineNumber.getOrElse(-1).asInstanceOf[Int],
+              lineNumber,
               queryOrder
             )
           }
         case None =>
+          println("Failed to parse query")
           logger.debug("Failed to parse query: There might be a problem with the syntax.")
           None
       }

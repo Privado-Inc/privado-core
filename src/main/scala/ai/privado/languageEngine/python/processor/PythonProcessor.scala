@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Paths
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
-import ai.privado.passes.{HTMLParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.SQLPropertyPass
 import scala.collection.mutable.ListBuffer
 
 object PythonProcessor {
@@ -52,6 +52,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
+          new PythonInheritanceNamePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )

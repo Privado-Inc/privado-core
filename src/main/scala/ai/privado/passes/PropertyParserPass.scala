@@ -29,6 +29,7 @@ import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, Seque
 import scala.jdk.CollectionConverters._
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.utility.Utilities.cleanPropertyWithLineNumber
 import org.yaml.snakeyaml.constructor.SafeConstructor
 
 import scala.collection.mutable.ListBuffer
@@ -90,7 +91,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   private def obtainKeyValuePairs(file: String, builder: DiffGraphBuilder): List[(String, String, Int)] = {
     // Function return (key, value, lineNumber), for most parser we have not got the linenumber so returning -1 as default
     if (file.matches(""".*\.(?:yml|yaml)""")) {
-      loadAndConvertYMLtoProperties(file).map(item => (item._1, item._2, -1))
+      loadAndConvertYMLtoProperties(file).map(cleanPropertyWithLineNumber)
     } else if (file.endsWith(".xml")) {
       loadAndConvertXMLtoProperties(file, builder).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".ini")) {
@@ -361,31 +362,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     keyValuePair: (String, String, Int),
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
-<<<<<<< HEAD
-    val (key, value) = keyValuePair
-    try {
-      val valueLineCol = value.split("\\.\\.\\.")
-      val propertyNode =
-        NewJavaProperty()
-          .name(key)
-          .value(valueLineCol(0))
-          .lineNumber(valueLineCol(1).toInt)
-          .columnNumber(valueLineCol(2).toInt)
-      builder.addNode(propertyNode)
-      propertyNode
-    } catch {
-      case e: Throwable =>
-        val propertyNode = NewJavaProperty().name(key).value(value)
-        builder.addNode(propertyNode)
-        propertyNode
-    }
-=======
-
     val (key, value, lineNumber) = keyValuePair
     val propertyNode             = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
     builder.addNode(propertyNode)
     propertyNode
->>>>>>> f07505a953bbe26e04bf676219e671b38b6e3782
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
