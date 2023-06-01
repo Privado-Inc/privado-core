@@ -32,20 +32,21 @@ import io.shiftleft.semanticcpg.language._
 
 class PythonSemanticGeneratorTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
+  val cpg = code("""
+      |import requests
+      |def foo():
+      |    orderId = "Mysource"
+      |    item = orderId
+      |    notMyItem = "something"
+      |    response = requests.post(
+      |            url="https://rest.marketingcloudapis.com/data/v1/async",
+      |            body=[notMyItem, item]
+      |        )
+      |    print(response)
+      |    myObject.foo()
+      |""".stripMargin)
+
   "Python semantic generator" should {
-    val cpg = code("""
-        |import requests
-        |def foo():
-        |    orderId = "Mysource"
-        |    item = orderId
-        |    notMyItem = "something"
-        |    response = requests.post(
-        |            url="https://rest.marketingcloudapis.com/data/v1/async",
-        |            body=[notMyItem, item]
-        |        )
-        |    print(response)
-        |    myObject.foo()
-        |""".stripMargin)
 
     "generate semantic for named argument" in {
       generateSemanticForTaint(
@@ -61,5 +62,9 @@ class PythonSemanticGeneratorTest extends AnyWordSpec with Matchers with BeforeA
     "generate semantic for function with 0 actual argument" in {
       generateSemanticForTaint(cpg.call("foo").head, -1).flow shouldBe "0->-1 0->0 1->-1 1->1"
     }
+  }
+
+  override def afterAll(): Unit = {
+    cpg.close()
   }
 }
