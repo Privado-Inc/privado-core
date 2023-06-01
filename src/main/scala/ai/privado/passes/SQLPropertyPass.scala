@@ -48,7 +48,6 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             )
           }
         case None =>
-          println("Failed to parse query")
           logger.debug("Failed to parse query: There might be a problem with the syntax.")
           None
       }
