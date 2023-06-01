@@ -176,10 +176,13 @@ class Dataflow(cpg: Cpg) {
   def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
     val lang = AppCache.repoLanguage
     lang match {
-      case Language.JAVA       => JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
-      case Language.PYTHON     => PythonSemanticGenerator.getSemantics(cpg, ruleCache, privadoScanConfig)
-      case Language.JAVASCRIPT => JavascriptSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache)
-      case _                   => JavaSemanticGenerator.getDefaultSemantics
+      case Language.JAVA =>
+        JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache, exportRuntimeSemantics = true)
+      case Language.PYTHON =>
+        PythonSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache, exportRuntimeSemantics = true)
+      case Language.JAVASCRIPT =>
+        JavascriptSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache, exportRuntimeSemantics = true)
+      case _ => JavaSemanticGenerator.getDefaultSemantics
     }
   }
 
