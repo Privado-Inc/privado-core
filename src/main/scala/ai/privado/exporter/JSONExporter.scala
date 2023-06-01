@@ -71,7 +71,7 @@ object JSONExporter {
     val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
     val collectionExporter      = new CollectionExporter(cpg, ruleCache)
     val probableSinkExporter    = new ProbableSinkExporter(cpg, ruleCache, repoPath)
-    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
 

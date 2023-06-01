@@ -1,11 +1,8 @@
 package ai.privado.languageEngine.java.threatEngine
 
-import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{getOccurrenceObjectWithCustomExcerpt, hasDataElements}
-import ai.privado.model.PolicyOrThreat
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{hasDataElements}
 import ai.privado.model.exporter.ViolationProcessingModel
-import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory

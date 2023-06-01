@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.threatEngine
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.ViolationModel
 import ai.privado.model.PolicyOrThreat
@@ -34,7 +34,13 @@ import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success}
 
-class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: String, ruleCache: RuleCache) {
+class ThreatEngineExecutor(
+  cpg: Cpg,
+  dataflows: Map[String, Path],
+  repoPath: String,
+  ruleCache: RuleCache,
+  taggerCache: TaggerCache
+) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -117,6 +123,30 @@ class ThreatEngineExecutor(cpg: Cpg, dataflows: Map[String, Path], repoPath: Str
           }
           case Failure(_) => None
         }
+
+      case "Threats.Storage.isSamePIIShouldNotBePresentInMultipleTables" =>
+        PIIShouldNotBePresentInMultipleTables.getViolations(cpg, taggerCache) match {
+          case Success(res) =>
+            Some(res)
+          case Failure(_) =>
+            None
+        }
+
+//      case "Threats.Storage.isPIIHavingDifferentRetentionPeriod" =>
+//        PIIHavingDifferentRetentionPeriod.getViolations(cpg, taggerCache) match {
+//          case Success(res) => {
+//            Some(res)
+//          }
+//          case Failure(_) => None
+//        }
+//
+//      case "Threats.Sharing.isDifferentKindOfPIIStoredInDifferentTables" =>
+//        DifferentKindOfPIIStoredInDifferentTables.getViolations(cpg, taggerCache) match {
+//          case Success(res) => {
+//            Some(res)
+//          }
+//          case Failure(_) => None
+//        }
 
       case "Threats.Leakage.CustomPrivacyLoggerMustbeUsed" =>
         CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg, dataflows, ruleCache) match {

@@ -24,6 +24,7 @@ package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.exporter.ExporterUtility
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.getSourceNode
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
@@ -55,7 +56,9 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
     val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
     val processingResult = processingTypePolicy
-      .map(policy => (policy.id, getSourcesMatchingRegex(policy).toList.flatMap(sourceId => getSourceNode(sourceId))))
+      .map(policy =>
+        (policy.id, getSourcesMatchingRegex(policy).toList.flatMap(sourceId => getSourceNode(this.cpg, sourceId)))
+      )
       .toMap
     processingResult
   }
@@ -87,7 +90,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   def getViolatingOccurrencesForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationProcessingModel] = {
     val violatingFlowList = mutable.HashSet[ViolationProcessingModel]()
     getSourcesMatchingRegex(policy).foreach(sourceId => {
-      val sourceNode = getSourceNode(sourceId)
+      val sourceNode = getSourceNode(this.cpg, sourceId)
       if (!sourceNode.isEmpty) {
         sourceNode.foreach((sourceNode) => {
           violatingFlowList.add(
@@ -154,21 +157,4 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
       .toSet
   }
 
-  def getSourceNode(sourceId: String): Option[(String, CfgNode)] = {
-    def filterBySource(tag: Traversal[Tag]): Traversal[Tag] =
-      tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
-    Try(cpg.tag.where(filterBySource).identifier.head) match {
-      case Success(identifierNode) => Some(sourceId, identifierNode)
-      case Failure(_) =>
-        Try(cpg.tag.where(filterBySource).literal.head) match {
-          case Success(literalNode) => Some(sourceId, literalNode)
-          case Failure(_) =>
-            Try(cpg.tag.where(filterBySource).call.head) match {
-              case Success(callNode) => Some(sourceId, callNode)
-              case Failure(_)        => None
-            }
-        }
-    }
-
-  }
 }
