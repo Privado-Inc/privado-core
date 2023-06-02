@@ -320,6 +320,7 @@ object ScanProcessor extends CommandProcessor {
     AppCache.init(sourceRepoLocation)
     Try(guessLanguage(sourceRepoLocation)) match {
       case Success(languageDetected) => {
+        println(languageDetected)
         println(
           s"${TimeMetric.getNewTime()} - Language detection done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
         )
