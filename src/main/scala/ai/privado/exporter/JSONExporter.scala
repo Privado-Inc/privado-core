@@ -34,6 +34,7 @@ import ai.privado.model.exporter.DataFlowEncoderDecoder._
 import ai.privado.model.exporter.ViolationEncoderDecoder._
 import ai.privado.model.exporter.CollectionEncoderDecoder._
 import ai.privado.model.exporter.SinkEncoderDecoder._
+import ai.privado.script.ExternalScalaScriptRunner
 import better.files.File
 import privado_core.BuildInfo
 import io.circe.Json
@@ -208,6 +209,11 @@ object JSONExporter {
       logger.info("Completed exporting policy violations")
       val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f               = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+
+      // Post export Trigger
+      ExternalScalaScriptRunner
+        .postExportTrigger(cpg, ruleCache, output)
+
       f.write(output.asJson.toString())
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")

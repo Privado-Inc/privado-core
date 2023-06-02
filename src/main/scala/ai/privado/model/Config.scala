@@ -62,7 +62,9 @@ case class ConfigAndRules(
   auditConfig: List[RuleInfo]
 )
 
-case class DataFlow(sources: List[String], sinks: List[String])
+case class SourceFilter(isSensitive: Option[Boolean], sensitivity: String)
+
+case class DataFlow(sources: List[String], sourceFilters: SourceFilter, sinks: List[String])
 
 case class PolicyOrThreat(
   id: String,
@@ -115,7 +117,7 @@ object CirceEnDe {
           policyOrThreatType = PolicyThreatType.withNameDefaultHandler(policyOrThreatType.getOrElse("")),
           description = description.getOrElse(""),
           action = PolicyAction.withNameDefaultHandler(action.getOrElse("")),
-          dataFlow = dataFlow.getOrElse(DataFlow(List[String](), List[String]())),
+          dataFlow = dataFlow.getOrElse(DataFlow(List[String](), SourceFilter(None, ""), List[String]())),
           repositories = repositories.getOrElse(List[String]()),
           tags = tags.getOrElse(HashMap[String, String]()),
           file = "",
@@ -125,11 +127,29 @@ object CirceEnDe {
     }
   }
 
+  implicit val decodeSourceFilter: Decoder[SourceFilter] = new Decoder[SourceFilter] {
+    override def apply(c: HCursor): Result[SourceFilter] = {
+      Right(
+        SourceFilter(
+          isSensitive = c.downField(Constants.isSensitive).as[Option[Boolean]].getOrElse(None),
+          sensitivity = c.downField(Constants.sensitivity).as[String].getOrElse("")
+        )
+      )
+    }
+  }
+
   implicit val decodeDataFlow: Decoder[DataFlow] = new Decoder[DataFlow] {
     override def apply(c: HCursor): Result[DataFlow] = {
-      val sources = c.downField(Constants.sources).as[List[String]]
-      val sinks   = c.downField(Constants.sinks).as[List[String]]
-      Right(DataFlow(sources = sources.getOrElse(List[String]()), sinks = sinks.getOrElse(List[String]())))
+      val sources      = c.downField(Constants.sources).as[List[String]]
+      val sourceFilter = c.downField(Constants.sourceFilters).as[SourceFilter]
+      val sinks        = c.downField(Constants.sinks).as[List[String]]
+      Right(
+        DataFlow(
+          sources = sources.getOrElse(List[String]()),
+          sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "")),
+          sinks = sinks.getOrElse(List[String]())
+        )
+      )
     }
   }
 

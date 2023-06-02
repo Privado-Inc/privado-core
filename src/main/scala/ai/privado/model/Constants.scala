@@ -87,6 +87,7 @@ object Constants {
   val language                     = "language"
   val gitMetaData                  = "gitMetaData"
   val sources                      = "sources"
+  val sourceFilters                = "sourceFilters"
   val localScanPath                = "localScanPath"
   val processing                   = "processing"
   val sinkProcessing               = "sinkProcessing"
@@ -129,6 +130,9 @@ object Constants {
   val apiSinks            = "apiSinks"
   val apiHttpLibraries    = "apiHttpLibraries"
   val apiIdentifier       = "apiIdentifier"
+
+  // External script keys
+  val postExportTrigger = "postExportTrigger"
 
   // TemplatedDom
 
