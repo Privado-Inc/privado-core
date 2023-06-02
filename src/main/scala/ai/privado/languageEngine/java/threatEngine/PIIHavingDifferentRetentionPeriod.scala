@@ -1,9 +1,10 @@
 package ai.privado.languageEngine.java.threatEngine
 
-import ai.privado.cache.{TaggerCache}
+import ai.privado.cache.TaggerCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{hasDataElements}
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.hasDataElements
+import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
@@ -22,22 +23,15 @@ object PIIHavingDifferentRetentionPeriod {
     *   cpg
     * @return
     */
-  def getViolations(cpg: Cpg, taggerCache: TaggerCache): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(
+    threat: PolicyOrThreat,
+    cpg: Cpg,
+    taggerCache: TaggerCache
+  ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
-      val violatingFlows = ListBuffer[ViolationProcessingModel]()
-      val entityMapper   = EntityMapper.getClassTableMapping(cpg)
-      val sourceIdRetentionPeriodMap: HashMap[String, Int] = HashMap(
-        "Data.Sensitive.NationalIdentificationNumbers.SocialSecurityNumber"         -> 7,
-        "Data.Sensitive.NationalIdentificationNumbers.TaxpayerIdentificationNumber" -> 7,
-        "Data.Sensitive.AccountData.AccountID"                                      -> 7,
-        "Data.Sensitive.PersonalIdentification.FirstName"                           -> 30,
-        "Data.Sensitive.PersonalIdentification.LastName"                            -> 30,
-        "Data.Sensitive.ContactData.PhoneNumber"                                    -> 30,
-        "Data.Sensitive.ContactData.Address"                                        -> 30,
-        "Data.Sensitive.PersonalIdentification.DateofBirth"                         -> 30,
-        "Data.Sensitive.PersonalCharacteristics.Height"                             -> 30,
-        "Data.Sensitive.PersonalCharacteristics.Weigth"                             -> 30
-      )
+      val violatingFlows                               = ListBuffer[ViolationProcessingModel]()
+      val entityMapper                                 = EntityMapper.getClassTableMapping(cpg)
+      val sourceIdRetentionPeriodMap: Map[String, Int] = getSourceIdRetentionMap(threat.config)
 
       entityMapper.foreach((entityWithTable) => {
         val tableName                   = entityWithTable._1
@@ -82,5 +76,21 @@ object PIIHavingDifferentRetentionPeriod {
 
       (violatingFlows.nonEmpty, violatingFlows.toList)
     } else (false, List())
+  }
+
+  private def getSourceIdRetentionMap(config: Map[String, String]): Map[String, Int] = {
+    val RETENTION_PERIOD_KEY                         = "retentionPeriods"
+    var sourceIdRetentionPeriodMap: Map[String, Int] = HashMap()
+    if (config.contains(RETENTION_PERIOD_KEY)) {
+      val keyValuePairs = config.get(RETENTION_PERIOD_KEY).get.split(",")
+      sourceIdRetentionPeriodMap = keyValuePairs.map { pair =>
+        val keyValue = pair.split(":")
+        val key      = keyValue(0).trim()
+        val value    = keyValue(1).trim().toInt
+
+        key -> value
+      }.toMap
+    }
+    sourceIdRetentionPeriodMap
   }
 }

@@ -76,6 +76,7 @@ case class PolicyOrThreat(
   dataFlow: DataFlow,
   repositories: List[String],
   tags: Map[String, String],
+  config: Map[String, String],
   file: String,
   categoryTree: Array[String]
 )
@@ -109,6 +110,7 @@ object CirceEnDe {
       val dataFlow           = c.downField(Constants.dataFlow).as[DataFlow]
       val repositories       = c.downField(Constants.repositories).as[List[String]]
       val tags               = c.downField(Constants.tags).as[Map[String, String]]
+      val config             = c.downField(Constants.config).as[Map[String, String]]
       Right(
         PolicyOrThreat(
           id = id.getOrElse(""),
@@ -120,6 +122,7 @@ object CirceEnDe {
           dataFlow = dataFlow.getOrElse(DataFlow(List[String](), SourceFilter(None, ""), List[String]())),
           repositories = repositories.getOrElse(List[String]()),
           tags = tags.getOrElse(HashMap[String, String]()),
+          config = config.getOrElse(HashMap[String, String]()),
           file = "",
           categoryTree = Array[String]()
         )

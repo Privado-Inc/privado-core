@@ -124,38 +124,37 @@ class ThreatEngineExecutor(
           case Failure(_) => None
         }
 
+      case "Threats.Sharing.isObjectsWithPIIsPassedAsParameter" =>
+        ObjectsWithPIIsPassedAsParameter.getViolations(cpg) match {
+          case Success(res) => {
+            Some(res)
+          }
+          case Failure(_) => None
+        }
+
       case "Threats.Storage.isSamePIIShouldNotBePresentInMultipleTables" =>
-        PIIShouldNotBePresentInMultipleTables.getViolations(cpg, taggerCache) match {
+        PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache) match {
           case Success(res) =>
             Some(res)
-          case Failure(_) =>
-            None
+          case Failure(_) => None
         }
 
       case "Threats.Storage.isPIIHavingDifferentRetentionPeriod" =>
-        PIIHavingDifferentRetentionPeriod.getViolations(cpg, taggerCache) match {
+        PIIHavingDifferentRetentionPeriod.getViolations(threat, cpg, taggerCache) match {
           case Success(res) =>
             Some(res)
-          case Failure(e) => {
-            println("FAILURE: ", e)
-            None
-          }
+          case Failure(_) => None
         }
 
       case "Threats.Storage.isDifferentKindOfPIIStoredInDifferentTables" =>
-        DifferentKindOfPIIStoredInDifferentTables.getViolations(cpg, taggerCache) match {
-          case Success(res) => {
-            println("TRUE: ", res)
+        DifferentKindOfPIIStoredInDifferentTables.getViolations(threat, cpg, taggerCache) match {
+          case Success(res) =>
             Some(res)
-          }
-          case Failure(e) => {
-            println("FAILURE: ", e)
-            None
-          }
+          case Failure(_) => None
         }
 
       case "Threats.Leakage.CustomPrivacyLoggerMustbeUsed" =>
-        CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg, dataflows, ruleCache) match {
+        CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg) match {
           case Success(res) => {
             Some(res)
           }

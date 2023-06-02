@@ -4,6 +4,7 @@ import ai.privado.cache.TaggerCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
 import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{getSourceNode, hasDataElements}
+import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -23,7 +24,11 @@ object PIIShouldNotBePresentInMultipleTables {
     *   cpg
     * @return
     */
-  def getViolations(cpg: Cpg, taggerCache: TaggerCache): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(
+    threat: PolicyOrThreat,
+    cpg: Cpg,
+    taggerCache: TaggerCache
+  ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows        = ListBuffer[ViolationProcessingModel]()
       val entityMapper          = EntityMapper.getClassTableMapping(cpg)

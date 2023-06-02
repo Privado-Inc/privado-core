@@ -78,6 +78,7 @@ object Constants {
   val remoteUrl   = "remoteUrl"
   val endPoint    = "endPoint"
 
+  val config                       = "config"
   val coreVersion                  = "privadoCoreVersion"
   val cliVersion                   = "privadoCLIVersion"
   val mainVersion                  = "privadoMainVersion"

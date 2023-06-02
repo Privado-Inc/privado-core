@@ -1,15 +1,15 @@
 package ai.privado.languageEngine.java.threatEngine
 
-import ai.privado.cache.{TaggerCache}
+import ai.privado.cache.TaggerCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{hasDataElements}
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.hasDataElements
+import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.Try
 
 object DifferentKindOfPIIStoredInDifferentTables {
@@ -22,21 +22,15 @@ object DifferentKindOfPIIStoredInDifferentTables {
     *   cpg
     * @return
     */
-  def getViolations(cpg: Cpg, taggerCache: TaggerCache): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(
+    threat: PolicyOrThreat,
+    cpg: Cpg,
+    taggerCache: TaggerCache
+  ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
-      val violatingFlows = ListBuffer[ViolationProcessingModel]()
-      val entityMapper   = EntityMapper.getClassTableMapping(cpg)
-      val sourceIdCategoryMap: HashMap[String, String] = HashMap(
-        "Data.Sensitive.PersonalIdentification.FirstName"                           -> "PersonalCharacteristics",
-        "Data.Sensitive.PersonalIdentification.LastName"                            -> "PersonalCharacteristics",
-        "Data.Sensitive.PersonalIdentification.DateofBirth"                         -> "PersonalCharacteristics",
-        "Data.Sensitive.PersonalCharacteristics.Height"                             -> "PersonalCharacteristics",
-        "Data.Sensitive.PersonalCharacteristics.Weigth"                             -> "PersonalCharacteristics",
-        "Data.Sensitive.ContactData.PhoneNumber"                                    -> "PersonalCharacteristics",
-        "Data.Sensitive.ContactData.Address"                                        -> "PersonalCharacteristics",
-        "Data.Sensitive.NationalIdentificationNumbers.SocialSecurityNumber"         -> "NationalIdentity",
-        "Data.Sensitive.NationalIdentificationNumbers.TaxpayerIdentificationNumber" -> "NationalIdentity"
-      )
+      val violatingFlows                           = ListBuffer[ViolationProcessingModel]()
+      val entityMapper                             = EntityMapper.getClassTableMapping(cpg)
+      val sourceIdCategoryMap: Map[String, String] = getSourceIdCategoryMap(threat.config)
 
       entityMapper.foreach((entityWithTable) => {
         val tableName               = entityWithTable._1
@@ -81,5 +75,16 @@ object DifferentKindOfPIIStoredInDifferentTables {
 
       (violatingFlows.nonEmpty, violatingFlows.toList)
     } else (false, List())
+  }
+
+  private def getSourceIdCategoryMap(config: Map[String, String]): Map[String, String] = {
+    val sourceIdCategoryMap: ArrayBuffer[(String, String)] = ArrayBuffer()
+
+    config.foreach { case (category, sources) =>
+      val sourceIds = sources.split(",").map(_.trim())
+      sourceIdCategoryMap.addAll(sourceIds.map(sourceId => (sourceId, category)))
+    }
+
+    sourceIdCategoryMap.toMap
   }
 }

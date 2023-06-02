@@ -32,17 +32,25 @@ object CookieConsentMgmtModule {
       val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName, ruleCache)
       val violatingFlows = policyExecutor.getViolatingOccurrencesForPolicy(threat)
 
-      val consentMgmtModulePresent      = cpg.call.methodFullName("(ngx-cookieconsent).*")
+      val consentMgmtModulePresent      = cpg.call.methodFullName(getCookieConsentMgmtModulePattern(threat.config))
       val prebidNonStandardIntergration = cpg.call("__tcfapi")
       val prebidStandardIntegration     = cpg.call.methodFullName(".*pbjs.*setConfig")
-//      println(
-//        consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty
-//      )
+
       // violation if empty
       (
         consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty,
         violatingFlows.toList
       )
     } else (false, List())
+  }
+
+  private def getCookieConsentMgmtModulePattern(config: Map[String, String]): String = {
+    val DEFAULT_PATTERN                    = "(ngx-cookieconsent).*"
+    val COOKIE_CONSENT_MGMT_MODULE_PATTERN = "cookieConsentMgmtModulePattern"
+    if (config.contains(COOKIE_CONSENT_MGMT_MODULE_PATTERN)) {
+      config.get(COOKIE_CONSENT_MGMT_MODULE_PATTERN).getOrElse(DEFAULT_PATTERN)
+    } else {
+      DEFAULT_PATTERN
+    }
   }
 }
