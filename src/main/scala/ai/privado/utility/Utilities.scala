@@ -33,7 +33,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
-import org.apache.logging.log4j.core.net.Priority
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 import overflowdb.traversal.Traversal
@@ -41,7 +40,6 @@ import overflowdb.traversal.Traversal
 import java.io.PrintWriter
 import java.math.BigInteger
 import java.net.URL
-import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
@@ -426,5 +424,4 @@ object Utilities {
     else if (dbUrl.matches(ipPortRegex)) Priority.MEDIUM
     else Priority.LOW
   }
-
 }
