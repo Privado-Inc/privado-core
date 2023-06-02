@@ -132,21 +132,27 @@ class ThreatEngineExecutor(
             None
         }
 
-//      case "Threats.Storage.isPIIHavingDifferentRetentionPeriod" =>
-//        PIIHavingDifferentRetentionPeriod.getViolations(cpg, taggerCache) match {
-//          case Success(res) => {
-//            Some(res)
-//          }
-//          case Failure(_) => None
-//        }
-//
-//      case "Threats.Sharing.isDifferentKindOfPIIStoredInDifferentTables" =>
-//        DifferentKindOfPIIStoredInDifferentTables.getViolations(cpg, taggerCache) match {
-//          case Success(res) => {
-//            Some(res)
-//          }
-//          case Failure(_) => None
-//        }
+      case "Threats.Storage.isPIIHavingDifferentRetentionPeriod" =>
+        PIIHavingDifferentRetentionPeriod.getViolations(cpg, taggerCache) match {
+          case Success(res) =>
+            Some(res)
+          case Failure(e) => {
+            println("FAILURE: ", e)
+            None
+          }
+        }
+
+      case "Threats.Storage.isDifferentKindOfPIIStoredInDifferentTables" =>
+        DifferentKindOfPIIStoredInDifferentTables.getViolations(cpg, taggerCache) match {
+          case Success(res) => {
+            println("TRUE: ", res)
+            Some(res)
+          }
+          case Failure(e) => {
+            println("FAILURE: ", e)
+            None
+          }
+        }
 
       case "Threats.Leakage.CustomPrivacyLoggerMustbeUsed" =>
         CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg, dataflows, ruleCache) match {
