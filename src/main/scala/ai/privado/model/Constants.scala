@@ -87,6 +87,7 @@ object Constants {
   val language                     = "language"
   val gitMetaData                  = "gitMetaData"
   val sources                      = "sources"
+  val sourceFilters                = "sourceFilters"
   val localScanPath                = "localScanPath"
   val processing                   = "processing"
   val sinkProcessing               = "sinkProcessing"

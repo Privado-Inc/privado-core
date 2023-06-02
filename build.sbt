@@ -6,7 +6,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.3.600"
-val joernVersion      = "1.1.1738"
+val joernVersion      = "1.1.1740"
 val overflowdbVersion = "1.171"
 
 //External dependency versions
@@ -51,6 +51,7 @@ libraryDependencies ++= Seq(
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
   "net.sourceforge.htmlunit"         % "htmlunit"                % "2.70.0",
+  "org.yaml"                         % "snakeyaml"               % "1.29",
   "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
   "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
   "com.iheart"                      %% "ficus"                   % "1.4.7" exclude ("com.typesafe", "config")

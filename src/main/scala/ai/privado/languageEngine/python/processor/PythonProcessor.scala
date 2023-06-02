@@ -28,8 +28,9 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import java.util.Calendar
-import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+import ai.privado.passes.SQLPropertyPass
+import scala.collection.mutable.ListBuffer
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -76,6 +77,7 @@ object PythonProcessor {
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
