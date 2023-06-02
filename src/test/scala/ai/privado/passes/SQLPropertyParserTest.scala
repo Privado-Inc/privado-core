@@ -60,9 +60,7 @@ class SQLPropertyParserTest extends AnyWordSpec with Matchers with BeforeAndAfte
     X2Cpg
       .withNewEmptyCpg(outputFile.toString(), config) { (cpg, config) =>
         new PropertyParserPass(cpg, config.inputPath, new RuleCache, detectedLanguage).createAndApply()
-        println(cpg.property.l)
         new SQLPropertyPass(cpg, config.inputPath, new RuleCache()).createAndApply()
-        println(cpg.sqlColumn.l)
       }
       .get
   }
