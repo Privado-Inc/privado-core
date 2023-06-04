@@ -127,7 +127,11 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
       if (!sourceNode.isEmpty) {
         sourceNode.foreach((sourceNode) => {
           violatingFlowList.add(
-            ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get)
+            ViolationProcessingModel(
+              sourceNode._1,
+              ExporterUtility.convertIndividualPathElement(sourceNode._2).get,
+              None
+            )
           )
         })
       }

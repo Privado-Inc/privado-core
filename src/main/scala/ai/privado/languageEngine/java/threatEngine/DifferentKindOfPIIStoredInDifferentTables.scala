@@ -3,12 +3,13 @@ package ai.privado.languageEngine.java.threatEngine
 import ai.privado.cache.TaggerCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.hasDataElements
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{getPIINameFromSourceId, hasDataElements}
 import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.Try
 
@@ -47,16 +48,34 @@ object DifferentKindOfPIIStoredInDifferentTables {
           })
 
           if (piiCategoryListForTable.toSet.size > 1) {
-            var excerpt =
-              s"Found below table with PIIs having different categories.\n" + s"TableName: ${tableName}\n"
-            var cacheSourceId: String = ""
+            val categoryWithSourceNames = mutable.Map[String, ListBuffer[String]]()
+            var additionalDetail        = s"The below data categories where stored in the table: ${tableName}\n"
+            var cacheSourceId: String   = ""
             typeDeclWithMembersMap.foreach((dataElementMemberMap) => {
               val sourceId = dataElementMemberMap._1
-              val retentionPeriod =
-                if (sourceIdCategoryMap.contains(sourceId)) sourceIdCategoryMap(sourceId)
-              excerpt += s"PII: ${sourceId} -> Category: ${retentionPeriod}\n"
+              val piiName  = getPIINameFromSourceId(sourceId)
+              val category =
+                if (sourceIdCategoryMap.contains(sourceId)) sourceIdCategoryMap(sourceId) else ""
+
+              if (categoryWithSourceNames.contains(category)) {
+                categoryWithSourceNames.get(category).get.append(piiName)
+              } else {
+                categoryWithSourceNames.addOne(category -> ListBuffer(piiName))
+              }
+
               if (cacheSourceId.isEmpty) {
                 cacheSourceId = sourceId
+              }
+            })
+
+            categoryWithSourceNames.toList.foreach((categoryWithSourceName) => {
+              val piiNameList = categoryWithSourceName._2
+              val category    = categoryWithSourceName._1
+              if (category.nonEmpty) {
+                additionalDetail += s"\t- ${category}\n"
+                piiNameList.foreach((piiName) => {
+                  additionalDetail += s"\t\t- ${piiName}\n"
+                })
               }
             })
 
@@ -66,9 +85,11 @@ object DifferentKindOfPIIStoredInDifferentTables {
               occurrence.lineNumber,
               occurrence.columnNumber,
               occurrence.fileName,
-              s"${excerpt}\n${occurrence.excerpt}"
+              occurrence.excerpt
             )
-            violatingFlows.append(ViolationProcessingModel(cacheSourceId, newOccurrence))
+            violatingFlows.append(
+              ViolationProcessingModel(getPIINameFromSourceId(cacheSourceId), newOccurrence, Some(additionalDetail))
+            )
           }
         }
       })

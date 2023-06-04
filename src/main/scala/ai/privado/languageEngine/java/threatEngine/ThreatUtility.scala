@@ -51,7 +51,7 @@ object ThreatUtility {
   def transformOccurrenceList(
     occurrenceList: List[DataFlowSubCategoryPathExcerptModel]
   ): List[ViolationProcessingModel] = {
-    occurrenceList.map(occurrence => ViolationProcessingModel("", occurrence))
+    occurrenceList.map(occurrence => ViolationProcessingModel("", occurrence, None))
   }
 
   def hasDataElements(cpg: Cpg): Boolean = {
@@ -137,5 +137,8 @@ object ThreatUtility {
         }
     }
   }
-
+  def getPIINameFromSourceId(input: String): String = {
+    val words = input.split("\\.")
+    words.lastOption.getOrElse(input)
+  }
 }

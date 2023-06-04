@@ -3,14 +3,13 @@ package ai.privado.languageEngine.java.threatEngine
 import ai.privado.cache.TaggerCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.hasDataElements
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{getPIINameFromSourceId, hasDataElements}
 import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable.HashMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.Try
 
 object PIIHavingDifferentRetentionPeriod {
@@ -48,18 +47,23 @@ object PIIHavingDifferentRetentionPeriod {
           })
 
           if (retentionPeriodListForTable.toSet.size > 1) {
-            var excerpt =
-              s"Found below table with PIIs having different retention period.\n" + s"TableName: ${tableName}\n"
+            var additionalDetails = ""
+//              s"Found below table with PIIs having different retention period.\n" + s"TableName: ${tableName}\n"
+            additionalDetails += "-------------------------------------------------------------------------\n"
+            additionalDetails += s"Data Element\t\t | \t\tRetention Period (days)\n"
+            additionalDetails += "-------------------------------------------------------------------------\n"
             var cacheSourceId: String = ""
             typeDeclWithMembersMap.foreach((dataElementMemberMap) => {
               val sourceId = dataElementMemberMap._1
+              val piiName  = getPIINameFromSourceId(sourceId)
               val retentionPeriod =
                 if (sourceIdRetentionPeriodMap.contains(sourceId)) sourceIdRetentionPeriodMap(sourceId)
-              excerpt += s"PII: ${sourceId} -> Retention Period: ${retentionPeriod}\n"
+              additionalDetails += s"${piiName}\t\t | \t\t${retentionPeriod}\n"
               if (cacheSourceId.isEmpty) {
                 cacheSourceId = sourceId
               }
             })
+            additionalDetails += "-------------------------------------------------------------------------"
 
             val occurrence = ExporterUtility.convertIndividualPathElement(typeDeclFullName).get
             val newOccurrence = DataFlowSubCategoryPathExcerptModel(
@@ -67,9 +71,9 @@ object PIIHavingDifferentRetentionPeriod {
               occurrence.lineNumber,
               occurrence.columnNumber,
               occurrence.fileName,
-              s"${excerpt}\n${occurrence.excerpt}"
+              occurrence.excerpt
             )
-            violatingFlows.append(ViolationProcessingModel(cacheSourceId, newOccurrence))
+            violatingFlows.append(ViolationProcessingModel(cacheSourceId, newOccurrence, Some(additionalDetails)))
           }
         }
       })
@@ -79,18 +83,14 @@ object PIIHavingDifferentRetentionPeriod {
   }
 
   private def getSourceIdRetentionMap(config: Map[String, String]): Map[String, Int] = {
-    val RETENTION_PERIOD_KEY                         = "retentionPeriods"
-    var sourceIdRetentionPeriodMap: Map[String, Int] = HashMap()
-    if (config.contains(RETENTION_PERIOD_KEY)) {
-      val keyValuePairs = config.get(RETENTION_PERIOD_KEY).get.split(",")
-      sourceIdRetentionPeriodMap = keyValuePairs.map { pair =>
-        val keyValue = pair.split(":")
-        val key      = keyValue(0).trim()
-        val value    = keyValue(1).trim().toInt
+    val sourceIdRetentionPeriodMap: ArrayBuffer[(String, Int)] = ArrayBuffer()
 
-        key -> value
-      }.toMap
+    config.foreach { case (source, value) =>
+      val sourceId        = source.trim()
+      val retentionPeriod = value.trim().toInt
+      sourceIdRetentionPeriodMap.addAll(List((sourceId, retentionPeriod)))
     }
-    sourceIdRetentionPeriodMap
+
+    sourceIdRetentionPeriodMap.toMap
   }
 }

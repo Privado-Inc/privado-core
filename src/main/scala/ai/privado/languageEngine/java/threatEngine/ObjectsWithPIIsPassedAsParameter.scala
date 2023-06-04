@@ -13,8 +13,7 @@ import scala.util.Try
 
 object ObjectsWithPIIsPassedAsParameter {
 
-  private val logger        = LoggerFactory.getLogger(getClass)
-  private val MAX_INSTANCES = 5
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Check for violation for data leakage to logs threat - consumes already generated dataflows
     *
@@ -28,12 +27,10 @@ object ObjectsWithPIIsPassedAsParameter {
       val parameters =
         cpg.parameter.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name)).l
 
-      parameters.foreach((parameter) => {
-        if (violatingFlows.size < MAX_INSTANCES) {
-          violatingFlows.append(
-            ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(parameter).get)
-          )
-        }
+      parameters.distinctBy(_.name) foreach ((parameter) => {
+        violatingFlows.append(
+          ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(parameter).get, None)
+        )
       })
 
       (violatingFlows.nonEmpty, violatingFlows.toList)

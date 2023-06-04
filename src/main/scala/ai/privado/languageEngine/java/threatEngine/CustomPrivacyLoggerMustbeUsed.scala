@@ -29,15 +29,22 @@ object CustomPrivacyLoggerMustbeUsed {
       val CUSTOM_LOOGER_PATTERN   = getCustomLoggerModulePattern(threat.config)
       val leakageSinks            = cpg.call.where(_.tag.nameExact(Constants.id).value(higherOrderLeakgeSinkId)).l
 
-      leakageSinks.foreach((leakage) => {
-        if (!leakage.methodFullName.matches(CUSTOM_LOOGER_PATTERN)) {
-          if (violatingFlows.size < MAX_INSTANCES) {
-            violatingFlows.append(
-              ViolationProcessingModel(leakage.name, ExporterUtility.convertIndividualPathElement(leakage).get)
-            )
+      leakageSinks
+        .distinctBy(_.methodFullName)
+        .foreach((leakage) => {
+          if (!leakage.methodFullName.matches(CUSTOM_LOOGER_PATTERN)) {
+            if (violatingFlows.size < MAX_INSTANCES) {
+              violatingFlows
+                .append(
+                  ViolationProcessingModel(
+                    leakage.name,
+                    ExporterUtility.convertIndividualPathElement(leakage).get,
+                    None
+                  )
+                )
+            }
           }
-        }
-      })
+        })
 
       (violatingFlows.nonEmpty, violatingFlows.toList)
     } else (false, List())
@@ -47,7 +54,7 @@ object CustomPrivacyLoggerMustbeUsed {
     val DEFAULT_PATTERN              = ""
     val CUSTOM_LOGGER_MODULE_PATTERN = "customLoggerModulePattern"
     if (config.contains(CUSTOM_LOGGER_MODULE_PATTERN)) {
-      config.get(CUSTOM_LOGGER_MODULE_PATTERN).getOrElse(DEFAULT_PATTERN)
+      config.getOrElse(CUSTOM_LOGGER_MODULE_PATTERN, DEFAULT_PATTERN)
     } else {
       DEFAULT_PATTERN
     }

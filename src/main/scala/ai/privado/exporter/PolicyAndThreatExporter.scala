@@ -70,11 +70,11 @@ class PolicyAndThreatExporter(cpg: Cpg, ruleCache: RuleCache, dataflows: Map[Str
 
   private def convertProcessingSources(sourceNode: (String, CfgNode)) = {
     try {
-      ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get)
+      ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get, None)
     } catch {
       case e: Exception =>
         logger.debug("Exception : ", e)
-        ViolationProcessingModel(sourceNode._1, null)
+        ViolationProcessingModel(sourceNode._1, null, None)
     }
   }
 
