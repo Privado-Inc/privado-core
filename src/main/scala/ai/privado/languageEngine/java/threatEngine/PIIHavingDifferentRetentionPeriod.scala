@@ -33,7 +33,6 @@ object PIIHavingDifferentRetentionPeriod {
       val sourceIdRetentionPeriodMap: Map[String, Int] = getSourceIdRetentionMap(threat.config)
 
       entityMapper.foreach((entityWithTable) => {
-        val tableName                   = entityWithTable._1
         val typeDeclFullName            = entityWithTable._2
         val retentionPeriodListForTable = ListBuffer[Int]()
 
@@ -47,9 +46,7 @@ object PIIHavingDifferentRetentionPeriod {
           })
 
           if (retentionPeriodListForTable.toSet.size > 1) {
-            var additionalDetails = ""
-//              s"Found below table with PIIs having different retention period.\n" + s"TableName: ${tableName}\n"
-            additionalDetails += "-------------------------------------------------------------------------\n"
+            var additionalDetails = "-------------------------------------------------------------------------\n"
             additionalDetails += s"Data Element\t\t | \t\tRetention Period (days)\n"
             additionalDetails += "-------------------------------------------------------------------------\n"
             var cacheSourceId: String = ""

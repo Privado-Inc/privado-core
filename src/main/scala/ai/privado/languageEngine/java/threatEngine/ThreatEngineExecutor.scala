@@ -75,90 +75,118 @@ class ThreatEngineExecutor(
       case "Threats.Collection.isKeyboardCacheUsed" if isAndroidRepo =>
         KeyboardCache.getViolations(ruleCache, repoPath) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Storage.isAppDataBackupAllowed" if isAndroidRepo =>
         SensitiveDataBackup.getViolations(cpg, manifestFile) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Configuration.Mobile.isBackgroundScreenshotEnabled" if isAndroidRepo =>
         BackgroundScreenshot.getViolations(cpg) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Sharing.isIpcDataSharingAllowed" if isAndroidRepo =>
         DataSharingIPC.getViolations(cpg, manifestFile) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Collection.isInputMasked" if isAndroidRepo =>
         SensitiveInputMask.getViolations(cpg, ruleCache, repoPath) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Storage.isDataStoredOnExternalStorage" if isAndroidRepo =>
         DataOnExternalStorage.getViolations(cpg, manifestFile) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.CookieConsent.isCookieConsentMgmtModuleImplemented" =>
         CookieConsentMgmtModule.getViolations(threat, cpg, dataflows, ruleCache) match {
-          case Success(res) => {
-            Some(res)
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
           }
-          case Failure(_) => None
         }
 
       case "Threats.Sharing.isParameterHardcoded" =>
         DataMethodParameterHardcoded.getViolations(cpg) match {
-          case Success(res) => {
-            Some(res)
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
           }
-          case Failure(_) => None
         }
 
       case "Threats.Sharing.isObjectsWithPIIsPassedAsParameter" =>
         ObjectsWithPIIsPassedAsParameter.getViolations(cpg) match {
-          case Success(res) => {
-            Some(res)
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
           }
-          case Failure(_) => None
         }
 
       case "Threats.Storage.isSamePIIShouldNotBePresentInMultipleTables" =>
         PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache) match {
-          case Success(res) =>
-            Some(res)
-          case Failure(_) => None
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Storage.isPIIHavingDifferentRetentionPeriod" =>
         PIIHavingDifferentRetentionPeriod.getViolations(threat, cpg, taggerCache) match {
-          case Success(res) =>
-            Some(res)
-          case Failure(_) => None
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Storage.isDifferentKindOfPIIStoredInDifferentTables" =>
         DifferentKindOfPIIStoredInDifferentTables.getViolations(threat, cpg, taggerCache) match {
-          case Success(res) =>
-            Some(res)
-          case Failure(_) => None
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
 
       case "Threats.Leakage.CustomPrivacyLoggerMustbeUsed" =>
         CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg) match {
-          case Success(res) => {
-            Some(res)
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
           }
-          case Failure(_) => None
         }
 
       case _ =>
@@ -194,12 +222,18 @@ class ThreatEngineExecutor(
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
         DataLeakageToNotifications.getViolations(threat, cpg, dataflows, ruleCache) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
         DataLeakageToLogs.getViolations(threat, cpg, dataflows, ruleCache) match {
           case Success(res) => Some(res)
-          case Failure(_)   => None
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
         }
       case _ =>
         logger.debug(s"No implementation detected for threat: ${threatId} (isAndroidRepo: ${isAndroidRepo})")

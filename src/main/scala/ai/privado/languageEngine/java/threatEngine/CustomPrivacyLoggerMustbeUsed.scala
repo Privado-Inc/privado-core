@@ -51,7 +51,7 @@ object CustomPrivacyLoggerMustbeUsed {
   }
 
   private def getCustomLoggerModulePattern(config: Map[String, String]): String = {
-    val DEFAULT_PATTERN              = ""
+    val DEFAULT_PATTERN              = ".*(?:error|severe|fatal|warn|debug|trace|info|log|exception)"
     val CUSTOM_LOGGER_MODULE_PATTERN = "customLoggerModulePattern"
     if (config.contains(CUSTOM_LOGGER_MODULE_PATTERN)) {
       config.getOrElse(CUSTOM_LOGGER_MODULE_PATTERN, DEFAULT_PATTERN)

@@ -23,13 +23,17 @@ object DataMethodParameterHardcoded {
   def getViolations(cpg: Cpg): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows      = ListBuffer[ViolationProcessingModel]()
-      val hardCodedParameters = cpg.parameter.code(".*=.*").filter(i => i.code != i.name).l
+      val hardCodedParameters = cpg.parameter.code(".*=.*").filter(parameter => parameter.code != parameter.name).l
 
-      hardCodedParameters.distinctBy(_.name) foreach ((i) => {
-        val relatedMethod = i.astParent.head
+      hardCodedParameters.distinctBy(_.name) foreach ((parameter) => {
+        val relatedMethod = parameter.method.head
         if (relatedMethod.nonEmpty) {
           violatingFlows.append(
-            ViolationProcessingModel(i.name, ExporterUtility.convertIndividualPathElement(relatedMethod).get, None)
+            ViolationProcessingModel(
+              parameter.name,
+              ExporterUtility.convertIndividualPathElement(relatedMethod).get,
+              None
+            )
           )
         }
       })
