@@ -31,11 +31,11 @@ import io.joern.pysrc2cpg.{
   Py2CpgOnFileSystem,
   Py2CpgOnFileSystemConfig,
   PythonInheritanceNamePass,
-  PythonNaiveCallLinker,
   PythonTypeRecoveryPass
 }
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -55,7 +55,7 @@ object PythonTestUtility {
         new PythonInheritanceNamePass(cpg).createAndApply()
         new PythonTypeRecoveryPass(cpg).createAndApply()
         new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
-        new PythonNaiveCallLinker(cpg).createAndApply()
+        new NaiveCallLinker(cpg).createAndApply()
         new AstLinkerPass(cpg).createAndApply()
         new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
         cpg
