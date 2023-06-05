@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.threatEngine.ThreatEngineExecutor
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
 import ai.privado.policyEngine.PolicyExecutor
@@ -34,13 +34,13 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class PolicyAndThreatExporter(cpg: Cpg, ruleCache: RuleCache, dataflows: Map[String, Path]) {
+class PolicyAndThreatExporter(cpg: Cpg, ruleCache: RuleCache, dataflows: Map[String, Path], taggerCache: TaggerCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getViolations(repoPath: String): List[ViolationModel] = {
     val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName, ruleCache)
-    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache)
+    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache)
 
     try {
       threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations
@@ -70,11 +70,11 @@ class PolicyAndThreatExporter(cpg: Cpg, ruleCache: RuleCache, dataflows: Map[Str
 
   private def convertProcessingSources(sourceNode: (String, CfgNode)) = {
     try {
-      ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get)
+      ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get, None)
     } catch {
       case e: Exception =>
         logger.debug("Exception : ", e)
-        ViolationProcessingModel(sourceNode._1, null)
+        ViolationProcessingModel(sourceNode._1, null, None)
     }
   }
 

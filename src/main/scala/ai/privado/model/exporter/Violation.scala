@@ -6,7 +6,11 @@ import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 //Need this to encode/decode DataFlowSubCategoryPathExcerptModel
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
 
-case class ViolationProcessingModel(sourceId: String, occurrence: DataFlowSubCategoryPathExcerptModel)
+case class ViolationProcessingModel(
+  sourceId: String,
+  occurrence: DataFlowSubCategoryPathExcerptModel,
+  detail: Option[String]
+)
 
 case class ViolationDataFlowModel(sourceId: String, sinkId: String, pathIds: List[String])
 

@@ -118,6 +118,16 @@
               }
             }
           },
+          "config": {
+            "$id": "#root/policies/items/config",
+            "title": "Config",
+            "type": ["object", "null"],
+            "default": null,
+            "patternProperties": {
+              "^.*$": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
           "repositories": {
             "$id": "#root/policies/items/repositories",
             "title": "Repositories",

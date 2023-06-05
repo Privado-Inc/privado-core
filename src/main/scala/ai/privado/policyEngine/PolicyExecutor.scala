@@ -23,8 +23,10 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.exporter.ExporterUtility
+import ai.privado.languageEngine.java.threatEngine.ThreatUtility.getSourceNode
+import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
 import ai.privado.exporter.SourceExporter
-import ai.privado.model.exporter.ViolationDataFlowModel
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -85,7 +87,10 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
     val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
     val processingResult = processingTypePolicy
       .map(policy =>
-        (policy.id, getSourcesMatchingRegexForProcessing(policy).toList.flatMap(sourceId => getSourceNode(sourceId)))
+        (
+          policy.id,
+          getSourcesMatchingRegexForProcessing(policy).toList.flatMap(sourceId => getSourceNode(this.cpg, sourceId))
+        )
       )
       .toMap
     processingResult
@@ -94,7 +99,6 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
   def getDataflowViolations: Map[String, mutable.HashSet[ViolationDataFlowModel]] = {
-
     val dataflowResult = policies
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
       .toMap
@@ -112,6 +116,25 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
           violatingFlowList.add(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
         }
       })
+    })
+    violatingFlowList
+  }
+
+  def getViolatingOccurrencesForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationProcessingModel] = {
+    val violatingFlowList = mutable.HashSet[ViolationProcessingModel]()
+    getSourcesMatchingRegex(policy).foreach(sourceId => {
+      val sourceNode = getSourceNode(this.cpg, sourceId)
+      if (!sourceNode.isEmpty) {
+        sourceNode.foreach((sourceNode) => {
+          violatingFlowList.add(
+            ViolationProcessingModel(
+              sourceNode._1,
+              ExporterUtility.convertIndividualPathElement(sourceNode._2).get,
+              None
+            )
+          )
+        })
+      }
     })
     violatingFlowList
   }
@@ -183,21 +206,4 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
       .toSet
   }
 
-  private def getSourceNode(sourceId: String): Option[(String, CfgNode)] = {
-    def filterBySource(tag: Traversal[Tag]): Traversal[Tag] =
-      tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
-    Try(cpg.tag.where(filterBySource).identifier.head) match {
-      case Success(identifierNode) => Some(sourceId, identifierNode)
-      case Failure(_) =>
-        Try(cpg.tag.where(filterBySource).literal.head) match {
-          case Success(literalNode) => Some(sourceId, literalNode)
-          case Failure(_) =>
-            Try(cpg.tag.where(filterBySource).call.head) match {
-              case Success(callNode) => Some(sourceId, callNode)
-              case Failure(_)        => None
-            }
-        }
-    }
-
-  }
 }
