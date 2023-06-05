@@ -26,7 +26,9 @@ import ai.privado.dataflow.Dataflow
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, SqlColumnNode, SqlQueryNode, SqlTableNode}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
-import overflowdb.traversal.{Traversal, jIteratortoTraversal}
+import overflowdb.traversal._
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object Language {
 
@@ -35,13 +37,13 @@ object Language {
 
   implicit class NodeStarterForSqlQueryNode(cpg: Cpg) {
     def sqlQuery: Traversal[SqlQueryNode] =
-      cpg.graph.nodes(NodeTypes.SQL_QUERY_NODE).cast[SqlQueryNode]
+      cpg.graph.nodes(NodeTypes.SQL_QUERY_NODE).asScala.cast[SqlQueryNode]
 
     def sqlTable: Traversal[SqlTableNode] =
-      cpg.graph.nodes(NodeTypes.SQL_TABLE_NODE).cast[SqlTableNode]
+      cpg.graph.nodes(NodeTypes.SQL_TABLE_NODE).asScala.cast[SqlTableNode]
 
     def sqlColumn: Traversal[SqlColumnNode] =
-      cpg.graph.nodes(NodeTypes.SQL_COLUMN_NODE).cast[SqlColumnNode]
+      cpg.graph.nodes(NodeTypes.SQL_COLUMN_NODE).asScala.cast[SqlColumnNode]
   }
 
   implicit class StepsForPropertyForSqlQueryNode(val trav: Traversal[SqlQueryNode]) extends AnyVal {

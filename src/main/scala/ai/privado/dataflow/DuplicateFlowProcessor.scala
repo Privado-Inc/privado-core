@@ -236,7 +236,7 @@ object DuplicateFlowProcessor {
 
   def getDataflowsMapByType(dataflowMapByPathId: Map[String, Path], sinkSubCategory: String): Map[String, Path] = {
     dataflowMapByPathId.filter(dataflowEntrySet =>
-      dataflowEntrySet._2.elements.last
+      dataflowEntrySet._2.elements.last.iterator
         .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(sinkSubCategory))
         .nonEmpty
     )
@@ -585,7 +585,7 @@ object DuplicateFlowProcessor {
       for (i <- reversedPath.indices) {
         val node = reversedPath(i)
         if (node.isCall) {
-          val traversalNode = Traversal(node).isCall.l
+          val traversalNode = Iterator(node).isCall.l
           var thisNode      = List[Expression]()
 
           if (traversalNode.name.headOption.getOrElse("") == Operators.fieldAccess)

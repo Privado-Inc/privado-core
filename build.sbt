@@ -5,9 +5,9 @@ ThisBuild / scalaVersion := "2.13.8"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.3.600"
-val joernVersion      = "1.1.1741"
-val overflowdbVersion = "1.171"
+val cpgVersion        = "1.3.612"
+val joernVersion      = "1.2.3"
+val overflowdbVersion = "1.179"
 
 //External dependency versions
 val circeVersion   = "0.14.1"
@@ -69,8 +69,7 @@ ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
-  Resolver.sonatypeRepo("snapshots")
-)
+) ++ Resolver.sonatypeOssRepos("snapshots")
 lazy val astGenDlUrl       = "https://github.com/joernio/astgen/releases/download/v2.14.0/"
 lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe", "astgen-macos-arm")
 

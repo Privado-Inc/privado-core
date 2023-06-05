@@ -26,7 +26,7 @@ object DataMethodParameterHardcoded {
       val hardCodedParameters = cpg.parameter.code(".*=.*").filter(parameter => parameter.code != parameter.name).l
 
       hardCodedParameters.distinctBy(_.name) foreach ((parameter) => {
-        val relatedMethod = parameter.method.head
+        val relatedMethod = parameter.method
         if (relatedMethod.nonEmpty) {
           violatingFlows.append(
             ViolationProcessingModel(

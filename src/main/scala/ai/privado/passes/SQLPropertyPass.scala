@@ -5,15 +5,8 @@ import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLParser
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  File,
-  JavaProperty,
-  NewFile,
-  NewSqlColumnNode,
-  NewSqlQueryNode,
-  NewSqlTableNode
-}
 import org.slf4j.LoggerFactory
 
 class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
@@ -22,7 +15,7 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.property.l.filter(prop => prop.name.matches("(?i)query")).toArray
+    cpg.property.iterator.filter(prop => prop.name.matches("(?i)query")).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
@@ -40,7 +33,7 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
           parsedQueryList.zipWithIndex.foreach { case (parsedQueryItem: SQLQuery, queryOrder) =>
             buildAndReturnIndividualQueryNode(
               builder,
-              property.sourceFileOut.head,
+              property.sourceFileOut.next(),
               parsedQueryItem,
               query,
               lineNumber,

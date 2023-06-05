@@ -2,14 +2,16 @@ package ai.privado.languageEngine.java.language
 
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, ModuleDependency}
-import overflowdb.traversal.{Traversal, jIteratortoTraversal}
+import overflowdb.traversal._
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object module {
 
   implicit class NodeStarters(cpg: Cpg) {
 
     def module: Traversal[io.shiftleft.codepropertygraph.generated.nodes.Module] =
-      cpg.graph.nodes(NodeTypes.MODULE).cast[io.shiftleft.codepropertygraph.generated.nodes.Module]
+      cpg.graph.nodes(NodeTypes.MODULE).asScala.cast[io.shiftleft.codepropertygraph.generated.nodes.Module]
   }
 
   implicit class StepsForModule(val trav: Traversal[io.shiftleft.codepropertygraph.generated.nodes.Module])
