@@ -29,7 +29,6 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
-import io.joern.pysrc2cpg.PythonNaiveCallLinker
 import ai.privado.languageEngine.javascript.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants._
@@ -43,6 +42,7 @@ import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 import better.files.File
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import java.util.Calendar
@@ -62,7 +62,7 @@ object JavascriptProcessor {
     xtocpg match {
       case Success(cpg) =>
         // Apply default overlays
-        new PythonNaiveCallLinker(cpg).createAndApply()
+        new NaiveCallLinker(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()

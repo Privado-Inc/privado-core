@@ -30,6 +30,8 @@ import java.nio.file.Paths
 import java.util.Calendar
 import scala.util.{Failure, Success, Try}
 import ai.privado.passes.SQLPropertyPass
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
+
 import scala.collection.mutable.ListBuffer
 
 object PythonProcessor {
@@ -64,7 +66,7 @@ object PythonProcessor {
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
-          new PythonNaiveCallLinker(cpg).createAndApply()
+          new NaiveCallLinker(cpg).createAndApply()
 
           // Some of passes above create new methods, so, we
           // need to run the ASTLinkerPass one more time
