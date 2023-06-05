@@ -88,7 +88,7 @@ object DifferentKindOfPIIStoredInDifferentTables {
               occurrence.excerpt
             )
             violatingFlows.append(
-              ViolationProcessingModel(getPIINameFromSourceId(cacheSourceId), newOccurrence, Some(additionalDetail))
+              ViolationProcessingModel(getPIINameFromSourceId(tableName), newOccurrence, Some(additionalDetail))
             )
           }
         }
