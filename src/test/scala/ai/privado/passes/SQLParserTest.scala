@@ -63,7 +63,7 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val inputDir = File.newTemporaryDirectory()
     (inputDir / "sample.sql").write(code)
     val outputFile = File.newTemporaryFile()
-    val config     = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config     = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
     X2Cpg
       .withNewEmptyCpg(outputFile.toString(), config) { (cpg, config) =>
         new SQLParser(cpg, config.inputPath, new RuleCache()).createAndApply()

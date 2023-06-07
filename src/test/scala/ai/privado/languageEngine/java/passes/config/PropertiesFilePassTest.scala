@@ -238,7 +238,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     outputFile = File.newTemporaryFile()
 
     (inputDir / "GeneralConfig.java").write(codeFileContents)
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
 
     cpg = new JavaSrc2Cpg().createCpg(config).get
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()

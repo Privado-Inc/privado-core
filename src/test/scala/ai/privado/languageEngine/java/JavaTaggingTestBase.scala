@@ -45,7 +45,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     (inputDir / "generalFile.java").write(javaFileContents)
     (inputDir / "unrelated.file").write("foo")
     outputFile = File.newTemporaryFile()
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
     cpg = new JavaSrc2Cpg().createCpg(config).get
 
     // Caching Rule

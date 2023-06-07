@@ -308,7 +308,9 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     outputFile = File.newTemporaryFile()
 
     (inputDir / "GeneralConfig.py").write(codeFileContents)
-    val pythonConfig = Py2CpgOnFileSystemConfig(Paths.get(outputFile.toString()), Paths.get(inputDir.toString()))
+    val pythonConfig = Py2CpgOnFileSystemConfig()
+      .withInputPath(inputDir.pathAsString)
+      .withOutputPath(outputFile.pathAsString)
     cpg = new Py2CpgOnFileSystem().createCpg(pythonConfig).get
 
     // Apply default overlays
