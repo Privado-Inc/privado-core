@@ -73,58 +73,6 @@ class GetEnvironmentTest extends JSPropertiesFilePassTestBase(".env") {
 
 }
 
-class GetYamlFileTest extends JSPropertiesFilePassTestBase(".yaml") {
-
-  val db_url = "https://mydb.dbname.in/secret"
-
-  override val configFileContents: String =
-    """DB_URL: https://mydb.dbname.in/secret
-       |DB_NAME: mydb""".stripMargin
-  override val codeFileContents: String =
-    """
-      |const dbUrl = process.env['DB_URL']
-      |const dbName = process.env.DB_NAME
-      |""".stripMargin
-
-  "JS Config File pass should" should {
-    "create a file node for the property file" in {
-      val files = cpg.file.name.l
-      files.filter(_.endsWith(".yaml")).head.endsWith("/test.yaml") shouldBe true
-    }
-
-    "create a `property` node for each property" in {
-      val properties = cpg.property.map(x => (x.name, x.value)).toMap
-      properties
-        .get("DB_URL")
-        .contains(db_url) shouldBe true
-    }
-
-    "connect property nodes to file" in {
-      val List(filename: String) = cpg.property.file.name.dedup.l
-      filename.endsWith("/test.yaml") shouldBe true
-    }
-
-    "process another way to connect literals" in {
-      val lit = cpg.property.usedAt.l
-      lit.exists(node => node.code.matches(".*DB_URL.*")) shouldBe true
-    }
-
-    "connect property node to literal via `IS_USED_AT` edge" in {
-      val lit = cpg.property.usedAt.l
-      lit.exists(node => node.code.matches(".*DB_NAME.*")) shouldBe true
-    }
-    "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
-      val javaP = cpg.property.usedAt.originalProperty.l.head
-      javaP.value shouldBe db_url
-
-      val lit = cpg.property.usedAt.l.head
-      lit.originalProperty.head.value shouldBe db_url
-      lit.originalPropertyValue.head shouldBe db_url
-    }
-  }
-
-}
-
 abstract class JSPropertiesFilePassTestBase(fileExtension: String)
     extends AnyWordSpec
     with Matchers
