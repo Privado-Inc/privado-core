@@ -21,9 +21,10 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
-    // TODO: Currently matches basic stuff like "/user/id", "/" etc. Possibly improve
     val collectionMethodsCache = mutable.ListBuffer[Method]()
 
+    // TODO: Add this one to Internal APIs
+    // Added this for now to log the endpoints, in future need to move client side endpoint to Internal API
     val CLIENT_ENDPOINT_PATTERN  = "(?:axios|fetch|express|@angular/common/http).*"
     val apiClientCollectionCalls = cpg.call.methodFullName(CLIENT_ENDPOINT_PATTERN).l
     for (call <- apiClientCollectionCalls) {
@@ -35,7 +36,14 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       }
     }
 
-    val EXPRESS_CLIENT_PATTERN = "(?:express).*"
+    // Supporting below pattern
+    // fastify.get('/endpoint', async (request, reply) => {
+    //  return 'Hello, World!';
+    // });
+    // Supported Framework: Express, Fastify, Featherjs
+    // TODO: Based on below frameworks improve the logic
+    // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
+    val EXPRESS_CLIENT_PATTERN = "(?:express|@feathersjs/feathers|fastify|@nestjs/cli).*"
     val expressCollectionCalls = cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
     for (call <- expressCollectionCalls) {
       if (call.argument.nonEmpty) {
@@ -57,17 +65,19 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
     if (call.argument.isLiteral.nonEmpty) {
       val endpoint = getRoute(call.argument.isLiteral.head.code)
-      println(methodId, "  ->  ", endpoint)
-      methodUrlMap.addOne(methodId -> endpoint)
-      isValid = true
+      if (endpoint.nonEmpty) {
+        println(methodId, "  ->  ", endpoint)
+        methodUrlMap.addOne(methodId -> endpoint)
+        isValid = true
+      }
     } else if (call.argument.isCall.nonEmpty) {
       val formatStringCallCode   = call.argument.isCall.name("<operator>.formatString")
       val additionStringCallCode = call.argument.isCall.name("<operator>.addition")
 
       if (formatStringCallCode.nonEmpty) {
         val endpoint = convertFormatString(formatStringCallCode.head.code)
-        println(methodId, "  ->  ", endpoint)
         if (endpoint.nonEmpty) {
+          println(methodId, "  ->  ", endpoint)
           methodUrlMap.addOne(methodId -> endpoint)
           isValid = true
         }
@@ -75,8 +85,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
       if (additionStringCallCode.nonEmpty) {
         val endpoint = convertAdditionString(additionStringCallCode.head.code)
-        println(methodId, "  ->  ", endpoint)
         if (endpoint.nonEmpty) {
+          println(methodId, "  ->  ", endpoint)
           methodUrlMap.addOne(methodId -> endpoint)
           isValid = true
         }
