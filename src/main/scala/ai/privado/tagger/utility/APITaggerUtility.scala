@@ -57,7 +57,7 @@ object APITaggerUtility {
       apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
-        val flows = apis.reachableByFlows(filteredSourceNode).l
+        val flows = apis.reachableByFlows(filteredSourceNode).toList
         if (ScanProcessor.config.disableDeDuplication)
           flows
         else

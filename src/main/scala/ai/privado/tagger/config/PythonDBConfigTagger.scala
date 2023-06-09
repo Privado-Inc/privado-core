@@ -13,7 +13,7 @@ class PythonDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[JavaProperty] = {
-    cpg.property.dedup.toArray
+    cpg.property.distinct.toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {

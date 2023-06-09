@@ -230,7 +230,7 @@ object Dataflow {
           .headOption
           .getOrElse("")
       } else {
-        sourceId = Traversal(path.elements.head).isIdentifier.typeFullName.headOption.getOrElse("")
+        sourceId = Iterator(path.elements.head).isIdentifier.typeFullName.headOption.getOrElse("")
       }
       var sinkId = path.elements.last.tag.nameExact(Constants.id).value.headOption.getOrElse("")
       // fetch call node methodeFullName if tag not present

@@ -29,7 +29,7 @@ abstract class UnresolvedFlowTestBase extends AnyWordSpec with Matchers with Bef
 
     outputDir = File.newTemporaryDirectory()
 
-    val config  = Config(inputPath = inputDir.toString(), outputPath = outputDir.toString())
+    val config  = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
     val javaSrc = new JavaSrc2Cpg()
     val xtocpg = javaSrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)

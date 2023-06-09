@@ -4,12 +4,12 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForDependency, StepsForModule}
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model._
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Dependency, Module, ModuleDependency}
+import io.shiftleft.codepropertygraph.generated.nodes.{Module, ModuleDependency}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -124,14 +124,14 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
 
   "MavenModuleInfoPass" should {
     "Test pom file Detection" in {
-      val pomFiles = cpg.module.file.l
+      val pomFiles = cpg.module.file.toList
 
       pomFiles.size shouldBe 3
     }
 
     "Test pom.xml content" in {
       val moduleMap = new mutable.HashMap[String, Module]()
-      val pomFiles  = cpg.module.l
+      val pomFiles  = cpg.module.toList
 
       pomFiles.foreach(file => {
         moduleMap.put(file.groupid, file)
@@ -162,7 +162,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       val dependencyVersionSet    = new mutable.HashSet[String]()
       val dependencySet           = new mutable.HashSet[ModuleDependency]()
 
-      val dependencies = cpg.module.dependencies.l
+      val dependencies = cpg.module.dependencies.toList
 
       dependencies.foreach(dependency => {
         dependencyGroupIdSet += dependency.groupid
@@ -194,7 +194,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
     }
 
     "Test child module list with filter" in {
-      val childModule = cpg.module.filter(m => m.groupid matches ("com.child")).l
+      val childModule = cpg.module.filter(m => m.groupid matches ("com.child")).toList
 
       childModule.size shouldBe 1
     }
@@ -204,7 +204,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       val dependencyArtifactIdList = new mutable.HashSet[String]()
       val dependencyVersionList    = new mutable.HashSet[String]()
 
-      val childModuleDependencies = cpg.module.filter(m => m.groupid matches ("com.child")).dependencies.l
+      val childModuleDependencies = cpg.module.filter(m => m.groupid matches ("com.child")).dependencies.toList
 
       childModuleDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
@@ -238,7 +238,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       val dependencyArtifactIdList = new mutable.HashSet[String]()
       val dependencyVersionList    = new mutable.HashSet[String]()
 
-      val childModuleDependencies = cpg.module.filter(m => m.groupid matches ("com.sub-child")).dependencies.l
+      val childModuleDependencies = cpg.module.filter(m => m.groupid matches ("com.sub-child")).dependencies.toList
 
       childModuleDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
@@ -272,7 +272,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
       val dependencyArtifactIdList = new mutable.HashSet[String]()
       val dependencyVersionList    = new mutable.HashSet[String]()
 
-      val filteredDependencies = cpg.module.dependencies.filter(d => d.groupid matches ("org.springframework")).l
+      val filteredDependencies = cpg.module.dependencies.filter(d => d.groupid matches ("org.springframework")).toList
 
       filteredDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
@@ -298,7 +298,7 @@ class ModuleMavenTest extends ModuleFilePassTestBase {
 
     "Test Maven Dependency File List" in {
       val fileSet  = new mutable.HashSet[io.shiftleft.codepropertygraph.generated.nodes.File]()
-      val fileList = cpg.module.dependencies.file.l
+      val fileList = cpg.module.dependencies.file.toList
 
       fileList.foreach(file => {
         fileSet += file
@@ -361,14 +361,14 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
 
   "GradleModuleFilePass" should {
     "Test build.gradle file" in {
-      val pomFile = cpg.module.file.l
+      val pomFile = cpg.module.file.toList
 
       pomFile.size shouldBe 1
       pomFile.head.name.contains("build.gradle") shouldBe true
     }
 
     "Test build.gradle content" in {
-      val buildGradleFile = cpg.module.l
+      val buildGradleFile = cpg.module.toList
 
       buildGradleFile.size shouldBe 1
       buildGradleFile.head.groupid shouldBe "com.test"
@@ -382,7 +382,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
       val dependencyArtifactIdList = new ListBuffer[String]()
       val dependencyVersionList    = new ListBuffer[String]()
 
-      val dependencies = cpg.module.dependencies.l
+      val dependencies = cpg.module.dependencies.toList
 
       dependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
@@ -412,7 +412,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
       val dependencyArtifactIdList = new ListBuffer[String]()
       val dependencyVersionList    = new ListBuffer[String]()
 
-      val filteredDependencies = cpg.module.dependencies.filter(d => d.groupid matches ("com.google.guava")).l
+      val filteredDependencies = cpg.module.dependencies.filter(d => d.groupid matches ("com.google.guava")).toList
 
       filteredDependencies.foreach(dependency => {
         dependencyGroupIdList += dependency.groupid
@@ -438,7 +438,7 @@ class ModuleGradleTest extends ModuleFilePassTestBase {
     }
 
     "Test Gradle Dependency File List" in {
-      val fileList = cpg.module.dependencies.file.l
+      val fileList = cpg.module.dependencies.file.toList
 
       fileList.head.name.contains("build.gradle") shouldBe true
     }
@@ -462,7 +462,8 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
     }
 
     outputDir = File.newTemporaryDirectory()
-    val config  = Config(inputPath = inputDir.toString(), outputPath = outputDir.toString(), fetchDependencies = true)
+    val config =
+      Config(fetchDependencies = true).withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
     val javaSrc = new JavaSrc2Cpg()
     val xtocpg = javaSrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)
