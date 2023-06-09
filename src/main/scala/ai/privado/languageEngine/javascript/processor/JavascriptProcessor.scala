@@ -191,7 +191,7 @@ object JavascriptProcessor {
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
-      Config(inputPath = absoluteSourceLocation, outputPath = cpgOutputPath)
+      Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
   }

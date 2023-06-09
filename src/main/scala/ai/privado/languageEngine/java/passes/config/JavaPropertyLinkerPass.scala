@@ -23,26 +23,21 @@
 
 package ai.privado.languageEngine.java.passes.config
 
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AnnotationParameterAssign,
-  JavaProperty,
-  Literal,
-  Member,
-  MethodParameterIn
-}
+import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.tagger.PrivadoParallelCpgPass
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
-import overflowdb.traversal._
-import ai.privado.languageEngine.java.language.NodeStarters
-import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
 class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
+
+  implicit val resolver: NoResolve.type = NoResolve
+
   override def generateParts(): Array[_ <: AnyRef] =
-    cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
+    cpg.property.iterator.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
     connectProperties(property, builder)
@@ -56,7 +51,7 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
   private def connectAnnotatedParameters(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val paramsAndValues = annotatedParameters()
 
-    paramsAndValues
+    paramsAndValues.iterator
       .filter { case (_, value) => propertyNode.name == value }
       .foreach { case (param, _) =>
         builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
@@ -77,23 +72,23 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     */
   def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
     .fullName("org.springframework.*Value")
-    .where(_.parameter)
-    .where(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\""))
+    .filter(_.parameter.nonEmpty)
+    .filter(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\"").nonEmpty)
     .map { x =>
-      val literalName = x.parameterAssign.code.head
+      val literalName = x.parameterAssign.code.next()
       val value       = literalName.slice(3, literalName.length - 2)
-      (x.start.parameter.head, value)
+      (x.parameter.next(), value)
     }
-    .l
+    .toList
 
   /** List of all members annotated with Spring's `Value` annotation, along with the property name.
     */
   private def annotatedMembers(): List[(AnnotationParameterAssign, Member)] = cpg.annotation
     .fullName(".*Value.*")
-    .where(_.member)
-    .filter(_.parameterAssign.l.length > 0)
-    .map { x => (x.parameterAssign.head, x.member.head) }
-    .l
+    .filter(_.member.nonEmpty)
+    .filter(_.parameterAssign.nonEmpty)
+    .map { x => (x.parameterAssign.next(), x.member.next()) }
+    .toList
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
@@ -106,7 +101,7 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   private def matchingLiteralsInGetPropertyCalls(propertyName: String): List[Literal] = cpg.literal
     .codeExact("\"" + propertyName + "\"")
-    .where(_.inCall.name(".*getProperty"))
-    .l
+    .filter(_.inCall.name(".*getProperty").nonEmpty)
+    .toList
 
 }

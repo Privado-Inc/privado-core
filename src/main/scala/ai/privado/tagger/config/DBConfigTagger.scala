@@ -30,6 +30,7 @@ import ai.privado.model.DatabaseDetails
 import ai.privado.tagger.{PrivadoParallelCpgPass, PrivadoSimpleCpgPass}
 import ai.privado.utility.Utilities.databaseURLPriority
 import org.slf4j.LoggerFactory
+import overflowdb.traversal._
 
 class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
 

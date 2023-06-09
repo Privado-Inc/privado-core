@@ -6,7 +6,6 @@ import ai.privado.model.DatabaseDetails
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
@@ -14,7 +13,7 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[JavaProperty] = {
-    cpg.property.dedup.toArray
+    cpg.property.distinct.toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
