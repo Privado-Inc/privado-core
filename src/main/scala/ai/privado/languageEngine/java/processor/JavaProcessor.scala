@@ -24,47 +24,36 @@
 package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache._
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
-import ai.privado.exporter.JSONExporter
-import ai.privado.exporter.ExcelExporter
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
+import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  outputUnresolvedFilename,
-  storages
-}
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants}
+import ai.privado.model.Constants._
+import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.passes.{HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language._
-import ai.privado.model.Language
 import ai.privado.utility.Utilities.createCpgFolder
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
 
 import java.util.Calendar
-import scala.util.{Failure, Success, Try}
-import io.joern.x2cpg.utils.ExternalCommand
-import better.files.File
-
 import scala.collection.mutable.ListBuffer
+import scala.util.{Failure, Success, Try}
 
 object JavaProcessor {
 
@@ -228,11 +217,9 @@ object JavaProcessor {
     createCpgFolder(sourceRepoLocation);
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-    cpgconfig = Config(
-      inputPath = sourceRepoLocation,
-      outputPath = cpgOutputPath,
-      fetchDependencies = !config.skipDownloadDependencies
-    )
+    cpgconfig = Config(fetchDependencies = !config.skipDownloadDependencies)
+      .withInputPath(sourceRepoLocation)
+      .withOutputPath(cpgOutputPath)
 
     // Create delomboked directory if source code uses lombok
     val dependencies        = JavaSrc2Cpg.getDependencyList(cpgconfig)
@@ -242,12 +229,9 @@ object JavaProcessor {
       AppCache.isLombokPresent = true
 
       // Creating a new CpgConfig which uses the delombokPath
-      cpgconfig = Config(
-        inputPath = delombokPath,
-        fetchDependencies = !config.skipDownloadDependencies,
-        delombokMode = Some("no-delombok"),
-        outputPath = cpgOutputPath
-      )
+      cpgconfig = Config(fetchDependencies = !config.skipDownloadDependencies, delombokMode = Some("no-delombok"))
+        .withInputPath(delombokPath)
+        .withOutputPath(cpgOutputPath)
     }
 
     val javasrc = JavaSrc2Cpg()

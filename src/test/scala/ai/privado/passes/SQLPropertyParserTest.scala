@@ -48,7 +48,7 @@ class SQLPropertyParserTest extends AnyWordSpec with Matchers with BeforeAndAfte
     val inputDir = File.newTemporaryDirectory()
     (inputDir / "sample.yml").write(code)
     val outputFile = File.newTemporaryFile()
-    val config     = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config     = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
 
     val detectedLanguage = guessLanguage(inputDir.toString()).getOrElse("") match {
       case "PYTHONSRC" => Language.PYTHON

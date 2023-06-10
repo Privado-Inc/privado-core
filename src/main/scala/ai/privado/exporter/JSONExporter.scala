@@ -72,7 +72,7 @@ object JSONExporter {
     val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
     val collectionExporter      = new CollectionExporter(cpg, ruleCache)
     val probableSinkExporter    = new ProbableSinkExporter(cpg, ruleCache, repoPath)
-    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
 
@@ -94,7 +94,9 @@ object JSONExporter {
       val sinks           = Future(sinkExporter.getSinks)
       val processingSinks = Future(sinkExporter.getProcessing)
       val collections     = Future(collectionExporter.getCollections)
-      val violations      = Future(policyAndThreatExporter.getViolations(repoPath))
+
+      val violationResult = policyAndThreatExporter.getViolations(repoPath)
+      output.addOne(Constants.violations -> violationResult.asJson)
 
       // Called when the asynchronous call is completed
       sources.onComplete({
@@ -148,16 +150,6 @@ object JSONExporter {
         }
       })
 
-      violations.onComplete({
-        case Success(value) => {
-          output.addOne("violations" -> value.asJson)
-          logger.info("Completed violation export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       ruleCache.getRule.sinks.foreach(sinkRule => {
         if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
@@ -178,8 +170,6 @@ object JSONExporter {
       logger.info("Completed Sink Exporting")
 
       logger.info("Completed Collections Exporting")
-
-      val violationResult = Await.result(violations, Duration.Inf);
 
       MetricHandler.metricsData("policyViolations") = violationResult.size.asJson
       violationResult.foreach(violation => {

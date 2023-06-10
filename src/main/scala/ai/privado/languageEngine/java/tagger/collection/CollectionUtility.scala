@@ -26,7 +26,7 @@ object CollectionUtility {
     methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String](),
     classUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
   ) = {
-    val collectionPoints = Traversal(collectionMethods).flatMap(collectionMethod => {
+    val collectionPoints = collectionMethods.flatMap(collectionMethod => {
       sourceRuleInfos.flatMap(sourceRule => {
         val parameters =
           collectionMethod.parameter.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("this")).l

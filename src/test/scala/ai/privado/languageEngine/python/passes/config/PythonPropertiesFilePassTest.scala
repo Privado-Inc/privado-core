@@ -10,11 +10,11 @@ import io.joern.pysrc2cpg.{
   ImportsPass,
   Py2CpgOnFileSystem,
   Py2CpgOnFileSystemConfig,
-  PythonNaiveCallLinker,
   PythonTypeHintCallLinker,
   PythonTypeRecoveryPass
 }
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -308,7 +308,9 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     outputFile = File.newTemporaryFile()
 
     (inputDir / "GeneralConfig.py").write(codeFileContents)
-    val pythonConfig = Py2CpgOnFileSystemConfig(Paths.get(outputFile.toString()), Paths.get(inputDir.toString()))
+    val pythonConfig = Py2CpgOnFileSystemConfig()
+      .withInputPath(inputDir.pathAsString)
+      .withOutputPath(outputFile.pathAsString)
     cpg = new Py2CpgOnFileSystem().createCpg(pythonConfig).get
 
     // Apply default overlays
@@ -316,7 +318,7 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     new ImportsPass(cpg).createAndApply()
     new PythonTypeRecoveryPass(cpg).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
-    new PythonNaiveCallLinker(cpg).createAndApply()
+    new NaiveCallLinker(cpg).createAndApply()
 
     // Apply OSS Dataflow overlay
     new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))

@@ -6,18 +6,15 @@ import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.jssrc2cpg.Config
-import io.joern.jssrc2cpg.JsSrc2Cpg
+import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.jssrc2cpg.passes.ImportsPass
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language._
-
-import java.nio.file.Paths
 
 class GetEnvironmentTest extends JSPropertiesFilePassTestBase(".env") {
 
@@ -93,8 +90,7 @@ abstract class JSPropertiesFilePassTestBase(fileExtension: String)
 
     (inputDir / "GeneralConfig.js").write(codeFileContents)
 
-    val cpgconfig =
-      Config(inputPath = inputDir.toString, outputPath = outputFile.toString)
+    val cpgconfig = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
     cpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig).get
 
     X2Cpg.applyDefaultOverlays(cpg)

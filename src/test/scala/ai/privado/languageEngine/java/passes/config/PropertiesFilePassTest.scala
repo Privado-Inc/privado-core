@@ -25,28 +25,16 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language._
-import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
-import io.joern.console.cpgcreation.PythonSrcCpgGenerator
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, MethodParameterIn}
+import io.shiftleft.semanticcpg.language._
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language._
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AnnotationParameterAssign,
-  AstNode,
-  CfgNode,
-  JavaProperty,
-  Literal,
-  MethodParameterIn
-}
-
-import java.nio.file.{Files, Paths}
 
 class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
@@ -81,7 +69,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       anno.foreach(element => {
         element.label match {
           case "METHOD_PARAMETER_IN" =>
-            val List(param: MethodParameterIn) = element.l
+            val List(param: MethodParameterIn) = element.toList
             param.name shouldBe "loggerBaseURL"
           case "MEMBER" =>
             element.code shouldBe "java.lang.String slackWebHookURL"
@@ -250,7 +238,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     outputFile = File.newTemporaryFile()
 
     (inputDir / "GeneralConfig.java").write(codeFileContents)
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
 
     cpg = new JavaSrc2Cpg().createCpg(config).get
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()

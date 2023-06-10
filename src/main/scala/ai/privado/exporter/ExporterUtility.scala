@@ -57,7 +57,7 @@ object ExporterUtility {
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
-        var typeFullName = Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        var typeFullName = Iterator(node).isIdentifier.typeFullName.headOption.getOrElse("")
 
         // Temporary fix for python to match the typeFullName
         typeFullName = updateTypeFullNameForPython(typeFullName, isPython)
@@ -172,13 +172,13 @@ object ExporterUtility {
       None
     else {
       val message = {
-        if (Traversal(node).isCall.nonEmpty) {
-          val methodFullName  = Traversal(node).isCall.methodFullName.headOption.getOrElse("")
+        if (Iterator(node).isCall.nonEmpty) {
+          val methodFullName  = Iterator(node).isCall.methodFullName.headOption.getOrElse("")
           val methodInterface = methodFullName.split(":").headOption.getOrElse("")
           if (methodInterface.contains("unresolved") || methodInterface.contains("<operator>")) ""
           else methodInterface
-        } else if (Traversal(node).isIdentifier.nonEmpty)
-          Traversal(node).isIdentifier.typeFullName.headOption.getOrElse("")
+        } else if (Iterator(node).isIdentifier.nonEmpty)
+          Iterator(node).isIdentifier.typeFullName.headOption.getOrElse("")
         else
           messageInExcerpt
       }

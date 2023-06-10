@@ -126,6 +126,16 @@
             "type": ["object", "null"],
             "default": null
           },
+          "config": {
+            "$id": "#root/policies/items/config",
+            "title": "Config",
+            "type": ["object", "null"],
+            "default": null,
+            "patternProperties": {
+              "^.*$": { "type": "string" }
+            },
+            "additionalProperties": false
+          },
           "type": {
             "$id": "#root/threats/items/type",
             "title": "Type",

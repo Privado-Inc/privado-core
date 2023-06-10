@@ -78,6 +78,7 @@ object Constants {
   val remoteUrl   = "remoteUrl"
   val endPoint    = "endPoint"
 
+  val config                       = "config"
   val coreVersion                  = "privadoCoreVersion"
   val cliVersion                   = "privadoCLIVersion"
   val mainVersion                  = "privadoMainVersion"
@@ -92,6 +93,7 @@ object Constants {
   val processing                   = "processing"
   val sinkProcessing               = "sinkProcessing"
   val probableSinks                = "probableSinks"
+  val violations                   = "violations"
   val outputFileName               = "privado.json"
   val outputDirectoryName          = ".privado"
   val outputIntermediateFileName   = "intermediate.json"
