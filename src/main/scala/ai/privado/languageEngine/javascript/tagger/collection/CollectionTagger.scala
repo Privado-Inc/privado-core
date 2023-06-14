@@ -5,7 +5,7 @@ import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Method}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -22,6 +22,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
     val collectionMethodsCache = mutable.ListBuffer[Method]()
+    val collectionBlocksCache = mutable.ListBuffer[Block]()
 
     // TODO: Add this one to Internal APIs
     // Added this for now to log the endpoints, in future need to move client side endpoint to Internal API
@@ -63,7 +64,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         if (call.argument.isBlock.nonEmpty) {
           val isValid = getCollectionMethodsCache(call, call.argument.isBlock.head.id())
           if (isValid) {
-            collectionMethodsCache += call.argument.isBlock.head
+            collectionBlocksCache += call.argument.isBlock.head
           }
         }
       }
