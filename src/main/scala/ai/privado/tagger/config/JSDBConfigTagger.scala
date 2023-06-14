@@ -13,7 +13,6 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[JavaProperty] = {
-    cpg.property.distinct.toArray.foreach(prop => println(prop.sourceFileOut.toList.head.name))
     cpg.property.distinct.toArray
   }
 
