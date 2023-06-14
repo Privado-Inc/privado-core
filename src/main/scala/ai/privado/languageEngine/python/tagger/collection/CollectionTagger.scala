@@ -48,7 +48,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           // we only get methodFullName here from the call node, so we have to get the relevant method for key
           cpg.method.fullNameExact(m.methodFullName).l.head.id() ->
             getRoute(
-              m.astParent.astParent
+              m.astParent.astParent.iterator
                 .where(_.isCall)
                 .head
                 .asInstanceOf[Call]

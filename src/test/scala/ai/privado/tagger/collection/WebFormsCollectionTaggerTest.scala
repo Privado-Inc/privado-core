@@ -225,7 +225,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     new HTMLParserPass(cpg, inputDir.toString(), ruleCache).createAndApply()
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
@@ -244,7 +244,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
     cpgs.addOne(cpg)

@@ -45,6 +45,8 @@ import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
 
+import scala.Int.MaxValue
+
 object Priority extends Enumeration {
   val MAX     = Value(3)
   val HIGHEST = Value(2)
@@ -410,7 +412,7 @@ object Utilities {
 
   }
 
-  def databaseURLPriority(dbUrl: (String, String)): Priority.Value = {
+  def databaseURLPriority(url: String, file: String): Priority.Value = {
     val ipPortRegex =
       "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,4})(:[0-9]{1,4})?$" // For database urls which contain an IP address
     val cloudDomainRegex =
@@ -419,9 +421,6 @@ object Utilities {
     val cloudDomainRegexProd = ".*(prd|prod).*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*"
 
     val prodFileRegex = ".*(prd|prod).*\\.(properties|yaml|yml|xml|conf)$"
-
-    val url  = dbUrl._1
-    val file = dbUrl._2
 
     // Priority - URLs in Prod files > PROD URLS w/ cloud > Cloud URLS > IP Urls > localhost or test urls
     if (file.matches(prodFileRegex)) Priority.MAX

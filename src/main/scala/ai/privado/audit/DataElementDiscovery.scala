@@ -32,7 +32,7 @@ object DataElementDiscovery {
           )
           .toList
         typeDeclList.foreach(node => {
-          if (node.head.fullName.nonEmpty) {
+          if (node.fullName.nonEmpty) {
             classNameList += node.fullName
           }
         })

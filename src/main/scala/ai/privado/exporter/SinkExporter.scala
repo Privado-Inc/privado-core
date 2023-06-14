@@ -83,7 +83,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
                   .distinctBy(_.code)
                   .distinctBy(_.lineNumber)
                   .distinctBy(node => {
-                    Traversal(node).head match {
+                    Iterator(node).head match {
                       case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
                         a.file.name.head
                       case a => a.location.filename
@@ -160,7 +160,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
               ruleInfoExporterModel.name,
               ruleInfoExporterModel.domains,
               apiUrl,
-              databaseDetails.getOrElse(DatabaseDetails("", "", "", ""))
+              databaseDetails.getOrElse(DatabaseDetails("", "", "", "", ""))
             )
           )
         case None => // not found anything, probably derived source

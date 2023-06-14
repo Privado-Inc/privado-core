@@ -41,18 +41,18 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     dbUrl: JavaProperty,
     dbName: String,
     dbLocation: String,
-    dbVendor: String
+    dbVendor: String,
+    configFile: String
   ): Unit = {
     rules.foreach(rule => {
       if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
         if (
           databaseURLPriority(
-            (
-              DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
-              DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
-            )
+            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
+            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
           ) < databaseURLPriority(
-            (dbUrl.value, dbUrl.sourceFileOut.head.name)
+            dbUrl.value,
+            dbUrl.sourceFileOut.head.name
           ) // Compare the priority of the database url with already present url in the database cache
         ) {
 
@@ -123,7 +123,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
       dbName = tokens(5)
     }
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
 
   }
 
@@ -156,7 +156,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
       }
     }
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
 
   }
 
@@ -193,7 +193,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
 
   }
 
@@ -207,7 +207,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     val dbLocation = dbUrl.value
     val dbName     = "Neo4j Graph Database"
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
 
   }
 
@@ -224,7 +224,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
     val dbName = "Neo4j Graph Database"
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
 
   }
 

@@ -48,7 +48,7 @@ class MethodFullName(cpg: Cpg) extends ForkJoinParallelCpgPass[(String, String, 
     // Captures `const bodyParser = require('body-parser')` style
     val requireStyleDependency = cpg.dependency.name
       .flatMap(dependencyName => {
-        Traversal(cachedOperatorCall)
+        cachedOperatorCall.iterator
           .where(
             _.argument(2)
               .code(".*require.*('" + dependencyName + "'|\"" + dependencyName + "\").*")
