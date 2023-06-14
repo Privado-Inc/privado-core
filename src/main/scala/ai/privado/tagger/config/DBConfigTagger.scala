@@ -41,8 +41,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     dbUrl: JavaProperty,
     dbName: String,
     dbLocation: String,
-    dbVendor: String,
-    configFile: String
+    dbVendor: String
   ): Unit = {
     rules.foreach(rule => {
       if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
@@ -123,7 +122,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
       dbName = tokens(5)
     }
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
@@ -156,7 +155,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
       }
     }
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
@@ -168,14 +167,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    addDatabaseDetailsMultiple(
-      rules,
-      dbUrl,
-      dbName,
-      dbLocation,
-      dbVendor,
-      dbUrl.sourceFileOut.headOption.getOrElse("").toString
-    )
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
@@ -193,7 +185,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
@@ -207,7 +199,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     val dbLocation = dbUrl.value
     val dbName     = "Neo4j Graph Database"
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
@@ -224,7 +216,7 @@ class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
     val dbName = "Neo4j Graph Database"
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, dbUrl.sourceFileOut.head.name)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
 
   }
 
