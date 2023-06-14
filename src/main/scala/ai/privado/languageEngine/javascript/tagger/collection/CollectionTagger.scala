@@ -56,6 +56,19 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       }
     }
 
+    val HAPI_CLIENT_PATTERN = "(hapi|@hapi/hapi).*|(?:request.route|server.route)"
+    val hapiCollectionCalls = cpg.call.methodFullName(HAPI_CLIENT_PATTERN).l
+    for (call <- hapiCollectionCalls) {
+      if (call.argument.nonEmpty) {
+        if (call.argument.isBlock.nonEmpty) {
+          val isValid = getCollectionMethodsCache(call, call.argument.isBlock.head.id())
+          if (isValid) {
+            collectionMethodsCache += call.argument.isBlock.head
+          }
+        }
+      }
+    }
+
     tagDirectSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
     tagDerivedSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
   }
@@ -71,7 +84,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         isValid = true
       }
     } else if (call.argument.isCall.nonEmpty) {
-      val formatStringCallCode   = call.argument.isCall.name("<operator>.formatString")
+      val formatStringCallCode = call.argument.isCall.name("<operator>.formatString")
       val additionStringCallCode = call.argument.isCall.name("<operator>.addition")
 
       if (formatStringCallCode.nonEmpty) {
@@ -90,6 +103,14 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           methodUrlMap.addOne(methodId -> endpoint)
           isValid = true
         }
+      }
+    }
+    else if (call.argument.isBlock.nonEmpty) { // Handle Hapi.js route parameters
+      val endpoint = call.argument.isBlock.code.l.flatMap(_.split("path: '").tail.map(_.split("'")(0))).mkString(", ")
+      if (endpoint.contains("/")) {
+        println(methodId, "  ->  ", endpoint)
+        methodUrlMap.addOne(methodId -> endpoint)
+        isValid = true
       }
     }
     isValid
