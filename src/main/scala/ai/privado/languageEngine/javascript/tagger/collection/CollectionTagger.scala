@@ -25,16 +25,16 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
     // TODO: Add this one to Internal APIs
     // Added this for now to log the endpoints, in future need to move client side endpoint to Internal API
-    val CLIENT_ENDPOINT_PATTERN  = "(?:axios|fetch|express|@angular/common/http).*"
-    val apiClientCollectionCalls = cpg.call.methodFullName(CLIENT_ENDPOINT_PATTERN).l
-    for (call <- apiClientCollectionCalls) {
-      if (call.argument.nonEmpty) {
-        val isValid = getCollectionMethodsCache(call, call.method.id())
-        if (isValid) {
-          collectionMethodsCache += call.method
-        }
-      }
-    }
+//    val CLIENT_ENDPOINT_PATTERN  = "(?:axios|fetch|express|@angular/common/http).*"
+//    val apiClientCollectionCalls = cpg.call.methodFullName(CLIENT_ENDPOINT_PATTERN).l
+//    for (call <- apiClientCollectionCalls) {
+//      if (call.argument.nonEmpty) {
+//        val isValid = getCollectionMethodsCache(call, call.method.id())
+//        if (isValid) {
+//          collectionMethodsCache += call.method
+//        }
+//      }
+//    }
 
     // Supporting below pattern
     // fastify.get('/endpoint', async (request, reply) => {
@@ -43,7 +43,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // Supported Framework: Express, Fastify, Featherjs
     // TODO: Based on below frameworks improve the logic
     // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
-    val EXPRESS_CLIENT_PATTERN = "(?:express|@feathersjs/feathers|fastify|@nestjs/cli|itty-router).*"
+    val EXPRESS_CLIENT_PATTERN = "(?:express|fetch|@feathersjs/feathers|fastify|@nestjs/cli|itty-router).*"
     val expressCollectionCalls = cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
     for (call <- expressCollectionCalls) {
       if (call.argument.nonEmpty) {
@@ -84,7 +84,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         isValid = true
       }
     } else if (call.argument.isCall.nonEmpty) {
-      val formatStringCallCode = call.argument.isCall.name("<operator>.formatString")
+      val formatStringCallCode   = call.argument.isCall.name("<operator>.formatString")
       val additionStringCallCode = call.argument.isCall.name("<operator>.addition")
 
       if (formatStringCallCode.nonEmpty) {
@@ -104,8 +104,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           isValid = true
         }
       }
-    }
-    else if (call.argument.isBlock.nonEmpty) { // Handle Hapi.js route parameters
+    } else if (call.argument.isBlock.nonEmpty) { // Handle Hapi.js route parameters
       val endpoint = call.argument.isBlock.code.l.flatMap(_.split("path: '").tail.map(_.split("'")(0))).mkString(", ")
       if (endpoint.contains("/")) {
         println(methodId, "  ->  ", endpoint)
