@@ -160,7 +160,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
               ruleInfoExporterModel.name,
               ruleInfoExporterModel.domains,
               apiUrl,
-              databaseDetails.getOrElse(DatabaseDetails("", "", "", ""))
+              databaseDetails.getOrElse(DatabaseDetails("", "", "", "", ""))
             )
           )
         case None => // not found anything, probably derived source
