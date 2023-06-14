@@ -100,7 +100,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
         ruleInfo.isSensitive,
         ruleInfo.tags,
         apiUrl,
-        databaseDetails.getOrElse(DatabaseDetails("", "", "", "")),
+        databaseDetails.getOrElse(DatabaseDetails("", "", "", "", "")),
         sinkPathIds
           .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId, sourceId))
       )

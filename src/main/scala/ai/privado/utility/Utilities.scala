@@ -29,13 +29,12 @@ import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, SqlQueryNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
-import overflowdb.traversal.Traversal
 
 import java.io.PrintWriter
 import java.math.BigInteger
@@ -47,6 +46,7 @@ import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
 
 object Priority extends Enumeration {
+  val MAX     = Value(3)
   val HIGHEST = Value(2)
   val HIGH    = Value(1)
   val MEDIUM  = Value(0)
@@ -304,7 +304,7 @@ object Utilities {
     * @return
     */
   def getFileNameForNode(node: AstNode): String = {
-    Traversal(node).file.name.headOption.getOrElse(Constants.EMPTY)
+    Iterator(node).file.name.headOption.getOrElse(Constants.EMPTY)
   }
 
   /** Returns a domain for a given url string
@@ -410,7 +410,7 @@ object Utilities {
 
   }
 
-  def databaseURLPriority(dbUrl: String): Priority.Value = {
+  def databaseURLPriority(dbUrl: (String, String)): Priority.Value = {
     val ipPortRegex =
       "^([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}:[0-9]{1,4})(:[0-9]{1,4})?$" // For database urls which contain an IP address
     val cloudDomainRegex =
@@ -418,10 +418,16 @@ object Utilities {
 
     val cloudDomainRegexProd = ".*(prd|prod).*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*"
 
-    // Priority - PROD URLS w/ cloud > Cloud URLS > IP Urls > localhost or test urls
-    if (dbUrl.matches(cloudDomainRegexProd)) Priority.HIGHEST
-    else if (dbUrl.matches(cloudDomainRegex)) Priority.HIGH
-    else if (dbUrl.matches(ipPortRegex)) Priority.MEDIUM
+    val prodFileRegex = ".*(prd|prod).*\\.(properties|yaml|yml|xml|conf)$"
+
+    val url  = dbUrl._1
+    val file = dbUrl._2
+
+    // Priority - URLs in Prod files > PROD URLS w/ cloud > Cloud URLS > IP Urls > localhost or test urls
+    if (file.matches(prodFileRegex)) Priority.MAX
+    else if (url.matches(cloudDomainRegexProd)) Priority.HIGHEST
+    else if (url.matches(cloudDomainRegex)) Priority.HIGH
+    else if (url.matches(ipPortRegex)) Priority.MEDIUM
     else Priority.LOW
   }
 }

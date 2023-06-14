@@ -6,7 +6,6 @@ import ai.privado.model.DatabaseDetails
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
-import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
 class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
@@ -14,7 +13,8 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[JavaProperty] = {
-    cpg.property.dedup.toArray
+    cpg.property.distinct.toArray.foreach(prop => println(prop.sourceFileOut.toList.head.name))
+    cpg.property.distinct.toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, dbUrl: JavaProperty): Unit = {
@@ -40,14 +40,15 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
       val dbVendor   = "dynamodb"
       val dbLocation = dbUrl.value.split("\\.")(1)
       val dbName     = dbUrl.value.split("/").last
+      val configFile = dbUrl.sourceFileOut.toList.head.name
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write", configFile),
         "Storages.AmazonDynamoDB.Write"
       )
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read", configFile),
         "Storages.AmazonDynamoDB.Read"
       )
     } catch {
@@ -64,14 +65,15 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
       val dbLocation = tokens.last.split("/")(0)
       val dbName     = dbUrl.value.split("/").last
       val dbVendor   = "postgresql"
+      val configFile = dbUrl.sourceFileOut.toList.head.name
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write", configFile),
         "Storages.Postgres.ReadAndWrite"
       )
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read", configFile),
         "Storages.Postgres.Read"
       )
     } catch {
@@ -88,14 +90,15 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
       val dbVendor   = "mongodb"
       val dbLocation = tokens.last.split("/")(0)
       val dbName     = dbUrl.value.split("/").last.split("\\?")(0)
+      val configFile = dbUrl.sourceFileOut.toList.head.name
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write", configFile),
         "Storages.MongoDB.Write"
       )
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read", configFile),
         "Storages.MongoDB.Read"
       )
 
