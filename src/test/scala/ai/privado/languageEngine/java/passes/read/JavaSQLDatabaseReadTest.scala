@@ -255,7 +255,7 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
     outputFile = File.newTemporaryFile()
 
     (inputDir / "SQLQueryFile.java").write(codeFileContents)
-    val config = Config(inputPath = inputDir.toString(), outputPath = outputFile.toString())
+    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
 
     cpg = new JavaSrc2Cpg().createCpg(config).get
     val taggerCache: TaggerCache = new TaggerCache

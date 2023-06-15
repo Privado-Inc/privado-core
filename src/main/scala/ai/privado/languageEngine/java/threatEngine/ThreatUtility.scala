@@ -29,8 +29,12 @@ import ai.privado.utility.Utilities
 import io.shiftleft.semanticcpg.language._
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import org.slf4j.LoggerFactory
+import io.shiftleft.codepropertygraph.generated.nodes.{Tag}
+import overflowdb.traversal.Traversal
 
+import scala.util.{Failure, Success, Try}
 import scala.util.control.Breaks.{break, breakable}
 import scala.xml.MetaData
 
@@ -47,7 +51,7 @@ object ThreatUtility {
   def transformOccurrenceList(
     occurrenceList: List[DataFlowSubCategoryPathExcerptModel]
   ): List[ViolationProcessingModel] = {
-    occurrenceList.map(occurrence => ViolationProcessingModel("", occurrence))
+    occurrenceList.map(occurrence => ViolationProcessingModel("", occurrence, None))
   }
 
   def hasDataElements(cpg: Cpg): Boolean = {
@@ -116,4 +120,25 @@ object ThreatUtility {
     DataFlowSubCategoryPathExcerptModel(sample, lineNumber, -1, filename, excerpt + "\n" + excerptPostfix + "\n")
   }
 
+  def getSourceNode(cpg: Cpg, sourceId: String): Option[(String, CfgNode)] = {
+    def filterBySource(tag: Traversal[Tag]): Traversal[Tag] =
+      tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
+
+    Try(cpg.tag.where(filterBySource).identifier.head) match {
+      case Success(identifierNode) => Some(sourceId, identifierNode)
+      case Failure(_) =>
+        Try(cpg.tag.where(filterBySource).literal.head) match {
+          case Success(literalNode) => Some(sourceId, literalNode)
+          case Failure(_) =>
+            Try(cpg.tag.where(filterBySource).call.head) match {
+              case Success(callNode) => Some(sourceId, callNode)
+              case Failure(_)        => None
+            }
+        }
+    }
+  }
+  def getPIINameFromSourceId(input: String): String = {
+    val words = input.split("\\.")
+    words.lastOption.getOrElse(input)
+  }
 }

@@ -246,3 +246,6 @@ project/plugins/project/
 /.idea/codeStyles/codeStyleConfig.xml
 /.metals
 /.vscode
+
+/domain-classes/src
+/domain-classes/target

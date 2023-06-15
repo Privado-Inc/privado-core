@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
-import java.io.File
+import java.io.{File, StringReader}
 import scala.io.Source
 import java.util.Properties
 import scala.jdk.CollectionConverters._
@@ -23,8 +23,13 @@ import com.typesafe.config._
 import scala.xml.XML
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
+import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
+
+import scala.jdk.CollectionConverters._
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+import org.yaml.snakeyaml.constructor.SafeConstructor
 
 import scala.collection.mutable.ListBuffer
 
@@ -59,10 +64,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
         ).toArray
       }
       case Language.JAVASCRIPT =>
-        configFiles(
-          projectRoot,
-          Set(FileExtensions.JSON, FileExtensions.YAML, FileExtensions.YML, FileExtensions.ENV)
-        ).toArray
+        configFiles(projectRoot, Set(FileExtensions.JSON, FileExtensions.ENV)).toArray
       case Language.PYTHON =>
         configFiles(
           projectRoot,
@@ -85,7 +87,8 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
   private def obtainKeyValuePairs(file: String, builder: DiffGraphBuilder): List[(String, String, Int)] = {
     // Function return (key, value, lineNumber), for most parser we have not got the linenumber so returning -1 as default
     if (file.matches(""".*\.(?:yml|yaml)""")) {
-      loadAndConvertYMLtoProperties(file).map(item => (item._1, item._2, -1))
+      // the Yaml parser returns a line number
+      loadAndConvertYMLtoProperties(file)
     } else if (file.endsWith(".xml")) {
       loadAndConvertXMLtoProperties(file, builder).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".ini")) {
@@ -168,31 +171,45 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       .toList
   }
 
-  private def loadAndConvertYMLtoProperties(file: String): List[(String, String)] = {
-    parser.parse(better.files.File(file).contentAsString) match {
-      case Right(json) => {
-        try {
-          JsonFlattener
-            .flattenAsMap(json.toString)
-            .asScala
-            .toList
-            .map(p => {
-              if (p._2 == null)
-                ("", "")
-              else
-                (p._1, p._2.asInstanceOf[String])
-            })
-        } catch {
-          case e: Throwable =>
-            logger.trace(s"Error while creating properties node for file $file")
-            logger.debug(s"Error while creating properties node for file : $file, error : ${e.getMessage}")
-            List[("", "")]()
+  private def loadAndConvertYMLtoProperties(file: String): List[(String, String, Int)] = {
+    try {
+      val yamlContent = better.files.File(file).contentAsString // Read the YAML file content as a string
+
+      val yaml                                = new Yaml(new SafeConstructor())
+      val rootNode                            = yaml.compose(new StringReader(yamlContent))
+      var result: List[(String, String, Int)] = List[(String, String, Int)]()
+      processNode(rootNode, "")
+
+      def processNode(node: Node, path: String): Unit = {
+        node match {
+          case mappingNode: MappingNode =>
+            mappingNode.getValue.asScala.foreach { nodeTuple: NodeTuple =>
+              val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
+              val valueNode = nodeTuple.getValueNode
+              val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
+              processNode(valueNode, fullPath)
+            }
+          case sequenceNode: SequenceNode =>
+            sequenceNode.getValue.asScala.zipWithIndex.foreach { case (valueNode, index) =>
+              val fullPath = s"$path[$index]"
+              processNode(valueNode, fullPath)
+            }
+          case scalarNode: ScalarNode =>
+            val line   = scalarNode.getStartMark.getLine + 1
+            val column = scalarNode.getStartMark.getColumn + 1
+            val value  = scalarNode.getValue
+            result = result.appended((path, value, line))
         }
       }
-      case Left(error) => {
-        List[("", "")]()
+
+      result
+    } catch {
+      case e: Throwable => {
+        logger.debug(s"Could not parse YAML file. Please double check the syntax. ${e.getMessage}")
+        List[(String, String, Int)]()
       }
     }
+
   }
 
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
@@ -349,7 +366,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     keyValuePair: (String, String, Int),
     builder: BatchedUpdate.DiffGraphBuilder
   ): NewJavaProperty = {
-
     val (key, value, lineNumber) = keyValuePair
     val propertyNode             = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
     builder.addNode(propertyNode)

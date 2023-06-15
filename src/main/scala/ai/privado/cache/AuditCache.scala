@@ -70,7 +70,7 @@ object AuditCache {
     val sources = Dataflow.getSources(cpg)
     val sinks   = Dataflow.getSinks(cpg)
 
-    val unfilteredPostSemanticsFlow = sinks.reachableByFlows(sources)(engineContext).l
+    val unfilteredPostSemanticsFlow = sinks.reachableByFlows(sources)(engineContext).toList
 
     dataflowMapByPathId = getDataflowPathAndIdMap(unfilteredPostSemanticsFlow)
 

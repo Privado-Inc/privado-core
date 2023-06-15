@@ -193,7 +193,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
         .flatMap(methodParameter => {
           ExporterUtility.convertIndividualPathElement(methodParameter) match {
             case Some(pathElement) =>
-              getCollectionOccurrenceModel(Traversal(methodParameter).method, pathElement)
+              getCollectionOccurrenceModel(Iterator(methodParameter).method, pathElement)
 
             case None => None
           }
@@ -255,7 +255,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       methodLocalOccurrences
         .flatMap(localVar => {
           ExporterUtility.convertIndividualPathElement(localVar) match {
-            case Some(pathElement) => getCollectionOccurrenceModel(Traversal(localVar).method, pathElement)
+            case Some(pathElement) => getCollectionOccurrenceModel(Iterator(localVar).method, pathElement)
             case None              => None
           }
         })
@@ -272,7 +272,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       methodLiteralOccurrences
         .flatMap(literal => {
           ExporterUtility.convertIndividualPathElement(literal) match {
-            case Some(pathElement) => getCollectionOccurrenceModel(Traversal(literal).method, pathElement)
+            case Some(pathElement) => getCollectionOccurrenceModel(Iterator(literal).method, pathElement)
             case None              => None
           }
         })
