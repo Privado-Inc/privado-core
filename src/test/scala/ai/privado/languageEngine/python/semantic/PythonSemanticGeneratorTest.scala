@@ -52,7 +52,7 @@ class PythonSemanticGeneratorTest extends AnyWordSpec with Matchers with BeforeA
       generateSemanticForTaint(
         cpg.call("post").head,
         -1
-      ).flow shouldBe "0->-1 0->0 1->-1 1->1 2->-1 2->2 3->-1 3->3 \"body\"->\"body\" \"body\"->-1 \"url\"->\"url\" \"url\"->-1"
+      ).flow shouldBe "0->-1 0->0 1->-1 1->1 2->-1 2->2 3->-1 3->3 \"body\"->\"body\" \"url\"->\"url\""
     }
 
     "generate semantic for non-named argument" in {
