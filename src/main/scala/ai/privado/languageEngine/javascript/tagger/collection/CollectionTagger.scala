@@ -5,7 +5,7 @@ import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Block, Call, Method, MethodRef}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -22,7 +22,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
     val collectionMethodsCache = mutable.ListBuffer[Method]()
-    val collectionBlocksCache = mutable.ListBuffer[Block]()
 
     // TODO: Add this one to Internal APIs
     // Added this for now to log the endpoints, in future need to move client side endpoint to Internal API
@@ -44,7 +43,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // Supported Framework: Express, Fastify, Featherjs
     // TODO: Based on below frameworks improve the logic
     // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
-    val EXPRESS_CLIENT_PATTERN = "(?:express|fetch|@feathersjs/feathers|fastify|@nestjs/cli|itty-router).*"
+    val EXPRESS_CLIENT_PATTERN = "(?:express|fetch|@feathersjs/feathers|fastify|restify|@nestjs/cli|itty-router).*"
     val expressCollectionCalls = cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
     for (call <- expressCollectionCalls) {
       if (call.argument.nonEmpty) {
@@ -57,14 +56,29 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       }
     }
 
-    val HAPI_CLIENT_PATTERN = "(hapi|@hapi/hapi).*|(?:request.route|server.route)"
+    // Supporting below pattern
+    // server.route({
+    //   method: 'PUT',
+    //   path: '/movies/{id}',
+    //   handler: async (req, emailId) => {
+    //     const payload = { ...req.payload, emailId }
+    //     const status = await req.mongo.db.collection('movies').updateOne({ _id: ObjectID }, { $set: payload });
+    //     return status;
+    //   }
+    // })
+    // Supported Framework: Hapijs
+    val HAPI_CLIENT_PATTERN = "(hapi|@hapi/hapi).*(?:route)"
     val hapiCollectionCalls = cpg.call.methodFullName(HAPI_CLIENT_PATTERN).l
     for (call <- hapiCollectionCalls) {
       if (call.argument.nonEmpty) {
         if (call.argument.isBlock.nonEmpty) {
-          val isValid = getCollectionMethodsCache(call, call.argument.isBlock.head.id())
-          if (isValid) {
-            collectionBlocksCache += call.argument.isBlock.head
+          val result = getRouteAndHandlerFromBlock(call.argument.isBlock.head, "path", "handler")
+          if (result._1.nonEmpty && result._2.nonEmpty) {
+            if (result._2.isMethodRef) {
+              val referencedMethod = result._2.referencedMethod
+              methodUrlMap.addOne(referencedMethod.id() -> result._1)
+              collectionMethodsCache += referencedMethod
+            }
           }
         }
       }
@@ -74,13 +88,33 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     tagDerivedSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
   }
 
+  def getRouteAndHandlerFromBlock(block: Block, pathField: String, handlerField: String): (String, MethodRef) = {
+    val objectKeyValuePairs      = block.astChildren.isCall.name("<operator>.assignment").l
+    var handlerMethod: MethodRef = null
+    var path: String             = ""
+    for (keyVal <- objectKeyValuePairs) {
+      if (keyVal.astChildren.nonEmpty) {
+        val objKeyVal = keyVal.astChildren
+        val key       = objKeyVal.isCall.head
+
+        if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
+          path = key.astSiblings.head.code
+        }
+
+        if (key.code.contains(handlerField) && key.astSiblings.head.isMethodRef) {
+          handlerMethod = cpg.methodRef.id(key.astSiblings.head.id()).head
+        }
+      }
+    }
+    (path, handlerMethod)
+  }
+
   def getCollectionMethodsCache(call: Call, methodId: Long): Boolean = {
     var isValid = false
 
     if (call.argument.isLiteral.nonEmpty) {
       val endpoint = getRoute(call.argument.isLiteral.head.code)
       if (endpoint.nonEmpty) {
-        println(methodId, "  ->  ", endpoint)
         methodUrlMap.addOne(methodId -> endpoint)
         isValid = true
       }
@@ -91,7 +125,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       if (formatStringCallCode.nonEmpty) {
         val endpoint = convertFormatString(formatStringCallCode.head.code)
         if (endpoint.nonEmpty) {
-          println(methodId, "  ->  ", endpoint)
           methodUrlMap.addOne(methodId -> endpoint)
           isValid = true
         }
@@ -100,17 +133,9 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       if (additionStringCallCode.nonEmpty) {
         val endpoint = convertAdditionString(additionStringCallCode.head.code)
         if (endpoint.nonEmpty) {
-          println(methodId, "  ->  ", endpoint)
           methodUrlMap.addOne(methodId -> endpoint)
           isValid = true
         }
-      }
-    } else if (call.argument.isBlock.nonEmpty) { // Handle Hapi.js route parameters
-      val endpoint = call.argument.isBlock.code.l.flatMap(_.split("path: '").tail.map(_.split("'")(0))).mkString(", ")
-      if (endpoint.contains("/")) {
-        println(methodId, "  ->  ", endpoint)
-        methodUrlMap.addOne(methodId -> endpoint)
-        isValid = true
       }
     }
     isValid
@@ -142,7 +167,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           )
           matchingLocals.foreach(local => storeForTag(builder, local, ruleCache)(Constants.id, sourceRule.id))
           matchingLiterals.foreach(literal => storeForTag(builder, literal, ruleCache)(Constants.id, sourceRule.id))
-//          println("Direct source: ", collectionMethod.code)
           Some(collectionMethod)
         } else {
           None
@@ -181,7 +205,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
             parameter.tag
               .name(Constants.privadoDerived + ".*")
               .foreach(refTag => {
-//                println("Derived source: ", refTag.name, parameter.typeFullName)
                 storeForTag(builder, parameter, ruleCache)(refTag.name, refTag.value)
               })
           })
@@ -215,7 +238,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     if (returnByName) {
       collectionPoint.name
     } else {
-//      println("Final:: ", collectionPoint.id(), "  ->  ", methodUrlMap.getOrElse(collectionPoint.id(), ""))
       val methodUrl = methodUrlMap.getOrElse(collectionPoint.id(), "")
       Try(classUrlMap.getOrElse(collectionPoint.typeDecl.head.id(), "")) match {
         case Success(classUrl) => classUrl + methodUrl

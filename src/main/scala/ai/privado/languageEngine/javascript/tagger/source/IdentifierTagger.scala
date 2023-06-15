@@ -126,13 +126,12 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
               .filter(n => typeDeclVal.endsWith(n.typeFullName))
               .whereNot(_.astSiblings.isImport)
               .whereNot(_.astSiblings.isCall.name("import"))
-              .whereNot(_.code("this|self|cls"))
               .l ::: cpg.parameter
               .filter(n => typeDeclVal.endsWith(n.typeFullName))
-              .whereNot(_.code("this|self|cls"))
               .l
 
             impactedObjects
+              .whereNot(_.code("this|self|cls"))
               .foreach(impactedObject => {
                 if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
                   storeForTag(builder, impactedObject, ruleCache)(
