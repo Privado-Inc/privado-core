@@ -39,14 +39,15 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
       val dbVendor   = "dynamodb"
       val dbLocation = dbUrl.value.split("\\.")(1)
       val dbName     = dbUrl.value.split("/").last
+      val configFile = dbUrl.sourceFileOut.toList.head.name
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write", configFile),
         "Storages.AmazonDynamoDB.Write"
       )
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read", configFile),
         "Storages.AmazonDynamoDB.Read"
       )
     } catch {
@@ -63,14 +64,15 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
       val dbLocation = tokens.last.split("/")(0)
       val dbName     = dbUrl.value.split("/").last
       val dbVendor   = "postgresql"
+      val configFile = dbUrl.sourceFileOut.toList.head.name
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write", configFile),
         "Storages.Postgres.ReadAndWrite"
       )
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read", configFile),
         "Storages.Postgres.Read"
       )
     } catch {
@@ -87,14 +89,15 @@ class JSDBConfigTagger(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cp
       val dbVendor   = "mongodb"
       val dbLocation = tokens.last.split("/")(0)
       val dbName     = dbUrl.value.split("/").last.split("\\?")(0)
+      val configFile = dbUrl.sourceFileOut.toList.head.name
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Write"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Write", configFile),
         "Storages.MongoDB.Write"
       )
 
       DatabaseDetailsCache.addDatabaseDetails(
-        DatabaseDetails(dbName, dbVendor, dbLocation, "Read"),
+        DatabaseDetails(dbName, dbVendor, dbLocation, "Read", configFile),
         "Storages.MongoDB.Read"
       )
 
