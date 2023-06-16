@@ -44,8 +44,10 @@ class WebFormsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPa
       * rows={4} name="message" onChange={handleChange} /> <Button type="submit">Submit</Button> </form> );
       */
     ruleCache.getRule.sources.foreach(sourceRule => {
-      val rule =
-        s"${collectionRuleInfo.combinedRulePattern}.*(?:name|id|label|value)=(?:\\{|t){0,2}(?:\"|\'|`)(${sourceRule.combinedRulePattern})(?:\"|\'|`).*"
+      val inputFieldFilterRule = s"${collectionRuleInfo.combinedRulePattern}"
+      val srcRule =
+        s".*(?:name|id|label|value)=(?:\\{|t){0,2}(?:\"|\'|`|\\{)(${sourceRule.combinedRulePattern})(?:\"|\'|`|\\}).*"
+
       cpg.templateDom
         // Each HTML element/template element translates into multiple CPG nodes.
         // Like
@@ -61,7 +63,8 @@ class WebFormsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPa
         .name(
           s"${Constants.jsxOpenElement}|${Constants.jsxElement}|${Constants.HTMLOpenElement}|${Constants.HTMLElement}"
         )
-        .code(rule)
+        .code(inputFieldFilterRule)
+        .code(srcRule)
         .foreach(element => {
           if (element.name == Constants.jsxOpenElement || element.name == Constants.HTMLOpenElement) {
             storeForTag(builder, element, ruleCache)(Constants.collectionSource, sourceRule.id)

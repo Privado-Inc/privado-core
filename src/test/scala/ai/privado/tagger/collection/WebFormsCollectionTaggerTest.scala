@@ -41,7 +41,8 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
   private val inputDirs   = mutable.ArrayBuffer.empty[File]
 
-  val sourceId = "Data.Sensitive.Email"
+  val sourceId          = "Data.Sensitive.Email"
+  val lastNameSrcRuleId = "Data.Sensitive.PersonalIdentification.LastName"
   val sourceRule = List(
     RuleInfo(
       sourceId,
@@ -49,6 +50,22 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       "",
       Array(),
       List("(?i).*email.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVASCRIPT,
+      Array()
+    ),
+    RuleInfo(
+      lastNameSrcRuleId,
+      "Last Name",
+      "",
+      Array(),
+      List("(?i).*((?:last|sur(?!geon))[^\\s/(;)#|,=!>]{0,5}name)"),
       false,
       "",
       Map(),
@@ -67,7 +84,9 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       "Webform data collection",
       "",
       Array(),
-      List("^<(?i)(?:input|textarea|\\w{0,}TextBox|\\w{0,}Field)"),
+      List(
+        "^<(?i)(?:\\w{0,}(input|upload)\\w{0,}|\\w{0,}(textarea|Text|TextBox|Select|Field|Autocomplete|Checkbox))[^>]*.*"
+      ),
       false,
       "",
       Map(),
@@ -212,6 +231,33 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       taggedHTMLElements.size shouldBe 1
       val HTMLElement = taggedHTMLElements.head.get()
       HTMLElement.name shouldBe Constants.HTMLElement
+    }
+  }
+
+  "ReactJS sample with hierarchical labels" should {
+    val cpg = jsxcode("""
+        |<ComplexInputField
+        |                    name={FIELDS.SURNAME}
+        |                    label={messages.surName.placeholder}
+        |                    value={values?.surname}
+        |                    error={errors.surname}
+        |                  />
+        |""".stripMargin)
+    "Last name collection input point identified" in {
+      val taggedJsxOpenElements = cpg.templateDom
+        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+        .l
+      taggedJsxOpenElements.size shouldBe 1
+      val jsxOpenElement = taggedJsxOpenElements.head.get()
+      jsxOpenElement.tag.name(Constants.collectionSource).value.head shouldBe lastNameSrcRuleId
+      jsxOpenElement.name shouldBe Constants.jsxOpenElement
+
+      val taggedJsxElements = cpg.templateDom
+        .where(_.tag.nameExact(Constants.id).valueExact(lastNameSrcRuleId))
+        .l
+      taggedJsxElements.size shouldBe 1
+      val jsxElement = taggedJsxElements.head.get()
+      jsxElement.name shouldBe Constants.jsxElement
     }
   }
 
