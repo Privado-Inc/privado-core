@@ -27,17 +27,9 @@ import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag, NodeType}
-import ai.privado.semantic.Language.finder
+import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  CfgNode,
-  FieldIdentifier,
-  Identifier,
-  Literal,
-  MethodParameterIn,
-  Tag
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.Traversal
 import org.slf4j.LoggerFactory
@@ -51,24 +43,30 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  /** Fetch and Convert sources to desired output
+  /** Fetch and Convert sinks to desired output
     */
   def getSinks: List[SinkModel] = {
     convertSinkList(sinkTagList)
   }
 
   def getProcessing: List[SinkProcessingModel] = {
-    val processingMap = mutable.HashMap[String, mutable.Set[CfgNode]]()
-    sinkList.foreach(source => {
-      def addToMap(sourceId: String): Unit = {
-        if (processingMap.contains(sourceId)) {
-          processingMap(sourceId) = processingMap(sourceId).addOne(source)
+    val processingMap = mutable.HashMap[String, mutable.Set[AstNode]]()
+    // special map to store sink processing which should never be deduplicated
+    val processingMapDisableDedup = mutable.HashMap[String, mutable.Set[AstNode]]()
+    sinkList.foreach(sink => {
+      def addToMap(sinkId: String): Unit = {
+        if (sinkId.startsWith(Constants.cookieWriteRuleId)) {
+          if (!processingMapDisableDedup.contains(sinkId))
+            processingMapDisableDedup.addOne(sinkId -> mutable.Set())
+          processingMapDisableDedup(sinkId).addOne(sink)
         } else {
-          processingMap.addOne(sourceId -> mutable.Set(source))
+          if (!processingMap.contains(sinkId))
+            processingMap.addOne(sinkId -> mutable.Set())
+          processingMap(sinkId).addOne(sink)
         }
       }
-      source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
-      source.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
+      sink.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+      sink.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
     })
     processingMap
       .map(entrySet =>
@@ -82,16 +80,12 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
                 entrySet._2.toList
                   .distinctBy(_.code)
                   .distinctBy(_.lineNumber)
-                  .distinctBy(node => {
-                    Iterator(node).head match {
-                      case a @ (_: Identifier | _: Literal | _: MethodParameterIn | _: Call | _: FieldIdentifier) =>
-                        a.file.name.head
-                      case a => a.location.filename
-                    }
-                  })
+                  .distinctBy(Utilities.getFileNameForNode)
             })
         )
       )
+      .toList ++ processingMapDisableDedup
+      .map(entrySet => SinkProcessingModel(entrySet._1, ExporterUtility.convertPathElements(entrySet._2.toList)))
       .toList
   }
 

@@ -23,10 +23,11 @@
 
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
+import ai.privado.model.{Constants, NodeType, RuleInfo, DatabaseDetails}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.addRuleTags
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language._
 
@@ -47,6 +48,40 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
 
-    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
+    if (ruleInfo.id.equals(Constants.cookieWriteRuleId)) {
+      sinks.foreach(sink => {
+        val cookieNameArgument = sink.argument.or(_.argumentIndex(1), _.argumentName("name")).l
+        if (cookieNameArgument.nonEmpty) {
+          val cookieName = (cookieNameArgument.head match {
+            case node: Literal => node.code
+            case node: Identifier =>
+              cpg.assignment
+                .where(_.argument.code(node.code).argumentIndex(1))
+                .argument
+                .argumentIndex(2)
+                .code
+                .headOption
+                .getOrElse(node.code)
+            case node => node.code
+          }).stripPrefix("\"").stripSuffix("\"")
+          val newRuleIdToUse = ruleInfo.id + "." + cookieName
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + cookieName))
+          addRuleTags(builder, sink, ruleInfo, ruleCache, Some(newRuleIdToUse))
+          DatabaseDetailsCache.addDatabaseDetails(
+            DatabaseDetails(
+              cookieName,
+              "cookie",
+              ruleInfo.domains.mkString(" "),
+              "Write",
+              sink.file.name.headOption.getOrElse("")
+            ),
+            newRuleIdToUse
+          )
+        } else {
+          addRuleTags(builder, sink, ruleInfo, ruleCache)
+        }
+      })
+    } else
+      sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
   }
 }
