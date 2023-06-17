@@ -5,7 +5,7 @@ import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Block, Call, Method, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Method, MethodRef}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
@@ -43,7 +43,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // Supported Framework: Express, Fastify, Featherjs
     // TODO: Based on below frameworks improve the logic
     // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
-    val EXPRESS_CLIENT_PATTERN = "(?:express|fetch|@feathersjs/feathers|fastify|restify|@nestjs/cli|itty-router).*"
+    val EXPRESS_CLIENT_PATTERN = "(?:express|fetch|@feathersjs/feathers|fastify|restify|@nestjs/cli|itty-router|koa-router|@ioc[:]Adonis|@adonisjs|@sails|sails|.*loopback).*"
     val expressCollectionCalls = cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
     for (call <- expressCollectionCalls) {
       if (call.argument.nonEmpty) {
@@ -83,6 +83,18 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         }
       }
     }
+
+    val CONNECT_CLIENT_PATTERN = "(?:connect).*"
+    val connectCollectionCalls = cpg.call.methodFullName(CONNECT_CLIENT_PATTERN).l
+    for (call <- connectCollectionCalls) {
+      if (call.argument.nonEmpty) {
+        val isValid = getCollectionMethodsCache(call, call.method.id())
+        if (isValid) {
+          collectionMethodsCache += call.method
+        }
+      }
+    }
+
 
     tagDirectSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
     tagDerivedSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
