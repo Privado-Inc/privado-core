@@ -81,10 +81,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
       }
 
       val databaseDetails = ruleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
-        case Some(rule)
-            if rule.id.matches(
-              "Storages.SpringFramework.Jdbc.*|Sinks.Database.JPA.*|Storages.MongoDB.SpringFramework.*|Storages.SpringFramework.Jooq.*|Storages.AmazonDynamoDB.*|Storages.Postgres.*|Storages.MongoDB.*|Storages.Neo4jGraphDatabase.*"
-            ) =>
+        case Some(rule) =>
           DatabaseDetailsCache.getDatabaseDetails(rule.id)
         case _ => Option.empty[DatabaseDetails]
       }
