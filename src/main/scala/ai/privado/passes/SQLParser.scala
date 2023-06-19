@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
+import scala.util.Try
 class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
@@ -46,7 +47,7 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
     buildAndAddSqlQueryNodes(file, builder, fileNode)
   }
 
-  private def buildAndAddSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = {
+  private def buildAndAddSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = Try {
 
     val sqlFile      = File(sqlFileName)
     var lineNumber   = 0
