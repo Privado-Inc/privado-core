@@ -27,6 +27,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLParser, Utilities}
+import better.files._
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
@@ -34,7 +35,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
-import scala.io.Source
+import scala.util.Try
 class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
@@ -46,14 +47,14 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
     buildAndAddSqlQueryNodes(file, builder, fileNode)
   }
 
-  private def buildAndAddSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = {
+  private def buildAndAddSqlQueryNodes(sqlFileName: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = Try {
 
-    val sqlFile      = Source.fromFile(sqlFileName)
+    val sqlFile      = File(sqlFileName)
     var lineNumber   = 0
     var queryLen     = 0
     var queryBuilder = new StringBuilder()
     val sqlQueries   = mutable.ListBuffer[(String, Int)]()
-    for (line <- sqlFile.getLines()) {
+    for (line <- sqlFile.lines) {
       lineNumber += 1
 
       if (line.trim().nonEmpty && !line.trim().startsWith("--")) {
@@ -73,7 +74,6 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
         }
       }
     }
-    sqlFile.close()
 
     sqlQueries
       .foreach(queryWthLine => {

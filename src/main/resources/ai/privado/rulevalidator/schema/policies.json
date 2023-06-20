@@ -54,8 +54,7 @@
             "default": "",
             "examples": [
               "Policy to restrict Contact Information being shared with Slack"
-            ],
-            "pattern": "^.*$"
+            ]
           },
           "action": {
             "$id": "#root/policies/items/action",
@@ -168,8 +167,7 @@
             "default": "",
             "examples": [
               "Policy to restrict Contact Information being shared with Slack"
-            ],
-            "pattern": "^.*$"
+            ]
           }
         }
       }
