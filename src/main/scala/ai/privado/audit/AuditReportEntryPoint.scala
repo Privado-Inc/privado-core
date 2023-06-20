@@ -20,9 +20,9 @@ object AuditReportEntryPoint {
     filePriorityScore: String,
     memberName: String,
     memberType: String,
-    tagged: String,
+    tagged: Boolean,
     sourceRuleId: String,
-    inputToCollection: String,
+    inputToCollection: Boolean,
     collectionEndpointPath: String,
     collectionMethodFullName: String
   )
@@ -45,9 +45,9 @@ object AuditReportEntryPoint {
         eliminateEmptyCellValueIfExist(item(2)),
         eliminateEmptyCellValueIfExist(item(3)),
         eliminateEmptyCellValueIfExist(item(4)),
-        eliminateEmptyCellValueIfExist(item(5)),
+        if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(6)),
-        eliminateEmptyCellValueIfExist(item(7)),
+        if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(8)),
         eliminateEmptyCellValueIfExist(item(9))
       )
