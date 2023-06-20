@@ -35,6 +35,8 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_COLLECTION_ENDPOINT = "Collection Endpoint Path"
 
+  val FILE_PRIORITY_SCORE = "File Priority Score"
+
   val ELEMENT_DISCOVERY_METHOD_NAME = "Collection Method Full Name"
 
   val ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX = "^(.*)(Controller|Service|Impl|Helper|Util|Processor|Dao)$"
