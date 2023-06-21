@@ -26,7 +26,13 @@ package ai.privado.languageEngine.python
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.pysrc2cpg._
+import io.joern.pysrc2cpg.{
+  ImportsPass,
+  Py2CpgOnFileSystem,
+  Py2CpgOnFileSystemConfig,
+  PythonInheritanceNamePass,
+  PythonTypeRecoveryPass
+}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker

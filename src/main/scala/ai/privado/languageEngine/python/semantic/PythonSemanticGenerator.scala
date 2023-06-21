@@ -68,8 +68,8 @@ object PythonSemanticGenerator extends SemanticGenerator {
     val parameterSemantic = mutable.HashSet[String]()
 
     namedArgumentList.map { item =>
-      if (toTaint != -2)
-        parameterSemantic.add(s"$item->$toTaint")
+      // if (toTaint != -2)
+      //  parameterSemantic.add(s"$item->$toTaint")
       parameterSemantic.add(s"$item->$item")
     }
 
