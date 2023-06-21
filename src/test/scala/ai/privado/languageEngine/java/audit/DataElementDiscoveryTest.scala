@@ -96,6 +96,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
     "Test final discovery result" in {
       val classNameList    = new mutable.HashSet[String]()
+      val fileScoreList    = new mutable.HashSet[String]()
       val memberList       = new mutable.HashSet[String]()
       val sourceRuleIdMap  = new mutable.HashMap[String, String]()
       val collectionTagMap = new mutable.HashMap[String, String]()
@@ -106,11 +107,12 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       workbookList.foreach(row => {
         classNameList += row.head
-        memberList += row(2)
-        sourceRuleIdMap.put(row(2), row(5))
-        if (!collectionTagMap.contains(row.head)) collectionTagMap.put(row.head, row(6))
-        if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(7))
-        if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(8))
+        fileScoreList += row(2)
+        memberList += row(3)
+        sourceRuleIdMap.put(row(3), row(6))
+        if (!collectionTagMap.contains(row.head)) collectionTagMap.put(row.head, row(7))
+        if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(8))
+        if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
       })
 
       // Validate class name in result
@@ -131,6 +133,9 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("accountNo")
       memberList should not contain ("addressInfo")
 
+      fileScoreList should contain("2.0")
+      fileScoreList should contain("0.0")
+
       // validate source Rule ID in result
       sourceRuleIdMap("firstName").toString should equal("Data.Sensitive.FirstName")
 
@@ -144,6 +149,15 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       methodNameMap("com.test.privado.Entity.User").toString should equal(
         "public String userHandler(@RequestBody User user)"
       )
+    }
+
+    "Test file score " in {
+      var score = DataElementDiscovery.getFileScore("User.java", Try(cpg))
+      score shouldBe "2.0"
+
+      score = DataElementDiscovery.getFileScore("Salary.java", Try(cpg))
+      score shouldBe "0.0"
+
     }
   }
 }
