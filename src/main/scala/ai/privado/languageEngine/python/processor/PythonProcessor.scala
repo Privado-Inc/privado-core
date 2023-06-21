@@ -18,6 +18,7 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg._
+import io.joern.pysrc2cpg.ImportResolverPass
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -51,6 +52,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
+          new ImportResolverPass(cpg).createAndApply()
           new PythonInheritanceNamePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
