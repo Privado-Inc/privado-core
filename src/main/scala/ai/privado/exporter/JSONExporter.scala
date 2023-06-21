@@ -23,6 +23,7 @@
 
 package ai.privado.exporter
 
+import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
 import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
@@ -251,6 +252,29 @@ object JSONExporter {
 
       val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Intermediate Exporter engine")
+      Right(())
+
+    } catch {
+      case ex: Exception =>
+        println("Failed to export intermediate output")
+        logger.debug("Failed to export intermediate output", ex)
+        Left(ex.toString)
+    }
+  }
+
+  def dataElementDiscoveryAuditFileExport(
+    outputFileName: String,
+    repoPath: String,
+    dataElementDiscoveryData: List[DataElementDiscoveryAudit]
+  ): Either[String, Unit] = {
+    logger.info("Initiated the Intermediate exporter engine")
+    val output = dataElementDiscoveryData.asJson
+    try {
+      logger.info("Completed Intermediate Data-Element Discovery Exporting")
+
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
       logger.info("Shutting down Intermediate Exporter engine")
       Right(())

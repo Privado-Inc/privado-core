@@ -6,9 +6,11 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+import ai.privado.dataflow.{Dataflow}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object DataElementDiscovery {
@@ -162,6 +164,39 @@ object DataElementDiscovery {
     collectionMethodInfoMap.toMap
   }
 
+  def getFileScore(absoluteFileName: String, xtocpg: Try[Cpg]): String = {
+    var score = 0.0
+    xtocpg match {
+      case Success(cpg) => {
+        if (Dataflow.getSources(cpg).file.where(_.name(absoluteFileName)).length > 0) {
+          score += 1
+        }
+        val objectDefinationDirectoryPattern = "(?i)pojo|model|dao|mapper|entity".r
+
+        objectDefinationDirectoryPattern.findFirstMatchIn(absoluteFileName) match {
+          case Some(_) => score += 0.25
+          case None    =>
+        }
+
+        val fileName = absoluteFileName.substring(absoluteFileName.lastIndexOf("/") + 1)
+
+        val datasubjectPattern = "(?i)person|user|customer".r
+
+        datasubjectPattern.findFirstMatchIn(fileName) match {
+          case Some(_) => score += 1
+          case None    =>
+        }
+        score.toString
+      }
+      case Failure(exception) => {
+        println("Failed to calculate file score")
+        logger.debug("Failed to calculate file score", exception)
+        logger.debug("exception: ", exception.printStackTrace())
+        "0"
+      }
+    }
+  }
+
   def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
     logger.info("Initiated the audit engine")
     val classNameRuleList    = getSourceUsingRules(xtocpg)
@@ -188,9 +223,11 @@ object DataElementDiscovery {
     }
 
     // Header List
+    // rearranging this list will affect the ordering on audit-sources.json file
     workbookResult += List(
       AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
       AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
+      AuditReportConstants.FILE_PRIORITY_SCORE,
       AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
       AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
       AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
@@ -211,6 +248,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -224,6 +262,7 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
+                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -239,6 +278,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   member.name,
                   member.typeFullName,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -251,6 +291,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   member.name,
                   member.typeFullName,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -267,6 +308,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -280,6 +322,7 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
+                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -293,6 +336,7 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
+                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                 member.name,
                 member.typeFullName,
                 AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,

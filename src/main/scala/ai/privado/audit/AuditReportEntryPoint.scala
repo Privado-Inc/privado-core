@@ -1,24 +1,78 @@
 package ai.privado.audit
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.TaggerCache
+import ai.privado.exporter.JSONExporter
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import io.circe.{Decoder, Encoder}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
-import org.apache.poi.ss.usermodel.{Cell, FillPatternType, IndexedColors, Row, Workbook}
+import org.apache.poi.ss.usermodel._
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 object AuditReportEntryPoint {
 
+  case class DataElementDiscoveryAudit(
+    className: String,
+    fileName: String,
+    filePriorityScore: Double,
+    memberName: String,
+    memberType: String,
+    tagged: Boolean,
+    sourceRuleId: String,
+    inputToCollection: Boolean,
+    collectionEndpointPath: String,
+    collectionMethodFullName: String
+  )
+
+  implicit val DataElementDiscoveryAuditModelDecoder: Decoder[DataElementDiscoveryAudit] =
+    deriveDecoder[DataElementDiscoveryAudit]
+  implicit val DataElementDiscoveryAuditEncoder: Encoder[DataElementDiscoveryAudit] =
+    deriveEncoder[DataElementDiscoveryAudit]
+
+  def eliminateEmptyCellValueIfExist(str: String): String =
+    if (str == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) "" else str
+
+  def createDataElementDiscoveryJson(dataElementDiscoveryData: List[List[String]], repoPath: String) = {
+
+    val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
+    for (item <- dataElementDiscoveryData.drop(1)) {
+      auditDataList += DataElementDiscoveryAudit(
+        eliminateEmptyCellValueIfExist(item(0)),
+        eliminateEmptyCellValueIfExist(item(1)),
+        item(2).toDouble,
+        eliminateEmptyCellValueIfExist(item(3)),
+        eliminateEmptyCellValueIfExist(item(4)),
+        if (item(5) == "YES") true else false,
+        eliminateEmptyCellValueIfExist(item(6)),
+        if (item(5) == "YES") true else false,
+        eliminateEmptyCellValueIfExist(item(8)),
+        eliminateEmptyCellValueIfExist(item(9))
+      )
+    }
+
+    JSONExporter.dataElementDiscoveryAuditFileExport(
+      AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
+      repoPath,
+      auditDataList.toList
+    )
+
+  }
+
   // Audit report generation for java
-  def getAuditWorkbook(xtocpg: Try[Cpg], taggerCache: TaggerCache, dependencies: Set[ModuleDependency]): Workbook = {
+  def getAuditWorkbook(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    dependencies: Set[ModuleDependency],
+    repoPath: String
+  ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME,
-      DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache)
-    )
+    val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache)
+    createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath)
+    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
     // Changed Background colour when tagged
     changeTaggedBackgroundColour(workbook, List(4, 6))
 
