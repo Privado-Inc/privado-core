@@ -191,7 +191,7 @@ object DataElementDiscovery {
       case Failure(exception) => {
         println("Failed to calculate file score")
         logger.debug("Failed to calculate file score", exception)
-        println(exception.printStackTrace())
+        logger.debug("exception: ", exception.printStackTrace())
         "0"
       }
     }
@@ -248,7 +248,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.head.name, xtocpg),
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -262,7 +262,7 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.head.name, xtocpg),
+                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -278,7 +278,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.head.name, xtocpg),
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   member.name,
                   member.typeFullName,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -291,7 +291,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.head.name, xtocpg),
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   member.name,
                   member.typeFullName,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -308,7 +308,7 @@ object DataElementDiscovery {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.head.name, xtocpg),
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -322,7 +322,7 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.head.name, xtocpg),
+                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -336,7 +336,7 @@ object DataElementDiscovery {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.head.name, xtocpg),
+                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                 member.name,
                 member.typeFullName,
                 AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,

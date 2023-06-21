@@ -104,4 +104,6 @@ object AuditReportConstants {
   val DEPENDENCY_UNRESOLVED_FLOW_ID_NAME = "flowId"
 
   val DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME = "Code Snippet"
+
+  val AUDIT_SOURCE_FILE_NAME = "audit-sources.json"
 }

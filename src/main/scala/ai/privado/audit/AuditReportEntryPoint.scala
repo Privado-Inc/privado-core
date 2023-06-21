@@ -53,7 +53,11 @@ object AuditReportEntryPoint {
       )
     }
 
-    JSONExporter.dataElementDiscoveryAuditFileExport("audit-sources.json", repoPath, auditDataList.toList)
+    JSONExporter.dataElementDiscoveryAuditFileExport(
+      AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
+      repoPath,
+      auditDataList.toList
+    )
 
   }
 
