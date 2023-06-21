@@ -17,7 +17,7 @@ object AuditReportEntryPoint {
   case class DataElementDiscoveryAudit(
     className: String,
     fileName: String,
-    filePriorityScore: String,
+    filePriorityScore: Double,
     memberName: String,
     memberType: String,
     tagged: Boolean,
@@ -42,7 +42,7 @@ object AuditReportEntryPoint {
       auditDataList += DataElementDiscoveryAudit(
         eliminateEmptyCellValueIfExist(item(0)),
         eliminateEmptyCellValueIfExist(item(1)),
-        eliminateEmptyCellValueIfExist(item(2)),
+        item(2).toDouble,
         eliminateEmptyCellValueIfExist(item(3)),
         eliminateEmptyCellValueIfExist(item(4)),
         if (item(5) == "YES") true else false,
