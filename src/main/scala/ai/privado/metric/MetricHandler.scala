@@ -107,7 +107,7 @@ object MetricHandler {
   }
 
   def stringifyJson(): String = {
-    val mapper = JsonMapper.builder().addModule(DefaultScalaModule).build()
+    val mapper = JsonMapper.builder().build()
     val json   = mapper.writeValueAsString(metricsData.asJson.noSpaces)
     json
   }
