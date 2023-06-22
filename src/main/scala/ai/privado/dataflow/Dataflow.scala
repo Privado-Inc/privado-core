@@ -35,7 +35,7 @@ import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, Identifier}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -160,6 +160,24 @@ class Dataflow(cpg: Cpg) {
             .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
       )
     }
+
+    // Filter and set all the flow which originate from Collection point in cache
+    // DataFlowCache.dataflow
+    // .flatMap(_._2.values.flatMap(_.toList))
+    DataFlowCache.getDataflow
+      .filter { flow =>
+        val path = DataFlowCache.dataflowsMapByType.get(flow.pathId)
+        val methodNode = path.elements.head match {
+          case a: Identifier => Some(a.method)
+          case _             => None
+        }
+        methodNode.isDefined && methodNode.tag
+          .nameExact(Constants.catLevelOne)
+          .valueExact(CatLevelOne.COLLECTIONS.name)
+          .nonEmpty
+      }
+      .foreach(flow => DataFlowCache.collectionToSinkDataflow.addOne(flow))
+
     // Need to return the filtered result
     println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
     val dataflowFromCache = DataFlowCache.getDataflow

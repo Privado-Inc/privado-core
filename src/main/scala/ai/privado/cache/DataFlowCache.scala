@@ -57,6 +57,8 @@ object DataFlowCache {
     dataflow.flatMap(_._2.values.flatMap(_.toList)).toList ::: extraFlows
   }
 
+  val collectionToSinkDataflow = mutable.ListBuffer[DataFlowPathModel]()
+
   var intermediateDataFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
 
   def setDataflow(dataFlowPathModel: DataFlowPathModel): Unit = {

@@ -22,6 +22,9 @@
 
 package ai.privado.model
 
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+
 case class DataFlowPathModel(
   sourceId: String,
   sinkId: String,
@@ -30,3 +33,11 @@ case class DataFlowPathModel(
   pathId: String,
   applyDedup: Boolean = true // applyDedup if set true means, this object be considered for deduplication
 )
+
+object DataFlowPathModelEncoderDecoder {
+
+  implicit val dataFlowPathModelDecoder: Decoder[DataFlowPathModel] =
+    deriveDecoder[DataFlowPathModel]
+  implicit val dataFlowPathModelEncoder: Encoder[DataFlowPathModel] =
+    deriveEncoder[DataFlowPathModel]
+}

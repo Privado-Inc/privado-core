@@ -29,6 +29,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.exporter.DataFlowSubCategoryModel
 import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.DataFlowPathModelEncoderDecoder._
 import ai.privado.model.exporter.DataFlowSourceIntermediateModel
 import ai.privado.model.exporter.SourceEncoderDecoder._
 import ai.privado.model.exporter.DataFlowEncoderDecoder._
@@ -167,7 +168,8 @@ object JSONExporter {
         )
       })
 
-      output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
+      output.addOne(Constants.dataFlow      -> dataflowsOutput.asJson)
+      output.addOne("collectionPointToSink" -> DataFlowCache.collectionToSinkDataflow.asJson)
       logger.info("Completed Sink Exporting")
 
       logger.info("Completed Collections Exporting")
