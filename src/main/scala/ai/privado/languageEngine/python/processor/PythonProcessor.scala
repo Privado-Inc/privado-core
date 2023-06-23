@@ -26,6 +26,7 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import io.joern.pysrc2cpg.DynamicTypeHintFullNamePass
 
 import java.nio.file.Paths
 import java.util.Calendar
@@ -60,6 +61,7 @@ object PythonProcessor {
 
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
+          new DynamicTypeHintFullNamePass(cpg).createAndApply()
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
