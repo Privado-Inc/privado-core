@@ -132,10 +132,9 @@ object JavaProcessor {
             // Fetch all dependency after pass
             val dependencies = DependencyReport.getDependencyList(xtocpg)
             new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
-
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies, sourceRepoLocation),
               sourceRepoLocation
             ) match {
               case Left(err) =>
