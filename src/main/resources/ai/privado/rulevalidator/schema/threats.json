@@ -55,8 +55,7 @@
             "default": "",
             "examples": [
               "Finding Sensitive Information in Auto-Generated Screenshots"
-            ],
-            "pattern": ".*"
+            ]
           },
           "dataFlow": {
             "$id": "#root/threats/items/dataFlow",
@@ -153,8 +152,7 @@
             "default": "",
             "examples": [
               "Ensure that FLAG_SECURE option is set on the window."
-            ],
-            "pattern": "^.*$"
+            ]
           }
         }
       }
