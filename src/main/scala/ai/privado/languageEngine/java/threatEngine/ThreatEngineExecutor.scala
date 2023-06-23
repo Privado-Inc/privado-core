@@ -126,7 +126,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.CookieConsent.isCookieConsentMgmtModuleImplemented" =>
+      case "PrivadoPolicy.CookieConsent.IsCookieConsentMgmtModuleImplemented" =>
         CookieConsentMgmtModule.getViolations(threat, cpg, dataflows, ruleCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
@@ -135,7 +135,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.Sharing.isParameterHardcoded" =>
+      case "PrivadoPolicy.Sharing.IsParameterHardcoded" =>
         DataMethodParameterHardcoded.getViolations(cpg) match {
           case Success(res) => Some(res)
           case Failure(e) => {
@@ -144,7 +144,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.Sharing.isObjectsWithPIIsPassedAsParameter" =>
+      case "PrivadoPolicy.Sharing.IsObjectsWithPIIsPassedAsParameter" =>
         ObjectsWithPIIsPassedAsParameter.getViolations(cpg) match {
           case Success(res) => Some(res)
           case Failure(e) => {
@@ -153,7 +153,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.Storage.isSamePIIShouldNotBePresentInMultipleTables" =>
+      case "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables" =>
         PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
@@ -162,7 +162,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.Storage.isPIIHavingDifferentRetentionPeriod" =>
+      case "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod" =>
         PIIHavingDifferentRetentionPeriod.getViolations(threat, cpg, taggerCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
@@ -171,7 +171,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.Storage.isDifferentKindOfPIIStoredInDifferentTables" =>
+      case "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables" =>
         DifferentKindOfPIIStoredInDifferentTables.getViolations(threat, cpg, taggerCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
@@ -180,7 +180,7 @@ class ThreatEngineExecutor(
           }
         }
 
-      case "Threats.Leakage.CustomPrivacyLoggerMustbeUsed" =>
+      case "PrivadoPolicy.Leakage.CentralisedPrivacyLoggerMustbeUsed" =>
         CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg) match {
           case Success(res) => Some(res)
           case Failure(e) => {
