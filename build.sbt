@@ -68,7 +68,7 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
-  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases",
+  "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases"
 ) ++ Resolver.sonatypeOssRepos("snapshots")
 lazy val astGenDlUrl       = "https://github.com/joernio/astgen/releases/download/v2.14.0/"
 lazy val astGenBinaryNames = Seq("astgen-linux", "astgen-macos", "astgen-win.exe", "astgen-macos-arm")
