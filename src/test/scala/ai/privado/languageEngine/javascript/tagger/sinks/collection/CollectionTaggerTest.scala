@@ -158,6 +158,104 @@ class CollectionTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfter
     }
   }
 
+  val cpg = hapiCode("""
+      |const Hapi = require('@hapi/hapi');
+      |const Joi = require('@hapi/joi');
+      |Joi.objectId = require('joi-objectid')(Joi)
+      |
+      |const init = async () => {
+      |
+      |    const server = Hapi.server({
+      |        port: 3000,
+      |        host: 'localhost'
+      |    });
+      |
+      |    await server.register({
+      |        plugin: require('hapi-mongodb'),
+      |        options: {
+      |          url: '{YOUR-CONNECTION-STRING}',
+      |          settings: {
+      |              useUnifiedTopology: true
+      |          },
+      |          decorate: true
+      |        }
+      |    });
+      |    // Get a single movie
+      |    server.route({
+      |        method: 'GET',
+      |        path: '/movies/{id}',
+      |        handler: async (req, h) => {
+      |            const id = req.params.id
+      |            const ObjectID = req.mongo.ObjectID;
+      |
+      |            const firstName = await req.mongo.db.collection('firstName').findOne({_id: new ObjectID(id)},{projection:{title:1,plot:1,cast:1,year:1, released:1}});
+      |
+      |            return firstName;
+      |        }
+      |    });
+      |
+      |    await server.start();
+      |    console.log('Server running on %s', server.info.uri);
+      |}
+      |
+      |init();
+      |""".stripMargin)
+  "test convertAdditionString" should {
+    val collectionTagger = new CollectionTagger(cpg, ruleCache)
+
+    "convertAdditionString should remove '+' characters" in {
+      val input    = "'/base/' + customerId + '/page/1'"
+      val expected = "/base/customerId/page/1"
+      val result   = collectionTagger.convertAdditionString(input)
+      assert(result == expected)
+    }
+
+    "convertAdditionString should remove single and double quotes" in {
+      val input    = "It's a 'test'"
+      val expected = "Itsatest"
+      val result   = collectionTagger.convertAdditionString(input)
+      assert(result == expected)
+    }
+
+    "convertAdditionString should remove backticks" in {
+      val input    = "`code`"
+      val expected = "code"
+      val result   = collectionTagger.convertAdditionString(input)
+      assert(result == expected)
+    }
+
+    "convertAdditionString should remove spaces" in {
+      val input    = "  1  +  2    +  3   "
+      val expected = "123"
+      val result   = collectionTagger.convertAdditionString(input)
+      assert(result == expected)
+    }
+
+    "convertAdditionString should handle an empty string" in {
+      val input    = ""
+      val expected = ""
+      val result   = collectionTagger.convertAdditionString(input)
+      assert(result == expected)
+    }
+  }
+
+  "test convertFormatString" should {
+    val collectionTagger = new CollectionTagger(cpg, ruleCache)
+
+    "convertFormatString should remove '<operator>.formatString('" in {
+      val input    = "<operator>.formatString('Hello, %s!', name)"
+      val expected = "Hello%s!name"
+      val result   = collectionTagger.convertFormatString(input)
+      assert(result == expected)
+    }
+
+    "convertFormatString should handle an empty string" in {
+      val input    = ""
+      val expected = ""
+      val result   = collectionTagger.convertFormatString(input)
+      assert(result == expected)
+    }
+  }
   def hapiCode(code: String): Cpg = {
     val inputDir = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)
