@@ -23,19 +23,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
     val collectionMethodsCache = mutable.ListBuffer[Method]()
 
-    // TODO: Add this one to Internal APIs
-    // Added this for now to log the endpoints, in future need to move client side endpoint to Internal API
-//    val CLIENT_ENDPOINT_PATTERN  = "(?:axios|fetch|express|@angular/common/http).*"
-//    val apiClientCollectionCalls = cpg.call.methodFullName(CLIENT_ENDPOINT_PATTERN).l
-//    for (call <- apiClientCollectionCalls) {
-//      if (call.argument.nonEmpty) {
-//        val isValid = getCollectionMethodsCache(call, call.method.id())
-//        if (isValid) {
-//          collectionMethodsCache += call.method
-//        }
-//      }
-//    }
-
     // Supporting below pattern
     // fastify.get('/endpoint', async (request, reply) => {
     //  return 'Hello, World!';
