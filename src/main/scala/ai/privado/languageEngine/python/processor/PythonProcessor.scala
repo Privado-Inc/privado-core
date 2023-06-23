@@ -60,6 +60,7 @@ object PythonProcessor {
 
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
+          new DynamicTypeHintFullNamePass(cpg).createAndApply()
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
