@@ -23,7 +23,7 @@
 
 package ai.privado.semantic
 
-import ai.privado.model.Semantic
+import ai.privado.model.{Constants, Semantic}
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}
@@ -100,7 +100,7 @@ trait SemanticGenerator {
     semantics.l
       .groupBy(_.signature)
       .map(item => (item._1, item._2.flatMap(sem => sem.flow.split(" ")).toSet.sorted.mkString(" ")))
-      .map(item => { "\"" + item._1 + "\" " + item._2 })
+      .map(item => { "\"" + item._1 + "\" " + item._2.replace(Constants.semanticDelimeter, " ") })
       .sorted
   }
 }
