@@ -460,6 +460,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
     for ((fileName, content) <- moduleFileMap) {
       (inputDir / fileName).write(content)
     }
+    (inputDir / "firstJavaFile.java").write("")
 
     outputDir = File.newTemporaryDirectory()
     val config =
