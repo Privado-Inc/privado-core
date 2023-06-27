@@ -124,8 +124,8 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
             // typeDeclVal: models.py:<module>.Profile
             val impactedObjects = cpg.identifier
               .filter(n => typeDeclVal.endsWith(n.typeFullName))
-              .whereNot(_.astSiblings.isImport)
-              .whereNot(_.astSiblings.isCall.name("import"))
+//              _.astSiblings failing in some cases to removing this filter for now.
+//              .whereNot(_.astSiblings.isCall.name("import"))
               .l ::: cpg.parameter
               .filter(n => typeDeclVal.endsWith(n.typeFullName))
               .l
