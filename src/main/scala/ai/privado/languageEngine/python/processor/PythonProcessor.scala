@@ -18,6 +18,7 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg._
+import io.joern.pysrc2cpg.ImportResolverPass
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -25,6 +26,7 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import io.joern.pysrc2cpg.DynamicTypeHintFullNamePass
 
 import java.nio.file.Paths
 import java.util.Calendar
@@ -51,6 +53,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
+          new ImportResolverPass(cpg).createAndApply()
           new PythonInheritanceNamePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -58,6 +61,7 @@ object PythonProcessor {
 
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
+          new DynamicTypeHintFullNamePass(cpg).createAndApply()
           new PythonTypeRecoveryPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
