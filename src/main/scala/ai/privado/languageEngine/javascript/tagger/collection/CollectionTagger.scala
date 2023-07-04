@@ -10,6 +10,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
@@ -60,12 +61,12 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val generalAssignmentCallsWithMethodParam =
       cpg
         .call("<operator>.assignment")
-        .code("(?i).*method.{0,4}[=]{1}.{0,4}(get|put|post|delete|trace|patch|option).*")
+        .code("(?i).*(method|type).{0,4}[=]{1}.{0,4}(get|put|post|delete|trace|patch|option).*")
         .l
     for (call <- generalAssignmentCallsWithMethodParam) {
       if (call.astParent.isBlock) {
         val result = Try {
-          getRouteAndHandlerFromBlock(call.astParent.asInstanceOf[Block], "path", "handler")
+          getRouteAndHandlerFromBlock(call.astParent.asInstanceOf[Block], "(url|path|uri|route)", "handler")
         }
 
         result match {
@@ -102,12 +103,14 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val objectKeyValuePairs      = block.astChildren.isCall.name("<operator>.assignment").l
     var handlerMethod: MethodRef = null
     var path: String             = ""
+    val pathRegex: Regex         = pathField.r
+
     for (keyVal <- objectKeyValuePairs) {
       if (keyVal.astChildren.nonEmpty) {
         val objKeyVal = keyVal.astChildren
         val key       = objKeyVal.isCall.head
 
-        if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
+        if (pathRegex.findFirstIn(key.code).isDefined && key.astSiblings.head.isLiteral) {
           path = key.astSiblings.head.code
         }
 
