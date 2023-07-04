@@ -5,10 +5,11 @@ import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Method, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Block, Call, Method, MethodRef}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
+import scala.collection.immutable.Stream.Empty
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -46,7 +47,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     }
 
     // Supporting below pattern
-    // server.route({
+    // {
     //   method: 'PUT',
     //   path: '/movies/{id}',
     //   handler: async (req, emailId) => {
@@ -54,20 +55,22 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     //     const status = await req.mongo.db.collection('movies').updateOne({ _id: ObjectID }, { $set: payload });
     //     return status;
     //   }
-    // })
-    // Supported Framework: Hapijs
-    val HAPI_CLIENT_PATTERN = "(hapi|@hapi/hapi).*(?:route)"
-    val hapiCollectionCalls = cpg.call.methodFullName(HAPI_CLIENT_PATTERN).l
-    for (call <- hapiCollectionCalls) {
-      if (call.argument.nonEmpty) {
-        if (call.argument.isBlock.nonEmpty) {
-          val result = getRouteAndHandlerFromBlock(call.argument.isBlock.head, "path", "handler")
-          if (result._1.nonEmpty && result._2.nonEmpty) {
-            if (result._2.isMethodRef) {
-              val referencedMethod = result._2.referencedMethod
-              methodUrlMap.addOne(referencedMethod.id() -> result._1)
-              collectionMethodsCache += referencedMethod
-            }
+    // }
+    // Merging Happijs with this one only.
+    // General Object with method, path & handler block
+    val generalAssignmentCallsWithMethodParam =
+      cpg
+        .call("<operator>.assignment")
+        .code("(?i).*method.{0,4}[=]{1}.{0,4}(get|put|post|delete|trace|patch|option).*")
+        .l
+    for (call <- generalAssignmentCallsWithMethodParam) {
+      if (call.astParent.isBlock) {
+        val result = getRouteAndHandlerFromBlock(call.astParent.asInstanceOf[Block], "path", "handler")
+        if (result._1.nonEmpty && result._2.nonEmpty) {
+          if (result._2.isMethodRef) {
+            val referencedMethod = result._2.referencedMethod
+            methodUrlMap.addOne(referencedMethod.id() -> result._1)
+            collectionMethodsCache += referencedMethod
           }
         }
       }
@@ -92,17 +95,21 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val objectKeyValuePairs      = block.astChildren.isCall.name("<operator>.assignment").l
     var handlerMethod: MethodRef = null
     var path: String             = ""
-    for (keyVal <- objectKeyValuePairs) {
-      if (keyVal.astChildren.nonEmpty) {
-        val objKeyVal = keyVal.astChildren
-        val key       = objKeyVal.isCall.head
+    if (objectKeyValuePairs.nonEmpty && objectKeyValuePairs.isInstanceOf[List[Call]]) {
+      for (keyVal <- objectKeyValuePairs) {
+        if (keyVal.astChildren.nonEmpty && keyVal.astChildren.isInstanceOf[Traversal[AstNode]]) {
+          val objKeyVal = keyVal.astChildren
+          val key       = objKeyVal.isCall
 
-        if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
-          path = key.astSiblings.head.code
-        }
+          if (key.nonEmpty) {
+            if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
+              path = key.astSiblings.head.code
+            }
+            if (key.code.contains(handlerField) && key.astSiblings.head.isMethodRef) {
+              handlerMethod = cpg.methodRef.id(key.astSiblings.head.id()).head
+            }
+          }
 
-        if (key.code.contains(handlerField) && key.astSiblings.head.isMethodRef) {
-          handlerMethod = cpg.methodRef.id(key.astSiblings.head.id()).head
         }
       }
     }
