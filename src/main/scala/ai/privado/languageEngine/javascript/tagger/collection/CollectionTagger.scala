@@ -5,11 +5,10 @@ import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities._
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Block, Call, Method, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Method, MethodRef}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
-import scala.collection.immutable.Stream.Empty
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -28,19 +27,20 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // fastify.get('/endpoint', async (request, reply) => {
     //  return 'Hello, World!';
     // });
-    // Supported Framework: Express, Fastify, Featherjs
+    // Supported Framework: Express, Fastify, Featherjs, AdonisJS, Loopback, Restify, Connect
     // TODO: Based on below frameworks improve the logic
-    // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
-    val EXPRESS_CLIENT_PATTERN =
-      "(?:express|fetch|@feathersjs/feathers|fastify|restify|@nestjs/cli|itty-router|koa-router|@ioc[:]Adonis|@adonisjs|@sails|sails|.*loopback).*"
-    val expressCollectionCalls =
-      cpg.call.methodFullName(collectionRuleInfo.patterns.headOption.getOrElse(EXPRESS_CLIENT_PATTERN)).l
-    for (call <- expressCollectionCalls) {
-      if (call.argument.nonEmpty) {
-        if (call.argument.isMethodRef.nonEmpty) {
-          val isValid = getCollectionMethodsCache(call, call.argument.isMethodRef.head.referencedMethod.id())
-          if (isValid) {
-            collectionMethodsCache += call.argument.isMethodRef.head.referencedMethod
+    // TODO: Need to support more frameworks Koa, Sails
+    val EXPRESS_CLIENT_PATTERN = collectionRuleInfo.patterns.headOption.getOrElse("")
+    if (EXPRESS_CLIENT_PATTERN.nonEmpty) {
+      val expressCollectionCalls =
+        cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
+      for (call <- expressCollectionCalls) {
+        if (call.argument.nonEmpty) {
+          if (call.argument.isMethodRef.nonEmpty) {
+            val isValid = getCollectionMethodsCache(call, call.argument.isMethodRef.head.referencedMethod.id())
+            if (isValid) {
+              collectionMethodsCache += call.argument.isMethodRef.head.referencedMethod
+            }
           }
         }
       }
@@ -56,7 +56,6 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     //     return status;
     //   }
     // }
-    // Merging Happijs with this one only.
     // General Object with method, path & handler block
     val generalAssignmentCallsWithMethodParam =
       cpg
@@ -65,13 +64,21 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         .l
     for (call <- generalAssignmentCallsWithMethodParam) {
       if (call.astParent.isBlock) {
-        val result = getRouteAndHandlerFromBlock(call.astParent.asInstanceOf[Block], "path", "handler")
-        if (result._1.nonEmpty && result._2.nonEmpty) {
-          if (result._2.isMethodRef) {
-            val referencedMethod = result._2.referencedMethod
-            methodUrlMap.addOne(referencedMethod.id() -> result._1)
-            collectionMethodsCache += referencedMethod
-          }
+        val result = Try {
+          getRouteAndHandlerFromBlock(call.astParent.asInstanceOf[Block], "path", "handler")
+        }
+
+        result match {
+          case Success((route, handler)) =>
+            if (route.nonEmpty && handler.nonEmpty) {
+              if (handler.isMethodRef) {
+                val referencedMethod = handler.referencedMethod
+                methodUrlMap.addOne(referencedMethod.id() -> route)
+                collectionMethodsCache += referencedMethod
+              }
+            }
+          case Failure(exception) =>
+            logger.error(s"An error occurred: ${exception.getMessage}")
         }
       }
     }
@@ -95,21 +102,17 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val objectKeyValuePairs      = block.astChildren.isCall.name("<operator>.assignment").l
     var handlerMethod: MethodRef = null
     var path: String             = ""
-    if (objectKeyValuePairs.nonEmpty && objectKeyValuePairs.isInstanceOf[List[Call]]) {
-      for (keyVal <- objectKeyValuePairs) {
-        if (keyVal.astChildren.nonEmpty && keyVal.astChildren.isInstanceOf[Traversal[AstNode]]) {
-          val objKeyVal = keyVal.astChildren
-          val key       = objKeyVal.isCall
+    for (keyVal <- objectKeyValuePairs) {
+      if (keyVal.astChildren.nonEmpty) {
+        val objKeyVal = keyVal.astChildren
+        val key       = objKeyVal.isCall.head
 
-          if (key.nonEmpty) {
-            if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
-              path = key.astSiblings.head.code
-            }
-            if (key.code.contains(handlerField) && key.astSiblings.head.isMethodRef) {
-              handlerMethod = cpg.methodRef.id(key.astSiblings.head.id()).head
-            }
-          }
+        if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
+          path = key.astSiblings.head.code
+        }
 
+        if (key.code.contains(handlerField) && key.astSiblings.head.isMethodRef) {
+          handlerMethod = cpg.methodRef.id(key.astSiblings.head.id()).head
         }
       }
     }
