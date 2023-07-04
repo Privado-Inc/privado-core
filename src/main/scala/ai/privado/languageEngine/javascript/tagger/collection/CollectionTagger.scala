@@ -10,6 +10,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
@@ -27,25 +28,27 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // fastify.get('/endpoint', async (request, reply) => {
     //  return 'Hello, World!';
     // });
-    // Supported Framework: Express, Fastify, Featherjs
+    // Supported Framework: Express, Fastify, Featherjs, AdonisJS, Loopback, Restify, Connect
     // TODO: Based on below frameworks improve the logic
-    // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
-    val EXPRESS_CLIENT_PATTERN =
-      "(?:express|fetch|@feathersjs/feathers|fastify|restify|@nestjs/cli|itty-router|koa-router|@ioc[:]Adonis|@adonisjs|@sails|sails|.*loopback).*"
-    val expressCollectionCalls = cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
-    for (call <- expressCollectionCalls) {
-      if (call.argument.nonEmpty) {
-        if (call.argument.isMethodRef.nonEmpty) {
-          val isValid = getCollectionMethodsCache(call, call.argument.isMethodRef.head.referencedMethod.id())
-          if (isValid) {
-            collectionMethodsCache += call.argument.isMethodRef.head.referencedMethod
+    // TODO: Need to support more frameworks Koa, Sails
+    val EXPRESS_CLIENT_PATTERN = collectionRuleInfo.patterns.headOption.getOrElse("")
+    if (EXPRESS_CLIENT_PATTERN.nonEmpty) {
+      val expressCollectionCalls =
+        cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
+      for (call <- expressCollectionCalls) {
+        if (call.argument.nonEmpty) {
+          if (call.argument.isMethodRef.nonEmpty) {
+            val isValid = getCollectionMethodsCache(call, call.argument.isMethodRef.head.referencedMethod.id())
+            if (isValid) {
+              collectionMethodsCache += call.argument.isMethodRef.head.referencedMethod
+            }
           }
         }
       }
     }
 
     // Supporting below pattern
-    // server.route({
+    // {
     //   method: 'PUT',
     //   path: '/movies/{id}',
     //   handler: async (req, emailId) => {
@@ -53,21 +56,30 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     //     const status = await req.mongo.db.collection('movies').updateOne({ _id: ObjectID }, { $set: payload });
     //     return status;
     //   }
-    // })
-    // Supported Framework: Hapijs
-    val HAPI_CLIENT_PATTERN = "(hapi|@hapi/hapi).*(?:route)"
-    val hapiCollectionCalls = cpg.call.methodFullName(HAPI_CLIENT_PATTERN).l
-    for (call <- hapiCollectionCalls) {
-      if (call.argument.nonEmpty) {
-        if (call.argument.isBlock.nonEmpty) {
-          val result = getRouteAndHandlerFromBlock(call.argument.isBlock.head, "path", "handler")
-          if (result._1.nonEmpty && result._2.nonEmpty) {
-            if (result._2.isMethodRef) {
-              val referencedMethod = result._2.referencedMethod
-              methodUrlMap.addOne(referencedMethod.id() -> result._1)
-              collectionMethodsCache += referencedMethod
+    // }
+    // General Object with method, path & handler block
+    val generalAssignmentCallsWithMethodParam =
+      cpg
+        .call("<operator>.assignment")
+        .code("(?i).*(method|type).{0,4}[=]{1}.{0,4}(get|put|post|delete|trace|patch|option).*")
+        .l
+    for (call <- generalAssignmentCallsWithMethodParam) {
+      if (call.astParent.isBlock) {
+        val result = Try {
+          getRouteAndHandlerFromBlock(call.astParent.asInstanceOf[Block], "(url|path|uri|route)", "handler")
+        }
+
+        result match {
+          case Success((route, handler)) =>
+            if (route.nonEmpty && handler.nonEmpty) {
+              if (handler.isMethodRef) {
+                val referencedMethod = handler.referencedMethod
+                methodUrlMap.addOne(referencedMethod.id() -> route)
+                collectionMethodsCache += referencedMethod
+              }
             }
-          }
+          case Failure(exception) =>
+            logger.error(s"An error occurred: ${exception.getMessage}")
         }
       }
     }
@@ -91,12 +103,14 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val objectKeyValuePairs      = block.astChildren.isCall.name("<operator>.assignment").l
     var handlerMethod: MethodRef = null
     var path: String             = ""
+    val pathRegex: Regex         = pathField.r
+
     for (keyVal <- objectKeyValuePairs) {
       if (keyVal.astChildren.nonEmpty) {
         val objKeyVal = keyVal.astChildren
         val key       = objKeyVal.isCall.head
 
-        if (key.code.contains(pathField) && key.astSiblings.head.isLiteral) {
+        if (pathRegex.findFirstIn(key.code).isDefined && key.astSiblings.head.isLiteral) {
           path = key.astSiblings.head.code
         }
 
