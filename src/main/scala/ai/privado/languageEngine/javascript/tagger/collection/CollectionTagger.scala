@@ -32,7 +32,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // TODO: Need to support more frameworks Hapijs, Koa, Loopback, Sails, Restify, Connect, AdonisJS
     val EXPRESS_CLIENT_PATTERN =
       "(?:express|fetch|@feathersjs/feathers|fastify|restify|@nestjs/cli|itty-router|koa-router|@ioc[:]Adonis|@adonisjs|@sails|sails|.*loopback).*"
-    val expressCollectionCalls = cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
+    val expressCollectionCalls =
+      cpg.call.methodFullName(collectionRuleInfo.patterns.headOption.getOrElse(EXPRESS_CLIENT_PATTERN)).l
     for (call <- expressCollectionCalls) {
       if (call.argument.nonEmpty) {
         if (call.argument.isMethodRef.nonEmpty) {
