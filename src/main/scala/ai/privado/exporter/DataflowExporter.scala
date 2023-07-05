@@ -70,23 +70,18 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
     sinkSubCategory: String,
     ruleCache: RuleCache
   ): List[DataFlowSubCategorySinkModel] = {
-    def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String]) = {
-      val sinkIdAfterSplit = sinkId.split("#_#")
+    def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String], urls: mutable.Set[String]) = {
 
       // Special case for API type of nodes
-      val apiUrl = ruleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
-        case Some(rule) if rule.nodeType.equals(NodeType.API) & sinkIdAfterSplit.size >= 2 =>
-          sinkIdAfterSplit(1).split(",").toList
-        case _ => List[String]()
-      }
+      val apiUrl = if (urls.size > 0) urls.toList else List[String]()
 
-      val databaseDetails = ruleCache.getRuleInfo(sinkIdAfterSplit(0)) match {
+      val databaseDetails = ruleCache.getRuleInfo(sinkId) match {
         case Some(rule) =>
           DatabaseDetailsCache.getDatabaseDetails(rule.id)
         case _ => Option.empty[DatabaseDetails]
       }
 
-      val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, sinkIdAfterSplit(0))
+      val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, sinkId)
       DataFlowSubCategorySinkModel(
         sinkSubCategory,
         ruleInfo.id,
@@ -104,19 +99,21 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
     }
 
     // sinkMap will have (sinkId -> List[String]() where value are all the paths/grouping-of-path which belong to the sinkId
-    val sinkMap = mutable.HashMap[String, ListBuffer[String]]()
+    val sinkMap     = mutable.HashMap[String, ListBuffer[String]]()
+    val sinkApiUrls = mutable.HashMap[String, mutable.Set[String]]()
     sourceModelList.foreach(sourceModel => {
       var sinkId = sourceModel.sinkId
       val sinkAPITag = dataflowsMap(sourceModel.pathId).elements.last.tag
         .filter(node => node.name.equals(Constants.apiUrl + sourceModel.sinkId))
-      if (sinkAPITag.nonEmpty) {
-        sinkId += "#_#" + sinkAPITag.value.l.mkString(",")
-      }
+      if (!sinkApiUrls.contains(sinkId))
+        sinkApiUrls(sinkId) = mutable.Set()
+      for (url <- sinkAPITag)
+        sinkApiUrls(sinkId).add(url.value)
       if (!sinkMap.contains(sinkId))
         sinkMap(sinkId) = ListBuffer()
       sinkMap(sinkId).append(sourceModel.pathId)
     })
-    sinkMap.map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toList)).toList
+    sinkMap.map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toList, sinkApiUrls(entrySet._1))).toList
 
   }
 
