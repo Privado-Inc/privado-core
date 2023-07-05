@@ -113,7 +113,7 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
         sinkMap(sinkId) = ListBuffer()
       sinkMap(sinkId).append(sourceModel.pathId)
     })
-    sinkMap.map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toList, sinkApiUrls(entrySet._1))).toList
+    sinkMap.map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toSet.toList, sinkApiUrls(entrySet._1))).toList
 
   }
 
