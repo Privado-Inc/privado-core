@@ -70,10 +70,10 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
     sinkSubCategory: String,
     ruleCache: RuleCache
   ): List[DataFlowSubCategorySinkModel] = {
-    def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String], urls: mutable.Set[String]) = {
+    def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String], urls: Set[String]) = {
 
       // Special case for API type of nodes
-      val apiUrl = if (urls.size > 0) urls.toList else List[String]()
+      val apiUrl = if (urls.nonEmpty) urls.toList else List[String]()
 
       val databaseDetails = ruleCache.getRuleInfo(sinkId) match {
         case Some(rule) =>
@@ -107,14 +107,13 @@ class DataflowExporter(cpg: Cpg, dataflowsMap: Map[String, Path], taggerCache: T
         .filter(node => node.name.equals(Constants.apiUrl + sourceModel.sinkId))
       if (!sinkApiUrls.contains(sinkId))
         sinkApiUrls(sinkId) = mutable.Set()
-      for (url <- sinkAPITag)
-        sinkApiUrls(sinkId).add(url.value)
+      sinkApiUrls(sinkId).addAll(sinkAPITag.value.l)
       if (!sinkMap.contains(sinkId))
         sinkMap(sinkId) = ListBuffer()
       sinkMap(sinkId).append(sourceModel.pathId)
     })
     sinkMap
-      .map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toSet.toList, sinkApiUrls(entrySet._1)))
+      .map(entrySet => convertSink(sourceId, entrySet._1, entrySet._2.toSet.toList, sinkApiUrls(entrySet._1).toSet))
       .toList
 
   }
