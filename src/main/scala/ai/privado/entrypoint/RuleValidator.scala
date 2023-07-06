@@ -9,8 +9,6 @@ object RuleValidator extends CommandProcessor {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override var config: PrivadoInput = _
-
   override def process(): Either[String, Unit] = {
     println("Starting rule validations ...")
     validateRules() match {

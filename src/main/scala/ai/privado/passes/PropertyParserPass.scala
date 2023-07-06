@@ -8,25 +8,25 @@ import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.{File, StringReader}
 import scala.io.Source
 import java.util.Properties
-import scala.jdk.CollectionConverters._
-import io.circe.parser._
-import io.circe._
+import scala.jdk.CollectionConverters.*
+import io.circe.parser.*
+import io.circe.*
 
 import scala.collection.mutable
-import com.typesafe.config._
+import com.typesafe.config.*
 
 import scala.xml.XML
 import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
-import org.yaml.snakeyaml.Yaml
+import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
 import org.yaml.snakeyaml.constructor.SafeConstructor
@@ -175,7 +175,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     try {
       val yamlContent = better.files.File(file).contentAsString // Read the YAML file content as a string
 
-      val yaml                                = new Yaml(new SafeConstructor())
+      val yaml                                = new Yaml(new SafeConstructor(LoaderOptions()))
       val rootNode                            = yaml.compose(new StringReader(yamlContent))
       var result: List[(String, String, Int)] = List[(String, String, Int)]()
       processNode(rootNode, "")
@@ -183,7 +183,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       def processNode(node: Node, path: String): Unit = {
         node match {
           case mappingNode: MappingNode =>
-            mappingNode.getValue.asScala.foreach { nodeTuple: NodeTuple =>
+            mappingNode.getValue.asScala.foreach { (nodeTuple: NodeTuple) =>
               val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
               val valueNode = nodeTuple.getValueNode
               val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"

@@ -32,21 +32,21 @@ import java.io.File
 import scala.collection.mutable
 import scala.io.{BufferedSource, Source}
 import scala.reflect.runtime.{currentMirror, universe}
-import scala.tools.reflect.ToolBox
+import scala.tools.reflect.{FastTrack, ToolBox}
 
 abstract class ExternalScript {
   def process(cpg: Cpg, output: mutable.LinkedHashMap[String, Json]): Unit
 }
 
 case class LoadExternalScript(filePath: String) {
-  val toolbox: ToolBox[universe.type] = currentMirror.mkToolBox()
+  val toolbox: ToolBox[universe.type] = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
   val sourceFile: BufferedSource      = Source.fromFile(filePath)
   private val fileContents =
     try sourceFile.getLines().mkString("\n")
     finally sourceFile.close()
 
   // The below package import should be similar to the pacakage where ExternalScript abstract case is present
-  private val tree         = toolbox.parse(s"import ai.privado.script._;\n$fileContents")
+  private val tree         = toolbox.parse(s"import ai.privado.script.*;\n$fileContents")
   private val compiledCode = toolbox.compile(tree)
 
   def getFileReference: ExternalScript = compiledCode().asInstanceOf[ExternalScript]
