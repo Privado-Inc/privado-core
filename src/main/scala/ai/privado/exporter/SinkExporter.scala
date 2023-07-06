@@ -142,8 +142,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
                   .toArray
               }
               apiurls
-            } else
-              Array[String]()
+            } else Array[String]()
           }
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
           Some(
