@@ -1,10 +1,11 @@
 package ai.privado.audit
 
+import ai.privado.audit.DependencyReport.getClass
 import ai.privado.languageEngine.java.cache.DependencyModuleCache
 import ai.privado.languageEngine.java.cache.DependencyModuleCache.RuleCategoryInfo
 import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
+import io.shiftleft.codepropertygraph.generated.nodes.{Dependency, ModuleDependency}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
