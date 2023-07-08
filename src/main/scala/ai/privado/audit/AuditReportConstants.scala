@@ -110,5 +110,5 @@ object AuditReportConstants {
   val JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX =
     ".*(types|dto(s)?|data|constants|components|model(s)?).*|.*(types.ts|constants.ts|models.ts)"
 
-  val JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX = ".*__ecma\\.String.*"
+  val JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX = ".*__ecma\\.(String|Number|Boolean|Object).*"
 }

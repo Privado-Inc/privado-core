@@ -422,6 +422,7 @@ object DataElementDiscoveryJS {
     workbookResult += List(
       AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
       AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
+      AuditReportConstants.FILE_PRIORITY_SCORE,
       AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
       AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
       AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
