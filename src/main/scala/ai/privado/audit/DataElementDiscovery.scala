@@ -373,14 +373,7 @@ object DataElementDiscoveryJS {
       case Success(cpg) => {
         val typeDeclList = cpg.typeDecl
           .filter(_.order > 0)
-          .where(_.fullName(AuditReportConstants.JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX))
           .toList
-          .concat(
-            cpg.typeDecl
-              .filter(_.order > 0)
-              .where(_.fullName(AuditReportConstants.JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX))
-              .toList
-          )
 
         typeDeclList.foreach(node => {
           if (node.fullName.nonEmpty) {
