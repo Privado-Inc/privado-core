@@ -106,4 +106,9 @@ object AuditReportConstants {
   val DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME = "Code Snippet"
 
   val AUDIT_SOURCE_FILE_NAME = "audit-sources.json"
+
+  val JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX =
+    ".*(types|dto(s)?|data|constants|components|model(s)?).*|.*(types.ts|constants.ts|models.ts)"
+
+  val JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX = ".*__ecma\\.(String|Number|Boolean|Object).*"
 }

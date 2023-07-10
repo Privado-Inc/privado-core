@@ -1,12 +1,14 @@
 package ai.privado.audit
 
+import ai.privado.audit.DataElementDiscovery.{getClass, getFileScore, getSourceUsingRules}
 import ai.privado.cache.TaggerCache
+import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import ai.privado.dataflow.{Dataflow}
+import ai.privado.dataflow.Dataflow
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -359,4 +361,133 @@ object DataElementDiscovery {
   }
 
   case class CollectionMethodInfo(var methodDetail: String, var endpoint: String)
+
+}
+
+object DataElementDiscoveryJS {
+  private val logger = LoggerFactory.getLogger(getClass)
+  def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
+    logger.info("Process Class Name from cpg")
+    val classNameList = ListBuffer[String]()
+    xtocpg match {
+      case Success(cpg) => {
+        val typeDeclList = cpg.typeDecl
+          .filter(_.order > 0)
+          .where(_.fullName(AuditReportConstants.JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX))
+          .toList
+          .concat(
+            cpg.typeDecl
+              .filter(_.order > 0)
+              .where(_.fullName(AuditReportConstants.JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX))
+              .toList
+          )
+
+        typeDeclList.foreach(node => {
+          if (node.fullName.nonEmpty) {
+            classNameList += node.fullName
+          }
+        })
+      }
+      case Failure(exception) => {
+        println("Failed to process class name from cpg")
+        logger.debug("Failed to process class name from cpg", exception)
+        println(exception.printStackTrace())
+      }
+    }
+    logger.info("Successfully Processed Class Name from cpg")
+    classNameList.toList
+  }
+
+  def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
+    val classNameRuleList   = getSourceUsingRules(xtocpg)
+    val memberInfo          = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
+    val workbookResult      = new ListBuffer[List[String]]()
+    val typeDeclMemberCache = taggerCache.typeDeclMemberCache
+
+    // Stores ClassName --> (MemberName --> SourceRuleID)
+    val taggedMemberInfo = mutable.HashMap[String, mutable.HashMap[String, String]]()
+
+    // Reverse the mapping to MemberName --> sourceRuleId
+    typeDeclMemberCache.foreach { case (key, value) =>
+      val reverseMap = mutable.HashMap[String, String]()
+      value.foreach { case (ruleName, memberSet) =>
+        memberSet.foreach(member => {
+          reverseMap.put(member.name, ruleName)
+        })
+      }
+      taggedMemberInfo.put(key, reverseMap)
+    }
+
+    // Header List
+    workbookResult += List(
+      AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
+      AuditReportConstants.FILE_PRIORITY_SCORE,
+      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
+      AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
+      AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+    )
+
+    // Construct the excel sheet and fill the data
+    try {
+      memberInfo.foreach {
+        case (key, value) => {
+          if (taggedMemberInfo.contains(key.fullName)) {
+            workbookResult += List(
+              key.name,
+              key.file.head.name,
+              getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+              AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+              AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+              AuditReportConstants.AUDIT_CHECKED_VALUE,
+              AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+              AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+              AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+              AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            )
+            val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
+            value.foreach(member => {
+              if (ruleMemberInfo.contains(member.name)) {
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  member.name,
+                  member.typeFullName,
+                  AuditReportConstants.AUDIT_CHECKED_VALUE,
+                  ruleMemberInfo.getOrElse(member.name, "Default value"),
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                )
+              } else {
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  member.name,
+                  member.typeFullName,
+                  AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                )
+              }
+            })
+          }
+        }
+      }
+      logger.info("Shutting down audit engine")
+    } catch {
+      case ex: Exception =>
+        println("Failed to process Data Element Discovery report")
+        logger.debug("Failed to process Data Element Discovery report", ex)
+    }
+    workbookResult.toList
+  }
 }

@@ -38,21 +38,21 @@ object AuditReportEntryPoint {
   def createDataElementDiscoveryJson(dataElementDiscoveryData: List[List[String]], repoPath: String) = {
 
     val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
+
     for (item <- dataElementDiscoveryData.drop(1)) {
       auditDataList += DataElementDiscoveryAudit(
         eliminateEmptyCellValueIfExist(item(0)),
         eliminateEmptyCellValueIfExist(item(1)),
-        item(2).toDouble,
+        if (item(2) == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) 0.0 else item(2).toDouble,
         eliminateEmptyCellValueIfExist(item(3)),
         eliminateEmptyCellValueIfExist(item(4)),
         if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(6)),
         if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(8)),
-        eliminateEmptyCellValueIfExist(item(9))
+        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
       )
     }
-
     JSONExporter.dataElementDiscoveryAuditFileExport(
       AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
       repoPath,
@@ -96,12 +96,28 @@ object AuditReportEntryPoint {
     workbook
   }
 
-  // Audit report generation for Python and javaScript
-  def getAuditWorkbook(): Workbook = {
+  def getAuditWorkbookPy(): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
+    createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
+    workbook
+  }
+  // Audit report generation for Python and javaScript
+  def getAuditWorkbookJS(xtocpg: Try[Cpg], taggerCache: TaggerCache, repoPath: String): Workbook = {
+    val workbook: Workbook       = new XSSFWorkbook()
+    val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
 
+    createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
+    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
+    // Changed Background colour when tagged
+    changeTaggedBackgroundColour(workbook, List(4, 6))
     // Set Data Flow report into Sheet
     createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
+    // Set Unresolved flow into Sheet
+    createSheet(
+      workbook,
+      AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
+      UnresolvedFlowReport.processUnresolvedFlow()
+    )
 
     workbook
   }
