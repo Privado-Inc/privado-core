@@ -114,7 +114,7 @@ object AuditReportConstants {
   val JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX = ".*__ecma\\.(String|Number|Boolean|Object).*"
 
   val JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX =
-    "(?i)(this|request|response|req|error|req|res|state|e|i|formik)|param.*"
+    "(?i)(this|request|response|req|error|req|res|state|e|i|formik)|param.*|_tmp.*"
 
   val JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX = ".*(?i)(anonymous|props|response|request).*"
 }
