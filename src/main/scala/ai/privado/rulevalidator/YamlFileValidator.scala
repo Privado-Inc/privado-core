@@ -73,11 +73,11 @@ object YamlFileValidator {
           .extension(toLowerCase = true)
           .toString
           .contains(".yaml")
-          ||
-            subDir
-              .extension(toLowerCase = true)
-              .toString
-              .contains(".yml")
+        ||
+        subDir
+          .extension(toLowerCase = true)
+          .toString
+          .contains(".yml")
       )
       .flatMap(ruleFile => {
         validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {

@@ -80,8 +80,7 @@ trait SemanticGenerator {
     if (semantic.signature.nonEmpty) {
       val generatedSemantic = "\"" + semantic.signature.trim + "\" " + semantic.flow
       Some(generatedSemantic.trim)
-    } else
-      None
+    } else None
   }
 
   /** Takes sequence of semantic as input and returns the unique semantic by signature which have the longest flow

@@ -122,8 +122,7 @@ object ExporterUtility {
                 currentNodeModel
             }
         }
-      } else
-        currentNodeModel
+      } else currentNodeModel
     }
   }
 
@@ -168,8 +167,7 @@ object ExporterUtility {
       }
     }
 
-    if (fileName.equals(Constants.EMPTY) || sample.equals(Constants.EMPTY))
-      None
+    if (fileName.equals(Constants.EMPTY) || sample.equals(Constants.EMPTY)) None
     else {
       val message = {
         if (Iterator(node).isCall.nonEmpty) {

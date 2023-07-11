@@ -70,13 +70,11 @@ class Dataflow(cpg: Cpg) {
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
 
-    if (sources.isEmpty || sinks.isEmpty)
-      Map[String, Path]()
+    if (sources.isEmpty || sinks.isEmpty) Map[String, Path]()
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
       val dataflowPathsUnfiltered = {
-        if (privadoScanConfig.disable2ndLevelClosure)
-          sinks.reachableByFlows(sources).l
+        if (privadoScanConfig.disable2ndLevelClosure) sinks.reachableByFlows(sources).l
         else {
           val firstLevelSources =
             sources.or(

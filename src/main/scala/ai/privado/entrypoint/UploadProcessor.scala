@@ -50,5 +50,4 @@ object UploadProcessor extends CommandProcessor {
         Left("Output file does not exist.")
     }
   }
-  override var config: PrivadoInput = _
 }

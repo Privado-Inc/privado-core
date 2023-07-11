@@ -166,8 +166,7 @@ object Utilities {
             }
           }
           .mkString("\n")
-      } else
-        ""
+      } else ""
     } catch {
       case e: Exception =>
         logger.debug("Error : ", e)
