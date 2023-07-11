@@ -255,7 +255,7 @@ object CommandParser {
             println(OParser.usage(parser))
             exit(1)
         }
-        commandProcessor.config = config
+        commandProcessor.withConfig(config)
         Some(commandProcessor)
       case _ =>
         println(OParser.usage(parser))

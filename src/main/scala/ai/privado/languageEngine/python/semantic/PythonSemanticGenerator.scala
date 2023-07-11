@@ -68,8 +68,7 @@ object PythonSemanticGenerator extends SemanticGenerator {
             arg.order - 1
         }
         Some(index.toString + s"${Constants.semanticDelimeter}\"${arg.argumentName.get}\"")
-      } else
-        None
+      } else None
     }.l
     val parameterSemantic = mutable.HashSet[String]()
 

@@ -68,8 +68,7 @@ object APITaggerUtility {
         val apiNode     = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id
-        if (ruleInfo.id.equals(Constants.internalAPIRuleId))
-          addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, apiNode, ruleInfo, ruleCache)
         else {
           val domain = getDomainFromString(literalCode)
           newRuleIdToUse = ruleInfo.id + "." + domain
