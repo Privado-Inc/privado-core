@@ -121,7 +121,7 @@ object PythonProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(),
+              AuditReportEntryPoint.getAuditWorkbookPy(),
               sourceRepoLocation
             ) match {
               case Left(err) =>
