@@ -23,11 +23,13 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.languageEngine.ruby.semantic.Language._
+import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
+import ai.privado.languageEngine.ruby.cache.PackageTable
+import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -61,6 +63,12 @@ object RubyProcessor {
         logger.info("Applying default overlays")
         logger.info("Enhancing Ruby graph")
         logger.debug("Running custom passes")
+
+        if (config.skipDownloadDependencies) {
+          val packageTable = new PackageTable()
+          println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
+          ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation, packageTable)
+        }
 
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
