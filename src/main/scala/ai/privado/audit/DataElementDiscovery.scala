@@ -2,10 +2,9 @@ package ai.privado.audit
 
 import ai.privado.audit.DataElementDiscovery.{CollectionMethodInfo, getClass, getFileScore, getSourceUsingRules, logger}
 import ai.privado.cache.TaggerCache
-import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForModule}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Member, MethodParameterIn, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{File, Identifier, Local, Member, MethodParameterIn, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import ai.privado.dataflow.Dataflow
@@ -429,15 +428,39 @@ object DataElementDiscoveryJS {
     methodParameterMap.toMap
   }
 
+  def getIdentifiers(xtocpg: Try[Cpg]): List[Identifier] = {
+    xtocpg match {
+      case Success(cpg) => {
+        cpg.identifier.l
+      }
+      case Failure(ex) => {
+        ex.printStackTrace()
+        List[Identifier]()
+      }
+    }
+  }
+
+  def getLocals(xtocpg: Try[Cpg]): List[Local] = {
+    xtocpg match {
+      case Success(cpg) => {
+        cpg.local.l
+      }
+      case Failure(ex) => {
+        ex.printStackTrace()
+        List[Local]()
+      }
+    }
+  }
+
   def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
-    val classNameRuleList   = getSourceUsingRules(xtocpg)
-    val memberInfo          = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
-    val workbookResult      = new ListBuffer[List[String]]()
-    val typeDeclMemberCache = taggerCache.typeDeclMemberCache
-
+    val classNameRuleList         = getSourceUsingRules(xtocpg)
+    val memberInfo                = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
+    val workbookResult            = new ListBuffer[List[String]]()
+    val typeDeclMemberCache       = taggerCache.typeDeclMemberCache
     val methodParametersFromTypes = getMethodParametersFromTypes(xtocpg, classNameRuleList.toSet)
-
-    val elementInfo = mutable.HashMap[TypeDecl, ListBuffer[Any]]()
+    val identifiers               = getIdentifiers(xtocpg)
+    val locals                    = getLocals(xtocpg)
+    val elementInfo               = mutable.HashMap[TypeDecl, ListBuffer[Any]]()
 
     methodParametersFromTypes.foreach {
       case (typeDecl, paramList) => {
@@ -585,11 +608,53 @@ object DataElementDiscoveryJS {
         }
       }
 
+      identifiers.foreach(identifier => {
+        if (
+          identifier.name.nonEmpty && !identifier.name
+            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
+          && !identifier.name
+            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+        )
+          workbookResult += List(
+            identifier.typeFullName,
+            identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
+            getFileScore(identifier.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            identifier.name,
+            identifier.typeFullName,
+            AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+          )
+      })
+
+      locals.foreach(local => {
+        if (
+          local.name.nonEmpty && !local.name
+            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
+            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+        )
+          workbookResult += List(
+            local.typeFullName,
+            local.file.head.name,
+            getFileScore(local.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            local.name,
+            local.typeFullName,
+            AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+          )
+      })
+
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
         println("Failed to process Data Element Discovery report")
         logger.debug("Failed to process Data Element Discovery report", ex)
+        ex.printStackTrace()
     }
     workbookResult.toList
   }

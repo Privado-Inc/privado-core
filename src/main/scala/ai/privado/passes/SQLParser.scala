@@ -26,7 +26,7 @@ package ai.privado.passes
 import ai.privado.cache.RuleCache
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{SQLParser, Utilities}
+import ai.privado.utility.{SQLParser => UtilitySQLParser, Utilities}
 import better.files._
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -80,7 +80,7 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
         val query           = queryWthLine._1
         val queryLineNumber = queryWthLine._2
         try {
-          SQLParser.parseSqlQuery(query) match {
+          UtilitySQLParser.parseSqlQuery(query) match {
             case Some(parsedQueryList) =>
               parsedQueryList.zipWithIndex.foreach { case (parsedQueryItem: SQLQuery, queryOrder) =>
                 buildAndReturnIndividualQueryNode(

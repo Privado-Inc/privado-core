@@ -161,8 +161,7 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
             .getOrElse(feignFlows.head.elements.head.code.split(" ").last)
       }
       (cpg.typeDecl.name(firstArgument).l, apiLiteral)
-    } else
-      (List[TypeDecl](), "")
+    } else (List[TypeDecl](), "")
   }
 
   /** Tag all the feign api calls which have some url like thing associated with them

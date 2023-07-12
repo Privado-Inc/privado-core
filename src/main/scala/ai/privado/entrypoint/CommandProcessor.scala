@@ -23,6 +23,13 @@
 package ai.privado.entrypoint
 
 trait CommandProcessor {
-  var config: PrivadoInput
+
+  var config: PrivadoInput = null
+
+  def withConfig(value: PrivadoInput): CommandProcessor = {
+    this.config = value
+    this
+  }
+
   def process(): Either[String, Unit]
 }

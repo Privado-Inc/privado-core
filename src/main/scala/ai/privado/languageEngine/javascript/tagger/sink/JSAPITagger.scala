@@ -41,8 +41,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
     scriptTags.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
-      if (ruleInfo.id.equals(Constants.internalAPIRuleId))
-        addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
+      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
       else {
         newRuleIdToUse = ruleInfo.id + "." + domain._2
         ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
@@ -77,8 +76,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(link.code)
       val callTag        = link.astParent
-      if (ruleInfo.id.equals(Constants.internalAPIRuleId))
-        addRuleTags(builder, callTag, ruleInfo, ruleCache)
+      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, callTag, ruleInfo, ruleCache)
       else {
         newRuleIdToUse = ruleInfo.id + "." + domain._2
         ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))

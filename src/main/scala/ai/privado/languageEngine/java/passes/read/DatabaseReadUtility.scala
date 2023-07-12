@@ -77,8 +77,7 @@ object DatabaseReadUtility {
             .l
         } else
           List()
-      } else
-        List(node)
+      } else List(node)
     }
 
     val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
