@@ -9,14 +9,13 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-
 abstract class ExternalDependenciesDownloadTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg: Cpg = _
   val rubyFileContentMap: Map[String, String]
   var inputDir: File = _
-  var output: File = _
-  val ruleCache = new RuleCache()
+  var output: File   = _
+  val ruleCache      = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -25,7 +24,7 @@ abstract class ExternalDependenciesDownloadTestBase extends AnyWordSpec with Mat
     }
     output = File.newTemporaryDirectory()
 
-    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(output.pathAsString)
+    val config  = Config().withInputPath(inputDir.pathAsString).withOutputPath(output.pathAsString)
     val rubySrc = new RubySrc2Cpg()
     val xtocpg = rubySrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)

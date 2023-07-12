@@ -33,7 +33,7 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
   "Ruby External Dependency Download" should {
     "Test dependency download" in {
       val packageTable = new PackageTable()
-      val packageUsed = List("dummy_logger")
+      val packageUsed  = List("dummy_logger")
 
       ExternalDependenciesResolver.downloadDependencies(cpg, inputDir.pathAsString, packageTable)
 
@@ -41,9 +41,15 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
       packageTable.containsModule("dummy_logger") shouldBe true
 
       // should have methodName
-      packageTable.getMethodFullNameUsingName(packageUsed, "third_fun").get should equal("dummy_logger::program:Main_module:Main_outer_class:third_fun")
-      packageTable.getMethodFullNameUsingName(packageUsed, "first_fun").get should equal("dummy_logger::program:Main_module:Main_outer_class:first_fun")
-      packageTable.getMethodFullNameUsingName(packageUsed, "help_print").get should equal("dummy_logger::program:Help:help_print")
+      packageTable.getMethodFullNameUsingName(packageUsed, "third_fun").get should equal(
+        "dummy_logger::program:Main_module:Main_outer_class:third_fun"
+      )
+      packageTable.getMethodFullNameUsingName(packageUsed, "first_fun").get should equal(
+        "dummy_logger::program:Main_module:Main_outer_class:first_fun"
+      )
+      packageTable.getMethodFullNameUsingName(packageUsed, "help_print").get should equal(
+        "dummy_logger::program:Help:help_print"
+      )
     }
   }
 }
