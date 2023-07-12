@@ -38,4 +38,8 @@ class PackageTable() {
     })
     finalMethodName.headOption
   }
+
+  def containsModule(moduleName: String): Boolean = {
+    methodTableMap.containsKey(moduleName)
+  }
 }
