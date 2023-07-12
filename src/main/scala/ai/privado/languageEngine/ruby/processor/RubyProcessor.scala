@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.languageEngine.ruby.semantic.Language.*
+import ai.privado.languageEngine.ruby.semantic.Language._
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
