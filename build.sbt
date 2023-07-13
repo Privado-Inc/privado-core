@@ -7,7 +7,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 
 val cpgVersion        = "1.4.8"
 val joernVersion      = "2.0.13"
-val overflowdbVersion = "1.179"
+val overflowdbVersion = "1.180"
 
 //External dependency versions
 val circeVersion   = "0.14.2"
