@@ -64,10 +64,9 @@ object RubyProcessor {
         logger.info("Enhancing Ruby graph")
         logger.debug("Running custom passes")
 
-        if (config.skipDownloadDependencies) {
-          val packageTable = new PackageTable()
+        if (!config.skipDownloadDependencies) {
           println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
-          ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation, packageTable)
+          val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
         }
 
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()

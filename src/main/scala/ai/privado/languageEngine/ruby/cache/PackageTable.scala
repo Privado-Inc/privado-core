@@ -16,7 +16,7 @@ class PackageTable() {
 
   def addPackageMethod(moduleName: String, methodName: String, parentClassPath: String, classType: String): Unit = {
     val packageMethod =
-      MethodTableModel(methodName, parentClassPath, classType, s"$moduleName::program:${parentClassPath}:$methodName")
+      MethodTableModel(methodName, parentClassPath, classType, s"$moduleName::program.${parentClassPath}.$methodName")
     val moduleMethodSet = methodTableMap.synchronized {
       methodTableMap.computeIfAbsent(moduleName, _ => mutable.HashSet.empty[MethodTableModel])
     }
@@ -36,6 +36,7 @@ class PackageTable() {
           })
       }
     })
+    // TODO: handle if list contains more than one method
     finalMethodName.headOption
   }
 

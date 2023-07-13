@@ -59,7 +59,8 @@ object ExternalDependenciesResolver {
     }
   }
 
-  def downloadDependencies(cpg: Cpg, inputPath: String, packageTable: PackageTable): Unit = {
+  def downloadDependencies(cpg: Cpg, inputPath: String): PackageTable = {
+    val packageTable = new PackageTable()
     if (File(s"${inputPath}${java.io.File.separator}Gemfile").exists) {
       val dependenciesList = fetchDependencyList(inputPath)
       if (checkDownloadPrerequisite()) {
@@ -79,6 +80,7 @@ object ExternalDependenciesResolver {
         }
       }
     }
+    packageTable
   }
 
   private def checkDownloadPrerequisite(): Boolean = {
