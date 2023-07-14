@@ -52,7 +52,8 @@ libraryDependencies ++= Seq(
   "org.yaml"                         % "snakeyaml"               % "1.33",
   "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
   "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
-  "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config")
+  "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config"),
+  "org.jruby"                        % "jruby-base"              % "9.4.3.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
