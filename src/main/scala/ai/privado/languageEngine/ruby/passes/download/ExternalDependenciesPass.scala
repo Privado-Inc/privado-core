@@ -1,8 +1,8 @@
 package ai.privado.languageEngine.ruby.passes.download
 
-import ai.privado.languageEngine.ruby.cache.PackageTable
 import ai.privado.languageEngine.ruby.download.JRubyBasedParser
 import better.files.File
+import io.joern.rubysrc2cpg.utils.PackageTable
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.jruby.Ruby

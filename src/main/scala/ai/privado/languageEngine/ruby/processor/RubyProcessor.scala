@@ -23,26 +23,26 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.languageEngine.ruby.semantic.Language._
+import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
-import ai.privado.languageEngine.ruby.cache.PackageTable
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
-import ai.privado.semantic.Language._
+import ai.privado.semantic.Language.*
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
 import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import better.files.File
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
+import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import java.util.Calendar
@@ -61,14 +61,19 @@ object RubyProcessor {
     xtocpg match {
       case Success(cpg) =>
         logger.info("Applying default overlays")
-        logger.info("Enhancing Ruby graph")
-        logger.debug("Running custom passes")
+        X2Cpg.applyDefaultOverlays(cpg)
 
+        logger.info("Enhancing Ruby graph")
         if (!config.skipDownloadDependencies) {
           println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
           val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
+          RubySrc2Cpg.packageTableInfo.set(packageTable)
         }
 
+        logger.info("Enhancing Ruby graph by post processing pass")
+        RubySrc2Cpg.postProcessingPasses(cpg)
+
+        logger.debug("Running custom passes")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         /*
