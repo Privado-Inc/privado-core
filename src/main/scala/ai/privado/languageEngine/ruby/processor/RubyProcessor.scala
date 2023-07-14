@@ -28,6 +28,7 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
+import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
@@ -41,9 +42,11 @@ import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -72,6 +75,12 @@ object RubyProcessor {
 
         logger.info("Enhancing Ruby graph by post processing pass")
         RubySrc2Cpg.postProcessingPasses(cpg)
+
+        logger.info("Applying data flow overlay")
+        val context = new LayerCreatorContext(cpg)
+        val options = new OssDataFlowOptions()
+        new OssDataFlow(options).run(context)
+        logger.info("=====================")
 
         logger.debug("Running custom passes")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
