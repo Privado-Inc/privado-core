@@ -3,7 +3,7 @@ package ai.privado.exporter
 import ai.privado.cache.RuleCache
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
-import ai.privado.utility.Utilities.{getAllFilesRecursively, isPrivacySink}
+import ai.privado.utility.Utilities.{getAllFilesRecursively, getAllFilesRecursivelyWithoutExtension, isPrivacySink}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
@@ -19,9 +19,12 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
     val lang         = MetricHandler.metricsData("language")
     val isPython     = lang.toString().contains(Languages.PYTHONSRC)
     val isJavascript = lang.toString().contains(Languages.JSSRC)
+    val isRuby       = lang.toString().contains(Languages.RUBYSRC)
 
     if (isJavascript) {
       getProbableSinkForJavascript(repoPath)
+    } else if (isRuby) {
+      getProbableSinkForRuby(repoPath)
     } else {
       getProbableSinkBasedOnTaggedMethods(isPython)
     }
@@ -43,6 +46,26 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
     }
     uniqueDeps.toList
       .filter((str) => isPrivacySink(str, ruleCache))
+  }
+
+  def getProbableSinkForRuby(repoPath: String): List[String] = {
+    // Set up a set to hold the unique dependencies
+    val gemFilePaths =
+      getAllFilesRecursivelyWithoutExtension(repoPath, "Gemfile")
+        .getOrElse(List.empty)
+        .filter(_.endsWith("Gemfile"))
+    val uniqueDependencies = gemFilePaths.flatMap(parseGemfileDependencies).toSet.toList
+    uniqueDependencies.filter(isPrivacySink(_, ruleCache))
+  }
+
+  def parseGemfileDependencies(filePath: String): List[String] = {
+    val gemfileLines = scala.io.Source.fromFile(filePath).getLines().toList
+    val gemLines     = gemfileLines.filter(_.startsWith("gem"))
+
+    gemLines.flatMap { line =>
+      val gemName = line.stripPrefix("gem").trim().split(",").headOption.map(_.trim())
+      gemName.map(_.stripPrefix("'").stripSuffix("'").stripPrefix("\"").stripSuffix("\""))
+    }
   }
 
   def getProbableSinkBasedOnTaggedMethods(isPython: Boolean): List[String] = {
