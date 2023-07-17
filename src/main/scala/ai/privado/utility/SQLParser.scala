@@ -134,7 +134,7 @@ object SQLParser {
   }
 
   def getColumns(plainSelect: PlainSelect): List[SQLColumn] = {
-    plainSelect.getSelectItems.asScala.flatMap { item: SelectItem =>
+    plainSelect.getSelectItems.asScala.flatMap { (item: SelectItem) =>
       item.toString match {
         case f: String if f.contains("(") =>
           val function = CCJSqlParserUtil.parseExpression(f).asInstanceOf[Function]
