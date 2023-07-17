@@ -28,6 +28,7 @@ import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model._
 import better.files.File
+//import java.io.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -254,6 +255,37 @@ object Utilities {
         None
     }
 
+  }
+
+  /** Returns all files matching the fileName
+   *
+   * @param folderPath
+   * @param fileName
+   * @return
+   */
+  def getAllFilesRecursivelyWithoutExtension(
+                              folderPath: String,
+                              fileName: String
+                            ): Option[List[String]] = {
+    try {
+      val dir = File(folderPath)
+      if (dir.isDirectory) {
+        val matchingFiles = dir.glob(s"**/$fileName").toList.map(_.pathAsString)
+        val subdirectoryFiles = dir.listRecursively
+          .filter(_.isDirectory)
+          .flatMap(subdir => subdir.glob(fileName).toList.map(_.pathAsString))
+          .toList
+        val topLevelFile = dir / fileName
+        val topLevelFilePath = if (topLevelFile.exists && topLevelFile.isRegularFile) Some(topLevelFile.pathAsString) else None
+        Some(matchingFiles ++ topLevelFilePath ++ subdirectoryFiles)
+      } else {
+        None
+      }
+    } catch {
+      case e: Exception =>
+        logger.debug("Exception ", e)
+        None
+    }
   }
 
   /** Returns the SHA256 hash for a given string.
