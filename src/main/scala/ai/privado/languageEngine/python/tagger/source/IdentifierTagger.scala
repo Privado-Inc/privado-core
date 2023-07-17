@@ -136,7 +136,10 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
             // typeFullName: models.py:<module>.Profile.Profile<body>
             // typeDeclVal: models.py:<module>.Profile
             val impactedObjects = cpg.identifier
-              .or(_.where(_.typeFullName(".*" + typeDeclVal + ".*")), _.filter(_.dynamicTypeHintFullName.exists(_.matches(".*" + typeDeclVal + ".*"))))
+              .or(
+                _.where(_.typeFullName(".*" + typeDeclVal + ".*")),
+                _.filter(_.dynamicTypeHintFullName.exists(_.matches(".*" + typeDeclVal + ".*")))
+              )
               .whereNot(_.astSiblings.isImport)
               .whereNot(_.astSiblings.isCall.name("import"))
               .whereNot(_.method.name(".*<meta.*>$"))
