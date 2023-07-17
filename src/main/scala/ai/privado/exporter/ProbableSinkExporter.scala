@@ -60,7 +60,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
 
   def parseGemfileDependencies(filePath: String): List[String] = {
     val gemfileLines = scala.io.Source.fromFile(filePath).getLines().toList
-    val gemLines = gemfileLines.filter(_.startsWith("gem"))
+    val gemLines     = gemfileLines.filter(_.startsWith("gem"))
 
     gemLines.flatMap { line =>
       val gemName = line.stripPrefix("gem").trim().split(",").headOption.map(_.trim())

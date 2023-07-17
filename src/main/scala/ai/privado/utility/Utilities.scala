@@ -258,15 +258,12 @@ object Utilities {
   }
 
   /** Returns all files matching the fileName
-   *
-   * @param folderPath
-   * @param fileName
-   * @return
-   */
-  def getAllFilesRecursivelyWithoutExtension(
-                              folderPath: String,
-                              fileName: String
-                            ): Option[List[String]] = {
+    *
+    * @param folderPath
+    * @param fileName
+    * @return
+    */
+  def getAllFilesRecursivelyWithoutExtension(folderPath: String, fileName: String): Option[List[String]] = {
     try {
       val dir = File(folderPath)
       if (dir.isDirectory) {
@@ -276,7 +273,8 @@ object Utilities {
           .flatMap(subdir => subdir.glob(fileName).toList.map(_.pathAsString))
           .toList
         val topLevelFile = dir / fileName
-        val topLevelFilePath = if (topLevelFile.exists && topLevelFile.isRegularFile) Some(topLevelFile.pathAsString) else None
+        val topLevelFilePath =
+          if (topLevelFile.exists && topLevelFile.isRegularFile) Some(topLevelFile.pathAsString) else None
         Some(matchingFiles ++ topLevelFilePath ++ subdirectoryFiles)
       } else {
         None
