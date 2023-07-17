@@ -30,11 +30,12 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.ruby.cache.PackageTable
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
+import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.semantic.Language._
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.model.Language
 import ai.privado.passes.SQLParser
 import ai.privado.utility.Utilities.createCpgFolder
@@ -69,6 +70,8 @@ object RubyProcessor {
           val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
         }
 
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
+        new RubyPropertyLinkerPass(cpg).createAndApply()
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         /*
