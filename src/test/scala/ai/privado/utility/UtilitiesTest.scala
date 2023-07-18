@@ -23,11 +23,15 @@
 
 package ai.privado.utility
 
+import ai.privado.utility.Utilities.getAllFilesRecursivelyWithoutExtension
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import better.files.File
+import scala.collection.mutable
 
 class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+  private val inputDirs = mutable.ArrayBuffer.empty[File]
 
   "getDomainFromTemplates test" should {
     "domain extratcion sample one" in {
@@ -79,5 +83,36 @@ class UtilitiesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       domain._2 shouldBe "unknown-domain"
       domain._1 shouldBe "unknown-domain"
     }
+  }
+
+  "getAllFilesRecursivelyWithoutExtension" should {
+    "return the list of files recursively without extension" in {
+      val testFolderPath = getDirectoryPath("--", "Gemfile")
+      val expectedFiles  = List(s"$testFolderPath/Gemfile")
+
+      val result = getAllFilesRecursivelyWithoutExtension(testFolderPath, "Gemfile")
+      result shouldBe Some(expectedFiles)
+    }
+
+    "return None when the folder path is invalid" in {
+      val invalidFolderPath = "path/to/invalid/folder"
+
+      val result = getAllFilesRecursivelyWithoutExtension(invalidFolderPath, "Gemfile")
+      result shouldBe None
+    }
+
+    "return an empty list when no files are found" in {
+      val emptyFolderPath = getDirectoryPath("--", "package.json")
+
+      val result = getAllFilesRecursivelyWithoutExtension(emptyFolderPath, "Gemfile")
+      result shouldBe Some(List.empty)
+    }
+  }
+
+  def getDirectoryPath(code: String, fileName: String): String = {
+    val inputDir = File.newTemporaryDirectory()
+    inputDirs.addOne(inputDir)
+    (inputDir / fileName).write(code)
+    inputDir.toString()
   }
 }
