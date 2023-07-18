@@ -25,7 +25,7 @@ package ai.privado.languageEngine.ruby.tagger
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.TimeMetric
-import ai.privado.languageEngine.ruby.tagger.sink.RegularSinkTagger
+import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.languageEngine.ruby.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
@@ -46,6 +46,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierTagger(cpg, ruleCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new APITagger(cpg, ruleCache).createAndApply()
     logger.info("Done with tagging")
     cpg.tag
   }
