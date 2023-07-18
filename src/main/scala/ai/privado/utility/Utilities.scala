@@ -22,12 +22,13 @@
 
 package ai.privado.utility
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model._
+import ai.privado.model.*
 import better.files.File
+import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
@@ -457,5 +458,39 @@ object Utilities {
     else if (url.matches(cloudDomainRegex)) Priority.HIGH
     else if (url.matches(ipPortRegex)) Priority.MEDIUM
     else Priority.LOW
+  }
+
+  def addDatabaseDetailsMultiple(
+    rules: List[(String, String)],
+    dbUrl: JavaProperty,
+    dbName: String,
+    dbLocation: String,
+    dbVendor: String
+  ): Unit = {
+    rules.foreach(rule => {
+      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+        if (
+          databaseURLPriority(
+            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
+            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
+          ) < databaseURLPriority(
+            dbUrl.value,
+            dbUrl.sourceFileOut.head.name
+          ) // Compare the priority of the database url with already present url in the database cache
+        ) {
+
+          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
+          DatabaseDetailsCache.addDatabaseDetails(
+            DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
+            rule._2
+          ) // Remove if current url has higher priority
+        }
+      } else {
+        DatabaseDetailsCache.addDatabaseDetails(
+          DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
+          rule._2
+        )
+      }
+    })
   }
 }

@@ -28,47 +28,13 @@ import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.DatabaseDetails
 import ai.privado.tagger.PrivadoSimpleCpgPass
-import ai.privado.utility.Utilities.databaseURLPriority
+import ai.privado.utility.Utilities.{addDatabaseDetailsMultiple, databaseURLPriority}
 import org.slf4j.LoggerFactory
 import overflowdb.traversal._
 
 class DBConfigTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
-
-  private def addDatabaseDetailsMultiple(
-    rules: List[(String, String)],
-    dbUrl: JavaProperty,
-    dbName: String,
-    dbLocation: String,
-    dbVendor: String
-  ): Unit = {
-    rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
-        if (
-          databaseURLPriority(
-            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
-            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
-          ) < databaseURLPriority(
-            dbUrl.value,
-            dbUrl.sourceFileOut.head.name
-          ) // Compare the priority of the database url with already present url in the database cache
-        ) {
-
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-          DatabaseDetailsCache.addDatabaseDetails(
-            DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
-            rule._2
-          ) // Remove if current url has higher priority
-        }
-      } else {
-        DatabaseDetailsCache.addDatabaseDetails(
-          DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
-          rule._2
-        )
-      }
-    })
-  }
 
   override def run(builder: DiffGraphBuilder): Unit = {
     cpg.property.dedup.toArray
