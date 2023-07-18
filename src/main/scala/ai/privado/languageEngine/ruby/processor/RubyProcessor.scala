@@ -30,6 +30,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
+import ai.privado.languageEngine.ruby.passes.ImportPass
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -71,11 +72,11 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
           val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
           RubySrc2Cpg.packageTableInfo.set(packageTable)
+          new ImportPass(cpg, RubySrc2Cpg.packageTableInfo).createAndApply()
         }
 
         logger.info("Enhancing Ruby graph by post processing pass")
-        RubySrc2Cpg.postProcessingPasses(cpg)
-
+        RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
         logger.info("Applying data flow overlay")
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
