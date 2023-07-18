@@ -11,10 +11,6 @@ class RubyPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val dbConnectionRegex =
-    "^(db|database|jdbc|mysql|postgres|oracle|sqlserver)_(connection_)?(host|port|name|user|password|uri|driver|ssl|pool_size|timeout|connection_string)$"
-  val apiConnectionRegex = ".*/(api|external)?(_|\\.)?(url|base(_|\\.)?path)/i"
-
   override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
   }
