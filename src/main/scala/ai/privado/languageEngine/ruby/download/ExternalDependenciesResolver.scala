@@ -1,9 +1,9 @@
 package ai.privado.languageEngine.ruby.download
 
-import ai.privado.languageEngine.ruby.cache.PackageTable
 import ai.privado.languageEngine.ruby.passes.download.ExternalDependenciesPass
 import better.files.File
 import io.joern.rubysrc2cpg.Config
+import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory

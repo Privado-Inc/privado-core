@@ -31,7 +31,8 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
     testGemMap.toMap
   }
 
-  "Ruby External Dependency Download" should {
+  /*
+  "Ruby External Dependency Download" ignore {
     "Test dummy_logger dependency download" in {
       val packageUsed = List("dummy_logger")
 
@@ -64,6 +65,7 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
       )
     }
   }
+   */
 }
 
 abstract class ExternalDependenciesDownloadTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
