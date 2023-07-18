@@ -54,7 +54,7 @@ class ExternalDependenciesPass(cpg: Cpg, tempExtDir: String, packageTable: Packa
           case NodeType.DEFNNODE =>
             val methodName = node.asInstanceOf[DefnNode].getName.toString
             val classPath  = currentNameSpace.mkString(".")
-            packageTable.addPackageMethod(moduleName, methodName, classPath, "<extMod>")
+            packageTable.addPackageMethod(moduleName, methodName, s"$classPath.", "<extMod>")
           case _ =>
             node.childNodes().forEach(childNode => fetchMethodInfoFromNode(childNode, currentNameSpace, moduleName))
         }
