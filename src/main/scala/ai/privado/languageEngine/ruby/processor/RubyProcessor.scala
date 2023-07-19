@@ -85,13 +85,11 @@ object RubyProcessor {
         logger.debug("Running custom passes")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
-        /*
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
           val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-          UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
+          UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.RUBY)
         }
-         */
         logger.info("=====================")
 
         // Run tagger

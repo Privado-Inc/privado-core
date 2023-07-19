@@ -47,6 +47,7 @@ object UnresolvedReportUtility {
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
     val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
+    val operator_name        = "(?i)(<operator>).*"
 
     var unresolved_sig_pattern = unknown_full_name
     if (language.equals(Language.JAVA)) {
@@ -55,8 +56,9 @@ object UnresolvedReportUtility {
 
     xtocpg match {
       case Success(cpg) => {
-        val importCount = cpg.call.l.filter((i) => i.name == "import").l.length
-        total = cpg.call.methodFullName.l.length - importCount
+        val importCount   = cpg.call.l.filter((i) => i.name == "import").l.length
+        val operatorCount = cpg.call.l.filter(i => !i.name.matches(operator_name)).l.length
+        total = cpg.call.methodFullName.l.length - importCount - operatorCount
         unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length - importCount
 
         nonempty = cpg.call.callee.filter(_.nonEmpty == false).l.length
@@ -102,6 +104,7 @@ object UnresolvedReportUtility {
       case Language.JAVA       => statfilepath = s"$outputDirectory/${Constants.JAVA_STATS}"
       case Language.JAVASCRIPT => statfilepath = s"$outputDirectory/${Constants.JS_STATS}"
       case Language.PYTHON     => statfilepath = s"$outputDirectory/${Constants.PYTHON_STATS}"
+      case Language.RUBY       => statfilepath = s"$outputDirectory/${Constants.RUBY_STATS}"
     }
     val statfile = File(statfilepath)
     statfile.write("")
