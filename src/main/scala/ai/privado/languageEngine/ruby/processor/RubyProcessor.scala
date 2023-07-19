@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.ruby.processor
 
 import ai.privado.languageEngine.ruby.semantic.Language.*
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
@@ -95,8 +95,10 @@ object RubyProcessor {
         logger.info("=====================")
 
         // Run tagger
+        // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(ruleCache)
+        val taggerCache = new TaggerCache
+        cpg.runTagger(ruleCache, taggerCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
         println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")

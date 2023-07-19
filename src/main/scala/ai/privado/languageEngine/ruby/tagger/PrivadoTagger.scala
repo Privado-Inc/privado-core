@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.tagger
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.languageEngine.ruby.tagger.source.IdentifierTagger
@@ -40,10 +40,10 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(ruleCache: RuleCache): Traversal[Tag] = {
+  override def runTagger(ruleCache: RuleCache, taggerCache: TaggerCache): Traversal[Tag] = {
     logger.info("Starting tagging")
     new LiteralTagger(cpg, ruleCache).createAndApply()
-    new IdentifierTagger(cpg, ruleCache).createAndApply()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new APITagger(cpg, ruleCache).createAndApply()
