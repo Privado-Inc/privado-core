@@ -46,7 +46,7 @@ object UnresolvedReportUtility {
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
-    val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
+    val unknown_full_name    = "(?i)(.*)(unknownfullname|empty)(.*)"
     val operator_name        = "(?i)(<operator>).*"
 
     var unresolved_sig_pattern = unknown_full_name

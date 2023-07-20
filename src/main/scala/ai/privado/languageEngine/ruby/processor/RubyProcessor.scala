@@ -30,7 +30,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
-import ai.privado.languageEngine.ruby.passes.ImportPass
+import ai.privado.languageEngine.ruby.passes.{ImportPass, MethodFullNamePassForRORBuiltIn, RubyImportResolverPass}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -44,8 +44,12 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.rubysrc2cpg.RubySrc2Cpg.packageTableInfo
+import io.joern.rubysrc2cpg.passes.{ImportResolverPass, RubyTypeHintCallLinker, RubyTypeRecoveryPass}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -74,9 +78,27 @@ object RubyProcessor {
           RubySrc2Cpg.packageTableInfo.set(packageTable)
           new ImportPass(cpg, RubySrc2Cpg.packageTableInfo).createAndApply()
         }
+        new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
 
         logger.info("Enhancing Ruby graph by post processing pass")
-        RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+
+        // Using our own pass by overriding languageEngine's pass
+        new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
+        new RubyTypeRecoveryPass(cpg).createAndApply()
+        new RubyTypeHintCallLinker(cpg).createAndApply()
+        new NaiveCallLinker(cpg).createAndApply()
+
+        // Some of passes above create new methods, so, we
+        // need to run the ASTLinkerPass one more time
+        new AstLinkerPass(cpg).createAndApply()
+
+        // Not using languageEngine's passes
+        // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+
+        // TODO remove below lines in GA release, need these for dubugging
+        // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).map(cl => (cl.name, cl.file.name.headOption.getOrElse(""), cl.methodFullName, cl.dynamicTypeHintFullName.l)).foreach(println)
+        // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).sortBy(_.name).map(cl => (cl.name, cl.methodFullName, cl.file.name.headOption.getOrElse(""), cl.lineNumber)).foreach(println)
+
         logger.info("Applying data flow overlay")
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
