@@ -25,14 +25,14 @@ package ai.privado.languageEngine.ruby.tagger
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.TimeMetric
+import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.languageEngine.ruby.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.config.RubyDBConfigTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 

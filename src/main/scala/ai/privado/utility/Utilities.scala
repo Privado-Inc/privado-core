@@ -469,19 +469,20 @@ object Utilities {
   ): Unit = {
     rules.foreach(rule => {
       if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+        val fileName = dbUrl.file.name.headOption.getOrElse("")
         if (
           databaseURLPriority(
             DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
             DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
           ) < databaseURLPriority(
             dbUrl.value,
-            dbUrl.sourceFileOut.head.name
+            fileName
           ) // Compare the priority of the database url with already present url in the database cache
         ) {
 
           DatabaseDetailsCache.removeDatabaseDetails(rule._2)
           DatabaseDetailsCache.addDatabaseDetails(
-            DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
+            DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, fileName),
             rule._2
           ) // Remove if current url has higher priority
         }
