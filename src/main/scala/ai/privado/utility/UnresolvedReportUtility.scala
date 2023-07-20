@@ -64,9 +64,14 @@ object UnresolvedReportUtility {
     val resolvedCallMethodFullNames = ListBuffer[Call]()
     xtocpg match {
       case Success(cpg) => {
-        val importCount = cpg.call.or(_.filter((i) => {
-            i.name.matches(importRegex)
-          }), _.where(_.code("<empty>"))).size
+        val importCount = cpg.call
+          .or(
+            _.filter((i) => {
+              i.name.matches(importRegex)
+            }),
+            _.where(_.code("<empty>"))
+          )
+          .size
 
         val operatorCount = cpg.call.count(i => !i.name.matches(operator_name))
         total = cpg.call.methodFullName.size - importCount - operatorCount
