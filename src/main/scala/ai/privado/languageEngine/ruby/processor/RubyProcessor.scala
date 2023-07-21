@@ -51,6 +51,13 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, ConfigFileCreationPass}
+import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
+import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
+import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
@@ -164,8 +171,36 @@ object RubyProcessor {
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
 
     val config = Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
-    val xtocpg = new RubySrc2Cpg().createCpg(config)
+    // val xtocpg = new RubySrc2Cpg().createCpg(config)
+
+    val global = new Global()
+    val xtocpg = withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
+
+      new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
+      new ConfigFileCreationPass(cpg).createAndApply()
+      val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, RubySrc2Cpg.packageTableInfo)
+      astCreationPass.createAndApply()
+      TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+    }
+
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
+  }
+
+  def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
+    val outputPath = if (outPath != "") Some(outPath) else None
+    Try {
+      val cpg = newEmptyCpg(outputPath)
+      Try {
+        applyPasses(cpg, config)
+      } match {
+        case Success(_) => cpg
+        case Failure(exception) =>
+          println(
+            s"Exception occurred in cpg generation, but continuing with failed cpg. The number of nodes in cpg are : ${cpg.all.size}, $exception"
+          )
+          cpg
+      }
+    }
   }
 
 }
