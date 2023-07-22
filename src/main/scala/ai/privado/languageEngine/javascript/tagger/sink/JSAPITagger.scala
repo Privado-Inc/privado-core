@@ -69,7 +69,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
     val scriptLinks =
       cpg
         .literal(".*" + ruleInfo.combinedRulePattern + ".*")
-        .filter((i) => parentBlocksOfHTMLScriptElement.indexOf(i.parentBlock.head.id) > -1)
+        .filter((i) => parentBlocksOfHTMLScriptElement.indexOf(i.parentBlock.id.headOption.getOrElse(-1L)) > -1)
         .l
 
     scriptLinks.foreach((link) => {
