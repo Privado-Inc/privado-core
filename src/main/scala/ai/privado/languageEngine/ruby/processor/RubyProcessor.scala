@@ -30,7 +30,12 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
-import ai.privado.languageEngine.ruby.passes.{ImportPass, MethodFullNamePassForRORBuiltIn, RubyImportResolverPass}
+import ai.privado.languageEngine.ruby.passes.{
+  GlobalImportPass,
+  MethodFullNamePassForRORBuiltIn,
+  PrivadoRubyTypeRecoveryPass,
+  RubyImportResolverPass
+}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -55,7 +60,7 @@ import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, ConfigFileC
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{LocalKey, MetaDataPass, SBKey, SymbolTable, TypeNodePass}
 import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -83,21 +88,29 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
           val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
           RubySrc2Cpg.packageTableInfo.set(packageTable)
-          new ImportPass(cpg, RubySrc2Cpg.packageTableInfo).createAndApply()
         }
+        println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing Done ...")
         new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
 
         logger.info("Enhancing Ruby graph by post processing pass")
 
         // Using our own pass by overriding languageEngine's pass
-        new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
-        new RubyTypeRecoveryPass(cpg).createAndApply()
+        println(s"${Calendar.getInstance().getTime} - Global import started  ...")
+        // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
+        val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+        new GlobalImportPass(cpg, packageTableInfo, globalSymbolTable).createAndApply()
+        println(s"${Calendar.getInstance().getTime} - Global import Done  ...")
+        new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
+        println(s"${Calendar.getInstance().getTime} - Type recovery Done  ...")
         new RubyTypeHintCallLinker(cpg).createAndApply()
+        println(s"${Calendar.getInstance().getTime} - Type hint linker Done  ...")
         new NaiveCallLinker(cpg).createAndApply()
+        println(s"${Calendar.getInstance().getTime} - Naive call linker Done  ...")
 
         // Some of passes above create new methods, so, we
         // need to run the ASTLinkerPass one more time
         new AstLinkerPass(cpg).createAndApply()
+        println(s"${Calendar.getInstance().getTime} - Ast linker Done  ...")
 
         // Not using languageEngine's passes
         // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
