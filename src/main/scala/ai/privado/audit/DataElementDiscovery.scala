@@ -176,7 +176,7 @@ object DataElementDiscovery {
 
         objectDefinationDirectoryPattern.findFirstMatchIn(absoluteFileName) match {
           case Some(_) => score += 0.25
-          case None =>
+          case None    =>
         }
 
         val fileName = absoluteFileName.substring(absoluteFileName.lastIndexOf("/") + 1)
@@ -185,7 +185,7 @@ object DataElementDiscovery {
 
         datasubjectPattern.findFirstMatchIn(fileName) match {
           case Some(_) => score += 1
-          case None =>
+          case None    =>
         }
         score.toString
       }
@@ -200,13 +200,13 @@ object DataElementDiscovery {
 
   def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
     logger.info("Initiated the audit engine")
-    val classNameRuleList = getSourceUsingRules(xtocpg)
-    val collectionInputList = getCollectionInputList(xtocpg)
+    val classNameRuleList    = getSourceUsingRules(xtocpg)
+    val collectionInputList  = getCollectionInputList(xtocpg)
     val collectionMethodInfo = getCollectionMethodInfo(xtocpg)
-    val derivedClassName = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
+    val derivedClassName     = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
     val memberInfo =
       getMemberUsingClassName(xtocpg, (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet)
-    val workbookResult = new ListBuffer[List[String]]()
+    val workbookResult      = new ListBuffer[List[String]]()
     val typeDeclMemberCache = taggerCache.typeDeclMemberCache
 
     // Stores ClassName --> (MemberName --> SourceRuleID)
@@ -396,9 +396,9 @@ object DataElementDiscoveryJS {
   }
 
   def getMethodParametersFromTypes(
-                                    xtocpg: Try[Cpg],
-                                    classNameRuleList: Set[String]
-                                  ): Map[TypeDecl, ListBuffer[MethodParameterIn]] = {
+    xtocpg: Try[Cpg],
+    classNameRuleList: Set[String]
+  ): Map[TypeDecl, ListBuffer[MethodParameterIn]] = {
     val methodParameterMap = new mutable.HashMap[TypeDecl, ListBuffer[MethodParameterIn]]()
     xtocpg match {
       case Success(cpg) => {
@@ -463,7 +463,7 @@ object DataElementDiscoveryJS {
         val probableSourcesDirectoryPattern = "(?i)models?|services?|controllers?|stores?".r
         probableSourcesDirectoryPattern.findFirstMatchIn(absoluteFileName) match {
           case Some(_) => score += 0.5
-          case None =>
+          case None    =>
         }
 
         val fileName = absoluteFileName.substring(absoluteFileName.lastIndexOf("/") + 1)
@@ -471,19 +471,19 @@ object DataElementDiscoveryJS {
         val dataSubjectPattern = "(?i)person|users?|customer".r
         dataSubjectPattern.findFirstMatchIn(fileName) match {
           case Some(_) => score += 0.5
-          case None =>
+          case None    =>
         }
 
         val sourceFiles = "(?i)register|store|login".r
         sourceFiles.findFirstMatchIn(fileName) match {
           case Some(_) => score += 0.5
-          case None =>
+          case None    =>
         }
 
         val lowPriorityFolders = "(?i)routes?|test|public|assets?|static|spec|configs?".r
         lowPriorityFolders.findFirstMatchIn(absoluteFileName) match {
           case Some(_) => score = 0.0
-          case None =>
+          case None    =>
         }
         score.toString
       }
@@ -497,14 +497,14 @@ object DataElementDiscoveryJS {
   }
 
   def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
-    val classNameRuleList = getSourceUsingRules(xtocpg)
-    val memberInfo = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
-    val workbookResult = new ListBuffer[List[String]]()
-    val typeDeclMemberCache = taggerCache.typeDeclMemberCache
+    val classNameRuleList         = getSourceUsingRules(xtocpg)
+    val memberInfo                = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
+    val workbookResult            = new ListBuffer[List[String]]()
+    val typeDeclMemberCache       = taggerCache.typeDeclMemberCache
     val methodParametersFromTypes = getMethodParametersFromTypes(xtocpg, classNameRuleList.toSet)
-    val identifiers = getIdentifiers(xtocpg)
-    val locals = getLocals(xtocpg)
-    val elementInfo = mutable.HashMap[TypeDecl, ListBuffer[Any]]()
+    val identifiers               = getIdentifiers(xtocpg)
+    val locals                    = getLocals(xtocpg)
+    val elementInfo               = mutable.HashMap[TypeDecl, ListBuffer[Any]]()
 
     methodParametersFromTypes.foreach {
       case (typeDecl, paramList) => {
@@ -656,7 +656,7 @@ object DataElementDiscoveryJS {
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
-            && !identifier.name
+          && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
         )
           workbookResult += List(
