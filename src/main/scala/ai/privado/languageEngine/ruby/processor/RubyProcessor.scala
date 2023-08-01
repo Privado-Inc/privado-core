@@ -182,8 +182,12 @@ object RubyProcessor {
 
     // Need to convert path to absolute path as ruby cpg needs abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
+    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
 
-    val config = Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
+    val config = Config()
+      .withInputPath(absoluteSourceLocation)
+      .withOutputPath(cpgOutputPath)
+      .withIgnoredFilesRegex(excludeFileRegex)
     // val xtocpg = new RubySrc2Cpg().createCpg(config)
 
     val global = new Global()
@@ -191,7 +195,7 @@ object RubyProcessor {
 
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, RubySrc2Cpg.packageTableInfo)
+      val astCreationPass = new AstCreationPass(cpg, global, RubySrc2Cpg.packageTableInfo, config)
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
