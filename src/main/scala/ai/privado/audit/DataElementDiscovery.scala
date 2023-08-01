@@ -488,7 +488,8 @@ object DataElementDiscoveryJS {
         score.toString
       }
       case Failure(exception) => {
-        println("Failed to calculate file score")
+        val fileName = absoluteFileName.substring(absoluteFileName.lastIndexOf("/") + 1)
+        println("Failed to calculate file score for " + fileName)
         logger.debug("Failed to calculate file score", exception)
         logger.debug("exception: ", exception.printStackTrace())
         "0"
