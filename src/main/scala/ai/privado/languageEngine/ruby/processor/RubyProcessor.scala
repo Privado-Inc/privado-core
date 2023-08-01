@@ -171,12 +171,7 @@ object RubyProcessor {
     * @param lang
     * @return
     */
-  def createRubyCpg(
-    ruleCache: RuleCache,
-    sourceRepoLocation: String,
-    lang: String,
-    excludeFileRegex: String
-  ): Either[String, Unit] = {
+  def createRubyCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -187,6 +182,7 @@ object RubyProcessor {
 
     // Need to convert path to absolute path as ruby cpg needs abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
+    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
 
     val config = Config()
       .withInputPath(absoluteSourceLocation)

@@ -338,12 +338,7 @@ object ScanProcessor extends CommandProcessor {
                 PythonProcessor.createPythonCpg(getProcessedRule(Language.PYTHON), sourceRepoLocation, lang)
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
-                RubyProcessor.createRubyCpg(
-                  getProcessedRule(Language.RUBY),
-                  sourceRepoLocation,
-                  lang,
-                  config.excludeFileRegex
-                )
+                RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
