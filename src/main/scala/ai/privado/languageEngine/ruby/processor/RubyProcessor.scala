@@ -88,8 +88,10 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
           val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
           RubySrc2Cpg.packageTableInfo.set(packageTable)
+          println(
+            s"${TimeMetric.getNewTime()} - Downloading dependencies and parsing done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
         }
-        println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing Done ...")
         new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
 
         logger.info("Enhancing Ruby graph by post processing pass")
@@ -99,19 +101,31 @@ object RubyProcessor {
         // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
         val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
         new GlobalImportPass(cpg, packageTableInfo, globalSymbolTable).createAndApply()
-        println(s"${Calendar.getInstance().getTime} - Global import Done  ...")
+        println(
+          s"${TimeMetric.getNewTime()} - Global import done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+        println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
         new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
-        println(s"${Calendar.getInstance().getTime} - Type recovery Done  ...")
+        println(
+          s"${TimeMetric.getNewTime()} - Type recovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+        println(s"${Calendar.getInstance().getTime} - Type hint linker started  ...")
         new RubyTypeHintCallLinker(cpg).createAndApply()
-        println(s"${Calendar.getInstance().getTime} - Type hint linker Done  ...")
+        println(
+          s"${TimeMetric.getNewTime()} - Type hint linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
+        println(s"${Calendar.getInstance().getTime} - Naive call linker started  ...")
         new NaiveCallLinker(cpg).createAndApply()
-        println(s"${Calendar.getInstance().getTime} - Naive call linker Done  ...")
-
+        println(
+          s"${TimeMetric.getNewTime()} - Naive call linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
         // Some of passes above create new methods, so, we
         // need to run the ASTLinkerPass one more time
+        println(s"${Calendar.getInstance().getTime} - Ast linker started  ...")
         new AstLinkerPass(cpg).createAndApply()
-        println(s"${Calendar.getInstance().getTime} - Ast linker Done  ...")
-
+        println(
+          s"${TimeMetric.getNewTime()} - Ast linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+        )
         // Not using languageEngine's passes
         // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
 
@@ -119,13 +133,12 @@ object RubyProcessor {
         // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).map(cl => (cl.name, cl.file.name.headOption.getOrElse(""), cl.methodFullName, cl.dynamicTypeHintFullName.l)).foreach(println)
         // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).sortBy(_.name).map(cl => (cl.name, cl.methodFullName, cl.file.name.headOption.getOrElse(""), cl.lineNumber)).foreach(println)
 
-        logger.info("Applying data flow overlay")
+        println(s"${Calendar.getInstance().getTime} - Overlay started  ...")
         val context = new LayerCreatorContext(cpg)
         val options = new OssDataFlowOptions()
         new OssDataFlow(options).run(context)
-        logger.info("=====================")
+        println(s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}")
 
-        logger.debug("Running custom passes")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
@@ -133,7 +146,6 @@ object RubyProcessor {
           val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
           UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.RUBY)
         }
-        logger.info("=====================")
 
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
@@ -199,7 +211,9 @@ object RubyProcessor {
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
-
+    println(
+      s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+    )
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
   }
 
