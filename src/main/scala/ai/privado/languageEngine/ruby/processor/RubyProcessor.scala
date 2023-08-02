@@ -72,8 +72,8 @@ import scala.util.{Failure, Success, Try, Using}
 
 object RubyProcessor {
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
+  private val logger    = LoggerFactory.getLogger(getClass)
+  private var cpgconfig = Config()
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
@@ -81,93 +81,102 @@ object RubyProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
-        logger.info("Applying default overlays")
-        X2Cpg.applyDefaultOverlays(cpg)
+        try {
+          logger.info("Applying default overlays")
+          X2Cpg.applyDefaultOverlays(cpg)
 
-        logger.info("Enhancing Ruby graph")
-        if (!config.skipDownloadDependencies) {
-          println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
-          val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
-          RubySrc2Cpg.packageTableInfo.set(packageTable)
-          println(
-            s"${TimeMetric.getNewTime()} - Downloading dependencies and parsing done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
-        }
-        new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
-
-        logger.info("Enhancing Ruby graph by post processing pass")
-
-        // Using our own pass by overriding languageEngine's pass
-        println(s"${Calendar.getInstance().getTime} - Global import started  ...")
-        // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
-        val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-        new GlobalImportPass(cpg, packageTableInfo, globalSymbolTable).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Global import done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
-        new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Type recovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        println(s"${Calendar.getInstance().getTime} - Type hint linker started  ...")
-        new RubyTypeHintCallLinker(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Type hint linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        println(s"${Calendar.getInstance().getTime} - Naive call linker started  ...")
-        new NaiveCallLinker(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Naive call linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        // Some of passes above create new methods, so, we
-        // need to run the ASTLinkerPass one more time
-        println(s"${Calendar.getInstance().getTime} - Ast linker started  ...")
-        new AstLinkerPass(cpg).createAndApply()
-        println(
-          s"${TimeMetric.getNewTime()} - Ast linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        // Not using languageEngine's passes
-        // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
-
-        // TODO remove below lines in GA release, need these for dubugging
-        // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).map(cl => (cl.name, cl.file.name.headOption.getOrElse(""), cl.methodFullName, cl.dynamicTypeHintFullName.l)).foreach(println)
-        // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).sortBy(_.name).map(cl => (cl.name, cl.methodFullName, cl.file.name.headOption.getOrElse(""), cl.lineNumber)).foreach(println)
-
-        println(s"${Calendar.getInstance().getTime} - Overlay started  ...")
-        val context = new LayerCreatorContext(cpg)
-        val options = new OssDataFlowOptions()
-        new OssDataFlow(options).run(context)
-        println(s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}")
-
-        new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
-        // Unresolved function report
-        if (config.showUnresolvedFunctionsReport) {
-          val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-          UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.RUBY)
-        }
-
-        // Run tagger
-        println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-        cpg.runTagger(ruleCache)
-        println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
-        println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
-        println(s"${Calendar.getInstance().getTime} - Brewing result...")
-        MetricHandler.setScanStatus(true)
-        // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
-          case Left(err) =>
-            MetricHandler.otherErrorsOrWarnings.addOne(err)
-            Left(err)
-          case Right(_) =>
-            println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
-            logger.debug(
-              s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+          logger.info("Enhancing Ruby graph")
+          if (!config.skipDownloadDependencies) {
+            println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
+            val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
+            RubySrc2Cpg.packageTableInfo.set(packageTable)
+            println(
+              s"${TimeMetric.getNewTime()} - Downloading dependencies and parsing done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
             )
+          }
+          new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
 
-            Right(())
+          logger.info("Enhancing Ruby graph by post processing pass")
+
+          // Using our own pass by overriding languageEngine's pass
+          println(s"${Calendar.getInstance().getTime} - Global import started  ...")
+          // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
+          val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+          new GlobalImportPass(cpg, packageTableInfo, globalSymbolTable).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Global import done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
+          new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Type recovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          println(s"${Calendar.getInstance().getTime} - Type hint linker started  ...")
+          new RubyTypeHintCallLinker(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Type hint linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          println(s"${Calendar.getInstance().getTime} - Naive call linker started  ...")
+          new NaiveCallLinker(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Naive call linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          // Some of passes above create new methods, so, we
+          // need to run the ASTLinkerPass one more time
+          println(s"${Calendar.getInstance().getTime} - Ast linker started  ...")
+          new AstLinkerPass(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Ast linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+          // Not using languageEngine's passes
+          // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+
+          // TODO remove below lines in GA release, need these for dubugging
+          // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).map(cl => (cl.name, cl.file.name.headOption.getOrElse(""), cl.methodFullName, cl.dynamicTypeHintFullName.l)).foreach(println)
+          // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).sortBy(_.name).map(cl => (cl.name, cl.methodFullName, cl.file.name.headOption.getOrElse(""), cl.lineNumber)).foreach(println)
+
+          println(s"${Calendar.getInstance().getTime} - Overlay started  ...")
+          val context = new LayerCreatorContext(cpg)
+          val options = new OssDataFlowOptions()
+          new OssDataFlow(options).run(context)
+          println(
+            s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
+          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+
+          // Unresolved function report
+          if (config.showUnresolvedFunctionsReport) {
+            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+            UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.RUBY)
+          }
+
+          // Run tagger
+          println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
+          cpg.runTagger(ruleCache)
+          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+          println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
+          println(s"${Calendar.getInstance().getTime} - Brewing result...")
+          MetricHandler.setScanStatus(true)
+          // Exporting
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
+            case Left(err) =>
+              MetricHandler.otherErrorsOrWarnings.addOne(err)
+              Left(err)
+            case Right(_) =>
+              println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
+              logger.debug(
+                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
+              )
+
+              Right(())
+          }
+        } finally {
+          cpg.close()
+          import java.io.File
+          val cpgFile = new File(cpgconfig.outputPath)
+          println(s"\n\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n")
         }
 
       case Failure(exception) =>
@@ -197,14 +206,14 @@ object RubyProcessor {
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
 
-    val config = Config()
+    cpgconfig = Config()
       .withInputPath(absoluteSourceLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
     // val xtocpg = new RubySrc2Cpg().createCpg(config)
 
     val global = new Global()
-    val xtocpg = withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
+    val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
 
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
