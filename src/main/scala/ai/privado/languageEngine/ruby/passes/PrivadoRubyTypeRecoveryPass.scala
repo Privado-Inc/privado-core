@@ -6,7 +6,7 @@ import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.Defines.{ConstructorMethodName, DynamicCallUnknownFullName}
 import io.joern.x2cpg.Defines as XDefines
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -257,9 +257,9 @@ private class RecoverForRubyFile(
     case Some(cVar) if globalSymbolTable.contains(cVar) =>
       globalSymbolTable.get(cVar)
     case Some(cVar) if symbolTable.contains(LocalVar(cVar.identifier)) =>
-      symbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s"$pathSep${XTypeRecovery.DummyIndexAccess}"))
+      symbolTable.get(LocalVar(cVar.identifier)).map(x => s"$x$pathSep${XTypeRecovery.DummyIndexAccess}")
     case Some(cVar) if globalSymbolTable.contains(LocalVar(cVar.identifier)) =>
-      globalSymbolTable.get(LocalVar(cVar.identifier)).map(_.concat(s"$pathSep${XTypeRecovery.DummyIndexAccess}"))
+      globalSymbolTable.get(LocalVar(cVar.identifier)).map(x => s"$x$pathSep${XTypeRecovery.DummyIndexAccess}")
     case _ => Set.empty
   }
 
@@ -522,9 +522,9 @@ private class RecoverForRubyFile(
   }
 
   private def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
-    lazy val existingTypes = nodeExistingTypes(storedNode)
+    lazy val existingTypes = storedNode.getKnownTypes
 
-    if (types.nonEmpty && types != existingTypes) {
+    if (types.nonEmpty && types.toSet != existingTypes) {
       storedNode match {
         case m: Member =>
           // To avoid overwriting member updates, we store them elsewhere until the end
@@ -549,14 +549,14 @@ private class RecoverForRubyFile(
   /** Allows one to modify the types assigned to nodes otherwise.
     */
   def storeDefaultTypeInfoPrivado(n: StoredNode, types: Seq[String]): Unit =
-    if (types != nodeExistingTypes(n)) {
+    if (types.toSet != n.getKnownTypes) {
       state.changesWereMade.compareAndSet(false, true)
       setTypesPrivado(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
     }
 
   def setTypesPrivado(n: StoredNode, types: Seq[String]): Unit =
     if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types.distinct)
+    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 
   /** Allows one to modify the types assigned to locals.
     */
@@ -591,24 +591,21 @@ private class RecoverForRubyFile(
   ): Unit = {
     // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
     // a method ref. This happens in jssrc2cpg
-    if (funcPtr.astParent.iterator.collectAll[Call].exists(_.name == funcName))
-      return
-
+    if (!funcPtr.astParent.iterator.collectAll[Call].exists(_.name == funcName)) {
       baseTypes
         .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
-        .flatMap(p => cpg.method.fullNameExact(p))
+        .flatMap(cpg.method.fullNameExact)
+        .filterNot(m => addedNodes.contains(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${m.fullName}"))
         .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
-        .filterNot { case (_, mRef) =>
-          addedNodes.contains((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
-        }
         .foreach { case (m, mRef) =>
           funcPtr.astParent
-            .filterNot(_.astChildren.isMethodRef.methodFullNameExact(mRef.methodFullName).nonEmpty)
+            .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
             .foreach { inCall =>
               state.changesWereMade.compareAndSet(false, true)
               integrateMethodRef(funcPtr, m, mRef, inCall)
             }
         }
+    }
   }
 
   private def integrateMethodRef(funcPtr: Expression, m: Method, mRef: NewMethodRef, inCall: AstNode) = {
@@ -623,7 +620,7 @@ private class RecoverForRubyFile(
       case x =>
         mRef.argumentIndex(x.astChildren.size + 1)
     }
-    addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
+    addedNodes.add(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${mRef.methodFullName}")
   }
   private def createMethodRef(
     baseName: Option[String],

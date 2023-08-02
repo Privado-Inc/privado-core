@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.RubySrc2Cpg.packageTableInfo
 import io.joern.rubysrc2cpg.passes.{ImportResolverPass, RubyTypeHintCallLinker, RubyTypeRecoveryPass}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
@@ -67,7 +68,7 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 object RubyProcessor {
 
@@ -195,9 +196,11 @@ object RubyProcessor {
 
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      val astCreationPass = new AstCreationPass(cpg, global, RubySrc2Cpg.packageTableInfo, config)
-      astCreationPass.createAndApply()
-      TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+        val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+        astCreationPass.createAndApply()
+        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+      }
     }
 
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
