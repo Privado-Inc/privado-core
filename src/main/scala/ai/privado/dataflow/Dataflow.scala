@@ -73,7 +73,7 @@ class Dataflow(cpg: Cpg) {
     if (sources.isEmpty || sinks.isEmpty) Map[String, Path]()
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
-      val dataflowPathsUnfiltered = {
+      var dataflowPathsUnfiltered = {
         if (privadoScanConfig.disable2ndLevelClosure) sinks.reachableByFlows(sources).l
         else {
           val firstLevelSources =
@@ -105,6 +105,7 @@ class Dataflow(cpg: Cpg) {
          */
       }
 
+      dataflowPathsUnfiltered = List()
       if (privadoScanConfig.generateAuditReport) {
         AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
 
