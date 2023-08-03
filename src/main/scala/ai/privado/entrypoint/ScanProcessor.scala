@@ -260,9 +260,17 @@ object ScanProcessor extends CommandProcessor {
     val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
+    val combinedSources = sources
+      .groupBy(_.id)
+      .view
+      .map { case (_, sourceGroup) =>
+        val combinedPattern = sourceGroup.map(_.patterns.mkString("|")).mkString("(", "|", ")")
+        sourceGroup.head.copy(patterns = List(combinedPattern))
+      }
+      .toList
     val mergedRules =
       ConfigAndRules(
-        sources = sources.distinctBy(_.id),
+        sources = combinedSources,
         sinks = sinks.distinctBy(_.id),
         collections = collections.distinctBy(_.id),
         policies = policies.distinctBy(_.id),
