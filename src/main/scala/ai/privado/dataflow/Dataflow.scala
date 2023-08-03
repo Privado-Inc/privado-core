@@ -73,20 +73,19 @@ class Dataflow(cpg: Cpg) {
     if (sources.isEmpty || sinks.isEmpty) Map[String, Path]()
     else {
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
-      val dataflowPathsUnfiltered = List()
-//      {
-//        if (privadoScanConfig.disable2ndLevelClosure) sinks.reachableByFlows(sources).l
-//        else {
-//          val firstLevelSources =
-//            sources.or(
-//              _.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name),
-//              _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
-//            )
-//          sinks.reachableByFlows(firstLevelSources).l
-//        }
-      // Commented the below piece of code as we still need to test out and fix few open Issues which are
-      // resulting in FP in 2nd level derivation for Storages
-      /*
+      val dataflowPathsUnfiltered = {
+        if (privadoScanConfig.disable2ndLevelClosure) sinks.reachableByFlows(sources).l
+        else {
+          val firstLevelSources =
+            sources.or(
+              _.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name),
+              _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
+            )
+          sinks.reachableByFlows(firstLevelSources).l
+        }
+        // Commented the below piece of code as we still need to test out and fix few open Issues which are
+        // resulting in FP in 2nd level derivation for Storages
+        /*
         if (privadoScanConfig.disable2ndLevelClosure)
           sinks.reachableByFlows(sources).l
         else {
@@ -103,8 +102,8 @@ class Dataflow(cpg: Cpg) {
           val storageFlows    = storageSinks.reachableByFlows(sources).toSet
           (nonStorageFlows ++ storageFlows).l
         }
-       */
-//      }
+         */
+      }
 
       if (privadoScanConfig.generateAuditReport) {
         AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
