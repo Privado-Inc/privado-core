@@ -522,8 +522,12 @@ object DataElementDiscoveryJS {
         }
       }
     }
+    val wordsToRemove =  "(?i)modules?|loggers?|val|console|require|_|get|key|value|data|page|url|Set|filter|<init>|err|errors|axios|express|router|component|Instance|utils?|app|undefined|context|process|...props?|async|await|const|let|var|this".r
+    val filteredMemberInfoMap = memberInfo.map { case (typeDeclNode, members) =>
+      typeDeclNode -> members.filterNot(member => wordsToRemove.findFirstIn(member.name).isDefined)
+    }
 
-    memberInfo.foreach {
+    filteredMemberInfoMap.foreach {
       case (typeDecl, memberList) => {
         // Filtering out the noise
         if (
