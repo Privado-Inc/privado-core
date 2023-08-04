@@ -220,7 +220,15 @@ object ScanProcessor extends CommandProcessor {
       }
     parsedRules
   }
-
+  def mergePatterns(collections: List[RuleInfo]): List[RuleInfo] = {
+    collections
+      .groupBy(_.id)
+      .map { case (_, item) =>
+        val combinedPatterns = item.flatMap(_.patterns)
+        item.head.copy(patterns = combinedPatterns)
+      }
+      .toList
+  }
   def processRules(lang: Language, ruleCache: RuleCache): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
@@ -260,19 +268,11 @@ object ScanProcessor extends CommandProcessor {
     val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
-    val combinedSources = sources
-      .groupBy(_.id)
-      .view
-      .map { case (_, sourceGroup) =>
-        val combinedPattern = sourceGroup.map(_.patterns.mkString("|")).mkString("(", "|", ")")
-        sourceGroup.head.copy(patterns = List(combinedPattern))
-      }
-      .toList
     val mergedRules =
       ConfigAndRules(
-        sources = combinedSources,
-        sinks = sinks.distinctBy(_.id),
-        collections = collections.distinctBy(_.id),
+        sources = mergePatterns(sources),
+        sinks = mergePatterns(sinks),
+        collections = mergePatterns(collections),
         policies = policies.distinctBy(_.id),
         exclusions = exclusions.distinctBy(_.id),
         threats = threats.distinctBy(_.id),
@@ -353,6 +353,7 @@ object ScanProcessor extends CommandProcessor {
                     s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
+
                   JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
                 } else {
                   println(s"As of now we only support privacy code scanning for 'Java' code base.")
