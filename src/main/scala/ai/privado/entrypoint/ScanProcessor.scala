@@ -220,8 +220,8 @@ object ScanProcessor extends CommandProcessor {
       }
     parsedRules
   }
-  def mergePatterns(collections: List[RuleInfo]): List[RuleInfo] = {
-    collections
+  def mergePatterns(ruleInfoList: List[RuleInfo]): List[RuleInfo] = {
+    ruleInfoList
       .groupBy(_.id)
       .map { case (_, item) =>
         val combinedPatterns = item.flatMap(_.patterns)
@@ -274,7 +274,7 @@ object ScanProcessor extends CommandProcessor {
         sinks = mergePatterns(sinks),
         collections = mergePatterns(collections),
         policies = policies.distinctBy(_.id),
-        exclusions = exclusions.distinctBy(_.id),
+        exclusions = mergePatterns(exclusions),
         threats = threats.distinctBy(_.id),
         semantics = semantics.distinctBy(_.signature),
         sinkSkipList = sinkSkipList.distinctBy(_.id),
