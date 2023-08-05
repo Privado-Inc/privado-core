@@ -196,7 +196,7 @@ object RubyProcessor {
     override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
       val cpg    = context.cpg
       val passes = Iterator(new RubyCfgCreationPass(cpg), new CfgDominatorPass(cpg), new CdgPass(cpg))
-      ControlFlow.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
+      passes.zipWithIndex.foreach { case (pass, index) =>
         runPass(pass, context, storeUndoInfo, index)
       }
     }
@@ -261,7 +261,7 @@ object RubyProcessor {
 
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit, 25000)) { parser =>
         val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
         astCreationPass.createAndApply()
         TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
