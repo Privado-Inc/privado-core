@@ -222,7 +222,7 @@ object RubyProcessor {
     override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
       val cpg    = context.cpg
       val passes = Iterator(new RubyCfgCreationPass(cpg), new CfgDominatorPass(cpg), new CdgPass(cpg))
-      ControlFlow.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
+      passes.zipWithIndex.foreach { case (pass, index) =>
         runPass(pass, context, storeUndoInfo, index)
       }
     }
@@ -231,7 +231,8 @@ object RubyProcessor {
 
   class RubyCfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) extends CfgCreator(entryNode, diffGraph) {
 
-    override protected def cfgForContinueStatement(node: ControlStructure): Cfg =
+    override protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
+      println("here it comes...........................>>>>>>>>>>>>>>>>>")
       node.astChildren.find(_.order == 1) match {
         case Some(jumpLabel: JumpLabel) =>
           val labelName = jumpLabel.name
@@ -252,6 +253,7 @@ object RubyProcessor {
         case None =>
           Cfg(entryNode = Option(node), continues = List((node, 1)))
       }
+    }
 
   }
 
@@ -288,7 +290,7 @@ object RubyProcessor {
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit, 50000)) { parser =>
+      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit, 25000)) { parser =>
         val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
         astCreationPass.createAndApply()
         TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
