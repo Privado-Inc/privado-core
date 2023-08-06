@@ -174,6 +174,11 @@ object RubyProcessor {
 
               Right(())
           }
+        } catch {
+          case ex: Exception =>
+            logger.error("Error while processing the CPG after source code parsing ", ex)
+            MetricHandler.setScanStatus(false)
+            Left("Error while parsing the source code: " + ex.toString)
         } finally {
           cpg.close()
           import java.io.File
@@ -182,7 +187,7 @@ object RubyProcessor {
         }
 
       case Failure(exception) =>
-        logger.error("Error while parsing the source code!")
+        logger.error("Error while parsing the source code!", exception)
         logger.debug("Error : ", exception)
         MetricHandler.setScanStatus(false)
         Left("Error while parsing the source code: " + exception.toString)
@@ -259,7 +264,7 @@ object RubyProcessor {
     * @return
     */
   def createRubyCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
-
+    logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
