@@ -48,7 +48,8 @@ case class PrivadoInput(
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
-  enableAuditSemanticsFilter: Boolean = false
+  enableAuditSemanticsFilter: Boolean = false,
+  limitNoSinksForDataflos: Int = -1
 )
 
 object CommandConstants {
@@ -88,6 +89,8 @@ object CommandConstants {
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
   val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
   val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
+  val LIMIT_NO_SINKS_FOR_DATAFLOWS                 = "limit-no-sinks-for-dataflows"
+  val LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR            = "lnsfd"
 }
 
 object CommandParser {
@@ -202,6 +205,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableAuditSemanticsFilter = true))
               .text("Enable semantic filter in dataflow audit report"),
+            opt[Int](CommandConstants.LIMIT_NO_SINKS_FOR_DATAFLOWS)
+              .abbr(CommandConstants.LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR)
+              .optional()
+              .action((x, c) => c.copy(limitNoSinksForDataflos = x))
+              .text("Limit the no sinks being used for finding dataflows"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
