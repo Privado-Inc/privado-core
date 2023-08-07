@@ -8,11 +8,11 @@ object StorageInheritRule {
 
   val rules = List(
     RuleInfo(
-      "Sink.DataBase.RWO.Read",
-      "Ruby Model Repository(Read)",
+      "Sink.DataBase.ROR.Read",
+      "Ruby on Rails Repository(Read)",
       "",
       Array[String](),
-      List[String](".*/model/.*", "(find|get|fetch)"),
+      List[String](".*/models/.*", "(find.*|where|select)"),
       false,
       "",
       HashMap[String, String](),
@@ -24,11 +24,27 @@ object StorageInheritRule {
       Array[String]()
     ),
     RuleInfo(
-      "Sink.DataBase.RWO.WRITE",
-      "Ruby Model Repository(Write)",
+      "Sink.DataBase.ROR.Write",
+      "Ruby on Rails Repository(Write)",
       "",
       Array[String](),
-      List[String](".*/model/.*", "(save|delete)"),
+      List[String](".*/models/.*", "save|update.*"),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.RUBY,
+      Array[String]()
+    ),
+    RuleInfo(
+      "Sink.DataBase.ROR.ReadAndWrite",
+      "Ruby on Rails Repository(ReadAndWrite)",
+      "",
+      Array[String](),
+      List[String](".*/models/.*", ""),
       false,
       "",
       HashMap[String, String](),
