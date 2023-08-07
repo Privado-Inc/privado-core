@@ -377,5 +377,4 @@ object ScanProcessor extends CommandProcessor {
     }
     sourceLocation.listRecursively.count(f => f.extension(toLowerCase = true).toString.contains(".java")) > 0
   }
-
 }
