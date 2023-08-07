@@ -49,7 +49,8 @@ case class PrivadoInput(
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
   enableAuditSemanticsFilter: Boolean = false,
-  limitNoSinksForDataflows: Int = -1
+  limitNoSinksForDataflows: Int = -1,
+  runOnlyDataFlows: Boolean = false
 )
 
 object CommandConstants {
@@ -91,6 +92,8 @@ object CommandConstants {
   val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
   val LIMIT_NO_SINKS_FOR_DATAFLOWS                 = "limit-no-sinks-for-dataflows"
   val LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR            = "lnsfd"
+  val RUN_ONLY_DATAFLOWS                           = "run-only-dataflows"
+  val RUN_ONLY_DATAFLOWS_ABBR                      = "rod"
 }
 
 object CommandParser {
@@ -210,6 +213,11 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(limitNoSinksForDataflows = x))
               .text("Limit the no sinks being used for finding dataflows"),
+            opt[Unit](CommandConstants.RUN_ONLY_DATAFLOWS)
+              .abbr(CommandConstants.RUN_ONLY_DATAFLOWS_ABBR)
+              .optional()
+              .action((_, c) => c.copy(runOnlyDataFlows = true))
+              .text("Run only dataflows, by loading the cpg.bin from previous run from inside repo location"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

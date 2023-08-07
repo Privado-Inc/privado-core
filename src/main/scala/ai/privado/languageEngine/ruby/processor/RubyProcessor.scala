@@ -22,7 +22,6 @@
  */
 
 package ai.privado.languageEngine.ruby.processor
-
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
@@ -61,13 +60,15 @@ import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, JumpLabel, Literal, Method}
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
+import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.nio.file.{Files, Paths}
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try, Using}
@@ -285,20 +286,24 @@ object RubyProcessor {
     // val xtocpg = new RubySrc2Cpg().createCpg(config)
 
     val global = new Global()
-    val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
-
-      new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigFileCreationPass(cpg).createAndApply()
-      // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-        val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
-        astCreationPass.createAndApply()
-        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+    val xtocpg = if ScanProcessor.config.runOnlyDataFlows && Files.exists(Paths.get(cpgOutputPath)) then {
+      Success(codepropertygraph.Cpg.withStorage(cpgOutputPath))
+    } else {
+      val parsedcpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
+        new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
+        new ConfigFileCreationPass(cpg).createAndApply()
+        // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
+        Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+          val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+          astCreationPass.createAndApply()
+          TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+        }
       }
+      println(
+        s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+      )
+      parsedcpg
     }
-    println(
-      s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-    )
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
   }
 
