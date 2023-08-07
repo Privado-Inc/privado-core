@@ -517,17 +517,16 @@ object DataElementDiscoveryJS {
             elementInfo.put(typeDecl, new ListBuffer[Any])
           }
           val elements = elementInfo(typeDecl)
-          paramList.foreach(param => elements += param)
+          paramList.foreach(param =>
+            if (!param.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)) {
+              elements += param
+            }
+          )
           elementInfo.put(typeDecl, elements)
         }
       }
     }
-    val wordsToRemove =  "(?i)modules?|loggers?|val|console|require|_|get|key|value|data|page|url|Set|filter|<init>|err|errors|axios|express|router|component|Instance|utils?|app|undefined|context|process|...props?|async|await|const|let|var|this".r
-    val filteredMemberInfoMap = memberInfo.map { case (typeDeclNode, members) =>
-      typeDeclNode -> members.filterNot(member => wordsToRemove.findFirstIn(member.name).isDefined)
-    }
-
-    filteredMemberInfoMap.foreach {
+    memberInfo.foreach {
       case (typeDecl, memberList) => {
         // Filtering out the noise
         if (
@@ -539,7 +538,11 @@ object DataElementDiscoveryJS {
             elementInfo.put(typeDecl, new ListBuffer[Any])
           }
           val elements = elementInfo(typeDecl)
-          memberList.foreach(member => elements += member)
+          memberList.foreach(member =>
+            if (!member.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)) {
+              elements += member
+            }
+          )
           elementInfo.put(typeDecl, elements)
         }
       }
@@ -663,6 +666,7 @@ object DataElementDiscoveryJS {
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
           && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+          && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
         )
           workbookResult += List(
             identifier.typeFullName,
@@ -683,6 +687,7 @@ object DataElementDiscoveryJS {
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+          && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
         )
           workbookResult += List(
             local.typeFullName,
