@@ -70,8 +70,8 @@ class Dataflow(cpg: Cpg) {
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
 
-    if (privadoScanConfig.limitNoSinksForDataflos > -1) {
-      sinks = sinks.take(privadoScanConfig.limitNoSinksForDataflos)
+    if (privadoScanConfig.limitNoSinksForDataflows > -1) {
+      sinks = sinks.take(privadoScanConfig.limitNoSinksForDataflows)
       println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes post limit - ${sinks.size}")
     }
 

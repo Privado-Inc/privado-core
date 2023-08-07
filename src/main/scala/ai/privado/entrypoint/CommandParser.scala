@@ -49,7 +49,7 @@ case class PrivadoInput(
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
   enableAuditSemanticsFilter: Boolean = false,
-  limitNoSinksForDataflos: Int = -1
+  limitNoSinksForDataflows: Int = -1
 )
 
 object CommandConstants {
@@ -208,7 +208,7 @@ object CommandParser {
             opt[Int](CommandConstants.LIMIT_NO_SINKS_FOR_DATAFLOWS)
               .abbr(CommandConstants.LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR)
               .optional()
-              .action((x, c) => c.copy(limitNoSinksForDataflos = x))
+              .action((x, c) => c.copy(limitNoSinksForDataflows = x))
               .text("Limit the no sinks being used for finding dataflows"),
             arg[String]("<Source directory>")
               .required()
