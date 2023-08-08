@@ -142,10 +142,20 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
       .whereNot(_.argumentIndex(0))
       .l
     if (targetArguments.nonEmpty) {
-      implicit val engineContext: EngineContext =
-        EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
+      val engineContext: EngineContext =
+        EngineContext(
+          semantics = JavaSemanticGenerator.getDefaultSemantics,
+          config =
+            if (ScanProcessor.config.limitArgExpansionDataflows > -1) then
+              EngineConfig(
+                maxCallDepth = 4,
+                maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
+                maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
+              )
+            else EngineConfig(4)
+        )
       val feignFlows = {
-        val flows = feignTargetCalls.reachableByFlows(httpSources).l
+        val flows = feignTargetCalls.reachableByFlows(httpSources)(engineContext).l
         if (ScanProcessor.config.disableDeDuplication)
           flows
         else

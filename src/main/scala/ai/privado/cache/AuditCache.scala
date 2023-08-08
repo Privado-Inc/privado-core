@@ -1,15 +1,15 @@
 package ai.privado.cache
 
 import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
-import ai.privado.entrypoint.PrivadoInput
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.DataFlowPathModel
+import ai.privado.model.{Constants, DataFlowPathModel, Language}
 import ai.privado.model.exporter.DataFlowPathIntermediateModel
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -63,10 +63,22 @@ object AuditCache {
 
   def addIntoBeforeSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
     val newPrivadoScanConfig = PrivadoInput(disableRunTimeSemantics = true)
+    val expanLimit =
+      if ScanProcessor.config.limitArgExpansionDataflows > -1 then ScanProcessor.config.limitArgExpansionDataflows
+      else Constants.defaultExpansionLimit
+
     val engineContext: EngineContext = EngineContext(
       semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
-      config = EngineConfig(4)
+      config =
+        if (AppCache.repoLanguage == Language.RUBY || ScanProcessor.config.limitArgExpansionDataflows > -1) then
+          EngineConfig(
+            maxCallDepth = 4,
+            maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
+            maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
+          )
+        else EngineConfig(4)
     )
+
     val sources = Dataflow.getSources(cpg)
     val sinks   = Dataflow.getSinks(cpg)
 

@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.ruby.tagger.sink
 
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
@@ -10,7 +11,7 @@ import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import io.circe.Json
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
@@ -24,9 +25,13 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
   val apis = cacheCall.name(APISINKS_REGEX).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
-
+  val expanLimit =
+    if ScanProcessor.config.limitArgExpansionDataflows > -1 then ScanProcessor.config.limitArgExpansionDataflows else 50
   implicit val engineContext: EngineContext =
-    EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
+    EngineContext(
+      semantics = JavaSemanticGenerator.getDefaultSemantics,
+      config = EngineConfig(maxCallDepth = 4, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
+    )
   val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {

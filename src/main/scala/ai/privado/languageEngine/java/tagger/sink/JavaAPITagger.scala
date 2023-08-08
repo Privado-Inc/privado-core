@@ -23,8 +23,9 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.language._
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.languageEngine.java.language.*
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
@@ -32,9 +33,10 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.ImportUtility
 import io.circe.Json
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
@@ -55,7 +57,19 @@ object APITaggerVersionJava extends Enumeration {
 
 class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger                             = LoggerFactory.getLogger(this.getClass)
+  private val logger = LoggerFactory.getLogger(this.getClass)
+  implicit val engineContext: EngineContext =
+    EngineContext(
+      semantics = JavaSemanticGenerator.getDefaultSemantics,
+      config =
+        if (ScanProcessor.config.limitArgExpansionDataflows > -1) then
+          EngineConfig(
+            maxCallDepth = 4,
+            maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
+            maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
+          )
+        else EngineConfig(4)
+    )
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()

@@ -63,7 +63,17 @@ class Dataflow(cpg: Cpg) {
 
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
-      EngineContext(semantics = getSemantics(cpg, privadoScanConfig, ruleCache), config = EngineConfig(4))
+      EngineContext(
+        semantics = getSemantics(cpg, privadoScanConfig, ruleCache),
+        config =
+          if (ScanProcessor.config.limitArgExpansionDataflows > -1) then
+            EngineConfig(
+              maxCallDepth = 4,
+              maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
+              maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
+            )
+          else EngineConfig(4)
+      )
     val sources = Dataflow.getSources(cpg)
     var sinks   = Dataflow.getSinks(cpg)
 
@@ -194,8 +204,15 @@ class Dataflow(cpg: Cpg) {
 object Dataflow {
 
   def dataflowForSourceSinkPair(sources: List[AstNode], sinks: List[CfgNode]): List[Path] = {
-    implicit val engineContext: EngineContext = EngineContext()
-    sinks.reachableByFlows(sources).l
+    val engineContext: EngineContext = EngineContext(config =
+      if (AppCache.repoLanguage == Language.RUBY || ScanProcessor.config.limitArgExpansionDataflows > -1) then
+        EngineConfig(
+          maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
+          maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
+        )
+      else EngineConfig()
+    )
+    sinks.reachableByFlows(sources)(engineContext).l
   }
 
   def getSources(cpg: Cpg): List[AstNode] = {

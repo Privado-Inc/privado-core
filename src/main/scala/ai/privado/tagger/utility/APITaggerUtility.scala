@@ -36,14 +36,12 @@ import ai.privado.utility.Utilities.{
   isFileProcessable,
   storeForTag
 }
+import io.joern.dataflowengineoss.language.*
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
-import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 
 object APITaggerUtility {
-  implicit val engineContext: EngineContext =
-    EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
 
   def sinkTagger(
     apiInternalSinkPattern: List[AstNode],
@@ -52,12 +50,12 @@ object APITaggerUtility {
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
     showAPI: Boolean = true
-  ): Unit = {
+  )(implicit engineContext: EngineContext): Unit = {
     val filteredSourceNode =
       apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
-        val flows = apis.reachableByFlows(filteredSourceNode).toList
+        val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
         if (ScanProcessor.config.disableDeDuplication)
           flows
         else
