@@ -17,7 +17,7 @@ class LeakageTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
     val leakages = cpg
       .call(ruleInfo.patterns(1))
       .filter(isFirstArgumentCall)
-      .filter(_.argument.head.asInstanceOf[Call].name(ruleInfo.patterns(0)))
+      .filter(_.argument.head.asInstanceOf[Call].name.matches(ruleInfo.patterns(0)))
       .l
 
     leakages.foreach(addRuleTags(builder, _, ruleInfo, ruleCache))
