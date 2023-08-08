@@ -1,29 +1,29 @@
 package ai.privado.languageEngine.python.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache._
+import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
-import ai.privado.languageEngine.python.semantic.Language._
+import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants._
+import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser, SQLPropertyPass}
-import ai.privado.semantic.Language._
+import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.pysrc2cpg._
+import io.joern.pysrc2cpg.*
 import io.joern.pysrc2cpg.ImportResolverPass
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 import io.joern.pysrc2cpg.DynamicTypeHintFullNamePass
@@ -81,6 +81,7 @@ object PythonProcessor {
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {

@@ -36,7 +36,7 @@ import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outpu
 import ai.privado.semantic.Language.*
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.model.Language
-import ai.privado.passes.SQLParser
+import ai.privado.passes.{DBTParserPass, SQLParser}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
@@ -84,6 +84,7 @@ object RubyProcessor {
 
         logger.debug("Running custom passes")
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
