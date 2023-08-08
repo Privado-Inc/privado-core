@@ -49,7 +49,15 @@ class RuleCache {
 
   def getRule: ConfigAndRules = rule
 
-  def setRuleInfo(ruleInfo: RuleInfo): Unit = ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+  def setRuleInfo(ruleInfo: RuleInfo): Unit = {
+    ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+    rule = ruleInfo.catLevelOne match {
+      case ai.privado.model.CatLevelOne.SOURCES     => rule.copy(sources = rule.sources.appended(ruleInfo))
+      case ai.privado.model.CatLevelOne.SINKS       => rule.copy(sinks = rule.sinks.appended(ruleInfo))
+      case ai.privado.model.CatLevelOne.COLLECTIONS => rule.copy(collections = rule.collections.appended(ruleInfo))
+      case _                                        => rule
+    }
+  }
 
   def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
 
@@ -59,7 +67,13 @@ class RuleCache {
 
   def getAllRuleInfo: Seq[RuleInfo] = ruleInfoMap.values.toList
 
-  private def setPolicyOrThreat(policy: PolicyOrThreat): Unit = policyOrThreatMap.addOne(policy.id -> policy)
+  private def setPolicyOrThreat(policy: PolicyOrThreat): Unit = {
+    policyOrThreatMap.addOne(policy.id -> policy)
+    rule = policy.policyOrThreatType match
+      case ai.privado.model.PolicyThreatType.THREAT     => rule.copy(threats = rule.threats.appended(policy))
+      case ai.privado.model.PolicyThreatType.COMPLIANCE => rule.copy(policies = rule.policies.appended(policy))
+
+  }
 
   def getPolicyOrThreat(policyId: String): Option[PolicyOrThreat] = policyOrThreatMap.get(policyId)
 

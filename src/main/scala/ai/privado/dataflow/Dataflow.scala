@@ -65,10 +65,15 @@ class Dataflow(cpg: Cpg) {
     implicit val engineContext: EngineContext =
       EngineContext(semantics = getSemantics(cpg, privadoScanConfig, ruleCache), config = EngineConfig(4))
     val sources = Dataflow.getSources(cpg)
-    val sinks   = Dataflow.getSinks(cpg)
+    var sinks   = Dataflow.getSinks(cpg)
 
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
+
+    if (privadoScanConfig.limitNoSinksForDataflows > -1) {
+      sinks = sinks.take(privadoScanConfig.limitNoSinksForDataflows)
+      println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes post limit - ${sinks.size}")
+    }
 
     if (sources.isEmpty || sinks.isEmpty) Map[String, Path]()
     else {
