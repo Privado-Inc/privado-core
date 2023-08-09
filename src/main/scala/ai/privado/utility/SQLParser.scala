@@ -24,7 +24,7 @@ object SqlCleaner {
   def clean(sql: String): String = {
     var cleanedSql = removeComments(sql)
     cleanedSql = removeDynamicVariables(cleanedSql)
-    cleanedSql
+    cleanedSql.replace("`", "")
   }
 
   private def removeComments(sql: String): String = {
@@ -112,7 +112,7 @@ object SQLParser {
           )
         case createStmt: CreateTable =>
           val columns: List[String] =
-            createStmt.getColumnDefinitions.asScala.map(colDef => cleanString(colDef.getColumnName)).toList
+            createStmt.getColumnDefinitions.asScala.map(_.getColumnName).toList
 
           val columnList = columns.map(columnName => {
             val lineColumn = getLineAndColumnNumber(sqlQuery, columnName)
@@ -146,7 +146,7 @@ object SQLParser {
   }
 
   private def createSQLTableItem(table: Table) = {
-    val tableName: String = cleanString(table.getName)
+    val tableName: String = table.getName
     val tableLineNumber   = Try(table.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE)
     val tableColumnNumber = Try(table.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     SQLTable(tableName, tableLineNumber, tableColumnNumber)
@@ -154,7 +154,7 @@ object SQLParser {
 
   private def createSQLColumnItem(column: ASTNodeAccess) = {
     SQLColumn(
-      cleanString(column.toString),
+      column.toString,
       Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE),
       Try(column.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     )
@@ -174,10 +174,6 @@ object SQLParser {
       }
     }
     (foundLineNumber, foundColumnNumber)
-  }
-
-  private def cleanString(value: String) = {
-    value.stripPrefix("`").stripSuffix("`")
   }
 
 }
