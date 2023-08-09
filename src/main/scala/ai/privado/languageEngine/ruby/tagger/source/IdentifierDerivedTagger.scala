@@ -15,7 +15,7 @@ class IdentifierDerivedTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
 
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
 
-  private val cachedTypeDecl: List[TypeDecl] = cpg.typeDecl.where(_.file.name("models/.*")).l
+  private val cachedTypeDecl: List[TypeDecl] = cpg.typeDecl.where(_.file.name(".*models/.*")).l
 
   override def generateParts(): Array[SqlColumnNode] = cpg.sqlQuery
     .name(SQLQueryType.CREATE)
