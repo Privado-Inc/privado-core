@@ -154,5 +154,5 @@ object Constants {
   val semanticDelimeter = "_A_"
 
   // Ruby defaults
-  val defaultExpansionLimit = 50
+  val defaultExpansionLimit = 20
 }
