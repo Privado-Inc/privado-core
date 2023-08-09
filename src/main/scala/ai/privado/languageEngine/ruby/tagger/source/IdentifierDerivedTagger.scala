@@ -36,30 +36,35 @@ class IdentifierDerivedTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
               val typeDeclFullNames = cachedTypeDecl.filter(_.name.equalsIgnoreCase(cleanedTableName)).fullName.l
               if (typeDeclFullNames.nonEmpty) {
                 val typeDeclFullNameRegex = typeDeclFullNames.mkString("(", "|", ")")
-                cpg.identifier.where(_.typeFullName(s"$typeDeclFullNameRegex.*")).foreach { impactedObject =>
+                cpg.identifier
+                  .or(
+                    _.typeFullName(s"$typeDeclFullNameRegex.*"),
+                    _.filter(_.dynamicTypeHintFullName.exists(_.matches(s"$typeDeclFullNameRegex.*")))
+                  )
+                  .foreach { impactedObject =>
 
-                  storeForTag(builder, impactedObject, ruleCache)(
-                    InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
-                    ruleInfo.id
-                  )
-                  storeForTag(builder, impactedObject, ruleCache)(
-                    Constants.id,
-                    Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
-                  )
-                  storeForTag(builder, impactedObject, ruleCache)(
-                    Constants.catLevelOne,
-                    CatLevelOne.DERIVED_SOURCES.name
-                  )
-                  storeForTag(builder, impactedObject, ruleCache)(
-                    Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-                    ruleInfo.id
-                  )
-                  // Tag for storing memberName in derived Objects -> user --> (email, password)
-                  storeForTag(builder, impactedObject, ruleCache)(
-                    ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-                    sqlColumn.name
-                  )
-                }
+                    storeForTag(builder, impactedObject, ruleCache)(
+                      InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+                      ruleInfo.id
+                    )
+                    storeForTag(builder, impactedObject, ruleCache)(
+                      Constants.id,
+                      Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                    )
+                    storeForTag(builder, impactedObject, ruleCache)(
+                      Constants.catLevelOne,
+                      CatLevelOne.DERIVED_SOURCES.name
+                    )
+                    storeForTag(builder, impactedObject, ruleCache)(
+                      Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+                      ruleInfo.id
+                    )
+                    // Tag for storing memberName in derived Objects -> user --> (email, password)
+                    storeForTag(builder, impactedObject, ruleCache)(
+                      ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+                      sqlColumn.name
+                    )
+                  }
               }
             case _ =>
         case None =>
