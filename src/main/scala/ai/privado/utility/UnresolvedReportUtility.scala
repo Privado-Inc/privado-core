@@ -48,8 +48,8 @@ object UnresolvedReportUtility {
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
-    var unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
-    val operator_name        = "(?i)(<operator>).*"
+    var unknown_full_name    = "(?i)(.*)(unknownfullname|empty)(.*)"
+    val operator_name        = "(?i)(operator).*"
     val importRegex          = "(?i).*(import|require).*"
 
     if (language.equals(Language.RUBY)) {
@@ -64,15 +64,18 @@ object UnresolvedReportUtility {
     val resolvedCallMethodFullNames = ListBuffer[Call]()
     xtocpg match {
       case Success(cpg) => {
-        val importCount = cpg.call.l
-          .filter((i) => {
-            i.name.matches(importRegex)
-          })
-          .l
-          .length
-        val operatorCount = cpg.call.l.filter(i => !i.name.matches(operator_name)).l.length
-        total = cpg.call.methodFullName.l.length - importCount - operatorCount
-        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length
+        val importCount = cpg.call
+          .or(
+            _.filter((i) => {
+              i.name.matches(importRegex)
+            }),
+            _.where(_.code("<empty>"))
+          )
+          .size
+
+        val operatorCount = cpg.call.count(i => !i.name.matches(operator_name))
+        total = cpg.call.methodFullName.size - importCount - operatorCount
+        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).size
 
         nonempty = cpg.call.callee.filter(_.nonEmpty == false).l.length
         isempty = cpg.call.callee.filter(_.isEmpty).l.length
