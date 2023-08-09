@@ -117,4 +117,7 @@ object AuditReportConstants {
     "(?i)(this|request|response|req|error|req|res|state|e|i|formik)|param.*|_tmp.*"
 
   val JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX = ".*(?i)(anonymous|props|response|request).*"
+
+  val JS_ELEMENTS_TO_BE_EXCLUDED =
+    "^(?i)(modules?|loggers?|val|console|require|_|get|key|value|data|page|url|Set|filter|<init>|err|errors|axios|express|router|component|Instance|utils?|app|undefined|context|process|...props?|async|await|const|let|var|this)$"
 }
