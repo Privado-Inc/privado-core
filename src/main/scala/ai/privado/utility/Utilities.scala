@@ -23,7 +23,7 @@
 package ai.privado.utility
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
@@ -66,15 +66,17 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def getEngineContext(maxCallDepthP: Int = 4)(implicit semanticsP: Semantics = DefaultSemantics()): EngineContext = {
+  def getEngineContext(maxCallDepthP: Int = 4, config: PrivadoInput = ScanProcessor.config)(implicit
+    semanticsP: Semantics = DefaultSemantics()
+  ): EngineContext = {
     val expanLimit =
-      if ScanProcessor.config.limitArgExpansionDataflows > -1 then ScanProcessor.config.limitArgExpansionDataflows
+      if config.limitArgExpansionDataflows > -1 then config.limitArgExpansionDataflows
       else Constants.defaultExpansionLimit
 
     EngineContext(
       semantics = semanticsP,
       config =
-        if (AppCache.repoLanguage == Language.RUBY || ScanProcessor.config.limitArgExpansionDataflows > -1) then
+        if (AppCache.repoLanguage == Language.RUBY || config.limitArgExpansionDataflows > -1) then
           EngineConfig(maxCallDepth = maxCallDepthP, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
         else EngineConfig(maxCallDepth = maxCallDepthP)
     )
