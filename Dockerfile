@@ -1,8 +1,7 @@
 ARG VERSION=1.0.0
 FROM openjdk:18.0.2.1-jdk-bullseye as build
-RUN apt update && apt install -y python3 git curl bash
+RUN apt update && apt install -y python3 git curl bash ruby-full
 RUN ln -sf python3 /usr/bin/python
-RUN apt update && apt-get install ruby-full
 ENV SBT_VERSION 1.7.1
 ENV SBT_HOME /usr/local/sbt
 ENV PATH ${PATH}:${SBT_HOME}/bin
