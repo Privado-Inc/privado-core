@@ -31,7 +31,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
-import ai.privado.utility.ImportUtility
+import ai.privado.utility.{ImportUtility, Utilities}
 import io.circe.Json
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -57,21 +57,10 @@ object APITaggerVersionJava extends Enumeration {
 
 class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger = LoggerFactory.getLogger(this.getClass)
-  implicit val engineContext: EngineContext =
-    EngineContext(
-      semantics = JavaSemanticGenerator.getDefaultSemantics,
-      config =
-        if (ScanProcessor.config.limitArgExpansionDataflows > -1) then
-          EngineConfig(
-            maxCallDepth = 4,
-            maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
-            maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
-          )
-        else EngineConfig(4)
-    )
-  val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  private val logger                        = LoggerFactory.getLogger(this.getClass)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)(JavaSemanticGenerator.getDefaultSemantics)
+  val cacheCall: List[Call]                 = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall: List[String]      = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
 
   val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)

@@ -30,6 +30,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
+import ai.privado.utility.Utilities
 import io.circe.Json
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -48,17 +49,8 @@ class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpg
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 
-  implicit val engineContext: EngineContext =
-    EngineContext(config =
-      if (ScanProcessor.config.limitArgExpansionDataflows > -1) then
-        EngineConfig(
-          maxCallDepth = 4,
-          maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
-          maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
-        )
-      else EngineConfig(4)
-    )
-  val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)
+  val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks

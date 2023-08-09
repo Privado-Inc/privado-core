@@ -5,6 +5,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{Constants, DataFlowPathModel, Language}
 import ai.privado.model.exporter.DataFlowPathIntermediateModel
+import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -63,26 +64,16 @@ object AuditCache {
 
   def addIntoBeforeSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Unit = {
     val newPrivadoScanConfig = PrivadoInput(disableRunTimeSemantics = true)
-    val expanLimit =
-      if ScanProcessor.config.limitArgExpansionDataflows > -1 then ScanProcessor.config.limitArgExpansionDataflows
-      else Constants.defaultExpansionLimit
-
-    val engineContext: EngineContext = EngineContext(
-      semantics = JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache),
-      config =
-        if (AppCache.repoLanguage == Language.RUBY || ScanProcessor.config.limitArgExpansionDataflows > -1) then
-          EngineConfig(
-            maxCallDepth = 4,
-            maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
-            maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
-          )
-        else EngineConfig(4)
-    )
 
     val sources = Dataflow.getSources(cpg)
     val sinks   = Dataflow.getSinks(cpg)
 
-    val unfilteredPostSemanticsFlow = sinks.reachableByFlows(sources)(engineContext).toList
+    // TODO: This is using only JavaSemantic. We need to change to use based on language selection. I assume this can be handled inside Utilities.getEngineContext method itself
+    val unfilteredPostSemanticsFlow = sinks
+      .reachableByFlows(sources)(
+        Utilities.getEngineContext()(JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache))
+      )
+      .toList
 
     dataflowMapByPathId = getDataflowPathAndIdMap(unfilteredPostSemanticsFlow)
 

@@ -6,7 +6,7 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.InternalTag
 import ai.privado.model.sql.SQLQuery
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.SQLParser
+import ai.privado.utility.{SQLParser, Utilities}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -74,17 +74,8 @@ class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
                   .filterNot(_.isMember)
                   .map(_.asInstanceOf[CfgNode])
                   .l
-              val engineContext: EngineContext =
-                EngineContext(config =
-                  if (ScanProcessor.config.limitArgExpansionDataflows > -1) then
-                    EngineConfig(
-                      maxCallDepth = 4,
-                      maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
-                      maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
-                    )
-                  else EngineConfig(4)
-                )
-              val readFlow = dataElementSinks.reachableByFlows(node)(engineContext).l
+
+              val readFlow = dataElementSinks.reachableByFlows(node)(Utilities.getEngineContext(4)).l
               if (readFlow.nonEmpty) {
                 // As a flow is present from Select query to a Data element we can say, the data element is read from the query
                 readFlow

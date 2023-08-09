@@ -29,6 +29,7 @@ import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
+import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
@@ -47,21 +48,8 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .methodFullName(commonHttpPackages)
     .l
-  val expanLimit =
-    if ScanProcessor.config.limitArgExpansionDataflows > -1 then ScanProcessor.config.limitArgExpansionDataflows
-    else Constants.defaultExpansionLimit
 
-  implicit val engineContext: EngineContext = EngineContext(
-    semantics = DefaultSemantics(),
-    config =
-      if (AppCache.repoLanguage == Language.RUBY || ScanProcessor.config.limitArgExpansionDataflows > -1) then
-        EngineConfig(
-          maxCallDepth = 4,
-          maxArgsToAllow = ScanProcessor.config.limitArgExpansionDataflows,
-          maxOutputArgsExpansion = ScanProcessor.config.limitArgExpansionDataflows
-        )
-      else EngineConfig(4)
-  )
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks

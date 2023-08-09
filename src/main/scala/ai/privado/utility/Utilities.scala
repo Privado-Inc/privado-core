@@ -22,12 +22,16 @@
 
 package ai.privado.utility
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model._
+import ai.privado.model.*
 import better.files.File
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
@@ -61,6 +65,20 @@ object Utilities {
   implicit val resolver: ICallResolver = NoResolve
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  def getEngineContext(maxCallDepthP: Int = 4)(implicit semanticsP: Semantics = DefaultSemantics()): EngineContext = {
+    val expanLimit =
+      if ScanProcessor.config.limitArgExpansionDataflows > -1 then ScanProcessor.config.limitArgExpansionDataflows
+      else Constants.defaultExpansionLimit
+
+    EngineContext(
+      semantics = semanticsP,
+      config =
+        if (AppCache.repoLanguage == Language.RUBY || ScanProcessor.config.limitArgExpansionDataflows > -1) then
+          EngineConfig(maxCallDepth = maxCallDepthP, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
+        else EngineConfig(maxCallDepth = maxCallDepthP)
+    )
+  }
 
   /** Utility to add a single tag to a object
     */
