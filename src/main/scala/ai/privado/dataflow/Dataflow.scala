@@ -64,7 +64,7 @@ class Dataflow(cpg: Cpg) {
 
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
-      Utilities.getEngineContext(4)(JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache))
+      Utilities.getEngineContext(4)(semanticsP = getSemantics(cpg, privadoScanConfig, ruleCache))
 
     val sources = Dataflow.getSources(cpg)
     var sinks   = Dataflow.getSinks(cpg)
