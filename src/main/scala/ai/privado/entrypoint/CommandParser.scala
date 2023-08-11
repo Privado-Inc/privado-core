@@ -48,7 +48,9 @@ case class PrivadoInput(
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
-  enableAuditSemanticsFilter: Boolean = false
+  enableAuditSemanticsFilter: Boolean = false,
+  limitNoSinksForDataflows: Int = -1,
+  limitArgExpansionDataflows: Int = -1
 )
 
 object CommandConstants {
@@ -88,6 +90,10 @@ object CommandConstants {
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
   val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
   val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
+  val LIMIT_NO_SINKS_FOR_DATAFLOWS                 = "limit-no-sinks-for-dataflows"
+  val LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR            = "lnsfd"
+  val LIMIT_ARG_EXPANSION_FOR_DATAFLOWS            = "limit-arg-exp-for-dataflows"
+  val LIMIT_ARG_EXPANSION_FOR_DATAFLOWS_ABBR       = "laefd"
 }
 
 object CommandParser {
@@ -202,6 +208,16 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableAuditSemanticsFilter = true))
               .text("Enable semantic filter in dataflow audit report"),
+            opt[Int](CommandConstants.LIMIT_NO_SINKS_FOR_DATAFLOWS)
+              .abbr(CommandConstants.LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR)
+              .optional()
+              .action((x, c) => c.copy(limitNoSinksForDataflows = x))
+              .text("Limit the no sinks being used for finding dataflows"),
+            opt[Int](CommandConstants.LIMIT_ARG_EXPANSION_FOR_DATAFLOWS)
+              .abbr(CommandConstants.LIMIT_ARG_EXPANSION_FOR_DATAFLOWS_ABBR)
+              .optional()
+              .action((x, c) => c.copy(limitArgExpansionDataflows = x))
+              .text("Max Limit for argument expansion being done while finding dataflows"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

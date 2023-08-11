@@ -3,6 +3,7 @@ package ai.privado.languageEngine.ruby.download
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.ruby.cache.PackageTable
 import better.files.File
+import io.joern.rubysrc2cpg.utils.{ModuleModel, TypeDeclModel}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -31,41 +32,33 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
     testGemMap.toMap
   }
 
-  /*
-  "Ruby External Dependency Download" ignore {
+  "Ruby External Dependency Download" should {
     "Test dummy_logger dependency download" in {
-      val packageUsed = List("dummy_logger")
-
       val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, inputDir.pathAsString)
 
       // Should have dummy_logger as module
-      packageTable.containsModule("dummy_logger") shouldBe true
+      packageTable.getModule("dummy_logger") shouldBe List(
+        ModuleModel("Main_module", "dummy_logger::program.Main_module")
+      )
 
-      // should have methodName
-      packageTable.getMethodFullNameUsingName(packageUsed, "third_fun").get should equal(
-        "dummy_logger::program.Main_module.Main_outer_class.third_fun"
-      )
-      packageTable.getMethodFullNameUsingName(packageUsed, "first_fun").get should equal(
-        "dummy_logger::program.Main_module.Main_outer_class.first_fun"
-      )
-      packageTable.getMethodFullNameUsingName(packageUsed, "help_print").get should equal(
-        "dummy_logger::program.Help.help_print"
+      // should capture typeDecls
+      packageTable.getTypeDecl("dummy_logger") shouldBe List(
+        TypeDeclModel("Main_outer_class", "dummy_logger::program.Main_module.Main_outer_class"),
+        TypeDeclModel("Help", "dummy_logger::program.Help")
       )
     }
 
-    "Test redis dependency download" in {
+    // TODO Remove this test case as anyways currently we are not focusing on methods
+    "Test redis dependency download" ignore {
       val packageUsed = List("redis")
 
       val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, inputDir.pathAsString)
 
-      packageTable.containsModule("redis") shouldBe true
-
-      packageTable.getMethodFullNameUsingName(packageUsed, "zscan_each").get should equal(
+      packageTable.getMethodFullNameUsingName(packageUsed, "zscan_each") shouldBe List(
         "redis::program.Redis.Commands.SortedSets.zscan_each"
       )
     }
   }
-   */
 }
 
 abstract class ExternalDependenciesDownloadTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
