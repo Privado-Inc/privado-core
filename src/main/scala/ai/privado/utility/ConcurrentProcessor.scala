@@ -77,21 +77,26 @@ abstract class ConcurrentProcessor[T, R](result: R) {
     *   \- Result object
     */
   def createAndApply(): R = {
-    val queueWriter = new Thread(Writer)
-    queueWriter.start()
-    val parts = generateParts()
-    val futures = parts
-      .map(part => {
-        Future {
-          runOnPart(part)
-          cleanup()
-        }
-      })
-      .toList
-    val allResults: Future[List[Unit]] = Future.sequence(futures)
-    Await.result(allResults, Duration.Inf)
-    pushStopCommandInQueue()
-    queueWriter.join()
+    init()
+    val genParts = generateParts()
+    Option(genParts) match
+      case Some(parts) if parts.size > 0 =>
+        val queueWriter = new Thread(Writer)
+        queueWriter.start()
+        val futures = parts
+          .map(part => {
+            Future {
+              runOnPart(part)
+              cleanup()
+            }
+          })
+          .toList
+        val allResults: Future[List[Unit]] = Future.sequence(futures)
+        Await.result(allResults, Duration.Inf)
+        pushStopCommandInQueue()
+        queueWriter.join()
+      case _ =>
+    finish()
     result
   }
 
@@ -107,13 +112,14 @@ abstract class ConcurrentProcessor[T, R](result: R) {
     *   \- ZeroMQ PUSH Socket.
     */
   private def getQueue(): ZMQ.Socket = {
-    Option(queue.get()) match {
+    val temp = queue.get()
+    Option(temp) match {
       case Some(socket) =>
         socket
       case None =>
         val socket = zContext.createSocket(SocketType.PUSH)
         socket.connect(s"inproc://${topic}")
-        logger.debug(
+        logger.trace(
           s"PUSH Socket connected to queue -> inproc://${topic} from thread ${Thread.currentThread().getId()}"
         )
         queue.set(socket)
@@ -123,7 +129,12 @@ abstract class ConcurrentProcessor[T, R](result: R) {
 
   // For now it will just close the socket.
   private def cleanup(): Unit = {
-    getQueue().close()
+    Option(queue.get()) match {
+      case Some(socket) =>
+        socket.close()
+        queue.set(null)
+      case _ =>
+    }
     logger.debug(
       s"PUSH Socket closed connection to queue -> inproc://${topic} from thread ${Thread.currentThread().getId()}"
     )
@@ -137,11 +148,19 @@ abstract class ConcurrentProcessor[T, R](result: R) {
     *   \- result object generated from the processing of {@link ConcurrentProcessor#runOnPart()}
     */
   def addInWriterQueue(command: String, item: Any): Unit = {
-    val queue = getQueue()
-    queue.sendMore(command)
-    queue.send(serialise(item))
-    logger.trace(s"Command '${command}' pushed to queue -> inproc://${topic}")
-    logger.trace(s"Item ${item} pushed to queue -> inproc://${topic}")
+    try {
+      val queue = getQueue()
+      queue.sendMore(command)
+      queue.send(serialise(item))
+      logger.trace(s"Command '${command}' pushed to queue -> inproc://${topic}")
+      logger.trace(s"Item ${item} pushed to queue -> inproc://${topic}")
+    } catch {
+      case ex: Exception =>
+        logger.error(
+          s"Error while writing in queue -> inproc://${topic} from thread ${Thread.currentThread().getId()}: ",
+          ex
+        )
+    }
   }
 
   /** Serialise any object to byte array to be passed through queue
