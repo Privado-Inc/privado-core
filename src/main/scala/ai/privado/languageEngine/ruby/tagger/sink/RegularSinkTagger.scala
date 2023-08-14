@@ -45,7 +45,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val combinedRegex = s"(pkg.){0,1}(\"${ruleInfo.combinedRulePattern}\").*"
+    val combinedRegex = ruleInfo.combinedRulePattern
     val sinks = cacheCall
       .or(_.methodFullName(combinedRegex), _.filter(_.dynamicTypeHintFullName.exists(_.matches(combinedRegex))))
       .l
