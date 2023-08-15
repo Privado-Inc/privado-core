@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.download
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.ruby.passes.download.{DownloadDependenciesPass, ExternalDependenciesPass}
+import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import better.files.File
 import io.joern.rubysrc2cpg.utils.{ModuleModel, PackageTable, TypeDeclModel}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
@@ -53,7 +53,7 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
     "Test redis dependency download" ignore {
       val packageUsed = List("redis")
 
-      val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, inputDir.pathAsString)
+      val packageTable = new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString).createAndApply()
 
       packageTable.getMethodFullNameUsingName(packageUsed, "zscan_each") shouldBe List(
         "redis::program.Redis.Commands.SortedSets.zscan_each"
