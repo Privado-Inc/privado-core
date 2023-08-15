@@ -28,7 +28,6 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
-import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
@@ -147,7 +146,6 @@ object RubyProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report

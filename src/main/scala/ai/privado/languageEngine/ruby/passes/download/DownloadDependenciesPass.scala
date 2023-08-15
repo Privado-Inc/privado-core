@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.ruby.passes.download
 
-import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver.logger
 import ai.privado.utility.ConcurrentProcessor
 import better.files.File
 import io.joern.rubysrc2cpg.utils.PackageTable
@@ -83,11 +82,11 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
                 if (internalGemFile.exists) then processGem(internalGemFile, downloadAndUnpackLocation)
                 logger.info(s"Gem unpacked Successfully: '$dogGemFile'")
               case Failure(exception) =>
-                logger.error(s"Error while unpacking '$dogGemFile' : ", exception)
+                logger.warn(s"Error while unpacking '$dogGemFile' : ", exception)
           case _ => println("Something is not working.....") // TODO: Removed this line once testing is done.
 
       case Failure(exception) =>
-        logger.error(s"Error while downloading dependency '${gemName}-${gemVersion}': ", exception)
+        logger.warn(s"Error while downloading dependency '${gemName}-${gemVersion}': ", exception)
   }
 
   // TODO: Add unit test for this method
@@ -178,7 +177,7 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
       }
     } catch {
       case ex: Exception =>
-        logger.error(s"Error while processing parsed AST for file -> ${filePath} : ", ex)
+        logger.warn(s"Error while processing parsed AST for file -> ${filePath} : ", ex)
     }
   }
 
