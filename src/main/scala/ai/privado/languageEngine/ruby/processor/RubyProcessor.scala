@@ -29,12 +29,7 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
-import ai.privado.languageEngine.ruby.passes.{
-  GlobalImportPass,
-  MethodFullNamePassForRORBuiltIn,
-  PrivadoRubyTypeRecoveryPass,
-  RubyImportResolverPass
-}
+import ai.privado.languageEngine.ruby.passes.{GlobalImportPass, MethodFullNamePassForRORBuiltIn, PrivadoRubyTypeRecoveryPass, RubyImportResolverPass}
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -59,7 +54,7 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.{ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, JumpLabel, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
@@ -67,6 +62,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import scopt.Validation
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -285,6 +281,7 @@ object RubyProcessor {
       .withInputPath(absoluteSourceLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withSchemaValidation(ValidationMode.Enabled)
     // val xtocpg = new RubySrc2Cpg().createCpg(config)
 
     val global = new Global()
