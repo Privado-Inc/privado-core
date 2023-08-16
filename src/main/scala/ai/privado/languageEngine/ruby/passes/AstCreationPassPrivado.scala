@@ -32,6 +32,7 @@ class AstCreationPassPrivado(
     println(s"Total no of files getting scanned ------ > ${files.size}")
     files
       .foreach(fileName => {
+        println(s"Starting to process file : $fileName")
         try {
           diffGraph.absorb(
             new AstCreator(
@@ -46,6 +47,9 @@ class AstCreationPassPrivado(
         } catch {
           case ex: Exception =>
             logger.error(s"Error while processing AST for file - $fileName - ", ex)
+        }
+        finally {
+          println(s"Processing file $fileName : Done")
         }
       })
   }
