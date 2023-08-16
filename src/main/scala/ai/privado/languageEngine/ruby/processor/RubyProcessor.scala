@@ -29,7 +29,7 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
-import ai.privado.languageEngine.ruby.passes.{GlobalImportPass, MethodFullNamePassForRORBuiltIn, PrivadoRubyTypeRecoveryPass, RubyImportResolverPass}
+import ai.privado.languageEngine.ruby.passes.{AstCreationPassPrivado, GlobalImportPass, MethodFullNamePassForRORBuiltIn, PrivadoRubyTypeRecoveryPass, RubyImportResolverPass}
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -291,7 +291,8 @@ object RubyProcessor {
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-        val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+
+        val astCreationPass = new AstCreationPassPrivado(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
         astCreationPass.createAndApply()
         TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
       }
