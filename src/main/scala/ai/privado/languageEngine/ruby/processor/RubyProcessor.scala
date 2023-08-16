@@ -245,10 +245,17 @@ object RubyProcessor {
         case Some(literal: Literal) =>
           // In case we find a literal, it is assumed to be an integer literal which
           // indicates how many loop levels the continue shall apply to.
-          val numberOfLevels = Integer.valueOf(literal.code)
-          Cfg(entryNode = Option(node), continues = List((node, numberOfLevels)))
+          Try(Integer.valueOf(literal.code)) match {
+            case Failure(exception) =>
+              logger.error(
+                s"Error when typeCasting literal to integer in file ${literal.file.headOption.map(_.name).getOrElse("unknown file")} ",
+                exception
+              )
+              Cfg(entryNode = Option(node), continues = List((node, 1)))
+            case Success(numberOfLevels) => Cfg(entryNode = Option(node), continues = List((node, numberOfLevels)))
+          }
         case Some(x) =>
-          logger.warn(
+          logger.error(
             s"Unexpected node ${x.label} (${x.code}) from ${x.file.headOption.map(_.name).getOrElse("unknown file")}.",
             new NotImplementedError(
               "Only jump labels and integer literals are currently supported for continue statements."
@@ -298,6 +305,7 @@ object RubyProcessor {
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
 
+        /*
         val files = SourceFiles
           .determine(config.inputPath, Set(".rb"), config)
         println(s"Total no of files getting scanned ------ > ${files.size}")
@@ -316,6 +324,12 @@ object RubyProcessor {
               println(s"Processing file : $fileName : Done")
             }
           })
+         */
+
+        val astCreationPass =
+          new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+        astCreationPass.createAndApply()
+        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
       }
     }
     println(
