@@ -29,7 +29,13 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
-import ai.privado.languageEngine.ruby.passes.{AstCreationPassPrivado, GlobalImportPass, MethodFullNamePassForRORBuiltIn, PrivadoRubyTypeRecoveryPass, RubyImportResolverPass}
+import ai.privado.languageEngine.ruby.passes.{
+  AstCreationPassPrivado,
+  GlobalImportPass,
+  MethodFullNamePassForRORBuiltIn,
+  PrivadoRubyTypeRecoveryPass,
+  RubyImportResolverPass
+}
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
@@ -54,7 +60,7 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
-import io.joern.x2cpg.{ValidationMode, X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, JumpLabel, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
@@ -292,15 +298,31 @@ object RubyProcessor {
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
 
-        val astCreationPass = new AstCreationPassPrivado(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
-        astCreationPass.createAndApply()
-        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+        val files = SourceFiles
+          .determine(config.inputPath, Set(".rb"), config)
+        println(s"Total no of files getting scanned ------ > ${files.size}")
+        files
+          .foreach(fileName => {
+            println(s"Starting to process file : $fileName")
+            try {
+              val astCreationPass =
+                new AstCreationPassPrivado(cpg, global, parser, RubySrc2Cpg.packageTableInfo, fileName)
+              astCreationPass.createAndApply()
+              TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+            } catch {
+              case ex: Exception =>
+                logger.error(s"Error while processing AST for file outside - $fileName - ", ex)
+            } finally {
+              println(s"Processing file : $fileName : Done")
+            }
+          })
       }
     }
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
+
   }
 
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
