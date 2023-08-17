@@ -596,9 +596,9 @@ object DataElementDiscoveryJS {
 
           value.foreach {
             case (member: Member) => {
-              val memberDetails = s"${key.fullName}${key.file.head.name}${member.name}"
+              val memberUniqueKey = s"${key.fullName}${key.file.head.name}${member.name}"
               if (member.name.nonEmpty && !addedMembers.contains(memberDetails)) {
-                addedMembers.add(memberDetails)
+                addedMembers.add(memberUniqueKey)
                 if (ruleMemberInfo.contains(member.name)) {
                   workbookResult += List(
                     key.fullName,
@@ -630,8 +630,8 @@ object DataElementDiscoveryJS {
             }
 
             case (param: MethodParameterIn) => {
-              val memberDetails = s"${key.fullName}${key.file.head.name}${param.name}"
-              if (!addedMembers.contains(memberDetails)) {
+              val paramUniqueKey = s"${key.fullName}${key.file.head.name}${param.name}"
+              if (!addedMembers.contains(paramUniqueKey)) {
                 addedMembers.add(memberDetails)
                 if (ruleMemberInfo.contains(param.name)) {
                   workbookResult += List(
@@ -668,14 +668,14 @@ object DataElementDiscoveryJS {
       }
       val addedIdentifiers = mutable.Set[String]()
       identifiers.foreach(identifier => {
-        val identifierDetails = s"${identifier.typeFullName}${identifier.file.head.name}${identifier.name}"
+        val identifierUniqueKey = s"${identifier.typeFullName}${identifier.file.head.name}${identifier.name}"
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
           && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
           && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-          && !addedIdentifiers.contains(identifierDetails)
+          && !addedIdentifiers.contains(identifierUniqueKey)
         )
           workbookResult += List(
             identifier.typeFullName,
@@ -693,13 +693,13 @@ object DataElementDiscoveryJS {
 
       val addedLocals = mutable.Set[String]()
       locals.foreach(local => {
-        val localsDetails = s"${local.typeFullName}${local.file.head.name}${local.name}"
+        val localsUniqueKey = s"${local.typeFullName}${local.file.head.name}${local.name}"
         if (
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
           && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-          && !addedLocals.contains(localsDetails)
+          && !addedLocals.contains(localsUniqueKey)
         )
           workbookResult += List(
             local.typeFullName,
