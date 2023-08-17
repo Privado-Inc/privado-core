@@ -597,7 +597,7 @@ object DataElementDiscoveryJS {
           value.foreach {
             case (member: Member) => {
               val memberUniqueKey = s"${key.fullName}${key.file.head.name}${member.name}"
-              if (member.name.nonEmpty && !addedMembers.contains(memberDetails)) {
+              if (member.name.nonEmpty && !addedMembers.contains(memberUniqueKey)) {
                 addedMembers.add(memberUniqueKey)
                 if (ruleMemberInfo.contains(member.name)) {
                   workbookResult += List(
@@ -632,7 +632,7 @@ object DataElementDiscoveryJS {
             case (param: MethodParameterIn) => {
               val paramUniqueKey = s"${key.fullName}${key.file.head.name}${param.name}"
               if (!addedMembers.contains(paramUniqueKey)) {
-                addedMembers.add(memberDetails)
+                addedMembers.add(paramUniqueKey)
                 if (ruleMemberInfo.contains(param.name)) {
                   workbookResult += List(
                     key.fullName,
