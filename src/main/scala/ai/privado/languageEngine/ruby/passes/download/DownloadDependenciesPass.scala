@@ -69,7 +69,7 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
         output.collectFirst { case line: String if line.startsWith("Downloaded") => line.split("\\s+").last } match
           case Some(dotGem) =>
             val dogGemFile = s"${downloadAndUnpackLocation}${java.io.File.separator}${dotGem}.gem"
-            // logger.info(s"Gem successfully downloaded: '$dogGemFile'")
+            logger.info(s"Gem successfully downloaded: '$dogGemFile'")
             ExternalCommand.run(
               s"gem unpack $dogGemFile",
               s"${downloadAndUnpackLocation}${java.io.File.separator}unpack"
@@ -80,7 +80,7 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
                   s"${downloadAndUnpackLocation}${java.io.File.separator}unpack${java.io.File.separator}dotGem${java.io.File.separator}Gemfile"
                 )
                 if (internalGemFile.exists) then processGem(internalGemFile, downloadAndUnpackLocation)
-              // logger.info(s"Gem unpacked Successfully: '$dogGemFile'")
+                logger.info(s"Gem unpacked Successfully: '$dogGemFile'")
               case Failure(exception) =>
                 logger.warn(s"Error while unpacking '$dogGemFile' : ", exception)
           case _ => println(s"Something is not working..... $output") // TODO: Removed this line once testing is done.
