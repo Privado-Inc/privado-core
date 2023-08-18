@@ -179,6 +179,7 @@ object RubyProcessor {
           }
         } catch {
           case ex: Exception =>
+            ex.printStackTrace()
             logger.error("Error while processing the CPG after source code parsing ", ex)
             MetricHandler.setScanStatus(false)
             Left("Error while parsing the source code: " + ex.toString)
