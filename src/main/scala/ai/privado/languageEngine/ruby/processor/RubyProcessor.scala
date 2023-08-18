@@ -30,7 +30,6 @@ import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
 import ai.privado.languageEngine.ruby.passes.{
-  AstCreationPassPrivado,
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
   PrivadoRubyTypeRecoveryPass,
@@ -304,27 +303,6 @@ object RubyProcessor {
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-
-        /*
-        val files = SourceFiles
-          .determine(config.inputPath, Set(".rb"), config)
-        println(s"Total no of files getting scanned ------ > ${files.size}")
-        files
-          .foreach(fileName => {
-            println(s"Starting to process file : $fileName")
-            try {
-              val astCreationPass =
-                new AstCreationPassPrivado(cpg, global, parser, RubySrc2Cpg.packageTableInfo, fileName)
-              astCreationPass.createAndApply()
-              TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
-            } catch {
-              case ex: Exception =>
-                logger.error(s"Error while processing AST for file outside - $fileName - ", ex)
-            } finally {
-              println(s"Processing file : $fileName : Done")
-            }
-          })
-         */
 
         val astCreationPass =
           new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
