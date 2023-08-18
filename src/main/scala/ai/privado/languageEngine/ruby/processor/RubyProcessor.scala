@@ -33,6 +33,7 @@ import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
   PrivadoRubyTypeRecoveryPass,
+  RubyExternalTypesPass,
   RubyImportResolverPass
 }
 import ai.privado.languageEngine.ruby.semantic.Language.*
@@ -103,14 +104,13 @@ object RubyProcessor {
 
           logger.info("Enhancing Ruby graph by post processing pass")
 
+          new RubyExternalTypesPass(cpg, packageTableInfo).createAndApply()
+
           // Using our own pass by overriding languageEngine's pass
-          println(s"${Calendar.getInstance().getTime} - Global import started  ...")
           // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
           val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
           new GlobalImportPass(cpg, packageTableInfo, globalSymbolTable).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Global import done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+          // TODO clear packageTableInfo
           println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
           new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
           println(
