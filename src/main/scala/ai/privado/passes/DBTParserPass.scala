@@ -15,8 +15,8 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import overflowdb.BatchedUpdate
 
-import java.io.{File, StringReader}
-import scala.io.Source
+import java.io.{File}
+import scala.io.{Source}
 import java.util.Properties
 import scala.jdk.CollectionConverters.*
 import io.circe.parser.*
@@ -37,6 +37,7 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import org.yaml.snakeyaml.constructor.SafeConstructor
 
 import scala.collection.mutable.ListBuffer
+import scala.util.{Try, Success, Failure}
 
 
 object FileExtensions {
@@ -57,8 +58,127 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     ).toArray
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
-    logger.info(f">>>>>> wooohoooo: file: $file")
+  override def runOnPart(builder: DiffGraphBuilder, projectFile: String): Unit = {
+    // Parse project YAML and get metadata from projectFile
+    // Get models directory
+    // parse all yamls in models directory: check for structure of file if it represents model / table / columns
+    // populate that data in nodes
+
+    logger.info(f">>>>>> wooohoooo: file: $projectFile")
+    getYAML(projectFile) match {
+      case Success(projectData) => {
+        val projectName = projectData.get("name").asInstanceOf[String]
+        val profileName = projectData.get("profile").asInstanceOf[String]
+        val modelsDirectoryName = getModelsDirectoryName(projectData)
+        val (dbName, dbHost, dbPlatform) = getDatabaseInfo(projectFile, profileName) match {
+          case Success(value) => value
+          case Failure(err) =>
+            logger.error(f"error while getting database info: ${projectFile}: ${err}")
+            ("DBT", "", "")
+        }
+
+        logger.info(f">>>>>> DBT DBT: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform")
+
+      }
+      case Failure(e) => {
+        logger.error(f"error while processing YAML file: ${projectFile}: ${e}")
+        None
+      }
+    }
+
+  }
+
+  private def getDirectoryName(path: String): String = {
+    val file = new File(path)
+    val parent = file.getParent
+    if (parent == null) ""
+    else parent
+  }
+
+  private def getDatabaseInfo(dbtProjectFile: String, dbtProfileName: String) = Try {
+    val result = ("DBT", "", "")
+
+    if (dbtProfileName != "null") {
+      val dbtProjectRoot = getDirectoryName(dbtProjectFile)
+      val profilesFiles = getConfigFiles(
+        dbtProjectRoot,
+        Set(FileExtensions.YAML, FileExtensions.YML),
+        Set("profiles[.]yaml", "profiles[.]yml")
+      ).toArray
+
+      for ( profileFile <- profilesFiles if result._1 == "DBT" ) {
+        val profileData = getYAML(profileFile) match {
+          case Success(profileData) =>
+            profileData.get(dbtProfileName) match {
+              case null => null
+              case value => value.asInstanceOf[java.util.Map[String, Any]]
+            }
+          case Failure(e) =>
+            logger.error(f"error while processing profile YAML file: ${profileFile}: ${e}")
+            null
+        }
+
+        if (profileData != null) {
+          logger.info(f">>>>>>>>>?>> Hey got some profile data for ${profileFile}")
+          val defaultOutput = profileData.get("target").asInstanceOf[String]
+          if (profileData.containsKey("outputs")) {
+            val outputs = profileData.get("outputs").asInstanceOf[java.util.Map[String, Any]]
+            getProfileOutputData(outputs, defaultOutput) match {
+              case Some((outputKey, outputData)) =>
+                logger.info(f"hehllo outputKey: ${outputKey}")
+
+              case _ =>
+                logger.error(f"could not find any output data in profiles: ${profileFile}")
+            }
+          }
+        }
+      }
+    }
+    result
+  }
+
+  private def getProfileOutputData(data: java.util.Map[String, Any], defaultOutput: String) = {
+    // look in production outputs
+    var result: Option[(String, java.util.Map[String, Any])] = None
+
+    val productionKeys = Array("production", "prod", "prd")
+    productionKeys.foreach(x => {
+      if (result.isEmpty && data.containsKey(x)) {
+        logger.info(f"PROD CASE: ")
+        result = Some(x, data.get(x).asInstanceOf[java.util.Map[String, Any]])
+      }
+    })
+
+    // look in default output
+    if (result.isEmpty && data.containsKey(defaultOutput)) {
+      logger.info("Default Case")
+      result = Some(defaultOutput, data.get(defaultOutput).asInstanceOf[java.util.Map[String, Any]])
+    }
+
+    // look in first (or any)
+    if (result.isEmpty && !data.isEmpty) {
+      logger.info("First Case")
+      val headKeyValue = data.entrySet().iterator().next()
+      result = Some(headKeyValue.getKey, headKeyValue.getValue.asInstanceOf[java.util.Map[String, Any]])
+    }
+
+    result
+  }
+  private def getModelsDirectoryName(data: java.util.Map[String, Any]) = {
+    data.get("model-paths") match {
+      case value: java.util.List[_] if !value.isEmpty =>
+        value.get(0).toString
+      case value: String =>
+        value
+      case _ =>
+        "models"
+    }
+  }
+
+  private def getYAML(file: String) = Try {
+    val yamlContent = better.files.File(file).contentAsString // Read the YAML file content as a string
+    val yaml = new Yaml(new SafeConstructor(LoaderOptions()))
+    yaml.load(yamlContent).asInstanceOf[java.util.Map[String, Any]]
   }
 
   private def getConfigFiles(projectRoot: String, extensions: Set[String], allowedFiles: Set[String] = Set()): List[String] = {
@@ -79,7 +199,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             f.getAbsolutePath
           })
       )
-      .filter(_.matches(f".*(${allowedFiles.mkString("|")}).*"))
+      .filter(_.matches(f".*(${allowedFiles.mkString("|")})"))
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
       .distinct
   }
