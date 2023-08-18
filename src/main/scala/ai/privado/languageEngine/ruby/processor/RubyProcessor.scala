@@ -28,7 +28,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
-import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
+import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
@@ -48,6 +48,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.rubysrc2cpg.RubySrc2Cpg.packageTableInfo
 import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.passes.*
+import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
 import io.joern.x2cpg.datastructures.Global
@@ -91,7 +92,8 @@ object RubyProcessor {
           logger.info("Enhancing Ruby graph")
           if (!config.skipDownloadDependencies) {
             println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
-            val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
+//            val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
+            val packageTable = new DownloadDependenciesPass(new PackageTable(), sourceRepoLocation).createAndApply()
             RubySrc2Cpg.packageTableInfo.set(packageTable)
             println(
               s"${TimeMetric.getNewTime()} - Downloading dependencies and parsing done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -145,7 +147,6 @@ object RubyProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
@@ -236,7 +237,6 @@ object RubyProcessor {
   class RubyCfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) extends CfgCreator(entryNode, diffGraph) {
 
     override protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
-      println("here it comes...........................>>>>>>>>>>>>>>>>>")
       node.astChildren.find(_.order == 1) match {
         case Some(jumpLabel: JumpLabel) =>
           val labelName = jumpLabel.name
