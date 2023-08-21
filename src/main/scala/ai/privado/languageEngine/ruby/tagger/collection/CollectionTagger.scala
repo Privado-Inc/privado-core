@@ -44,7 +44,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           val routeMethodCall: String = targetCollectionUrl.stripPrefix("\"").stripSuffix("\"")
           val routeSeparatedStrings   = routeMethodCall.split(SYMBOL_HASH)
           val methodName              = routeSeparatedStrings(1)
-          val fileName                = ".*" + "/" + routeSeparatedStrings(0) + ".*_controller.rb"
+          val fileName                = ".*" + "/" + routeSeparatedStrings.headOption.getOrElse("") + ".*_controller.rb"
           val targetCollectionMethod  = cpg.method.name(methodName).where(_.file.name(fileName)).l
           if (targetCollectionMethod.nonEmpty) {
             methodUrlMap.addOne(
