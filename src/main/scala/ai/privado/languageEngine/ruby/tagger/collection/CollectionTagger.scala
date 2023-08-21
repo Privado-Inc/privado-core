@@ -37,22 +37,22 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .map { m =>
         //        sample route -> get '/hotels/new', to: 'hotels#new'
         // TODO: check scenarios involving single, double and no quote
-        val targetCollectionUrl = m.argument.isCall.code(COLLECTION_METHOD_REFERENCE_PATTERN).argument.isLiteral.code.l
+        val targetCollectionUrl = m.argument.isCall.code(COLLECTION_METHOD_REFERENCE_PATTERN).argument.isLiteral.code.head
+
         if (targetCollectionUrl.nonEmpty && targetCollectionUrl.contains(SYMBOL_HASH)) {
-          val routeMethodCall: String = targetCollectionUrl.head.stripPrefix("\"").stripSuffix("\"")
-          val routeSeparatedStrings = routeMethodCall.split("#")
+          val routeMethodCall: String = targetCollectionUrl.stripPrefix("\"").stripSuffix("\"")
+          val routeSeparatedStrings = routeMethodCall.split(SYMBOL_HASH)
           val methodName = routeSeparatedStrings(1)
-          val fileName = ".*" + "/" + routeSeparatedStrings(0) + ".*_controller\.rb"
-          val targetCollectionMethod = cpg.method.name(methodName).where(_.file.name(fileName))
+          val fileName = ".*" + "/" + routeSeparatedStrings(0) + ".*_controller.rb"
+          val targetCollectionMethod = cpg.method.name(methodName).where(_.file.name(fileName)).l
           if (targetCollectionMethod.nonEmpty) {
             methodUrlMap.addOne(
               targetCollectionMethod
-                .l
                 .head
                 .id -> m.argument.isLiteral.code.head
               //          TODO: ⬆️use .stripPrefix("\"").stripSuffix("\"") if required
             )
-            targetCollectionMethod.head
+            targetCollectionMethod
           } else {
             None
           }
