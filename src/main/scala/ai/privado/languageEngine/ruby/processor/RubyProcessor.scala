@@ -28,7 +28,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
-import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
+import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
@@ -48,6 +48,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.rubysrc2cpg.RubySrc2Cpg.packageTableInfo
 import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.passes.*
+import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
 import io.joern.x2cpg.datastructures.Global
@@ -59,7 +60,7 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
+import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, JumpLabel, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
@@ -67,6 +68,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import scopt.Validation
 
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -90,7 +92,8 @@ object RubyProcessor {
           logger.info("Enhancing Ruby graph")
           if (!config.skipDownloadDependencies) {
             println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
-            val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
+//            val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
+            val packageTable = new DownloadDependenciesPass(new PackageTable(), sourceRepoLocation).createAndApply()
             RubySrc2Cpg.packageTableInfo.set(packageTable)
             println(
               s"${TimeMetric.getNewTime()} - Downloading dependencies and parsing done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -144,7 +147,6 @@ object RubyProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
-
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
@@ -235,7 +237,6 @@ object RubyProcessor {
   class RubyCfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) extends CfgCreator(entryNode, diffGraph) {
 
     override protected def cfgForContinueStatement(node: ControlStructure): Cfg = {
-      println("here it comes...........................>>>>>>>>>>>>>>>>>")
       node.astChildren.find(_.order == 1) match {
         case Some(jumpLabel: JumpLabel) =>
           val labelName = jumpLabel.name
@@ -243,10 +244,17 @@ object RubyProcessor {
         case Some(literal: Literal) =>
           // In case we find a literal, it is assumed to be an integer literal which
           // indicates how many loop levels the continue shall apply to.
-          val numberOfLevels = Integer.valueOf(literal.code)
-          Cfg(entryNode = Option(node), continues = List((node, numberOfLevels)))
+          Try(Integer.valueOf(literal.code)) match {
+            case Failure(exception) =>
+              logger.error(
+                s"Error when typeCasting literal to integer in file ${literal.file.headOption.map(_.name).getOrElse("unknown file")} ",
+                exception
+              )
+              Cfg(entryNode = Option(node), continues = List((node, 1)))
+            case Success(numberOfLevels) => Cfg(entryNode = Option(node), continues = List((node, numberOfLevels)))
+          }
         case Some(x) =>
-          logger.warn(
+          logger.error(
             s"Unexpected node ${x.label} (${x.code}) from ${x.file.headOption.map(_.name).getOrElse("unknown file")}.",
             new NotImplementedError(
               "Only jump labels and integer literals are currently supported for continue statements."
@@ -285,6 +293,7 @@ object RubyProcessor {
       .withInputPath(absoluteSourceLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withSchemaValidation(ValidationMode.Enabled)
     // val xtocpg = new RubySrc2Cpg().createCpg(config)
 
     val global = new Global()
@@ -294,7 +303,9 @@ object RubyProcessor {
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-        val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+
+        val astCreationPass =
+          new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
         astCreationPass.createAndApply()
         TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
       }
@@ -303,6 +314,7 @@ object RubyProcessor {
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
     processCPG(xtocpg, ruleCache, sourceRepoLocation)
+
   }
 
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
