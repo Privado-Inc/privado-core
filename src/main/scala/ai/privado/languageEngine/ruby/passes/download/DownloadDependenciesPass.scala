@@ -193,7 +193,8 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
           .split(java.io.File.separator)
           .last
           .split("-")
-          .head
+          .init
+          .mkString("-")
       } else {
         path
       }
