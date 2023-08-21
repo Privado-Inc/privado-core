@@ -50,6 +50,7 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         None
     }
   }
+  
 
   private def buildAndReturnIndividualQueryNode(
     builder: DiffGraphBuilder,

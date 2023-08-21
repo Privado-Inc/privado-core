@@ -27,12 +27,16 @@ import io.circe.{Decoder, HCursor}
 
 import scala.collection.immutable.HashMap
 
+case class Schema(
+
+)
 case class DatabaseDetails(
   dbName: String,
   dbVendor: String,
   dbLocation: String,
   dbOperation: String,
-  configFile: String
+  configFile: String,
+  schema: Option[List[Schema]] = None
 )
 
 case class RuleInfo(

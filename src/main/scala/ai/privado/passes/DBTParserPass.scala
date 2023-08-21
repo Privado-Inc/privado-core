@@ -30,6 +30,7 @@ import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
 import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
+import scala.collection.mutable.ArrayBuffer
 
 import scala.jdk.CollectionConverters.*
 import ai.privado.model.Language
@@ -38,6 +39,8 @@ import org.yaml.snakeyaml.constructor.SafeConstructor
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{Try, Success, Failure}
+import java.nio.file.{Paths, Path}
+import scala.util.control.Breaks._
 
 
 object FileExtensions {
@@ -64,7 +67,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     // parse all yamls in models directory: check for structure of file if it represents model / table / columns
     // populate that data in nodes
 
-    logger.info(f">>>>>> wooohoooo: file: $projectFile")
+    logger.debug(f"Processing DBT Project: $projectFile")
     getYAML(projectFile) match {
       case Success(projectData) => {
         val projectName = projectData.get("name").asInstanceOf[String]
@@ -77,18 +80,112 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             ("DBT", "", "")
         }
 
-        logger.info(f">>>>>> DBT DBT: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform")
+        val models = getModels(projectFile, modelsDirectoryName) match {
+          case Success(value) => value
+          case Failure(err) =>
+            logger.error(f"error while getting models for profile: ${projectFile}: ${err}")
+            Array[java.util.Map[String, Any]]()
+        }
 
+
+        // for each model
+        models.foreach{ x =>
+
+        }
+
+//        ruleCache.setRuleInfo => Add Rules
+//        addDatabaseDetails => Call this for the new rule (with custom info?)
+//        new DatabaseNode
+
+
+
+        // Database Sink => Table => Column ("schema")
+//
+//        databaseInfo {
+//          "ID": "Sinks.Database.DBT.ProjectName",
+//          "",
+//          "host", "name", "location", "schemas": [{ table: "", columns: [{}] }]
+//          "users" > "mysql"
+//
+//        }
+//
+//        DBT
+//
+
+        // create database node
+        // create a table node
+        // create column nodes
+        // create edge between table-column node
+        // see creating a database-sink node
+
+
+        logger.debug(f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform")
       }
       case Failure(e) => {
         logger.error(f"error while processing YAML file: ${projectFile}: ${e}")
         None
       }
     }
-
   }
 
-  private def getDirectoryName(path: String): String = {
+//  private def getLineAndColumnNumber(fileText: String, query: String) = {
+//    var foundLineNumber = 1
+//    var foundColumnNumber = -1
+//    breakable {
+//      fileText.split("\n").zipWithIndex.foreach { case (queryLine, lineNumber) =>
+//        val columnNumber = queryLine.indexOf(query)
+//        if (columnNumber != NUMBER_MINUSONE) {
+//          foundLineNumber = lineNumber + NUMBER_ONE
+//          foundColumnNumber = columnNumber
+//          break()
+//        }
+//      }
+//    }
+//    (foundLineNumber, foundColumnNumber)
+//  }
+//
+//  private def findFirstPatternInFile(filePath: String, pattern: Regex): (Int, Int, String) = {
+//    val lines = Source.fromFile(filePath).getLines().toSeq
+//
+//    val (defaultRow, defaultCol) = (1, -1)
+//
+//    lines.zipWithIndex.flatMap { case (line, rowIndex) =>
+//      val matches = pattern.findFirstMatchIn(line)
+//      matches.map(matchResult => (rowIndex + 1, matchResult.start + 1, matchResult.group(0)))
+//    }.headOption.getOrElse((defaultRow, defaultCol, ""))
+//  }
+
+
+  private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
+    val dbtProjectRoot = getDirectoryName(dbtProjectFile)
+    val modelsDirectory = Paths.get(dbtProjectRoot, modelsDirectoryName).toString
+    val modelsFiles = getConfigFiles(
+      modelsDirectory,
+      Set(FileExtensions.YAML, FileExtensions.YML),
+      Set()
+    ).toArray
+
+    val modelTables = ArrayBuffer[java.util.Map[String, Any]]()
+    modelsFiles.foreach{ modelFile =>
+      getYAML(modelFile) match {
+        case Success(data) =>
+          if (data != null && !data.isEmpty && data.containsKey("models")) {
+            val models = data.get("models").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+            models.forEach( x =>
+              if (x.containsKey("columns")) {
+                modelTables += x
+              }
+            )
+          }
+        case Failure(e) =>
+          logger.error(f"error while processing models YAML file: ${modelFile}: ${e}")
+      }
+    }
+
+    modelTables.toArray
+  }
+
+    private def getDirectoryName(path: String): String = {
     val file = new File(path)
     val parent = file.getParent
     if (parent == null) ""
@@ -96,7 +193,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   }
 
   private def getDatabaseInfo(dbtProjectFile: String, dbtProfileName: String) = Try {
-    val result = ("DBT", "", "")
+    var result = ("DBT", "", "")
 
     if (dbtProfileName != "null") {
       val dbtProjectRoot = getDirectoryName(dbtProjectFile)
@@ -119,13 +216,24 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         }
 
         if (profileData != null) {
-          logger.info(f">>>>>>>>>?>> Hey got some profile data for ${profileFile}")
           val defaultOutput = profileData.get("target").asInstanceOf[String]
           if (profileData.containsKey("outputs")) {
             val outputs = profileData.get("outputs").asInstanceOf[java.util.Map[String, Any]]
             getProfileOutputData(outputs, defaultOutput) match {
               case Some((outputKey, outputData)) =>
-                logger.info(f"hehllo outputKey: ${outputKey}")
+                val dbKeys = Array("project", "dataset", "dbname", "database", "schema", "type")
+                breakable {
+                  dbKeys.foreach { k =>
+                    if (outputData.containsKey(k)) {
+                      result = (
+                        outputData.get(k).asInstanceOf[String],
+                        outputData.getOrDefault("host", "").asInstanceOf[String],
+                        outputData.getOrDefault("type", "").asInstanceOf[String]
+                      )
+                      break
+                    }
+                  }
+                }
 
               case _ =>
                 logger.error(f"could not find any output data in profiles: ${profileFile}")
@@ -144,20 +252,17 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     val productionKeys = Array("production", "prod", "prd")
     productionKeys.foreach(x => {
       if (result.isEmpty && data.containsKey(x)) {
-        logger.info(f"PROD CASE: ")
         result = Some(x, data.get(x).asInstanceOf[java.util.Map[String, Any]])
       }
     })
 
     // look in default output
     if (result.isEmpty && data.containsKey(defaultOutput)) {
-      logger.info("Default Case")
       result = Some(defaultOutput, data.get(defaultOutput).asInstanceOf[java.util.Map[String, Any]])
     }
 
     // look in first (or any)
     if (result.isEmpty && !data.isEmpty) {
-      logger.info("First Case")
       val headKeyValue = data.entrySet().iterator().next()
       result = Some(headKeyValue.getKey, headKeyValue.getValue.asInstanceOf[java.util.Map[String, Any]])
     }

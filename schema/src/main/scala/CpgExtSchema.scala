@@ -117,6 +117,18 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Adding SQL query node End
 
+  // Adding DB node Start
+  val dbNode = builder
+    .addNodeType(CpgSchemaConstants.DB_NODE_NAME)
+    .addProperty(name)
+    .extendz(astNode) // We are extending the new node from AstNode
+
+  dbNode.addOutEdge(edge = sourceFile, inNode = file)
+  dbNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  dbNode.addOutEdge(edge = ast, inNode = sqlQueryNode)
+  // Adding DB node End
+
   val groupId = builder
     .addProperty(name = CpgSchemaConstants.MODULE_GROUP_ID_NAME, valueType = ValueType.String)
     .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
