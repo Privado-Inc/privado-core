@@ -16,6 +16,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val logger       = LoggerFactory.getLogger(this.getClass)
   private val methodUrlMap = mutable.HashMap[Long, String]()
   private val classUrlMap  = mutable.HashMap[Long, String]()
+  private val COLLECTION_METHOD_REFERENCE_PATTERN = "to:.*"
+  private val SYMBOL_HASH = "#"
 
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
@@ -25,7 +27,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val collectionMethods = cpg
       .call("get|post|put|patch|delete")
       .where(_.file.name(".*routes.rb"))
-      .filter(_.argument.isCall.code("to.*").argument.isLiteral.nonEmpty)
+      .filter(_.argument.isCall.code(COLLECTION_METHOD_REFERENCE_PATTERN).argument.isLiteral.nonEmpty)
       .l
 
     /*
@@ -35,28 +37,27 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .map { m =>
         //        sample route -> get '/hotels/new', to: 'hotels#new'
         // TODO: check scenarios involving single, double and no quote
-        val targetCollectionUrl = m.argument.isCall.code("to:.*").argument.isLiteral.code.l
-        if (!targetCollectionUrl.isEmpty) {
+        val targetCollectionUrl = m.argument.isCall.code(COLLECTION_METHOD_REFERENCE_PATTERN).argument.isLiteral.code.l
+        if (targetCollectionUrl.nonEmpty && targetCollectionUrl.contains(SYMBOL_HASH)) {
           val routeMethodCall: String = targetCollectionUrl.head.stripPrefix("\"").stripSuffix("\"")
-          val routeSeparatedStrings   = routeMethodCall.split("#")
-          val methodName              = routeSeparatedStrings(1)
-          val fileName                = ".*" + routeSeparatedStrings(0) + ".*"
-          if (!cpg.method.name(methodName).where(_.file.name(fileName)).l.isEmpty) {
+          val routeSeparatedStrings = routeMethodCall.split("#")
+          val methodName = routeSeparatedStrings(1)
+          val fileName = ".*" + "/" + routeSeparatedStrings(0) + ".*_controller\.rb"
+          val targetCollectionMethod = cpg.method.name(methodName).where(_.file.name(fileName))
+          if (targetCollectionMethod.nonEmpty) {
             methodUrlMap.addOne(
-              cpg.method
-                .name(methodName)
-                .where(_.file.name(fileName))
+              targetCollectionMethod
                 .l
                 .head
-                .id() -> m.argument.isLiteral.code.head
+                .id -> m.argument.isLiteral.code.head
               //          TODO: ⬆️use .stripPrefix("\"").stripSuffix("\"") if required
             )
-            cpg.method.name(methodName).where(_.file.name(fileName)).l
+            targetCollectionMethod.head
           } else {
-            List()
+            None
           }
         } else {
-          List()
+          None
         }
       }
       .l
