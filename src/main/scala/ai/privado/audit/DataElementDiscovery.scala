@@ -596,10 +596,10 @@ object DataElementDiscoveryJS {
 
           value.foreach {
             case (member: Member) => {
-              val memberUniqueKey = s"${key.fullName}${key.file.head.name}${member.name}"
-              if (member.name.nonEmpty && !addedMembers.contains(memberUniqueKey)) {
-                addedMembers.add(memberUniqueKey)
-                if (ruleMemberInfo.contains(member.name)) {
+              val memberUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
+              if (member.name.nonEmpty) {
+                if (ruleMemberInfo.contains(member.name) && !addedMembers.contains(memberUniqueKey)) {
+                  addedMembers.add(memberUniqueKey)
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
@@ -612,7 +612,8 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
                   )
-                } else {
+                } else if(!addedMembers.contains(memberUniqueKey)) {
+                  addedMembers.add(memberUniqueKey)
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
@@ -630,10 +631,9 @@ object DataElementDiscoveryJS {
             }
 
             case (param: MethodParameterIn) => {
-              val paramUniqueKey = s"${key.fullName}${key.file.head.name}${param.name}"
-              if (!addedMembers.contains(paramUniqueKey)) {
-                addedMembers.add(paramUniqueKey)
-                if (ruleMemberInfo.contains(param.name)) {
+              val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
+                if (ruleMemberInfo.contains(param.name)&& !addedMembers.contains(paramUniqueKey)) {
+                  addedMembers.add(paramUniqueKey)
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
@@ -646,7 +646,8 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
                   )
-                } else {
+                } else if(!addedMembers.contains(paramUniqueKey)) {
+                  addedMembers.add(paramUniqueKey)
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
@@ -660,7 +661,6 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
                   )
                 }
-              }
             }
             case _ => {}
           }
@@ -668,7 +668,7 @@ object DataElementDiscoveryJS {
       }
       val addedIdentifiers = mutable.Set[String]()
       identifiers.foreach(identifier => {
-        val identifierUniqueKey = s"${identifier.typeFullName}${identifier.file.head.name}${identifier.name}"
+        val identifierUniqueKey = s"${identifier.typeFullName}${identifier.file.name.headOption.getOrElse(Constants.EMPTY)}${identifier.name}"
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
@@ -693,7 +693,7 @@ object DataElementDiscoveryJS {
 
       val addedLocals = mutable.Set[String]()
       locals.foreach(local => {
-        val localsUniqueKey = s"${local.typeFullName}${local.file.head.name}${local.name}"
+        val localsUniqueKey = s"${local.typeFullName}${local.file.name.headOption.getOrElse(Constants.EMPTY)}${local.name}"
         if (
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
