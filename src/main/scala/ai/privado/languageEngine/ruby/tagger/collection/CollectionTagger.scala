@@ -43,21 +43,19 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         if (targetCollectionUrl.nonEmpty && targetCollectionUrl.contains(SYMBOL_HASH)) {
           val routeMethodCall: String = targetCollectionUrl.stripPrefix("\"").stripSuffix("\"")
           val routeSeparatedStrings   = routeMethodCall.split(SYMBOL_HASH)
-          val methodName              = routeSeparatedStrings(1)
-          val fileName                = ".*" + "/" + routeSeparatedStrings.headOption.getOrElse("") + ".*_controller.rb"
-          val targetCollectionMethod  = cpg.method.name(methodName).where(_.file.name(fileName)).l
-          if (targetCollectionMethod.nonEmpty) {
-            methodUrlMap.addOne(
-              targetCollectionMethod.head.id -> m.argument.isLiteral.code.head
-              //          TODO: ⬆️use .stripPrefix("\"").stripSuffix("\"") if required
-            )
-            targetCollectionMethod
-          } else {
-            None
-          }
-        } else {
-          None
-        }
+          if (routeSeparatedStrings.size >= 2) {
+            val methodName = routeSeparatedStrings(1)
+            val fileName   = ".*" + "/" + routeSeparatedStrings.headOption.getOrElse("") + ".*_controller.rb"
+            val targetCollectionMethod = cpg.method.name(methodName).where(_.file.name(fileName)).l
+            if (targetCollectionMethod.nonEmpty) {
+              methodUrlMap.addOne(
+                targetCollectionMethod.head.id -> m.argument.isLiteral.code.head
+                //          TODO: ⬆️use .stripPrefix("\"").stripSuffix("\"") if required
+              )
+              targetCollectionMethod
+            } else None
+          } else None
+        } else None
       }
       .l
       .flatten(method => method) // returns the handler method list
