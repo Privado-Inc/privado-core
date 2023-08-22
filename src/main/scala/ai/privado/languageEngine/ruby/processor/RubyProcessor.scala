@@ -33,6 +33,7 @@ import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
   PrivadoRubyTypeRecoveryPass,
+  RubyExternalTypesPass,
   RubyImportResolverPass
 }
 import ai.privado.languageEngine.ruby.semantic.Language.*
@@ -45,7 +46,6 @@ import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.rubysrc2cpg.RubySrc2Cpg.packageTableInfo
 import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.passes.*
 import io.joern.rubysrc2cpg.utils.PackageTable
@@ -103,14 +103,14 @@ object RubyProcessor {
 
           logger.info("Enhancing Ruby graph by post processing pass")
 
+          new RubyExternalTypesPass(cpg, RubySrc2Cpg.packageTableInfo).createAndApply()
+
           // Using our own pass by overriding languageEngine's pass
-          println(s"${Calendar.getInstance().getTime} - Global import started  ...")
           // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
           val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-          new GlobalImportPass(cpg, packageTableInfo, globalSymbolTable).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Global import done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+          new GlobalImportPass(cpg, RubySrc2Cpg.packageTableInfo, globalSymbolTable).createAndApply()
+          // We are clearing up the packageTableInfo as it is not needed afterwards
+          RubySrc2Cpg.packageTableInfo.clear()
           println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
           new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
           println(

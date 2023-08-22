@@ -64,6 +64,7 @@ class GlobalImportPass(cpg: Cpg, packageTable: PackageTable, globalSymbolTable: 
 
   override def run(builder: DiffGraphBuilder): Unit = {
 
+    /*
     val resolvedModulesExternal = packageTable.moduleMapping.values.flatMap(moduleMappings =>
       moduleMappings.map(module => ResolvedTypeDecl(module.fullName))
     )
@@ -77,6 +78,7 @@ class GlobalImportPass(cpg: Cpg, packageTable: PackageTable, globalSymbolTable: 
         )
       )
     )
+     */
 
     val resolvedTypeDeclInternal = cpg.typeDecl
       .flatMap(typeDecl =>
@@ -99,7 +101,8 @@ class GlobalImportPass(cpg: Cpg, packageTable: PackageTable, globalSymbolTable: 
       .isMethod
       .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
 
-    (resolvedModulesExternal ++ resolvedTypeDeclExternal ++ resolvedTypeDeclInternal ++ resolvedModuleInternal ++ resolvedMethodInternal).toSet
+    // (resolvedModulesExternal ++ resolvedTypeDeclExternal ++
+    (resolvedTypeDeclInternal ++ resolvedModuleInternal ++ resolvedMethodInternal).toSet
       .foreach {
         case ResolvedMethod(fullName, alias, receiver, _) =>
           globalSymbolTable.append(CallAlias(alias, receiver), fullName)

@@ -83,7 +83,7 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
                 logger.info(s"Gem unpacked Successfully: '$dogGemFile'")
               case Failure(exception) =>
                 logger.warn(s"Error while unpacking '$dogGemFile' : ", exception)
-          case _ => println("Something is not working.....") // TODO: Removed this line once testing is done.
+          case _ => println(s"Something is not working..... $output") // TODO: Removed this line once testing is done.
 
       case Failure(exception) =>
         logger.warn(s"Error while downloading dependency '${gemName}-${gemVersion}': ", exception)
@@ -193,7 +193,8 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
           .split(java.io.File.separator)
           .last
           .split("-")
-          .head
+          .init
+          .mkString("-")
       } else {
         path
       }
