@@ -39,7 +39,7 @@ import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.SQLParser
+import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.utility.Utilities.createCpgFolder
@@ -145,7 +145,7 @@ object RubyProcessor {
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
