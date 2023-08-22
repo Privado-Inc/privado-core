@@ -596,7 +596,8 @@ object DataElementDiscoveryJS {
 
           value.foreach {
             case (member: Member) => {
-              val memberUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
+              val memberUniqueKey =
+                s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
               if (member.name.nonEmpty) {
                 if (ruleMemberInfo.contains(member.name) && !addedMembers.contains(memberUniqueKey)) {
                   addedMembers.add(memberUniqueKey)
@@ -612,7 +613,7 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
                   )
-                } else if(!addedMembers.contains(memberUniqueKey)) {
+                } else if (!addedMembers.contains(memberUniqueKey)) {
                   addedMembers.add(memberUniqueKey)
                   workbookResult += List(
                     key.fullName,
@@ -632,35 +633,35 @@ object DataElementDiscoveryJS {
 
             case (param: MethodParameterIn) => {
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
-                if (ruleMemberInfo.contains(param.name)&& !addedMembers.contains(paramUniqueKey)) {
-                  addedMembers.add(paramUniqueKey)
-                  workbookResult += List(
-                    key.fullName,
-                    key.file.head.name,
-                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
-                    param.name,
-                    param.typeFullName,
-                    AuditReportConstants.AUDIT_CHECKED_VALUE,
-                    ruleMemberInfo.getOrElse(param.name, "Default value"),
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
-                  )
-                } else if(!addedMembers.contains(paramUniqueKey)) {
-                  addedMembers.add(paramUniqueKey)
-                  workbookResult += List(
-                    key.fullName,
-                    key.file.head.name,
-                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
-                    param.name,
-                    param.typeFullName,
-                    AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
-                  )
-                }
+              if (ruleMemberInfo.contains(param.name) && !addedMembers.contains(paramUniqueKey)) {
+                addedMembers.add(paramUniqueKey)
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  param.name,
+                  param.typeFullName,
+                  AuditReportConstants.AUDIT_CHECKED_VALUE,
+                  ruleMemberInfo.getOrElse(param.name, "Default value"),
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                )
+              } else if (!addedMembers.contains(paramUniqueKey)) {
+                addedMembers.add(paramUniqueKey)
+                workbookResult += List(
+                  key.fullName,
+                  key.file.head.name,
+                  getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  param.name,
+                  param.typeFullName,
+                  AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                )
+              }
             }
             case _ => {}
           }
@@ -668,7 +669,8 @@ object DataElementDiscoveryJS {
       }
       val addedIdentifiers = mutable.Set[String]()
       identifiers.foreach(identifier => {
-        val identifierUniqueKey = s"${identifier.typeFullName}${identifier.file.name.headOption.getOrElse(Constants.EMPTY)}${identifier.name}"
+        val identifierUniqueKey =
+          s"${identifier.typeFullName}${identifier.file.name.headOption.getOrElse(Constants.EMPTY)}${identifier.name}"
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
@@ -693,7 +695,8 @@ object DataElementDiscoveryJS {
 
       val addedLocals = mutable.Set[String]()
       locals.foreach(local => {
-        val localsUniqueKey = s"${local.typeFullName}${local.file.name.headOption.getOrElse(Constants.EMPTY)}${local.name}"
+        val localsUniqueKey =
+          s"${local.typeFullName}${local.file.name.headOption.getOrElse(Constants.EMPTY)}${local.name}"
         if (
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
