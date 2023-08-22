@@ -3,6 +3,7 @@ package ai.privado.languageEngine.ruby.passes.download
 import ai.privado.utility.ConcurrentProcessor
 import better.files.File
 import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import org.jruby.ast.*
@@ -35,15 +36,31 @@ case class PackageMethodMetaData(moduleName: String, methodName: String, parentC
 class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
     extends ConcurrentProcessor[String, PackageTable](packageTable) {
   private val logger = LoggerFactory.getLogger(this.getClass)
+
+  private val GEMFILE      = "Gemfile"
+  private val GEMFILE_LOCK = "Gemfile.lock"
+  private val GEMSPEC      = "gemspec"
+
   val tempLocation = {
     val tempDir = File.newTemporaryDirectory()
     (tempDir / "unpack").createDirectoryIfNotExists()
     tempDir
   }
   override def generateParts(): Array[String] = {
-    val gemFile = File(s"${inputPath}${java.io.File.separator}Gemfile")
-    if (checkDownloadPrerequisite() && gemFile.exists) {
-      processGem(gemFile, tempLocation.toString)
+    val gemFiles = File(inputPath).listRecursively
+      .filter(file => file.isRegularFile && file.name.matches("Gemfile|Gemfile[.]lock|.*[.]gemspec"))
+      .map(file =>
+        file.name match
+          case GEMFILE      => (file, GEMFILE)
+          case GEMFILE_LOCK => (file, GEMFILE_LOCK)
+          case _            => (file, GEMSPEC)
+      )
+      .toList
+    if (checkDownloadPrerequisite() && gemFiles.nonEmpty) {
+      gemFiles.foreach { gemFileWithType =>
+        val (gemFile, gemType) = gemFileWithType
+        processGem(gemFile, gemType, tempLocation.toString)
+      }
       tempLocation.listRecursively.filter(_.extension.exists(_ == ".rb")).map(_.path.toString).toArray
     } else {
       Array.empty
@@ -51,8 +68,8 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
   }
 
   // TODO: Add unit test for this method
-  def processGem(gemFile: File, downloadAndUnpackLocation: String): Unit = {
-    val dependenciesList = getDependencyList(gemFile)
+  def processGem(gemFile: File, gemType: String, downloadAndUnpackLocation: String): Unit = {
+    val dependenciesList = getDependencyList(gemFile, gemType)
     val futureTasks = dependenciesList.map((gemName, version) => {
       Future {
         downloadAndUnpackDependency(downloadAndUnpackLocation, gemName, extractGemVersion(version))
@@ -79,7 +96,7 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
                 val internalGemFile = File(
                   s"${downloadAndUnpackLocation}${java.io.File.separator}unpack${java.io.File.separator}dotGem${java.io.File.separator}Gemfile"
                 )
-                if (internalGemFile.exists) then processGem(internalGemFile, downloadAndUnpackLocation)
+                if (internalGemFile.exists) then processGem(internalGemFile, GEMFILE, downloadAndUnpackLocation)
                 logger.info(s"Gem unpacked Successfully: '$dogGemFile'")
               case Failure(exception) =>
                 logger.warn(s"Error while unpacking '$dogGemFile' : ", exception)
@@ -90,19 +107,50 @@ class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
   }
 
   // TODO: Add unit test for this method
-  def getDependencyList(gemFile: File): List[(String, String)] = {
-    val gemFileContent = gemFile.contentAsString
-    val gemRegex       = """gem ['"]([^'"]+)['"](?:,\s*['"]([^'"]+)['"])?""".r
+  def getDependencyList(gemFile: File, gemType: String): List[(String, String)] = {
 
-    gemRegex
-      .findAllMatchIn(gemFileContent)
-      .flatMap { matchResult =>
-        val gemName    = matchResult.group(1)
-        val gemVersion = Option(matchResult.group(2)).map(extractVersion => extractVersion).getOrElse("")
-        Some(gemName -> gemVersion)
-      }
-      .toList
-      .distinctBy(_._1)
+    val gemFileContent = gemFile.lines.map(_.trim).toList
+    gemType match {
+      case GEMFILE =>
+        val gemRegex = """gem ['"]([^'"]+)['"](?:,\s*['"]([^'"]+)['"])?"""
+        gemFileContent.filter(_.matches(gemRegex)).flatMap { gemLine =>
+          gemRegex.r
+            .findAllMatchIn(gemLine)
+            .flatMap { matchResult =>
+              val gemName    = matchResult.group(1)
+              val gemVersion = Option(matchResult.group(2)).map(extractVersion => extractVersion).getOrElse("")
+              Some(gemName -> gemVersion)
+            }
+            .toList
+            .distinctBy(_._1)
+        }
+      case GEMFILE_LOCK =>
+        val gemRegex = """([\w-]+) (?:[(](.+)[)])?"""
+        gemFileContent.filter(_.matches(gemRegex)).flatMap { gemLine =>
+          gemRegex.r
+            .findAllMatchIn(gemLine)
+            .flatMap { matchResult =>
+              val gemName    = matchResult.group(1)
+              val gemVersion = Option(matchResult.group(2)).map(extractVersion => extractVersion).getOrElse("")
+              Some(gemName -> gemVersion)
+            }
+            .toList
+            .distinctBy(_._1)
+        }
+      case GEMSPEC =>
+        val gemRegex = """spec[.]add(?:_|_runtime_|_development_)dependency ['"]([^'"]+)['"](?:,\s*['"]([^'"]+)['"])?"""
+        gemFileContent.filter(_.matches(gemRegex)).flatMap { gemLine =>
+          gemRegex.r
+            .findAllMatchIn(gemLine)
+            .flatMap { matchResult =>
+              val gemName    = matchResult.group(1)
+              val gemVersion = Option(matchResult.group(2)).map(extractVersion => extractVersion).getOrElse("")
+              Some(gemName -> gemVersion)
+            }
+            .toList
+            .distinctBy(_._1)
+        }
+    }
   }
 
   // TODO: Add unit test for this method
