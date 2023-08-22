@@ -27,14 +27,15 @@ import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{Constants, RuleInfo}
-import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
+import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, TypeDecl}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -142,10 +143,10 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
       .whereNot(_.argumentIndex(0))
       .l
     if (targetArguments.nonEmpty) {
-      implicit val engineContext: EngineContext =
-        EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
       val feignFlows = {
-        val flows = feignTargetCalls.reachableByFlows(httpSources).l
+        val flows = feignTargetCalls
+          .reachableByFlows(httpSources)(Utilities.getEngineContext(4)(JavaSemanticGenerator.getDefaultSemantics))
+          .l
         if (ScanProcessor.config.disableDeDuplication)
           flows
         else

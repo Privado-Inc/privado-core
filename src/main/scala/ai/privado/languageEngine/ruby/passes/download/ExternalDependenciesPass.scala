@@ -14,8 +14,6 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class ExternalDependenciesPass(cpg: Cpg, tempExtDir: String, packageTable: PackageTable, inputPath: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
-  private val rubyInstance = Ruby.getGlobalRuntime()
-
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[String] = getRubyDependenciesFile(tempExtDir)
@@ -30,29 +28,55 @@ class ExternalDependenciesPass(cpg: Cpg, tempExtDir: String, packageTable: Packa
     }
   }
 
-  private def fetchMethodInfoFromNode(node: Node, currentNameSpace: ListBuffer[String], moduleName: String): Unit = {
-    if (node != null) {
-      node.getNodeType match {
-        case NodeType.CLASSNODE | NodeType.MODULENODE =>
-          val childList = node.childNodes().asScala.toList
-          if (childList.nonEmpty) {
-            val classOrModuleName = childList.head.asInstanceOf[Colon2Node].getName.toString
-            currentNameSpace.addOne(classOrModuleName)
-          }
-        case NodeType.DEFNNODE =>
-          val methodName = node.asInstanceOf[DefnNode].getName.toString
-          val classPath  = currentNameSpace.mkString(".")
-          packageTable.addPackageMethod(moduleName, methodName, classPath, "<extMod>")
-        case _ =>
+  private def fetchMethodInfoFromNode(node: Node, currentNameSpace: List[String], moduleName: String): Unit = {
+    try {
+      if (node != null) {
+        node.getNodeType match {
+          case NodeType.CLASSNODE | NodeType.MODULENODE =>
+            val childList = node.childNodes().asScala.toList
+            if (childList.nonEmpty) {
+              val classOrModuleName = childList.head.asInstanceOf[Colon2Node].getName.toString
+              val classPath         = currentNameSpace.mkString(".")
+              if (node.getNodeType == NodeType.CLASSNODE)
+                packageTable.addTypeDecl(
+                  moduleName,
+                  classOrModuleName,
+                  s"$classPath.$classOrModuleName".stripPrefix(".")
+                )
+              else
+                packageTable.addModule(moduleName, classOrModuleName, s"$classPath.$classOrModuleName".stripPrefix("."))
+              node
+                .childNodes()
+                .forEach(childNode =>
+                  fetchMethodInfoFromNode(childNode, currentNameSpace ++ Seq(classOrModuleName), moduleName)
+                )
+            }
+          case NodeType.DEFNNODE =>
+            val methodName = node.asInstanceOf[DefnNode].getName.toString
+            val classPath  = currentNameSpace.mkString(".")
+            packageTable.addPackageMethod(moduleName, methodName, s"$classPath.", "<extMod>")
+          case _ =>
+            node.childNodes().forEach(childNode => fetchMethodInfoFromNode(childNode, currentNameSpace, moduleName))
+        }
       }
-      node.childNodes().forEach(childNode => fetchMethodInfoFromNode(childNode, currentNameSpace, moduleName))
+    } catch {
+      case e: Exception =>
+        logger.info(s"Error when fetching methodInfo from node $moduleName, ${e.getMessage}")
+        logger.debug(s"Error when fetching methodInfo from node $moduleName, ", e)
     }
+
   }
 
   private def processRubyDependencyFile(inputPath: String, moduleName: String): Unit = {
-    if (File(inputPath).exists) {
-      val rootNode = JRubyBasedParser.parseFile(inputPath)
-      fetchMethodInfoFromNode(rootNode, ListBuffer.empty, moduleName)
+    try {
+      if (File(inputPath).exists) {
+        val rootNode = JRubyBasedParser.parseFile(inputPath)
+        fetchMethodInfoFromNode(rootNode, List.empty, moduleName)
+      }
+    } catch {
+      case e: Exception =>
+        logger.info(s"Error while processing ruby dependency file $moduleName, ${e.getMessage}")
+        logger.debug(s"Error while processing ruby dependency file $moduleName, ", e)
     }
   }
 

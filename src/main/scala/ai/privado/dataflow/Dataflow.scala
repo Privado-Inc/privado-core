@@ -32,14 +32,15 @@ import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.javascript.JavascriptSemanticGenerator
 import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 import ai.privado.model.exporter.DataFlowPathIntermediateModel
+import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 
 import java.util.Calendar
@@ -63,12 +64,18 @@ class Dataflow(cpg: Cpg) {
 
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
-      EngineContext(semantics = getSemantics(cpg, privadoScanConfig, ruleCache), config = EngineConfig(4))
+      Utilities.getEngineContext(4)(semanticsP = getSemantics(cpg, privadoScanConfig, ruleCache))
+
     val sources = Dataflow.getSources(cpg)
-    val sinks   = Dataflow.getSinks(cpg)
+    var sinks   = Dataflow.getSinks(cpg)
 
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
+
+    if (privadoScanConfig.limitNoSinksForDataflows > -1) {
+      sinks = sinks.take(privadoScanConfig.limitNoSinksForDataflows)
+      println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes post limit - ${sinks.size}")
+    }
 
     if (sources.isEmpty || sinks.isEmpty) Map[String, Path]()
     else {
@@ -189,8 +196,7 @@ class Dataflow(cpg: Cpg) {
 object Dataflow {
 
   def dataflowForSourceSinkPair(sources: List[AstNode], sinks: List[CfgNode]): List[Path] = {
-    implicit val engineContext: EngineContext = EngineContext()
-    sinks.reachableByFlows(sources).l
+    sinks.reachableByFlows(sources)(Utilities.getEngineContext()).l
   }
 
   def getSources(cpg: Cpg): List[AstNode] = {
