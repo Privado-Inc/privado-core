@@ -201,10 +201,25 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     builder.addNode(databaseNode)
     builder.addEdge(databaseNode, fileNode, EdgeTypes.SOURCE_FILE)
 
-    Utilities.addRuleTags(builder, databaseNode, ruleInfo, ruleCache)
+//    Utilities.addRuleTags(builder, databaseNode, ruleInfo, ruleCache)
+
+    val storeForTagHelper = storeForTag(builder, databaseNode) _
+    storeForTagHelper(Constants.id, ruleInfo.id)
+    storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
+    storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
+    storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
     databaseNode
   }
+
+  private def storeForTag(builder: BatchedUpdate.DiffGraphBuilder, node: AstNodeNew)(
+    tagName: String,
+    tagValue: String = ""
+  ): BatchedUpdate.DiffGraphBuilder = {
+    builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
+    builder
+  }
+
   private def createTableColumnNodesFromModels(builder: DiffGraphBuilder, model: java.util.Map[String, Any], tableQueryOrder: Int) = {
     val modelFile = model.get("filePath").asInstanceOf[String]
     val tableName = model.get("name").asInstanceOf[String]
