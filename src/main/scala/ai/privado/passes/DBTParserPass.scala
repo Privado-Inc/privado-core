@@ -45,14 +45,12 @@ import java.nio.file.{Files, Path, Paths}
 import scala.util.control.Breaks.*
 import scala.util.matching.Regex
 
-
 object FileExtensions {
-  val YAML       = ".yaml"
-  val YML        = ".yml"
+  val YAML = ".yaml"
+  val YML  = ".yml"
 }
 
-class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
-    extends PrivadoParallelCpgPass[String](cpg) {
+class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
 
@@ -68,8 +66,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     logger.debug(f"Processing DBT Project: $projectFile")
     getYAML(projectFile) match {
       case Success(projectData) => {
-        val projectName = projectData.get("name").asInstanceOf[String]
-        val profileName = projectData.get("profile").asInstanceOf[String]
+        val projectName         = projectData.get("name").asInstanceOf[String]
+        val profileName         = projectData.get("profile").asInstanceOf[String]
         val modelsDirectoryName = getModelsDirectoryName(projectData)
 
         // extract db information from profile
@@ -104,7 +102,9 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
           builder.addEdge(sqlNode, tableNode, EdgeTypes.AST)
         }
 
-        logger.debug(f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform, dbKey: $dbKey, profileFile=$profileFile")
+        logger.debug(
+          f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform, dbKey: $dbKey, profileFile=$profileFile"
+        )
       }
       case Failure(e) => {
         logger.error(f"error while processing YAML file: ${projectFile}: ${e}")
@@ -113,16 +113,25 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     }
   }
 
-  private def transformModelsToSchema(projectName: String, dbPlatform: String, models: Array[java.util.Map[String, Any]]): DatabaseSchema = {
+  private def transformModelsToSchema(
+    projectName: String,
+    dbPlatform: String,
+    models: Array[java.util.Map[String, Any]]
+  ): DatabaseSchema = {
     val tables = models.map { table =>
-      val columns = table.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]].asScala.map{ col =>
-        DatabaseColumn(
-          col.get("name").asInstanceOf[String],
-          col.getOrDefault("description", "").asInstanceOf[String],
-          "",
-          ""  // TODO: Match and add sourceId here
-        )
-      }.toList
+      val columns = table
+        .get("columns")
+        .asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+        .asScala
+        .map { col =>
+          DatabaseColumn(
+            col.get("name").asInstanceOf[String],
+            col.getOrDefault("description", "").asInstanceOf[String],
+            "",
+            "" // TODO: Match and add sourceId here
+          )
+        }
+        .toList
 
       DatabaseTable(
         table.get("name").asInstanceOf[String],
@@ -131,17 +140,18 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       )
     }.toList
 
-    val dbSchema = DatabaseSchema(
-      kind = "dbt",
-      projectName = projectName,
-      platform = dbPlatform,
-      tables = tables
-    )
+    val dbSchema = DatabaseSchema(kind = "dbt", projectName = projectName, platform = dbPlatform, tables = tables)
 
     dbSchema
   }
 
-  private def createDatabaseSinkRule(projectName: String, dbName: String, dbPlatform: String, dbHost: String, schema: DatabaseSchema) = {
+  private def createDatabaseSinkRule(
+    projectName: String,
+    dbName: String,
+    dbPlatform: String,
+    dbHost: String,
+    schema: DatabaseSchema
+  ) = {
     val ruleId = f"Storages.DBT.ReadAndWrite.${projectName}"
 
     val customDatabaseSinkRule = RuleInfo(
@@ -161,14 +171,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       Array[String]()
     )
 
-    val dbDetails = DatabaseDetails(
-      dbName,
-      dbPlatform,
-      dbHost,
-      "",
-      "",
-      Some(schema)
-    )
+    val dbDetails = DatabaseDetails(dbName, dbPlatform, dbHost, "", "", Some(schema))
 
     ruleCache.setRuleInfo(customDatabaseSinkRule)
     DatabaseDetailsCache.addDatabaseDetails(dbDetails, ruleId)
@@ -183,10 +186,18 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
     sqlNode
   }
-  private def createAndTagDatabaseNode(builder: DiffGraphBuilder, ruleInfo: RuleInfo, projectFile: String, projectName: String, profileFile: String, dbName: String, dbKey: String) = {
+  private def createAndTagDatabaseNode(
+    builder: DiffGraphBuilder,
+    ruleInfo: RuleInfo,
+    projectFile: String,
+    projectName: String,
+    profileFile: String,
+    dbName: String,
+    dbKey: String
+  ) = {
     val (fileName, (lineNumber, columnNumber, matchedLine)) = dbName match {
       case "DBT" => (projectFile, findFirstPatternInYAMLFile(projectFile, "name", projectName))
-      case _ => (profileFile, findFirstPatternInYAMLFile(profileFile, dbKey, dbName))
+      case _     => (profileFile, findFirstPatternInYAMLFile(profileFile, dbKey, dbName))
     }
 
     val fileNode = addFileNode(fileName, builder)
@@ -212,15 +223,19 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     databaseNode
   }
 
-  private def storeForTag(builder: BatchedUpdate.DiffGraphBuilder, node: AstNodeNew)(
-    tagName: String,
-    tagValue: String = ""
-  ): BatchedUpdate.DiffGraphBuilder = {
+  private def storeForTag(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNodeNew
+  )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
     builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
     builder
   }
 
-  private def createTableColumnNodesFromModels(builder: DiffGraphBuilder, model: java.util.Map[String, Any], tableQueryOrder: Int) = {
+  private def createTableColumnNodesFromModels(
+    builder: DiffGraphBuilder,
+    model: java.util.Map[String, Any],
+    tableQueryOrder: Int
+  ) = {
     val modelFile = model.get("filePath").asInstanceOf[String]
     val tableName = model.get("name").asInstanceOf[String]
 
@@ -228,7 +243,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     val fileNode = addFileNode(modelFile, builder)
 
     // create table node
-    val (tableLineNumber, tableColumnNumber, tableMatchedLine) = findFirstPatternInYAMLFile(modelFile, "name", tableName)
+    val (tableLineNumber, tableColumnNumber, tableMatchedLine) =
+      findFirstPatternInYAMLFile(modelFile, "name", tableName)
     val tableNode = NewSqlTableNode()
       .name(tableName)
       .code(tableMatchedLine)
@@ -242,7 +258,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     // create column nodes
     val columns = model.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
     columns.asScala.zipWithIndex.foreach { case (column, index) =>
-      val colName = column.get("name").asInstanceOf[String]
+      val colName                                          = column.get("name").asInstanceOf[String]
       val (colLineNumber, colColumnNumber, colMatchedLine) = findFirstPatternInYAMLFile(modelFile, "name", colName)
       val columnNode = NewSqlColumnNode()
         .name(colName)
@@ -264,34 +280,32 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
   private def findFirstPatternInYAMLFile(filePath: String, key: String, value: String): (Int, Int, String) = {
     val (escapedKey, escapedValue) = (Regex.quote(key), Regex.quote(value))
-    val pattern = s"""["']?$escapedKey["']?\\s*:\\s*["']?$escapedValue["']?\\s*$$""".r
-    val lines = Files.readAllLines(Paths.get(filePath)).toArray(Array.ofDim[String](0))
+    val pattern                    = s"""["']?$escapedKey["']?\\s*:\\s*["']?$escapedValue["']?\\s*$$""".r
+    val lines                      = Files.readAllLines(Paths.get(filePath)).toArray(Array.ofDim[String](0))
 
     val (defaultRow, defaultCol) = (1, -1)
 
-    lines.zipWithIndex.flatMap {
-      case (line, rowIndex) =>
+    lines.zipWithIndex
+      .flatMap { case (line, rowIndex) =>
         val matches = pattern.findFirstMatchIn(line)
         matches.map(matchResult => (rowIndex + 1, matchResult.start + 1, matchResult.group(0)))
-    }.headOption.getOrElse((defaultRow, defaultCol, ""))
+      }
+      .headOption
+      .getOrElse((defaultRow, defaultCol, ""))
   }
 
   private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
-    val dbtProjectRoot = getDirectoryName(dbtProjectFile)
+    val dbtProjectRoot  = getDirectoryName(dbtProjectFile)
     val modelsDirectory = Paths.get(dbtProjectRoot, modelsDirectoryName).toString
-    val modelsFiles = getConfigFiles(
-      modelsDirectory,
-      Set(FileExtensions.YAML, FileExtensions.YML),
-      Set()
-    ).toArray
+    val modelsFiles     = getConfigFiles(modelsDirectory, Set(FileExtensions.YAML, FileExtensions.YML), Set()).toArray
 
     val modelTables = ArrayBuffer[java.util.Map[String, Any]]()
-    modelsFiles.foreach{ modelFile =>
+    modelsFiles.foreach { modelFile =>
       getYAML(modelFile) match {
         case Success(data) =>
           if (data != null && !data.isEmpty && data.containsKey("models")) {
             val models = data.get("models").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
-            models.forEach( x =>
+            models.forEach(x =>
               if (x.containsKey("name") && x.containsKey("columns")) {
                 x.put("filePath", modelFile)
                 modelTables += x
@@ -307,7 +321,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   }
 
   private def getDirectoryName(path: String): String = {
-    val file = new File(path)
+    val file   = new File(path)
     val parent = file.getParent
     if (parent == null) ""
     else parent
@@ -324,11 +338,11 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         Set("profiles[.]yaml", "profiles[.]yml")
       ).toArray
 
-      for ( profileFile <- profilesFiles if result._3 == "DBT" ) {
+      for (profileFile <- profilesFiles if result._3 == "DBT") {
         val profileData = getYAML(profileFile) match {
           case Success(profileData) =>
             profileData.get(dbtProfileName) match {
-              case null => null
+              case null  => null
               case value => value.asInstanceOf[java.util.Map[String, Any]]
             }
           case Failure(e) =>
@@ -405,11 +419,15 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
   private def getYAML(file: String) = Try {
     val yamlContent = better.files.File(file).contentAsString // Read the YAML file content as a string
-    val yaml = new Yaml(new SafeConstructor(LoaderOptions()))
+    val yaml        = new Yaml(new SafeConstructor(LoaderOptions()))
     yaml.load(yamlContent).asInstanceOf[java.util.Map[String, Any]]
   }
 
-  private def getConfigFiles(projectRoot: String, extensions: Set[String], allowedFiles: Set[String] = Set()): List[String] = {
+  private def getConfigFiles(
+    projectRoot: String,
+    extensions: Set[String],
+    allowedFiles: Set[String] = Set()
+  ): List[String] = {
     def getListOfFiles(dir: String): List[File] = {
       val d = new File(dir)
       if (d.exists && d.isDirectory) {
@@ -433,8 +451,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   }
 
   private def addFileNode(file: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
-    val rootPath: Path = Paths.get(projectRoot)
-    val filePath: Path = Paths.get(file)
+    val rootPath: Path     = Paths.get(projectRoot)
+    val filePath: Path     = Paths.get(file)
     val relativePath: Path = rootPath.relativize(filePath)
 
     val fileNode = NewFile().name(relativePath.toString)

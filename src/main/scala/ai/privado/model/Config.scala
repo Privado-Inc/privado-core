@@ -27,12 +27,7 @@ import io.circe.{Decoder, HCursor}
 
 import scala.collection.immutable.HashMap
 
-case class DatabaseSchema(
-  kind: String,
-  projectName: String,
-  platform: String,
-  tables: List[DatabaseTable]
-)
+case class DatabaseSchema(kind: String, projectName: String, platform: String, tables: List[DatabaseTable])
 case class DatabaseTable(name: String, description: String, columns: List[DatabaseColumn])
 case class DatabaseColumn(name: String, description: String, datatype: String, sourceId: String)
 

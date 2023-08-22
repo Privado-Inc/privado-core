@@ -116,7 +116,9 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++
         cpg.templateDom
           .where(filterSink)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode.where(filterSink).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
+          .where(filterSink)
+          .l
     sinks
   }
   // TODO: CHECK THIS ONCE
