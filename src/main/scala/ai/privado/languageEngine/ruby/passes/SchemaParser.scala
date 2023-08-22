@@ -61,8 +61,8 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
         val tableNode: Literal           = queryWthLine._1.astSiblings.isLiteral.dedup.l(n)
         val columns: List[Literal] = queryWthLine._2
         try {
-          val table : SQLTable = SQLTable(tableNode.code, tableNode.lineNumber.getOrElse(Integer.valueOf(0)), tableNode.columnNumber.getOrElse(Integer.valueOf(0)))
-          val sqlColumns : List[SQLColumn] = columns.map(x=>SQLColumn(x.code, x.lineNumber.getOrElse(Integer.valueOf(0)), x.columnNumber.getOrElse(Integer.valueOf(0))))
+          val table : SQLTable = SQLTable(tableNode.code.stripPrefix("\"").stripSuffix("\""), tableNode.lineNumber.getOrElse(Integer.valueOf(0)), tableNode.columnNumber.getOrElse(Integer.valueOf(0)))
+          val sqlColumns : List[SQLColumn] = columns.map(x=>SQLColumn(x.code.stripPrefix("\"").stripSuffix("\""), x.lineNumber.getOrElse(Integer.valueOf(0)), x.columnNumber.getOrElse(Integer.valueOf(0))))
           val queryModel = SQLQuery(SQLQueryType.CREATE, table, sqlColumns)
 
           println(s"tableNode.code ${tableNode.code}")
