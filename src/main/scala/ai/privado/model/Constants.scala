@@ -108,6 +108,7 @@ object Constants {
   val dbVendor    = "dbVendor"
   val dbLocation  = "dbLocation"
   val dbOperation = "dbOperation"
+  val schema      = "schema"
 
   // Other commonly used constants
   val RULES_DIR_IN_CONFIG           = "rules"

@@ -30,6 +30,7 @@ import scala.collection.immutable.HashMap
 case class Schema(
 
 )
+
 case class DatabaseDetails(
   dbName: String,
   dbVendor: String,

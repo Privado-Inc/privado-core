@@ -15,8 +15,8 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import overflowdb.BatchedUpdate
 
-import java.io.{File}
-import scala.io.{Source}
+import java.io.File
+import scala.io.Source
 import java.util.Properties
 import scala.jdk.CollectionConverters.*
 import io.circe.parser.*
@@ -30,17 +30,19 @@ import com.github.wnameless.json.flattener.JsonFlattener
 import io.circe.yaml.parser
 import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
-import scala.collection.mutable.ArrayBuffer
 
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
+import com.github.javaparser.utils.ProjectRoot
 import org.yaml.snakeyaml.constructor.SafeConstructor
 
 import scala.collection.mutable.ListBuffer
-import scala.util.{Try, Success, Failure}
-import java.nio.file.{Paths, Path}
-import scala.util.control.Breaks._
+import scala.util.{Failure, Success, Try}
+import java.nio.file.{Files, Path, Paths}
+import scala.util.control.Breaks.*
+import scala.util.matching.Regex
 
 
 object FileExtensions {
@@ -62,22 +64,17 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   }
 
   override def runOnPart(builder: DiffGraphBuilder, projectFile: String): Unit = {
-    // Parse project YAML and get metadata from projectFile
-    // Get models directory
-    // parse all yamls in models directory: check for structure of file if it represents model / table / columns
-    // populate that data in nodes
-
     logger.debug(f"Processing DBT Project: $projectFile")
     getYAML(projectFile) match {
       case Success(projectData) => {
         val projectName = projectData.get("name").asInstanceOf[String]
         val profileName = projectData.get("profile").asInstanceOf[String]
         val modelsDirectoryName = getModelsDirectoryName(projectData)
-        val (dbName, dbHost, dbPlatform) = getDatabaseInfo(projectFile, profileName) match {
+        val (profileFile, dbKey, dbName, dbHost, dbPlatform) = getDatabaseInfo(projectFile, profileName) match {
           case Success(value) => value
           case Failure(err) =>
             logger.error(f"error while getting database info: ${projectFile}: ${err}")
-            ("DBT", "", "")
+            ("", "", "DBT", "", "")
         }
 
         val models = getModels(projectFile, modelsDirectoryName) match {
@@ -87,11 +84,19 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             Array[java.util.Map[String, Any]]()
         }
 
+        // create database node
+        val dbNode = createDatabaseNode(builder, projectFile, projectName, profileFile, dbName, dbKey)
+        // create sql node
+        val sqlNode = createSQLNode(builder, dbNode)
 
-        // for each model
-        models.foreach{ x =>
-
+        // create table and column nodes
+        models.zipWithIndex.foreach { case (model, i) =>
+          val tableNode = createTableColumnNodesFromModels(builder, model, i)
+          builder.addEdge(sqlNode, tableNode, EdgeTypes.AST)
         }
+
+
+
 
 //        ruleCache.setRuleInfo => Add Rules
 //        addDatabaseDetails => Call this for the new rule (with custom info?)
@@ -119,7 +124,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         // see creating a database-sink node
 
 
-        logger.debug(f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform")
+        logger.debug(f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform, dbKey: $dbKey, profileFile=$profileFile")
       }
       case Failure(e) => {
         logger.error(f"error while processing YAML file: ${projectFile}: ${e}")
@@ -128,33 +133,95 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     }
   }
 
-//  private def getLineAndColumnNumber(fileText: String, query: String) = {
-//    var foundLineNumber = 1
-//    var foundColumnNumber = -1
-//    breakable {
-//      fileText.split("\n").zipWithIndex.foreach { case (queryLine, lineNumber) =>
-//        val columnNumber = queryLine.indexOf(query)
-//        if (columnNumber != NUMBER_MINUSONE) {
-//          foundLineNumber = lineNumber + NUMBER_ONE
-//          foundColumnNumber = columnNumber
-//          break()
-//        }
-//      }
-//    }
-//    (foundLineNumber, foundColumnNumber)
-//  }
-//
-//  private def findFirstPatternInFile(filePath: String, pattern: Regex): (Int, Int, String) = {
-//    val lines = Source.fromFile(filePath).getLines().toSeq
-//
-//    val (defaultRow, defaultCol) = (1, -1)
-//
-//    lines.zipWithIndex.flatMap { case (line, rowIndex) =>
-//      val matches = pattern.findFirstMatchIn(line)
-//      matches.map(matchResult => (rowIndex + 1, matchResult.start + 1, matchResult.group(0)))
-//    }.headOption.getOrElse((defaultRow, defaultCol, ""))
-//  }
+  private def createSQLNode(builder: DiffGraphBuilder, dbNode: NewDbNode) = {
+    val sqlNode = NewSqlQueryNode().name("DBT").code("DBT").order(0)
+    builder.addNode(sqlNode)
+    builder.addEdge(dbNode, sqlNode, EdgeTypes.AST)
 
+    sqlNode
+  }
+  private def createDatabaseNode(builder: DiffGraphBuilder, projectFile: String, projectName: String, profileFile: String, dbName: String, dbKey: String) = {
+    val (fileName, (lineNumber, columnNumber, matchedLine)) = dbName match {
+      case "DBT" => (projectFile, findFirstPatternInYAMLFile(projectFile, "name", projectName))
+      case _ => (profileFile, findFirstPatternInYAMLFile(profileFile, dbKey, dbName))
+    }
+
+    val fileNode = addFileNode(fileName, builder)
+
+    val databaseNode = NewDbNode()
+      .name(dbName)
+      .code(matchedLine)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+      .order(0)
+
+    builder.addNode(databaseNode)
+    builder.addEdge(databaseNode, fileNode, EdgeTypes.SOURCE_FILE)
+
+    databaseNode
+  }
+  private def createTableColumnNodesFromModels(builder: DiffGraphBuilder, model: java.util.Map[String, Any], tableQueryOrder: Int) = {
+    val modelFile = model.get("filePath").asInstanceOf[String]
+    val tableName = model.get("name").asInstanceOf[String]
+
+    // create file node
+    val fileNode = addFileNode(modelFile, builder)
+
+    // create table node
+    val (tableLineNumber, tableColumnNumber, tableMatchedLine) = findFirstPatternInYAMLFile(modelFile, "name", tableName)
+    val tableNode = NewSqlTableNode()
+      .name(tableName)
+      .code(tableMatchedLine)
+      .lineNumber(tableLineNumber)
+      .columnNumber(tableColumnNumber)
+      .order(tableQueryOrder)
+
+    builder.addNode(tableNode)
+    builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
+
+    // create column nodes
+    val columns = model.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+    columns.asScala.zipWithIndex.foreach { case (column, index) =>
+      val colName = column.get("name").asInstanceOf[String]
+      val (colLineNumber, colColumnNumber, colMatchedLine) = findFirstPatternInYAMLFile(modelFile, "name", colName)
+      val columnNode = NewSqlColumnNode()
+        .name(colName)
+        .code(colMatchedLine)
+        .lineNumber(colLineNumber)
+        .columnNumber(colColumnNumber)
+        .order(index)
+
+      logger.debug(f"Creating column node for $colName in table node $tableName")
+
+      // link nodes
+      builder.addNode(columnNode)
+      builder.addEdge(tableNode, columnNode, EdgeTypes.AST)
+      builder.addEdge(columnNode, fileNode, EdgeTypes.SOURCE_FILE)
+    }
+
+    tableNode
+  }
+  private def createDBTSinkRule(ruleId: String, projectName: String) = {
+
+  }
+
+  private def addDatabaseSchemaDetails(ruleId: String) = {
+
+  }
+
+  private def findFirstPatternInYAMLFile(filePath: String, key: String, value: String): (Int, Int, String) = {
+    val (escapedKey, escapedValue) = (Regex.quote(key), Regex.quote(value))
+    val pattern = s"""["']?$escapedKey["']?\\s*:\\s*["']?$escapedValue["']?\\s*$$""".r
+    val lines = Files.readAllLines(Paths.get(filePath)).toArray(Array.ofDim[String](0))
+
+    val (defaultRow, defaultCol) = (1, -1)
+
+    lines.zipWithIndex.flatMap {
+      case (line, rowIndex) =>
+        val matches = pattern.findFirstMatchIn(line)
+        matches.map(matchResult => (rowIndex + 1, matchResult.start + 1, matchResult.group(0)))
+    }.headOption.getOrElse((defaultRow, defaultCol, ""))
+  }
 
   private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
     val dbtProjectRoot = getDirectoryName(dbtProjectFile)
@@ -172,7 +239,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
           if (data != null && !data.isEmpty && data.containsKey("models")) {
             val models = data.get("models").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
             models.forEach( x =>
-              if (x.containsKey("columns")) {
+              if (x.containsKey("name") && x.containsKey("columns")) {
+                x.put("filePath", modelFile)
                 modelTables += x
               }
             )
@@ -185,7 +253,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     modelTables.toArray
   }
 
-    private def getDirectoryName(path: String): String = {
+  private def getDirectoryName(path: String): String = {
     val file = new File(path)
     val parent = file.getParent
     if (parent == null) ""
@@ -193,7 +261,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   }
 
   private def getDatabaseInfo(dbtProjectFile: String, dbtProfileName: String) = Try {
-    var result = ("DBT", "", "")
+    var result = ("", "", "DBT", "", "")
 
     if (dbtProfileName != "null") {
       val dbtProjectRoot = getDirectoryName(dbtProjectFile)
@@ -203,7 +271,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         Set("profiles[.]yaml", "profiles[.]yml")
       ).toArray
 
-      for ( profileFile <- profilesFiles if result._1 == "DBT" ) {
+      for ( profileFile <- profilesFiles if result._3 == "DBT" ) {
         val profileData = getYAML(profileFile) match {
           case Success(profileData) =>
             profileData.get(dbtProfileName) match {
@@ -226,6 +294,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
                   dbKeys.foreach { k =>
                     if (outputData.containsKey(k)) {
                       result = (
+                        profileFile,
+                        k,
                         outputData.get(k).asInstanceOf[String],
                         outputData.getOrDefault("host", "").asInstanceOf[String],
                         outputData.getOrDefault("type", "").asInstanceOf[String]
@@ -309,70 +379,13 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       .distinct
   }
 
-//
-//  private def addSqlNodes(builder: DBTParserPass.this.DiffGraphBuilder, property: JavaProperty): Unit = {
-//
-//    val query        = property.value
-//    val lineNumber   = property.lineNumber.getOrElse(-1).asInstanceOf[Int]
-//    val columnNumber = property.columnNumber.getOrElse(-1).asInstanceOf[Int]
-//    try {
-//      SQLParser.parseSqlQuery(query) match {
-//        case Some(parsedQueryList) =>
-//          parsedQueryList.zipWithIndex.foreach { case (parsedQueryItem: SQLQuery, queryOrder) =>
-//            buildAndReturnIndividualQueryNode(
-//              builder,
-//              property.sourceFileOut.next(),
-//              parsedQueryItem,
-//              query,
-//              lineNumber,
-//              queryOrder
-//            )
-//          }
-//        case None =>
-//          logger.debug("Failed to parse query: There might be a problem with the syntax.")
-//          None
-//      }
-//    } catch {
-//      case ex: Exception =>
-//        logger.debug(s"Error while parsing SQL query at line $lineNumber: ${ex.getMessage}")
-//        None
-//    }
-//  }
-//
-//  private def buildAndReturnIndividualQueryNode(
-//    builder: DiffGraphBuilder,
-//    fileNode: File,
-//    queryModel: SQLQuery,
-//    query: String,
-//    queryLineNumber: Int,
-//    queryOrder: Int
-//  ): Unit = {
-//    // Have added tableName in name key
-//    // Have added columns in value key
-//
-//    val queryNode = NewSqlQueryNode().name(queryModel.queryType).code(query).lineNumber(queryLineNumber)
-//
-//    val tableNode = NewSqlTableNode()
-//      .name(queryModel.table.name)
-//      .code(query)
-//      .lineNumber(queryLineNumber + queryModel.table.lineNumber - 1)
-//      .columnNumber(queryModel.table.columnNumber)
-//      .order(queryOrder)
-//
-//    builder.addEdge(queryNode, tableNode, EdgeTypes.AST)
-//    builder.addEdge(queryNode, fileNode, EdgeTypes.SOURCE_FILE)
-//    builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
-//
-//    queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
-//      val columnNode = NewSqlColumnNode()
-//        .name(queryColumn.name)
-//        .code(queryColumn.name)
-//        .lineNumber(queryLineNumber + queryColumn.lineNumber - 1)
-//        .columnNumber(queryColumn.columnNumber)
-//        .order(columnIndex)
-//      builder.addEdge(tableNode, columnNode, EdgeTypes.AST)
-//      builder.addEdge(columnNode, fileNode, EdgeTypes.SOURCE_FILE)
-//
-//    }
-//  }
+  private def addFileNode(file: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+    val rootPath: Path = Paths.get(projectRoot)
+    val filePath: Path = Paths.get(file)
+    val relativePath: Path = rootPath.relativize(filePath)
+
+    val fileNode = NewFile().name(relativePath.toString)
+    builder.addNode(fileNode)
+    fileNode
+  }
 }
