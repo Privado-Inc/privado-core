@@ -1,7 +1,7 @@
 package ai.privado.passes
 
 import ai.privado.utility.Utilities
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import io.joern.x2cpg.SourceFiles
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
@@ -31,9 +31,10 @@ import io.circe.yaml.parser
 import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.*
-import ai.privado.model.Language
+import ai.privado.model._
 import ai.privado.tagger.PrivadoParallelCpgPass
 import com.github.javaparser.utils.ProjectRoot
 import org.yaml.snakeyaml.constructor.SafeConstructor
@@ -70,6 +71,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         val projectName = projectData.get("name").asInstanceOf[String]
         val profileName = projectData.get("profile").asInstanceOf[String]
         val modelsDirectoryName = getModelsDirectoryName(projectData)
+
+        // extract db information from profile
         val (profileFile, dbKey, dbName, dbHost, dbPlatform) = getDatabaseInfo(projectFile, profileName) match {
           case Success(value) => value
           case Failure(err) =>
@@ -77,6 +80,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             ("", "", "DBT", "", "")
         }
 
+        // get all models from the model directory
         val models = getModels(projectFile, modelsDirectoryName) match {
           case Success(value) => value
           case Failure(err) =>
@@ -84,8 +88,13 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             Array[java.util.Map[String, Any]]()
         }
 
-        // create database node
-        val dbNode = createDatabaseNode(builder, projectFile, projectName, profileFile, dbName, dbKey)
+        // transform models into expected schema format
+        val schema = transformModelsToSchema(projectName, dbPlatform, models)
+        // create rule and add metadata for dbt storage sink
+        val ruleInfo = createDatabaseSinkRule(projectName, dbName, dbPlatform, dbHost, schema)
+
+        // create and tag database node
+        val dbNode = createAndTagDatabaseNode(builder, ruleInfo, projectFile, projectName, profileFile, dbName, dbKey)
         // create sql node
         val sqlNode = createSQLNode(builder, dbNode)
 
@@ -94,35 +103,6 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
           val tableNode = createTableColumnNodesFromModels(builder, model, i)
           builder.addEdge(sqlNode, tableNode, EdgeTypes.AST)
         }
-
-
-
-
-//        ruleCache.setRuleInfo => Add Rules
-//        addDatabaseDetails => Call this for the new rule (with custom info?)
-//        new DatabaseNode
-
-
-
-        // Database Sink => Table => Column ("schema")
-//
-//        databaseInfo {
-//          "ID": "Sinks.Database.DBT.ProjectName",
-//          "",
-//          "host", "name", "location", "schemas": [{ table: "", columns: [{}] }]
-//          "users" > "mysql"
-//
-//        }
-//
-//        DBT
-//
-
-        // create database node
-        // create a table node
-        // create column nodes
-        // create edge between table-column node
-        // see creating a database-sink node
-
 
         logger.debug(f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform, dbKey: $dbKey, profileFile=$profileFile")
       }
@@ -133,6 +113,69 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     }
   }
 
+  private def transformModelsToSchema(projectName: String, dbPlatform: String, models: Array[java.util.Map[String, Any]]): DatabaseSchema = {
+    val tables = models.map { table =>
+      val columns = table.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]].asScala.map{ col =>
+        DatabaseColumn(
+          col.get("name").asInstanceOf[String],
+          col.getOrDefault("description", "").asInstanceOf[String],
+          "",
+          ""  // TODO: Match and add sourceId here
+        )
+      }.toList
+
+      DatabaseTable(
+        table.get("name").asInstanceOf[String],
+        table.getOrDefault("description", "").asInstanceOf[String],
+        columns
+      )
+    }.toList
+
+    val dbSchema = DatabaseSchema(
+      kind = "dbt",
+      projectName = projectName,
+      platform = dbPlatform,
+      tables = tables
+    )
+
+    dbSchema
+  }
+
+  private def createDatabaseSinkRule(projectName: String, dbName: String, dbPlatform: String, dbHost: String, schema: DatabaseSchema) = {
+    val ruleId = f"Storages.DBT.ReadAndWrite.${projectName}"
+
+    val customDatabaseSinkRule = RuleInfo(
+      ruleId,
+      f"${dbName}",
+      "",
+      Array[String]("getdbt.com"),
+      List[String](),
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "storages",
+      Language.DEFAULT,
+      Array[String]()
+    )
+
+    val dbDetails = DatabaseDetails(
+      dbName,
+      dbPlatform,
+      dbHost,
+      "",
+      "",
+      Some(schema)
+    )
+
+    ruleCache.setRuleInfo(customDatabaseSinkRule)
+    DatabaseDetailsCache.addDatabaseDetails(dbDetails, ruleId)
+
+    customDatabaseSinkRule
+  }
+
   private def createSQLNode(builder: DiffGraphBuilder, dbNode: NewDbNode) = {
     val sqlNode = NewSqlQueryNode().name("DBT").code("DBT").order(0)
     builder.addNode(sqlNode)
@@ -140,7 +183,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
     sqlNode
   }
-  private def createDatabaseNode(builder: DiffGraphBuilder, projectFile: String, projectName: String, profileFile: String, dbName: String, dbKey: String) = {
+  private def createAndTagDatabaseNode(builder: DiffGraphBuilder, ruleInfo: RuleInfo, projectFile: String, projectName: String, profileFile: String, dbName: String, dbKey: String) = {
     val (fileName, (lineNumber, columnNumber, matchedLine)) = dbName match {
       case "DBT" => (projectFile, findFirstPatternInYAMLFile(projectFile, "name", projectName))
       case _ => (profileFile, findFirstPatternInYAMLFile(profileFile, dbKey, dbName))
@@ -157,6 +200,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
     builder.addNode(databaseNode)
     builder.addEdge(databaseNode, fileNode, EdgeTypes.SOURCE_FILE)
+
+    Utilities.addRuleTags(builder, databaseNode, ruleInfo, ruleCache)
 
     databaseNode
   }
@@ -200,13 +245,6 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     }
 
     tableNode
-  }
-  private def createDBTSinkRule(ruleId: String, projectName: String) = {
-
-  }
-
-  private def addDatabaseSchemaDetails(ruleId: String) = {
-
   }
 
   private def findFirstPatternInYAMLFile(filePath: String, key: String, value: String): (Int, Int, String) = {

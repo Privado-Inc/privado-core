@@ -115,7 +115,6 @@ object Utilities {
     storeForTagHelper(Constants.dbVendor, databaseDetails.dbVendor)
     storeForTagHelper(Constants.dbLocation, databaseDetails.dbLocation)
     storeForTagHelper(Constants.dbOperation, databaseDetails.dbOperation)
-//    storeForTagHelper(Constants.schema, databaseDetails.schema)
   }
 
   /** Utility to add Tag based on a rule Object
