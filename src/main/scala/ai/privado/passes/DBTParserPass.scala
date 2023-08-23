@@ -152,7 +152,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     dbHost: String,
     schema: DatabaseSchema
   ) = {
-    val ruleId = f"Storages.DBT.ReadAndWrite.${projectName}"
+    val ruleId   = f"Storages.DBT.ReadAndWrite.${projectName}"
     val ruleHost = if (dbHost != "") dbHost else "getdbt.com"
 
     val customDatabaseSinkRule = RuleInfo(
@@ -228,8 +228,6 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     storeForTag(builder, databaseNode, Constants.catLevelOne, ruleInfo.catLevelOne.name)
     storeForTag(builder, databaseNode, Constants.catLevelTwo, ruleInfo.catLevelTwo)
   }
-
-
 
   private def createTableColumnNodesFromModels(
     builder: DiffGraphBuilder,
