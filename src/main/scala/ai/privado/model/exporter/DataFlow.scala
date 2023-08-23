@@ -3,6 +3,7 @@ package ai.privado.model.exporter
 import ai.privado.model.{DatabaseDetails, DatabaseSchema, DatabaseTable, DatabaseColumn}
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import ai.privado.model.DatabaseEncoderDecoder._ //Required for DatabaseDetails Model
 
 case class DataFlowSubCategoryModel(sourceId: String, sinks: List[DataFlowSubCategorySinkModel])
 
@@ -74,26 +75,6 @@ object DataFlowEncoderDecoder {
     deriveDecoder[DataFlowSubCategoryPathModel]
   implicit val dataFlowSubCategoryPathModelEncoder: Encoder[DataFlowSubCategoryPathModel] =
     deriveEncoder[DataFlowSubCategoryPathModel]
-
-  implicit val databaseDetailsDecoder: Decoder[DatabaseDetails] =
-    deriveDecoder[DatabaseDetails]
-  implicit val databaseDetailsEncoder: Encoder[DatabaseDetails] =
-    deriveEncoder[DatabaseDetails]
-
-  implicit val databaseSchemaDecoder: Decoder[DatabaseSchema] =
-    deriveDecoder[DatabaseSchema]
-  implicit val databaseSchemaEncoder: Encoder[DatabaseSchema] =
-    deriveEncoder[DatabaseSchema]
-
-  implicit val databaseTableDecoder: Decoder[DatabaseTable] =
-    deriveDecoder[DatabaseTable]
-  implicit val databaseTableEncoder: Encoder[DatabaseTable] =
-    deriveEncoder[DatabaseTable]
-
-  implicit val databaseColumnDecoder: Decoder[DatabaseColumn] =
-    deriveDecoder[DatabaseColumn]
-  implicit val databaseColumnEncoder: Encoder[DatabaseColumn] =
-    deriveEncoder[DatabaseColumn]
 
   implicit val dataFlowPathModelIntermediateDecoder: Decoder[DataFlowPathIntermediateModel] =
     deriveDecoder[DataFlowPathIntermediateModel]
