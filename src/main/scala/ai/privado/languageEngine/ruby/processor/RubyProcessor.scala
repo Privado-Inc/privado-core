@@ -152,14 +152,10 @@ object RubyProcessor {
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          println(s"${Calendar.getInstance().getTime} - Schema Parser started  ...")
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(s"${Calendar.getInstance().getTime} - Schema Parser is completed  ...")
-
-          println(s"${Calendar.getInstance().getTime} - SQL Parser started  ...")
+          
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          println(s"${Calendar.getInstance().getTime} - SQL Parser is completed  ...")
-
+          
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
             val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
