@@ -73,7 +73,7 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
             .l(i)
             .ast
             .collectAll[io.shiftleft.codepropertygraph.generated.nodes.Call]
-            .whereNot(_.isCallTo("<operator>.*"))
+            .whereNot(_.isCallTo(ALL_OPERATOR))
             .astChildren
             .isLiteral
             .l
