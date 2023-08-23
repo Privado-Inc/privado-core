@@ -52,7 +52,10 @@ object FileExtensions {
 
 class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger          = LoggerFactory.getLogger(getClass)
+  val DEFAULT_DB_NAME = "DBT"
+  val CONFIG_NAME_KEY = "name"
+  val CONFIG_DESC_KEY = "description"
 
   override def generateParts(): Array[String] = {
     getConfigFiles(
@@ -66,7 +69,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     logger.debug(f"Processing DBT Project: $projectFile")
     getYAML(projectFile) match {
       case Success(projectData) => {
-        val projectName         = projectData.get("name").asInstanceOf[String]
+        val projectName         = projectData.get(CONFIG_NAME_KEY).asInstanceOf[String]
         val profileName         = projectData.get("profile").asInstanceOf[String]
         val modelsDirectoryName = getModelsDirectoryName(projectData)
 
@@ -75,7 +78,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
           case Success(value) => value
           case Failure(err) =>
             logger.error(f"error while getting database info: ${projectFile}: ${err}")
-            ("", "", "DBT", "", "")
+            ("", "", DEFAULT_DB_NAME, "", "")
         }
 
         // get all models from the model directory
@@ -127,17 +130,17 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
         .asScala
         .map { col =>
           DatabaseColumn(
-            col.get("name").asInstanceOf[String],
-            col.getOrDefault("description", "").asInstanceOf[String],
+            col.get(CONFIG_NAME_KEY).asInstanceOf[String],
+            col.getOrDefault(CONFIG_DESC_KEY, "").asInstanceOf[String],
             "",
-            findMatchingSourceId(col.get("name").asInstanceOf[String])
+            findMatchingSourceId(col.get(CONFIG_NAME_KEY).asInstanceOf[String])
           )
         }
         .toList
 
       DatabaseTable(
-        table.get("name").asInstanceOf[String],
-        table.getOrDefault("description", "").asInstanceOf[String],
+        table.get(CONFIG_NAME_KEY).asInstanceOf[String],
+        table.getOrDefault(CONFIG_DESC_KEY, "").asInstanceOf[String],
         columns
       )
     }.toList
@@ -192,7 +195,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
   }
 
   private def createSQLQueryNode(builder: DiffGraphBuilder, dbNode: NewDbNode) = {
-    val sqlNode = NewSqlQueryNode().name("DBT").code("DBT").order(0)
+    val sqlNode = NewSqlQueryNode().name(DEFAULT_DB_NAME).code(DEFAULT_DB_NAME).order(0)
     builder.addNode(sqlNode)
     builder.addEdge(dbNode, sqlNode, EdgeTypes.AST)
 
@@ -208,8 +211,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     dbKey: String
   ) = {
     val (fileName, (lineNumber, columnNumber, matchedLine)) = dbName match {
-      case "DBT" => (projectFile, findFirstPatternInYAMLFile(projectFile, "name", projectName))
-      case _     => (profileFile, findFirstPatternInYAMLFile(profileFile, dbKey, dbName))
+      case DEFAULT_DB_NAME => (projectFile, findFirstPatternInYAMLFile(projectFile, CONFIG_NAME_KEY, projectName))
+      case _               => (profileFile, findFirstPatternInYAMLFile(profileFile, dbKey, dbName))
     }
 
     val fileNode = addFileNode(fileName, builder)
@@ -246,14 +249,14 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     tableQueryOrder: Int
   ) = {
     val modelFile = model.get("filePath").asInstanceOf[String]
-    val tableName = model.get("name").asInstanceOf[String]
+    val tableName = model.get(CONFIG_NAME_KEY).asInstanceOf[String]
 
     // create file node
     val fileNode = addFileNode(modelFile, builder)
 
     // create table node
     val (tableLineNumber, tableColumnNumber, tableMatchedLine) =
-      findFirstPatternInYAMLFile(modelFile, "name", tableName)
+      findFirstPatternInYAMLFile(modelFile, CONFIG_NAME_KEY, tableName)
     val tableNode = NewSqlTableNode()
       .name(tableName)
       .code(tableMatchedLine)
@@ -269,8 +272,9 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     // create column nodes
     val columns = model.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
     columns.asScala.zipWithIndex.foreach { case (column, index) =>
-      val colName                                          = column.get("name").asInstanceOf[String]
-      val (colLineNumber, colColumnNumber, colMatchedLine) = findFirstPatternInYAMLFile(modelFile, "name", colName)
+      val colName = column.get(CONFIG_NAME_KEY).asInstanceOf[String]
+      val (colLineNumber, colColumnNumber, colMatchedLine) =
+        findFirstPatternInYAMLFile(modelFile, CONFIG_NAME_KEY, colName)
       val columnNode = NewSqlColumnNode()
         .name(colName)
         .code(colMatchedLine)
@@ -317,7 +321,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
           if (data != null && !data.isEmpty && data.containsKey("models")) {
             val models = data.get("models").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
             models.forEach(x =>
-              if (x.containsKey("name") && x.containsKey("columns")) {
+              if (x.containsKey(CONFIG_NAME_KEY) && x.containsKey("columns")) {
                 x.put("filePath", modelFile)
                 modelTables += x
               }
@@ -339,7 +343,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
   }
 
   private def getDatabaseInfo(dbtProjectFile: String, dbtProfileName: String) = Try {
-    var result = ("", "", "DBT", "", "")
+    var result = ("", "", DEFAULT_DB_NAME, "", "")
 
     if (dbtProfileName != "null") {
       val dbtProjectRoot = getDirectoryName(dbtProjectFile)
@@ -349,7 +353,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
         Set("profiles[.]yaml", "profiles[.]yml")
       ).toArray
 
-      for (profileFile <- profilesFiles if result._3 == "DBT") {
+      for (profileFile <- profilesFiles if result._3 == DEFAULT_DB_NAME) {
         val profileData = getYAML(profileFile) match {
           case Success(profileData) =>
             profileData.get(dbtProfileName) match {

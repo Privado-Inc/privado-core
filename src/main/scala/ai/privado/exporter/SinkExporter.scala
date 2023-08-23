@@ -121,7 +121,6 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l
     sinks
   }
-  // TODO: CHECK THIS ONCE
 
   private def convertSinkList(sinks: List[List[Tag]]) = {
     def convertSink(sinkId: String) = {
