@@ -21,7 +21,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
   private val logger = LoggerFactory.getLogger(this.getClass)
   val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
-  lazy val APISINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.apiSinks)
+  val APISINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
   val apis = cacheCall.name(APISINKS_REGEX).l
 
@@ -51,7 +51,12 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
     println(s"${Calendar.getInstance().getTime} - --API TAGGER Common HTTP Libraries Used...")
     sinkTagger(
       apiInternalSources ++ propertySources ++ identifierSource,
-      apis.methodFullName(commonHttpPackages).l,
+      apis
+        .or(
+          _.methodFullName(commonHttpPackages),
+          _.filter(_.dynamicTypeHintFullName.exists(_.matches(commonHttpPackages)))
+        )
+        .l,
       builder,
       ruleInfo,
       ruleCache
