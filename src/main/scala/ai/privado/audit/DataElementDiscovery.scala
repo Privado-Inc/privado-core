@@ -369,6 +369,7 @@ object DataElementDiscovery {
 
 object DataElementDiscoveryJS {
   private val logger = LoggerFactory.getLogger(getClass)
+
   def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
     logger.info("Process Class Name from cpg")
     val classNameList = ListBuffer[String]()
@@ -452,6 +453,50 @@ object DataElementDiscoveryJS {
     }
   }
 
+  def getFileScoreJS(absoluteFileName: String, xtocpg: Try[Cpg]): String = {
+    var score = 0.0
+    xtocpg match {
+      case Success(cpg) => {
+        if (Dataflow.getSources(cpg).file.where(_.name(absoluteFileName)).length > 0) {
+          score += 1
+        }
+        val probableSourcesDirectoryPattern = "(?i)models?|services?|controllers?|stores?".r
+        probableSourcesDirectoryPattern.findFirstMatchIn(absoluteFileName) match {
+          case Some(_) => score += 0.5
+          case None    =>
+        }
+
+        val fileName = absoluteFileName.substring(absoluteFileName.lastIndexOf("/") + 1)
+
+        val dataSubjectPattern = "(?i)person|users?|customer".r
+        dataSubjectPattern.findFirstMatchIn(fileName) match {
+          case Some(_) => score += 0.5
+          case None    =>
+        }
+
+        val sourceFiles = "(?i)register|store|login".r
+        sourceFiles.findFirstMatchIn(fileName) match {
+          case Some(_) => score += 0.5
+          case None    =>
+        }
+
+        val lowPriorityFolders = "(?i)routes?|test|public|assets?|static|spec|configs?".r
+        lowPriorityFolders.findFirstMatchIn(absoluteFileName) match {
+          case Some(_) => score = 0.0
+          case None    =>
+        }
+        score.toString
+      }
+      case Failure(exception) => {
+        val fileName = absoluteFileName.substring(absoluteFileName.lastIndexOf("/") + 1)
+        logger.debug(s"Failed to calculate file priority score for '$fileName'")
+        logger.debug("Failed to calculate file score", exception)
+        logger.debug("exception: ", exception.printStackTrace())
+        "0"
+      }
+    }
+  }
+
   def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
     val classNameRuleList         = getSourceUsingRules(xtocpg)
     val memberInfo                = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
@@ -472,12 +517,15 @@ object DataElementDiscoveryJS {
             elementInfo.put(typeDecl, new ListBuffer[Any])
           }
           val elements = elementInfo(typeDecl)
-          paramList.foreach(param => elements += param)
+          paramList.foreach(param =>
+            if (!param.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)) {
+              elements += param
+            }
+          )
           elementInfo.put(typeDecl, elements)
         }
       }
     }
-
     memberInfo.foreach {
       case (typeDecl, memberList) => {
         // Filtering out the noise
@@ -490,7 +538,11 @@ object DataElementDiscoveryJS {
             elementInfo.put(typeDecl, new ListBuffer[Any])
           }
           val elements = elementInfo(typeDecl)
-          memberList.foreach(member => elements += member)
+          memberList.foreach(member =>
+            if (!member.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)) {
+              elements += member
+            }
+          )
           elementInfo.put(typeDecl, elements)
         }
       }
@@ -530,7 +582,7 @@ object DataElementDiscoveryJS {
           workbookResult += List(
             key.name,
             key.file.head.name,
-            getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -548,7 +600,7 @@ object DataElementDiscoveryJS {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -561,7 +613,7 @@ object DataElementDiscoveryJS {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -579,7 +631,7 @@ object DataElementDiscoveryJS {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   param.name,
                   param.typeFullName,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -592,7 +644,7 @@ object DataElementDiscoveryJS {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                   param.name,
                   param.typeFullName,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -614,11 +666,12 @@ object DataElementDiscoveryJS {
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
           && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+          && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
         )
           workbookResult += List(
             identifier.typeFullName,
             identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
-            getFileScore(identifier.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(identifier.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
             identifier.name,
             identifier.typeFullName,
             AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -634,11 +687,12 @@ object DataElementDiscoveryJS {
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+          && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
         )
           workbookResult += List(
             local.typeFullName,
             local.file.head.name,
-            getFileScore(local.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(local.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
             local.name,
             local.typeFullName,
             AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,

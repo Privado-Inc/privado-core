@@ -29,9 +29,10 @@ import ai.privado.model.Constants
 import ai.privado.model.Language
 
 import scala.collection.mutable.ListBuffer
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.utility.Utilities.{getFileNameForNode, resolver}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 
 object UnresolvedReportUtility {
   def reportUnresolvedMethods(xtocpg: Try[Cpg], statoutdir: String, language: Language.Language): Unit = {
@@ -43,24 +44,46 @@ object UnresolvedReportUtility {
     var unresolvedNamespacesList      = ListBuffer[String]()
     var nonempty                      = 0
     var isempty                       = 0
+    var resolvedCalls                 = 0
 
     val unresolved_signature = "(?i)(.*)(unresolved)(signature)(.*)"
     val unresolved_namespace = "(?i)(.*)(unresolved)(namespace)(.*)"
-    val unknown_full_name    = "(?i)(.*)(unknownfullname)(.*)"
+    var unknown_full_name    = "(?i)(.*)(unknownfullname|empty)(.*)"
+    val operator_name        = "(?i)(operator).*"
+    val importRegex          = "(?i).*(import|require).*"
+
+    if (language.equals(Language.RUBY)) {
+      unknown_full_name = "(?i)(.*)(unknownfullname|empty)(.*)"
+    }
 
     var unresolved_sig_pattern = unknown_full_name
     if (language.equals(Language.JAVA)) {
       unresolved_sig_pattern = unresolved_signature
     }
 
+    val resolvedCallMethodFullNames = ListBuffer[Call]()
     xtocpg match {
       case Success(cpg) => {
-        val importCount = cpg.call.l.filter((i) => i.name == "import").l.length
-        total = cpg.call.methodFullName.l.length - importCount
-        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).l.length - importCount
+        val importCount = cpg.call
+          .or(
+            _.filter((i) => {
+              i.name.matches(importRegex)
+            }),
+            _.where(_.code("<empty>"))
+          )
+          .size
+
+        val operatorCount = cpg.call.count(i => !i.name.matches(operator_name))
+        total = cpg.call.methodFullName.size - importCount - operatorCount
+        unresolvedSignatures = cpg.call.methodFullName(unresolved_sig_pattern).size
 
         nonempty = cpg.call.callee.filter(_.nonEmpty == false).l.length
         isempty = cpg.call.callee.filter(_.isEmpty).l.length
+
+        // Resolved calls list
+        resolvedCalls = resolvedCallMethodFullNames
+          .addAll(cpg.call.whereNot(_.methodFullName(s"$unknown_full_name|$operator_name|$importRegex")).l)
+          .length
 
         cpg.call
           .methodFullName(unresolved_sig_pattern)
@@ -102,6 +125,7 @@ object UnresolvedReportUtility {
       case Language.JAVA       => statfilepath = s"$outputDirectory/${Constants.JAVA_STATS}"
       case Language.JAVASCRIPT => statfilepath = s"$outputDirectory/${Constants.JS_STATS}"
       case Language.PYTHON     => statfilepath = s"$outputDirectory/${Constants.PYTHON_STATS}"
+      case Language.RUBY       => statfilepath = s"$outputDirectory/${Constants.RUBY_STATS}"
     }
     val statfile = File(statfilepath)
     statfile.write("")
@@ -141,9 +165,6 @@ object UnresolvedReportUtility {
       statstr += s"$percentage% calls resolved\n"
     }
 
-    print(statstr)
-    statfile.appendText(statstr)
-
 //    if (nonempty > 0)
     statstr += s"\nCalls with nonEmpty Callee false: $nonempty"
 //    if (isempty > 0)
@@ -160,6 +181,20 @@ object UnresolvedReportUtility {
       statfile.appendLine("List of Calls with Unresolved Namespaces:")
       unresolvedNamespacesList.zipWithIndex.map { case (un, index) => statfile.appendLine(s"${(index + 1)} - $un") }
     }
+
+    statstr += s"$divider\n"
+    statstr += "Resolved calls: \n"
+
+    statfile.appendLine(divider)
+    statfile.appendLine("Resolved calls: \n")
+
+    resolvedCallMethodFullNames.foreach(call => {
+      statfile.appendLine(call.methodFullName)
+      statstr += s"${call.methodFullName}\n"
+    })
+
+    print(statstr)
+    statfile.appendText(statstr)
 
     println(divider)
     println()

@@ -27,13 +27,14 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.addRuleTags
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  lazy val cacheCall = cpg.call
+  val cacheCall: List[Call] = cpg.call
     .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
     .whereNot(_.method.name(".*<meta.*>$"))
     .l
@@ -45,7 +46,10 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
+    val combinedRegex = ruleInfo.combinedRulePattern
+    val sinks = cacheCall
+      .or(_.methodFullName(combinedRegex), _.filter(_.dynamicTypeHintFullName.exists(_.matches(combinedRegex))))
+      .l
 
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
   }

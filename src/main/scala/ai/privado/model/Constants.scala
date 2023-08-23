@@ -119,6 +119,7 @@ object Constants {
   val JAVA_STATS   = "java.txt"
   val JS_STATS     = "js.txt"
   val PYTHON_STATS = "python.txt"
+  val RUBY_STATS   = "ruby.txt"
 
   val delombok = "delombok"
   val API      = "API"
@@ -151,4 +152,7 @@ object Constants {
   val annotations       = "annotations"
   val default           = "default"
   val semanticDelimeter = "_A_"
+
+  // Ruby defaults
+  val defaultExpansionLimit = 20
 }

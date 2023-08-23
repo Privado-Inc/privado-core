@@ -3,14 +3,15 @@ package ai.privado.languageEngine.java.audit
 import ai.privado.audit.UnresolvedFlowReport
 import ai.privado.cache.AuditCache
 import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.PrivadoInput
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator.getSemantics
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
-import io.joern.dataflowengineoss.language._
+import ai.privado.utility.Utilities
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import scala.collection.mutable
@@ -25,11 +26,13 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
     val options      = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    implicit val engineContext: EngineContext =
-      EngineContext(semantics = getSemantics(cpg, privadoInput, ruleCache), config = EngineConfig(4))
     val sources         = Dataflow.getSources(cpg)
     val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
-    val unresolvedFlows = unfilteredSinks.reachableByFlows(sources).l
+    val unresolvedFlows = unfilteredSinks
+      .reachableByFlows(sources)(
+        Utilities.getEngineContext(4, config = privadoInput)(getSemantics(cpg, privadoInput, ruleCache))
+      )
+      .l
     AuditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows))
   }
 

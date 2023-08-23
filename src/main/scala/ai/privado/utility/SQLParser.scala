@@ -24,7 +24,7 @@ object SqlCleaner {
   def clean(sql: String): String = {
     var cleanedSql = removeComments(sql)
     cleanedSql = removeDynamicVariables(cleanedSql)
-    cleanedSql
+    cleanedSql.replace("`", "")
   }
 
   private def removeComments(sql: String): String = {
