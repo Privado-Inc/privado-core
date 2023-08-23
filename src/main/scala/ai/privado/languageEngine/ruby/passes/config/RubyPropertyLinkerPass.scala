@@ -11,6 +11,8 @@ class RubyPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  private val cachedCall = cpg.call("<operator>.(assignment|fieldAccess)").l
+
   override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
   }
@@ -25,7 +27,7 @@ class RubyPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     } else {
       val pattern =
         s".*ENV(\\.fetch)?(\\.${propertyName}|\\[('|`|\")${propertyName}('|`|\")]).*"
-      cpg.call("<operator>.(assignment|fieldAccess)").astChildren.code(pattern).l
+      cachedCall.astChildren.code(pattern).l
     }
   }
 
