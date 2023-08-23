@@ -443,25 +443,10 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     extensions: Set[String],
     allowedFiles: Set[String] = Set()
   ): List[String] = {
-    def getListOfFiles(dir: String): List[File] = {
-      val d = new File(dir)
-      if (d.exists && d.isDirectory) {
-        d.listFiles.filter(_.isFile).toList
-      } else {
-        List[File]()
-      }
-    }
-
     SourceFiles
       .determine(Set(projectRoot), extensions)
-      .concat(
-        getListOfFiles(projectRoot)
-          .map(f => {
-            f.getAbsolutePath
-          })
-      )
       .filter(_.matches(f".*(${allowedFiles.mkString("|")})"))
-      .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
+      .filter(file => Utilities.isFileProcessable(file, ruleCache))
       .distinct
   }
 
