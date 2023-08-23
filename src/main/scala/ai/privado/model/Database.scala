@@ -65,7 +65,6 @@ object DatabaseEncoderDecoder {
     deriveEncoder[DatabaseColumn]
 }
 
-
 //
 //import io.circe.Decoder.Result
 //import io.circe.{Decoder, Encoder}
