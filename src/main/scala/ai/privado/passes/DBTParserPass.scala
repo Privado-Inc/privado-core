@@ -153,12 +153,13 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     schema: DatabaseSchema
   ) = {
     val ruleId = f"Storages.DBT.ReadAndWrite.${projectName}"
+    val ruleHost = if (dbHost != "") dbHost else "getdbt.com"
 
     val customDatabaseSinkRule = RuleInfo(
       ruleId,
       f"${dbName}",
       "",
-      Array[String]("getdbt.com"),
+      Array[String](ruleHost),
       List[String](),
       false,
       "",
@@ -211,25 +212,24 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
 
     builder.addNode(databaseNode)
     builder.addEdge(databaseNode, fileNode, EdgeTypes.SOURCE_FILE)
-
-//    Utilities.addRuleTags(builder, databaseNode, ruleInfo, ruleCache)
-
-    val storeForTagHelper = storeForTag(builder, databaseNode) _
-    storeForTagHelper(Constants.id, ruleInfo.id)
-    storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
-    storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
-    storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
+    addRuleTags(builder, databaseNode, ruleInfo)
 
     databaseNode
   }
 
-  private def storeForTag(
-    builder: BatchedUpdate.DiffGraphBuilder,
-    node: AstNodeNew
-  )(tagName: String, tagValue: String = ""): BatchedUpdate.DiffGraphBuilder = {
-    builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
-    builder
+  private def addRuleTags(builder: DiffGraphBuilder, databaseNode: AstNodeNew, ruleInfo: RuleInfo) = {
+    def storeForTag(builder: DiffGraphBuilder, node: AstNodeNew, tagName: String, tagValue: String = "") = {
+      builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
+      builder
+    }
+
+    storeForTag(builder, databaseNode, Constants.id, ruleInfo.id)
+    storeForTag(builder, databaseNode, Constants.nodeType, ruleInfo.nodeType.toString)
+    storeForTag(builder, databaseNode, Constants.catLevelOne, ruleInfo.catLevelOne.name)
+    storeForTag(builder, databaseNode, Constants.catLevelTwo, ruleInfo.catLevelTwo)
   }
+
+
 
   private def createTableColumnNodesFromModels(
     builder: DiffGraphBuilder,
