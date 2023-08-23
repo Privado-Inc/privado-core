@@ -154,9 +154,9 @@ object RubyProcessor {
           )
 
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          
+
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          
+
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
             val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
