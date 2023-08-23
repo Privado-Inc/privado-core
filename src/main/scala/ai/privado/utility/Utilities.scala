@@ -22,7 +22,7 @@
 
 package ai.privado.utility
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.CatLevelOne.CatLevelOne
@@ -32,6 +32,7 @@ import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
@@ -477,5 +478,40 @@ object Utilities {
     else if (url.matches(cloudDomainRegex)) Priority.HIGH
     else if (url.matches(ipPortRegex)) Priority.MEDIUM
     else Priority.LOW
+  }
+
+  def addDatabaseDetailsMultiple(
+    rules: List[(String, String)],
+    dbUrl: JavaProperty,
+    dbName: String,
+    dbLocation: String,
+    dbVendor: String
+  ): Unit = {
+    rules.foreach(rule => {
+      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+        val fileName = dbUrl.file.name.headOption.getOrElse("")
+        if (
+          databaseURLPriority(
+            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
+            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
+          ) < databaseURLPriority(
+            dbUrl.value,
+            fileName
+          ) // Compare the priority of the database url with already present url in the database cache
+        ) {
+
+          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
+          DatabaseDetailsCache.addDatabaseDetails(
+            DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, fileName),
+            rule._2
+          ) // Remove if current url has higher priority
+        }
+      } else {
+        DatabaseDetailsCache.addDatabaseDetails(
+          DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
+          rule._2
+        )
+      }
+    })
   }
 }

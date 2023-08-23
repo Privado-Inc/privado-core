@@ -70,6 +70,8 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
           projectRoot,
           Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
         ).toArray
+      case Language.RUBY =>
+        configFiles(projectRoot, Set(FileExtensions.YML, FileExtensions.YAML, FileExtensions.ENV)).toArray
     }
   }
 

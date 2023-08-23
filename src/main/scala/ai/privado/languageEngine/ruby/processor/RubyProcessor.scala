@@ -28,6 +28,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
+import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
@@ -42,7 +43,7 @@ import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outpu
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.SQLParser
 import ai.privado.semantic.Language.*
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -100,6 +101,9 @@ object RubyProcessor {
             )
           }
           new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
+
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
+          new RubyPropertyLinkerPass(cpg).createAndApply()
 
           logger.info("Enhancing Ruby graph by post processing pass")
 
