@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
+import java.io.File
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -45,7 +46,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           val routeSeparatedStrings   = routeMethodCall.split(SYMBOL_HASH)
           if (routeSeparatedStrings.size >= 2) {
             val methodName = routeSeparatedStrings(1)
-            val fileName   = ".*" + "/" + routeSeparatedStrings.headOption.getOrElse("") + ".*_controller.rb"
+            val fileName =
+              ".*" + File.separator + routeSeparatedStrings.headOption.getOrElse("UNKNOWN") + "_controller.rb"
             val targetCollectionMethod = cpg.method.name(methodName).where(_.file.name(fileName)).l
             if (targetCollectionMethod.nonEmpty) {
               methodUrlMap.addOne(
