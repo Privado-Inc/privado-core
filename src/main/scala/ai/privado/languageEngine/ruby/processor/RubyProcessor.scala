@@ -29,17 +29,12 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.download.ExternalDependenciesResolver
-import ai.privado.languageEngine.ruby.passes.{
-  GlobalImportPass,
-  MethodFullNamePassForRORBuiltIn,
-  PrivadoRubyTypeRecoveryPass,
-  RubyImportResolverPass
-}
+import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.languageEngine.ruby.passes.SchemaParser
+import ai.privado.passes.SQLParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.utility.Utilities.createCpgFolder
@@ -145,7 +140,13 @@ object RubyProcessor {
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
+          println(s"${Calendar.getInstance().getTime} - Schema Parser started  ...")
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          println(s"${Calendar.getInstance().getTime} - Schema Parser is completed  ...")
+
+          println(s"${Calendar.getInstance().getTime} - SQL Parser started  ...")
+          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          println(s"${Calendar.getInstance().getTime} - SQL Parser is completed  ...")
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
