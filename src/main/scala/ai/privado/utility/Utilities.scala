@@ -481,12 +481,12 @@ object Utilities {
   }
 
   def addDatabaseDetailsMultiple(
-                                  rules: List[(String, String)],
-                                  dbUrl: JavaProperty,
-                                  dbName: String,
-                                  dbLocation: String,
-                                  dbVendor: String
-                                ): Unit = {
+    rules: List[(String, String)],
+    dbUrl: JavaProperty,
+    dbName: String,
+    dbLocation: String,
+    dbVendor: String
+  ): Unit = {
     rules.foreach(rule => {
       if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
         val fileName = dbUrl.file.name.headOption.getOrElse("")

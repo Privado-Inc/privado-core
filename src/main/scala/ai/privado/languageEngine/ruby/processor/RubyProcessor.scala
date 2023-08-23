@@ -28,8 +28,15 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.java.processor.JavaProcessor.logger
+import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
-import ai.privado.languageEngine.ruby.passes.{GlobalImportPass, MethodFullNamePassForRORBuiltIn, PrivadoRubyTypeRecoveryPass, RubyExternalTypesPass, RubyImportResolverPass}
+import ai.privado.languageEngine.ruby.passes.{
+  GlobalImportPass,
+  MethodFullNamePassForRORBuiltIn,
+  PrivadoRubyTypeRecoveryPass,
+  RubyExternalTypesPass,
+  RubyImportResolverPass
+}
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
