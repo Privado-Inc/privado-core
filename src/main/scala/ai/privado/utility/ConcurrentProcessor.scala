@@ -119,9 +119,6 @@ abstract class ConcurrentProcessor[T, R](result: R) {
       case None =>
         val socket = zContext.createSocket(SocketType.PUSH)
         socket.connect(s"inproc://${topic}")
-        logger.trace(
-          s"PUSH Socket connected to queue -> inproc://${topic} from thread ${Thread.currentThread().getId()}"
-        )
         queue.set(socket)
         socket
     }
@@ -135,9 +132,6 @@ abstract class ConcurrentProcessor[T, R](result: R) {
         queue.set(null)
       case _ =>
     }
-    logger.debug(
-      s"PUSH Socket closed connection to queue -> inproc://${topic} from thread ${Thread.currentThread().getId()}"
-    )
   }
 
   /** Connect to ZeroMQ queue topic using PUSH socket and push the {@command} along with the {@item} to be processed
