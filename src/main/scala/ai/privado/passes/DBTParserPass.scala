@@ -93,8 +93,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
 
         // create and tag database node
         val dbNode = createAndTagDatabaseNode(builder, ruleInfo, projectFile, projectName, profileFile, dbName, dbKey)
-        // create sql node
-        val sqlNode = createSQLNode(builder, dbNode)
+        // create sql query node
+        val sqlNode = createSQLQueryNode(builder, dbNode)
 
         // create table and column nodes
         models.zipWithIndex.foreach { case (model, i) =>
@@ -103,7 +103,9 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
         }
 
         logger.debug(
-          f">>>>>> DBT Pass Detection: projectName=${projectName}, profileName=${profileName}, modelsDirectoryName=${modelsDirectoryName}, models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform, dbKey: $dbKey, profileFile=$profileFile"
+          f"DBT Pass Detection: ruleId: ${ruleInfo.id}, projectName=${projectName}, profileName=${profileName}, " +
+            f"models=${models.length}, dbName=$dbName, dbHost=$dbHost, dbPlatform=$dbPlatform, dbKey: $dbKey, " +
+            f"profileFile=$profileFile"
         )
       }
       case Failure(e) => {
@@ -128,7 +130,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
             col.get("name").asInstanceOf[String],
             col.getOrDefault("description", "").asInstanceOf[String],
             "",
-            "" // TODO: Match and add sourceId here
+            findMatchingSourceId(col.get("name").asInstanceOf[String])
           )
         }
         .toList
@@ -180,7 +182,16 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     customDatabaseSinkRule
   }
 
-  private def createSQLNode(builder: DiffGraphBuilder, dbNode: NewDbNode) = {
+  private def findMatchingSourceId(query: String) = {
+    val matchingRules = for {
+      rule <- ruleCache.getRule.sources
+      if query.matches(rule.combinedRulePattern)
+    } yield rule
+
+    if (!matchingRules.isEmpty) matchingRules.head.id else ""
+  }
+
+  private def createSQLQueryNode(builder: DiffGraphBuilder, dbNode: NewDbNode) = {
     val sqlNode = NewSqlQueryNode().name("DBT").code("DBT").order(0)
     builder.addNode(sqlNode)
     builder.addEdge(dbNode, sqlNode, EdgeTypes.AST)
@@ -249,6 +260,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       .lineNumber(tableLineNumber)
       .columnNumber(tableColumnNumber)
       .order(tableQueryOrder)
+
+    logger.debug(f"Creating table node for $tableName")
 
     builder.addNode(tableNode)
     builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
