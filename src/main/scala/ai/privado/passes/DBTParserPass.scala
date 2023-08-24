@@ -295,7 +295,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
 
   private def findFirstPatternInYAMLFile(filePath: String, key: String, value: String): (Int, Int, String) = {
     val (escapedKey, escapedValue) = (Regex.quote(key), Regex.quote(value))
-    val pattern                    = s"""["']?$escapedKey["']?\\s*:\\s*["']?$escapedValue["']?\\s*$$""".r
+    val pattern                    = s"""["']?$escapedKey["']?\\s*:\\s*["']?$escapedValue["']?""".r
     val lines                      = Files.readAllLines(Paths.get(filePath)).toArray(Array.ofDim[String](0))
 
     val (defaultRow, defaultCol) = (1, -1)
