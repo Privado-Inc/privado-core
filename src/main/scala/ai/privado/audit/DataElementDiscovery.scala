@@ -592,11 +592,16 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
+          val addedMembers   = mutable.Set[String]()
+
           value.foreach {
             case (member: Member) => {
-              if (member.name.nonEmpty) {
+              val memberUniqueKey =
+                s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
+              if (member.name.nonEmpty && !addedMembers.contains(memberUniqueKey)) {
+                addedMembers.add(memberUniqueKey)
                 if (ruleMemberInfo.contains(member.name)) {
-
+                  addedMembers.add(memberUniqueKey)
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
@@ -627,46 +632,53 @@ object DataElementDiscoveryJS {
             }
 
             case (param: MethodParameterIn) => {
-              if (ruleMemberInfo.contains(param.name)) {
-                workbookResult += List(
-                  key.fullName,
-                  key.file.head.name,
-                  getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
-                  param.name,
-                  param.typeFullName,
-                  AuditReportConstants.AUDIT_CHECKED_VALUE,
-                  ruleMemberInfo.getOrElse(param.name, "Default value"),
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
-                )
-              } else {
-                workbookResult += List(
-                  key.fullName,
-                  key.file.head.name,
-                  getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
-                  param.name,
-                  param.typeFullName,
-                  AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
-                )
+              val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
+              if (!addedMembers.contains(paramUniqueKey)) {
+                addedMembers.add(paramUniqueKey)
+                if (ruleMemberInfo.contains(param.name)) {
+                  workbookResult += List(
+                    key.fullName,
+                    key.file.head.name,
+                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    param.name,
+                    param.typeFullName,
+                    AuditReportConstants.AUDIT_CHECKED_VALUE,
+                    ruleMemberInfo.getOrElse(param.name, "Default value"),
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                  )
+                } else {
+                  workbookResult += List(
+                    key.fullName,
+                    key.file.head.name,
+                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    param.name,
+                    param.typeFullName,
+                    AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                  )
+                }
               }
             }
             case _ => {}
           }
         }
       }
-
+      val addedIdentifiers = mutable.Set[String]()
       identifiers.foreach(identifier => {
+        val identifierUniqueKey =
+          s"${identifier.typeFullName}${identifier.file.name.headOption.getOrElse(Constants.EMPTY)}${identifier.name}"
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
           && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
           && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
+          && !addedIdentifiers.contains(identifierUniqueKey)
         )
           workbookResult += List(
             identifier.typeFullName,
@@ -682,12 +694,16 @@ object DataElementDiscoveryJS {
           )
       })
 
+      val addedLocals = mutable.Set[String]()
       locals.foreach(local => {
+        val localsUniqueKey =
+          s"${local.typeFullName}${local.file.name.headOption.getOrElse(Constants.EMPTY)}${local.name}"
         if (
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
           && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
+          && !addedLocals.contains(localsUniqueKey)
         )
           workbookResult += List(
             local.typeFullName,
