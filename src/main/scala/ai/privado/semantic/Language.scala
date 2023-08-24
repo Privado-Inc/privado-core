@@ -24,7 +24,7 @@ package ai.privado.semantic
 
 import ai.privado.dataflow.Dataflow
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{File, SqlColumnNode, SqlQueryNode, SqlTableNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{File, SqlColumnNode, SqlQueryNode, SqlTableNode, DbNode}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import overflowdb.traversal._
 
@@ -46,6 +46,15 @@ object Language {
       cpg.graph.nodes(NodeTypes.SQL_COLUMN_NODE).asScala.cast[SqlColumnNode]
   }
 
+  implicit class NodeStarterForDBNode(cpg: Cpg) {
+    def dbNode: Traversal[DbNode] =
+      cpg.graph.nodes(NodeTypes.DB_NODE).asScala.cast[DbNode]
+  }
+
+  implicit class StepsForPropertyForDbNode(val trav: Traversal[DbNode]) extends AnyVal {
+    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+
+  }
   implicit class StepsForPropertyForSqlQueryNode(val trav: Traversal[SqlQueryNode]) extends AnyVal {
     def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
 
