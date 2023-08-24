@@ -19,15 +19,48 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val classUrlMap                         = mutable.HashMap[Long, String]()
   private val COLLECTION_METHOD_REFERENCE_PATTERN = "to:.*"
   private val SYMBOL_HASH                         = "#"
+  private val ROUTES_FILE_PATTERN                 = ".*routes.rb"
+  private val RESOURCES                           = "resources"
 
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
+    tagRestCallCollection(builder, collectionRuleInfo)
+    tagResourceCollection(builder, collectionRuleInfo)
+  }
 
+  private def tagResourceCollection(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
+
+    val collectionRoutes =
+      cpg.call.where(_.file.name(ROUTES_FILE_PATTERN)).name(RESOURCES).where(_.argument.isLiteral).l
+
+    val collectionMethodsCache = collectionRoutes
+      .map { m =>
+        //        sample route -> resources :phone_numbers, only: %i(index destroy)
+        val targetCollectionUrl = m.argument.isLiteral.code.headOption.getOrElse("").strip().stripPrefix(":")
+        if (targetCollectionUrl.nonEmpty) {
+          val methodName             = "show|update|new|create|destroy|index"
+          val fileName               = ".*" + File.separator + targetCollectionUrl + "_controller.rb"
+          val targetCollectionMethod = cpg.method.name(methodName).where(_.file.name(fileName)).l
+          if (targetCollectionMethod.nonEmpty) {
+            for (method <- targetCollectionMethod) {
+              methodUrlMap.addOne(method.id -> s"${m.argument.isLiteral.code.head} -> ${method.name}")
+            }
+            targetCollectionMethod
+          } else None
+        } else None
+      }
+      .l
+      .flatten(method => method) // returns the handler method list
+
+    tagDirectSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+    //    TODO: tag derived sources too
+  }
+  private def tagRestCallCollection(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
     val collectionMethods = cpg
       .call("get|post|put|patch|delete")
-      .where(_.file.name(".*routes.rb"))
+      .where(_.file.name(ROUTES_FILE_PATTERN))
       .filter(_.argument.isCall.code(COLLECTION_METHOD_REFERENCE_PATTERN).argument.isLiteral.nonEmpty)
       .l
 
@@ -63,6 +96,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .flatten(method => method) // returns the handler method list
 
     tagDirectSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+//    TODO: tag derived sources too
   }
 
   def tagDirectSources(
