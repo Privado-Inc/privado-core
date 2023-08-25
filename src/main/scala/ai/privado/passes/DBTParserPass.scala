@@ -124,17 +124,14 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     models: Array[java.util.Map[String, Any]]
   ): DatabaseSchema = {
     val tables = models.map { table =>
-      val columns = getColumnsFromTableModel(table)
-        .asScala
-        .map { col =>
-          DatabaseColumn(
-            col.get(CONFIG_NAME_KEY).asInstanceOf[String],
-            col.getOrDefault(CONFIG_DESC_KEY, "").asInstanceOf[String],
-            "",
-            findMatchingSourceId(col.get(CONFIG_NAME_KEY).asInstanceOf[String])
-          )
-        }
-        .toList
+      val columns = getColumnsFromTableModel(table).asScala.map { col =>
+        DatabaseColumn(
+          col.get(CONFIG_NAME_KEY).asInstanceOf[String],
+          col.getOrDefault(CONFIG_DESC_KEY, "").asInstanceOf[String],
+          "",
+          findMatchingSourceId(col.get(CONFIG_NAME_KEY).asInstanceOf[String])
+        )
+      }.toList
 
       DatabaseTable(
         table.get(CONFIG_NAME_KEY).asInstanceOf[String],
@@ -309,10 +306,11 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
 
   private def getColumnsFromTableModel(model: java.util.Map[String, Any]) = {
     val emptyDefault = java.util.ArrayList[java.util.Map[String, Any]]
-    val columns = model.getOrDefault("columns", emptyDefault)
+    val columns      = model.getOrDefault("columns", emptyDefault)
     columns match {
-      case null => emptyDefault   // when key exists without any value
-      case cols => cols.asInstanceOf[java.util.List[java.util.Map[String, Any]]]    // for all other cases including default
+      case null => emptyDefault // when key exists without any value
+      case cols =>
+        cols.asInstanceOf[java.util.List[java.util.Map[String, Any]]] // for all other cases including default
     }
   }
   private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
