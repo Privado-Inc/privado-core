@@ -26,7 +26,8 @@ package ai.privado.passes
 import ai.privado.cache.RuleCache
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{SQLParser, Utilities}
+import ai.privado.utility.{SQLParser => UtilitySQLParser, Utilities}
+import ai.privado.utility.SQLNodeBuilder
 import better.files._
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -80,10 +81,10 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
         val query           = queryWthLine._1
         val queryLineNumber = queryWthLine._2
         try {
-          SQLParser.parseSqlQuery(query) match {
+          UtilitySQLParser.parseSqlQuery(query) match {
             case Some(parsedQueryList) =>
               parsedQueryList.zipWithIndex.foreach { case (parsedQueryItem: SQLQuery, queryOrder) =>
-                buildAndReturnIndividualQueryNode(
+                SQLNodeBuilder.buildAndReturnIndividualQueryNode(
                   builder,
                   fileNode,
                   parsedQueryItem,
@@ -104,43 +105,6 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
       })
 
   }
-
-  private def buildAndReturnIndividualQueryNode(
-    builder: DiffGraphBuilder,
-    fileNode: NewFile,
-    queryModel: SQLQuery,
-    query: String,
-    queryLineNumber: Int,
-    queryOrder: Int
-  ): Unit = {
-    // Have added tableName in name key
-    // Have added columns in value key
-
-    val queryNode = NewSqlQueryNode().name(queryModel.queryType).code(query).lineNumber(queryLineNumber)
-
-    val tableNode = NewSqlTableNode()
-      .name(queryModel.table.name)
-      .code(query)
-      .lineNumber(queryLineNumber + queryModel.table.lineNumber - 1)
-      .columnNumber(queryModel.table.columnNumber)
-      .order(queryOrder)
-
-    builder.addEdge(queryNode, tableNode, EdgeTypes.AST)
-    builder.addEdge(queryNode, fileNode, EdgeTypes.SOURCE_FILE)
-    builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
-
-    queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
-      val columnNode = NewSqlColumnNode()
-        .name(queryColumn.name)
-        .code(queryColumn.name)
-        .lineNumber(queryLineNumber + queryColumn.lineNumber - 1)
-        .columnNumber(queryColumn.columnNumber)
-        .order(columnIndex)
-      builder.addEdge(tableNode, columnNode, EdgeTypes.AST)
-      builder.addEdge(columnNode, fileNode, EdgeTypes.SOURCE_FILE)
-    }
-  }
-
   private def getSQLFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
       .determine(Set(projectRoot), extensions)

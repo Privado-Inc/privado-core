@@ -1,6 +1,8 @@
 package ai.privado.utility
 
 import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 
 import java.io.StringReader
 import scala.util.matching.Regex
@@ -14,17 +16,17 @@ import net.sf.jsqlparser.statement.insert.Insert
 import net.sf.jsqlparser.statement.select.{PlainSelect, Select, SelectItem, SetOperationList}
 import net.sf.jsqlparser.statement.update.Update
 import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Try
-
 import scala.util.control.Breaks.{break, breakable}
 
 object SqlCleaner {
   def clean(sql: String): String = {
     var cleanedSql = removeComments(sql)
     cleanedSql = removeDynamicVariables(cleanedSql)
-    cleanedSql
+    cleanedSql.replace("`", "")
   }
 
   private def removeComments(sql: String): String = {
@@ -134,7 +136,7 @@ object SQLParser {
   }
 
   def getColumns(plainSelect: PlainSelect): List[SQLColumn] = {
-    plainSelect.getSelectItems.asScala.flatMap { item: SelectItem =>
+    plainSelect.getSelectItems.asScala.flatMap { (item: SelectItem) =>
       item.toString match {
         case f: String if f.contains("(") =>
           val function = CCJSqlParserUtil.parseExpression(f).asInstanceOf[Function]
@@ -174,6 +176,46 @@ object SQLParser {
       }
     }
     (foundLineNumber, foundColumnNumber)
+  }
+
+}
+
+object SQLNodeBuilder {
+
+  def buildAndReturnIndividualQueryNode(
+    builder: DiffGraphBuilder,
+    fileNode: NewFile,
+    queryModel: SQLQuery,
+    query: String,
+    queryLineNumber: Int,
+    queryOrder: Int
+  ): Unit = {
+    // Have added tableName in name key
+    // Have added columns in value key
+
+    val queryNode = NewSqlQueryNode().name(queryModel.queryType).code(query).lineNumber(queryLineNumber)
+
+    val tableNode = NewSqlTableNode()
+      .name(queryModel.table.name)
+      .code(query)
+      .lineNumber(queryLineNumber + queryModel.table.lineNumber - 1)
+      .columnNumber(queryModel.table.columnNumber)
+      .order(queryOrder)
+
+    builder.addEdge(queryNode, tableNode, EdgeTypes.AST)
+    builder.addEdge(queryNode, fileNode, EdgeTypes.SOURCE_FILE)
+    builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
+
+    queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
+      val columnNode = NewSqlColumnNode()
+        .name(queryColumn.name)
+        .code(queryColumn.name)
+        .lineNumber(queryLineNumber + queryColumn.lineNumber - 1)
+        .columnNumber(queryColumn.columnNumber)
+        .order(columnIndex)
+      builder.addEdge(tableNode, columnNode, EdgeTypes.AST)
+      builder.addEdge(columnNode, fileNode, EdgeTypes.SOURCE_FILE)
+    }
   }
 
 }

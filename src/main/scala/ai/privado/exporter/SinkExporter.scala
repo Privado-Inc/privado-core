@@ -26,11 +26,13 @@ package ai.privado.exporter
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
+import ai.privado.model.exporter.DataFlowEncoderDecoder._
+import ai.privado.semantic.Language.*
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag, NodeType}
 import ai.privado.utility.Utilities
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
 import org.slf4j.LoggerFactory
 
@@ -38,7 +40,7 @@ import scala.collection.mutable
 
 class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
 
-  lazy val sinkList: List[CfgNode]      = getSinkList
+  lazy val sinkList: List[AstNode]      = getSinkList
   lazy val sinkTagList: List[List[Tag]] = sinkList.map(_.tag.l)
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -93,7 +95,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
     * @param traversal
     * @return
     */
-  private def filterSink(traversal: Traversal[CfgNode]) = {
+  private def filterSink(traversal: Traversal[AstNode]) = {
     traversal
       .where(_.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)))
       .whereNot(_.tag.where(_.nameExact(Constants.catLevelTwo).valueExact(Constants.leakages)))
@@ -101,7 +103,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   /** Fetch all the sink node
     */
-  private def getSinkList: List[CfgNode] = {
+  private def getSinkList: List[AstNode] = {
     val sinks =
       cpg.identifier
         .where(filterSink)
@@ -114,7 +116,9 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++
         cpg.templateDom
           .where(filterSink)
-          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l
+          .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
+          .where(filterSink)
+          .l
     sinks
   }
 
@@ -142,8 +146,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
                   .toArray
               }
               apiurls
-            } else
-              Array[String]()
+            } else Array[String]()
           }
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
           Some(

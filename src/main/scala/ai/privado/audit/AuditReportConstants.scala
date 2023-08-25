@@ -106,4 +106,18 @@ object AuditReportConstants {
   val DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME = "Code Snippet"
 
   val AUDIT_SOURCE_FILE_NAME = "audit-sources.json"
+
+  // Not used for the time being
+  val JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX =
+    ".*(types|dto(s)?|data|constants|components|model(s)?).*|.*(types.ts|constants.ts|models.ts)"
+
+  val JS_ELEMENT_DISCOVERY_OBJECT_INCLUDE_REGEX = ".*__ecma\\.(String|Number|Boolean|Object).*"
+
+  val JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX =
+    "(?i)(this|request|response|req|error|req|res|state|e|i|formik)|param.*|_tmp.*"
+
+  val JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX = ".*(?i)(anonymous|props|response|request).*"
+
+  val JS_ELEMENTS_TO_BE_EXCLUDED =
+    "^(?i)(modules?|loggers?|val|console|require|_|get|key|value|data|page|url|Set|filter|<init>|err|errors|axios|express|router|component|Instance|utils?|app|undefined|context|process|...props?|async|await|const|let|var|this)$"
 }

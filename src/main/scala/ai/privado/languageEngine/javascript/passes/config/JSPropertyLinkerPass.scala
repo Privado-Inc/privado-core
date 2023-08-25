@@ -3,7 +3,7 @@ package ai.privado.languageEngine.javascript.passes.config
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, JavaProperty}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty}
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language._
 
@@ -35,7 +35,7 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
     * @return
     *   a list of Call nodes representing the matching assignment calls.
     */
-  private def matchProcessEnvAssignmentCalls(propertyName: String): List[Call] = {
+  private def matchProcessEnvAssignmentCalls(propertyName: String): List[AstNode] = {
     // Match assignment calls on the right side for process.env.PROPERTY or process.env['PROPERTY']
     // Example const dbName = process.env['DB_NAME']
     // conf.accontHost
@@ -44,7 +44,7 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
     } else {
       val pattern =
         s".*process\\.env(\\.${propertyName}|\\[('|`|\")${propertyName}('|`|\")]).*|.*(conf|Conf).*${propertyName}.*"
-      cpg.call("<operator>.(assignment|fieldAccess)").where(_.astChildren.code(pattern)).l
+      cpg.call("<operator>.(assignment|fieldAccess)").astChildren.code(pattern).l
     }
   }
 

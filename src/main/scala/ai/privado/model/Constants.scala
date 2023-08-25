@@ -108,6 +108,7 @@ object Constants {
   val dbVendor    = "dbVendor"
   val dbLocation  = "dbLocation"
   val dbOperation = "dbOperation"
+  val schema      = "schema"
 
   // Other commonly used constants
   val RULES_DIR_IN_CONFIG           = "rules"
@@ -119,6 +120,7 @@ object Constants {
   val JAVA_STATS   = "java.txt"
   val JS_STATS     = "js.txt"
   val PYTHON_STATS = "python.txt"
+  val RUBY_STATS   = "ruby.txt"
 
   val delombok = "delombok"
   val API      = "API"
@@ -148,6 +150,10 @@ object Constants {
   val HTMLElementAttribute = "HTMLElementAttribute"
   val HTMLScriptElement    = "HTMLScriptElement"
 
-  val annotations = "annotations"
-  val default     = "default"
+  val annotations       = "annotations"
+  val default           = "default"
+  val semanticDelimeter = "_A_"
+
+  // Ruby defaults
+  val defaultExpansionLimit = 20
 }

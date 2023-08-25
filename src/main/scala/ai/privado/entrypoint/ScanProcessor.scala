@@ -220,7 +220,15 @@ object ScanProcessor extends CommandProcessor {
       }
     parsedRules
   }
-
+  def mergePatterns(ruleInfoList: List[RuleInfo]): List[RuleInfo] = {
+    ruleInfoList
+      .groupBy(_.id)
+      .map { case (_, item) =>
+        val combinedPatterns = item.flatMap(_.patterns)
+        item.head.copy(patterns = combinedPatterns)
+      }
+      .toList
+  }
   def processRules(lang: Language, ruleCache: RuleCache): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
@@ -262,11 +270,11 @@ object ScanProcessor extends CommandProcessor {
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
     val mergedRules =
       ConfigAndRules(
-        sources = sources.distinctBy(_.id),
-        sinks = sinks.distinctBy(_.id),
-        collections = collections.distinctBy(_.id),
+        sources = mergePatterns(sources),
+        sinks = mergePatterns(sinks),
+        collections = mergePatterns(collections),
         policies = policies.distinctBy(_.id),
-        exclusions = exclusions.distinctBy(_.id),
+        exclusions = mergePatterns(exclusions),
         threats = threats.distinctBy(_.id),
         semantics = semantics.distinctBy(_.signature),
         sinkSkipList = sinkSkipList.distinctBy(_.id),
@@ -345,6 +353,7 @@ object ScanProcessor extends CommandProcessor {
                     s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
+
                   JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
                 } else {
                   println(s"As of now we only support privacy code scanning for 'Java' code base.")
@@ -377,6 +386,4 @@ object ScanProcessor extends CommandProcessor {
     }
     sourceLocation.listRecursively.count(f => f.extension(toLowerCase = true).toString.contains(".java")) > 0
   }
-
-  override var config: PrivadoInput = _
 }

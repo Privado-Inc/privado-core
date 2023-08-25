@@ -24,6 +24,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
     for ((key, content) <- javaFileContentMap) {
       (inputDir / key).write(content)
     }
+    (inputDir / "firstJavaFile.java").write("")
 
     outputDir = File.newTemporaryDirectory()
 

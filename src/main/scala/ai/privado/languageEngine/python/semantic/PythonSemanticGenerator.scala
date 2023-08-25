@@ -60,10 +60,15 @@ object PythonSemanticGenerator extends SemanticGenerator {
 
   def generateSemanticForTaint(callNode: Call, toTaint: Int): Semantic = {
     val namedArgumentList = callNode.argument.flatMap { arg =>
-      if (arg.argumentName.isDefined)
-        Some("\"" + arg.argumentName.get + "\"")
-      else
-        None
+      if (arg.argumentName.isDefined) {
+        val index = {
+          if (arg.argumentIndex != -1)
+            arg.argumentIndex
+          else
+            arg.order - 1
+        }
+        Some(index.toString + s"${Constants.semanticDelimeter}\"${arg.argumentName.get}\"")
+      } else None
     }.l
     val parameterSemantic = mutable.HashSet[String]()
 

@@ -23,7 +23,7 @@
 
 package ai.privado.semantic
 
-import ai.privado.model.Semantic
+import ai.privado.model.{Constants, Semantic}
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}
@@ -80,8 +80,7 @@ trait SemanticGenerator {
     if (semantic.signature.nonEmpty) {
       val generatedSemantic = "\"" + semantic.signature.trim + "\" " + semantic.flow
       Some(generatedSemantic.trim)
-    } else
-      None
+    } else None
   }
 
   /** Takes sequence of semantic as input and returns the unique semantic by signature which have the longest flow
@@ -100,7 +99,7 @@ trait SemanticGenerator {
     semantics.l
       .groupBy(_.signature)
       .map(item => (item._1, item._2.flatMap(sem => sem.flow.split(" ")).toSet.sorted.mkString(" ")))
-      .map(item => { "\"" + item._1 + "\" " + item._2 })
+      .map(item => { "\"" + item._1 + "\" " + item._2.replace(Constants.semanticDelimeter, " ") })
       .sorted
   }
 }

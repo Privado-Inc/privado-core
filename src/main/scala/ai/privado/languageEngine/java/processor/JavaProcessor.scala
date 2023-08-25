@@ -36,7 +36,7 @@ import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants._
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
+import ai.privado.passes.{HTMLParserPass, SQLParser, DBTParserPass}
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -45,12 +45,14 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
@@ -75,6 +77,7 @@ object JavaProcessor {
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           logger.info("Applying data flow overlay")
           val context = new LayerCreatorContext(cpg)
@@ -221,7 +224,7 @@ object JavaProcessor {
       .withOutputPath(cpgOutputPath)
 
     // Create delomboked directory if source code uses lombok
-    val dependencies        = JavaSrc2Cpg.getDependencyList(cpgconfig)
+    val dependencies        = getDependencyList(cpgconfig)
     val hasLombokDependency = dependencies.exists(_.contains("lombok"))
     if (hasLombokDependency) {
       val delombokPath = Delombok.run(AppCache.scanPath)
@@ -256,6 +259,16 @@ object JavaProcessor {
       }
     }
     msg
+  }
+
+  def getDependencyList(config: Config): Set[String] = {
+    val codeDir = config.inputPath
+    DependencyResolver.getDependencies(Paths.get(codeDir)) match {
+      case Some(dependencies) => dependencies.toSet
+      case None =>
+        logger.warn(s"Could not fetch dependencies for project at path $codeDir")
+        Set()
+    }
   }
 }
 
@@ -312,5 +325,4 @@ object Delombok {
         projectDir
     }
   }
-
 }

@@ -25,8 +25,10 @@ package ai.privado.languageEngine.python.semantic
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator.generateSemanticForTaint
+import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator.{
+  generateSemanticForTaint,
+  getMaximumFlowSemantic
+}
 import ai.privado.languageEngine.python.PythonTestUtility.code
 import io.shiftleft.semanticcpg.language._
 
@@ -49,10 +51,9 @@ class PythonSemanticGeneratorTest extends AnyWordSpec with Matchers with BeforeA
   "Python semantic generator" should {
 
     "generate semantic for named argument" in {
-      generateSemanticForTaint(
-        cpg.call("post").head,
-        -1
-      ).flow shouldBe "0->-1 0->0 1->-1 1->1 2->-1 2->2 3->-1 3->3 \"body\"->\"body\" \"body\"->-1 \"url\"->\"url\" \"url\"->-1"
+      getMaximumFlowSemantic(Iterator(generateSemanticForTaint(cpg.call("post").head, -1))) shouldBe Seq(
+        "\"<unknownFullName>\" 0->-1 0->0 1->-1 1->1 1 \"url\"->-1 1 \"url\"->1 \"url\" 2->-1 2->2 2 \"body\"->-1 2 \"body\"->2 \"body\" 3->-1 3->3"
+      )
     }
 
     "generate semantic for non-named argument" in {

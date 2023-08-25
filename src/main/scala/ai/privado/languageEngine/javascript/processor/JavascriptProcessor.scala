@@ -29,18 +29,18 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
-import ai.privado.languageEngine.javascript.semantic.Language._
+import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants._
+import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
-import ai.privado.semantic.Language._
+import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser}
+import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import better.files.File
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -68,6 +68,7 @@ object JavascriptProcessor {
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
         new JSPropertyLinkerPass(cpg).createAndApply()
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
@@ -114,7 +115,7 @@ object JavascriptProcessor {
         if (ScanProcessor.config.generateAuditReport) {
           ExcelExporter.auditExport(
             outputAuditFileName,
-            AuditReportEntryPoint.getAuditWorkbook(),
+            AuditReportEntryPoint.getAuditWorkbookJS(xtocpg, taggerCache, sourceRepoLocation),
             sourceRepoLocation
           ) match {
             case Left(err) =>
