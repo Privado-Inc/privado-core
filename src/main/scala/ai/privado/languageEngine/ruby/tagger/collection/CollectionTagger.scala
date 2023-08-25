@@ -33,7 +33,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private def tagResourceCollection(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
 
     val collectionRoutes =
-      cpg.call.where(_.file.name(ROUTES_FILE_PATTERN)).name(RESOURCES).filter(_.argument.isLiteral.size==1).l
+      cpg.call.where(_.file.name(ROUTES_FILE_PATTERN)).name(RESOURCES).filter(_.argument.isLiteral.size == 1).l
 
     val collectionMethodsCache = collectionRoutes
       .map { m =>
