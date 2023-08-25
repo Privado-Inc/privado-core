@@ -311,8 +311,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     val emptyDefault = java.util.ArrayList[java.util.Map[String, Any]]
     val columns = model.getOrDefault("columns", emptyDefault)
     columns match {
-      case null => emptyDefault
-      case cols => cols.asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+      case null => emptyDefault   // when key exists without any value
+      case cols => cols.asInstanceOf[java.util.List[java.util.Map[String, Any]]]    // for all other cases including default
     }
   }
   private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
@@ -327,7 +327,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
           if (data != null && !data.isEmpty && data.containsKey("models")) {
             val models = data.get("models").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
             models.forEach(x =>
-              if (x.containsKey(CONFIG_NAME_KEY) && x.containsKey("columns")) {
+              if (x.containsKey(CONFIG_NAME_KEY)) {
                 x.put("filePath", modelFile)
                 modelTables += x
               }
