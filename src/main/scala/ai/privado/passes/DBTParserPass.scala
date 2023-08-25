@@ -124,19 +124,14 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     models: Array[java.util.Map[String, Any]]
   ): DatabaseSchema = {
     val tables = models.map { table =>
-      val columns = table
-        .get("columns")
-        .asInstanceOf[java.util.List[java.util.Map[String, Any]]]
-        .asScala
-        .map { col =>
-          DatabaseColumn(
-            col.get(CONFIG_NAME_KEY).asInstanceOf[String],
-            col.getOrDefault(CONFIG_DESC_KEY, "").asInstanceOf[String],
-            "",
-            findMatchingSourceId(col.get(CONFIG_NAME_KEY).asInstanceOf[String])
-          )
-        }
-        .toList
+      val columns = getColumnsFromTableModel(table).asScala.map { col =>
+        DatabaseColumn(
+          col.get(CONFIG_NAME_KEY).asInstanceOf[String],
+          col.getOrDefault(CONFIG_DESC_KEY, "").asInstanceOf[String],
+          "",
+          findMatchingSourceId(col.get(CONFIG_NAME_KEY).asInstanceOf[String])
+        )
+      }.toList
 
       DatabaseTable(
         table.get(CONFIG_NAME_KEY).asInstanceOf[String],
@@ -270,7 +265,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
 
     // create column nodes
-    val columns = model.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+    val columns = getColumnsFromTableModel(model)
     columns.asScala.zipWithIndex.foreach { case (column, index) =>
       val colName = column.get(CONFIG_NAME_KEY).asInstanceOf[String]
       val (colLineNumber, colColumnNumber, colMatchedLine) =
@@ -309,6 +304,15 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       .getOrElse((defaultRow, defaultCol, ""))
   }
 
+  private def getColumnsFromTableModel(model: java.util.Map[String, Any]) = {
+    val emptyDefault = java.util.ArrayList[java.util.Map[String, Any]]
+    val columns      = model.getOrDefault("columns", emptyDefault)
+    columns match {
+      case null => emptyDefault // when key exists without any value
+      case cols =>
+        cols.asInstanceOf[java.util.List[java.util.Map[String, Any]]] // for all other cases including default
+    }
+  }
   private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
     val dbtProjectRoot  = getDirectoryName(dbtProjectFile)
     val modelsDirectory = Paths.get(dbtProjectRoot, modelsDirectoryName).toString
@@ -321,7 +325,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
           if (data != null && !data.isEmpty && data.containsKey("models")) {
             val models = data.get("models").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
             models.forEach(x =>
-              if (x.containsKey(CONFIG_NAME_KEY) && x.containsKey("columns")) {
+              if (x.containsKey(CONFIG_NAME_KEY)) {
                 x.put("filePath", modelFile)
                 modelTables += x
               }
