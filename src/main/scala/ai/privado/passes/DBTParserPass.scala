@@ -124,9 +124,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     models: Array[java.util.Map[String, Any]]
   ): DatabaseSchema = {
     val tables = models.map { table =>
-      val columns = table
-        .get("columns")
-        .asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+      val columns = getColumnsFromTableModel(table)
         .asScala
         .map { col =>
           DatabaseColumn(
@@ -270,7 +268,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
 
     // create column nodes
-    val columns = model.get("columns").asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+    val columns = getColumnsFromTableModel(model)
     columns.asScala.zipWithIndex.foreach { case (column, index) =>
       val colName = column.get(CONFIG_NAME_KEY).asInstanceOf[String]
       val (colLineNumber, colColumnNumber, colMatchedLine) =
@@ -309,6 +307,14 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       .getOrElse((defaultRow, defaultCol, ""))
   }
 
+  private def getColumnsFromTableModel(model: java.util.Map[String, Any]) = {
+    val emptyDefault = java.util.ArrayList[java.util.Map[String, Any]]
+    val columns = model.getOrDefault("columns", emptyDefault)
+    columns match {
+      case null => emptyDefault
+      case cols => cols.asInstanceOf[java.util.List[java.util.Map[String, Any]]]
+    }
+  }
   private def getModels(dbtProjectFile: String, modelsDirectoryName: String) = Try {
     val dbtProjectRoot  = getDirectoryName(dbtProjectFile)
     val modelsDirectory = Paths.get(dbtProjectRoot, modelsDirectoryName).toString
