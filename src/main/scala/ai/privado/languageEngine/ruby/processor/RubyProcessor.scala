@@ -39,7 +39,7 @@ import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.SQLParser
+import ai.privado.passes.{SQLParser, DBTParserPass}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.utility.Utilities.createCpgFolder
@@ -146,6 +146,7 @@ object RubyProcessor {
           )
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {

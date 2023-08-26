@@ -4,6 +4,7 @@ import ai.privado.model.DatabaseDetails
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import ai.privado.model.exporter.DataFlowEncoderDecoder._ //Required for DataFlowSubCategoryPathExcerptModel
+import ai.privado.model.DatabaseEncoderDecoder._          //Required for DatabaseDetails Model
 
 case class SinkModel(
   sourceType: String,
