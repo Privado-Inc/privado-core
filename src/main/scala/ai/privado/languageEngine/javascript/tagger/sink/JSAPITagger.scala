@@ -24,16 +24,74 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.RuleCache
+import ai.privado.dataflow.DuplicateFlowProcessor
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.sink.APITagger
+
+import scala.collection.mutable.ListBuffer
+import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromTemplates, storeForTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.joern.dataflowengineoss.DefaultSemantics
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDomainFromString,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
+import io.joern.dataflowengineoss.language.toExtendedCfgNode
+import overflowdb.BatchedUpdate
 
+// class GraphqlAPITagger
 class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
+
+    // DONE: "baseUrl" Identify the client creation & baseUrl used
+    // DONE: Replace the "baseUrl" with already tagged sinks
+    val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+    val apiInternalSources = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
+    val apis               = cacheCall.methodFullName("(?i)axios.*create").toList
+    println(apis.methodFullName.l)
+
+    val uniqueDomains = getBaseUrlForFrontendApps(apis, apiInternalSources)
+    val apiCalls = cacheCall
+      .name(APISINKS_REGEX)
+      .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
+      .methodFullName(commonHttpPackages)
+      .l
+    sinkTagger(apiInternalSources, apiCalls, builder, ruleInfo, ruleCache, uniqueDomains)
+
+//    uniqueDomains.map(domain => {
+//      val isInternalDomain = domain.contains("localhost") || domain.matches(".*(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3}).*")
+//      if (ruleInfo.id.equals(Constants.internalAPIRuleId)){
+//        println(ruleInfo.id)
+//        if (isInternalDomain) {
+//          println(domain)
+////          addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+//        }
+//      } else {
+//        println(ruleInfo.id)
+//        if (!isInternalDomain) {
+//          println(domain)
+//          val newRuleIdToUse = ruleInfo.id + "." + domain
+//          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+////          addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+//        }
+//      }
+//    })
+
+    // -----
+    // TODO: Add additional pass to remove API if domain is also present for same node.
+    // Else: Do this removal activity in exporter.
+
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
     // Tag the respective templateDom node as API sink
     val scriptTags =
@@ -85,4 +143,83 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       storeForTag(builder, callTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
   }
+
+  def getBaseUrlForFrontendApps(apis: List[CfgNode], apiInternalSources: List[AstNode])(implicit
+    engineContext: EngineContext
+  ): List[String] = {
+    val domains = ListBuffer[String]()
+    if (apis.nonEmpty && apiInternalSources.nonEmpty) {
+      val apiFlows = apis.reachableByFlows(apiInternalSources)(engineContext).toList
+      apiFlows.foreach(flow => {
+        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
+        val domain      = getDomainFromString(literalCode)
+        if (!domains.contains(domain)) {
+          domains += domain
+        }
+      })
+    }
+    domains.toList
+  }
+
+  def sinkTagger(
+    apiInternalSources: List[AstNode],
+    apis: List[CfgNode],
+    builder: BatchedUpdate.DiffGraphBuilder,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    domains: List[String],
+    showAPI: Boolean = true
+  )(implicit engineContext: EngineContext): Unit = {
+    val filteredSourceNode =
+      apiInternalSources.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
+
+    def tagSinkNode(apiNode: AstNode, ruleInfo: RuleInfo, domain: String): Unit = {
+      println("ksjdngkerngjkern")
+//      println(apiNode.tag.nameExact(Constants.id).value.head)
+//      println(apiNode.tag.nameExact(Constants.apiUrl).value.head)
+
+      apiNode.tag.foreach(i => {
+        println(i.name)
+        println(i.value)
+      })
+
+      val newRuleIdToUse = ruleInfo.id + "." + domain
+      ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+      addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+      storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain)
+    }
+
+    domains.foreach(i => println(i))
+    if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
+      val apiFlows = {
+        val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
+        if (ScanProcessor.config.disableDeDuplication)
+          flows
+        else
+          DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
+      }
+
+      apiFlows.foreach(flow => {
+        val apiNode = flow.elements.last
+        // Tag API's when we find a dataflow to them
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+          domains.foreach(domain => tagSinkNode(apiNode, ruleInfo, domain))
+        }
+      })
+      // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
+      if (showAPI && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+        val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
+        val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
+        apiNodesWithoutLiteralPath.foreach(apiNode => {
+          domains.foreach(domain => tagSinkNode(apiNode, ruleInfo, domain))
+        })
+      }
+    } // Add url as 'API' for non Internal api nodes, for cases where there is no http literal present in source code
+    else if (showAPI && filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+      apis.foreach(apiNode => {
+        domains.foreach(domain => tagSinkNode(apiNode, ruleInfo, domain))
+      })
+    }
+  }
+
 }

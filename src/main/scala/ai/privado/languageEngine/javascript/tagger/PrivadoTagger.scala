@@ -27,10 +27,9 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.TimeMetric
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
+import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPITagger, RegularSinkTagger}
 import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.source.SqlQueryTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -57,6 +56,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 
     new JSAPITagger(cpg, ruleCache).createAndApply()
+
+    new GraphqlAPITagger(cpg, ruleCache).createAndApply()
 
     new JSDBConfigTagger(cpg).createAndApply()
 
