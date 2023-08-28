@@ -133,7 +133,9 @@ class Dataflow(cpg: Cpg) {
 
       // Apply `this` filtering for JS & JAVA also
       val dataflowPaths = {
-        if (privadoScanConfig.disableThisFiltering || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT))
+        if (
+          privadoScanConfig.disableThisFiltering || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
+        )
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered
