@@ -25,6 +25,9 @@ package ai.privado.languageEngine.ruby.tagger
 
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+
+import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
 import ai.privado.languageEngine.ruby.tagger.source.{IdentifierDerivedTagger, IdentifierTagger}
 import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
@@ -49,7 +52,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierDerivedTagger(cpg, ruleCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new APITagger(cpg, ruleCache).createAndApply()
-
+    new CollectionTagger(cpg, ruleCache).createAndApply()
+    new RubyDBConfigTagger(cpg).createAndApply()
     if (!ScanProcessor.config.ignoreInternalRules) {
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()

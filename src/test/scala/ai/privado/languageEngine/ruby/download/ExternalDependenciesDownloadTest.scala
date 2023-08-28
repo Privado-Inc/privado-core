@@ -1,9 +1,9 @@
 package ai.privado.languageEngine.ruby.download
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.ruby.cache.PackageTable
+import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import better.files.File
-import io.joern.rubysrc2cpg.utils.{ModuleModel, TypeDeclModel}
+import io.joern.rubysrc2cpg.utils.{ModuleModel, PackageTable, TypeDeclModel}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -34,7 +34,8 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
 
   "Ruby External Dependency Download" should {
     "Test dummy_logger dependency download" in {
-      val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, inputDir.pathAsString)
+
+      val packageTable = new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString).createAndApply()
 
       // Should have dummy_logger as module
       packageTable.getModule("dummy_logger") shouldBe List(
@@ -52,7 +53,7 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
     "Test redis dependency download" ignore {
       val packageUsed = List("redis")
 
-      val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, inputDir.pathAsString)
+      val packageTable = new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString).createAndApply()
 
       packageTable.getMethodFullNameUsingName(packageUsed, "zscan_each") shouldBe List(
         "redis::program.Redis.Commands.SortedSets.zscan_each"
