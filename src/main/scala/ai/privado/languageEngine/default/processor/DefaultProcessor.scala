@@ -33,6 +33,7 @@ import ai.privado.model.Constants._
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{HTMLParserPass, SQLParser, DBTParserPass}
 import ai.privado.semantic.Language._
+import ai.privado.languageEngine.default.semantic.Language._
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.tagger.source.{SqlQueryTagger}
@@ -141,7 +142,7 @@ object DefaultProcessor {
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
 
-    val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) => {}}
+    val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) => {} }
 
     val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation)
     msg

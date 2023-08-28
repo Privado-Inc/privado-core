@@ -358,13 +358,10 @@ object ScanProcessor extends CommandProcessor {
                   JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation)
-                  println(s"We detected this code base of '${lang}'.")
-                  exit(1)
                 }
             }
           case _ =>
-            processCpgWithDefaultProcessor(sourceRepoLocation);
-            println(s"Unable to detect language.")
+            processCpgWithDefaultProcessor(sourceRepoLocation)
         }
       }
       case Failure(exc) =>
@@ -376,8 +373,8 @@ object ScanProcessor extends CommandProcessor {
 
   private def processCpgWithDefaultProcessor(sourceRepoLocation: String) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
-    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation)
     println(s"Running scan with default processor.")
+    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation)
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {
