@@ -130,8 +130,12 @@ class Dataflow(cpg: Cpg) {
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
+
+      // Apply `this` filtering for JS & JAVA also
       val dataflowPaths = {
-        if (privadoScanConfig.disableThisFiltering || AppCache.repoLanguage != Language.JAVA)
+        if (
+          privadoScanConfig.disableThisFiltering || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
+        )
           dataflowPathsUnfiltered
         else
           dataflowPathsUnfiltered
