@@ -27,6 +27,7 @@ import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
+import ai.privado.languageEngine.default.processor.DefaultProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
 import ai.privado.model._
@@ -356,14 +357,11 @@ object ScanProcessor extends CommandProcessor {
 
                   JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
                 } else {
-                  println(s"As of now we only support privacy code scanning for 'Java' code base.")
-                  println(s"We detected this code base of '${lang}'.")
-                  exit(1)
+                  processCpgWithDefaultProcessor(sourceRepoLocation)
                 }
             }
           case _ =>
-            logger.error("Unable to detect language! Is it supported yet?")
-            Left("Unable to detect language!")
+            processCpgWithDefaultProcessor(sourceRepoLocation)
         }
       }
       case Failure(exc) =>
@@ -371,6 +369,12 @@ object ScanProcessor extends CommandProcessor {
         println(s"Error Occurred: ${exc.getMessage}")
         exit(1)
     }
+  }
+
+  private def processCpgWithDefaultProcessor(sourceRepoLocation: String) = {
+    MetricHandler.metricsData("language") = Json.fromString("default")
+    println(s"Running scan with default processor.")
+    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation)
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {
