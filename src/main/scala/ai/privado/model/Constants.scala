@@ -127,6 +127,7 @@ object Constants {
 
   // Rule ids
   val internalAPIRuleId   = "Sinks.API.InternalAPI"
+  val thirdPartiesAPIRuleId = "Sinks.ThirdParties.API"
   val jmsConsumerRuleId   = "Messaging.Service.JMS.Consumer"
   val kafkaConsumerRuleId = "Messaging.Queue.Kafka.Consumer"
   val cookieWriteRuleId   = "Storages.Web.Cookie.Write"
@@ -138,6 +139,7 @@ object Constants {
   val apiGraphqlLibraries = "apiGraphqlLibraries"
   val apiGraphqlReadSink  = "apiGraphqlReadSink"
   val apiGraphqlWriteSink = "apiGraphqlWriteSink"
+  val clientCreationBaseUrlPattern = "clientCreationBaseUrlPattern"
 
   // External script keys
   val postExportTrigger = "postExportTrigger"

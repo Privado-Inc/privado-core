@@ -123,6 +123,13 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
   }
 
   private def convertSinkList(sinks: List[List[Tag]]) = {
+    def isAPIUrlTag(tag: Tag): Boolean = {
+      tag.name == "id" && (
+        tag.value.matches( Constants.thirdPartiesAPIRuleId + "\\..*") ||
+          tag.value.matches(Constants.internalAPIRuleId + "\\..*")
+        )
+    }
+
     def convertSink(sinkId: String) = {
       ruleCache.getRuleInfo(sinkId) match {
         case Some(rule) =>
@@ -171,7 +178,16 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
         .filter(node => node.name.equals(Constants.id) || node.name.startsWith(Constants.privadoDerived))
       node.value.toSet
     }
-    sinks
+
+    val updatedSinks = sinks.map { tags =>
+      val containsAPIUrl = tags.exists(isAPIUrlTag)
+      if (containsAPIUrl) {
+        tags.filterNot(tag => tag.value == Constants.thirdPartiesAPIRuleId)
+      } else {
+        tags
+      }
+    }
+    updatedSinks
       .flatMap(sink => getSinks(sink))
       .filter(_.nonEmpty)
       .toSet
