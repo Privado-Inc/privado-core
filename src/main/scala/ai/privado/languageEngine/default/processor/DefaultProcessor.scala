@@ -67,8 +67,8 @@ object DefaultProcessor {
       case Success(cpg) => {
         try {
           println(s"${Calendar.getInstance().getTime} - HTML parser pass")
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
