@@ -87,21 +87,4 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     }
   }
 
-  def getBaseUrlForFrontendApps(apis: List[CfgNode], apiInternalSources: List[AstNode])(implicit
-    engineContext: EngineContext
-  ): List[String] = {
-    val domains = ListBuffer[String]()
-    if (apis.nonEmpty && apiInternalSources.nonEmpty) {
-      val apiFlows = apis.reachableByFlows(apiInternalSources)(engineContext).toList
-      apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
-        val domain      = getDomainFromString(literalCode)
-        if (!domains.contains(domain)) {
-          domains += domain
-        }
-      })
-    }
-    domains.toList
-  }
-
 }

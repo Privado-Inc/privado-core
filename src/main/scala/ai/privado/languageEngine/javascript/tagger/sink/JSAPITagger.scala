@@ -56,7 +56,8 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
 
     // baseUrl" Identify the client creation & baseUrl used
     // TODO: Replace the "baseUrl" with already tagged sinks
-    val ClientCreationBaseUrlPattern: String      = ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
+    val ClientCreationBaseUrlPattern: String =
+      ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
     val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
     val apiInternalSources = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
     val apis               = cacheCall.methodFullName(ClientCreationBaseUrlPattern).toList
@@ -157,7 +158,6 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain)
     }
 
-    domains.foreach(i => println(i))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
@@ -168,7 +168,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       }
 
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
-      if (showAPI) {// && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+      if (showAPI) { // && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
         val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
         apiNodesWithoutLiteralPath.foreach(apiNode => {

@@ -125,9 +125,9 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
   private def convertSinkList(sinks: List[List[Tag]]) = {
     def isAPIUrlTag(tag: Tag): Boolean = {
       tag.name == "id" && (
-        tag.value.matches( Constants.thirdPartiesAPIRuleId + "\\..*") ||
+        tag.value.matches(Constants.thirdPartiesAPIRuleId + "\\..*") ||
           tag.value.matches(Constants.internalAPIRuleId + "\\..*")
-        )
+      )
     }
 
     def convertSink(sinkId: String) = {
