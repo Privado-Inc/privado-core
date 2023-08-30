@@ -115,6 +115,8 @@ object Constants {
   val CONFIG_DIR_IN_CONFIG          = "config"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
   val EMPTY                         = "<empty>"
+  val READ_WITH_BRACKETS            = " (Read)"
+  val WRITE_WITH_BRACKETS           = " (Write)"
 
   // Stat files
   val JAVA_STATS   = "java.txt"

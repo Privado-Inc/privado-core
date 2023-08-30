@@ -24,32 +24,24 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
 import ai.privado.model.{Constants, NodeType, RuleInfo}
-import ai.privado.tagger.sink.APITagger
 
 import scala.collection.mutable.ListBuffer
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities.{addRuleTags, getDomainFromTemplates, storeForTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.joern.dataflowengineoss.DefaultSemantics
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDomainFromString,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
+import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
 class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+  val commonGraphqlPackages: String = ruleCache.getSystemConfigByKey(Constants.apiGraphqlLibraries, true)
+  val graphqlREADSink: String       = ruleCache.getSystemConfigByKey(Constants.apiGraphqlReadSink, true)
+  val graphqlWRITESink: String      = ruleCache.getSystemConfigByKey(Constants.apiGraphqlWriteSink, true)
+  val cacheCall                     = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
@@ -58,11 +50,7 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val commonGraphqlPackages: String = ruleCache.getSystemConfigByKey(Constants.apiGraphqlLibraries, true)
-    val graphqlREADSink: String       = ruleCache.getSystemConfigByKey(Constants.apiGraphqlReadSink, true)
-    val graphqlWRITESink: String      = ruleCache.getSystemConfigByKey(Constants.apiGraphqlWriteSink, true)
-    val cacheCall                     = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-    val apis                          = cacheCall.methodFullName(commonGraphqlPackages).toList
+    val apis = cacheCall.methodFullName(commonGraphqlPackages).toList
 
     if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
       apis.foreach((apiNode) => {
@@ -70,15 +58,23 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         val isWriteAPI = apiNode.name.matches(graphqlWRITESink)
 
         if (isReadAPI) {
-          val newRuleIdToUse = ruleInfo.id + " (Read)"
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " (Read)"))
+          val newRuleIdToUse = ruleInfo.id + Constants.READ_WITH_BRACKETS
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + Constants.READ_WITH_BRACKETS))
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
-          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, Constants.API + " (Read)")
+          storeForTag(builder, apiNode, ruleCache)(
+            Constants.apiUrl + newRuleIdToUse,
+            Constants.API + Constants.READ_WITH_BRACKETS
+          )
         } else if (isWriteAPI) {
-          val newRuleIdToUse = ruleInfo.id + " (Write)"
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " (Write)"))
+          val newRuleIdToUse = ruleInfo.id + Constants.WRITE_WITH_BRACKETS
+          ruleCache.setRuleInfo(
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + Constants.WRITE_WITH_BRACKETS)
+          )
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
-          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, Constants.API + " (Write)")
+          storeForTag(builder, apiNode, ruleCache)(
+            Constants.apiUrl + newRuleIdToUse,
+            Constants.API + Constants.WRITE_WITH_BRACKETS
+          )
         } else {
           addRuleTags(builder, apiNode, ruleInfo, ruleCache)
           storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)

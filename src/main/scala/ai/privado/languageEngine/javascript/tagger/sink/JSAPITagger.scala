@@ -32,15 +32,15 @@ import ai.privado.tagger.sink.APITagger
 import scala.collection.mutable.ListBuffer
 import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.utility.Utilities.{addRuleTags, getDomainFromTemplates, storeForTag}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.queryengine.{EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.joern.dataflowengineoss.DefaultSemantics
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
+  getDomainFromTemplates,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
@@ -48,27 +48,20 @@ import ai.privado.utility.Utilities.{
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
-// class GraphqlAPITagger
 class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
+
+  val clientCreationBaseUrlPattern: String =
+    ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
 
     // baseUrl" Identify the client creation & baseUrl used
     // TODO: Replace the "baseUrl" with already tagged sinks
-    val ClientCreationBaseUrlPattern: String =
-      ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
-    val cacheCall          = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-    val apiInternalSources = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
-    val apis               = cacheCall.methodFullName(ClientCreationBaseUrlPattern).toList
-
-    val uniqueDomains = getBaseUrlForFrontendApps(apis, apiInternalSources)
-//    val apiCalls = cacheCall
-//      .name(APISINKS_REGEX)
-//      .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
-//      .methodFullName(commonHttpPackages)
-//      .l
-    sinkTaggerWithDomains(apiInternalSources, apis, builder, ruleInfo, ruleCache, uniqueDomains)
+    val apiLiterals   = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
+    val initApiCalls  = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
+    val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals)
+    sinkTaggerWithDomains(apiLiterals, initApiCalls, builder, ruleInfo, ruleCache, uniqueDomains)
 
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
     // Tag the respective templateDom node as API sink
