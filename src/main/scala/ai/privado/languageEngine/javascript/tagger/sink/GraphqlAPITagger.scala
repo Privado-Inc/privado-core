@@ -39,7 +39,13 @@ import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.joern.dataflowengineoss.DefaultSemantics
-import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, getFileNameForNode, isFileProcessable, storeForTag}
+import ai.privado.utility.Utilities.{
+  addRuleTags,
+  getDomainFromString,
+  getFileNameForNode,
+  isFileProcessable,
+  storeForTag
+}
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
@@ -53,15 +59,32 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val commonGraphqlPackages: String = ruleCache.getSystemConfigByKey(Constants.apiGraphqlLibraries, true)
+    val graphqlREADSink: String       = ruleCache.getSystemConfigByKey(Constants.apiGraphqlReadSink, true)
+    val graphqlWRITESink: String      = ruleCache.getSystemConfigByKey(Constants.apiGraphqlWriteSink, true)
     val cacheCall                     = cpg.call.where(_.nameNot("(<operator|<init).*")).l
     val apis                          = cacheCall.methodFullName(commonGraphqlPackages).toList
 
-    apis.foreach((apiNode) => {
-      if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
-        addRuleTags(builder, apiNode, ruleInfo, ruleCache)
-        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
-      }
-    });
+    if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+      apis.foreach((apiNode) => {
+        val isReadAPI  = apiNode.name.matches(graphqlREADSink)
+        val isWriteAPI = apiNode.name.matches(graphqlWRITESink)
+
+        if (isReadAPI) {
+          val newRuleIdToUse = ruleInfo.id + " (Read)"
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " (Read)"))
+          addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, Constants.API + " (Read)")
+        } else if (isWriteAPI) {
+          val newRuleIdToUse = ruleInfo.id + " (Write)"
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " (Write)"))
+          addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, Constants.API + " (Write)")
+        } else {
+          addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
+        }
+      });
+    }
   }
 
   def getBaseUrlForFrontendApps(apis: List[CfgNode], apiInternalSources: List[AstNode])(implicit

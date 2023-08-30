@@ -136,6 +136,8 @@ object Constants {
   val apiHttpLibraries    = "apiHttpLibraries"
   val apiIdentifier       = "apiIdentifier"
   val apiGraphqlLibraries = "apiGraphqlLibraries"
+  val apiGraphqlReadSink  = "apiGraphqlReadSink"
+  val apiGraphqlWriteSink = "apiGraphqlWriteSink"
 
   // External script keys
   val postExportTrigger = "postExportTrigger"
