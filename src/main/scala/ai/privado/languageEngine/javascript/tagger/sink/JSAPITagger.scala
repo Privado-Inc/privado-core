@@ -50,14 +50,32 @@ import overflowdb.BatchedUpdate
 
 class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
 
-  val clientCreationBaseUrlPattern: String =
-    ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
 
     // baseUrl" Identify the client creation & baseUrl used
     // TODO: Replace the "baseUrl" with already tagged sinks
+    // Tagging below two cases:
+    // 1. Axios Create case
+    //    const axios = require("axios");
+    //    const baseUrl = 'http://twitter.com:4001';
+    //    const axiosInstance = axios.create({
+    //      baseURL: baseUrl
+    //    });
+    // 2. ANgular Interceptor case
+    //    @Injectable({ providedIn: "root" })
+    //    export class ApiInterceptor
+    //    implements HttpInterceptor {
+    //      intercept(req: HttpRequest < any >, next: HttpHandler): Observable < HttpEvent < any >> {
+    //        const apiReq = req.clone({
+    //          url: `https://api.realworld.io/api${req.url}`
+    //        });
+    //        return next.handle(apiReq);
+    //      }
+    //    }
+
+    val clientCreationBaseUrlPattern: String = ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
     val apiLiterals   = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
     val initApiCalls  = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
     val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals)
@@ -161,7 +179,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       }
 
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
-      if (showAPI) { // && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+      if (showAPI) {
         val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
         apiNodesWithoutLiteralPath.foreach(apiNode => {
