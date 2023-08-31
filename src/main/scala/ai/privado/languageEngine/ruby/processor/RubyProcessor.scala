@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -41,7 +41,7 @@ import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{SQLParser, DBTParserPass}
+import ai.privado.passes.{DBTParserPass, SQLParser}
 import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -166,7 +166,8 @@ object RubyProcessor {
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          cpg.runTagger(ruleCache)
+          val taggerCache = new TaggerCache
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy())
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
           println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
