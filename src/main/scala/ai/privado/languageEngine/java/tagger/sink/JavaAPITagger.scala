@@ -142,6 +142,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           builder,
           ruleInfo,
           ruleCache,
+          privadoInputConfig,
           privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
@@ -149,7 +150,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,
-          ruleCache
+          ruleCache,
+          privadoInputConfig
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
@@ -159,7 +161,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,
-          ruleCache
+          ruleCache,
+          privadoInputConfig
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
@@ -169,7 +172,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,
-          ruleCache
+          ruleCache,
+          privadoInputConfig
         )
     }
   }

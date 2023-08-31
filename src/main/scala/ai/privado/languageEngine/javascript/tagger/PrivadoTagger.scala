@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.javascript.tagger
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.entrypoint.TimeMetric
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPITagger, RegularSinkTagger}
@@ -43,7 +43,11 @@ import java.util.Calendar
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def runTagger(ruleCache: RuleCache, taggerCache: TaggerCache): Traversal[Tag] = {
+  override def runTagger(
+    ruleCache: RuleCache,
+    taggerCache: TaggerCache,
+    privadoInputConfig: PrivadoInput
+  ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
 
@@ -55,7 +59,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 
-    new JSAPITagger(cpg, ruleCache).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
 
     new GraphqlAPITagger(cpg, ruleCache).createAndApply()
 

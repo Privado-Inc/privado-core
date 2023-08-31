@@ -25,7 +25,7 @@ package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.sink.APITagger
 
@@ -34,7 +34,7 @@ import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, St
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.joern.dataflowengineoss.queryengine.{EngineContext}
+import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.joern.dataflowengineoss.DefaultSemantics
 import ai.privado.utility.Utilities.{
@@ -48,13 +48,13 @@ import ai.privado.utility.Utilities.{
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
-class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
+class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+    extends APITagger(cpg, ruleCache, privadoInput) {
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
 
     // baseUrl" Identify the client creation & baseUrl used
-    // TODO: Replace the "baseUrl" with already tagged sinks
     // Tagging below two cases:
     // 1. Axios Create case
     //    const axios = require("axios");
@@ -78,8 +78,9 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
       ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
     val apiLiterals   = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
     val initApiCalls  = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
-    val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals)
-    sinkTaggerWithDomains(apiLiterals, initApiCalls, builder, ruleInfo, ruleCache, uniqueDomains)
+    val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals, builder, ruleInfo, ruleCache)
+    // TODO: Need another approach to map the baseUrl with actual sink nodes.
+    // sinkTaggerWithDomains(apiLiterals, initApiCalls, builder, ruleInfo, ruleCache, uniqueDomains)
 
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
     // Tag the respective templateDom node as API sink
@@ -133,15 +134,27 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
     })
   }
 
-  def getBaseUrlForFrontendApps(apis: List[CfgNode], apiInternalSources: List[AstNode])(implicit
-    engineContext: EngineContext
-  ): List[String] = {
+  def getBaseUrlForFrontendApps(
+    apis: List[CfgNode],
+    apiInternalSources: List[AstNode],
+    builder: BatchedUpdate.DiffGraphBuilder,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache
+  )(implicit engineContext: EngineContext): List[String] = {
     val domains = ListBuffer[String]()
     if (apis.nonEmpty && apiInternalSources.nonEmpty) {
       val apiFlows = apis.reachableByFlows(apiInternalSources)(engineContext).toList
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
+        val apiNode     = flow.elements.last
         val domain      = getDomainFromString(literalCode)
+
+        // Tagging the node with respective domain
+        val newRuleIdToUse = ruleInfo.id + "." + domain
+        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+        addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain)
+
         if (!domains.contains(domain)) {
           domains += domain
         }

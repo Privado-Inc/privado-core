@@ -25,7 +25,7 @@ package ai.privado.tagger.utility
 
 import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{Constants, RuleInfo}
@@ -49,6 +49,7 @@ object APITaggerUtility {
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     showAPI: Boolean = true
   )(implicit engineContext: EngineContext): Unit = {
     val filteredSourceNode =
@@ -56,7 +57,7 @@ object APITaggerUtility {
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
-        if (ScanProcessor.config.disableDeDuplication)
+        if (privadoInput.disableDeDuplication)
           flows
         else
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)

@@ -37,11 +37,13 @@ import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
+import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   val commonGraphqlPackages: String = ruleCache.getSystemConfigByKey(Constants.apiGraphqlLibraries, true)
   val graphqlREADSink: String       = ruleCache.getSystemConfigByKey(Constants.apiGraphqlReadSink, true)
   val graphqlWRITESink: String      = ruleCache.getSystemConfigByKey(Constants.apiGraphqlWriteSink, true)
-  val cacheCall                     = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val cacheCall                     = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks

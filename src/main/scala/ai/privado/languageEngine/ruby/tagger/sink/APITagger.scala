@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
@@ -17,7 +17,8 @@ import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
@@ -59,7 +60,8 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
         .l,
       builder,
       ruleInfo,
-      ruleCache
+      ruleCache,
+      privadoInput
     )
   }
 }

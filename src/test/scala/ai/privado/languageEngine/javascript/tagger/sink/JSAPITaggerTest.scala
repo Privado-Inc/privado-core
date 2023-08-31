@@ -1,12 +1,12 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
-
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
@@ -46,7 +46,9 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Third Party API",
       "",
       Array(),
-      List("post|get|all|delete|put|patch|head|subscribe|unsubscribe"),
+      List(
+        "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
+      ),
       false,
       "",
       Map(),
@@ -96,81 +98,85 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       Array()
     )
   )
-//  val axiosCreateCPG = apiSampleCode(
-//    """
-//      |const axios = require("axios");
-//      |
-//      |const baseUrl = 'http://twitter.com:4001';
-//      |
-//      |const axiosInstance = axios.create({
-//      |  baseURL: baseUrl
-//      |});
-//      |
-//      |let obj = {};
-//      |const getRankNames =  async () => {
-//      |  for(let i = 0; i < 24; i++ ) {
-//      |    await axiosInstance.get(`/top/list?idx=${i}`).then(data => {
-//      |      obj[i] = data.playlist.name;
-//      |    })
-//      |  }
-//      |  console.log(obj);
-//      |}
-//      |
-//      |getRankNames();
-//      |""".stripMargin)
-//
-//  "Axios Create sample" should {
-//
-//    "axios.create should be tagged" in {
-//      val callNode = axiosCreateCPG.call.methodFullName("axios.create").head
-//      callNode.name shouldBe "create"
-//      callNode.tag.size shouldBe 6
-////      callNode.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
-////      callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
-////      callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
-////      callNode.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
-////      callNode.tag.nameExact("third_partiesapi").head.value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
-////      callNode.tag.nameExact("apiUrlSinks.ThirdParties.API (Read)").head.value shouldBe (Constants.API + Constants.READ_WITH_BRACKETS)
-//    }
-//  }
 
-//  val angularInterceptorCPG = apiSampleCode(
-//    """
-//      |import { Injectable } from "@angular/core";
-//      |import {
-//      |  HttpEvent,
-//      |  HttpInterceptor,
-//      |  HttpHandler,
-//      |  HttpRequest,
-//      |} from "@angular/common/http";
-//      |import { Observable } from "rxjs";
-//      |
-//      |@Injectable({ providedIn: "root" })
-//      |export class ApiInterceptor implements HttpInterceptor {
-//      |  intercept(
-//      |    req: HttpRequest<any>,
-//      |    next: HttpHandler
-//      |  ): Observable<HttpEvent<any>> {
-//      |    const apiReq = req.clone({ url: `https://api.realworld.io/api${req.url}` });
-//      |    return next.handle(apiReq);
-//      |  }
-//      |}
-//      |""".stripMargin)
-//
-//  "Angular Interceptor Sample" should {
-//
-//    "Angular interceptor req.clone should be tagged" in {
-//      val callNode = angularInterceptorCPG.call.methodFullName("HttpRequest.clone").head
-//      callNode.name shouldBe "clone"
-//      callNode.tag.size shouldBe 6
-//      //      callNode.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
-//      //      callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
-//      //      callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
-//      //      callNode.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
-//      //      callNode.tag.nameExact("third_partiesapi").head.value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
-//      //      callNode.tag.nameExact("apiUrlSinks.ThirdParties.API (Read)").head.value shouldBe (Constants.API + Constants.READ_WITH_BRACKETS)
-//    }
-//  }
+  val privadoInput = PrivadoInput(generateAuditReport = true)
+
+  val axiosCreateCPG = apiSampleCode("""
+      |import axios from "axios";
+      |
+      |export const baseUrl = "http://google.com:3300";
+      |
+      |const axiosInstance = axios.create({
+      |  baseURL: baseUrl
+      |});
+      |
+      |let obj = {};
+      |const getRankNames =  async () => {
+      |  for(let i = 0; i < 24; i++ ) {
+      |    await axiosInstance.get(`/top/list?idx=${i}`).then(data => {
+      |      obj[i] = data.playlist.name;
+      |    })
+      |  }
+      |  console.log(obj);
+      |}
+      |
+      |getRankNames();
+      |""".stripMargin)
+
+  "Axios Create sample" should {
+
+    "axios.create should be tagged" in {
+      val callNode = axiosCreateCPG.call.methodFullName("axios.*create").head
+      callNode.name shouldBe "create"
+      callNode.tag.size shouldBe 6
+      callNode.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + ".google.com")
+      callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
+      callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
+      callNode.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
+      callNode.tag.nameExact("third_partiesapi").head.value shouldBe (Constants.thirdPartiesAPIRuleId + ".google.com")
+      callNode.tag.nameExact("apiUrlSinks.ThirdParties.API.google.com").head.value shouldBe ("google.com")
+    }
+  }
+
+  val angularInterceptorCPG = apiSampleCode("""
+      |import { Injectable } from "@angular/core";
+      |import {
+      |  HttpEvent,
+      |  HttpInterceptor,
+      |  HttpHandler,
+      |  HttpRequest,
+      |} from "@angular/common/http";
+      |import { Observable } from "rxjs";
+      |
+      |@Injectable({ providedIn: "root" })
+      |export class ApiInterceptor implements HttpInterceptor {
+      |  intercept(
+      |    req: HttpRequest<any>,
+      |    next: HttpHandler
+      |  ): Observable<HttpEvent<any>> {
+      |    const apiReq = req.clone({ url: `https://api.realworld.io/api${req.url}` });
+      |    return next.handle(apiReq);
+      |  }
+      |}
+      |""".stripMargin)
+
+  "Angular Interceptor Sample" should {
+
+    "Angular interceptor req.clone should be tagged" in {
+      val callNode = angularInterceptorCPG.call.methodFullName("HttpRequest.*clone").head
+      callNode.name shouldBe "clone"
+      callNode.tag.size shouldBe 6
+      callNode.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + ".api.realworld.io")
+      callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
+      callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
+      callNode.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
+      callNode.tag
+        .nameExact("third_partiesapi")
+        .head
+        .value shouldBe (Constants.thirdPartiesAPIRuleId + ".api.realworld.io")
+      callNode.tag.nameExact("apiUrlSinks.ThirdParties.API.api.realworld.io").head.value shouldBe ("api.realworld.io")
+    }
+  }
 
   def apiSampleCode(code: String): Cpg = {
     val inputDir = File.newTemporaryDirectory()
@@ -186,7 +192,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
     cpgs.addOne(cpg)
     cpg
   }
