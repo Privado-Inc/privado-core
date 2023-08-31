@@ -99,7 +99,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     )
   )
 
-  val privadoInput = PrivadoInput(generateAuditReport = true)
+  val privadoInput = PrivadoInput()
 
   val axiosCreateCPG = apiSampleCode("""
       |import axios from "axios";
