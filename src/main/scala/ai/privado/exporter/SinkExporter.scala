@@ -171,7 +171,6 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
         .filter(node => node.name.equals(Constants.id) || node.name.startsWith(Constants.privadoDerived))
       node.value.toSet
     }
-
     sinks
       .flatMap(sink => getSinks(sink))
       .filter(_.nonEmpty)
