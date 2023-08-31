@@ -80,7 +80,7 @@ class GraphqlAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfter
       Language.JAVASCRIPT,
       "",
       Array()
-    ),
+    )
   )
 
   "Graphql READ Example" should {
@@ -110,12 +110,21 @@ class GraphqlAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfter
       val callNode = cpg.call.methodFullName("graphql.load").head
       callNode.name shouldBe "load"
       callNode.tag.size shouldBe 6
-      callNode.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
+      callNode.tag
+        .nameExact(Constants.id)
+        .head
+        .value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
       callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
       callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
       callNode.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
-      callNode.tag.nameExact("third_partiesapi").head.value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
-      callNode.tag.nameExact("apiUrlSinks.ThirdParties.API (Read)").head.value shouldBe (Constants.API + Constants.READ_WITH_BRACKETS)
+      callNode.tag
+        .nameExact("third_partiesapi")
+        .head
+        .value shouldBe (Constants.thirdPartiesAPIRuleId + Constants.READ_WITH_BRACKETS)
+      callNode.tag
+        .nameExact("apiUrlSinks.ThirdParties.API (Read)")
+        .head
+        .value shouldBe (Constants.API + Constants.READ_WITH_BRACKETS)
     }
   }
 

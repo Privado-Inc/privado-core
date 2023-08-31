@@ -50,7 +50,6 @@ import overflowdb.BatchedUpdate
 
 class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCache) {
 
-
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
 
@@ -75,7 +74,8 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache) extends APITagger(cpg, ruleCac
     //      }
     //    }
 
-    val clientCreationBaseUrlPattern: String = ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
+    val clientCreationBaseUrlPattern: String =
+      ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
     val apiLiterals   = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
     val initApiCalls  = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
     val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals)
