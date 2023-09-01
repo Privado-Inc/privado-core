@@ -36,7 +36,7 @@ import ai.privado.languageEngine.java.semantic.Language._
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants._
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser}
+import ai.privado.passes.{HTMLParserPass, SQLParser, DBTParserPass}
 import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -77,6 +77,7 @@ object JavaProcessor {
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           logger.info("Applying data flow overlay")
           val context = new LayerCreatorContext(cpg)

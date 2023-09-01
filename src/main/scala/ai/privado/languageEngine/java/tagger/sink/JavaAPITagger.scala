@@ -23,18 +23,20 @@
 package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.language._
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.languageEngine.java.language.*
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
-import ai.privado.utility.ImportUtility
+import ai.privado.utility.{ImportUtility, Utilities}
 import io.circe.Json
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.util.Calendar
@@ -55,9 +57,10 @@ object APITaggerVersionJava extends Enumeration {
 
 class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger                             = LoggerFactory.getLogger(this.getClass)
-  val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  private val logger                        = LoggerFactory.getLogger(this.getClass)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)(JavaSemanticGenerator.getDefaultSemantics)
+  val cacheCall: List[Call]                 = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall: List[String]      = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
 
   val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
@@ -139,6 +142,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           builder,
           ruleInfo,
           ruleCache,
+          privadoInputConfig,
           privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
@@ -146,7 +150,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,
-          ruleCache
+          ruleCache,
+          privadoInputConfig
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
@@ -156,7 +161,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,
-          ruleCache
+          ruleCache,
+          privadoInputConfig
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
@@ -166,7 +172,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,
-          ruleCache
+          ruleCache,
+          privadoInputConfig
         )
     }
   }

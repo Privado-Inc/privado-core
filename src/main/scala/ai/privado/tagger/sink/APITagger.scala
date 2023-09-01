@@ -23,17 +23,21 @@
 
 package ai.privado.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
+import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
+import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.DefaultSemantics
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
@@ -47,7 +51,8 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
     .methodFullName(commonHttpPackages)
     .l
 
-  implicit val engineContext: EngineContext = EngineContext(semantics = DefaultSemantics(), config = EngineConfig(4))
+  implicit val engineContext: EngineContext =
+    Utilities.getEngineContext(4, PrivadoInput(disableDeDuplication = true))(JavaSemanticGenerator.getDefaultSemantics)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
@@ -66,6 +71,13 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[R
       else
         List()
     }
-    sinkTagger(apiInternalSources ++ propertySources ++ identifierSource, apis, builder, ruleInfo, ruleCache)
+    sinkTagger(
+      apiInternalSources ++ propertySources ++ identifierSource,
+      apis,
+      builder,
+      ruleInfo,
+      ruleCache,
+      privadoInput
+    )
   }
 }

@@ -25,7 +25,7 @@ package ai.privado.tagger.utility
 
 import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{Constants, RuleInfo}
@@ -36,14 +36,12 @@ import ai.privado.utility.Utilities.{
   isFileProcessable,
   storeForTag
 }
+import io.joern.dataflowengineoss.language.*
+import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import overflowdb.BatchedUpdate
-import io.joern.dataflowengineoss.language._
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 
 object APITaggerUtility {
-  implicit val engineContext: EngineContext =
-    EngineContext(semantics = JavaSemanticGenerator.getDefaultSemantics, config = EngineConfig(4))
 
   def sinkTagger(
     apiInternalSinkPattern: List[AstNode],
@@ -51,14 +49,15 @@ object APITaggerUtility {
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     showAPI: Boolean = true
-  ): Unit = {
+  )(implicit engineContext: EngineContext): Unit = {
     val filteredSourceNode =
       apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
-        val flows = apis.reachableByFlows(filteredSourceNode).toList
-        if (ScanProcessor.config.disableDeDuplication)
+        val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
+        if (privadoInput.disableDeDuplication)
           flows
         else
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)

@@ -135,14 +135,9 @@ object DatabaseReadUtility {
               }
             }
           } else {
-            if (sensitiveMemberRuleIds.nonEmpty)
-              sensitiveMemberRuleIds
-                .filter(ruleId => isColumnNameMatchingWithRule(ruleCache, ruleId, columns))
-                .foreach(ruleId => addTagsToNode(ruleCache, ruleId, referencingQueryNodes, builder))
-            else
-              ruleCache.getRule.sources
-                .filter(rule => isColumnNameMatchingWithRule(ruleCache, rule.id, columns))
-                .foreach(rule => addTagsToNode(ruleCache, rule.id, referencingQueryNodes, builder))
+            ruleCache.getRule.sources
+              .filter(rule => isColumnNameMatchingWithRule(ruleCache, rule.id, columns))
+              .foreach(rule => addTagsToNode(ruleCache, rule.id, referencingQueryNodes, builder))
           }
         }
       case None => ()
