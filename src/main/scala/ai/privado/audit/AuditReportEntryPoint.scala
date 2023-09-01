@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel._
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
+import org.apache.xmlbeans.XmlException
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
@@ -103,7 +104,6 @@ object AuditReportEntryPoint {
   }
   // Audit report generation for Python and javaScript
   def getAuditWorkbookJS(xtocpg: Try[Cpg], taggerCache: TaggerCache, repoPath: String): Workbook = {
-    println("In audit JS")
     val workbook: Workbook       = new XSSFWorkbook()
     val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
 
