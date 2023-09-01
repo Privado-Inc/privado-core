@@ -118,6 +118,8 @@ object DatabaseReadUtility {
                     System.out.println("ID: " + id + ", Name: " + firstName + ", Age: " + age)
                 }
                */
+              // TODO Need to find a optimized way to solve this
+              /*
               val dataElementSinks =
                 Dataflow
                   .getSources(cpg)
@@ -133,6 +135,7 @@ object DatabaseReadUtility {
                   .value
                   .foreach(ruleId => addTagsToNode(ruleCache, ruleId, referencingQueryNodes, builder))
               }
+               */
             }
           } else {
             ruleCache.getRule.sources
