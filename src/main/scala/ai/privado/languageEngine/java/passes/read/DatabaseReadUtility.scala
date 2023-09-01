@@ -25,13 +25,14 @@ package ai.privado.languageEngine.java.passes.read
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.InternalTag
 import ai.privado.model.sql.SQLQuery
 import ai.privado.utility.SQLParser
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.nodes.{AnnotationLiteral, AstNode, CfgNode, TypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 object DatabaseReadUtility {
@@ -45,7 +46,8 @@ object DatabaseReadUtility {
     taggerCache: TaggerCache,
     classTableMapping: Map[String, TypeDecl],
     cpg: Cpg,
-    node: AstNode
+    node: AstNode,
+    privadoInputConfig: PrivadoInput
   ) = {
 
     val queryCode = node.code
@@ -118,20 +120,23 @@ object DatabaseReadUtility {
                     System.out.println("ID: " + id + ", Name: " + firstName + ", Age: " + age)
                 }
                */
-              val dataElementSinks =
-                Dataflow
-                  .getSources(cpg)
-                  .filter(_.isInstanceOf[CfgNode])
-                  .map(_.asInstanceOf[CfgNode])
-                  .l
+              // TODO Need to find a optimized way to solve this
+              if (!privadoInputConfig.disableReadDataflow) {
+                val dataElementSinks =
+                  Dataflow
+                    .getSources(cpg)
+                    .filter(_.isInstanceOf[CfgNode])
+                    .map(_.asInstanceOf[CfgNode])
+                    .l
 
-              val readFlow = Dataflow.dataflowForSourceSinkPair(referencingQueryNodes, dataElementSinks)
-              if (readFlow.nonEmpty) {
-                // As a flow is present from Select query to a Data element we can say, the data element is read from the query
-                readFlow
-                  .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
-                  .value
-                  .foreach(ruleId => addTagsToNode(ruleCache, ruleId, referencingQueryNodes, builder))
+                val readFlow = Dataflow.dataflowForSourceSinkPair(referencingQueryNodes, dataElementSinks)
+                if (readFlow.nonEmpty) {
+                  // As a flow is present from Select query to a Data element we can say, the data element is read from the query
+                  readFlow
+                    .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
+                    .value
+                    .foreach(ruleId => addTagsToNode(ruleCache, ruleId, referencingQueryNodes, builder))
+                }
               }
             }
           } else {

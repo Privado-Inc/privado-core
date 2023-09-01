@@ -79,7 +79,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new MessagingConsumerReadPass(cpg, taggerCache).createAndApply()
     }
 
-    new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, EntityMapper.getClassTableMapping(cpg)).createAndApply()
+    new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, EntityMapper.getClassTableMapping(cpg))
+      .createAndApply()
 
     new DatabaseRepositoryReadPass(cpg, taggerCache).createAndApply()
 

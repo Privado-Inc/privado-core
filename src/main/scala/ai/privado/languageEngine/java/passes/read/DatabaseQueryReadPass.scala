@@ -1,17 +1,19 @@
 package ai.privado.languageEngine.java.passes.read
 
 import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.passes.read.DatabaseReadUtility.{fromRegexPattern, selectRegexPattern}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 class DatabaseQueryReadPass(
   cpg: Cpg,
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
+  privadoInputConfig: PrivadoInput,
   classTableMapping: Map[String, TypeDecl]
 ) extends PrivadoParallelCpgPass[Expression](cpg) {
 
@@ -33,6 +35,14 @@ class DatabaseQueryReadPass(
   }
 
   override def runOnPart(builder: DiffGraphBuilder, node: Expression): Unit = {
-    DatabaseReadUtility.processDBReadNode(builder, ruleCache, taggerCache, classTableMapping, cpg, node)
+    DatabaseReadUtility.processDBReadNode(
+      builder,
+      ruleCache,
+      taggerCache,
+      classTableMapping,
+      cpg,
+      node,
+      privadoInputConfig
+    )
   }
 }
