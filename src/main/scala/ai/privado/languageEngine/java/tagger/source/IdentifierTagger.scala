@@ -204,13 +204,15 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
           val sourceRuleId = entrySet._1
           entrySet._2.foreach(taggerCache.addItemToTypeDeclMemberCache(typeDecl.fullName, sourceRuleId, _))
         })
-      // To Mark all field Access and getters
-      tagAllFieldAccessAndGetters(
-        builder,
-        typeDecl.fullName,
-        ruleInfo,
-        taggerCache.typeDeclMemberCache(typeDecl.fullName)(ruleInfo.id).name.mkString("|")
-      )
+      if (taggerCache.typeDeclMemberCache.keys.exists(_.contains(typeDecl.fullName))) {
+        // To Mark all field Access and getters
+        tagAllFieldAccessAndGetters(
+          builder,
+          typeDecl.fullName,
+          ruleInfo,
+          taggerCache.typeDeclMemberCache(typeDecl.fullName)(ruleInfo.id).name.mkString("|")
+        )
+      }
 
     })
 

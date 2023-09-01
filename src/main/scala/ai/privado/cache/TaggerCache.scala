@@ -49,7 +49,9 @@ class TaggerCache {
       typeDeclMemberCache.addOne(typeDeclVal -> mutable.HashMap[String, mutable.HashSet[Member]]())
     if (!typeDeclMemberCache(typeDeclVal).contains(ruleId))
       typeDeclMemberCache(typeDeclVal).addOne(ruleId -> mutable.HashSet())
-    typeDeclMemberCache(typeDeclVal)(ruleId).addOne(typeDeclMember)
+    else if (typeDeclMemberCache(typeDeclVal).contains(ruleId)) {
+      typeDeclMemberCache(typeDeclVal)(ruleId).addOne(typeDeclMember)
+    }
   }
 
 }

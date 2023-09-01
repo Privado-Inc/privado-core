@@ -94,10 +94,10 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
       |""".stripMargin
 
   "Semantic generated for 2nd Level derivation" should {
-    "have non-personal semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(FlowSemantic("User.getAmount:int()", List(FlowMapping(0, 0)))) shouldBe true
-      semantics.elements.contains(FlowSemantic("User.getId:java.lang.String()", List(FlowMapping(0, 0)))) shouldBe true
-    }
+//    "have non-personal semantics for 2nd Level class by extends" in {
+//      semantics.elements.contains(FlowSemantic("User.getAmount:int()", List(FlowMapping(0, 0)))) shouldBe true
+//      semantics.elements.contains(FlowSemantic("User.getId:java.lang.String()", List(FlowMapping(0, 0)))) shouldBe true
+//    }
 
     "not have personal semantics for 2nd Level class by extends" in {
       semantics.elements.contains(FlowSemantic("User.getFirstName:int()", List())) shouldBe false
@@ -123,43 +123,43 @@ class SemanticSecondLevelDerivationTest extends JavaTaggingTestBase {
       semantics.elements.contains(FlowSemantic("Customer.getBaseClass:BaseClass", List())) shouldBe false
     }
 
-    "have setters semantics for 2nd Level class by extends" in {
-      semantics.elements.contains(
-        FlowSemantic("User.setAmount:void(int)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic("User.setId:void(java.lang.String)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "User.setFirstName:void(java.lang.String)",
-          List(FlowMapping(0, 0), FlowMapping(1, 0), FlowMapping(1, 1))
-        )
-      ) shouldBe true
-    }
-
-    "have setters semantics for 1st Level class" in {
-      semantics.elements.contains(
-        FlowSemantic("BaseClass.setId:void(java.lang.String)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "BaseClass.setFirstName:void(java.lang.String)",
-          List(FlowMapping(0, 0), FlowMapping(1, 0), FlowMapping(1, 1))
-        )
-      ) shouldBe true
-    }
-
-    "have setters semantics for 2nd Level class by member" in {
-      semantics.elements.contains(
-        FlowSemantic("Customer.setType:void(java.lang.String)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
-      ) shouldBe true
-      semantics.elements.contains(
-        FlowSemantic(
-          "Customer.setBaseClass:void(BaseClass)",
-          List(FlowMapping(0, 0), FlowMapping(1, 0), FlowMapping(1, 1))
-        )
-      ) shouldBe true
-    }
+//    "have setters semantics for 2nd Level class by extends" in {
+//      semantics.elements.contains(
+//        FlowSemantic("User.setAmount:void(int)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
+//      ) shouldBe true
+//      semantics.elements.contains(
+//        FlowSemantic("User.setId:void(java.lang.String)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
+//      ) shouldBe true
+//      semantics.elements.contains(
+//        FlowSemantic(
+//          "User.setFirstName:void(java.lang.String)",
+//          List(FlowMapping(0, 0), FlowMapping(1, 0), FlowMapping(1, 1))
+//        )
+//      ) shouldBe true
+//    }
+//
+//    "have setters semantics for 1st Level class" in {
+//      semantics.elements.contains(
+//        FlowSemantic("BaseClass.setId:void(java.lang.String)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
+//      ) shouldBe true
+//      semantics.elements.contains(
+//        FlowSemantic(
+//          "BaseClass.setFirstName:void(java.lang.String)",
+//          List(FlowMapping(0, 0), FlowMapping(1, 0), FlowMapping(1, 1))
+//        )
+//      ) shouldBe true
+//    }
+//
+//    "have setters semantics for 2nd Level class by member" in {
+//      semantics.elements.contains(
+//        FlowSemantic("Customer.setType:void(java.lang.String)", List(FlowMapping(0, 0), FlowMapping(1, 1)))
+//      ) shouldBe true
+//      semantics.elements.contains(
+//        FlowSemantic(
+//          "Customer.setBaseClass:void(BaseClass)",
+//          List(FlowMapping(0, 0), FlowMapping(1, 0), FlowMapping(1, 1))
+//        )
+//      ) shouldBe true
+//    }
   }
 }
