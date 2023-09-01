@@ -40,6 +40,7 @@ case class PrivadoInput(
   disableThisFiltering: Boolean = false,
   disableFlowSeparationByDataElement: Boolean = false,
   disable2ndLevelClosure: Boolean = false,
+  disableReadDataflow: Boolean = false,
   enableAPIDisplay: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
@@ -73,6 +74,8 @@ object CommandConstants {
   val DISABLE_FLOW_SEPERATION_BY_DATA_ELEMENT_ABBR = "dfsde"
   val DISABLE_2ND_LEVEL_CLOSURE                    = "disable-2nd-level-closure"
   val DISABLE_2ND_LEVEL_CLOSURE_ABBR               = "d2lc"
+  val DISABLE_READ_DATAFLOW                        = "disable-read-dataflow"
+  val DISABLE_READ_DATAFLOW_ABBR                   = "drd"
   val ENABLE_API_DISPLAY                           = "enable-api-display"
   val ENABLE_API_DISPLAY_ABBR                      = "ead"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
@@ -164,6 +167,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(disable2ndLevelClosure = true))
               .text("Disable 2nd level closure"),
+            opt[Unit](CommandConstants.DISABLE_READ_DATAFLOW)
+              .abbr(CommandConstants.DISABLE_READ_DATAFLOW_ABBR)
+              .optional()
+              .action((_, c) => c.copy(disableReadDataflow = true))
+              .text("Disable database read dataflow"),
             opt[Unit](CommandConstants.ENABLE_API_DISPLAY)
               .abbr(CommandConstants.ENABLE_API_DISPLAY_ABBR)
               .optional()
