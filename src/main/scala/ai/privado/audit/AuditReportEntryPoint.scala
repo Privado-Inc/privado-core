@@ -103,6 +103,7 @@ object AuditReportEntryPoint {
   }
   // Audit report generation for Python and javaScript
   def getAuditWorkbookJS(xtocpg: Try[Cpg], taggerCache: TaggerCache, repoPath: String): Workbook = {
+    println("In audit JS")
     val workbook: Workbook       = new XSSFWorkbook()
     val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
 
