@@ -403,21 +403,24 @@ object DataElementDiscoveryJS {
     xtocpg match {
       case Success(cpg) => {
         classNameRuleList.foreach(className => {
-          val typeDecl = cpg.typeDecl.where(_.fullName(className)).l.head
-          cpg.method
-            .fullName(typeDecl.fullName)
-            .foreach(method => {
-              if (!methodParameterMap.contains(typeDecl)) {
-                methodParameterMap.put(typeDecl, new ListBuffer[MethodParameterIn])
-              }
-              val methodParameterInfo = methodParameterMap(typeDecl)
-              method.parameter.l
-                .whereNot(_.name(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX))
-                .foreach(parameter => {
-                  methodParameterInfo += parameter
+          cpg.typeDecl.where(_.fullName(className)).l.headOption match
+            case Some(typeDecl) =>
+              cpg.method
+                .fullName(typeDecl.fullName)
+                .foreach(method => {
+                  if (!methodParameterMap.contains(typeDecl)) {
+                    methodParameterMap.put(typeDecl, new ListBuffer[MethodParameterIn])
+                  }
+                  val methodParameterInfo = methodParameterMap(typeDecl)
+                  method.parameter.l
+                    .whereNot(_.name(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX))
+                    .foreach(parameter => {
+                      methodParameterInfo += parameter
+                    })
+                  methodParameterMap.put(typeDecl, methodParameterInfo)
                 })
-              methodParameterMap.put(typeDecl, methodParameterInfo)
-            })
+            case None =>
+              logger.debug("head of empty list")
         })
       }
       case Failure(exception) => {
