@@ -32,12 +32,14 @@ import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.Languages
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.dump
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import better.files.File
 
 import scala.collection.mutable
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.concurrent.TrieMap
 
 object ExporterUtility {
 
@@ -64,20 +66,20 @@ object ExporterUtility {
 
         // Going 1 level deep for derived sources to add extra nodes
         taggerCache.typeDeclMemberCache
-          .getOrElse(typeFullName, mutable.HashMap[String, mutable.HashSet[Member]]())
+          .getOrElse(typeFullName, TrieMap[String, mutable.Set[Member]]())
           .get(sourceId) match {
-          case Some(members) =>
+          case Some(members: mutable.HashSet[Member]) =>
             // Picking up only the head as any path to base is sufficient
-            val member             = members.head
+            val member: Member     = members.head
             var typeFullNameLevel2 = member.typeFullName // java.lang.string
 
             // Temporary fix for python to match the typeFullName
             typeFullNameLevel2 = updateTypeFullNameForPython(typeFullNameLevel2, isPython)
 
             taggerCache.typeDeclMemberCache
-              .getOrElse(typeFullNameLevel2, mutable.HashMap[String, mutable.HashSet[Member]]())
+              .getOrElse(typeFullNameLevel2, TrieMap[String, mutable.Set[Member]]())
               .get(sourceId) match {
-              case Some(member2Set) =>
+              case Some(member2Set: mutable.HashSet[Member]) =>
                 // Picking up only the head as any path to base is sufficient
                 val member2 = member2Set.head
                 // Going 2 level deep for derived sources to add extra nodes
@@ -96,14 +98,14 @@ object ExporterUtility {
             }
 
           case _ => // Checking if 2nd level is of Extends type
-            taggerCache.typeDeclExtendingTypeDeclCache
-              .getOrElse(typeFullName, mutable.HashMap[String, TypeDecl]())
+            taggerCache
+              .getTypeDeclExtendingTypeDeclCacheItem(typeFullName)
               .get(sourceId) match {
-              case Some(typeDecl) => // Fetching information for the 2nd level member node
+              case Some(typeDecl: TypeDecl) => // Fetching information for the 2nd level member node
                 taggerCache.typeDeclMemberCache
-                  .getOrElse(typeDecl.fullName, mutable.HashMap[String, mutable.HashSet[Member]]())
+                  .getOrElse(typeDecl.fullName, TrieMap[String, mutable.Set[Member]]())
                   .get(sourceId) match {
-                  case Some(members) =>
+                  case Some(members: mutable.HashSet[Member]) =>
                     // Picking up only the head as any path to base is sufficient
                     val member = members.head
                     val currentTypeDeclNode = // Fetching the current TypeDecl node

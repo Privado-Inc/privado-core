@@ -33,6 +33,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AnnotationLiteral, AstNod
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.Cpg
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 object DatabaseReadUtility {
 

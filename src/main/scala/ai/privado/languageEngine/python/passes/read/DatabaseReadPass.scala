@@ -14,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
+import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     extends PrivadoParallelCpgPass[Expression](cpg) {

@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.util.Try
 
 object PIIHavingDifferentRetentionPeriod {
@@ -37,7 +38,7 @@ object PIIHavingDifferentRetentionPeriod {
         val retentionPeriodListForTable = ListBuffer[Int]()
 
         if (taggerCache.typeDeclMemberCache.contains(typeDeclFullName.fullName)) {
-          val typeDeclWithMembersMap = taggerCache.typeDeclMemberCache.get(typeDeclFullName.fullName).get
+          val typeDeclWithMembersMap = taggerCache.getTypeDeclMemberCacheItem(typeDeclFullName.fullName)
           typeDeclWithMembersMap.foreach((dataElementMemberMap) => {
             val sourceId = dataElementMemberMap._1
             if (sourceIdRetentionPeriodMap.contains(sourceId)) {

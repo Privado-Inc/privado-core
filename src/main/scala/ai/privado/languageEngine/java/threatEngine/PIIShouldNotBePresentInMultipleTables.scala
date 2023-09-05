@@ -16,6 +16,7 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 

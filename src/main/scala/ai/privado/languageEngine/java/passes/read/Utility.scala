@@ -26,7 +26,7 @@ package ai.privado.languageEngine.java.passes.read
 import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.DuplicateFlowProcessor
 import io.joern.dataflowengineoss.language.Path
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Member}
 
 object Utility {
 
@@ -36,29 +36,44 @@ object Utility {
     node: AstNode
   ): List[(String, String, Path)] = {
     taggerCache
-      .typeDeclMemberCache(matchedTypeDeclFullName)
-      .map(item => (item._1, item._2.head))
-      .map(sourceRuleIdMemberTuple => {
-        val sourceRuleId = sourceRuleIdMemberTuple._1
-        val memberNodes = {
-          val sourceMatchingMemberL1 = sourceRuleIdMemberTuple._2
-          if (
-            taggerCache.typeDeclMemberCache.contains(sourceMatchingMemberL1.typeFullName) && taggerCache
-              .typeDeclMemberCache(sourceMatchingMemberL1.typeFullName)
-              .contains(sourceRuleId)
-          ) {
-            List(
-              taggerCache.typeDeclMemberCache(sourceMatchingMemberL1.typeFullName)(sourceRuleId).head,
-              sourceMatchingMemberL1
-            )
-          } else
-            List(sourceMatchingMemberL1)
-        }
+      .getTypeDeclMemberCacheItem(matchedTypeDeclFullName)
+      .flatMap { case (sourceRuleId, members) =>
+        members.map { sourceMatchingMemberL1 =>
+          val memberNodes = taggerCache
+            .getTypeDeclMemberCacheItem(sourceMatchingMemberL1.typeFullName)
+            .getOrElse(sourceRuleId, Set.empty[Member]) + sourceMatchingMemberL1
 
-        val newPath: Path = new Path(memberNodes ::: List(node))
-        val pathId        = DuplicateFlowProcessor.calculatePathId(newPath).get
-        (pathId, sourceRuleId, newPath)
-      })
+          val newPath: Path = new Path(memberNodes.toList ::: List(node))
+          val pathId        = DuplicateFlowProcessor.calculatePathId(newPath).get
+          (pathId, sourceRuleId, newPath)
+        }
+      }
       .toList
+
+//  taggerCache
+//      .getTypeDeclMemberCacheItem(matchedTypeDeclFullName)
+//      .map(item => (item._1, item._2.head))
+//      .map(sourceRuleIdMemberTuple => {
+//        val sourceRuleId = sourceRuleIdMemberTuple._1
+//        val memberNodes = {
+//          val sourceMatchingMemberL1 = sourceRuleIdMemberTuple._2
+//          if (
+//            taggerCache.typeDeclMemberCache.contains(sourceMatchingMemberL1.typeFullName) && taggerCache
+//              .typeDeclMemberCache(sourceMatchingMemberL1.typeFullName)
+//              .contains(sourceRuleId)
+//          ) {
+//            List(
+//              taggerCache.getTypeDeclMemberCacheItem(sourceMatchingMemberL1.typeFullName).get(sourceRuleId).head,
+//              sourceMatchingMemberL1
+//            )
+//          } else
+//            List(sourceMatchingMemberL1)
+//        }
+//
+//        val newPath: Path = new Path(memberNodes ::: List(node))
+//        val pathId        = DuplicateFlowProcessor.calculatePathId(newPath).get
+//        (pathId, sourceRuleId, newPath)
+//      })
+//      .toList
   }
 }
