@@ -8,6 +8,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel._
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
+import org.apache.xmlbeans.XmlException
+import org.apache.commons.collections4.ListValuedMap
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
