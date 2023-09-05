@@ -27,9 +27,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
-import java.util.concurrent.ConcurrentHashMap
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
-
 class TaggerCache {
   // Stores typeDeclFullName --> ( sourceRuleId --->  Member Node)
   val typeDeclMemberCache = TrieMap[String, TrieMap[String, mutable.Set[Member]]]()
@@ -47,7 +44,6 @@ class TaggerCache {
     * @param typeDeclMember
     */
   def addItemToTypeDeclMemberCache(typeDeclVal: String, ruleId: String, typeDeclMember: Member): Unit = {
-    println("typeDeclVal: " + typeDeclVal + " ruleId: " + ruleId + " typeDeclMember: " + typeDeclMember)
     typeDeclMemberCache.getOrElseUpdate(typeDeclVal, TrieMap[String, mutable.Set[Member]]()).updateWith(ruleId) {
       case Some(existingMembers) => Some(existingMembers += typeDeclMember)
       case None                  => Some(mutable.Set(typeDeclMember))

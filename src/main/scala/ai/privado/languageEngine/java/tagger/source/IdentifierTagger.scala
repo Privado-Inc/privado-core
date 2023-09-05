@@ -34,9 +34,7 @@ import ai.privado.languageEngine.java.tagger.source.Utility.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.concurrent.TrieMap
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
@@ -207,12 +205,6 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
           val sourceRuleId = entrySet._1
           entrySet._2.foreach(taggerCache.addItemToTypeDeclMemberCache(typeDecl.fullName, sourceRuleId, _))
         })
-
-      println(typeDecl.fullName)
-//      taggerCache.typeDeclMemberCache(typeDecl.fullName).asScala.foreach( i => {
-//        println(i)
-//      })
-//      println()
 
       val membersOption = taggerCache.typeDeclMemberCache
         .get(typeDecl.fullName)

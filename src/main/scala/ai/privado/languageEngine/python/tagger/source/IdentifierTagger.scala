@@ -32,8 +32,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.semanticcpg.language.*
 
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import cats.Show.Shown.mat
 
 import scala.collection.concurrent.TrieMap

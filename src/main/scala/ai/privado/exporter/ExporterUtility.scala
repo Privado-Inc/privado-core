@@ -38,7 +38,6 @@ import io.shiftleft.semanticcpg.language.*
 import better.files.File
 
 import scala.collection.mutable
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.concurrent.TrieMap
 
 object ExporterUtility {

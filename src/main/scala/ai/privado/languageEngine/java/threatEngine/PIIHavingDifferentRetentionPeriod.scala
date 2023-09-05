@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.util.Try
 
 object PIIHavingDifferentRetentionPeriod {

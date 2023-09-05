@@ -33,9 +33,7 @@ import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate
 
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.concurrent.TrieMap
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)

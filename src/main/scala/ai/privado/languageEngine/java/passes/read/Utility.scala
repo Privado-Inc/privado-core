@@ -49,31 +49,5 @@ object Utility {
         }
       }
       .toList
-
-//  taggerCache
-//      .getTypeDeclMemberCacheItem(matchedTypeDeclFullName)
-//      .map(item => (item._1, item._2.head))
-//      .map(sourceRuleIdMemberTuple => {
-//        val sourceRuleId = sourceRuleIdMemberTuple._1
-//        val memberNodes = {
-//          val sourceMatchingMemberL1 = sourceRuleIdMemberTuple._2
-//          if (
-//            taggerCache.typeDeclMemberCache.contains(sourceMatchingMemberL1.typeFullName) && taggerCache
-//              .typeDeclMemberCache(sourceMatchingMemberL1.typeFullName)
-//              .contains(sourceRuleId)
-//          ) {
-//            List(
-//              taggerCache.getTypeDeclMemberCacheItem(sourceMatchingMemberL1.typeFullName).get(sourceRuleId).head,
-//              sourceMatchingMemberL1
-//            )
-//          } else
-//            List(sourceMatchingMemberL1)
-//        }
-//
-//        val newPath: Path = new Path(memberNodes ::: List(node))
-//        val pathId        = DuplicateFlowProcessor.calculatePathId(newPath).get
-//        (pathId, sourceRuleId, newPath)
-//      })
-//      .toList
   }
 }

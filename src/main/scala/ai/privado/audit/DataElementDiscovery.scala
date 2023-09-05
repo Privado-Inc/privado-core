@@ -13,7 +13,6 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 object DataElementDiscovery {
 
