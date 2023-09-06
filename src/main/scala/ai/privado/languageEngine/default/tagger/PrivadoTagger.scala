@@ -14,7 +14,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
   override def runTagger(ruleCache: RuleCache, taggerCache: TaggerCache): Traversal[Tag] = {
 
-    logger.info("Starting tagging")
+    logger.info("Starting tagger")
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
