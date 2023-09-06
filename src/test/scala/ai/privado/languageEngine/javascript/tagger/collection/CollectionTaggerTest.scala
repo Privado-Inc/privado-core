@@ -1,4 +1,5 @@
-package ai.privado.languageEngine.javascript.tagger.sinks.collection
+package ai.privado.languageEngine.javascript.tagger.collection
+
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger

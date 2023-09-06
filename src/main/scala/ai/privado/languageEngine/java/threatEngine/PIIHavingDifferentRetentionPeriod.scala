@@ -37,7 +37,7 @@ object PIIHavingDifferentRetentionPeriod {
         val retentionPeriodListForTable = ListBuffer[Int]()
 
         if (taggerCache.typeDeclMemberCache.contains(typeDeclFullName.fullName)) {
-          val typeDeclWithMembersMap = taggerCache.typeDeclMemberCache.get(typeDeclFullName.fullName).get
+          val typeDeclWithMembersMap = taggerCache.getTypeDeclMemberCacheItem(typeDeclFullName.fullName)
           typeDeclWithMembersMap.foreach((dataElementMemberMap) => {
             val sourceId = dataElementMemberMap._1
             if (sourceIdRetentionPeriodMap.contains(sourceId)) {

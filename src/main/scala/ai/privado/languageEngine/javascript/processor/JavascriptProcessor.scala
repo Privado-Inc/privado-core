@@ -80,7 +80,7 @@ object JavascriptProcessor {
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         val taggerCache = new TaggerCache
-        cpg.runTagger(ruleCache, taggerCache)
+        cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy())
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
         val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
         println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric

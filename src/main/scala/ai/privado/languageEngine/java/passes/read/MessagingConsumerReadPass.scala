@@ -91,7 +91,7 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Priv
       readNode.argument.code(".*[.]class").isCall.argument.isIdentifier.typeFullName.headOption match {
         case Some(readTypeFullName) =>
           if (taggerCache.typeDeclMemberCache.contains(readTypeFullName)) {
-            taggerCache.typeDeclMemberCache(readTypeFullName).keys.foreach { sourceRuleId =>
+            taggerCache.getTypeDeclMemberCacheItem(readTypeFullName).keys.foreach { sourceRuleId =>
               addToDataflowCache(consumerRuleId, sourceRuleId, flow, pathId)
             }
           }

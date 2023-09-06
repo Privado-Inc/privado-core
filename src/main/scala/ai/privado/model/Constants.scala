@@ -115,6 +115,8 @@ object Constants {
   val CONFIG_DIR_IN_CONFIG          = "config"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
   val EMPTY                         = "<empty>"
+  val READ_WITH_BRACKETS            = " (Read)"
+  val WRITE_WITH_BRACKETS           = " (Write)"
 
   // Stat files
   val JAVA_STATS   = "java.txt"
@@ -126,15 +128,20 @@ object Constants {
   val API      = "API"
 
   // Rule ids
-  val internalAPIRuleId   = "Sinks.API.InternalAPI"
-  val jmsConsumerRuleId   = "Messaging.Service.JMS.Consumer"
-  val kafkaConsumerRuleId = "Messaging.Queue.Kafka.Consumer"
-  val cookieWriteRuleId   = "Storages.Web.Cookie.Write"
-  val cookieSourceRuleId  = "Data.Sensitive.OnlineIdentifiers.Cookies"
-  val ignoredSinks        = "ignoredSinks"
-  val apiSinks            = "apiSinks"
-  val apiHttpLibraries    = "apiHttpLibraries"
-  val apiIdentifier       = "apiIdentifier"
+  val internalAPIRuleId            = "Sinks.API.InternalAPI"
+  val thirdPartiesAPIRuleId        = "Sinks.ThirdParties.API"
+  val jmsConsumerRuleId            = "Messaging.Service.JMS.Consumer"
+  val kafkaConsumerRuleId          = "Messaging.Queue.Kafka.Consumer"
+  val cookieWriteRuleId            = "Storages.Web.Cookie.Write"
+  val cookieSourceRuleId           = "Data.Sensitive.OnlineIdentifiers.Cookies"
+  val ignoredSinks                 = "ignoredSinks"
+  val apiSinks                     = "apiSinks"
+  val apiHttpLibraries             = "apiHttpLibraries"
+  val apiIdentifier                = "apiIdentifier"
+  val apiGraphqlLibraries          = "apiGraphqlLibraries"
+  val apiGraphqlReadSink           = "apiGraphqlReadSink"
+  val apiGraphqlWriteSink          = "apiGraphqlWriteSink"
+  val clientCreationBaseUrlPattern = "clientCreationBaseUrlPattern"
 
   // External script keys
   val postExportTrigger = "postExportTrigger"
