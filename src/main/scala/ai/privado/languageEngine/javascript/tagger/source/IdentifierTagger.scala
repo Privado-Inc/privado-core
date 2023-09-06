@@ -29,10 +29,11 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate
 
 import java.util.UUID
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
@@ -187,7 +188,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     val typeDeclsExtendingTypeName = cpg.typeDecl.filter(_.inheritsFromTypeFullName.contains(typeDeclName)).dedup.l
 
     typeDeclsExtendingTypeName.foreach(typeDecl => {
-      taggerCache.typeDeclDerivedByExtendsCache.addOne(typeDecl.fullName, typeDecl)
+      taggerCache.typeDeclDerivedByExtendsCache.put(typeDecl.fullName, typeDecl)
 
       taggerCache
         .typeDeclMemberCache(typeDeclName)
@@ -201,10 +202,10 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     typeDeclsExtendingTypeName.fullName.dedup.foreach(typeDeclVal => {
 
       if (!taggerCache.typeDeclExtendingTypeDeclCache.contains(typeDeclVal))
-        taggerCache.typeDeclExtendingTypeDeclCache.addOne(typeDeclVal -> mutable.HashMap[String, TypeDecl]())
+        taggerCache.typeDeclExtendingTypeDeclCache.put(typeDeclVal, TrieMap[String, TypeDecl]())
       taggerCache
-        .typeDeclExtendingTypeDeclCache(typeDeclVal)
-        .addOne(ruleInfo.id -> cpg.typeDecl.where(_.fullNameExact(typeDeclName)).head)
+        .getTypeDeclExtendingTypeDeclCacheItem(typeDeclVal)
+        .put(ruleInfo.id, cpg.typeDecl.where(_.fullNameExact(typeDeclName)).head)
 
       val impactedObjects =
         cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this")).l ::: cpg.parameter
@@ -224,16 +225,23 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
           Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
           ruleInfo.id
         )
+
         // Tag for storing memberName in derived Objects -> patient (patient extends user) --> (email, password)
-        taggerCache
-          .typeDeclMemberCache(typeDeclName)(ruleInfo.id)
-          .name
-          .foreach(memberName =>
+        // Get the option of the set of members
+        val membersOption = taggerCache.typeDeclMemberCache
+          .get(typeDeclVal)
+          .flatMap(_.get(ruleInfo.id))
+
+        // Access the name property if it's present
+        membersOption.foreach { members =>
+          members.foreach { member =>
             storeForTag(builder, impactedObject, ruleCache)(
               ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
-              memberName
+              member.name // Assuming "name" is a property of the Member class
             )
-          )
+          }
+        }
+
       })
     })
   }

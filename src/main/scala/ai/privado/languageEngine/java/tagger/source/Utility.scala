@@ -127,7 +127,7 @@ object Utility {
         .toSet
     val allMembers = typeDeclNode.member.name.toSet ++ inheritedMembers
 
-    val personalMembers    = taggerCache.typeDeclMemberCache(typeDeclFullName).flatMap(_._2).name.toSet
+    val personalMembers    = taggerCache.getTypeDeclMemberCacheItem(typeDeclFullName).flatMap(_._2).name.toSet
     val nonPersonalMembers = allMembers.diff(personalMembers)
     (personalMembers, nonPersonalMembers)
   }
