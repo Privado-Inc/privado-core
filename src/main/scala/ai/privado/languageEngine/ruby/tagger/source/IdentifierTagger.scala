@@ -51,9 +51,9 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     })
 
     val regexMatchingCalls = cachedCall.name(rulePattern).l
-    regexMatchingCalls.foreach(identifier => {
-      storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_CALL.toString)
-      addRuleTags(builder, identifier, ruleInfo, ruleCache)
+    regexMatchingCalls.foreach(call => {
+      storeForTag(builder, call, ruleCache)(InternalTag.VARIABLE_REGEX_CALL.toString)
+      addRuleTags(builder, call, ruleInfo, ruleCache)
     })
 
     val regexMatchingFieldIdentifiersIdentifiers =
