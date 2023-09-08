@@ -78,7 +78,7 @@ object Utilities {
       semantics = semanticsP,
       config =
         if (AppCache.repoLanguage == Language.RUBY || config.limitArgExpansionDataflows > -1) then
-          EngineConfig(maxCallDepth = 8, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
+          EngineConfig(maxCallDepth = maxCallDepthP, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
         else EngineConfig(maxCallDepth = maxCallDepthP)
     )
   }
