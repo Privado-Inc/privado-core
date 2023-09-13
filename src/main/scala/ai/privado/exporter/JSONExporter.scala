@@ -89,7 +89,6 @@ object JSONExporter {
       output.addOne(Constants.probableSinks                -> probableSinkExporter.getProbableSinks.asJson)
 
       // Future creates a thread and starts resolving the function call asynchronously
-
       val sources = Future {
         val _sources = sourceExporter.getSources
         output.addOne(Constants.sources -> _sources.asJson)
@@ -118,58 +117,6 @@ object JSONExporter {
 
       val violationResult = policyAndThreatExporter.getViolations(repoPath)
       output.addOne(Constants.violations -> violationResult.asJson)
-
-      // Called when the asynchronous call is completed
-//      sources.onComplete({
-//        case Success(value) => {
-//          output.addOne(Constants.sources -> value.asJson)
-//          logger.info("Completed sources export.")
-//        }
-//        case Failure(e) => {
-//          println(e)
-//        }
-//      })
-//
-//      sinks.onComplete({
-//        case Success(value) => {
-//          output.addOne(Constants.sinks -> value.asJson)
-//          logger.info("Completed sinks export.")
-//        }
-//        case Failure(e) => {
-//          println(e)
-//        }
-//      })
-//
-//      processing.onComplete({
-//        case Success(value) => {
-//          output.addOne(Constants.processing -> value.asJson)
-//          logger.info("Completed processing export.")
-//
-//        }
-//        case Failure(e) => {
-//          println(e)
-//        }
-//      })
-//
-//      collections.onComplete({
-//        case Success(value) => {
-//          output.addOne(Constants.collections -> value.asJson)
-//          logger.info("Completed collections export.")
-//        }
-//        case Failure(e) => {
-//          println(e)
-//        }
-//      })
-//
-//      processingSinks.onComplete({
-//        case Success(value) => {
-//          output.addOne(Constants.sinkProcessing -> value.asJson)
-//          logger.info("Completed sinks export.")
-//        }
-//        case Failure(e) => {
-//          println(e)
-//        }
-//      })
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       ruleCache.getRule.sinks.foreach(sinkRule => {
