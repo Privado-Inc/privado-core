@@ -113,7 +113,6 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
       storeForTag(builder, externalScriptCall, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
 
-
     // Identification of script tag generated dynamically in code
     // const n = document.createElement("script");
     // n.type = "text/javascript";
