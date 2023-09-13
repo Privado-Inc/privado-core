@@ -97,6 +97,23 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
       storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
 
+    // Identification of script tags from loadExternalScript() method
+    // await loadExternalScript(`https://widget.intercom.io/widget/${INTERCOM_BOT_ID}`, 'Intercom');
+    val loadExternalScriptCalls = cpg.call("loadExternalScript").l
+
+    loadExternalScriptCalls.foreach(externalScriptCall => {
+      var newRuleIdToUse = ruleInfo.id
+      val domain         = getDomainFromTemplates(externalScriptCall.code)
+      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, externalScriptCall, ruleInfo, ruleCache)
+      else {
+        newRuleIdToUse = ruleInfo.id + "." + domain._2
+        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+        addRuleTags(builder, externalScriptCall, ruleInfo, ruleCache, Some(newRuleIdToUse))
+      }
+      storeForTag(builder, externalScriptCall, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
+    })
+
+
     // Identification of script tag generated dynamically in code
     // const n = document.createElement("script");
     // n.type = "text/javascript";
