@@ -15,7 +15,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class RubyPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".env") {
+class RubyEnvPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".env") {
 
   val mongourl = "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
 
@@ -31,10 +31,10 @@ class RubyPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".env") 
       |db_name = ENV.fetch["DB_NAME"]
       |""".stripMargin
 
-  "ConfigFilePass" should {
+  "EnvConfigFilePass" should {
     "create a file node for config file" in {
       val files = cpg.file.name.l
-      files.filter(_.endsWith(".env")).head.endsWith("/config.env") shouldBe true
+      files.filter(_.endsWith(".env")).head.endsWith("config.env") shouldBe true
     }
 
     "create a 'property' node" in {
@@ -44,7 +44,7 @@ class RubyPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".env") 
 
     "connect property node to file" in {
       val List(filename: String) = cpg.property.file.name.dedup.l
-      filename.endsWith("/config.env") shouldBe true
+      filename.endsWith("config.env") shouldBe true
     }
 
     "process another way to connect literals" in {
@@ -65,42 +65,5 @@ class RubyPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".env") 
       lit.originalProperty.head.value shouldBe mongourl
       lit.originalPropertyValue.head shouldBe mongourl
     }
-  }
-}
-
-abstract class RubyPropertiesFilePassTestBase(fileExtension: String)
-    extends AnyWordSpec
-    with Matchers
-    with BeforeAndAfterAll {
-  var cpg: Cpg = _
-  val configFileContents: String
-  val codeFileContents: String
-  var inputDir: File  = _
-  var outputDir: File = _
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / s"config$fileExtension").write(configFileContents)
-    (inputDir / s"code.rb").write(codeFileContents)
-    outputDir = File.newTemporaryDirectory()
-
-    val config  = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
-    val rubySrc = new RubySrc2Cpg()
-    val xtocpg = rubySrc.createCpg(config).map { cpg =>
-      applyDefaultOverlays(cpg)
-      cpg
-    }
-
-    cpg = xtocpg.get
-    new PropertyParserPass(cpg, inputDir.pathAsString, new RuleCache(), Language.RUBY).createAndApply()
-    new RubyPropertyLinkerPass(cpg).createAndApply()
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    cpg.close()
-    outputDir.delete()
-    super.afterAll()
   }
 }
