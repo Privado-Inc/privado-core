@@ -90,12 +90,12 @@ object JSONExporter {
 
       // Future creates a thread and starts resolving the function call asynchronously
       val sources = Future {
-        val _sources = sourceExporter.getSources
+        val _sources = Try(sourceExporter.getSources).getOrElse(List())
         output.addOne(Constants.sources -> _sources.asJson)
         _sources
       }
       val processing = Future {
-        val _processing = sourceExporter.getProcessing
+        val _processing = Try(sourceExporter.getProcessing).getOrElse(List())
         output.addOne(Constants.processing -> _processing.asJson)
         _processing
       }
@@ -105,17 +105,17 @@ object JSONExporter {
         _sinks
       }
       val processingSinks = Future {
-        val _processingSinks = sinkExporter.getProcessing
+        val _processingSinks = Try(sinkExporter.getProcessing).getOrElse(List())
         output.addOne(Constants.sinkProcessing -> _processingSinks.asJson)
         _processingSinks
       }
       val collections = Future {
-        val _collections = collectionExporter.getCollections
+        val _collections = Try(collectionExporter.getCollections).getOrElse(List())
         output.addOne(Constants.collections -> _collections.asJson)
         _collections
       }
 
-      val violationResult = policyAndThreatExporter.getViolations(repoPath)
+      val violationResult = Try(policyAndThreatExporter.getViolations(repoPath)).getOrElse(List())
       output.addOne(Constants.violations -> violationResult.asJson)
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
