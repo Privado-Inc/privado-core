@@ -26,15 +26,15 @@ package ai.privado.exporter
 import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
 import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.Constants.{outputDirectoryName, value}
 import ai.privado.model.exporter.DataFlowSubCategoryModel
 import ai.privado.model.{Constants, PolicyThreatType}
 import ai.privado.model.exporter.DataFlowSourceIntermediateModel
-import ai.privado.model.exporter.SourceEncoderDecoder._
-import ai.privado.model.exporter.DataFlowEncoderDecoder._
-import ai.privado.model.exporter.ViolationEncoderDecoder._
-import ai.privado.model.exporter.CollectionEncoderDecoder._
-import ai.privado.model.exporter.SinkEncoderDecoder._
+import ai.privado.model.exporter.SourceEncoderDecoder.*
+import ai.privado.model.exporter.DataFlowEncoderDecoder.*
+import ai.privado.model.exporter.ViolationEncoderDecoder.*
+import ai.privado.model.exporter.CollectionEncoderDecoder.*
+import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.script.ExternalScalaScriptRunner
 import better.files.File
 import privado_core.BuildInfo
@@ -48,12 +48,12 @@ import org.slf4j.LoggerFactory
 import java.math.BigInteger
 import java.util.Calendar
 import scala.collection.mutable
-import scala.concurrent._
+import scala.concurrent.*
 import ExecutionContext.Implicits.global
-import duration._
+import duration.*
 import scala.language.postfixOps
-import scala.util.{Failure, Success}
-import io.shiftleft.semanticcpg.language._
+import scala.util.{Failure, Success, Try}
+import io.shiftleft.semanticcpg.language.*
 
 object JSONExporter {
 
@@ -88,68 +88,88 @@ object JSONExporter {
       output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
       output.addOne(Constants.probableSinks                -> probableSinkExporter.getProbableSinks.asJson)
 
-      val sources = Future(
-        sourceExporter.getSources
-      ) // Future creates a thread and starts resolving the function call asynchronously
-      val processing      = Future(sourceExporter.getProcessing)
-      val sinks           = Future(sinkExporter.getSinks)
-      val processingSinks = Future(sinkExporter.getProcessing)
-      val collections     = Future(collectionExporter.getCollections)
+      // Future creates a thread and starts resolving the function call asynchronously
+
+      val sources = Future {
+        val _sources = sourceExporter.getSources
+        output.addOne(Constants.sources -> _sources.asJson)
+        _sources
+      }
+      val processing = Future {
+        val _processing = sourceExporter.getProcessing
+        output.addOne(Constants.processing -> _processing.asJson)
+        _processing
+      }
+      val sinks = Future {
+        val _sinks = Try(sinkExporter.getSinks).getOrElse(List())
+        output.addOne(Constants.sinks -> _sinks.asJson)
+        _sinks
+      }
+      val processingSinks = Future {
+        val _processingSinks = sinkExporter.getProcessing
+        output.addOne(Constants.sinkProcessing -> _processingSinks.asJson)
+        _processingSinks
+      }
+      val collections = Future {
+        val _collections = collectionExporter.getCollections
+        output.addOne(Constants.collections -> _collections.asJson)
+        _collections
+      }
 
       val violationResult = policyAndThreatExporter.getViolations(repoPath)
       output.addOne(Constants.violations -> violationResult.asJson)
 
       // Called when the asynchronous call is completed
-      sources.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.sources -> value.asJson)
-          logger.info("Completed sources export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      sinks.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.sinks -> value.asJson)
-          logger.info("Completed sinks export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      processing.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.processing -> value.asJson)
-          logger.info("Completed processing export.")
-
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      collections.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.collections -> value.asJson)
-          logger.info("Completed collections export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
-
-      processingSinks.onComplete({
-        case Success(value) => {
-          output.addOne(Constants.sinkProcessing -> value.asJson)
-          logger.info("Completed sinks export.")
-        }
-        case Failure(e) => {
-          println(e)
-        }
-      })
+//      sources.onComplete({
+//        case Success(value) => {
+//          output.addOne(Constants.sources -> value.asJson)
+//          logger.info("Completed sources export.")
+//        }
+//        case Failure(e) => {
+//          println(e)
+//        }
+//      })
+//
+//      sinks.onComplete({
+//        case Success(value) => {
+//          output.addOne(Constants.sinks -> value.asJson)
+//          logger.info("Completed sinks export.")
+//        }
+//        case Failure(e) => {
+//          println(e)
+//        }
+//      })
+//
+//      processing.onComplete({
+//        case Success(value) => {
+//          output.addOne(Constants.processing -> value.asJson)
+//          logger.info("Completed processing export.")
+//
+//        }
+//        case Failure(e) => {
+//          println(e)
+//        }
+//      })
+//
+//      collections.onComplete({
+//        case Success(value) => {
+//          output.addOne(Constants.collections -> value.asJson)
+//          logger.info("Completed collections export.")
+//        }
+//        case Failure(e) => {
+//          println(e)
+//        }
+//      })
+//
+//      processingSinks.onComplete({
+//        case Success(value) => {
+//          output.addOne(Constants.sinkProcessing -> value.asJson)
+//          logger.info("Completed sinks export.")
+//        }
+//        case Failure(e) => {
+//          println(e)
+//        }
+//      })
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
       ruleCache.getRule.sinks.foreach(sinkRule => {
