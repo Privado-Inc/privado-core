@@ -173,7 +173,9 @@ object DuplicateFlowProcessor {
       if (privadoScanConfig.generateAuditReport) {
         AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
       }
-      if (privadoScanConfig.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA) {
+      if (
+        privadoScanConfig.disableFlowSeparationByDataElement || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
+      ) {
         // Filter out flows where source is cookie and sink is cookie read
         if (
           !(flow.sinkId.startsWith(Constants.cookieWriteRuleId) && flow.pathSourceId
