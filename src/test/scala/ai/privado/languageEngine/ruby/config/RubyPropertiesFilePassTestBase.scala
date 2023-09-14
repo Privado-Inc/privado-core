@@ -13,7 +13,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 abstract class RubyPropertiesFilePassTestBase(fileExtension: String)
-  extends AnyWordSpec
+    extends AnyWordSpec
     with Matchers
     with BeforeAndAfterAll {
   var cpg: Cpg = _
