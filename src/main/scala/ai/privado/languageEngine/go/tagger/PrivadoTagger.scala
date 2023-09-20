@@ -25,8 +25,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new LiteralTagger(cpg, ruleCache).createAndApply()
 
-    new SqlQueryTagger(cpg, ruleCache).createAndApply()
-
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
