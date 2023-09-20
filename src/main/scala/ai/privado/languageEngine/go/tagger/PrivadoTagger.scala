@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
+import ai.privado.tagger.sink.RegularSinkTagger
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -24,7 +25,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new LiteralTagger(cpg, ruleCache).createAndApply()
 
+    new SqlQueryTagger(cpg, ruleCache).createAndApply()
+
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+
+    new RegularSinkTagger(cpg, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
 
