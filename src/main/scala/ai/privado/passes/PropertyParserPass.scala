@@ -74,7 +74,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
         (configFiles(projectRoot, Set(FileExtensions.ENV)) ++ configFiles(
           projectRoot,
           Set(FileExtensions.YML, FileExtensions.YAML)
-        ).filter(_.matches(".*settings.*"))).toArray
+        ).filter(_.matches(".*(settings|config).*"))).toArray
       // Ruby has a lot of yaml files so creating property nodes for all of them, exposes a lot of property nodes,
       // which are incorrect, so we go by the approach of being selective and creating property nodes for only the impacted files
     }
