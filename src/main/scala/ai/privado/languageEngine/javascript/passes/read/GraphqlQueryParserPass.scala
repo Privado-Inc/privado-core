@@ -76,12 +76,6 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
             }.toList)
             val fields = extractFields(selections.toList)
 
-//            println(operation)
-//            variableDefs.foreach(i => println("Variables: " + i))
-//            objectTypeDefs.foreach(i => println("Object Type: " + i))
-//            inputValueDefs.foreach(i => println("InputValueDefs: " + i))
-//            fields.foreach(i => println("Fields: " + i))
-
             // Process the GQL Nodes
             processGQLReadNode(builder, node, name.getOrElse("Unnamed"), fields ++ variableDefs)
             List(operation) ++ variableDefs ++ objectTypeDefs ++ inputValueDefs ++ fields
@@ -97,7 +91,7 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
         // }
         document.definitions.collect { case objDef: ObjectTypeDefinition =>
           extractObjectTypeDetails(builder, node, objDef)
-        }.flatten
+        }
 
       case Failure(error) =>
         logger.info(s"Syntax error: ${error.getMessage}")
@@ -105,11 +99,7 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
   }
 
   // Function to extract fields from ObjectTypeDefinition
-  def extractObjectTypeDetails(
-    builder: DiffGraphBuilder,
-    node: Expression,
-    objDef: ObjectTypeDefinition
-  ): List[String] = {
+  def extractObjectTypeDetails(builder: DiffGraphBuilder, node: Expression, objDef: ObjectTypeDefinition): Unit = {
     val typeName = objDef.name
     val fields = objDef.fields.flatMap {
       case field: FieldDefinition =>
@@ -121,7 +111,6 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
     }
 
     processGQLReadNode(builder, node, typeName, fields.toList)
-    s"Object Type: $typeName" +: fields.toList
   }
 
   // Function to extract fields
