@@ -524,7 +524,7 @@ object DuplicateFlowProcessor {
     ) { // To explicity remove Sources which result in FP
       isCorrect = false
     } else if (
-      sinkId.equals(Constants.cookieWriteRuleId) && pathSourceId.equals(Constants.cookieSourceRuleId)
+      sinkId.startsWith(Constants.cookieWriteRuleId) && pathSourceId.equals(Constants.cookieSourceRuleId)
     ) // To remove cookie flows which are FP's
       isCorrect = false
     isCorrect
