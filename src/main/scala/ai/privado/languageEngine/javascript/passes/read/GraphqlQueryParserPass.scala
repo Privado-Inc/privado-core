@@ -94,7 +94,7 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
         }
 
       case Failure(error) =>
-        logger.info(s"Syntax error: ${error.getMessage}")
+        logger.debug(s"GQL Parser Syntax error: ${error.getMessage}")
     }
   }
 
@@ -141,52 +141,10 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
 
   def processGQLReadNode(builder: DiffGraphBuilder, node: Expression, tableName: String, columns: List[String]) = {
     // Match classes which end with tableName/ObjectName
-    val sensitiveMemberRuleIds = sensitiveClasses.find(s => s.matches(s"(?i).*${tableName}")) match {
-      case Some(value) => sensitiveClassesWithMatchedRules(value).keys.l
-      case None        => List.empty
-    }
+    ruleCache.getRule.sources
+      .filter(rule => isColumnNameMatchingWithRule(rule.id, columns))
+      .foreach(rule => addTagsToNode(rule.id, node, builder))
 
-    if (columns.length == 1 && columns(0) == "*") {
-      if (sensitiveMemberRuleIds.nonEmpty)
-        sensitiveMemberRuleIds.foreach(ruleId => addTagsToNode(ruleId, node, builder))
-      else {
-        /* Run dataflow and verify the data-elements read from the call,
-              Ex - resultSet = statement.executeQuery("SELECT * FROM mytable");
-              // Loop through the result set and print out each row
-              while (resultSet.next()) {
-                  int id = resultSet.getInt("id");
-                  String firstName = resultSet.getString("name");
-                  int age = resultSet.getInt("age");
-                  System.out.println("ID: " + id + ", Name: " + firstName + ", Age: " + age)
-              }
-         */
-        val dataElementSinks =
-          Dataflow
-            .getSources(cpg)
-            .filterNot(_.isMember)
-            .map(_.asInstanceOf[CfgNode])
-            .l
-
-        val readFlow = dataElementSinks.reachableByFlows(node)(Utilities.getEngineContext(4)).l
-        if (readFlow.nonEmpty) {
-          // As a flow is present from Select query to a Data element we can say, the data element is read from the query
-          readFlow
-            .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
-            .value
-            .foreach(ruleId => addTagsToNode(ruleId, node, builder))
-        }
-      }
-    } else {
-      if (sensitiveMemberRuleIds.nonEmpty)
-        sensitiveMemberRuleIds
-          .filter(ruleId => isColumnNameMatchingWithRule(ruleId, columns))
-          .foreach(ruleId => addTagsToNode(ruleId, node, builder))
-      else
-        ruleCache.getRule.sources
-          .filter(rule => isColumnNameMatchingWithRule(rule.id, columns))
-          .foreach(rule => addTagsToNode(rule.id, node, builder))
-
-    }
   }
 
   /** Return True if any column name matches the pattern
