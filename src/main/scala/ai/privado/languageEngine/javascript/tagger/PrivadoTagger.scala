@@ -26,6 +26,7 @@ package ai.privado.languageEngine.javascript.tagger
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
+import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPITagger, RegularSinkTagger}
 import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
@@ -62,6 +63,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new JSAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
 
     new GraphqlAPITagger(cpg, ruleCache).createAndApply()
+
+    new GraphqlQueryParserPass(cpg, ruleCache, taggerCache).createAndApply()
 
     new JSDBConfigTagger(cpg).createAndApply()
 

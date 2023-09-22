@@ -136,7 +136,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
                 .value
                 .dedup
                 .toArray
-              if (apiurls != null && apiurls.isEmpty) {
+              if (apiurls != null && (apiurls.isEmpty || apiurls.headOption.contains(Constants.API))) {
                 apiurls = cpg.templateDom
                   .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
                   .tag
