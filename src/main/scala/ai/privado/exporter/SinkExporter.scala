@@ -129,23 +129,26 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           val ruleInfoExporterModel = ExporterUtility.getRuleInfoForExporting(ruleCache, sinkId)
           val apiUrl = {
             if (rule.nodeType == NodeType.API) {
-              var apiurls = cpg.call
+              val callUrls = cpg.call
                 .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
                 .tag
                 .nameExact(Constants.apiUrl + rule.id)
                 .value
                 .dedup
                 .toArray
-              if (apiurls != null && (apiurls.isEmpty || apiurls.headOption.contains(Constants.API))) {
-                apiurls = cpg.templateDom
-                  .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
-                  .tag
-                  .nameExact(Constants.apiUrl + rule.id)
-                  .value
-                  .dedup
-                  .toArray
-              }
-              apiurls
+              val apiUrls =
+                if (callUrls == null || callUrls.isEmpty || callUrls.headOption.contains(Constants.API)) {
+                  cpg.templateDom
+                    .where(_.tag.nameExact(Constants.id).valueExact(rule.id))
+                    .tag
+                    .nameExact(Constants.apiUrl + rule.id)
+                    .value
+                    .dedup
+                    .toArray
+                } else {
+                  callUrls
+                }
+              if (apiUrls.nonEmpty) apiUrls else callUrls
             } else Array[String]()
           }
           val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
