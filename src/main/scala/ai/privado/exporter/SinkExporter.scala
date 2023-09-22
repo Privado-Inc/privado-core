@@ -67,7 +67,16 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           processingMap(sinkId).addOne(sink)
         }
       }
-      sink.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
+      sink.tag
+        .nameExact(Constants.id)
+        .value
+        .filter { sinkId =>
+          val apiUrlVal = sink.tag.nameExact(Constants.apiUrl + sinkId).value.nextOption().getOrElse("")
+          !(apiUrlVal == Constants.API && sinkId != Constants.thirdPartiesAPIRuleId) && !sinkId.startsWith(
+            Constants.privadoDerived
+          )
+        }
+        .foreach(addToMap)
       sink.tag.name(Constants.privadoDerived + ".*").value.foreach(addToMap)
     })
     processingMap
