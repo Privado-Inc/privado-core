@@ -31,8 +31,22 @@ class RubyPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     }
   }
 
+  private def matchYamlAssignmentCalls(propertyName: String): List[AstNode] = {
+    if (propertyName.contains("**")) {
+      List()
+    } else {
+      val pattern =
+        s".*Settings.*${propertyName}.*"
+      cachedCall.astChildren.code(pattern).l
+    }
+  }
+
   private def connectEnvCallsToProperties(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
     matchEnvAssignmentCalls(propertyNode.name.strip()).foreach(member => {
+      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
+      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+    })
+    matchYamlAssignmentCalls(propertyNode.name.strip()).foreach(member => {
       builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
       builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     })
