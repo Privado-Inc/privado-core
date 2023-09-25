@@ -38,7 +38,7 @@ import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
-  extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   implicit val resolver: ICallResolver                              = NoResolve
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
@@ -63,7 +63,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
       addRuleTags(builder, member, ruleInfo, ruleCache)
     })
-/*
+    /*
     val regexMatchingFieldIdentifiersIdentifiers =
       cpg.fieldAccess
         .where(
@@ -78,19 +78,19 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
-  */
+     */
     // Step 2.1 --> contains step 2.2, 2.3
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
 
   }
 
   /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
-   */
+    */
   private def tagObjectOfTypeDeclHavingMemberName(
-                                                   builder: BatchedUpdate.DiffGraphBuilder,
-                                                   memberNameRegex: String,
-                                                   ruleInfo: RuleInfo
-                                                 ): Unit = {
+    builder: BatchedUpdate.DiffGraphBuilder,
+    memberNameRegex: String,
+    ruleInfo: RuleInfo
+  ): Unit = {
     val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
       .where(_.member.name(memberNameRegex).filterNot(item => item.name.equals(item.name.toUpperCase)))
       .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(memberNameRegex).l))
@@ -105,7 +105,9 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
           val typeDeclMemberName = typeDeclMember.name
           // Have started tagging Parameters as well, as in collection points sometimes there is no referencing Identifier present for a local
           val impactedObjects =
-            cpg.identifier.where(_.typeFullName(typeDeclFullName)).l ::: cpg.parameter.where(_.typeFullName(typeDeclFullName)).l
+            cpg.identifier
+              .where(_.typeFullName(typeDeclFullName))
+              .l ::: cpg.parameter.where(_.typeFullName(typeDeclFullName)).l
           impactedObjects
             .foreach(impactedObject => {
               if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
@@ -145,12 +147,12 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   }
 
   /** Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
-   */
+    */
   private def tagObjectOfTypeDeclHavingMemberType(
-                                                   builder: BatchedUpdate.DiffGraphBuilder,
-                                                   memberType: String,
-                                                   ruleInfo: RuleInfo
-                                                 ): Unit = {
+    builder: BatchedUpdate.DiffGraphBuilder,
+    memberType: String,
+    ruleInfo: RuleInfo
+  ): Unit = {
     // stores tuple(Member, TypeDeclFullName)
     val typeDeclHavingMemberTypeTuple =
       cpg.typeDecl.member.typeFullName(memberType).map(member => (member, member.typeDecl.fullName)).dedup.l
@@ -183,18 +185,18 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   }
 
   /** Function to tag all the field access operations and all the methods whose return code matches the member regex
-   * @param builder
-   * @param typeDeclVal
-   * @param memberNameRegex
-   * @param ruleInfo
-   * @param typeDeclMemberName
-   */
+    * @param builder
+    * @param typeDeclVal
+    * @param memberNameRegex
+    * @param ruleInfo
+    * @param typeDeclMemberName
+    */
   private def tagAllFieldAccessAndGetters(
-                                           builder: BatchedUpdate.DiffGraphBuilder,
-                                           typeDeclVal: String,
-                                           ruleInfo: RuleInfo,
-                                           typeDeclMemberName: String
-                                         ): Unit = {
+    builder: BatchedUpdate.DiffGraphBuilder,
+    typeDeclVal: String,
+    ruleInfo: RuleInfo,
+    typeDeclMemberName: String
+  ): Unit = {
     val impactedGetters = getFieldAccessCallsMatchingRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
       .filterNot(item => item.code.equals(item.code.toUpperCase))
 
