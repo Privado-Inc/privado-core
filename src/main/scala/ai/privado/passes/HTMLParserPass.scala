@@ -166,8 +166,14 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       if (element.isInstanceOf[HtmlScript]) {
         val scriptElement = element.asInstanceOf[HtmlScript]
         val scriptContent = scriptElement.getTextContent()
-        if (scriptContent.nonEmpty) {
-          val attributeStr = s"content=\"${scriptContent}\""
+
+        // Remove single-line comments
+        val scriptContentWithoutSingleLineComments = scriptContent.replaceAll("//.*?(\\n|$)", "")
+        // Remove multi-line comments
+        val scriptContentWithoutComments = scriptContentWithoutSingleLineComments.replaceAll("/\\*.*?\\*/", "")
+
+        if (scriptContentWithoutComments.nonEmpty) {
+          val attributeStr = s"content=\"${scriptContentWithoutComments}\""
           elementAttributesStr += " " + attributeStr
         }
       }
