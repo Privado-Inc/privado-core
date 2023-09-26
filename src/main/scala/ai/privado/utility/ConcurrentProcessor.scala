@@ -13,7 +13,7 @@ import scala.concurrent.{Await, Future}
 object ConcurrentProcessor {
   val zContext = new ZContext()
   zContext.getContext.setMaxSockets(4096)
-  val STOP     = "STOP"
+  val STOP = "STOP"
 }
 
 /** Concurrent processor to process the individual processing of the data in parallel threads for each item of the array
