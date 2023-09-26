@@ -28,9 +28,10 @@ import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
+import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
-import ai.privado.model._
+import ai.privado.model.*
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
@@ -348,6 +349,9 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
                 RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
+              case language if language == Languages.KOTLIN =>
+                println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
+                KotlinProcessor.createKotlinCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(

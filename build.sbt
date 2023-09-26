@@ -29,6 +29,7 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "javasrc2cpg"   % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
+  "io.joern"             %% "kotlin2cpg"   % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
