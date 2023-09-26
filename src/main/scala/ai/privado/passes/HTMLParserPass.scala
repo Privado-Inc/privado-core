@@ -97,7 +97,7 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       val htmlElement: HtmlElement = page.getFirstByXPath("//*")
       processElement(builder, htmlElement, fileNode, htmlFilePath)
     } catch {
-      case _: Throwable => logger.debug(s"Some error while parsing HTML file -> ${htmlFilePath}")
+      case _: Throwable => logger.trace(s"Some error while parsing HTML file -> ${htmlFilePath}")
     }
   }
 
