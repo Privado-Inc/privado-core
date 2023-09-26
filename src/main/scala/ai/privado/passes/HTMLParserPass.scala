@@ -28,6 +28,7 @@ import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
 import com.gargoylesoftware.htmlunit.html._
+import com.gargoylesoftware.htmlunit.html.HtmlScript
 import com.gargoylesoftware.htmlunit.{BrowserVersion, WebClient}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTemplateDom}
@@ -85,6 +86,12 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       val webClient = new WebClient(
         new BrowserVersion.BrowserVersionBuilder(BrowserVersion.CHROME).setOnLine(false).build()
       )
+      val options = webClient.getOptions
+
+      // Configure options to ignore certain errors
+      options.setThrowExceptionOnFailingStatusCode(false) // Do not throw exceptions for failing HTTP status codes
+      options.setThrowExceptionOnScriptError(false)       // Do not throw exceptions for JavaScript errors
+
       val htmlFile                 = new JFile(htmlFilePath)
       val page: HtmlPage           = webClient.getPage(htmlFile.toURI.toURL)
       val htmlElement: HtmlElement = page.getFirstByXPath("//*")
@@ -113,7 +120,6 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
     val (elementAttributesStr, attributeNodes) = processAttributes(builder, element, fileNode)
     val (openElementStr, openElement)          = processOpenElement(builder, element, fileNode, elementAttributesStr)
     val (closingElementStr, closingElement)    = processClosingElement(builder, element, fileNode)
-    logger.trace(s"processing element for file -> ${htmlFilePath}  ->>> ${openElementStr} ${closingElementStr}")
     val htmlElement = createTemplateDomNode(
       Constants.HTMLElement,
       s"${openElementStr} ${closingElementStr}",
@@ -155,6 +161,18 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       elementAttributesStr += " " + attributeStr
       attributeNodes.addOne(attributeNode)
     })
+
+    if (element.getTagName.equalsIgnoreCase("script")) {
+      if (element.isInstanceOf[HtmlScript]) {
+        val scriptElement = element.asInstanceOf[HtmlScript]
+        val scriptContent = scriptElement.getTextContent()
+        if (scriptContent.nonEmpty) {
+          val attributeStr = s"content=\"${scriptContent}\""
+          elementAttributesStr += " " + attributeStr
+        }
+      }
+    }
+
     (elementAttributesStr, attributeNodes.toList)
   }
 
