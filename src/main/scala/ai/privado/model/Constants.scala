@@ -157,6 +157,8 @@ object Constants {
   val HTMLElementAttribute = "HTMLElementAttribute"
   val HTMLScriptElement    = "HTMLScriptElement"
 
+  val UnknownDomain = "unknown-domain"
+
   val annotations       = "annotations"
   val default           = "default"
   val semanticDelimeter = "_A_"

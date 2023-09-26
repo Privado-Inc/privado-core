@@ -85,24 +85,27 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     // Tag the respective templateDom node as API sink
     val scriptTags =
       cpg.templateDom
-        .name(Constants.jsxElement)
+        .name(s"(?i)(${Constants.jsxElement}|${Constants.HTMLElement})")
         .code("(?i)[\\\"]*<(script|iframe).*" + ruleInfo.combinedRulePattern + ".*")
         .l
     scriptTags.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
-      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
-      else {
-        newRuleIdToUse = ruleInfo.id + "." + domain._2
-        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
-        addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+
+      if (!domain._1.equals(Constants.UnknownDomain)) {
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
+        else {
+          newRuleIdToUse = ruleInfo.id + "." + domain._2
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+          addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+        }
+        storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
       }
-      storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
 
     // Identification of script tags from loadExternalScript() method
     // await loadExternalScript(`https://widget.intercom.io/widget/${INTERCOM_BOT_ID}`, 'Intercom');
-    val loadExternalScriptCalls = cpg.call("loadExternalScript").l
+    val loadExternalScriptCalls = cpg.call("(loadExternalScript|loadThirdPartyScript)").l
 
     loadExternalScriptCalls.foreach(externalScriptCall => {
       var newRuleIdToUse = ruleInfo.id
