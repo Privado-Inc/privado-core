@@ -28,6 +28,7 @@ import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
+import ai.privado.languageEngine.go.processor.GoProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
 import ai.privado.model._
@@ -348,6 +349,10 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
                 RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
+              case language if language == Languages.GOLANG =>
+                println(s"${Calendar.getInstance().getTime} - Detected language 'Go'")
+                GoProcessor.createGoCpg(getProcessedRule(Language.GO), sourceRepoLocation, lang)
+
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
