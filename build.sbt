@@ -61,7 +61,8 @@ libraryDependencies ++= Seq(
   "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config"),
   "org.jruby"                        % "jruby-base"              % "9.4.3.0",
   "org.zeromq"                       % "jeromq"                  % "0.5.3",
-  "com.michaelpollmeier"  % "versionsort"  % "1.0.11"
+  "org.sangria-graphql"             %% "sangria"                 % "4.0.0",
+  "com.michaelpollmeier"             % "versionsort"             % "1.0.11"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
