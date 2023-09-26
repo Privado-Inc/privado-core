@@ -1,3 +1,25 @@
+/*
+ * This file is part of Privado OSS.
+ *
+ * Privado is an open source static code analysis tool to discover data flows in the code.
+ * Copyright (C) 2022 Privado, Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, contact support@privado.ai
+ *
+ */
 package ai.privado.languageEngine.go.tagger.source
 
 import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
@@ -6,7 +28,6 @@ import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
 class GoIdentifierTaggingTest extends GoTaggingTestBase {
-
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -45,7 +66,10 @@ class GoIdentifierTaggingTest extends GoTaggingTestBase {
 
     "tag user(of type structure) object" in {
       val List(userIdentifier) = cpg.identifier("user").lineNumber(13).l
-      userIdentifier.tag.where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)).value.head shouldBe "Data.Sensitive.FirstName"
+      userIdentifier.tag
+        .where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
+        .value
+        .head shouldBe "Data.Sensitive.FirstName"
       userIdentifier.tag.where(_.nameExact(Constants.id)).size shouldBe 1
       userIdentifier.tag.where(_.nameExact(Constants.catLevelOne)).value.head shouldBe "DerivedSources"
     }
