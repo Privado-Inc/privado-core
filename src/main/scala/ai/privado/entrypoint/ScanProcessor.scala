@@ -64,7 +64,7 @@ object ScanProcessor extends CommandProcessor {
       List[RuleInfo]()
     )
 
-  def parseRules(rulesPath: String, lang: Language): ConfigAndRules = {
+  def parseRules(rulesPath: String, lang: Set[Language]): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
@@ -78,11 +78,11 @@ object ScanProcessor extends CommandProcessor {
     }
 
     def filterByLang(rule: RuleInfo): Boolean =
-      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+      lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSemanticByLang(rule: Semantic): Boolean =
-      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+      lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSystemConfigByLang(rule: SystemConfig): Boolean =
-      rule.language == lang || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+      lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
         ir.listRecursively.toList.par
@@ -231,7 +231,7 @@ object ScanProcessor extends CommandProcessor {
       }
       .toList
   }
-  def processRules(lang: Language, ruleCache: RuleCache): ConfigAndRules = {
+  def processRules(lang: Set[Language], ruleCache: RuleCache): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
       internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
@@ -316,8 +316,9 @@ object ScanProcessor extends CommandProcessor {
     * @return
     *   processed rules
     */
-  def getProcessedRule(lang: Language): RuleCache = {
-    AppCache.repoLanguage = lang // we are caching the repo language here, and we will use this to get the repo's lang
+  def getProcessedRule(lang: Set[Language]): RuleCache = {
+    AppCache.repoLanguage =
+      lang.head // we are caching the repo language here, and we will use this to get the repo's lang
     val ruleCache      = new RuleCache()
     val processedRules = processRules(lang, ruleCache)
     ruleCache.setRule(processedRules)
@@ -339,19 +340,27 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, language)
+                JavaProcessor.createJavaCpg(getProcessedRule(Set(Language.JAVA)), sourceRepoLocation, language)
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(getProcessedRule(Language.JAVASCRIPT), sourceRepoLocation, lang)
+                JavascriptProcessor.createJavaScriptCpg(
+                  getProcessedRule(Set(Language.JAVASCRIPT)),
+                  sourceRepoLocation,
+                  lang
+                )
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
-                PythonProcessor.createPythonCpg(getProcessedRule(Language.PYTHON), sourceRepoLocation, lang)
+                PythonProcessor.createPythonCpg(getProcessedRule(Set(Language.PYTHON)), sourceRepoLocation, lang)
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
-                RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
+                RubyProcessor.createRubyCpg(getProcessedRule(Set(Language.RUBY)), sourceRepoLocation, lang)
               case language if language == Languages.KOTLIN =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
-                KotlinProcessor.createKotlinCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
+                KotlinProcessor.createKotlinCpg(
+                  getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
+                  sourceRepoLocation,
+                  lang
+                )
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
@@ -359,7 +368,7 @@ object ScanProcessor extends CommandProcessor {
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
 
-                  JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
+                  JavaProcessor.createJavaCpg(getProcessedRule(Set(Language.JAVA)), sourceRepoLocation, lang)
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation)
                 }
@@ -378,7 +387,7 @@ object ScanProcessor extends CommandProcessor {
   private def processCpgWithDefaultProcessor(sourceRepoLocation: String) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     println(s"Running scan with default processor.")
-    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation)
+    DefaultProcessor.createDefaultCpg(getProcessedRule(Set(Language.UNKNOWN)), sourceRepoLocation)
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {
