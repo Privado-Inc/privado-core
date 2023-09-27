@@ -49,8 +49,8 @@ abstract class ConcurrentProcessor[T, R](result: R, rules: RuleCache) {
 
   // set maximum sockets that can be used
   private val count          = rules.getSystemConfigByKey(Constants.MAX_SOCKET_COUNT, true)
-  private val maxSocketCount = if (count.isEmpty) 1024 else if (count.toInt > 10000) 1024 else count.toInt
-  println(maxSocketCount)
+  private val maxSocketCount = if (count.isEmpty) 4096 else if (count.toInt > 10000) 4096 else count.toInt
+  logger.info("Max ZMQ sockets: " + maxSocketCount)
   zContext.getContext.setMaxSockets(maxSocketCount)
 
   // generate Array of parts that can be processed in parallel
