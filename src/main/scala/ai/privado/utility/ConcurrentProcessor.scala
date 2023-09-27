@@ -48,8 +48,8 @@ abstract class ConcurrentProcessor[T, R](result: R, rules: RuleCache) {
   private val topic: String = UUID.randomUUID().toString
 
   // set maximum sockets that can be used
-  private val count          = rules.getSystemConfigByKey(Constants.MAX_SOCKET_COUNT)
-  private val maxSocketCount = if (count.isEmpty) 1024 else if (count.toInt > 4000) 1024 else count.toInt
+  private val count          = rules.getSystemConfigByKey(Constants.MAX_SOCKET_COUNT, true)
+  private val maxSocketCount = if (count.isEmpty) 1024 else if (count.toInt > 10000) 1024 else count.toInt
   println(maxSocketCount)
   zContext.getContext.setMaxSockets(maxSocketCount)
 
