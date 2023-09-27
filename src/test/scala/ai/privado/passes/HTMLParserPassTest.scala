@@ -196,6 +196,54 @@ class HTMLParserPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     }
   }
 
+  "VanilaJS with inline-script tags" should {
+    val cpg = code("""
+        |<!DOCTYPE html>
+        |<html>
+        |<head>
+        |  <title>Script Loading Example</title>
+        |</head>
+        |<body>
+        |
+        |  <!-- Script tag to load another script -->
+        |  <script async src="//www.googletagservices.com/tag/js/gpt.js"></script>
+        |
+        |  <!-- Script tag with inline JavaScript code that loads third-party scripts -->
+        |  <script>
+        |    var div_1_sizes = [
+        |                [300, 250],
+        |                [300, 600]
+        |            ];
+        |            var div_2_sizes = [
+        |                [728, 90],
+        |                [970, 250]
+        |            ];
+        |  </script>
+        |</body>
+        |</html>
+        |""".stripMargin)
+    "Count of html elements" in {
+      // Considering the HtmlUnit will wrapp this html inside <html><head></head><body> above contents </body></html>
+      // The element count will be 8 + 3 = 11
+      cpg.templateDom.name(Constants.HTMLElement).l.size shouldBe 6
+      cpg.templateDom.name(Constants.HTMLOpenElement).l.size shouldBe 6
+      cpg.templateDom.name(Constants.HTMLClosingElement).l.size shouldBe 6
+      cpg.templateDom.name(Constants.HTMLElementAttribute).l.size shouldBe 2
+      // Checking only for single first node if the file node is attached.
+      cpg.templateDom.file.name.l.head should endWith("sample.html")
+    }
+
+    "Count of script tag elements + " in {
+      // Checking for Script tags
+      cpg.templateDom.name(Constants.HTMLOpenElement).code("(?i)[\\\"]*<(script).*").l.size shouldBe 2
+    }
+
+    "Content attribute should be present for script tag" in {
+      // Ensure inline script tag is with content attribute
+      cpg.templateDom.name(Constants.HTMLOpenElement).code("(?i)[\\\"]*<(script).*(content).*").l.size shouldBe 1
+    }
+  }
+
   def code(code: String): Cpg = {
     val inputDir = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)

@@ -47,7 +47,7 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
-      .filter(rule => rule.nodeType.equals(NodeType.API))
+      .filter(rule => rule.id.equals(Constants.thirdPartiesAPIRuleId))
       .toArray
   }
 

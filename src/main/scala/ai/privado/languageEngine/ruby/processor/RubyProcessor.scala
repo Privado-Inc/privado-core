@@ -126,11 +126,13 @@ object RubyProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Type hint linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
+          /*
           println(s"${Calendar.getInstance().getTime} - Naive call linker started  ...")
           new NaiveCallLinker(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Naive call linker done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
+           */
           // Some of passes above create new methods, so, we
           // need to run the ASTLinkerPass one more time
           println(s"${Calendar.getInstance().getTime} - Ast linker started  ...")

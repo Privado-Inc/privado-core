@@ -24,32 +24,46 @@
 package ai.privado.cache
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
-
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import java.util.concurrent.ConcurrentHashMap
-import scala.jdk.CollectionConverters.ConcurrentMapHasAsScala
 
 class TaggerCache {
   // Stores typeDeclFullName --> ( sourceRuleId --->  Member Node)
-  val typeDeclMemberCache = new ConcurrentHashMap[String, mutable.HashMap[String, mutable.HashSet[Member]]]().asScala
+  val typeDeclMemberCache = TrieMap[String, TrieMap[String, mutable.Set[Member]]]()
 
-  // Stores typeDeclFullName --> ( sourceRuleId --->  Extending TypeDecl Node)
-  val typeDeclExtendingTypeDeclCache = mutable.HashMap[String, mutable.HashMap[String, TypeDecl]]()
+  // Stores typeDeclFullName --> (sourceRuleId ---> Extending TypeDecl Node)
+  val typeDeclExtendingTypeDeclCache = TrieMap[String, TrieMap[String, TypeDecl]]()
 
   // Stores typeDeclFullName --> TypeDeclNode
-  val typeDeclDerivedByExtendsCache = mutable.HashMap[String, TypeDecl]()
+  val typeDeclDerivedByExtendsCache = TrieMap[String, TypeDecl]()
 
-  /** Checks and add item to Type decl member cache
+  /** Checks and adds an item to Type decl member cache
+    *
     * @param typeDeclVal
     * @param ruleId
     * @param typeDeclMember
     */
   def addItemToTypeDeclMemberCache(typeDeclVal: String, ruleId: String, typeDeclMember: Member): Unit = {
-    if (!typeDeclMemberCache.contains(typeDeclVal))
-      typeDeclMemberCache.addOne(typeDeclVal -> mutable.HashMap[String, mutable.HashSet[Member]]())
-    if (!typeDeclMemberCache(typeDeclVal).contains(ruleId))
-      typeDeclMemberCache(typeDeclVal).addOne(ruleId -> mutable.HashSet())
-    typeDeclMemberCache(typeDeclVal)(ruleId).addOne(typeDeclMember)
+    typeDeclMemberCache.getOrElseUpdate(typeDeclVal, TrieMap[String, mutable.Set[Member]]()).updateWith(ruleId) {
+      case Some(existingMembers) => Some(existingMembers += typeDeclMember)
+      case None                  => Some(mutable.Set(typeDeclMember))
+    }
+  }
+
+  def getTypeDeclMemberCacheItem(typeDeclVal: String): Map[String, Set[Member]] = {
+    typeDeclMemberCache.getOrElse(typeDeclVal, TrieMap.empty).view.mapValues(_.toSet).toMap
+  }
+
+  def getTypeDeclExtendingTypeDeclCache: Map[String, Map[String, TypeDecl]] = {
+    typeDeclExtendingTypeDeclCache.view.mapValues(_.toMap).toMap
+  }
+
+  def getTypeDeclExtendingTypeDeclCacheItem(typeFullName: String): TrieMap[String, TypeDecl] = {
+    typeDeclExtendingTypeDeclCache.getOrElse(typeFullName, TrieMap[String, TypeDecl]())
+  }
+
+  def getTypeDeclDerivedByExtendsCache: Map[String, TypeDecl] = {
+    typeDeclDerivedByExtendsCache.toMap
   }
 
 }

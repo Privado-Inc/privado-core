@@ -39,7 +39,7 @@ object DifferentKindOfPIIStoredInDifferentTables {
         val piiCategoryListForTable = ListBuffer[String]()
 
         if (taggerCache.typeDeclMemberCache.contains(typeDeclFullName.fullName)) {
-          val typeDeclWithMembersMap = taggerCache.typeDeclMemberCache.get(typeDeclFullName.fullName).get
+          val typeDeclWithMembersMap = taggerCache.getTypeDeclMemberCacheItem(typeDeclFullName.fullName)
           typeDeclWithMembersMap.foreach((dataElementMemberMap) => {
             val sourceId = dataElementMemberMap._1
             if (sourceIdCategoryMap.contains(sourceId)) {

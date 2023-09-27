@@ -84,17 +84,39 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
     // Tag the respective templateDom node as API sink
     val scriptTags =
-      cpg.templateDom.name(Constants.jsxElement).code("(?i)[\\\"]*<script.*" + ruleInfo.combinedRulePattern + ".*").l
+      cpg.templateDom
+        .name(s"(?i)(${Constants.jsxElement}|${Constants.HTMLElement})")
+        .code("(?i)[\\\"]*<(script|iframe).*" + ruleInfo.combinedRulePattern + ".*")
+        .l
     scriptTags.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
-      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
+
+      if (!domain._1.equals(Constants.UnknownDomain)) {
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
+        else {
+          newRuleIdToUse = ruleInfo.id + "." + domain._2
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+          addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+        }
+        storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
+      }
+    })
+
+    // Identification of script tags from loadExternalScript() method
+    // await loadExternalScript(`https://widget.intercom.io/widget/${INTERCOM_BOT_ID}`, 'Intercom');
+    val loadExternalScriptCalls = cpg.call("(loadExternalScript|loadThirdPartyScript)").l
+
+    loadExternalScriptCalls.foreach(externalScriptCall => {
+      var newRuleIdToUse = ruleInfo.id
+      val domain         = getDomainFromTemplates(externalScriptCall.code)
+      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, externalScriptCall, ruleInfo, ruleCache)
       else {
         newRuleIdToUse = ruleInfo.id + "." + domain._2
         ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
-        addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+        addRuleTags(builder, externalScriptCall, ruleInfo, ruleCache, Some(newRuleIdToUse))
       }
-      storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
+      storeForTag(builder, externalScriptCall, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
 
     // Identification of script tag generated dynamically in code

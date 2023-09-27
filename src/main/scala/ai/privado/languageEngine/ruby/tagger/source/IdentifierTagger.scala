@@ -27,11 +27,18 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+
+  val cachedCall: List[Call] = cpg.call
+    .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
+    .l
 
   override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
 

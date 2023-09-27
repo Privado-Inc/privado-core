@@ -157,10 +157,12 @@ object Constants {
   val HTMLElementAttribute = "HTMLElementAttribute"
   val HTMLScriptElement    = "HTMLScriptElement"
 
+  val UnknownDomain = "unknown-domain"
+
   val annotations       = "annotations"
   val default           = "default"
   val semanticDelimeter = "_A_"
 
   // Ruby defaults
-  val defaultExpansionLimit = 20
+  val defaultExpansionLimit = 100
 }

@@ -39,7 +39,9 @@ class IdentifierDerivedTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
                 cpg.identifier
                   .or(
                     _.typeFullName(s"$typeDeclFullNameRegex.*"),
-                    _.filter(_.dynamicTypeHintFullName.exists(_.matches(s"$typeDeclFullNameRegex.*")))
+                    _.filter(_.dynamicTypeHintFullName.exists(_.matches(s"$typeDeclFullNameRegex.*"))),
+                    _.name(s"(?i)$cleanedTableName"),
+                    _.name(s"(?i)${tableNode.name.stripSuffix("s")}")
                   )
                   .foreach { impactedObject =>
 

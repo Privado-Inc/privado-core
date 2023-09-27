@@ -173,7 +173,9 @@ object DuplicateFlowProcessor {
       if (privadoScanConfig.generateAuditReport) {
         AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
       }
-      if (privadoScanConfig.disableFlowSeparationByDataElement || AppCache.repoLanguage != Language.JAVA) {
+      if (
+        privadoScanConfig.disableFlowSeparationByDataElement || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
+      ) {
         // Filter out flows where source is cookie and sink is cookie read
         if (
           !(flow.sinkId.startsWith(Constants.cookieWriteRuleId) && flow.pathSourceId
@@ -423,6 +425,7 @@ object DuplicateFlowProcessor {
     else if (
       isCorrectDataSourceConsumedInSink(
         pathSourceId,
+        sinkId,
         sinkPathId,
         dataflowsMapByType(sinkPathId),
         dataflowSinkType,
@@ -443,6 +446,7 @@ object DuplicateFlowProcessor {
     */
   def isCorrectDataSourceConsumedInSink(
     pathSourceId: String,
+    sinkId: String,
     pathId: String,
     path: Path,
     dataflowSinkType: String,
@@ -513,11 +517,16 @@ object DuplicateFlowProcessor {
           }
         }
       }
-    } else if (dataflowSinkType.equals("third_parties") || dataflowNodeType.equals(NodeType.API.toString)) {
-      // To explicity remove Sources which result in FP
-      if (falsePositiveSources.contains(pathSourceId))
-        isCorrect = false
-    }
+    } else if (
+      (dataflowSinkType.equals(Constants.third_parties) || dataflowNodeType.equals(
+        NodeType.API.toString
+      )) && falsePositiveSources.contains(pathSourceId)
+    ) { // To explicity remove Sources which result in FP
+      isCorrect = false
+    } else if (
+      sinkId.startsWith(Constants.cookieWriteRuleId) && pathSourceId.equals(Constants.cookieSourceRuleId)
+    ) // To remove cookie flows which are FP's
+      isCorrect = false
     isCorrect
   }
 

@@ -6,8 +6,8 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 
-val cpgVersion        = "1.4.18"
-val joernVersion      = "2.0.52"
+val cpgVersion        = "1.4.22"
+val joernVersion      = "2.0.78"
 val overflowdbVersion = "1.181"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -57,7 +57,8 @@ libraryDependencies ++= Seq(
   "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
   "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config"),
   "org.jruby"                        % "jruby-base"              % "9.4.3.0",
-  "org.zeromq"                       % "jeromq"                  % "0.5.3"
+  "org.zeromq"                       % "jeromq"                  % "0.5.3",
+  "org.sangria-graphql"             %% "sangria"                 % "4.0.0"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
