@@ -633,7 +633,6 @@ object DataElementDiscoveryJS {
                 }
               }
             }
-
             case (param: MethodParameterIn) => {
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
               if (!addedParams.contains(paramUniqueKey)) {
