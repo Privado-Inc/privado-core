@@ -111,7 +111,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
     val sinksMatchingIds  = getSinksMatchingRegex(policy)
     sourceMatchingIds.foreach(sourceId => {
       sinksMatchingIds.foreach(sinkId => {
-        val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
+        val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId)).dedup.toList
         if (intersectingPathIds.nonEmpty) {
           violatingFlowList.add(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
         }
