@@ -33,7 +33,7 @@ object PIIHavingDifferentRetentionPeriod {
       val sourceIdRetentionPeriodMap: Map[String, Int] = getSourceIdRetentionMap(threat.config)
 
       entityMapper.foreach((entityWithTable) => {
-        val tableName = entityWithTable._1
+        val tableName                   = entityWithTable._1
         val typeDeclFullName            = entityWithTable._2
         val retentionPeriodListForTable = ListBuffer[Int]()
 
