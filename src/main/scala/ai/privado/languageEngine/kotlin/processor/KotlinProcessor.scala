@@ -185,7 +185,7 @@ object KotlinProcessor {
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
-    val cpgconfig = Config(downloadDependencies = !config.skipDownloadDependencies)
+    val cpgconfig = Config(downloadDependencies = !config.skipDownloadDependencies, includeJavaSourceFiles = true)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
     val xtocpg = new Kotlin2Cpg().createCpg(cpgconfig).map { cpg =>
