@@ -3,7 +3,7 @@ package ai.privado.policyEngine
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.tagger.source.InSensitiveCallTagger
@@ -116,13 +116,15 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     (inputDir / "sample.js").write(code)
     val outputFile   = File.newTemporaryFile()
     val config       = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
-    val privadoInput = PrivadoInput(enableAuditSemanticsFilter = true)
+    val privadoInput = PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
     val configAndRules =
       ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), List(), List())
     ScanProcessor.config = privadoInput
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
-    val cpg = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
+    val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
+    val auditCache    = new AuditCache
+    val dataFlowCache = new DataFlowCache(auditCache)
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -131,9 +133,8 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new IdentifierTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
-    val dataFlowCache = new DataFlowCache
-    val dataflowMap =
-      cpg.dataflow(privadoInput, ruleCache, dataFlowCache)
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+
     val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache)
     policyExecutor
   }

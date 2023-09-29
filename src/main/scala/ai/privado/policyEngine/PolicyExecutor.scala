@@ -38,7 +38,7 @@ import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class PolicyExecutor(cpg: Cpg, dataflowCache: DataFlowCache, repoName: String, ruleCache: RuleCache) {
+class PolicyExecutor(cpg: Cpg, dataFlowCache: DataFlowCache, repoName: String, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -152,11 +152,11 @@ class PolicyExecutor(cpg: Cpg, dataflowCache: DataFlowCache, repoName: String, r
   }
 
   private def getDataflowBySourceIdMapping = {
-    dataflowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
+    dataFlowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getDataflowBySinkIdMapping = {
-    dataflowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
+    dataFlowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {

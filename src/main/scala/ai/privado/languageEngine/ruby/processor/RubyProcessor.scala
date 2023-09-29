@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -84,7 +84,8 @@ object RubyProcessor {
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -172,7 +173,7 @@ object RubyProcessor {
           val taggerCache = new TaggerCache
           cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
@@ -301,7 +302,8 @@ object RubyProcessor {
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     lang: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -339,7 +341,7 @@ object RubyProcessor {
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
 
   }
 

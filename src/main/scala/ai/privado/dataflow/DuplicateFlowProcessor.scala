@@ -22,7 +22,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.AuditCache.SourcePathInfo
+import ai.privado.cache.SourcePathInfo
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
@@ -165,14 +165,15 @@ object DuplicateFlowProcessor {
     dataflowMapByPathId: Map[String, Path],
     privadoScanConfig: PrivadoInput,
     ruleCache: RuleCache,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Unit = {
 
     val expendedSourceSinkInfo = processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache)
 
     expendedSourceSinkInfo.foreach(flow => {
       if (privadoScanConfig.generateAuditReport) {
-        AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
+        auditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
       }
       if (
         privadoScanConfig.disableFlowSeparationByDataElement || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)

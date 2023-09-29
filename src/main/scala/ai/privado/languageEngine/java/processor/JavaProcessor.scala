@@ -65,7 +65,8 @@ object JavaProcessor {
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -103,7 +104,7 @@ object JavaProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
           println(
@@ -144,7 +145,7 @@ object JavaProcessor {
             new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies, sourceRepoLocation),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies, sourceRepoLocation, auditCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -160,7 +161,7 @@ object JavaProcessor {
             JSONExporter.UnresolvedFlowFileExport(
               outputUnresolvedFilename,
               sourceRepoLocation,
-              dataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+              dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -221,7 +222,8 @@ object JavaProcessor {
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     lang: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
@@ -262,7 +264,7 @@ object JavaProcessor {
       cpg
     }
 
-    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache)
+    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
 
     // Delete the delomboked directory after scanning is completed
     if (AppCache.isLombokPresent) {

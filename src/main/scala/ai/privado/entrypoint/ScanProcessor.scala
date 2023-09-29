@@ -22,7 +22,7 @@
 
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, Environment, RuleCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
@@ -310,8 +310,13 @@ object ScanProcessor extends CommandProcessor {
     processCpg()
   }
 
-  def getDataflowCache: DataFlowCache = {
-    new DataFlowCache()
+  private def getAuditCache: AuditCache = {
+    new AuditCache()
+  }
+
+  private val auditCache = new AuditCache
+  private def getDataflowCache: DataFlowCache = {
+    new DataFlowCache(auditCache)
   }
 
   /** Helper function to process rule for a language
@@ -346,7 +351,8 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Language.JAVA),
                   sourceRepoLocation,
                   language,
-                  dataFlowCache = getDataflowCache
+                  dataFlowCache = getDataflowCache,
+                  auditCache
                 )
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
@@ -354,7 +360,8 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Language.JAVASCRIPT),
                   sourceRepoLocation,
                   lang,
-                  dataFlowCache = getDataflowCache
+                  dataFlowCache = getDataflowCache,
+                  auditCache
                 )
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
@@ -362,7 +369,8 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Language.PYTHON),
                   sourceRepoLocation,
                   lang,
-                  dataFlowCache = getDataflowCache
+                  dataFlowCache = getDataflowCache,
+                  auditCache
                 )
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
@@ -370,7 +378,8 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Language.RUBY),
                   sourceRepoLocation,
                   lang,
-                  dataFlowCache = getDataflowCache
+                  dataFlowCache = getDataflowCache,
+                  auditCache
                 )
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
@@ -383,7 +392,8 @@ object ScanProcessor extends CommandProcessor {
                     getProcessedRule(Language.JAVA),
                     sourceRepoLocation,
                     lang,
-                    dataFlowCache = getDataflowCache
+                    dataFlowCache = getDataflowCache,
+                    auditCache
                   )
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation)
@@ -403,7 +413,12 @@ object ScanProcessor extends CommandProcessor {
   private def processCpgWithDefaultProcessor(sourceRepoLocation: String) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     println(s"Running scan with default processor.")
-    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation, new DataFlowCache)
+    DefaultProcessor.createDefaultCpg(
+      getProcessedRule(Language.UNKNOWN),
+      sourceRepoLocation,
+      getDataflowCache,
+      getAuditCache
+    )
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {

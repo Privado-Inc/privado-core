@@ -21,9 +21,12 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val privadoInput = PrivadoInput(generateAuditReport = true)
-    val context      = new LayerCreatorContext(cpg)
-    val options      = new OssDataFlowOptions()
+    val privadoInput = PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
+
+    // TODO Instead of assigning config directly need to pass instance.
+    ScanProcessor.config = privadoInput
+    val context = new LayerCreatorContext(cpg)
+    val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     val sources         = Dataflow.getSources(cpg)
@@ -33,7 +36,7 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
         Utilities.getEngineContext(4, config = privadoInput)(getSemantics(cpg, privadoInput, ruleCache))
       )
       .l
-    AuditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows))
+    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows))
   }
 
   def getContent(): Map[String, String] = {
@@ -48,7 +51,7 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
       val sinkSet     = mutable.HashSet[String]()
       val codeSnippet = mutable.HashSet[String]()
 
-      val workbookResult = UnresolvedFlowReport.processUnresolvedFlow()
+      val workbookResult = UnresolvedFlowReport.processUnresolvedFlow(auditCache)
 
       workbookResult.foreach(row => {
         sourceSet += row.head

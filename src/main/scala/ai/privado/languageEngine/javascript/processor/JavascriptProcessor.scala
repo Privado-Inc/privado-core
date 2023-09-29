@@ -58,7 +58,8 @@ object JavascriptProcessor {
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -83,7 +84,7 @@ object JavascriptProcessor {
         val taggerCache = new TaggerCache
         cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache)
+        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
         println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
             .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
         println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
@@ -124,7 +125,7 @@ object JavascriptProcessor {
         if (ScanProcessor.config.generateAuditReport) {
           ExcelExporter.auditExport(
             outputAuditFileName,
-            AuditReportEntryPoint.getAuditWorkbookJS(xtocpg, taggerCache, sourceRepoLocation),
+            AuditReportEntryPoint.getAuditWorkbookJS(xtocpg, taggerCache, sourceRepoLocation, auditCache),
             sourceRepoLocation
           ) match {
             case Left(err) =>
@@ -157,7 +158,7 @@ object JavascriptProcessor {
           JSONExporter.UnresolvedFlowFileExport(
             outputUnresolvedFilename,
             sourceRepoLocation,
-            dataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+            dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -193,7 +194,8 @@ object JavascriptProcessor {
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     lang: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -208,7 +210,7 @@ object JavascriptProcessor {
     val cpgconfig =
       Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
   }
 
 }

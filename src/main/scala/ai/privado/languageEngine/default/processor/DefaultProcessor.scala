@@ -62,7 +62,8 @@ object DefaultProcessor {
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -81,7 +82,7 @@ object DefaultProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
           println(
@@ -143,7 +144,8 @@ object DefaultProcessor {
   def createDefaultCpg(
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using default pass")
 
@@ -157,7 +159,7 @@ object DefaultProcessor {
 
     val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) => {} }
 
-    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache)
+    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
     msg
   }
 }

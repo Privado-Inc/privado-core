@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.audit
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AuditCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -109,4 +109,5 @@ abstract class UnresolvedFlowTestBase extends AnyWordSpec with Matchers with Bef
     ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
+  val auditCache  = new AuditCache
 }

@@ -59,11 +59,12 @@ class Dataflow(cpg: Cpg) {
   def dataflow(
     privadoScanConfig: PrivadoInput,
     ruleCache: RuleCache,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Map[String, Path] = {
 
     if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
-      AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
+      auditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
     }
 
     logger.info("Generating dataflow")
@@ -117,12 +118,12 @@ class Dataflow(cpg: Cpg) {
       }
 
       if (privadoScanConfig.generateAuditReport) {
-        AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
+        auditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
 
         // For Unresolved flow sheet
         val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
         val unresolvedFlows = unfilteredSinks.reachableByFlows(sources).l
-        AuditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows))
+        auditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows))
       }
 
       // Storing the pathInfo into dataFlowCache
@@ -171,7 +172,8 @@ class Dataflow(cpg: Cpg) {
         dataflowMapByPathId,
         privadoScanConfig,
         ruleCache,
-        dataFlowCache
+        dataFlowCache,
+        auditCache
       )
       println(
         s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
@@ -183,7 +185,7 @@ class Dataflow(cpg: Cpg) {
     val dataflowFromCache = dataFlowCache.getDataflow
     println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
         .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
-    AuditCache.addIntoFinalPath(dataflowFromCache)
+    auditCache.addIntoFinalPath(dataflowFromCache)
     dataflowFromCache
       .map(_.pathId)
       .toSet
