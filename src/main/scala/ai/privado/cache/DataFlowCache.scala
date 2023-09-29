@@ -138,7 +138,6 @@ class DataFlowCache(auditCache: AuditCache) {
     }
 
     if (ScanProcessor.config.generateAuditReport) {
-      println("Generate")
       auditCache.addIntoBeforeFirstDedup(dataflow)
     }
 
