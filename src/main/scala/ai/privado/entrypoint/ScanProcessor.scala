@@ -22,7 +22,7 @@
 
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, Environment, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
@@ -30,7 +30,7 @@ import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
-import ai.privado.model._
+import ai.privado.model.*
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
@@ -310,6 +310,10 @@ object ScanProcessor extends CommandProcessor {
     processCpg()
   }
 
+  def getDataflowCache: DataFlowCache = {
+    new DataFlowCache()
+  }
+
   /** Helper function to process rule for a language
     * @param lang
     * @return
@@ -338,16 +342,36 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, language)
+                JavaProcessor.createJavaCpg(
+                  getProcessedRule(Language.JAVA),
+                  sourceRepoLocation,
+                  language,
+                  dataFlowCache = getDataflowCache
+                )
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(getProcessedRule(Language.JAVASCRIPT), sourceRepoLocation, lang)
+                JavascriptProcessor.createJavaScriptCpg(
+                  getProcessedRule(Language.JAVASCRIPT),
+                  sourceRepoLocation,
+                  lang,
+                  dataFlowCache = getDataflowCache
+                )
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
-                PythonProcessor.createPythonCpg(getProcessedRule(Language.PYTHON), sourceRepoLocation, lang)
+                PythonProcessor.createPythonCpg(
+                  getProcessedRule(Language.PYTHON),
+                  sourceRepoLocation,
+                  lang,
+                  dataFlowCache = getDataflowCache
+                )
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
-                RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
+                RubyProcessor.createRubyCpg(
+                  getProcessedRule(Language.RUBY),
+                  sourceRepoLocation,
+                  lang,
+                  dataFlowCache = getDataflowCache
+                )
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
@@ -355,7 +379,12 @@ object ScanProcessor extends CommandProcessor {
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
 
-                  JavaProcessor.createJavaCpg(getProcessedRule(Language.JAVA), sourceRepoLocation, lang)
+                  JavaProcessor.createJavaCpg(
+                    getProcessedRule(Language.JAVA),
+                    sourceRepoLocation,
+                    lang,
+                    dataFlowCache = getDataflowCache
+                  )
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation)
                 }
@@ -374,7 +403,7 @@ object ScanProcessor extends CommandProcessor {
   private def processCpgWithDefaultProcessor(sourceRepoLocation: String) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     println(s"Running scan with default processor.")
-    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation)
+    DefaultProcessor.createDefaultCpg(getProcessedRule(Language.UNKNOWN), sourceRepoLocation, new DataFlowCache)
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {

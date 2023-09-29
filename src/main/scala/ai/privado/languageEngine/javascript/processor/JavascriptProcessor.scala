@@ -57,7 +57,8 @@ object JavascriptProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -80,17 +81,25 @@ object JavascriptProcessor {
         // Run tagger
         println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
         val taggerCache = new TaggerCache
-        cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy())
+        cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
         println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+        val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache)
         println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-            .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+            .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
         println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
         println(s"${Calendar.getInstance().getTime} - Brewing result...")
         MetricHandler.setScanStatus(true)
         val errorMsg = new ListBuffer[String]()
         // Exporting
-        JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
+        JSONExporter.fileExport(
+          cpg,
+          outputFileName,
+          sourceRepoLocation,
+          dataflowMap,
+          ruleCache,
+          taggerCache,
+          dataFlowCache
+        ) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
             errorMsg += err
@@ -133,7 +142,7 @@ object JavascriptProcessor {
           JSONExporter.IntermediateFileExport(
             outputIntermediateFileName,
             sourceRepoLocation,
-            DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
+            dataFlowCache.getJsonFormatDataFlow(dataFlowCache.getIntermediateDataFlow())
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -148,7 +157,7 @@ object JavascriptProcessor {
           JSONExporter.UnresolvedFlowFileExport(
             outputUnresolvedFilename,
             sourceRepoLocation,
-            DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+            dataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -180,7 +189,12 @@ object JavascriptProcessor {
     * @param lang
     * @return
     */
-  def createJavaScriptCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+  def createJavaScriptCpg(
+    ruleCache: RuleCache,
+    sourceRepoLocation: String,
+    lang: String,
+    dataFlowCache: DataFlowCache
+  ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -194,7 +208,7 @@ object JavascriptProcessor {
     val cpgconfig =
       Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, ruleCache, sourceRepoLocation)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache)
   }
 
 }

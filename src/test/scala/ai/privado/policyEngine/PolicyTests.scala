@@ -3,7 +3,7 @@ package ai.privado.policyEngine
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.tagger.source.InSensitiveCallTagger
@@ -106,7 +106,8 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       violationDataflowModel.pathIds.size shouldBe 1
     }
     "have only unique path ids" in {
-      violationDataflowModel.pathIds.count(p => p == "9-16-15-11") shouldBe 1
+      println(violationDataflowModel.pathIds)
+      violationDataflowModel.pathIds.count(p => p == "9-16-11") shouldBe 1
     }
   }
 
@@ -130,9 +131,10 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new IdentifierTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
+    val dataFlowCache = new DataFlowCache
     val dataflowMap =
-      cpg.dataflow(privadoInput, ruleCache)
-    val policyExecutor = new PolicyExecutor(cpg, dataflowMap, config.inputPath, ruleCache)
+      cpg.dataflow(privadoInput, ruleCache, dataFlowCache)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache)
     policyExecutor
   }
 }

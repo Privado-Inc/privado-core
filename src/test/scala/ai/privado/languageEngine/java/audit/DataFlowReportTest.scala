@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.DataFlowReport
-import ai.privado.cache.AuditCache
+import ai.privado.cache.{AuditCache, DataFlowCache}
 import ai.privado.cache.AuditCache.SourcePathInfo
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
@@ -31,7 +31,8 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache)
+    val dataFlowCache = new DataFlowCache
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache)
   }
 
   def getContent(): Map[String, String] = {

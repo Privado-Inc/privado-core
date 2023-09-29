@@ -40,7 +40,7 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-object DataFlowCache {
+class DataFlowCache {
 
   val dataflowsMapByType: ConcurrentMap[String, Path] = new ConcurrentHashMap[String, Path]()
 

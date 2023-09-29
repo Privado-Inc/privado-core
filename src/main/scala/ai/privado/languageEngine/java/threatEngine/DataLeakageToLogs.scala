@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.threatEngine
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.model.exporter.ViolationDataFlowModel
 import ai.privado.policyEngine.PolicyExecutor
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -49,13 +49,14 @@ object DataLeakageToLogs {
     threat: PolicyOrThreat,
     cpg: Cpg,
     dataflows: Map[String, Path],
-    ruleCache: RuleCache
+    ruleCache: RuleCache,
+    dataFlowCache: DataFlowCache
   ): Try[(Boolean, List[ViolationDataFlowModel])] = Try {
     // use policy executor to directly process existing flows
     // we already have this implementation as part of policy enforcement
     // threat being type of suggestive policy
     // might restructure this in future and have central utilities consumed by both
-    val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName, ruleCache)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache)
     val violatingFlows = policyExecutor.getViolatingFlowsForPolicy(threat)
 
     // violation if empty
