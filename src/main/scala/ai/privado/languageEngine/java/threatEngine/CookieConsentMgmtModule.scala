@@ -39,7 +39,7 @@ object CookieConsentMgmtModule {
       // violation if empty
       (
         consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty,
-        violatingFlows.toList
+        violatingFlows.toList.distinctBy(_.sourceId)
       )
     } else (false, List())
   }
