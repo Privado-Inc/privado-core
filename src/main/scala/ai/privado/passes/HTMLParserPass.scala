@@ -24,10 +24,11 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
-import com.gargoylesoftware.htmlunit.html._
+import com.gargoylesoftware.htmlunit.html.*
 import com.gargoylesoftware.htmlunit.html.HtmlScript
 import com.gargoylesoftware.htmlunit.{BrowserVersion, WebClient}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -51,7 +52,8 @@ import scala.tools.nsc.io.JFile
   * @param projectRoot
   * @param ruleCache
   */
-class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
+class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
+    extends PrivadoParallelCpgPass[String](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Search for .html and .hbs files and generate tasks to process each file separately in its own thread
@@ -91,6 +93,16 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       // Configure options to ignore certain errors
       options.setThrowExceptionOnFailingStatusCode(false) // Do not throw exceptions for failing HTTP status codes
       options.setThrowExceptionOnScriptError(false)       // Do not throw exceptions for JavaScript errors
+
+      // Disable loading of CSS and images
+      options.setCssEnabled(false)
+      options.setDownloadImages(false)
+      options.setPrintContentOnFailingStatusCode(false)
+
+      // Based on Offline mode skip downloading JS files
+      if (privadoInputConfig.offlineMode) {
+        options.setJavaScriptEnabled(false)
+      }
 
       val htmlFile                 = new JFile(htmlFilePath)
       val page: HtmlPage           = webClient.getPage(htmlFile.toURI.toURL)

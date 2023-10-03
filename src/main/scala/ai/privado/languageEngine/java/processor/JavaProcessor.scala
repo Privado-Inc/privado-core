@@ -76,7 +76,8 @@ object JavaProcessor {
           new JavaPropertyLinkerPass(cpg).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - HTML parser pass")
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+            .createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()

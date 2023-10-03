@@ -24,12 +24,13 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{ConfigAndRules, Constants}
 import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -252,11 +253,12 @@ class HTMLParserPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
       ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List(), List())
-    val ruleCache = new RuleCache()
+    val ruleCache    = new RuleCache()
+    val privadoInput = PrivadoInput()
     ruleCache.setRule(rule)
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = X2Cpg.withNewEmptyCpg(outputFile.toString(), config)((cpg, config) => {}).get
-    new HTMLParserPass(cpg, inputDir.toString(), ruleCache).createAndApply()
+    new HTMLParserPass(cpg, inputDir.toString(), ruleCache, privadoInput).createAndApply()
     cpgs.addOne(cpg)
     cpg
   }

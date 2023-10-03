@@ -66,7 +66,8 @@ object JavascriptProcessor {
         // Apply default overlays
         new NaiveCallLinker(cpg).createAndApply()
 
-        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+          .createAndApply()
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
         new JSPropertyLinkerPass(cpg).createAndApply()
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
