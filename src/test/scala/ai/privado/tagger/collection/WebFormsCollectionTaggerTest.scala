@@ -24,12 +24,13 @@
 package ai.privado.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model._
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.model.*
 import ai.privado.passes.HTMLParserPass
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -271,9 +272,10 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
-    val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
-    val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
-    new HTMLParserPass(cpg, inputDir.toString(), ruleCache).createAndApply()
+    val privadoInput = PrivadoInput()
+    val config       = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
+    val cpg          = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
+    new HTMLParserPass(cpg, inputDir.toString(), ruleCache, privadoInput).createAndApply()
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
     cpgs.addOne(cpg)
