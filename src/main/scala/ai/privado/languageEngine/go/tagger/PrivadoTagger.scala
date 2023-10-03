@@ -4,7 +4,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.tagger.PrivadoBaseTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import overflowdb.traversal.Traversal
@@ -18,7 +18,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    dataFlowCache: DataFlowCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")

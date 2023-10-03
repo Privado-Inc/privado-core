@@ -382,10 +382,15 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache
                 )
-                RubyProcessor.createRubyCpg(getProcessedRule(Language.RUBY), sourceRepoLocation, lang)
               case language if language == Languages.GOLANG =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Go'")
-                GoProcessor.createGoCpg(getProcessedRule(Language.GO), sourceRepoLocation, lang)
+                GoProcessor.createGoCpg(
+                  getProcessedRule(Language.GO),
+                  sourceRepoLocation,
+                  lang,
+                  dataFlowCache = getDataflowCache,
+                  auditCache
+                )
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(

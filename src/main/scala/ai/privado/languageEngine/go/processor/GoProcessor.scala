@@ -35,7 +35,9 @@ object GoProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -64,21 +66,29 @@ object GoProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy())
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
+          JSONExporter.fileExport(
+            cpg,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache
+          ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
@@ -94,7 +104,7 @@ object GoProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(),
+              AuditReportEntryPoint.getAuditWorkbookPy(auditCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -110,7 +120,7 @@ object GoProcessor {
             JSONExporter.UnresolvedFlowFileExport(
               outputUnresolvedFilename,
               sourceRepoLocation,
-              DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+              dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -127,7 +137,7 @@ object GoProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
+              dataFlowCache.getJsonFormatDataFlow(dataFlowCache.getIntermediateDataFlow())
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -170,7 +180,13 @@ object GoProcessor {
     * @param lang
     * @return
     */
-  def createGoCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+  def createGoCpg(
+    ruleCache: RuleCache,
+    sourceRepoLocation: String,
+    lang: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
+  ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -193,7 +209,7 @@ object GoProcessor {
         )
         cpg
       }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
   }
 
 }
