@@ -1,8 +1,8 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.DataFlowReport
-import ai.privado.cache.AuditCache
-import ai.privado.cache.AuditCache.SourcePathInfo
+import ai.privado.cache.{AuditCache, DataFlowCache}
+import ai.privado.cache.SourcePathInfo
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
@@ -31,7 +31,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache)
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
   }
 
   def getContent(): Map[String, String] = {
@@ -52,11 +52,11 @@ class DataFlowReportTest extends DataFlowReportTestBase {
       val firstDedupMap   = mutable.HashMap[String, String]()
       val secondDedupMap  = mutable.HashMap[String, String]()
 
-      AuditCache.addIntoBeforeSemantics(
+      auditCache.addIntoBeforeSemantics(
         SourcePathInfo("Data.Sensitive.FinancialData.PaymentMode", "ThirdParties.SDK.Stripe", "2880-2883-2882")
       )
 
-      val workflowResult = DataFlowReport.processDataFlowAudit()
+      val workflowResult = DataFlowReport.processDataFlowAudit(auditCache)
 
       workflowResult.foreach(row => {
         firstFilterMap.put(row.head, row(6))
@@ -74,7 +74,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     }
 
     "test unfiltered flow Data size" in {
-      val unfilteredFlow = AuditCache.getFlowBeforeFirstFiltering
+      val unfilteredFlow = auditCache.getFlowBeforeFirstFiltering
 
       unfilteredFlow.size should not equal (0)
     }
@@ -88,7 +88,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
       val workflowfinalResult    = new mutable.HashMap[SourcePathInfo, String]()
 
       DataFlowReport
-        .processDataFlowAudit()
+        .processDataFlowAudit(auditCache)
         .foreach(row => {
           val sourcePathInfo = SourcePathInfo(row.head, row(1), row(3))
           workflowSemanticResult.put(sourcePathInfo, row(5))

@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
@@ -47,7 +47,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    dataFlowCache: DataFlowCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")

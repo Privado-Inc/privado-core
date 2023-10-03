@@ -16,7 +16,17 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
 
-object AuditCache {
+case class SourcePathInfo(sourceId: String, sinkId: String, pathId: String) {
+  override def equals(other: Any): Boolean = other match {
+    case that: SourcePathInfo =>
+      this.sourceId == that.sourceId && this.sinkId == that.sinkId && this.pathId == that.pathId
+    case _ => false
+  }
+
+  override def hashCode: Int = sourceId.hashCode + sinkId.hashCode + pathId.hashCode
+}
+
+class AuditCache {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -40,19 +50,20 @@ object AuditCache {
 
   def getUnfilteredFlow(): List[DataFlowPathIntermediateModel] = unfilteredFlow.toList
 
-  def addIntoBeforeSemantics(sourcePathInfo: SourcePathInfo): Unit = flowPathBeforeSemantics += sourcePathInfo
+  def addIntoBeforeSemantics(sourcePathInfo: SourcePathInfo): Unit = flowPathBeforeSemantics.add(sourcePathInfo)
 
   def getFlowBeforeSemantics: Set[SourcePathInfo] = flowPathBeforeSemantics.toSet
 
   def getFlowBeforeFirstFiltering: Set[SourcePathInfo] = flowPathBeforeFirstFiltering.toSet
 
-  def addIntoBeforeFirstFiltering(sourcePathInfo: SourcePathInfo): Unit = flowPathBeforeFirstFiltering += sourcePathInfo
+  def addIntoBeforeFirstFiltering(sourcePathInfo: SourcePathInfo): Unit =
+    flowPathBeforeFirstFiltering.add(sourcePathInfo)
 
   def checkFlowExistInFirstFiltering(sourcePathInfo: SourcePathInfo): Boolean =
     if (flowPathBeforeFirstFiltering.contains(sourcePathInfo)) true else false
 
   def addIntoBeforeSecondFiltering(sourcePathInfo: SourcePathInfo): Unit =
-    flowPathBeforeSecondFiltering += sourcePathInfo
+    flowPathBeforeSecondFiltering.add(sourcePathInfo)
 
   def checkFlowExistInSecondFiltering(sourcePathInfo: SourcePathInfo): Boolean =
     flowPathBeforeSecondFiltering.contains(sourcePathInfo)
@@ -134,7 +145,7 @@ object AuditCache {
         fileInfo._2.foreach(dataflowModel => {
           val newDataFlow = SourcePathInfo(dataflowModel.sourceId, dataflowModel.sinkId, dataflowModel.pathId)
           if (!flowPathBeforeFirstDedup.contains(newDataFlow)) {
-            flowPathBeforeFirstDedup += newDataFlow
+            flowPathBeforeFirstDedup.add(newDataFlow)
           }
         })
       })
@@ -152,7 +163,7 @@ object AuditCache {
         fileInfo._2.foreach(dataflowModel => {
           val newDataFlow = SourcePathInfo(dataflowModel.sourceId, dataflowModel.sinkId, dataflowModel.pathId)
           if (!flowPathBeforeSecondDedup.contains(newDataFlow)) {
-            flowPathBeforeSecondDedup += newDataFlow
+            flowPathBeforeSecondDedup.add(newDataFlow)
           }
         })
       })
@@ -164,20 +175,10 @@ object AuditCache {
 
   def addIntoFinalPath(dataFlowPathModel: List[DataFlowPathModel]): Unit = {
     dataFlowPathModel.foreach(flow => {
-      flowPathFinal += SourcePathInfo(flow.sourceId, flow.sinkId, flow.pathId)
+      flowPathFinal.add(SourcePathInfo(flow.sourceId, flow.sinkId, flow.pathId))
     })
   }
 
   def checkFlowExistInFinal(sourcePathInfo: SourcePathInfo): Boolean = flowPathFinal.contains(sourcePathInfo)
-
-  case class SourcePathInfo(sourceId: String, sinkId: String, pathId: String) {
-    override def equals(other: Any): Boolean = other match {
-      case that: SourcePathInfo =>
-        this.sourceId == that.sourceId && this.sinkId == that.sinkId && this.pathId == that.pathId
-      case _ => false
-    }
-
-    override def hashCode: Int = sourceId.hashCode + sinkId.hashCode + pathId.hashCode
-  }
 
 }
