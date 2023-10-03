@@ -158,6 +158,7 @@ object Constants {
   val HTMLScriptElement    = "HTMLScriptElement"
 
   val UnknownDomain = "unknown-domain"
+  val Unknown       = "unknown"
 
   val annotations       = "annotations"
   val default           = "default"
