@@ -106,7 +106,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       violationDataflowModel.pathIds.size shouldBe 1
     }
     "have only unique path ids" ignore {
-      violationDataflowModel.pathIds.count(p => p == "9-16-11") shouldBe 1
+      violationDataflowModel.pathIds.size == violationDataflowModel.pathIds.toSet.size shouldBe true
     }
   }
 
