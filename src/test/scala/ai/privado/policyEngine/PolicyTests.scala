@@ -105,7 +105,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     "have non-empty pathIds" in {
       violationDataflowModel.pathIds.size shouldBe 1
     }
-    "have only unique path ids" ignore {
+    "have only unique path ids" in {
       violationDataflowModel.pathIds.size == violationDataflowModel.pathIds.toSet.size shouldBe true
     }
   }
