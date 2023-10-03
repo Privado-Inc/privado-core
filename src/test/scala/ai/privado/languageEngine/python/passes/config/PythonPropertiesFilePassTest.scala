@@ -55,7 +55,6 @@ class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
       filename.endsWith("/test.env") shouldBe true
     }
     "connect property node to literal via `IS_USED_AT` edge" in {
-      println(cpg.property.usedAt.lineNumber.l)
       val lit = cpg.property.usedAt.l.head
       lit.code shouldBe "\"MONGO_URL\""
     }
