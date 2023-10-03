@@ -56,10 +56,15 @@ class Dataflow(cpg: Cpg) {
     * @return
     *   \- Map of PathId -> Path corresponding to source to sink path
     */
-  def dataflow(privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Map[String, Path] = {
+  def dataflow(
+    privadoScanConfig: PrivadoInput,
+    ruleCache: RuleCache,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
+  ): Map[String, Path] = {
 
     if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
-      AuditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
+      auditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
     }
 
     logger.info("Generating dataflow")
@@ -113,17 +118,17 @@ class Dataflow(cpg: Cpg) {
       }
 
       if (privadoScanConfig.generateAuditReport) {
-        AuditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
+        auditCache.addIntoBeforeFirstFiltering(dataflowPathsUnfiltered, privadoScanConfig, ruleCache)
 
         // For Unresolved flow sheet
         val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
         val unresolvedFlows = unfilteredSinks.reachableByFlows(sources).l
-        AuditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows))
+        auditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows))
       }
 
       // Storing the pathInfo into dataFlowCache
       if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
-        DataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered)
+        dataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered)
       }
 
       println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
@@ -159,26 +164,32 @@ class Dataflow(cpg: Cpg) {
 
       // Setting cache
       dataflowMapByPathId.foreach(item => {
-        DataFlowCache.dataflowsMapByType.put(item._1, item._2)
+        dataFlowCache.dataflowsMapByType.put(item._1, item._2)
       })
 
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
-      DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(dataflowMapByPathId, privadoScanConfig, ruleCache)
+      DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(
+        dataflowMapByPathId,
+        privadoScanConfig,
+        ruleCache,
+        dataFlowCache,
+        auditCache
+      )
       println(
         s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
-            .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${DataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
+            .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
       )
     }
     // Need to return the filtered result
     println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
-    val dataflowFromCache = DataFlowCache.getDataflow
+    val dataflowFromCache = dataFlowCache.getDataflow
     println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
         .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
-    AuditCache.addIntoFinalPath(dataflowFromCache)
+    auditCache.addIntoFinalPath(dataflowFromCache)
     dataflowFromCache
       .map(_.pathId)
       .toSet
-      .map((pathId: String) => (pathId, DataFlowCache.dataflowsMapByType.get(pathId)))
+      .map((pathId: String) => (pathId, dataFlowCache.dataflowsMapByType.get(pathId)))
       .toMap
   }
 

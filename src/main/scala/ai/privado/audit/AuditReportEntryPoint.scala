@@ -1,12 +1,12 @@
 package ai.privado.audit
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{AuditCache, TaggerCache}
 import ai.privado.exporter.JSONExporter
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
-import org.apache.poi.ss.usermodel._
+import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
 import org.apache.xmlbeans.XmlException
 import org.apache.commons.collections4.ListValuedMap
@@ -68,7 +68,8 @@ object AuditReportEntryPoint {
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
     dependencies: Set[ModuleDependency],
-    repoPath: String
+    repoPath: String,
+    auditCache: AuditCache
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
@@ -86,25 +87,38 @@ object AuditReportEntryPoint {
     )
 
     // Set Data Flow report into Sheet
-    createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
+    createSheet(
+      workbook,
+      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
+      DataFlowReport.processDataFlowAudit(auditCache)
+    )
 
     // Set Unresolved flow into Sheet
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-      UnresolvedFlowReport.processUnresolvedFlow()
+      UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
 
     workbook
   }
 
-  def getAuditWorkbookPy(): Workbook = {
+  def getAuditWorkbookPy(auditCache: AuditCache): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
-    createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
+    createSheet(
+      workbook,
+      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
+      DataFlowReport.processDataFlowAudit(auditCache)
+    )
     workbook
   }
   // Audit report generation for Python and javaScript
-  def getAuditWorkbookJS(xtocpg: Try[Cpg], taggerCache: TaggerCache, repoPath: String): Workbook = {
+  def getAuditWorkbookJS(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    repoPath: String,
+    auditCache: AuditCache
+  ): Workbook = {
     val workbook: Workbook       = new XSSFWorkbook()
     val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
 
@@ -113,12 +127,16 @@ object AuditReportEntryPoint {
     // Changed Background colour when tagged
     changeTaggedBackgroundColour(workbook, List(4, 6))
     // Set Data Flow report into Sheet
-    createSheet(workbook, AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME, DataFlowReport.processDataFlowAudit())
+    createSheet(
+      workbook,
+      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
+      DataFlowReport.processDataFlowAudit(auditCache)
+    )
     // Set Unresolved flow into Sheet
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-      UnresolvedFlowReport.processUnresolvedFlow()
+      UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
 
     workbook

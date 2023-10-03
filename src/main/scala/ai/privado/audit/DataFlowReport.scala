@@ -6,20 +6,21 @@ import scala.collection.mutable.ListBuffer
 
 object DataFlowReport {
 
-  def processDataFlowAudit(): List[List[String]] = {
+  def processDataFlowAudit(auditCache: AuditCache): List[List[String]] = {
     val workbookResult = ListBuffer[List[String]]()
 
-    AuditCache.getFlowBeforeSemantics.foreach(flow => {
-      val existInFirstFiltering  = if (AuditCache.checkFlowExistInFirstFiltering(flow)) "YES" else "--"
-      val existInSecondFiltering = if (AuditCache.checkFlowExistInSecondFiltering(flow)) "YES" else "--"
-      val existInFirstDedup      = if (AuditCache.checkFlowExistInFirstDedup(flow)) "YES" else "--"
-      val existInSecondDedup     = if (AuditCache.checkFlowExistInSecondDedup(flow)) "YES" else "--"
-      val existInFinal           = if (AuditCache.checkFlowExistInFinal(flow)) "YES" else "--"
+    auditCache.getFlowBeforeSemantics.foreach(flow => {
+      val existInFirstFiltering  = if (auditCache.checkFlowExistInFirstFiltering(flow)) "YES" else "--"
+      val existInSecondFiltering = if (auditCache.checkFlowExistInSecondFiltering(flow)) "YES" else "--"
+      val existInFirstDedup      = if (auditCache.checkFlowExistInFirstDedup(flow)) "YES" else "--"
+      val existInSecondDedup     = if (auditCache.checkFlowExistInSecondDedup(flow)) "YES" else "--"
+      val existInFinal           = if (auditCache.checkFlowExistInFinal(flow)) "YES" else "--"
+
       workbookResult += List(
         flow.sourceId,
         flow.sinkId,
         flow.pathId,
-        getShortPath(flow.pathId),
+        getShortPath(flow.pathId, auditCache),
         AuditReportConstants.AUDIT_CHECKED_VALUE,
         AuditReportConstants.AUDIT_CHECKED_VALUE,
         existInFirstFiltering,
@@ -47,12 +48,12 @@ object DataFlowReport {
     ) ++ workbookResult.toList.groupBy(_.head).values.toList.flatten
   }
 
-  private def getShortPath(pathId: String): String = {
+  private def getShortPath(pathId: String, auditCache: AuditCache): String = {
     val shortPathBuilder = new StringBuffer()
-    if (!AuditCache.pathIdExist(pathId)) {
+    if (!auditCache.pathIdExist(pathId)) {
       shortPathBuilder.append("NA")
     } else {
-      AuditCache
+      auditCache
         .getPathFromId(pathId)
         .elements
         .foreach(node => {

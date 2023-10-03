@@ -40,7 +40,7 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-object DataFlowCache {
+class DataFlowCache(auditCache: AuditCache) {
 
   val dataflowsMapByType: ConcurrentMap[String, Path] = new ConcurrentHashMap[String, Path]()
 
@@ -49,7 +49,7 @@ object DataFlowCache {
   lazy val finalDataflow: List[DataFlowPathModel] = {
     val extraFlows = {
       if (!ScanProcessor.config.disableDeDuplication)
-        setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse()
+        setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse(auditCache)
       else
         List()
     }
@@ -100,7 +100,7 @@ object DataFlowCache {
     intermediateSourceResult.toList
   }
 
-  private def setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse() = {
+  private def setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse(auditCache: AuditCache) = {
 
     println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
     def addToMap(dataFlowPathModel: DataFlowPathModel): Unit = {
@@ -138,7 +138,7 @@ object DataFlowCache {
     }
 
     if (ScanProcessor.config.generateAuditReport) {
-      AuditCache.addIntoBeforeFirstDedup(dataflow)
+      auditCache.addIntoBeforeFirstDedup(dataflow)
     }
 
     val filteredSourceIdMap = dataflow.map(entrySet => {
@@ -157,7 +157,7 @@ object DataFlowCache {
     dataflow.clear()
 
     if (ScanProcessor.config.generateAuditReport) {
-      AuditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
+      auditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
     }
 
     filteredSourceIdMap.foreach(sourceMap => {

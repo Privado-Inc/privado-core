@@ -32,7 +32,8 @@ import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends PrivadoSimpleCpgPass(cpg) {
+class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCache: DataFlowCache)
+    extends PrivadoSimpleCpgPass(cpg) {
 
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys.l
@@ -51,7 +52,7 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Pri
             case Some(returnedFullName) =>
               sensitiveClasses.find(_.equals(returnedFullName)) match {
                 case Some(matchedTypeDeclFullName) =>
-                  addFlowToDataFlowCache(taggerCache, matchedTypeDeclFullName, callNode)
+                  addFlowToDataFlowCache(taggerCache, matchedTypeDeclFullName, callNode, dataFlowCache)
                 case None =>
                   // This case is to get the Returned object from the code
                   // Ex - Optional<UserE> resp = userr.findByEmail(login.getEmail());
@@ -62,7 +63,7 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Pri
                         case Some(returnClassValue) =>
                           sensitiveClasses.find(_.endsWith("." + returnClassValue)) match {
                             case Some(matchedTypeDeclFullName) =>
-                              addFlowToDataFlowCache(taggerCache, matchedTypeDeclFullName, callNode)
+                              addFlowToDataFlowCache(taggerCache, matchedTypeDeclFullName, callNode, dataFlowCache)
                             case None =>
                           }
                         case None =>
@@ -81,7 +82,8 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Pri
   private def addFlowToDataFlowCache(
     taggerCache: TaggerCache,
     matchedTypeDeclFullName: String,
-    callNode: AstNode
+    callNode: AstNode,
+    dataFlowCache: DataFlowCache
   ): Unit = {
     Utility
       .appendExtraNodesAndRetunNewFlow(taggerCache, matchedTypeDeclFullName, callNode)
@@ -89,8 +91,8 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Pri
         synchronized {
           val (pathId, sourceRuleId, path) = entry
           // We need to update the dataflowsMap and set new dataflow using setDataflow function
-          DataFlowCache.dataflowsMapByType.put(pathId, path)
-          DataFlowCache.setDataflow(
+          dataFlowCache.dataflowsMapByType.put(pathId, path)
+          dataFlowCache.setDataflow(
             DataFlowPathModel(
               sourceRuleId,
               callNode.tag.nameExact(Constants.id).value(".*Read.*").value.head,

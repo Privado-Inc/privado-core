@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -83,7 +83,9 @@ object RubyProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -169,9 +171,9 @@ object RubyProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy())
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
@@ -179,7 +181,15 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache) match {
+          JSONExporter.fileExport(
+            cpg,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache
+          ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               Left(err)
@@ -288,7 +298,13 @@ object RubyProcessor {
     * @param lang
     * @return
     */
-  def createRubyCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+  def createRubyCpg(
+    ruleCache: RuleCache,
+    sourceRepoLocation: String,
+    lang: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
+  ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -325,7 +341,7 @@ object RubyProcessor {
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
-    processCPG(xtocpg, ruleCache, sourceRepoLocation)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
 
   }
 

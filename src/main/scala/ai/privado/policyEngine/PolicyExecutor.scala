@@ -31,14 +31,14 @@ import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String, ruleCache: RuleCache) {
+class PolicyExecutor(cpg: Cpg, dataFlowCache: DataFlowCache, repoName: String, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -111,7 +111,7 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
     val sinksMatchingIds  = getSinksMatchingRegex(policy)
     sourceMatchingIds.foreach(sourceId => {
       sinksMatchingIds.foreach(sinkId => {
-        val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId))
+        val intersectingPathIds = dataflowSourceIdMap(sourceId).intersect(dataflowSinkIdMap(sinkId)).dedup.toList
         if (intersectingPathIds.nonEmpty) {
           violatingFlowList.add(ViolationDataFlowModel(sourceId, sinkId, intersectingPathIds))
         }
@@ -152,11 +152,11 @@ class PolicyExecutor(cpg: Cpg, dataflowMap: Map[String, Path], repoName: String,
   }
 
   private def getDataflowBySourceIdMapping = {
-    DataFlowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
+    dataFlowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getDataflowBySinkIdMapping = {
-    DataFlowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
+    dataFlowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {

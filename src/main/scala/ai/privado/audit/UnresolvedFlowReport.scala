@@ -10,8 +10,8 @@ import scala.collection.mutable.ListBuffer
 
 object UnresolvedFlowReport {
   val workbookResult: ListBuffer[List[String]] = ListBuffer[List[String]]()
-  def processUnresolvedFlow(): List[List[String]] = {
-    val expendedSourceSinkInfo = AuditCache.getUnfilteredFlow()
+  def processUnresolvedFlow(auditCache: AuditCache): List[List[String]] = {
+    val expendedSourceSinkInfo = auditCache.getUnfilteredFlow()
 
     expendedSourceSinkInfo.foreach(sourceSinkInfo => {
       workbookResult += List(

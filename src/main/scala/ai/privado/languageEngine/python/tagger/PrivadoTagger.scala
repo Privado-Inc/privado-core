@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
@@ -24,7 +24,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    dataFlowCache: DataFlowCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")

@@ -61,7 +61,9 @@ object DefaultProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -80,9 +82,9 @@ object DefaultProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
           )
@@ -90,7 +92,15 @@ object DefaultProcessor {
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
+          JSONExporter.fileExport(
+            cpg,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache
+          ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
@@ -131,7 +141,12 @@ object DefaultProcessor {
     * @param lang
     * @return
     */
-  def createDefaultCpg(ruleCache: RuleCache, sourceRepoLocation: String): Either[String, Unit] = {
+  def createDefaultCpg(
+    ruleCache: RuleCache,
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
+  ): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using default pass")
 
     // Create the .privado folder if not present
@@ -144,7 +159,7 @@ object DefaultProcessor {
 
     val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) => {} }
 
-    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation)
+    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
     msg
   }
 }
