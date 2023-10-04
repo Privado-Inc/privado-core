@@ -64,7 +64,9 @@ object JavaProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -74,7 +76,8 @@ object JavaProcessor {
           new JavaPropertyLinkerPass(cpg).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - HTML parser pass")
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+            .createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -97,14 +100,14 @@ object JavaProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, ScanProcessor.config)
+          cpg.runTagger(ruleCache, taggerCache, ScanProcessor.config, dataFlowCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
           )
@@ -112,7 +115,15 @@ object JavaProcessor {
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
+          JSONExporter.fileExport(
+            cpg,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache
+          ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
@@ -135,7 +146,7 @@ object JavaProcessor {
             new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies, sourceRepoLocation),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies, sourceRepoLocation, auditCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -151,7 +162,7 @@ object JavaProcessor {
             JSONExporter.UnresolvedFlowFileExport(
               outputUnresolvedFilename,
               sourceRepoLocation,
-              DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+              dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -168,7 +179,7 @@ object JavaProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
+              dataFlowCache.getJsonFormatDataFlow(dataFlowCache.getIntermediateDataFlow())
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -208,7 +219,13 @@ object JavaProcessor {
     * @param lang
     * @return
     */
-  def createJavaCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+  def createJavaCpg(
+    ruleCache: RuleCache,
+    sourceRepoLocation: String,
+    lang: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
+  ): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
@@ -248,7 +265,7 @@ object JavaProcessor {
       cpg
     }
 
-    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation)
+    val msg = processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
 
     // Delete the delomboked directory after scanning is completed
     if (AppCache.isLombokPresent) {

@@ -51,7 +51,8 @@ case class PrivadoInput(
   generateAuditReport: Boolean = false,
   enableAuditSemanticsFilter: Boolean = false,
   limitNoSinksForDataflows: Int = -1,
-  limitArgExpansionDataflows: Int = -1
+  limitArgExpansionDataflows: Int = -1,
+  offlineMode: Boolean = false
 )
 
 object CommandConstants {
@@ -97,6 +98,8 @@ object CommandConstants {
   val LIMIT_NO_SINKS_FOR_DATAFLOWS_ABBR            = "lnsfd"
   val LIMIT_ARG_EXPANSION_FOR_DATAFLOWS            = "limit-arg-exp-for-dataflows"
   val LIMIT_ARG_EXPANSION_FOR_DATAFLOWS_ABBR       = "laefd"
+  val OFFLINE_MODE                                 = "offline-mode"
+  val OFFLINE_MODE_ABBR                            = "om"
 }
 
 object CommandParser {
@@ -162,6 +165,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(disableFlowSeparationByDataElement = true))
               .text("Disable flow separation by data element"),
+            opt[Unit](CommandConstants.OFFLINE_MODE)
+              .abbr(CommandConstants.OFFLINE_MODE_ABBR)
+              .optional()
+              .action((_, c) => c.copy(offlineMode = true))
+              .text("Offline mode"),
             opt[Unit](CommandConstants.DISABLE_2ND_LEVEL_CLOSURE)
               .abbr(CommandConstants.DISABLE_2ND_LEVEL_CLOSURE_ABBR)
               .optional()

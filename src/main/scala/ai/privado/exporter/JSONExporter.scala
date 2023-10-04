@@ -65,15 +65,16 @@ object JSONExporter {
     repoPath: String,
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
-    taggerCache: TaggerCache = new TaggerCache()
+    taggerCache: TaggerCache = new TaggerCache(),
+    dataFlowCache: DataFlowCache
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg, ruleCache)
     val sinkExporter            = new SinkExporter(cpg, ruleCache)
-    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
+    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache)
     val collectionExporter      = new CollectionExporter(cpg, ruleCache)
     val probableSinkExporter    = new ProbableSinkExporter(cpg, ruleCache, repoPath)
-    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
 
@@ -129,7 +130,7 @@ object JSONExporter {
       sinkSubCategories.foreach(sinkSubTypeEntry => {
         dataflowsOutput.addOne(
           sinkSubTypeEntry._1 -> dataflowExporter
-            .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache)
+            .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowCache)
             .toList
         )
       })
@@ -169,7 +170,7 @@ object JSONExporter {
           s"Total flows before FP: ${AppCache.totalFlowFromReachableBy}\n" +
           s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
           s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
-          s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
+          s"Total flows after complete computation : ${dataFlowCache.getDataflow.size}"
       )
 
       logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")

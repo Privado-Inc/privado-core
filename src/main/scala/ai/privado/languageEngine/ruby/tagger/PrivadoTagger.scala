@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.tagger
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
@@ -46,7 +46,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    dataFlowCache: DataFlowCache
   ): Traversal[Tag] = {
     logger.info("Starting tagging")
     new LiteralTagger(cpg, ruleCache).createAndApply()

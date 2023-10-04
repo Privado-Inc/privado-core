@@ -391,7 +391,7 @@ object Utilities {
         (matched.matched, matched.group(3))
       case Failure(e) =>
         logger.debug("Exception : ", e)
-        ("unknown-domain", "unknown-domain")
+        (Constants.UnknownDomain, Constants.UnknownDomain)
     }
   }
 

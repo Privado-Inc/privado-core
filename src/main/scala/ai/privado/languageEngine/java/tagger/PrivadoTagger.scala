@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.passes.read.{
@@ -52,7 +52,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    dataFlowCache: DataFlowCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -76,13 +77,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
       new MessagingConsumerCustomTagger(cpg, ruleCache).createAndApply()
-      new MessagingConsumerReadPass(cpg, taggerCache).createAndApply()
+      new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache).createAndApply()
     }
 
     new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, EntityMapper.getClassTableMapping(cpg))
       .createAndApply()
 
-    new DatabaseRepositoryReadPass(cpg, taggerCache).createAndApply()
+    new DatabaseRepositoryReadPass(cpg, taggerCache, dataFlowCache).createAndApply()
 
     new CollectionTagger(cpg, ruleCache).createAndApply()
 

@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.threatEngine.ThreatEngineExecutor
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
 import ai.privado.policyEngine.PolicyExecutor
@@ -34,13 +34,19 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class PolicyAndThreatExporter(cpg: Cpg, ruleCache: RuleCache, dataflows: Map[String, Path], taggerCache: TaggerCache) {
+class PolicyAndThreatExporter(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  dataflows: Map[String, Path],
+  taggerCache: TaggerCache,
+  dataFlowCache: DataFlowCache
+) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getViolations(repoPath: String): List[ViolationModel] = {
-    val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName, ruleCache)
-    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache)
+    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache, dataFlowCache)
 
     try {
       threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations
