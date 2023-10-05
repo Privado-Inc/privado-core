@@ -55,14 +55,19 @@ abstract class CustomInheritTagger(cpg: Cpg, ruleCache: RuleCache) extends Priva
     * @return
     */
   def getImpactedTypeDeclNode(stringPattern: String): List[TypeDecl] = {
-    cpg.typeDecl
-      .filter(
-        _.inheritsFromTypeFullName
-          .map(inheritsFrom => {
-            inheritsFrom.matches(stringPattern)
-          })
-          .foldLeft(false)((a, b) => a || b)
-      )
-      .l
+    if (stringPattern.nonEmpty && !stringPattern.equals("()")) {
+      cpg.typeDecl
+        .filter(
+          _.inheritsFromTypeFullName
+            .map(inheritsFrom => {
+              inheritsFrom.matches(stringPattern)
+            })
+            .foldLeft(false)((a, b) => a || b)
+        )
+        .l
+    } else {
+      List()
+    }
+
   }
 }
