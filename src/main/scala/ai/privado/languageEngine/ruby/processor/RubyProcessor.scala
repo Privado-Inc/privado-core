@@ -97,7 +97,8 @@ object RubyProcessor {
           if (!config.skipDownloadDependencies) {
             println(s"${Calendar.getInstance().getTime} - Downloading dependencies and parsing ...")
 //            val packageTable = ExternalDependenciesResolver.downloadDependencies(cpg, sourceRepoLocation)
-            val packageTable = new DownloadDependenciesPass(new PackageTable(), sourceRepoLocation).createAndApply()
+            val packageTable =
+              new DownloadDependenciesPass(new PackageTable(), sourceRepoLocation, ruleCache).createAndApply()
             RubySrc2Cpg.packageTableInfo.set(packageTable)
             println(
               s"${TimeMetric.getNewTime()} - Downloading dependencies and parsing done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"

@@ -1,6 +1,8 @@
 package ai.privado.utility
 
 import ai.privado.utility.ConcurrentProcessor.{STOP, zContext}
+import ai.privado.cache.RuleCache
+import ai.privado.model.Constants
 import org.slf4j.LoggerFactory
 import org.zeromq.{SocketType, ZContext, ZMQ}
 
@@ -38,12 +40,18 @@ object ConcurrentProcessor {
   * @tparam R
   *   \- Type of the result object
   */
-abstract class ConcurrentProcessor[T, R](result: R) {
+abstract class ConcurrentProcessor[T, R](result: R, rules: RuleCache) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   // PUSH socket maintained for each task thread (Future)
   private val queue: ThreadLocal[ZMQ.Socket] = new ThreadLocal[ZMQ.Socket]
   // Unique ZeroMQ inproc:// topic used for each instance of ConcurrentProcessor.
   private val topic: String = UUID.randomUUID().toString
+
+  // set maximum sockets that can be used
+  private val count          = rules.getSystemConfigByKey(Constants.MAX_SOCKET_COUNT, true)
+  private val maxSocketCount = if (count.isEmpty) 4096 else if (count.toInt > 10000) 4096 else count.toInt
+  logger.info("Max ZMQ sockets: " + maxSocketCount)
+  zContext.getContext.setMaxSockets(maxSocketCount)
 
   // generate Array of parts that can be processed in parallel
   def generateParts(): Array[T]

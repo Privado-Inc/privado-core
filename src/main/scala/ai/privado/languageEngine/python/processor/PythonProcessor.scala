@@ -61,7 +61,8 @@ object PythonProcessor {
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+            .createAndApply()
 
           new DynamicTypeHintFullNamePass(cpg).createAndApply()
           new PythonTypeRecoveryPass(cpg).createAndApply()
