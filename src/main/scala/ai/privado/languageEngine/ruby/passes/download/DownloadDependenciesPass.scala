@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.ruby.passes.download
 
+import ai.privado.cache.RuleCache
 import ai.privado.utility.ConcurrentProcessor
 import better.files.File
 import io.joern.rubysrc2cpg.utils.PackageTable
@@ -33,8 +34,8 @@ case class TypeDeclMetaData(gemOrFileName: String, typeDeclName: String, typeDec
 case class ModuleMetaData(gemOrFileName: String, moduleName: String, modulePath: String)
 case class PackageMethodMetaData(moduleName: String, methodName: String, parentClassPath: String, classType: String)
 
-class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String)
-    extends ConcurrentProcessor[String, PackageTable](packageTable) {
+class DownloadDependenciesPass(packageTable: PackageTable, inputPath: String, rules: RuleCache)
+    extends ConcurrentProcessor[String, PackageTable](packageTable, rules) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val GEMFILE      = "Gemfile"

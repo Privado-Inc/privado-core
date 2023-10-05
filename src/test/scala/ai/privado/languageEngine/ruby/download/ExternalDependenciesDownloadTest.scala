@@ -35,7 +35,8 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
   "Ruby External Dependency Download" should {
     "Test dummy_logger dependency download" in {
 
-      val packageTable = new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString).createAndApply()
+      val packageTable =
+        new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString, ruleCache).createAndApply()
 
       // Should have dummy_logger as module
       packageTable.getModule("dummy_logger") shouldBe List(
@@ -53,7 +54,8 @@ class ExternalDependenciesDownloadTest extends ExternalDependenciesDownloadTestB
     "Test redis dependency download" ignore {
       val packageUsed = List("redis")
 
-      val packageTable = new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString).createAndApply()
+      val packageTable =
+        new DownloadDependenciesPass(new PackageTable(), inputDir.pathAsString, ruleCache).createAndApply()
 
       packageTable.getMethodFullNameUsingName(packageUsed, "zscan_each") shouldBe List(
         "redis::program.Redis.Commands.SortedSets.zscan_each"
