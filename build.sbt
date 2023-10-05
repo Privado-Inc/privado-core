@@ -1,9 +1,11 @@
 import sbt.Credentials
+
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
 ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
+
 
 
 val cpgVersion        = "1.4.23"
@@ -16,6 +18,7 @@ val upickle           = "3.1.2"
 val circeVersion   = "0.14.2"
 val jacksonVersion = "2.15.2"
 val mockitoVersion = "1.17.14"
+val goAstGenVersion = "0.11.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
@@ -29,6 +32,7 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "javasrc2cpg"   % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
+  "io.joern"             %% "gosrc2cpg"   % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
@@ -59,6 +63,7 @@ libraryDependencies ++= Seq(
   "org.jruby"                        % "jruby-base"              % "9.4.3.0",
   "org.zeromq"                       % "jeromq"                  % "0.5.4",
   "org.sangria-graphql"             %% "sangria"                 % "4.0.0"
+  "com.michaelpollmeier"             % "versionsort"             % "1.0.11"
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -100,6 +105,56 @@ astGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 Compile / compile := ((Compile / compile) dependsOn astGenDlTask).value
+
+// download goastgen: start
+
+lazy val GoAstgenWin      = "goastgen-windows.exe"
+lazy val GoAstgenLinux    = "goastgen-linux"
+lazy val GoAstgenLinuxArm = "goastgen-linux-arm64"
+lazy val GoAstgenMac      = "goastgen-macos"
+lazy val GoAstgenMacArm   = "goastgen-macos-arm64"
+
+lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
+goAstGenDlUrl := s"https://github.com/Privado-Inc/goastgen/releases/download/v${goAstGenVersion}/"
+
+lazy val goAstGenBinaryNames = taskKey[Seq[String]]("goastgen binary names")
+goAstGenBinaryNames := {Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
+}
+
+lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
+goAstGenDlTask := {
+  val goAstGenDir = baseDirectory.value / "bin" / "goastgen"
+  goAstGenDir.mkdirs()
+
+  goAstGenBinaryNames.value.foreach { fileName =>
+    val dest = goAstGenDir / fileName
+    if (!dest.exists) {
+      val url            = s"${goAstGenDlUrl.value}$fileName"
+      val downloadedFile = SimpleCache.downloadMaybe(url)
+      IO.copyFile(downloadedFile, dest)
+    }
+  }
+
+  val distDir = (Universal / stagingDirectory).value / "bin" / "goastgen"
+  distDir.mkdirs()
+  IO.copyDirectory(goAstGenDir, distDir)
+
+  // permissions are lost during the download; need to set them manually
+  goAstGenDir.listFiles().foreach(_.setExecutable(true, false))
+  distDir.listFiles().foreach(_.setExecutable(true, false))
+}
+
+Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
+
+lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
+goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
+
+stage := Def
+  .sequential(goAstGenSetAllPlatforms, Universal / stage)
+  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
+  .value
+
+// download goastgen: end
 
 // Also remove astgen binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,
