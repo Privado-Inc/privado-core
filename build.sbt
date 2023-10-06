@@ -7,7 +7,6 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 
-
 val cpgVersion        = "1.4.23"
 val joernVersion      = "2.0.110"
 val overflowdbVersion = "1.181"
