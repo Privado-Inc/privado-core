@@ -201,6 +201,7 @@ object GoProcessor {
     val cpgconfig = Config()
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
+      .withFetchDependencies(!config.skipDownloadDependencies)
     val xtocpg = new GoSrc2Cpg()
       .createCpg(cpgconfig)
       .map { cpg =>
