@@ -84,9 +84,17 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
     */
   private def getSourcesList: List[AstNode] = {
     def filterSource(traversal: Traversal[AstNode]) = {
-      traversal.tag
-        .nameExact(Constants.catLevelOne)
-        .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
+      traversal
+        .where(
+          _.tag
+            .nameExact(Constants.catLevelOne)
+            .valueExact(CatLevelOne.SOURCES.name)
+        )
+        .whereNot(
+          _.tag
+            .nameExact(Constants.catLevelOne)
+            .valueExact(CatLevelOne.DERIVED_SOURCES.name)
+        )
     }
     val sources =
       cpg.identifier
