@@ -24,19 +24,19 @@
 package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
-import ai.privado.semantic.Language._
-import io.shiftleft.semanticcpg.language._
+import ai.privado.semantic.Language.*
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
-class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
+class SourceExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput) {
 
   lazy val sourcesList: List[AstNode]      = getSourcesList
   lazy val sourcesTagList: List[List[Tag]] = sourcesList.map(_.tag.l)
@@ -67,7 +67,7 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache) {
           entrySet._1,
           ExporterUtility
             .convertPathElements({
-              if (ScanProcessor.config.disableDeDuplication)
+              if (privadoInput.disableDeDuplication)
                 entrySet._2.toList
               else
                 entrySet._2.toList

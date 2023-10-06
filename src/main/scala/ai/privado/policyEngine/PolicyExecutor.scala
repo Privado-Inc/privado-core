@@ -23,6 +23,7 @@
 package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.threatEngine.ThreatUtility.getSourceNode
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
@@ -38,7 +39,13 @@ import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class PolicyExecutor(cpg: Cpg, dataFlowCache: DataFlowCache, repoName: String, ruleCache: RuleCache) {
+class PolicyExecutor(
+  cpg: Cpg,
+  dataFlowCache: DataFlowCache,
+  repoName: String,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput
+) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -52,7 +59,7 @@ class PolicyExecutor(cpg: Cpg, dataFlowCache: DataFlowCache, repoName: String, r
   // Map to contain sinkId -> List(pathIds)
   lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
-  val sourceExporter = new SourceExporter(cpg, ruleCache)
+  val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput)
 
   lazy val sourceExporterModel = sourceExporter.getSources
 
