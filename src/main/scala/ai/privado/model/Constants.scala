@@ -44,8 +44,9 @@ object Constants {
   val flow      = "flow"
 
   // systemConfig
-  val key   = "key"
-  val value = "value"
+  val key              = "key"
+  val value            = "value"
+  val MAX_SOCKET_COUNT = "maxSocketCount"
 
   val third_parties   = "third_parties"
   val internal_apis   = "internal_apis"

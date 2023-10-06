@@ -101,7 +101,7 @@ object StorageInheritRule {
       Array[String]("sqlalchemy.org"),
       List[String](
         "sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>",
-        ".*(all|get|one)"
+        "(all|get|one|one_or_none|query)"
       ), // Matches class models with chained methods
       false,
       "",
@@ -118,7 +118,10 @@ object StorageInheritRule {
       "SQLAlchemy(Write)",
       "",
       Array[String]("sqlalchemy.org"),
-      List[String]("sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>", ".*(add_columns)"),
+      List[String](
+        "sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>",
+        "(add_columns|gen_columns|create_all)"
+      ),
       false,
       "",
       HashMap[String, String](),

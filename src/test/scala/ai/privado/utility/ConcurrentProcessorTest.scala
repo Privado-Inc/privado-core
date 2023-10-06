@@ -1,5 +1,6 @@
 package ai.privado.utility
 
+import ai.privado.cache.RuleCache
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -7,7 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.collection.mutable.ListBuffer
 
 class SampleConcurrentProcessor(result: ListBuffer[String])
-    extends ConcurrentProcessor[String, ListBuffer[String]](result) {
+    extends ConcurrentProcessor[String, ListBuffer[String]](result, new RuleCache) {
   override def generateParts(): Array[String] = Array("first", "second", "third", "forth")
 
   override def runOnPart(part: String): Unit = {
