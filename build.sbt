@@ -62,7 +62,7 @@ libraryDependencies ++= Seq(
   "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config"),
   "org.jruby"                        % "jruby-base"              % "9.4.3.0",
   "org.zeromq"                       % "jeromq"                  % "0.5.4",
-  "org.sangria-graphql"             %% "sangria"                 % "4.0.0"
+  "org.sangria-graphql"             %% "sangria"                 % "4.0.0",
   "com.michaelpollmeier"             % "versionsort"             % "1.0.11"
 )
 
