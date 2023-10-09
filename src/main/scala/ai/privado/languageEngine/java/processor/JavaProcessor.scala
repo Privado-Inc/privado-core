@@ -277,6 +277,8 @@ object JavaProcessor {
         case Failure(exception) => logger.debug(s"Exception :", exception)
       }
     }
+
+    println(s"${Calendar.getInstance().getTime} -- After Lombok")
     msg
   }
 
