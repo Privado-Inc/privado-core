@@ -49,12 +49,12 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Clone standalone-monitoring-stability/flow-test
+      - name: Clone standalone-monitoring-stability/main
         uses: actions/checkout@v3
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: main
+          ref: parallel-test
 
       # langauge specific repository file
       - name: Run the script for ${{github.head_ref}} and ${{github.base_ref}}
@@ -127,7 +127,7 @@ jobs:
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: main
+          ref: parallel-test
 
       - name: Collate summary
         run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./collate_summary.py -s /home/runner/work/privado-core/privado-core/language_summary
