@@ -68,7 +68,8 @@ jobs:
 
       # Send result to slack
       - name: Zip the results
-        run: zip result-${{matrix.language}}-${{github.event.number}}.zip -r /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results
+        run: cd /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability && zip result-${{matrix.language}}-${{github.event.number}}.zip -r ./results
+
 
       - name: Set summary variable
         run: |
