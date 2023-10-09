@@ -66,7 +66,7 @@ jobs:
       - name: Move results to a folder
         run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{matrix.language}}-${{github.event.number}}.xlsx ./results/output-${{matrix.language}}-${{github.event.number}}.xlsx && mv ./temp/result-${{matrix.language}}-${{github.event.number}}.zip ./results/result-${{matrix.language}}-${{github.event.number}}.zip && mv slack_summary.txt ./results/slack_summary.txt
 
-      # Send result to slack
+      # Zip the results
       - name: Zip the results
         run: cd /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability && zip result-${{matrix.language}}-${{github.event.number}}.zip -r ./results
 
