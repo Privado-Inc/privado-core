@@ -153,7 +153,7 @@ jobs:
         with:
           update-ts: ${{needs.start_workflow.outputs.init_message_ts}}
           channel-id: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
-          slack-message: "\nComparison Results generated on ${{github.event.repository.name}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
+          slack-message: "\n*Language Engine* Comparison Results generated on ${{github.event.repository.name}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_TOKEN }}
 
