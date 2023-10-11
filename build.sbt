@@ -8,7 +8,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 
 
 val cpgVersion        = "1.4.23"
-val joernVersion      = "2.0.110"
+val joernVersion      = "2.0.117"
 val overflowdbVersion = "1.181"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
