@@ -38,10 +38,18 @@ import ai.privado.utility.Utilities.{
 }
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member}
 import overflowdb.BatchedUpdate
 
 object APITaggerUtility {
+  def getLiteralCode(element: AstNode): String = {
+    val literalCode = element match {
+      case member: Member => member.name
+      case _ => element.code.split(" ").last
+    }
+
+    element.originalPropertyValue.getOrElse(literalCode)
+  }
 
   def sinkTagger(
     apiInternalSinkPattern: List[AstNode],
@@ -63,7 +71,7 @@ object APITaggerUtility {
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
       }
       apiFlows.foreach(flow => {
-        val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
+        val literalCode = getLiteralCode(flow.elements.head)
         val apiNode     = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id

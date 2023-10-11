@@ -50,6 +50,7 @@ import java.security.MessageDigest
 import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
+import scala.util.matching.Regex
 
 import scala.Int.MaxValue
 
@@ -393,6 +394,12 @@ object Utilities {
         logger.debug("Exception : ", e)
         (Constants.UnknownDomain, Constants.UnknownDomain)
     }
+  }
+
+  def getAPIIdentifierFromCode(codeSnippet: String, variablePattern: String): Option[String] = {
+    val variableRegex = s"\\b$variablePattern\\b".r
+    val words = codeSnippet.split("\\s+")
+    words.find(variableRegex.pattern.matcher(_).matches())
   }
 
   /** Get list of source files with given file extensions
