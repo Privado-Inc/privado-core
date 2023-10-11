@@ -105,13 +105,12 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
         val identifierDomain =
           getAPIIdentifierFromCode(scriptTag.code, identifierRegex).getOrElse(Constants.UnknownDomain)
         if (!identifierDomain.equals(Constants.UnknownDomain)) {
-          if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
-          else {
+          if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
             newRuleIdToUse = ruleInfo.id + "." + identifierDomain
             ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + identifierDomain))
             addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+            storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, identifierDomain)
           }
-          storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, identifierDomain)
         }
       }
     })
