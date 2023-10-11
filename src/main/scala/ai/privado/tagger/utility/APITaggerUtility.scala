@@ -45,7 +45,7 @@ object APITaggerUtility {
   def getLiteralCode(element: AstNode): String = {
     val literalCode = element match {
       case member: Member => member.name
-      case _ => element.code.split(" ").last
+      case _              => element.code.split(" ").last
     }
 
     element.originalPropertyValue.getOrElse(literalCode)

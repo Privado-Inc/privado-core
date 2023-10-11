@@ -398,7 +398,7 @@ object Utilities {
 
   def getAPIIdentifierFromCode(codeSnippet: String, variablePattern: String): Option[String] = {
     val variableRegex = s"\\b$variablePattern\\b".r
-    val words = codeSnippet.split("\\s+")
+    val words         = codeSnippet.split("\\s+")
     words.find(variableRegex.pattern.matcher(_).matches())
   }
 
