@@ -5,6 +5,7 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
+import ai.privado.passes.HTMLParserPass
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -13,6 +14,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.util.Calendar
 import scala.collection.mutable
 
 class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
@@ -78,7 +80,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     ),
     SystemConfig(
       "apiIdentifier",
-      "(?i).*((hook|base|auth|prov|endp|install|cloud|host|request|service|gateway|route|resource|upload|api|worker|tracker)(.){0,12}url|(slack|web)(.){0,4}hook|(sentry|segment)(.){0,1}(dsn)|(rest|api|host|cloud|request|service)(.){0,4}(endpoint|gateway|route)).*",
+      "(?i).*((hook|base|auth|prov|endpoint|install|cloud|host|request|service|gateway|route|resource|upload|api|worker|tracker)(.){0,12}url|(slack|web)(.){0,4}hook|(sentry|segment)(.){0,1}(dsn)|(rest|api|host|cloud|request|service)(.){0,4}(endpoint|gateway|route)).*",
       Language.JAVASCRIPT,
       "",
       Array()
@@ -178,6 +180,80 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  val htmlScriptTagToCpg = scriptTagSampleCode(
+    "",
+    """
+      |<!doctype html>
+      |<html>
+      |    <script type="text/javascript">
+      |        await loadExternalScript(`https://widget.intercom.com/${INTERCOM_CHATBOT_APP_ID}`, 'Intercom');
+      |    </script>
+      |
+      |    <!-- Tealium Universal Tag -->
+      |    <script type="text/javascript" importance="low" fetchpriority="low">
+      |        (function(a,b,c,d) {
+      |            a='<%= conf.endpointUrl %><%= conf.TEALIUM_UTAG %>';
+      |            b=document;c='script';d=b.createElement(c);d.src=a;
+      |            d.type='text/java'+c;d.defer=true;
+      |            a=b.getElementsByTagName(c)[0];a.parentNode.insertBefore(d,a)})();
+      |    </script>
+      |    <script>
+      |        document.getElementById("demo").innerHTML = "Hello JavaScript!";
+      |    </script>
+      |
+      |    <script type="text/javascript">
+      |        (function(c,l,a,r,i,t,y){
+      |            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+      |            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+      |            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+      |        })(window, document, "clarity", "script", "i4bxc5y843");
+      |    </script>
+      |</html>
+      |""".stripMargin
+  )
+
+  "HTML ScripTag Parser" should {
+
+    "HTML ScriptTag should be tagged" in {
+      val scriptTagNode = htmlScriptTagToCpg.templateDom
+        .name(s"(?i)(${Constants.jsxElement}|${Constants.HTMLElement})")
+        .code("(?i)[\\\"]*<(script|iframe).*(https:\\/\\/).*")
+        .l
+
+      scriptTagNode.size shouldBe 4
+      scriptTagNode.foreach(n => {
+        n.name shouldBe "HTMLElement"
+        if (n.tag.nonEmpty) {
+          if (n.code.contains("widget.intercom.com")) {
+            n.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + ".widget.intercom.com")
+          } else {
+            n.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + ".clarity.ms")
+          }
+          n.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
+          n.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
+          n.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
+        }
+      })
+    }
+
+    "HTML ScriptTag with Identifier should be tagged" in {
+      val identifierTagNode = htmlScriptTagToCpg.templateDom
+        .name(s"(?i)(${Constants.jsxElement}|${Constants.HTMLElement})")
+        .code("(?i)[\\\"]*<(script|iframe).*(endpointUrl).*")
+        .l
+
+      identifierTagNode.size shouldBe 2
+
+      identifierTagNode.foreach(n => {
+        n.name shouldBe "HTMLElement"
+        n.tag.nameExact(Constants.id).head.value shouldBe (Constants.thirdPartiesAPIRuleId + ".conf.endpointUrl")
+        n.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
+        n.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
+        n.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
+      })
+    }
+  }
+
   def apiSampleCode(code: String): Cpg = {
     val inputDir = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)
@@ -191,6 +267,30 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val config      = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
+    cpgs.addOne(cpg)
+    cpg
+  }
+
+  def scriptTagSampleCode(code: String, htmlCode: String): Cpg = {
+    val inputDir = File.newTemporaryDirectory()
+    inputDirs.addOne(inputDir)
+    (inputDir / "axios-create.js").write(code)
+    (inputDir / "index.html").write(htmlCode)
+    val outputFile = File.newTemporaryFile()
+    outPutFiles.addOne(outputFile)
+    val rule: ConfigAndRules =
+      ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
+    val ruleCache = new RuleCache()
+    ruleCache.setRule(rule)
+    val config      = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
+    val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
+    val taggerCache = new TaggerCache()
+
+    println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+    new HTMLParserPass(cpg, projectRoot = inputDir.toString(), ruleCache, privadoInputConfig = privadoInput.copy())
+      .createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
     cpgs.addOne(cpg)
