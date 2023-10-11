@@ -180,7 +180,7 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, privad
         val scriptContent = scriptElement.getTextContent()
 
         // Remove single-line comments
-        val scriptContentWithoutSingleLineComments = scriptContent.replaceAll("//.*?(\\n|$)", "")
+        val scriptContentWithoutSingleLineComments = scriptContent.replaceAll("(?<!https?:)//.*?(\\n|$)", "")
         // Remove multi-line comments
         val scriptContentWithoutComments = scriptContentWithoutSingleLineComments.replaceAll("/\\*.*?\\*/", "")
 
