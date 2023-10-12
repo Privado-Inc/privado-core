@@ -63,15 +63,13 @@ object PIIHavingDifferentRetentionPeriod {
             })
             additionalDetails += "-------------------------------------------------------------------------"
 
-            val occurrence = ExporterUtility.convertIndividualPathElement(typeDeclFullName).get
-            val newOccurrence = DataFlowSubCategoryPathExcerptModel(
-              cacheSourceId,
-              occurrence.lineNumber,
-              occurrence.columnNumber,
-              occurrence.fileName,
-              occurrence.excerpt
+            ThreatUtility.convertToViolationProcessingModelAndAddToViolatingFlows(
+              Some(cacheSourceId),
+              typeDeclFullName,
+              violatingFlows,
+              tableName,
+              Some(additionalDetails)
             )
-            violatingFlows.append(ViolationProcessingModel(tableName, newOccurrence, Some(additionalDetails)))
           }
         }
       })

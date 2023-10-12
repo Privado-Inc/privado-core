@@ -29,11 +29,7 @@ object DataMethodParameterHardcoded {
         val relatedMethod = parameter.method
         if (relatedMethod.nonEmpty) {
           violatingFlows.append(
-            ViolationProcessingModel(
-              parameter.name,
-              ExporterUtility.convertIndividualPathElement(relatedMethod).get,
-              None
-            )
+            ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(relatedMethod), None)
           )
         }
       })
