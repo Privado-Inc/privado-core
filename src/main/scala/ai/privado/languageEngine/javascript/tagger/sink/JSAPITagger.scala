@@ -41,6 +41,7 @@ import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
   getDomainFromTemplates,
+  getAPIIdentifierFromCode,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
@@ -76,9 +77,10 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
 
     val clientCreationBaseUrlPattern: String =
       ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
-    val apiLiterals   = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
-    val initApiCalls  = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
-    val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals, builder, ruleInfo, ruleCache)
+    val apiLiterals     = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
+    val identifierRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val initApiCalls    = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
+    val uniqueDomains   = getBaseUrlForFrontendApps(initApiCalls, apiLiterals, builder, ruleInfo, ruleCache)
     // TODO: Need another approach to map the baseUrl with actual sink nodes
 
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
@@ -86,12 +88,11 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     val scriptTags =
       cpg.templateDom
         .name(s"(?i)(${Constants.jsxElement}|${Constants.HTMLElement})")
-        .code("(?i)[\\\"]*<(script|iframe).*" + ruleInfo.combinedRulePattern + ".*")
+        .code("(?i)[\\\"]*<(script|iframe).*(" + ruleInfo.combinedRulePattern + "|" + identifierRegex + ").*")
         .l
-    scriptTags.foreach(scriptTag => {
+    scriptTags.dedup.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
-
       if (!domain._1.equals(Constants.UnknownDomain)) {
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
         else {
@@ -100,6 +101,17 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
           addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
         storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
+      } else {
+        val identifierDomain =
+          getAPIIdentifierFromCode(scriptTag.code, identifierRegex).getOrElse(Constants.UnknownDomain)
+        if (!identifierDomain.equals(Constants.UnknownDomain)) {
+          if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+            newRuleIdToUse = ruleInfo.id + "." + identifierDomain
+            ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + identifierDomain))
+            addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+            storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, identifierDomain)
+          }
+        }
       }
     })
 
