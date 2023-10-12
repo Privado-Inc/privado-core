@@ -52,7 +52,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     .l
 
   implicit val engineContext: EngineContext =
-    Utilities.getEngineContext(4, PrivadoInput(disableDeDuplication = true))(JavaSemanticGenerator.getDefaultSemantics)
+    Utilities.getEngineContext(PrivadoInput(disableDeDuplication = true), 4)(JavaSemanticGenerator.getDefaultSemantics)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks

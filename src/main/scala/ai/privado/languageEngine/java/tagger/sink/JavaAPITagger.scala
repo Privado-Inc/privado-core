@@ -57,10 +57,11 @@ object APITaggerVersionJava extends Enumeration {
 
 class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger                        = LoggerFactory.getLogger(this.getClass)
-  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)(JavaSemanticGenerator.getDefaultSemantics)
-  val cacheCall: List[Call]                 = cpg.call.where(_.nameNot("(<operator|<init).*")).l
-  val internalMethodCall: List[String]      = cpg.method.dedup.isExternal(false).fullName.take(30).l
+  private val logger = LoggerFactory.getLogger(this.getClass)
+  implicit val engineContext: EngineContext =
+    Utilities.getEngineContext(privadoInputConfig, 4)(JavaSemanticGenerator.getDefaultSemantics)
+  val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+  val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
 
   val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
@@ -126,7 +127,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         new FeignAPI(cpg, ruleCache).tagFeignAPIWithDomainAndReturnWithoutDomainAPISinks(
           builder,
           ruleInfo,
-          apiInternalSources ++ propertySources ++ identifierSource
+          apiInternalSources ++ propertySources ++ identifierSource,
+          privadoInputConfig
         )
       else
         List()

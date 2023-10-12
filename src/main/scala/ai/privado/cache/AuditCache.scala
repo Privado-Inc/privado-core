@@ -82,7 +82,8 @@ class AuditCache {
     // TODO: This is using only JavaSemantic. We need to change to use based on language selection. I assume this can be handled inside Utilities.getEngineContext method itself
     val unfilteredPostSemanticsFlow = sinks
       .reachableByFlows(sources)(
-        Utilities.getEngineContext()(JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache))
+        Utilities
+          .getEngineContext(privadoScanConfig)(JavaSemanticGenerator.getSemantics(cpg, newPrivadoScanConfig, ruleCache))
       )
       .toList
 

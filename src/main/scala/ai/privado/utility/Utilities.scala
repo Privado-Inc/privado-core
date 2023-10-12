@@ -67,7 +67,7 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def getEngineContext(maxCallDepthP: Int = 4, config: PrivadoInput = ScanProcessor.config)(implicit
+  def getEngineContext(config: PrivadoInput, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()
   ): EngineContext = {
     val expanLimit =

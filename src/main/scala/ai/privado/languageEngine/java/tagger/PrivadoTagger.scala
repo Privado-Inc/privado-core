@@ -77,7 +77,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
       new MessagingConsumerCustomTagger(cpg, ruleCache).createAndApply()
-      new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache).createAndApply()
+      new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache, privadoInputConfig).createAndApply()
     }
 
     new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, EntityMapper.getClassTableMapping(cpg))
