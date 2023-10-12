@@ -129,7 +129,8 @@ object DatabaseReadUtility {
                     .map(_.asInstanceOf[CfgNode])
                     .l
 
-                val readFlow = Dataflow.dataflowForSourceSinkPair(referencingQueryNodes, dataElementSinks)
+                val readFlow =
+                  Dataflow.dataflowForSourceSinkPair(referencingQueryNodes, dataElementSinks, privadoInputConfig)
                 if (readFlow.nonEmpty) {
                   // As a flow is present from Select query to a Data element we can say, the data element is read from the query
                   readFlow

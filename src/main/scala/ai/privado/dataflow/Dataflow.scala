@@ -69,7 +69,7 @@ class Dataflow(cpg: Cpg) {
 
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
-      Utilities.getEngineContext(4)(semanticsP = getSemantics(cpg, privadoScanConfig, ruleCache))
+      Utilities.getEngineContext(privadoScanConfig, 4)(semanticsP = getSemantics(cpg, privadoScanConfig, ruleCache))
 
     val sources = Dataflow.getSources(cpg)
     var sinks   = Dataflow.getSinks(cpg)
@@ -210,8 +210,12 @@ class Dataflow(cpg: Cpg) {
 
 object Dataflow {
 
-  def dataflowForSourceSinkPair(sources: List[AstNode], sinks: List[CfgNode]): List[Path] = {
-    sinks.reachableByFlows(sources)(Utilities.getEngineContext()).l
+  def dataflowForSourceSinkPair(
+    sources: List[AstNode],
+    sinks: List[CfgNode],
+    privadoInputConfig: PrivadoInput
+  ): List[Path] = {
+    sinks.reachableByFlows(sources)(Utilities.getEngineContext(privadoInputConfig)).l
   }
 
   def getSources(cpg: Cpg): List[AstNode] = {

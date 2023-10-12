@@ -25,7 +25,7 @@ package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -58,11 +58,12 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
   def tagFeignAPIWithDomainAndReturnWithoutDomainAPISinks(
     builder: DiffGraphBuilder,
     ruleInfo: RuleInfo,
-    httpSources: List[AstNode]
+    httpSources: List[AstNode],
+    privadoInputConfig: PrivadoInput
   ): List[Call] = {
     val (typeDeclWithoutUrl, typeDeclWithUrl) = getTypeDeclUsingFeignClient
     val feignRequestLineTypeDecl              = getFeignClientTypeDeclUsingRequestLine
-    val (feingAPIBeanTypeDecl, beanUrl)       = getFeignClientTypeDeclUsingBean(httpSources)
+    val (feingAPIBeanTypeDecl, beanUrl)       = getFeignClientTypeDeclUsingBean(httpSources, privadoInputConfig)
 
     val feignClientTypeDeclWithUrl    = mutable.HashMap[String, String]()
     val feignClientTypeDeclWithoutUrl = mutable.Set[TypeDecl]()
@@ -131,7 +132,10 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
 
   /** Returns typeDecl node and url which are probable API sinks when used with Bean configuration
     */
-  private def getFeignClientTypeDeclUsingBean(httpSources: List[AstNode]): (List[TypeDecl], String) = {
+  private def getFeignClientTypeDeclUsingBean(
+    httpSources: List[AstNode],
+    privadoInputConfig: PrivadoInput
+  ): (List[TypeDecl], String) = {
     val feignTargetCalls = cpg.method
       .where(_.annotation.name("Bean"))
       .ast
@@ -145,7 +149,9 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     if (targetArguments.nonEmpty) {
       val feignFlows = {
         val flows = feignTargetCalls
-          .reachableByFlows(httpSources)(Utilities.getEngineContext(4)(JavaSemanticGenerator.getDefaultSemantics))
+          .reachableByFlows(httpSources)(
+            Utilities.getEngineContext(privadoInputConfig, 4)(JavaSemanticGenerator.getDefaultSemantics)
+          )
           .l
         if (ScanProcessor.config.disableDeDuplication)
           flows
