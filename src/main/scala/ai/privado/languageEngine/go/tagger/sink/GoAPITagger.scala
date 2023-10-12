@@ -43,7 +43,7 @@ class GoAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  val cacheCall      = cpg.call.where(_.nameNot("(<operator).*")).l
+  val cacheCall = cpg.call.where(_.nameNot("(<operator).*")).l
 
   lazy val APISINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
