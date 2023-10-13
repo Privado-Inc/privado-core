@@ -29,7 +29,7 @@ object ObjectsWithPIIsPassedAsParameter {
 
       parameters.distinctBy(_.name) foreach ((parameter) => {
         violatingFlows.append(
-          ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(parameter).get, None)
+          ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(parameter), None)
         )
       })
 

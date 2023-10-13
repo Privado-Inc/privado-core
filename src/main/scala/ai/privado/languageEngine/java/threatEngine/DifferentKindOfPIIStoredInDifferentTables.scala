@@ -79,16 +79,12 @@ object DifferentKindOfPIIStoredInDifferentTables {
               }
             })
 
-            val occurrence = ExporterUtility.convertIndividualPathElement(typeDeclFullName).get
-            val newOccurrence = DataFlowSubCategoryPathExcerptModel(
-              cacheSourceId,
-              occurrence.lineNumber,
-              occurrence.columnNumber,
-              occurrence.fileName,
-              occurrence.excerpt
-            )
-            violatingFlows.append(
-              ViolationProcessingModel(getPIINameFromSourceId(tableName), newOccurrence, Some(additionalDetail))
+            ThreatUtility.convertToViolationProcessingModelAndAddToViolatingFlows(
+              Some(cacheSourceId),
+              typeDeclFullName,
+              violatingFlows,
+              tableName,
+              Some(additionalDetail)
             )
           }
         }
