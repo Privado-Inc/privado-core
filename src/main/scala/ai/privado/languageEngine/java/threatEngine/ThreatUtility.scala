@@ -23,17 +23,18 @@
 
 package ai.privado.languageEngine.java.threatEngine
 
+import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.utility.Utilities
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
 import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.nodes.{Tag}
 import overflowdb.traversal.Traversal
 
+import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 import scala.util.control.Breaks.{break, breakable}
 import scala.xml.MetaData
@@ -51,7 +52,7 @@ object ThreatUtility {
   def transformOccurrenceList(
     occurrenceList: List[DataFlowSubCategoryPathExcerptModel]
   ): List[ViolationProcessingModel] = {
-    occurrenceList.map(occurrence => ViolationProcessingModel("", occurrence, None))
+    occurrenceList.map(occurrence => ViolationProcessingModel("", Some(occurrence), None))
   }
 
   def hasDataElements(cpg: Cpg): Boolean = {
@@ -140,5 +141,25 @@ object ThreatUtility {
   def getPIINameFromSourceId(input: String): String = {
     val words = input.split("\\.")
     words.lastOption.getOrElse(input)
+  }
+
+  def convertToViolationProcessingModelAndAddToViolatingFlows(
+    sample: Option[String],
+    node: AstNode,
+    violatingFlows: ListBuffer[ViolationProcessingModel],
+    sourceId: String,
+    details: Option[String]
+  ) = {
+    val occurrence = ExporterUtility.convertIndividualPathElement(node)
+    if (occurrence.isDefined) {
+      val newOccurrence = DataFlowSubCategoryPathExcerptModel(
+        if sample.isDefined then sample.get else occurrence.get.sample,
+        occurrence.get.lineNumber,
+        occurrence.get.columnNumber,
+        occurrence.get.fileName,
+        occurrence.get.excerpt
+      )
+      violatingFlows.append(ViolationProcessingModel(sourceId, Some(newOccurrence), details))
+    }
   }
 }
