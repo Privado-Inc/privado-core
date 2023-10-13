@@ -41,7 +41,7 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
   var inputDir: File   = _
   var outputFile: File = _
   val ruleCache        = new RuleCache()
-  val privadoInput = PrivadoInput(limitArgExpansionDataflows = 20)
+  val privadoInput     = PrivadoInput(limitArgExpansionDataflows = 20)
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()

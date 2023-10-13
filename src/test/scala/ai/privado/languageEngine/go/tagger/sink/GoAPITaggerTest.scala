@@ -112,10 +112,10 @@ class GoAPITaggerTest extends GoTaggingTestBase {
       postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
       postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API"
       postCallNode.tag.nameExact("apiUrlSinks.ThirdParties.API").value.head shouldBe "API"
-      //TODO: check tags on postCallNode for below cases
-        // 1. When literal holds some url
-        // 2. When Identifier is matching with apiIdentifier pattern
-        // 3. When nothing is matching it should tagged with "API"
+      // TODO: check tags on postCallNode for below cases
+      // 1. When literal holds some url
+      // 2. When Identifier is matching with apiIdentifier pattern
+      // 3. When nothing is matching it should tagged with "API"
     }
 
   }
