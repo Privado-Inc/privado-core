@@ -54,13 +54,13 @@ class GoAPITaggerTest extends GoTaggingTestBase {
       |	Email    string
       |}
       |func (client *APIClient) SendUser(user User) error {
-      |	url := client.BaseURL + "/users"
+      |	http_url := client.BaseURL + "/users"
       |	payload, err := json.Marshal(user)
       |	if err != nil {
       |		return err
       |	}
       |
-      |	resp, err := http.Post(url, "application/json", bytes.NewBuffer(payload))
+      |	resp, err := http.Post(http_url, "application/json", bytes.NewBuffer(payload))
       |	if err != nil {
       |		return err
       |	}
@@ -104,6 +104,14 @@ class GoAPITaggerTest extends GoTaggingTestBase {
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
+
+      postCallNode.tag.size shouldBe 6
+      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API"
+      postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
+      postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
+      postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
+      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API"
+      postCallNode.tag.nameExact("apiUrlSinks.ThirdParties.API").value.head shouldBe "API"
       //TODO: check tags on postCallNode for below cases
         // 1. When literal holds some url
         // 2. When Identifier is matching with apiIdentifier pattern
