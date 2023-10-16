@@ -104,7 +104,6 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val methodNameMap    = new mutable.HashMap[String, String]()
 
       val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
-
       workbookList.foreach(row => {
         classNameList += row.head
         fileScoreList += row(2)

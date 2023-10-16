@@ -17,16 +17,16 @@ import scala.util.Try
 object AuditReportEntryPoint {
 
   case class DataElementDiscoveryAudit(
-    className: String,
+    isPII: String,
+    excerpt: String,
+    sample: String,
     fileName: String,
-    filePriorityScore: Double,
-    memberName: String,
-    memberType: String,
-    tagged: Boolean,
-    sourceRuleId: String,
-    inputToCollection: Boolean,
-    collectionEndpointPath: String,
-    collectionMethodFullName: String
+    dataElementId: String
+//    tagged: Boolean,
+//    sourceRuleId: String,
+//    inputToCollection: Boolean,
+//    collectionEndpointPath: String,
+//    collectionMethodFullName: String
   )
 
   implicit val DataElementDiscoveryAuditModelDecoder: Decoder[DataElementDiscoveryAudit] =
@@ -42,18 +42,12 @@ object AuditReportEntryPoint {
     val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
 
     for (item <- dataElementDiscoveryData.drop(1)) {
-      auditDataList += DataElementDiscoveryAudit(
-        eliminateEmptyCellValueIfExist(item(0)),
-        eliminateEmptyCellValueIfExist(item(1)),
-        if (item(2) == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) 0.0 else item(2).toDouble,
-        eliminateEmptyCellValueIfExist(item(3)),
-        eliminateEmptyCellValueIfExist(item(4)),
-        if (item(5) == "YES") true else false,
-        eliminateEmptyCellValueIfExist(item(6)),
-        if (item(5) == "YES") true else false,
-        eliminateEmptyCellValueIfExist(item(8)),
-        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
-      )
+      val rItem = item.map(el => el.replace("\"", "\\"))
+      println("------")
+      println(rItem)
+      println("===>>>>")
+      println(item)
+      auditDataList += DataElementDiscoveryAudit(rItem(0), rItem(1), rItem(2), rItem(3), rItem(4))
     }
     JSONExporter.dataElementDiscoveryAuditFileExport(
       AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
@@ -74,31 +68,33 @@ object AuditReportEntryPoint {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
     val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache)
+    println(dataElementDiscoveryData)
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath)
-    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
+    println("Created JSON")
+//    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
     // Changed Background colour when tagged
-    changeTaggedBackgroundColour(workbook, List(4, 6))
+//    changeTaggedBackgroundColour(workbook, List(4, 6))
 
     // Set Dependency Report data into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
-      DependencyReport.processDependencyAudit(dependencies)
-    )
+//    createSheet(
+//      workbook,
+//      AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
+//      DependencyReport.processDependencyAudit(dependencies)
+//    )
 
     // Set Data Flow report into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
-      DataFlowReport.processDataFlowAudit(auditCache)
-    )
+//    createSheet(
+//      workbook,
+//      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
+//      DataFlowReport.processDataFlowAudit(auditCache)
+//    )
 
     // Set Unresolved flow into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-      UnresolvedFlowReport.processUnresolvedFlow(auditCache)
-    )
+//    createSheet(
+//      workbook,
+//      AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
+//      UnresolvedFlowReport.processUnresolvedFlow(auditCache)
+//    )
 
     workbook
   }
