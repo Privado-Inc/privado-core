@@ -105,7 +105,7 @@ object JavaProcessor {
                 val removedPaths = totalPaths.filter(_.equals("No"))
                 println(s"Total path : ${totalPaths.size}")
                 println(s"Removed path : ${removedPaths.size}")
-                println(s"Percentage path reduced : ${(totalPaths.size-removedPaths.size)*100/totalPaths.size}")
+                println(s"Percentage path reduced : ${(removedPaths.size)*100/totalPaths.size}")
                 val generatedSemantics = JavaSemanticGenerator.getMaximumFlowSemantic(responseModel.output.map{ scm =>
                   val semanticModel = JavaSemanticGenerator.generateSemanticForTaint(cpg.call.where(_.id(scm.id)).head)
 
