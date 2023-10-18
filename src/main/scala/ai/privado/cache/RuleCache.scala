@@ -23,6 +23,7 @@
 package ai.privado.cache
 
 import ai.privado.model.{ConfigAndRules, Constants, PolicyOrThreat, RuleInfo}
+import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 
 import scala.collection.mutable
 
@@ -37,6 +38,8 @@ class RuleCache {
   val internalRules             = mutable.HashMap[String, Int]()
   val internalPolicies          = mutable.Set[String]()
   private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
+
+  private val externalSemantics = mutable.ListBuffer[String]()
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
@@ -62,6 +65,9 @@ class RuleCache {
   def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
 
   def getStorageRuleInfo(): List[RuleInfo] = storageRuleInfo.toList
+
+  def addExternalSemantics(semanticRules : Seq[String]): Unit = semanticRules.foreach(externalSemantics.addOne)
+  def getExternalSemantics: List[String] = externalSemantics.toList
 
   def getRuleInfo(ruleId: String): Option[RuleInfo] = ruleInfoMap.get(ruleId)
 

@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache._
+import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
@@ -32,15 +32,19 @@ import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
-import ai.privado.languageEngine.java.semantic.Language._
+import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
+import ai.privado.languageEngine.java.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants._
-import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser, DBTParserPass}
-import ai.privado.semantic.Language._
-import ai.privado.utility.Utilities.createCpgFolder
+import ai.privado.model.Constants.*
+import ai.privado.model.llm.SemanticResponseModel
+import ai.privado.model.{CatLevelOne, Constants, Language, Semantic}
+import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser}
+import ai.privado.semantic.Language.*
+import ai.privado.utility.Utilities.{createCpgFolder, resolver}
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
+import com.fasterxml.jackson.databind.json.JsonMapper
+import dotty.tools.dotc.util.HashMap
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -48,7 +52,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
@@ -56,6 +60,7 @@ import java.nio.file.Paths
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+import requests.*
 
 object JavaProcessor {
 
@@ -71,6 +76,48 @@ object JavaProcessor {
     xtocpg match {
       case Success(cpg) => {
         try {
+          // Generating Semantic
+          val url = "http://127.0.0.1:8000/generate-semantic/"
+          //val data = Map("key1" -> "value1", "key2" -> "value2")
+          val callMapping = cpg.method.filter(_.isExternal).where(_.nameNot("(?i).*(operator|<init>|require|import).*"))
+            .callIn.map(call => (call.id(), call.typeFullName, call.name, call.code, call.argument.map(arg => (arg.argumentIndex, arg.argumentName, arg.code))))
+            .dedupBy(_._3)
+            .map { call => List(("id", call._1),("returnValue", call._2), ("name", call._3), ("code", call._4), ("arguments", call._5.l)).toMap }.l
+
+          val callMap = callMapping.groupBy(mapping => mapping.get("id"))
+
+          val data = s"""{"callMappings": ${callMapping.toJson}}""".stripMargin
+
+          val response = requests.post(url, data=data, readTimeout=100000, connectTimeout=100000, headers = Map("Content-Type" -> "application/json"))
+
+          if (response.statusCode == 200) {
+            val responseBody = response.text()
+
+            import io.circe.parser._
+            import ai.privado.model.llm.SemanticResponseEncoderDecoder._
+
+            val parsedData = decode[SemanticResponseModel](responseBody)
+            parsedData match
+              case Left(error) => println(s"Failed to parse the JSON response: ${error.getMessage}")
+              case Right(responseModel) =>
+                // Process responseBody as needed
+                val totalPaths = responseModel.output.flatMap(_.arguments.map(_.result.label))
+                val removedPaths = totalPaths.filter(_.equals("No"))
+                println(s"Total path : ${totalPaths.size}")
+                println(s"Removed path : ${removedPaths.size}")
+                println(s"Percentage path reduced : ${(totalPaths.size-removedPaths.size)*100/totalPaths.size}")
+                val generatedSemantics = JavaSemanticGenerator.getMaximumFlowSemantic(responseModel.output.map{ scm =>
+                  val semanticModel = JavaSemanticGenerator.generateSemanticForTaint(cpg.call.where(_.id(scm.id)).head)
+
+                  val newSemantic = scm.arguments.filter(_.result.label == "Yes").map(ar => s"${ar.param1._1.get}->${ar.param2._1.get}")
+                  Semantic(semanticModel.signature, semanticModel.flow.trim + " " + newSemantic.mkString(" "), semanticModel.file, semanticModel.language, semanticModel.categoryTree)
+                }.iterator)
+                ruleCache.addExternalSemantics(generatedSemantics)
+                println(responseModel)
+                println(generatedSemantics)
+          } else {
+            println(s"Request failed with status code: ${response.statusCode}")
+          }
 
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA).createAndApply()
           new JavaPropertyLinkerPass(cpg).createAndApply()

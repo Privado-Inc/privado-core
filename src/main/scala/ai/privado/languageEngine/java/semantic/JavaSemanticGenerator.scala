@@ -61,6 +61,7 @@ object JavaSemanticGenerator extends SemanticGenerator {
     var customNonPersonalMemberSemantics = Seq[String]()
 
     if (!privadoScanConfig.disableRunTimeSemantics) {
+      /*
       val nonTaintingMethods = cpg.method.where(_.callIn).isExternal(true).fullName(".*:(void|boolean|long|int)\\(.*").l
       customNonTaintDefaultSemantics = getMaximumFlowSemantic(
         nonTaintingMethods
@@ -82,6 +83,8 @@ object JavaSemanticGenerator extends SemanticGenerator {
           .fullNameNot(".*\\.set[A-Za-z_]*:.*")
           .map(generateSemanticForTaint(_, -1))
       )
+      */
+      customNonTaintDefaultSemantics = ruleCache.getExternalSemantics
 
       customNonPersonalMemberSemantics = generateNonPersonalMemberSemantics(cpg)
     }
