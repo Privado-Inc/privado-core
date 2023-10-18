@@ -88,7 +88,7 @@ object JavaProcessor {
 
           val data = s"""{"callMappings": ${callMapping.toJson}}""".stripMargin
 
-          val response = requests.post(url, data=data, readTimeout=100000, connectTimeout=100000, headers = Map("Content-Type" -> "application/json"))
+          val response = requests.post(url, data=data, readTimeout=1000000, connectTimeout=1000000, headers = Map("Content-Type" -> "application/json"))
 
           if (response.statusCode == 200) {
             val responseBody = response.text()
