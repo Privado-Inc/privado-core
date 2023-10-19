@@ -81,7 +81,6 @@ object JavaProcessor {
           //val data = Map("key1" -> "value1", "key2" -> "value2")
           val callMapping = cpg.method.filter(_.isExternal).where(_.nameNot("(?i).*(operator|<init>|require|import).*"))
             .callIn.map(call => (call.id(), call.typeFullName, call.name, call.code, call.argument.map(arg => (arg.argumentIndex, arg.argumentName, arg.code))))
-            .dedupBy(_._3)
             .map { call => List(("id", call._1),("returnValue", call._2), ("name", call._3), ("code", call._4), ("arguments", call._5.l)).toMap }.l
 
           val callMap = callMapping.groupBy(mapping => mapping.get("id"))
