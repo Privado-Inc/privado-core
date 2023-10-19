@@ -49,11 +49,13 @@ object JavaSemanticGenerator extends SemanticGenerator {
     ruleCache: RuleCache,
     exportRuntimeSemantics: Boolean = false
   ): Semantics = {
-    val customSinkSemantics = getMaximumFlowSemantic(
+    val customSinkSemantics = Seq[String]()
+      /*getMaximumFlowSemantic(
       cpg.call
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
         .map(generateSemanticForTaint(_, -1))
     )
+      */
 
     var customNonTaintDefaultSemantics   = Seq[String]()
     var specialNonTaintDefaultSemantics  = Seq[String]()
