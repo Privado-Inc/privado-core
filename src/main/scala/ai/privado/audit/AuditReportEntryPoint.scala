@@ -26,7 +26,8 @@ object AuditReportEntryPoint {
     sourceRuleId: String,
     inputToCollection: Boolean,
     collectionEndpointPath: String,
-    collectionMethodFullName: String
+    collectionMethodFullName: String,
+    excerpt: String
   )
 
   implicit val DataElementDiscoveryAuditModelDecoder: Decoder[DataElementDiscoveryAudit] =
@@ -52,7 +53,8 @@ object AuditReportEntryPoint {
         eliminateEmptyCellValueIfExist(item(6)),
         if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(8)),
-        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        item(10)
       )
     }
     JSONExporter.dataElementDiscoveryAuditFileExport(

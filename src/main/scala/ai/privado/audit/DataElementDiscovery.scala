@@ -5,9 +5,10 @@ import ai.privado.cache.TaggerCache
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{File, Identifier, Local, Member, MethodParameterIn, TypeDecl}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import ai.privado.dataflow.Dataflow
+import ai.privado.exporter.ExporterUtility.convertIndividualPathElement
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -235,7 +236,8 @@ object DataElementDiscovery {
       AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      "excerpt"
     )
 
     // Construct the excel sheet and fill the data
@@ -256,7 +258,8 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
-                  info.methodDetail
+                  info.methodDetail,
+                  convertIndividualPathElement(key).get.excerpt
                 )
               })
             } else {
@@ -270,7 +273,8 @@ object DataElementDiscovery {
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                convertIndividualPathElement(key).get.excerpt
               )
             }
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
@@ -287,7 +291,8 @@ object DataElementDiscovery {
                     ruleMemberInfo.getOrElse(member.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    convertIndividualPathElement(member).get.excerpt
                   )
                 } else {
                   workbookResult += List(
@@ -300,7 +305,8 @@ object DataElementDiscovery {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    convertIndividualPathElement(member).get.excerpt
                   )
                 }
               }
@@ -318,7 +324,8 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
-                  info.methodDetail
+                  info.methodDetail,
+                  convertIndividualPathElement(key).get.excerpt
                 )
               })
             } else {
@@ -332,7 +339,8 @@ object DataElementDiscovery {
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                convertIndividualPathElement(key).get.excerpt
               )
             }
             value.foreach {
@@ -347,7 +355,8 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  convertIndividualPathElement(member).get.excerpt
                 )
               }
             }
@@ -576,7 +585,8 @@ object DataElementDiscoveryJS {
       AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      "excerpt"
     )
     // Construct the excel sheet and fill the data
     try {
@@ -592,7 +602,8 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            convertIndividualPathElement(key).get.excerpt
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
           val addedMembers   = mutable.Set[String]()
@@ -615,7 +626,8 @@ object DataElementDiscoveryJS {
                     ruleMemberInfo.getOrElse(member.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    convertIndividualPathElement(member).get.excerpt
                   )
                 } else {
                   workbookResult += List(
@@ -628,7 +640,8 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    convertIndividualPathElement(member).get.excerpt
                   )
                 }
               }
@@ -648,7 +661,8 @@ object DataElementDiscoveryJS {
                     ruleMemberInfo.getOrElse(param.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    convertIndividualPathElement(key).get.excerpt
                   )
                 } else {
                   workbookResult += List(
@@ -661,7 +675,8 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    convertIndividualPathElement(key).get.excerpt
                   )
                 }
               }
@@ -693,7 +708,8 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            convertIndividualPathElement(identifier).get.excerpt
           )
       })
 
@@ -719,7 +735,8 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            convertIndividualPathElement(local).get.excerpt
           )
       })
 
