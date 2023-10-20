@@ -29,8 +29,10 @@ import ai.privado.semantic.SemanticGenerator
 import ai.privado.utility.Utilities.semanticFileExporter
 import io.joern.dataflowengineoss.semanticsloader.{Parser, Semantics}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
+
+import scala.util.{Failure, Success, Try}
 
 object JavascriptSemanticGenerator extends SemanticGenerator {
 
@@ -41,12 +43,15 @@ object JavascriptSemanticGenerator extends SemanticGenerator {
     privadoScanConfig: PrivadoInput,
     ruleCache: RuleCache,
     exportRuntimeSemantics: Boolean = false
-  ) = {
+  ): Semantics = {
     val customSinkSemantics = getMaximumFlowSemantic(
       cpg.call
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+        .where(_.tag.valueExact(Constants.leakages))
         .map(generateSemanticForTaint(_, -1, extraParameter = 1))
     )
+
+
 
     val semanticFromConfig = ruleCache.getRule.semantics.flatMap(generateSemantic).sorted
 
@@ -58,6 +63,7 @@ object JavascriptSemanticGenerator extends SemanticGenerator {
     if (exportRuntimeSemantics) {
       try {
         val headerAndSemanticPairs: Map[String, Seq[String]] = Map(
+          "Custom generated semantics" -> ruleCache.getExternalSemantics,
           "Custom customSinkSemantics semantics" -> customSinkSemantics,
           "Custom semanticFromConfig semantics"  -> semanticFromConfig
         )
@@ -70,9 +76,13 @@ object JavascriptSemanticGenerator extends SemanticGenerator {
       }
     }
 
-    val list           = customSinkSemantics ++ semanticFromConfig
+
+    val list           = ruleCache.getExternalSemantics ++ customSinkSemantics ++ semanticFromConfig
     val parsed         = new Parser().parse(list.mkString("\n"))
     val finalSemantics = JavascriptSemanticGenerator.getDefaultSemantics.elements ++ parsed
+
+    println("Final semantics")
+    Semantics.fromList(finalSemantics).elements.foreach(item => println((item.methodFullName, item.mappings, item.regex)))
     Semantics.fromList(finalSemantics)
   }
 

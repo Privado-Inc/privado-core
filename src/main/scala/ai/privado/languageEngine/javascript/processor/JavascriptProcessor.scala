@@ -28,11 +28,13 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerC
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.javascript.JavascriptSemanticGenerator
 import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
 import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.llm.SemanticResponseModel
+import ai.privado.model.{CatLevelOne, Constants, Language, Semantic}
 import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -46,6 +48,7 @@ import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import java.util.Calendar
+import scala.collection.immutable.List
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
@@ -65,6 +68,51 @@ object JavascriptProcessor {
       case Success(cpg) =>
         // Apply default overlays
         new NaiveCallLinker(cpg).createAndApply()
+
+
+        // Generating Semantic
+        val url = "http://127.0.0.1:8000/generate-semantic/"
+        //val data = Map("key1" -> "value1", "key2" -> "value2")
+        val callMapping = cpg.method.filter(_.isExternal).where(_.nameNot("(?i).*(operator|<init>|require|import).*"))
+          .map(_.callIn.headOption).filter(_.isDefined).map(_.get)
+          .map(call => (call.id(), call.typeFullName, call.name, call.code, call.argument.map(arg => (arg.argumentIndex, arg.argumentName, arg.code))))
+          .map { call => List(("id", call._1), ("returnValue", call._2), ("name", call._3), ("code", call._4), ("arguments", call._5.l)).toMap }.l
+
+        val callMap = callMapping.groupBy(mapping => mapping.get("id"))
+
+        val data = s"""{"callMappings": ${callMapping.toJson}}""".stripMargin
+
+        val response = requests.post(url, data = data, readTimeout = 1000000, connectTimeout = 1000000, headers = Map("Content-Type" -> "application/json"))
+
+        if (response.statusCode == 200) {
+          val responseBody = response.text()
+
+          import io.circe.parser._
+          import ai.privado.model.llm.SemanticResponseEncoderDecoder._
+
+          val parsedData = decode[SemanticResponseModel](responseBody)
+          parsedData match
+            case Left(error) => println(s"Failed to parse the JSON response: ${error.getMessage}")
+            case Right(responseModel) =>
+              // Process responseBody as needed
+              val totalPaths = responseModel.output.flatMap(_.arguments.map(_.result.label))
+              val removedPaths = totalPaths.filter(_.equals("No"))
+              println(s"Total path : ${totalPaths.size}")
+              println(s"Removed path : ${removedPaths.size}")
+              println(s"Percentage path reduced : ${(removedPaths.size) * 100 / totalPaths.size}")
+              val generatedSemantics = JavascriptSemanticGenerator.getMaximumFlowSemantic(responseModel.output.map { scm =>
+                val semanticModel = JavascriptSemanticGenerator.generateSemanticForTaint(cpg.call.where(_.id(scm.id)).head)
+
+                val newSemantic = scm.arguments.filter(_.result.label == "Yes").map(ar => s"${ar.param1._1.get}->${ar.param2._1.get}")
+                Semantic(semanticModel.signature, semanticModel.flow.trim + " " + newSemantic.mkString(" "), semanticModel.file, semanticModel.language, semanticModel.categoryTree)
+              }.iterator)
+              ruleCache.addExternalSemantics(generatedSemantics)
+              println(responseModel)
+              println(generatedSemantics)
+        } else {
+          println(s"Request failed with status code: ${response.statusCode}")
+        }
+
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
           .createAndApply()
