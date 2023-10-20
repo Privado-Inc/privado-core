@@ -743,7 +743,7 @@ object DataElementDiscoveryJS {
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
-        println("Failed to process Data Element Discovery report")
+        println("Failed to process Data Element Discovery report ")
         logger.debug("Failed to process Data Element Discovery report", ex)
         ex.printStackTrace()
     }
