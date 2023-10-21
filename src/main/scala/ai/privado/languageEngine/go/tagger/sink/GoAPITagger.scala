@@ -36,6 +36,4 @@ class GoAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 
-
-
 }

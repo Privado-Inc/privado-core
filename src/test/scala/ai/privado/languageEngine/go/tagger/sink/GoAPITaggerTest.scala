@@ -98,6 +98,7 @@ class GoAPITaggerTest extends GoTaggingTestBase {
       |""".stripMargin
 
   "Tagging api sink" should {
+
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
