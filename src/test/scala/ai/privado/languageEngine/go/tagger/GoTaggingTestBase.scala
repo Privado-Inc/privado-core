@@ -41,7 +41,7 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
   var inputDir: File   = _
   var outputFile: File = _
   val ruleCache        = new RuleCache()
-  val privadoInput     = PrivadoInput(limitArgExpansionDataflows = 20)
+  val privadoInput     = PrivadoInput()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -99,7 +99,7 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
       "",
       CatLevelOne.SINKS,
       catLevelTwo = Constants.third_parties,
-      Language.JAVASCRIPT,
+      Language.GO,
       Array()
     )
   )
