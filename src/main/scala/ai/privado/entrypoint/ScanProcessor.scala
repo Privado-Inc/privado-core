@@ -398,7 +398,10 @@ object ScanProcessor extends CommandProcessor {
                 KotlinProcessor.createKotlinCpg(
                   getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
                   sourceRepoLocation,
-                  lang, dataFlowCache = getDataflowCache, auditCache)
+                  lang,
+                  dataFlowCache = getDataflowCache,
+                  auditCache
+                )
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(

@@ -9,7 +9,14 @@ import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, outputUnresolvedFilename}
+import ai.privado.model.Constants.{
+  cpgOutputFileName,
+  outputAuditFileName,
+  outputDirectoryName,
+  outputFileName,
+  outputIntermediateFileName,
+  outputUnresolvedFilename
+}
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser, SQLPropertyPass}
 import ai.privado.semantic.Language.*
@@ -55,6 +62,8 @@ object KotlinProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
 
+          Kotlin2Cpg.postProcessingPass(cpg)
+
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
@@ -86,7 +95,15 @@ object KotlinProcessor {
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache, dataFlowCache) match {
+          JSONExporter.fileExport(
+            cpg,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache
+          ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
@@ -180,8 +197,13 @@ object KotlinProcessor {
     * @param lang
     * @return
     */
-  def createKotlinCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String, dataFlowCache: DataFlowCache,
-                      auditCache: AuditCache): Either[String, Unit] = {
+  def createKotlinCpg(
+    ruleCache: RuleCache,
+    sourceRepoLocation: String,
+    lang: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
+  ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
