@@ -1,23 +1,19 @@
 package ai.privado.languageEngine.kotlin.processor
 
-import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.java.cache.ModuleCache
+import ai.privado.languageEngine.java.passes.config.ModuleFilePass
+import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  outputUnresolvedFilename
-}
+import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, outputUnresolvedFilename}
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser, SQLPropertyPass}
-import ai.privado.semantic.Language._
-import ai.privado.languageEngine.kotlin.semantic.Language._
+import ai.privado.semantic.Language.*
+import ai.privado.languageEngine.kotlin.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
@@ -29,7 +25,7 @@ import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -43,7 +39,9 @@ object KotlinProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
-    sourceRepoLocation: String
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -73,22 +71,22 @@ object KotlinProcessor {
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
 
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy())
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
 
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${DataFlowCache.finalDataflow.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
-          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache) match {
+          JSONExporter.fileExport(cpg, outputFileName, sourceRepoLocation, dataflowMap, ruleCache, taggerCache, dataFlowCache) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
@@ -102,9 +100,15 @@ object KotlinProcessor {
 
           // Exporting the Audit report
           if (ScanProcessor.config.generateAuditReport) {
+            val moduleCache: ModuleCache = new ModuleCache()
+            new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
+            new DependenciesNodePass(cpg, moduleCache).createAndApply()
+            // Fetch all dependency after pass
+            val dependencies = DependencyReport.getDependencyList(xtocpg)
+            new DependenciesCategoryPass(xtocpg.get, ruleCache, dependencies.toList).createAndApply()
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(),
+              AuditReportEntryPoint.getAuditWorkbook(xtocpg, taggerCache, dependencies, sourceRepoLocation, auditCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -120,7 +124,7 @@ object KotlinProcessor {
             JSONExporter.UnresolvedFlowFileExport(
               outputUnresolvedFilename,
               sourceRepoLocation,
-              DataFlowCache.getJsonFormatDataFlow(AuditCache.unfilteredFlow)
+              dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -137,7 +141,7 @@ object KotlinProcessor {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
-              DataFlowCache.getJsonFormatDataFlow(DataFlowCache.getIntermediateDataFlow())
+              dataFlowCache.getJsonFormatDataFlow(dataFlowCache.getIntermediateDataFlow())
             ) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -176,7 +180,8 @@ object KotlinProcessor {
     * @param lang
     * @return
     */
-  def createKotlinCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String): Either[String, Unit] = {
+  def createKotlinCpg(ruleCache: RuleCache, sourceRepoLocation: String, lang: String, dataFlowCache: DataFlowCache,
+                      auditCache: AuditCache): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -194,7 +199,7 @@ object KotlinProcessor {
       )
       cpg
     }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
   }
 
 }

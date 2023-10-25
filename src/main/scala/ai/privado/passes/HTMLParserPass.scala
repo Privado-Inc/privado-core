@@ -24,10 +24,12 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
-import com.gargoylesoftware.htmlunit.html._
+import com.gargoylesoftware.htmlunit.html.*
+import com.gargoylesoftware.htmlunit.html.HtmlScript
 import com.gargoylesoftware.htmlunit.{BrowserVersion, WebClient}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTemplateDom}
@@ -50,7 +52,8 @@ import scala.tools.nsc.io.JFile
   * @param projectRoot
   * @param ruleCache
   */
-class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
+class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
+    extends PrivadoParallelCpgPass[String](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   /** Search for .html and .hbs files and generate tasks to process each file separately in its own thread
@@ -85,6 +88,22 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       val webClient = new WebClient(
         new BrowserVersion.BrowserVersionBuilder(BrowserVersion.CHROME).setOnLine(false).build()
       )
+      val options = webClient.getOptions
+
+      // Configure options to ignore certain errors
+      options.setThrowExceptionOnFailingStatusCode(false) // Do not throw exceptions for failing HTTP status codes
+      options.setThrowExceptionOnScriptError(false)       // Do not throw exceptions for JavaScript errors
+
+      // Disable loading of CSS and images
+      options.setCssEnabled(false)
+      options.setDownloadImages(false)
+      options.setPrintContentOnFailingStatusCode(false)
+
+      // Based on Offline mode skip downloading JS files
+      if (privadoInputConfig.offlineMode) {
+        options.setJavaScriptEnabled(false)
+      }
+
       val htmlFile                 = new JFile(htmlFilePath)
       val page: HtmlPage           = webClient.getPage(htmlFile.toURI.toURL)
       val htmlElement: HtmlElement = page.getFirstByXPath("//*")
@@ -113,7 +132,6 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
     val (elementAttributesStr, attributeNodes) = processAttributes(builder, element, fileNode)
     val (openElementStr, openElement)          = processOpenElement(builder, element, fileNode, elementAttributesStr)
     val (closingElementStr, closingElement)    = processClosingElement(builder, element, fileNode)
-    logger.trace(s"processing element for file -> ${htmlFilePath}  ->>> ${openElementStr} ${closingElementStr}")
     val htmlElement = createTemplateDomNode(
       Constants.HTMLElement,
       s"${openElementStr} ${closingElementStr}",
@@ -155,6 +173,24 @@ class HTMLParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
       elementAttributesStr += " " + attributeStr
       attributeNodes.addOne(attributeNode)
     })
+
+    if (element.getTagName.equalsIgnoreCase("script")) {
+      if (element.isInstanceOf[HtmlScript]) {
+        val scriptElement = element.asInstanceOf[HtmlScript]
+        val scriptContent = scriptElement.getTextContent()
+
+        // Remove single-line comments
+        val scriptContentWithoutSingleLineComments = scriptContent.replaceAll("(?<!https?:)//.*?(\\n|$)", "")
+        // Remove multi-line comments
+        val scriptContentWithoutComments = scriptContentWithoutSingleLineComments.replaceAll("/\\*.*?\\*/", "")
+
+        if (scriptContentWithoutComments.nonEmpty) {
+          val attributeStr = s"content=\"${scriptContentWithoutComments}\""
+          elementAttributesStr += " " + attributeStr
+        }
+      }
+    }
+
     (elementAttributesStr, attributeNodes.toList)
   }
 

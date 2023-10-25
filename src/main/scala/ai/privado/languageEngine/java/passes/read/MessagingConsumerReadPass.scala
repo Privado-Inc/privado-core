@@ -30,9 +30,10 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
-class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends PrivadoParallelCpgPass[String](cpg) {
+class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCache: DataFlowCache)
+    extends PrivadoParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     List(Constants.jmsConsumerRuleId, Constants.kafkaConsumerRuleId).toArray
@@ -63,7 +64,7 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Priv
         .foreach(entry => {
           synchronized {
             val (pathId, sourceRuleId, path) = entry
-            addToDataflowCache(consumerRuleId, sourceRuleId, path, pathId)
+            addToDataflowCache(consumerRuleId, sourceRuleId, path, pathId, dataFlowCache)
           }
         })
     })
@@ -92,7 +93,7 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Priv
         case Some(readTypeFullName) =>
           if (taggerCache.typeDeclMemberCache.contains(readTypeFullName)) {
             taggerCache.getTypeDeclMemberCacheItem(readTypeFullName).keys.foreach { sourceRuleId =>
-              addToDataflowCache(consumerRuleId, sourceRuleId, flow, pathId)
+              addToDataflowCache(consumerRuleId, sourceRuleId, flow, pathId, dataFlowCache)
             }
           }
         case None =>
@@ -131,16 +132,22 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache) extends Priv
         if (sourceRuleId.nonEmpty) {
           val path   = new Path(List(sinkNode))
           val pathId = DuplicateFlowProcessor.calculatePathId(path).get
-          addToDataflowCache(consumerRuleId, sourceRuleId, path, pathId)
+          addToDataflowCache(consumerRuleId, sourceRuleId, path, pathId, dataFlowCache)
         }
       }
   }
 
-  private def addToDataflowCache(consumerRuleId: String, sourceRuleId: String, flow: Path, pathId: String): Unit =
+  private def addToDataflowCache(
+    consumerRuleId: String,
+    sourceRuleId: String,
+    flow: Path,
+    pathId: String,
+    dataFlowCache: DataFlowCache
+  ): Unit =
     synchronized {
       // We need to update the dataflowsMap and set new dataflow using setDataflow function
-      DataFlowCache.dataflowsMapByType.put(pathId, flow)
-      DataFlowCache.setDataflow(
+      dataFlowCache.dataflowsMapByType.put(pathId, flow)
+      dataFlowCache.setDataflow(
         DataFlowPathModel(
           sourceRuleId,
           consumerRuleId,

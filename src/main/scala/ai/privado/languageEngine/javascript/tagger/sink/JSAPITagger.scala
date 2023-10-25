@@ -41,6 +41,7 @@ import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
   getDomainFromTemplates,
+  getAPIIdentifierFromCode,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
@@ -76,33 +77,47 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
 
     val clientCreationBaseUrlPattern: String =
       ruleCache.getSystemConfigByKey(Constants.clientCreationBaseUrlPattern, true)
-    val apiLiterals   = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
-    val initApiCalls  = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
-    val uniqueDomains = getBaseUrlForFrontendApps(initApiCalls, apiLiterals, builder, ruleInfo, ruleCache)
+    val apiLiterals     = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
+    val identifierRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val initApiCalls    = cacheCall.methodFullName(clientCreationBaseUrlPattern).toList
+    val uniqueDomains   = getBaseUrlForFrontendApps(initApiCalls, apiLiterals, builder, ruleInfo, ruleCache)
     // TODO: Need another approach to map the baseUrl with actual sink nodes
 
     // Identification of script tag with pixel code <Script src="https://c.amazon-adsystem.com/aax2/apstag.js" strategy="lazyOnload" />
     // Tag the respective templateDom node as API sink
     val scriptTags =
       cpg.templateDom
-        .name(Constants.jsxElement)
-        .code("(?i)[\\\"]*<(script|iframe).*" + ruleInfo.combinedRulePattern + ".*")
+        .name(s"(?i)(${Constants.jsxElement}|${Constants.HTMLElement})")
+        .code("(?i)[\\\"]*<(script|iframe).*(" + ruleInfo.combinedRulePattern + "|" + identifierRegex + ").*")
         .l
-    scriptTags.foreach(scriptTag => {
+    scriptTags.dedup.foreach(scriptTag => {
       var newRuleIdToUse = ruleInfo.id
       val domain         = getDomainFromTemplates(scriptTag.code)
-      if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
-      else {
-        newRuleIdToUse = ruleInfo.id + "." + domain._2
-        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
-        addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+      if (!domain._1.equals(Constants.UnknownDomain)) {
+        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
+        else {
+          newRuleIdToUse = ruleInfo.id + "." + domain._2
+          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+          addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+        }
+        storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
+      } else {
+        val identifierDomain =
+          getAPIIdentifierFromCode(scriptTag.code, identifierRegex).getOrElse(Constants.UnknownDomain)
+        if (!identifierDomain.equals(Constants.UnknownDomain)) {
+          if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
+            newRuleIdToUse = ruleInfo.id + "." + identifierDomain
+            ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + identifierDomain))
+            addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
+            storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, identifierDomain)
+          }
+        }
       }
-      storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
     })
 
     // Identification of script tags from loadExternalScript() method
     // await loadExternalScript(`https://widget.intercom.io/widget/${INTERCOM_BOT_ID}`, 'Intercom');
-    val loadExternalScriptCalls = cpg.call("loadExternalScript").l
+    val loadExternalScriptCalls = cpg.call("(loadExternalScript|loadThirdPartyScript)").l
 
     loadExternalScriptCalls.foreach(externalScriptCall => {
       var newRuleIdToUse = ruleInfo.id

@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.kotlin.tagger
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
@@ -19,7 +19,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   override def runTagger(
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    dataflowCache: DataFlowCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")

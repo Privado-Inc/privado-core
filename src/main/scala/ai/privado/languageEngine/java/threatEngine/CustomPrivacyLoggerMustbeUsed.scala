@@ -37,8 +37,8 @@ object CustomPrivacyLoggerMustbeUsed {
               violatingFlows
                 .append(
                   ViolationProcessingModel(
-                    leakage.name,
-                    ExporterUtility.convertIndividualPathElement(leakage).get,
+                    s"${leakage.methodFullName}::${leakage.file.name.headOption.getOrElse(Constants.Unknown)}",
+                    ExporterUtility.convertIndividualPathElement(leakage),
                     None
                   )
                 )

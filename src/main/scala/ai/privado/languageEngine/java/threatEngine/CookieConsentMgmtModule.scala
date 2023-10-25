@@ -1,13 +1,13 @@
 package ai.privado.languageEngine.java.threatEngine
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.languageEngine.java.threatEngine.ThreatUtility.hasDataElements
 import ai.privado.model.PolicyOrThreat
-import ai.privado.model.exporter.{ViolationProcessingModel}
+import ai.privado.model.exporter.ViolationProcessingModel
 import ai.privado.policyEngine.PolicyExecutor
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.util.Try
@@ -26,10 +26,11 @@ object CookieConsentMgmtModule {
     threat: PolicyOrThreat,
     cpg: Cpg,
     dataflows: Map[String, Path],
-    ruleCache: RuleCache
+    ruleCache: RuleCache,
+    dataFlowCache: DataFlowCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
-      val policyExecutor = new PolicyExecutor(cpg, dataflows, AppCache.repoName, ruleCache)
+      val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache)
       val violatingFlows = policyExecutor.getViolatingOccurrencesForPolicy(threat)
 
       val consentMgmtModulePresent      = cpg.call.methodFullName(getCookieConsentMgmtModulePattern(threat.config))
@@ -39,7 +40,7 @@ object CookieConsentMgmtModule {
       // violation if empty
       (
         consentMgmtModulePresent.isEmpty && prebidStandardIntegration.isEmpty && prebidNonStandardIntergration.isEmpty,
-        violatingFlows.toList
+        violatingFlows.toList.distinctBy(_.sourceId)
       )
     } else (false, List())
   }

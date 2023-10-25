@@ -22,7 +22,7 @@
 
 package ai.privado.dataflow
 
-import ai.privado.cache.AuditCache.SourcePathInfo
+import ai.privado.cache.SourcePathInfo
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
@@ -164,14 +164,16 @@ object DuplicateFlowProcessor {
   def filterIrrelevantFlowsAndStoreInCache(
     dataflowMapByPathId: Map[String, Path],
     privadoScanConfig: PrivadoInput,
-    ruleCache: RuleCache
+    ruleCache: RuleCache,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache
   ): Unit = {
 
     val expendedSourceSinkInfo = processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache)
 
     expendedSourceSinkInfo.foreach(flow => {
       if (privadoScanConfig.generateAuditReport) {
-        AuditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
+        auditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
       }
       if (
         privadoScanConfig.disableFlowSeparationByDataElement || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
@@ -181,7 +183,7 @@ object DuplicateFlowProcessor {
           !(flow.sinkId.startsWith(Constants.cookieWriteRuleId) && flow.pathSourceId
             .equals(Constants.cookieSourceRuleId))
         ) {
-          DataFlowCache.setDataflow(
+          dataFlowCache.setDataflow(
             DataFlowPathModel(
               flow.pathSourceId,
               flow.sinkId,
@@ -199,7 +201,8 @@ object DuplicateFlowProcessor {
           flow.dataflowNodeType,
           ruleCache,
           flow.sinkId,
-          flow.sinkPathId
+          flow.sinkPathId,
+          dataFlowCache
         )
       }
     })
@@ -352,7 +355,8 @@ object DuplicateFlowProcessor {
     dataflowNodeType: String,
     ruleCache: RuleCache,
     sinkId: String,
-    sinkPathId: String
+    sinkPathId: String,
+    dataFlowCache: DataFlowCache
   ) = {
     // Logic to filter flows which are interfering with the current source item
     // Ex - If traversing flow for email, discard flow which uses password
@@ -433,7 +437,7 @@ object DuplicateFlowProcessor {
         ruleCache
       )
     )
-      DataFlowCache.setDataflow(DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId))
+      dataFlowCache.setDataflow(DataFlowPathModel(pathSourceId, sinkId, dataflowSinkType, dataflowNodeType, sinkPathId))
   }
 
   /** Check to classify if correct path Source Id is getting consumed in sink for derived sources

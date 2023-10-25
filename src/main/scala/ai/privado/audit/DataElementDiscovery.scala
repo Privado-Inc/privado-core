@@ -596,6 +596,7 @@ object DataElementDiscoveryJS {
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
           val addedMembers   = mutable.Set[String]()
+          val addedParams    = mutable.Set[String]()
 
           value.foreach {
             case (member: Member) => {
@@ -604,7 +605,6 @@ object DataElementDiscoveryJS {
               if (member.name.nonEmpty && !addedMembers.contains(memberUniqueKey)) {
                 addedMembers.add(memberUniqueKey)
                 if (ruleMemberInfo.contains(member.name)) {
-                  addedMembers.add(memberUniqueKey)
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
@@ -633,11 +633,10 @@ object DataElementDiscoveryJS {
                 }
               }
             }
-
             case (param: MethodParameterIn) => {
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
-              if (!addedMembers.contains(paramUniqueKey)) {
-                addedMembers.add(paramUniqueKey)
+              if (!addedParams.contains(paramUniqueKey)) {
+                addedParams.add(paramUniqueKey)
                 if (ruleMemberInfo.contains(param.name)) {
                   workbookResult += List(
                     key.fullName,
@@ -683,6 +682,7 @@ object DataElementDiscoveryJS {
           && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
           && !addedIdentifiers.contains(identifierUniqueKey)
         )
+          addedIdentifiers.add(identifierUniqueKey)
           workbookResult += List(
             identifier.typeFullName,
             identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
@@ -708,6 +708,7 @@ object DataElementDiscoveryJS {
           && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
           && !addedLocals.contains(localsUniqueKey)
         )
+          addedLocals.add(localsUniqueKey)
           workbookResult += List(
             local.typeFullName,
             local.file.head.name,

@@ -27,9 +27,17 @@ import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
 import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
-import ai.privado.model.exporter.DataFlowSubCategoryModel
+import ai.privado.model.exporter.{
+  CollectionModel,
+  DataFlowSourceIntermediateModel,
+  DataFlowSubCategoryModel,
+  SinkModel,
+  SinkProcessingModel,
+  SourceModel,
+  SourceProcessingModel,
+  ViolationModel
+}
 import ai.privado.model.{Constants, PolicyThreatType}
-import ai.privado.model.exporter.DataFlowSourceIntermediateModel
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
@@ -65,15 +73,16 @@ object JSONExporter {
     repoPath: String,
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
-    taggerCache: TaggerCache = new TaggerCache()
+    taggerCache: TaggerCache = new TaggerCache(),
+    dataFlowCache: DataFlowCache
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
     val sourceExporter          = new SourceExporter(cpg, ruleCache)
     val sinkExporter            = new SinkExporter(cpg, ruleCache)
-    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache)
+    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache)
     val collectionExporter      = new CollectionExporter(cpg, ruleCache)
     val probableSinkExporter    = new ProbableSinkExporter(cpg, ruleCache, repoPath)
-    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache)
+    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache)
     val output                  = mutable.LinkedHashMap[String, Json]()
     try {
 
@@ -90,32 +99,32 @@ object JSONExporter {
 
       // Future creates a thread and starts resolving the function call asynchronously
       val sources = Future {
-        val _sources = Try(sourceExporter.getSources).getOrElse(List())
+        val _sources = Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
         output.addOne(Constants.sources -> _sources.asJson)
         _sources
       }
       val processing = Future {
-        val _processing = Try(sourceExporter.getProcessing).getOrElse(List())
+        val _processing = Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
         output.addOne(Constants.processing -> _processing.asJson)
         _processing
       }
       val sinks = Future {
-        val _sinks = Try(sinkExporter.getSinks).getOrElse(List())
+        val _sinks = Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
         output.addOne(Constants.sinks -> _sinks.asJson)
         _sinks
       }
       val processingSinks = Future {
-        val _processingSinks = Try(sinkExporter.getProcessing).getOrElse(List())
+        val _processingSinks = Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
         output.addOne(Constants.sinkProcessing -> _processingSinks.asJson)
         _processingSinks
       }
       val collections = Future {
-        val _collections = Try(collectionExporter.getCollections).getOrElse(List())
+        val _collections = Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
         output.addOne(Constants.collections -> _collections.asJson)
         _collections
       }
 
-      val violationResult = Try(policyAndThreatExporter.getViolations(repoPath)).getOrElse(List())
+      val violationResult = Try(policyAndThreatExporter.getViolations(repoPath)).getOrElse(List[ViolationModel]())
       output.addOne(Constants.violations -> violationResult.asJson)
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
@@ -129,7 +138,7 @@ object JSONExporter {
       sinkSubCategories.foreach(sinkSubTypeEntry => {
         dataflowsOutput.addOne(
           sinkSubTypeEntry._1 -> dataflowExporter
-            .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache)
+            .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowCache)
             .toList
         )
       })
@@ -169,7 +178,7 @@ object JSONExporter {
           s"Total flows before FP: ${AppCache.totalFlowFromReachableBy}\n" +
           s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
           s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
-          s"Total flows after complete computation : ${DataFlowCache.getDataflow.size}"
+          s"Total flows after complete computation : ${dataFlowCache.getDataflow.size}"
       )
 
       logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")

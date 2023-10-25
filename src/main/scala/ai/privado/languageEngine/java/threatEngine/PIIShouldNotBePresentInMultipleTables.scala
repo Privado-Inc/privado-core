@@ -69,27 +69,27 @@ object PIIShouldNotBePresentInMultipleTables {
           val relatedNode      = getSourceNode(cpg, piiId).head
           var additionalDetail = s"${piiName} was found in the following tables:\n"
           if (relatedNode._2.nonEmpty) {
-            val occurrence           = ExporterUtility.convertIndividualPathElement(relatedNode._2).get
             var newOccurrenceExcerpt = ""
 
             for ((table, member) <- piiWithTables._2.zip(dataElementToMembersMap(piiId))) {
-              val dataFlowSubCategoryPathExcerptModel = ExporterUtility.convertIndividualPathElement(member).get
-              newOccurrenceExcerpt = newOccurrenceExcerpt + "Table Name: " + table
-              additionalDetail = s"${additionalDetail}\t- ${table}\n"
-              newOccurrenceExcerpt =
-                s"${newOccurrenceExcerpt}\nFileName: ${dataFlowSubCategoryPathExcerptModel.fileName}"
-              newOccurrenceExcerpt =
-                s"${newOccurrenceExcerpt}\nOccurrence: ${dataFlowSubCategoryPathExcerptModel.excerpt}\n\n"
+              val dataFlowSubCategoryPathExcerptModel = ExporterUtility.convertIndividualPathElement(member)
+              if (dataFlowSubCategoryPathExcerptModel.isDefined) {
+                newOccurrenceExcerpt = newOccurrenceExcerpt + "Table Name: " + table
+                additionalDetail = s"${additionalDetail}\t- ${table}\n"
+                newOccurrenceExcerpt =
+                  s"${newOccurrenceExcerpt}\nFileName: ${dataFlowSubCategoryPathExcerptModel.get.fileName}"
+                newOccurrenceExcerpt =
+                  s"${newOccurrenceExcerpt}\nOccurrence: ${dataFlowSubCategoryPathExcerptModel.get.excerpt}\n\n"
+              }
             }
 
-            val newOccurrence = DataFlowSubCategoryPathExcerptModel(
-              occurrence.sample,
-              1, // (occurrence.lineNumber - 3),
-              occurrence.columnNumber,
-              occurrence.fileName,
-              newOccurrenceExcerpt
+            ThreatUtility.convertToViolationProcessingModelAndAddToViolatingFlows(
+              None,
+              relatedNode._2,
+              violatingFlows,
+              piiName,
+              Some(additionalDetail)
             )
-            violatingFlows.append(ViolationProcessingModel(piiName, newOccurrence, Some(additionalDetail)))
           }
         }
       })

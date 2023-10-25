@@ -33,6 +33,7 @@ object PIIHavingDifferentRetentionPeriod {
       val sourceIdRetentionPeriodMap: Map[String, Int] = getSourceIdRetentionMap(threat.config)
 
       entityMapper.foreach((entityWithTable) => {
+        val tableName                   = entityWithTable._1
         val typeDeclFullName            = entityWithTable._2
         val retentionPeriodListForTable = ListBuffer[Int]()
 
@@ -62,15 +63,13 @@ object PIIHavingDifferentRetentionPeriod {
             })
             additionalDetails += "-------------------------------------------------------------------------"
 
-            val occurrence = ExporterUtility.convertIndividualPathElement(typeDeclFullName).get
-            val newOccurrence = DataFlowSubCategoryPathExcerptModel(
-              cacheSourceId,
-              occurrence.lineNumber,
-              occurrence.columnNumber,
-              occurrence.fileName,
-              occurrence.excerpt
+            ThreatUtility.convertToViolationProcessingModelAndAddToViolatingFlows(
+              Some(cacheSourceId),
+              typeDeclFullName,
+              violatingFlows,
+              tableName,
+              Some(additionalDetails)
             )
-            violatingFlows.append(ViolationProcessingModel(cacheSourceId, newOccurrence, Some(additionalDetails)))
           }
         }
       })
