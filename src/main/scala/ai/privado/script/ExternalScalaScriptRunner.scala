@@ -41,8 +41,9 @@ abstract class ExternalScript {
 }
 
 case class LoadExternalScript(filePath: String) {
-  private val sourceCode               = Using(Source.fromFile(filePath)) { source => source.mkString }.getOrElse("")
-  def getFileReference: ExternalScript = ScriptEngine().eval(sourceCode).asInstanceOf[ExternalScript]
+  private val sourceCode = Using(Source.fromFile(filePath)) { source => source.mkString }.getOrElse("")
+  def getFileReference: ExternalScript =
+    ScriptEngine().eval(s"import ai.privado.script.*\n$sourceCode").asInstanceOf[ExternalScript]
 }
 
 object ExternalScalaScriptRunner {
