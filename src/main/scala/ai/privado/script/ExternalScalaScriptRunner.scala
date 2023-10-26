@@ -37,7 +37,7 @@ import scala.tools.reflect.{FastTrack, ToolBox}
 import scala.util.Using
 
 abstract class ExternalScript {
-  def process(cpg: Cpg, output: mutable.LinkedHashMap[String, Json]): Unit
+  def process(cpg: Cpg, output: mutable.LinkedHashMap[String, Json]): Any
 }
 
 case class LoadExternalScript(filePath: String) {
