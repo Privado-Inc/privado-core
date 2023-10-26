@@ -1,10 +1,12 @@
 package ai.privado.languageEngine.kotlin.tagger
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.PrivadoInput
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
+import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
+import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
@@ -36,6 +38,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new JavaDBConfigTagger(cpg).createAndApply()
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
+
+    // Custom Rule tagging
+    if (!ScanProcessor.config.ignoreInternalRules) {
+      // Adding custom rule to cache
+      StorageAnnotationRule.rules.foreach(ruleCache.setRuleInfo)
+      new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
+    }
 
     new APITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
 

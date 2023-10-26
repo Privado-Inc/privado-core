@@ -37,37 +37,19 @@ abstract class CustomInheritTagger(cpg: Cpg, ruleCache: RuleCache) extends Priva
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
-    val typeDeclNodeL1 = getImpactedTypeDeclNode(ruleInfo.patterns.head)
+    val typeDeclNodeL1 = CustomTaggerUtility.getImpactedTypeDeclNodeByExtends(cpg, ruleInfo.patterns.head)
     // We are calling the function getImpactedTypeDeclNode again to get classes following below format
     // public interface BillableUsageRepository extends EnrichmentRepository<BillableUsageEntity>
     // EnrichmentRepository extends JPARepository
-    val typeDeclNode = typeDeclNodeL1 ++ getImpactedTypeDeclNode(typeDeclNodeL1.fullName.mkString("(", "|", ")"))
+    val typeDeclNode = typeDeclNodeL1 ++ CustomTaggerUtility.getImpactedTypeDeclNodeByExtends(
+      cpg,
+      typeDeclNodeL1.fullName.mkString("(", "|", ")")
+    )
     if (typeDeclNode.nonEmpty) {
       typeDeclNode.fullName.dedup.foreach(typeDeclName => {
         val callNodes = cpg.call.methodFullName(typeDeclName + ".*" + ruleInfo.patterns(1)).l
         callNodes.foreach(callNode => addRuleTags(builder, callNode, ruleInfo, ruleCache))
       })
     }
-  }
-
-  /** Fetch all the typeDeclNode which inherits from classes which match the stringPattern regex
-    * @param stringPattern
-    * @return
-    */
-  def getImpactedTypeDeclNode(stringPattern: String): List[TypeDecl] = {
-    if (stringPattern.nonEmpty && !stringPattern.equals("()")) {
-      cpg.typeDecl
-        .filter(
-          _.inheritsFromTypeFullName
-            .map(inheritsFrom => {
-              inheritsFrom.matches(stringPattern)
-            })
-            .foldLeft(false)((a, b) => a || b)
-        )
-        .l
-    } else {
-      List()
-    }
-
   }
 }
