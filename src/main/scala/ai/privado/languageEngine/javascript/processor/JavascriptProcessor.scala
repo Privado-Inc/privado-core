@@ -65,6 +65,7 @@ object JavascriptProcessor {
       case Success(cpg) =>
         // Apply default overlays
         new NaiveCallLinker(cpg).createAndApply()
+        new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
           .createAndApply()
@@ -210,9 +211,7 @@ object JavascriptProcessor {
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val cpgconfig =
       Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
-    val xtocpg = new JsSrc2Cpg()
-      .createCpgWithAllOverlays(cpgconfig)
-      .map(cpg => new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply())
+    val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
   }
 

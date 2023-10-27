@@ -2,7 +2,7 @@ package ai.privado.passes
 
 import io.joern.dataflowengineoss.passes.reachingdef.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
+import io.joern.dataflowengineoss.{DefaultSemantics, globalFromLiteral, identifierToFirstUsages}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, PropertyNames}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
@@ -11,11 +11,11 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-/**
- * Enables DDG edges from variables outside of a closure to their references inside.
- */
-class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit s: Semantics)
-  extends ForkJoinParallelCpgPass[Method](cpg) {
+/** Enables DDG edges from variables outside of a closure to their references inside.
+  */
+class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: Int = 4000)(implicit
+  s: Semantics = DefaultSemantics()
+) extends ForkJoinParallelCpgPass[Method](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -23,7 +23,7 @@ class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: In
 
   override def runOnPart(builder: DiffGraphBuilder, method: Method): Unit = {
     implicit val diffGraph: DiffGraphBuilder = builder
-    val problem = ReachingDefProblem.create(method)
+    val problem                              = ReachingDefProblem.create(method)
     if (shouldBailOut(method, problem)) {
       logger.warn("Skipping.")
     } else {
@@ -42,7 +42,7 @@ class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: In
             (identifier.lineNumber, firstUsage.lineNumber, lastUsage.lineNumber) match {
               case (Some(iNo), Some(fNo), _) if iNo <= fNo => Some(identifier, firstUsage)
               case (Some(iNo), _, Some(lNo)) if iNo >= lNo => Some(lastUsage, identifier)
-              case _ => None
+              case _                                       => None
             }
           }
       }.distinct
@@ -67,9 +67,9 @@ class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: In
   }
 
   /** Before we start propagating definitions in the graph, which is the bulk of the work, we check how many definitions
-   * were are dealing with in total. If a threshold is reached, we bail out instead, leaving reaching definitions
-   * uncalculated for the method in question. Users can increase the threshold if desired.
-   */
+    * were are dealing with in total. If a threshold is reached, we bail out instead, leaving reaching definitions
+    * uncalculated for the method in question. Users can increase the threshold if desired.
+    */
   private def shouldBailOut(method: Method, problem: DataFlowProblem[StoredNode, mutable.BitSet]): Boolean = {
     val transferFunction = problem.transferFunction.asInstanceOf[ReachingDefTransferFunction]
     // For each node, the `gen` map contains the list of definitions it generates
@@ -87,17 +87,24 @@ class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: In
   private def nodeToEdgeLabel(node: StoredNode): String = {
     node match {
       case n: MethodParameterIn => n.name
-      case n: CfgNode => n.code
-      case _ => ""
+      case n: CfgNode           => n.code
+      case _                    => ""
+    }
+  }
+
+  private def edgeExists(fromNode: CfgNode, toNode: CfgNode, variable: String = ""): Boolean = {
+    fromNode.outE(EdgeTypes.REACHING_DEF).exists { e =>
+      e.inNode() == toNode && e.property(PropertyNames.VARIABLE) == variable
     }
   }
 
   private def addEdge(fromNode: StoredNode, toNode: StoredNode, variable: String = "")(implicit
-                                                                                       dstGraph: DiffGraphBuilder
+    dstGraph: DiffGraphBuilder
   ): Unit = {
     if (!fromNode.isInstanceOf[Unknown] && !toNode.isInstanceOf[Unknown]) {
       (fromNode, toNode) match {
-        case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
+        case (parentNode: CfgNode, childNode: CfgNode)
+            if !edgeExists(parentNode, childNode, variable) && EdgeValidator.isValidEdge(childNode, parentNode) =>
           dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
         case _ =>
 
