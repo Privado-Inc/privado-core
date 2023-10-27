@@ -226,6 +226,7 @@ object JavaProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache
   ): Either[String, Unit] = {
+    val excludeFileRegex = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!config.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
@@ -239,6 +240,7 @@ object JavaProcessor {
     cpgconfig = Config(fetchDependencies = !config.skipDownloadDependencies)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
+      .withIgnoredFilesRegex(excludeFileRegex)
 
     // Create delomboked directory if source code uses lombok
     val dependencies        = getDependencyList(cpgconfig)
@@ -251,6 +253,7 @@ object JavaProcessor {
       cpgconfig = Config(fetchDependencies = !config.skipDownloadDependencies, delombokMode = Some("no-delombok"))
         .withInputPath(delombokPath)
         .withOutputPath(cpgOutputPath)
+        .withIgnoredFilesRegex(excludeFileRegex)
     }
 
     val javasrc = JavaSrc2Cpg()
