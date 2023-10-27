@@ -25,6 +25,7 @@ package ai.privado.script
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
+import dotty.tools.repl.ScriptEngine
 import io.circe.Json
 import io.shiftleft.codepropertygraph.Cpg
 
@@ -33,23 +34,16 @@ import scala.collection.mutable
 import scala.io.{BufferedSource, Source}
 import scala.reflect.runtime.{currentMirror, universe}
 import scala.tools.reflect.{FastTrack, ToolBox}
+import scala.util.Using
 
 abstract class ExternalScript {
-  def process(cpg: Cpg, output: mutable.LinkedHashMap[String, Json]): Unit
+  def process(cpg: Cpg, output: mutable.LinkedHashMap[String, Json]): Any
 }
 
 case class LoadExternalScript(filePath: String) {
-  val toolbox: ToolBox[universe.type] = universe.runtimeMirror(getClass.getClassLoader).mkToolBox()
-  val sourceFile: BufferedSource      = Source.fromFile(filePath)
-  private val fileContents =
-    try sourceFile.getLines().mkString("\n")
-    finally sourceFile.close()
-
-  // The below package import should be similar to the pacakage where ExternalScript abstract case is present
-  private val tree         = toolbox.parse(s"import ai.privado.script.*;\n$fileContents")
-  private val compiledCode = toolbox.compile(tree)
-
-  def getFileReference: ExternalScript = compiledCode().asInstanceOf[ExternalScript]
+  private val sourceCode = Using(Source.fromFile(filePath)) { source => source.mkString }.getOrElse("")
+  def getFileReference: ExternalScript =
+    ScriptEngine().eval(s"import ai.privado.script.*\n$sourceCode").asInstanceOf[ExternalScript]
 }
 
 object ExternalScalaScriptRunner {
