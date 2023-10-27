@@ -44,6 +44,8 @@ private class RecoverForRubyFile(
   state: XTypeRecoveryState
 ) extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
@@ -582,57 +584,5 @@ private class RecoverForRubyFile(
       case None    =>
     }
   }
-
-  private def handlePotentialFunctionPointer(
-    funcPtr: Expression,
-    baseTypes: Set[String],
-    funcName: String,
-    baseName: Option[String] = None
-  ): Unit = {
-    // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
-    // a method ref. This happens in jssrc2cpg
-    if (!funcPtr.astParent.iterator.collectAll[Call].exists(_.name == funcName)) {
-      baseTypes
-        .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
-        .flatMap(cpg.method.fullNameExact)
-        .filterNot(m => addedNodes.contains(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${m.fullName}"))
-        .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
-        .foreach { case (m, mRef) =>
-          funcPtr.astParent
-            .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
-            .foreach { inCall =>
-              state.changesWereMade.compareAndSet(false, true)
-              integrateMethodRef(funcPtr, m, mRef, inCall)
-            }
-        }
-    }
-  }
-
-  private def integrateMethodRef(funcPtr: Expression, m: Method, mRef: NewMethodRef, inCall: AstNode) = {
-    builder.addNode(mRef)
-    builder.addEdge(mRef, m, EdgeTypes.REF)
-    builder.addEdge(inCall, mRef, EdgeTypes.AST)
-    builder.addEdge(funcPtr.method, mRef, EdgeTypes.CONTAINS)
-    inCall match {
-      case x: Call =>
-        builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
-        mRef.argumentIndex(x.argumentOut.size + 1)
-      case x =>
-        mRef.argumentIndex(x.astChildren.size + 1)
-    }
-    addedNodes.add(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${mRef.methodFullName}")
-  }
-  private def createMethodRef(
-    baseName: Option[String],
-    funcName: String,
-    methodFullName: String,
-    lineNo: Option[Integer],
-    columnNo: Option[Integer]
-  ): NewMethodRef =
-    NewMethodRef()
-      .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
-      .methodFullName(methodFullName)
-      .lineNumber(lineNo)
-      .columnNumber(columnNo)
 
 }
