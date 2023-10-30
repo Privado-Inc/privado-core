@@ -64,7 +64,7 @@ import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, JumpLabel, Literal, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, JumpLabel, Literal, Method}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
@@ -288,6 +288,15 @@ object RubyProcessor {
           Cfg(entryNode = Option(node), continues = List((node, 1)))
       }
     }
+    override protected def cfgForAndExpression(call: Call): Cfg =
+      Try(super.cfgForAndExpression(call)) match
+        case Failure(exception) =>
+          logger.error(
+            s"Error when generating Cfg for expression in file ${call.file.headOption.map(_.name).getOrElse("unknown file")} ",
+            exception
+          )
+          Cfg.empty
+        case Success(cfg) => cfg
 
   }
 
