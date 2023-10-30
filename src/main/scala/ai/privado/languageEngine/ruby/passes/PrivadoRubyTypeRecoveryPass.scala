@@ -9,6 +9,7 @@ import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
 import scala.annotation.tailrec
 import scala.collection.{Seq, mutable}
@@ -580,31 +581,6 @@ private class RecoverForRubyFile(
     getLocalMember(i) match {
       case Some(m) => storeNodeTypeInfo(m, types.toSeq)
       case None    =>
-    }
-  }
-
-  private def handlePotentialFunctionPointer(
-    funcPtr: Expression,
-    baseTypes: Set[String],
-    funcName: String,
-    baseName: Option[String] = None
-  ): Unit = {
-    // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
-    // a method ref. This happens in jssrc2cpg
-    if (!funcPtr.astParent.iterator.collectAll[Call].exists(_.name == funcName)) {
-      baseTypes
-        .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
-        .flatMap(cpg.method.fullNameExact)
-        .filterNot(m => addedNodes.contains(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${m.fullName}"))
-        .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
-        .foreach { case (m, mRef) =>
-          funcPtr.astParent
-            .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
-            .foreach { inCall =>
-              state.changesWereMade.compareAndSet(false, true)
-              integrateMethodRef(funcPtr, m, mRef, inCall)
-            }
-        }
     }
   }
 
