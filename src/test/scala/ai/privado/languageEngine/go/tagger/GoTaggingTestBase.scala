@@ -24,6 +24,8 @@
 package ai.privado.languageEngine.go.tagger
 
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.model.{Constants, SystemConfig}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
@@ -39,6 +41,7 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
   var inputDir: File   = _
   var outputFile: File = _
   val ruleCache        = new RuleCache()
+  val privadoInput     = PrivadoInput()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -80,8 +83,53 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
     )
   )
 
+  val sinkRule = List(
+    RuleInfo(
+      Constants.thirdPartiesAPIRuleId,
+      "Third Party API",
+      "",
+      Array(),
+      List(
+        "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
+      ),
+      false,
+      "",
+      Map(),
+      NodeType.API,
+      "",
+      CatLevelOne.SINKS,
+      catLevelTwo = Constants.third_parties,
+      Language.GO,
+      Array()
+    )
+  )
+
+  val systemConfig = List(
+    SystemConfig(
+      "apiHttpLibraries",
+      "^(?i)(net/http|github.com/parnurzeal/gorequest|gopkg.in/resty|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
+      Language.GO,
+      "",
+      Array()
+    ),
+    SystemConfig(
+      "apiSinks",
+      "(?i)(?:url|client|open|request|execute|newCall|load|host|access|list|set|put|post|proceed|trace|patch|Path|send|remove|delete|write|read|postForEntity|call|createCall|createEndpoint|dispatch|invoke|getInput|getOutput|getResponse|do)",
+      Language.GO,
+      "",
+      Array()
+    ),
+    SystemConfig(
+      "apiIdentifier",
+      "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
+      Language.GO,
+      "",
+      Array()
+    )
+  )
+
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
 
   val taggerCache = new TaggerCache()
 }

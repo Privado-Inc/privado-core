@@ -29,7 +29,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
   val apis: List[Call] = cacheCall.name(APISINKS_REGEX).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
-  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)
   val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   val httpApis: List[Call] = apis
