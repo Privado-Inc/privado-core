@@ -7,6 +7,7 @@ import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.metric.MetricHandler
+import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser, SQLPropertyPass}
@@ -57,6 +58,7 @@ object GoProcessor {
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
+          new SQLQueryParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
             val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
