@@ -11,7 +11,13 @@ import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.{
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  SQLParser,
+  SQLPropertyPass
+}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -78,6 +84,7 @@ object PythonProcessor {
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+          new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
           new PythonPropertyLinkerPass(cpg).createAndApply()

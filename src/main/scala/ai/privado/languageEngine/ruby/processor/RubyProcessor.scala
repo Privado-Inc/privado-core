@@ -41,7 +41,7 @@ import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, SQLParser}
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, SQLParser}
 import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -154,6 +154,7 @@ object RubyProcessor {
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
           new OssDataFlow(options).run(context)
+          new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
