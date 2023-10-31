@@ -72,7 +72,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
     // Custom Rule tagging
-    if (!ScanProcessor.config.ignoreInternalRules) {
+    if (!privadoInputConfig.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()

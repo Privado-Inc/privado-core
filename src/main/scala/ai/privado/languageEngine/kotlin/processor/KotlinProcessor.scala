@@ -6,7 +6,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.ModuleFilePass
+import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{
@@ -66,6 +66,13 @@ object KotlinProcessor {
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA).createAndApply()
+          new JavaPropertyLinkerPass(cpg).createAndApply()
+
+          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+            .createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
