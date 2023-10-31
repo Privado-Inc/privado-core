@@ -90,11 +90,6 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
             .nameExact(Constants.catLevelOne)
             .valueExact(CatLevelOne.SOURCES.name)
         )
-        .whereNot(
-          _.tag
-            .nameExact(Constants.catLevelOne)
-            .valueExact(CatLevelOne.DERIVED_SOURCES.name)
-        )
     }
     val sources =
       cpg.identifier
