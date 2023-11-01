@@ -30,7 +30,14 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLNodeBuilder, Utilities, SQLParser as UtilitySQLParser}
 import better.files.*
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Literal, NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
+  Literal,
+  NewFile,
+  NewSqlColumnNode,
+  NewSqlQueryNode,
+  NewSqlTableNode
+}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
