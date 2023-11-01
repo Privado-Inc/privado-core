@@ -68,7 +68,7 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
       case Success(fileNode) =>
         buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
       case Failure(_) =>
-        val fileNode = NewFile().name(Constants.dummyFileName)
+        val fileNode = NewFile().name(Constants.Unknown)
         buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
   }
 
