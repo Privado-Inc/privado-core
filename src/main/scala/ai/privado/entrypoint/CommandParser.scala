@@ -42,6 +42,7 @@ case class PrivadoInput(
   disable2ndLevelClosure: Boolean = false,
   disableReadDataflow: Boolean = false,
   enableAPIDisplay: Boolean = false,
+  enableLambdaFlows: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
@@ -79,6 +80,8 @@ object CommandConstants {
   val DISABLE_READ_DATAFLOW_ABBR                   = "drd"
   val ENABLE_API_DISPLAY                           = "enable-api-display"
   val ENABLE_API_DISPLAY_ABBR                      = "ead"
+  val ENABLE_LAMBDA_FLOWS = "enable-lambda-flows"
+  val ENABLE_LAMBDA_FLOWS_ABBR = "elf"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
   val UPLOAD                                       = "upload"
@@ -185,6 +188,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableAPIDisplay = true))
               .text("Enable api display"),
+            opt[Unit](CommandConstants.ENABLE_LAMBDA_FLOWS)
+              .abbr(CommandConstants.ENABLE_LAMBDA_FLOWS_ABBR)
+              .optional()
+              .action((_, c) => c.copy(enableLambdaFlows = true))
+              .text("Enable lambda flows"),
             opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
               .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
               .optional()
