@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.ruby.passes
 
 import better.files.File
-import io.joern.rubysrc2cpg.utils.{MethodTableModel, PackageTable}
+import io.joern.rubysrc2cpg.deprecated.utils.{MethodTableModel, PackageTable}
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg

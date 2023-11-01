@@ -3,7 +3,7 @@ package ai.privado.languageEngine.ruby.passes.download
 import ai.privado.cache.RuleCache
 import ai.privado.utility.ConcurrentProcessor
 import better.files.File
-import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg

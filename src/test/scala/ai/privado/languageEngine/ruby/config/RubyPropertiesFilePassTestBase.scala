@@ -28,7 +28,10 @@ abstract class RubyPropertiesFilePassTestBase(fileExtension: String)
     (inputDir / s"code.rb").write(codeFileContents)
     outputDir = File.newTemporaryDirectory()
 
-    val config  = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
+    val config = Config()
+      .withInputPath(inputDir.pathAsString)
+      .withOutputPath(outputDir.pathAsString)
+      .withUseDeprecatedFrontend(true)
     val rubySrc = new RubySrc2Cpg()
     val xtocpg = rubySrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)
