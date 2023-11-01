@@ -2,9 +2,8 @@ name: Monitoring Stability and Comparing Results
 
 # Triggers when a pull_request is created
 on:
-  pull_request_target:
-    branches:
-      - "**"
+  schedule:
+    - cron: '15 3,8 * * *'
 
 jobs:
   start_workflow:
@@ -16,8 +15,8 @@ jobs:
         with:
           slack-optional-parse: full
           slack-bot-user-oauth-access-token: ${{ secrets.SLACK_TOKEN }}
-          slack-channel: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-text: "Comparison workflow started for ${{github.event.pull_request.html_url}}"
+          slack-channel: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
+          slack-text: "Comparison workflow started for Privado Language Engine version update."
 
       - name: Save output to env
         id: save-output
@@ -33,6 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Debug output
+        run: echo ${{needs.start_workflow.outputs.init_message_ts}}
+
       - name: Install JDK-18
         uses: actions/setup-java@v3
         with:
@@ -49,26 +52,26 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Clone standalone-monitoring-stability/main
+      - name: Clone standalone-monitoring-stability/flow-test
         uses: actions/checkout@v3
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: main
+          ref: joern-parallel
 
       # langauge specific repository file
-      - name: Run the script for ${{github.head_ref}} and ${{github.base_ref}}
-        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -b ${{github.base_ref}} -h ${{github.head_ref}} -bcr ${{ github.event.pull_request.base.repo.html_url }} -hcr ${{ github.event.pull_request.head.repo.html_url }} -guf
+      - name: Run the script
+        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -ju -guf
 
       - name: Run aws-export
-        run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{matrix.language}}-${{github.event.number}}
+        run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{matrix.language}}
 
       - name: Move results to a folder
-        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{matrix.language}}-${{github.event.number}}.xlsx ./results/output-${{matrix.language}}-${{github.event.number}}.xlsx && mv ./temp/result-${{matrix.language}}-${{github.event.number}}.zip ./results/result-${{matrix.language}}-${{github.event.number}}.zip && mv slack_summary.txt ./results/slack_summary.txt
+        run: cd ./temp/standalone-monitoring-stability/ && mkdir results && mv output-${{matrix.language}}.xlsx ./results/output-${{matrix.language}}.xlsx && mv ./temp/result-${{matrix.language}}.zip ./results/result-${{matrix.language}}.zip && mv slack_summary.txt ./results/slack_summary.txt
 
-      # Zip the results by name
+      # Send result to slack
       - name: Zip the results
-        run: cd /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability && zip result-${{matrix.language}}-${{github.event.number}}.zip -r ./results
+        run: cd /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability && zip result-${{matrix.language}}.zip -r ./results
 
       - name: Set summary variable
         run: |
@@ -81,9 +84,9 @@ jobs:
         with:
           thread_ts: ${{needs.start_workflow.outputs.init_message_ts}}
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          channel_id: ${{ secrets.SLACK_CHANNEL_ID }} # check
-          file_path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}-${{github.event.number}}.zip"
-          initial_comment: "Comparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
+          channel_id: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
+          file_path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}.zip"
+          initial_comment: "Comparison Results generated on ${{github.event.repository.name}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
           file_type: "zip"
 
       - name: Export workflow output
@@ -117,6 +120,10 @@ jobs:
         with:
           path: ./language_summary
 
+      # Check output
+      - name: Debug output
+        run: ls ./language_summary
+
       - name: Install Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -127,10 +134,13 @@ jobs:
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: main
+          ref: joern-parallel
 
       - name: Collate summary
-        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./collate_summary.py -s /home/runner/work/privado-core/privado-core/language_summary
+        run: cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./collate_summary.py -s /home/runner/work/privado-core/privado-core/language_summary -ju True
+
+      - name: Debug summary output
+        run: cat ./temp/standalone-monitoring-stability/global_summary.txt
 
       - name: Set summary variable
         run: |
@@ -142,8 +152,8 @@ jobs:
         uses: slackapi/slack-github-action@v1.24.0
         with:
           update-ts: ${{needs.start_workflow.outputs.init_message_ts}}
-          channel-id: ${{ secrets.SLACK_CHANNEL_ID }}
-          slack-message: "\nComparison Results generated on ${{github.event.repository.name}} by PR ${{github.event.number}} from branch ${{github.head_ref}} to ${{github.base_ref}} \nPR link https://github.com/Privado-Inc/privado-core/pull/${{github.event.number}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
+          channel-id: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
+          slack-message: "\n*Language Engine* Comparison Results generated on ${{github.event.repository.name}}\nLanguage: All \nSummary Report:\n ${{ env.MESSAGE }}"
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_TOKEN }}
 

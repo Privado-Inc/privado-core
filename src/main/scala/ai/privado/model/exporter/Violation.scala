@@ -8,7 +8,7 @@ import ai.privado.model.exporter.DataFlowEncoderDecoder._
 
 case class ViolationProcessingModel(
   sourceId: String,
-  occurrence: DataFlowSubCategoryPathExcerptModel,
+  occurrence: Option[DataFlowSubCategoryPathExcerptModel],
   detail: Option[String]
 )
 

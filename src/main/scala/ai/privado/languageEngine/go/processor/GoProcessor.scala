@@ -195,6 +195,7 @@ object GoProcessor {
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
     val cpgOutputPath          = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
@@ -202,6 +203,7 @@ object GoProcessor {
     val cpgconfig = Config()
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
+      .withIgnoredFilesRegex(excludeFileRegex)
       .withFetchDependencies(!config.skipDownloadDependencies)
     val xtocpg = new GoSrc2Cpg()
       .createCpg(cpgconfig)

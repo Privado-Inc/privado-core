@@ -77,15 +77,8 @@ class PolicyAndThreatExporter(
     )
   }
 
-  private def convertProcessingSources(sourceNode: (String, CfgNode)) = {
-    try {
-      ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2).get, None)
-    } catch {
-      case e: Exception =>
-        logger.debug("Exception : ", e)
-        ViolationProcessingModel(sourceNode._1, null, None)
-    }
-  }
+  private def convertProcessingSources(sourceNode: (String, CfgNode)) =
+    ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2), None)
 
   private def convertDataflowPolicyViolation(
     policyId: String,

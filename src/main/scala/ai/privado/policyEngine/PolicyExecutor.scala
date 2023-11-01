@@ -134,11 +134,7 @@ class PolicyExecutor(
       if (!sourceNode.isEmpty) {
         sourceNode.foreach((sourceNode) => {
           violatingFlowList.add(
-            ViolationProcessingModel(
-              sourceNode._1,
-              ExporterUtility.convertIndividualPathElement(sourceNode._2).get,
-              None
-            )
+            ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2), None)
           )
         })
       }

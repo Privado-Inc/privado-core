@@ -52,7 +52,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new CollectionTagger(cpg, ruleCache).createAndApply()
 
-    new DatabaseReadPass(cpg, ruleCache, taggerCache).createAndApply()
+    new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
