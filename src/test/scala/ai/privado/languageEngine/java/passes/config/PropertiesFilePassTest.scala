@@ -116,7 +116,7 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
-      val List(_, name: String) = cpg.file.name.l
+      val List(name: String) = cpg.file.name.l
 
       name.endsWith("/test.properties") shouldBe true
     }
