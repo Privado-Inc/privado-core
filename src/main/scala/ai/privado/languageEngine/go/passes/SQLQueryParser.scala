@@ -37,15 +37,16 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewSqlQueryNode,
   NewSqlTableNode
 }
+
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators}
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
-import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[Literal](cpg) {
+class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
 
   val sqlQueryRegexPattern = "(?i).*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE).*"
   val logger               = LoggerFactory.getLogger(getClass)
@@ -58,27 +59,26 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[Literal](cpg) {
       .isCall
       .argument
       .code(sqlQueryRegexPattern)
-      .isLiteral
       .toArray
 
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, queryLiteral: Literal): Unit = {
-    Try(queryLiteral.file.head) match
+  override def runOnPart(builder: DiffGraphBuilder, queryNode: AstNode): Unit = {
+    Try(queryNode.file.head) match
       case Success(fileNode) =>
-        buildAndAddSqlQueryNodes(queryLiteral, builder, fileNode)
+        buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
       case Failure(_) =>
         val fileNode = NewFile().name(Constants.dummyFileName)
-        buildAndAddSqlQueryNodes(queryLiteral, builder, fileNode)
+        buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
   }
 
   private def buildAndAddSqlQueryNodes(
-    queryLiteral: Literal,
+    queryLiteral: AstNode,
     builder: DiffGraphBuilder,
     fileNode: NodeOrDetachedNode
   ): Unit = Try {
 
-    val queryLineNumber = queryLiteral.lineNumber.getOrElse(Integer.valueOf(0))
+    val queryLineNumber = queryLiteral.lineNumber.getOrElse(Integer.valueOf(-1))
     val query           = queryLiteral.code
     try {
       UtilitySQLParser.parseSqlQuery(query) match {
