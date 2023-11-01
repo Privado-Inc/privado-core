@@ -56,17 +56,44 @@ object Language {
 
   }
   implicit class StepsForPropertyForSqlQueryNode(val trav: Traversal[SqlQueryNode]) extends AnyVal {
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
-
+    def file: Traversal[File]             = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def sqlTable: Traversal[SqlTableNode] = trav.out(EdgeTypes.AST).cast[SqlTableNode]
   }
 
   implicit class StepsForPropertyForSqlTableNode(val trav: Traversal[SqlTableNode]) extends AnyVal {
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
-
+    def file: Traversal[File]               = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def sqlColumn: Traversal[SqlColumnNode] = trav.out(EdgeTypes.AST).cast[SqlColumnNode]
   }
 
   implicit class StepsForPropertyForSqlColumnNode(val trav: Traversal[SqlColumnNode]) extends AnyVal {
     def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
 
   }
+
+  implicit class SqlColumnObject(val node: SqlColumnNode) {
+    def sqlTable: Option[SqlTableNode] = {
+      val property = node.out(EdgeTypes.AST)
+      if (property != null && property.hasNext) {
+        val prop = property.next()
+        if (prop.isInstanceOf[SqlTableNode]) {
+          return Some(prop.asInstanceOf[SqlTableNode])
+        }
+      }
+      None
+    }
+  }
+
+  implicit class SqlTableObject(val node: SqlTableNode) {
+    def sqlQuery: Option[SqlQueryNode] = {
+      val property = node.out(EdgeTypes.AST)
+      if (property != null && property.hasNext) {
+        val prop = property.next()
+        if (prop.isInstanceOf[SqlQueryNode]) {
+          return Some(prop.asInstanceOf[SqlQueryNode])
+        }
+      }
+      None
+    }
+  }
+
 }

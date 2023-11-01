@@ -25,17 +25,21 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.sql.SQLQueryType
+import ai.privado.semantic.Language.*
 import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.semantic.Language._
-import io.shiftleft.semanticcpg.language._
 
+import scala.collection.mutable
 class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+  private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
+  private val outPutFiles = mutable.ArrayBuffer.empty[File]
+  private val inputDirs   = mutable.ArrayBuffer.empty[File]
 
   "SQL parser" should {
     val cpg = code("""
@@ -56,18 +60,64 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       cpg.sqlQuery.name.l shouldBe List(SQLQueryType.SELECT)
       cpg.sqlQuery.code.head shouldBe "select firstName, lastName from customer;"
     }
-    cpg.close()
+  }
+
+  "CREATE SQL query" should {
+    val cpg = code("""
+        |CREATE TABLE IF NOT EXISTS votes (
+        |		id SERIAL NOT NULL,
+        |		created_at datetime NOT NULL,
+        |		candidate VARCHAR(6) NOT NULL,
+        |		PRIMARY KEY (id)
+        |	);
+        |
+        |SELECT id, candidate from votes;
+        |""".stripMargin)
+    "Query node check" in {
+      cpg.sqlQuery.size shouldBe 2
+      val List(a, b) = cpg.sqlQuery.l
+      a.name shouldBe SQLQueryType.CREATE
+      b.name shouldBe SQLQueryType.SELECT
+    }
+
+    "SqlTable node check" in {
+      val List(x) = cpg.sqlTable.dedupBy(_.name).l
+      x.name shouldBe "votes"
+    }
+
+    "Traversal from query to table" in {
+      val List(x) = cpg.sqlQuery.sqlTable.dedupBy(_.name).l
+      x.name shouldBe "votes"
+    }
+
+    "Traversal from table to column" in {
+      val List(id, created_at, candidate) = cpg.sqlQuery.sqlTable.dedupBy(_.name).sqlColumn.l
+      id.name shouldBe "id"
+      created_at.name shouldBe "created_at"
+      candidate.name shouldBe "candidate"
+    }
   }
 
   def code(code: String): Cpg = {
     val inputDir = File.newTemporaryDirectory()
     (inputDir / "sample.sql").write(code)
+    inputDirs.addOne(inputDir)
     val outputFile = File.newTemporaryFile()
-    val config     = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
-    X2Cpg
+    outPutFiles.addOne(outputFile)
+    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+    val cpg = X2Cpg
       .withNewEmptyCpg(outputFile.toString(), config) { (cpg, config) =>
         new SQLParser(cpg, config.inputPath, new RuleCache()).createAndApply()
       }
       .get
+    cpgs.addOne(cpg)
+    cpg
+  }
+
+  override def afterAll(): Unit = {
+    cpgs.foreach(_.close())
+    outPutFiles.foreach(_.delete())
+    inputDirs.foreach(_.delete())
+    super.afterAll()
   }
 }
