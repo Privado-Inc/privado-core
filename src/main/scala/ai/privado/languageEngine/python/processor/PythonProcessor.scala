@@ -123,7 +123,8 @@ object PythonProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache
+            dataFlowCache,
+            ScanProcessor.config
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)

@@ -131,7 +131,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
             })
 
           // To Mark all field Access and getters
-          tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName)
+          tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMemberName, true)
         })
       })
 
@@ -181,7 +181,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       })
 
       // To Mark all field Access and getters
-      tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMember.name)
+      tagAllFieldAccessAndGetters(builder, typeDeclVal, ruleInfo, typeDeclMember.name, true)
     })
   }
 
@@ -210,7 +210,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
         .get(typeDecl.fullName)
         .flatMap(_.get(ruleInfo.id))
       // To Mark all field Access and getters
-      tagAllFieldAccessAndGetters(builder, typeDecl.fullName, ruleInfo, membersOption.map(_.name).mkString("|"))
+      tagAllFieldAccessAndGetters(builder, typeDecl.fullName, ruleInfo, membersOption.map(_.name).mkString("|"), true)
 
     })
 
@@ -272,7 +272,8 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     builder: BatchedUpdate.DiffGraphBuilder,
     typeDeclVal: String,
     ruleInfo: RuleInfo,
-    typeDeclMemberName: String
+    typeDeclMemberName: String,
+    isDerived: Boolean = false
   ): Unit = {
     val impactedGetters = getFieldAccessCallsMatchingRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
       .filterNot(item => item.code.equals(item.code.toUpperCase))
@@ -280,6 +281,8 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     impactedGetters.foreach(impactedGetter => {
       storeForTag(builder, impactedGetter, ruleCache)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
       addRuleTags(builder, impactedGetter, ruleInfo, ruleCache)
+      if (isDerived)
+        storeForTag(builder, impactedGetter, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
     })
 
     val impactedReturnMethods = getCallsMatchingReturnRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
