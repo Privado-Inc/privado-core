@@ -23,7 +23,6 @@
 
 package ai.privado.languageEngine.go.passes
 
-
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
@@ -31,7 +30,13 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLNodeBuilder, Utilities, SQLParser as UtilitySQLParser}
 import better.files.*
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Literal,
+  NewFile,
+  NewSqlColumnNode,
+  NewSqlQueryNode,
+  NewSqlTableNode
+}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators}
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}

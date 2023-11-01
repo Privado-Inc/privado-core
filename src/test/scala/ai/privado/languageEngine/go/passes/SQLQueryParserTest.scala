@@ -69,7 +69,6 @@ class SQLQueryParserTest extends GoTaggingTestBase {
       tableNodes.size shouldBe 1
     }
 
-
   }
 
 }
