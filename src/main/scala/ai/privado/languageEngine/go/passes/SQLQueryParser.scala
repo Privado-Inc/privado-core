@@ -23,28 +23,24 @@
 
 package ai.privado.languageEngine.go.passes
 
+
 import ai.privado.cache.RuleCache
+import ai.privado.model.Constants
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLNodeBuilder, Utilities, SQLParser as UtilitySQLParser}
 import better.files.*
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Literal,
-  NewFile,
-  NewSqlColumnNode,
-  NewSqlQueryNode,
-  NewSqlTableNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{Literal, NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators}
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
-class SQLQueryParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[Literal](cpg) {
+class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[Literal](cpg) {
 
   val sqlQueryRegexPattern = "(?i).*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE).*"
   val logger               = LoggerFactory.getLogger(getClass)
@@ -62,9 +58,13 @@ class SQLQueryParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extend
 
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, query: Literal): Unit = {
-    val fileNode = query.file.head
-    buildAndAddSqlQueryNodes(query, builder, fileNode)
+  override def runOnPart(builder: DiffGraphBuilder, queryLiteral: Literal): Unit = {
+    Try(queryLiteral.file.head) match
+      case Success(fileNode) =>
+        buildAndAddSqlQueryNodes(queryLiteral, builder, fileNode)
+      case Failure(_) =>
+        val fileNode = NewFile().name(Constants.dummyFileName)
+        buildAndAddSqlQueryNodes(queryLiteral, builder, fileNode)
   }
 
   private def buildAndAddSqlQueryNodes(
