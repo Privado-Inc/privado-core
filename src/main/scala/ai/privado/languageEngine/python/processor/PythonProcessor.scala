@@ -84,7 +84,8 @@ object PythonProcessor {
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-          new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
+          if (ScanProcessor.config.enableLambdaFlows)
+            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
           new PythonPropertyLinkerPass(cpg).createAndApply()

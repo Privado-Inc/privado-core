@@ -58,7 +58,8 @@ object GoProcessor {
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
           new OssDataFlow(options).run(context)
-          new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
+          if (ScanProcessor.config.enableLambdaFlows)
+            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           logger.info("=====================")
           println(
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"

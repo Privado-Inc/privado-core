@@ -65,7 +65,8 @@ object JavascriptProcessor {
       case Success(cpg) =>
         // Apply default overlays
         new NaiveCallLinker(cpg).createAndApply()
-        new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
+        if (ScanProcessor.config.enableLambdaFlows)
+          new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
           .createAndApply()
