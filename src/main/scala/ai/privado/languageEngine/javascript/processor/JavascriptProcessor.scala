@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
@@ -33,17 +33,17 @@ import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser}
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language.*
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
-import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
-import io.shiftleft.codepropertygraph
-import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language.*
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
+import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
+import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -65,6 +65,8 @@ object JavascriptProcessor {
       case Success(cpg) =>
         // Apply default overlays
         new NaiveCallLinker(cpg).createAndApply()
+        if (ScanProcessor.config.enableLambdaFlows)
+          new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
           .createAndApply()
@@ -100,7 +102,8 @@ object JavascriptProcessor {
           dataflowMap,
           ruleCache,
           taggerCache,
-          dataFlowCache
+          dataFlowCache,
+          ScanProcessor.config
         ) match {
           case Left(err) =>
             MetricHandler.otherErrorsOrWarnings.addOne(err)
