@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.java.threatEngine
+package ai.privado.threatEngine
 
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg

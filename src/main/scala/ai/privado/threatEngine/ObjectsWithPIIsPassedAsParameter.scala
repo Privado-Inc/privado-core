@@ -1,7 +1,8 @@
-package ai.privado.languageEngine.java.threatEngine
+package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.{hasDataElements}
+import ThreatUtility.hasDataElements
+import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
@@ -10,7 +11,7 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
-object DataMethodParameterHardcoded {
+object ObjectsWithPIIsPassedAsParameter {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -22,16 +23,14 @@ object DataMethodParameterHardcoded {
     */
   def getViolations(cpg: Cpg): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
-      val violatingFlows      = ListBuffer[ViolationProcessingModel]()
-      val hardCodedParameters = cpg.parameter.code(".*=.*").filter(parameter => parameter.code != parameter.name).l
+      val violatingFlows = ListBuffer[ViolationProcessingModel]()
+      val parameters =
+        cpg.parameter.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name)).l
 
-      hardCodedParameters.distinctBy(_.name) foreach ((parameter) => {
-        val relatedMethod = parameter.method
-        if (relatedMethod.nonEmpty) {
-          violatingFlows.append(
-            ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(relatedMethod), None)
-          )
-        }
+      parameters.distinctBy(_.name) foreach ((parameter) => {
+        violatingFlows.append(
+          ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(parameter), None)
+        )
       })
 
       (violatingFlows.nonEmpty, violatingFlows.toList)

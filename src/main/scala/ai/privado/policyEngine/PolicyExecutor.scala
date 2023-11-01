@@ -24,7 +24,7 @@ package ai.privado.policyEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.getSourceNode
+import ai.privado.threatEngine.ThreatUtility.getSourceNode
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
 import ai.privado.exporter.SourceExporter
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}

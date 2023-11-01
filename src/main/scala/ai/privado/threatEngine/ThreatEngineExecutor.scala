@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.java.threatEngine
+package ai.privado.threatEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.exporter.ExporterUtility
