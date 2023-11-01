@@ -45,6 +45,8 @@ private class RecoverForRubyFile(
   state: XTypeRecoveryState
 ) extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
