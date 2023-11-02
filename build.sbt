@@ -6,8 +6,8 @@ ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.4.24"
-val joernVersion      = "2.0.117"
+val cpgVersion        = "1.4.25"
+val joernVersion      = "2.0.134"
 val overflowdbVersion = "1.181"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -27,8 +27,10 @@ libraryDependencies ++= Seq(
   "com.github.pathikrit" %% "better-files"  % "3.9.2",
   "com.github.scopt"     %% "scopt"         % "4.1.0",
   "io.joern"             %% "x2cpg"         % Versions.joern,
+  "io.joern"             %% "x2cpg"         % Versions.joern % Test classifier "tests",
   "io.joern"             %% "javasrc2cpg"   % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
+  "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
   "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,

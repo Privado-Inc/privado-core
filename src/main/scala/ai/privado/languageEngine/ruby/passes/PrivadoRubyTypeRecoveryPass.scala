@@ -3,12 +3,14 @@ package ai.privado.languageEngine.ruby.passes
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.Defines.{ConstructorMethodName, DynamicCallUnknownFullName}
 import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
 import scala.annotation.tailrec
 import scala.collection.{Seq, mutable}
@@ -43,6 +45,8 @@ private class RecoverForRubyFile(
   builder: DiffGraphBuilder,
   state: XTypeRecoveryState
 ) extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
+
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
   /** A heuristic method to determine if a call is a constructor or not.
     */
@@ -196,13 +200,16 @@ private class RecoverForRubyFile(
       // We have been able to resolve the type inter-procedurally
       associateTypes(i, globalTypes)
     } else if (baseTypes.nonEmpty) {
+      lazy val existingMembers = cpg.typeDecl.fullNameExact(baseTypes.toSeq: _*).member.nameExact(fieldName)
       if (
         baseTypes.equals(symbolTable.get(LocalVar(fieldFullName)).union(globalSymbolTable.get(LocalVar(fieldFullName))))
       ) {
         associateTypes(i, baseTypes)
-      } else {
+      } else if (existingMembers.isEmpty) {
         // If not available, use a dummy variable that can be useful for call matching
         associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep)))
+      } else {
+        Set.empty
       }
     } else {
       // Assign dummy
@@ -243,7 +250,7 @@ private class RecoverForRubyFile(
       symbolTable
         .get(LocalVar(getFieldName(new FieldAccess(c))))
         .union(globalSymbolTable.get(LocalVar(getFieldName(new FieldAccess(c)))))
-    case _ if symbolTable.contains(c)       => symbolTable.get(c)
+    case _ if symbolTable.contains(c)       => methodReturnValues(symbolTable.get(c).toSeq)
     case _ if globalSymbolTable.contains(c) => globalSymbolTable.get(c)
     case Operators.indexAccess              => getIndexAccessTypes(c)
     case n =>
@@ -580,31 +587,6 @@ private class RecoverForRubyFile(
     getLocalMember(i) match {
       case Some(m) => storeNodeTypeInfo(m, types.toSeq)
       case None    =>
-    }
-  }
-
-  private def handlePotentialFunctionPointer(
-    funcPtr: Expression,
-    baseTypes: Set[String],
-    funcName: String,
-    baseName: Option[String] = None
-  ): Unit = {
-    // Sometimes the function identifier is an argument to the call itself as a "base". In this case we don't need
-    // a method ref. This happens in jssrc2cpg
-    if (!funcPtr.astParent.iterator.collectAll[Call].exists(_.name == funcName)) {
-      baseTypes
-        .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
-        .flatMap(cpg.method.fullNameExact)
-        .filterNot(m => addedNodes.contains(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${m.fullName}"))
-        .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
-        .foreach { case (m, mRef) =>
-          funcPtr.astParent
-            .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
-            .foreach { inCall =>
-              state.changesWereMade.compareAndSet(false, true)
-              integrateMethodRef(funcPtr, m, mRef, inCall)
-            }
-        }
     }
   }
 

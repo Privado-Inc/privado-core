@@ -33,7 +33,7 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
     val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
     val unresolvedFlows = unfilteredSinks
       .reachableByFlows(sources)(
-        Utilities.getEngineContext(4, config = privadoInput)(getSemantics(cpg, privadoInput, ruleCache))
+        Utilities.getEngineContext(config = privadoInput, 4)(getSemantics(cpg, privadoInput, ruleCache))
       )
       .l
     auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows))

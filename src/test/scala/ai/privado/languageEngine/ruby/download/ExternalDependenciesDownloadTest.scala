@@ -3,7 +3,7 @@ package ai.privado.languageEngine.ruby.download
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import better.files.File
-import io.joern.rubysrc2cpg.utils.{ModuleModel, PackageTable, TypeDeclModel}
+import io.joern.rubysrc2cpg.deprecated.utils.{ModuleModel, PackageTable, TypeDeclModel}
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg

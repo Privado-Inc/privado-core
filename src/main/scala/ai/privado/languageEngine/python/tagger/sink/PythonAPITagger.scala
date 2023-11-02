@@ -50,7 +50,7 @@ class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 
-  implicit val engineContext: EngineContext = Utilities.getEngineContext(4)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)
   val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {

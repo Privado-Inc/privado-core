@@ -51,13 +51,11 @@ class JavaIdentifierTaggingTest extends JavaTaggingTestBase {
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
     }
 
-    /*
     "tag fieldAccess of firstName" in {
       // Note - this test is Fails with the current query on cpg.method.callIn, but works fine on cpg.call
-      val identifierNodes = cpg.call.tag.nameExact(Constants.id).l
-      identifierNodes.size shouldBe 1
+      val identifierNodes = cpg.fieldAccess.tag.nameExact(Constants.id).l
+      identifierNodes.size shouldBe 2
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
     }
-     */
   }
 }
