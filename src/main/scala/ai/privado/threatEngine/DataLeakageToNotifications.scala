@@ -24,6 +24,7 @@
 package ai.privado.threatEngine
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.exporter.ViolationDataFlowModel
 import ai.privado.model.PolicyOrThreat
 import ai.privado.policyEngine.PolicyExecutor
@@ -50,13 +51,14 @@ object DataLeakageToNotifications {
     cpg: Cpg,
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    privadoInput: PrivadoInput
   ): Try[(Boolean, List[ViolationDataFlowModel])] = Try {
     // use policy executor to directly process existing flows (we have rule for notifications)
     // we already have this implementation as part of policy enforcement
     // threat being type of suggestive policy
     // might restructure this in future and have central utilities consumed by both
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache, privadoInput)
     val violatingFlows = policyExecutor.getViolatingFlowsForPolicy(threat)
 
     // violation if empty

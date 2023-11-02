@@ -41,21 +41,21 @@ import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, SQLParser}
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, SQLParser}
 import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
-import io.joern.rubysrc2cpg.passes.*
-import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
+import io.joern.rubysrc2cpg.deprecated.passes.*
+import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.layers.*
-import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.base.{AstLinkerPass, FileCreationPass}
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
@@ -154,6 +154,8 @@ object RubyProcessor {
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
           new OssDataFlow(options).run(context)
+          if (ScanProcessor.config.enableLambdaFlows)
+            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -189,7 +191,8 @@ object RubyProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache
+            dataFlowCache,
+            ScanProcessor.config
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -332,13 +335,14 @@ object RubyProcessor {
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
       .withSchemaValidation(ValidationMode.Enabled)
-    // val xtocpg = new RubySrc2Cpg().createCpg(config)
+      // TODO: Remove old ruby frontend this once we have the new frontend ready upstream
+      .withUseDeprecatedFrontend(true)
 
     val global = new Global()
     val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
 
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigFileCreationPass(cpg).createAndApply()
+      new FileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
 

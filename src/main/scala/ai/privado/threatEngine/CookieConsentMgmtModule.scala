@@ -2,6 +2,7 @@ package ai.privado.threatEngine
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ThreatUtility.hasDataElements
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.ViolationProcessingModel
 import ai.privado.policyEngine.PolicyExecutor
@@ -27,10 +28,11 @@ object CookieConsentMgmtModule {
     cpg: Cpg,
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    privadoInput: PrivadoInput
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
-      val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache)
+      val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache, privadoInput)
       val violatingFlows = policyExecutor.getViolatingOccurrencesForPolicy(threat)
 
       val consentMgmtModulePresent      = cpg.call.methodFullName(getCookieConsentMgmtModulePattern(threat.config))

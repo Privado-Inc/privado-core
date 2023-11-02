@@ -24,6 +24,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
 import ai.privado.policyEngine.PolicyExecutor
 import ai.privado.threatEngine.ThreatEngineExecutor
@@ -39,14 +40,16 @@ class PolicyAndThreatExporter(
   ruleCache: RuleCache,
   dataflows: Map[String, Path],
   taggerCache: TaggerCache,
-  dataFlowCache: DataFlowCache
+  dataFlowCache: DataFlowCache,
+  privadoInput: PrivadoInput
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getViolations(repoPath: String): List[ViolationModel] = {
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache)
-    val threatExecutor = new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache, dataFlowCache)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache, privadoInput)
+    val threatExecutor =
+      new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache, dataFlowCache, privadoInput)
 
     try {
       threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations

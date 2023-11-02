@@ -114,7 +114,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
 
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache, privadoInput)
     policyExecutor
   }
 }

@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache._
+import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
@@ -32,12 +32,12 @@ import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
-import ai.privado.languageEngine.java.semantic.Language._
+import ai.privado.languageEngine.java.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants._
+import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser, DBTParserPass}
-import ai.privado.semantic.Language._
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser}
+import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
@@ -48,7 +48,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
@@ -86,6 +86,8 @@ object JavaProcessor {
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
           new OssDataFlow(options).run(context)
+          if (ScanProcessor.config.enableLambdaFlows)
+            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           logger.info("=====================")
           println(
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -122,7 +124,8 @@ object JavaProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache
+            dataFlowCache,
+            ScanProcessor.config
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
