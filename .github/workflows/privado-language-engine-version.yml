@@ -4,7 +4,8 @@ name: Monitoring Stability and Comparing Results
 on:
   schedule:
     - cron: '15 3,8 * * *'
-
+  workflow_dispatch:
+    
 jobs:
   start_workflow:
     runs-on: ubuntu-latest
