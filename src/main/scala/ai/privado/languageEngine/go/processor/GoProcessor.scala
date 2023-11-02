@@ -9,7 +9,13 @@ import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.{
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  SQLParser,
+  SQLPropertyPass
+}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -52,6 +58,8 @@ object GoProcessor {
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()
           new OssDataFlow(options).run(context)
+          if (ScanProcessor.config.enableLambdaFlows)
+            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           logger.info("=====================")
           println(
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -87,7 +95,8 @@ object GoProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache
+            dataFlowCache,
+            ScanProcessor.config
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)

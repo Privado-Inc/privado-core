@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.passes
 
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames

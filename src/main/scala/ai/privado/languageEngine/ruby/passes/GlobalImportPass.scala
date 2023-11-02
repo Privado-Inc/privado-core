@@ -28,7 +28,7 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.passes.frontend.{CallAlias, ImportsPass, LocalKey, LocalVar, SymbolTable, XImportsPass}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.passes.frontend.ImportsPass.{ResolvedMethod, ResolvedTypeDecl}

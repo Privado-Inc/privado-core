@@ -25,6 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
 import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
 import ai.privado.model.exporter.{
@@ -74,16 +75,18 @@ object JSONExporter {
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    privadoInput: PrivadoInput
   ): Either[String, Unit] = {
     logger.info("Initiated exporter engine")
-    val sourceExporter          = new SourceExporter(cpg, ruleCache)
-    val sinkExporter            = new SinkExporter(cpg, ruleCache)
-    val dataflowExporter        = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache)
-    val collectionExporter      = new CollectionExporter(cpg, ruleCache)
-    val probableSinkExporter    = new ProbableSinkExporter(cpg, ruleCache, repoPath)
-    val policyAndThreatExporter = new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache)
-    val output                  = mutable.LinkedHashMap[String, Json]()
+    val sourceExporter       = new SourceExporter(cpg, ruleCache, privadoInput)
+    val sinkExporter         = new SinkExporter(cpg, ruleCache)
+    val dataflowExporter     = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache)
+    val collectionExporter   = new CollectionExporter(cpg, ruleCache)
+    val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath)
+    val policyAndThreatExporter =
+      new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache, privadoInput)
+    val output = mutable.LinkedHashMap[String, Json]()
     try {
 
       output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
