@@ -4,7 +4,7 @@ import ai.privado.cache.TaggerCache
 import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.model.exporter.ViolationProcessingModel
 import ai.privado.semantic.Language.*
-import ai.privado.threatEngine.ThreatUtility.hasDataElements
+import ai.privado.threatEngine.ThreatUtility.{getPIINameFromSourceId, hasDataElements}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{SqlColumnNode, StoredNode}
 import io.shiftleft.semanticcpg.language.*
@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory
 
 import java.util.UUID
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 object PIIShouldNotBePresentInMultipleTablesWithSQL {
@@ -29,14 +30,39 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
     cpg: Cpg,
     taggerCache: TaggerCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+    val violatingFlows          = ListBuffer[ViolationProcessingModel]()
+
     if (hasDataElements(cpg)) {
       val taggedSources = getSources(cpg)
-      taggedSources.foreach(t => {
-        println(t._1)
-        t._2.foreach(col => println(col.sqlTable.get.name))
+      taggedSources.foreach(groupedSource => {
+        println(groupedSource._1)
+        val tableNames   = groupedSource._2.collect(col => col.sqlTable.get.name)
+        val piiName   = getPIINameFromSourceId(groupedSource._1)
+        val violationDescription = s"${piiName} was found in the following tables:\n"
+
+        if (tableNames.size > 1) {
+          val additionalDetail = createDetailBlock(violationDescription, tableNames)
+
+          ThreatUtility.convertToViolationProcessingModelAndAddToViolatingFlows(
+            None,
+            groupedSource._2.head,
+            violatingFlows,
+            piiName,
+            Some(additionalDetail)
+          )
+        }
       })
+      (violatingFlows.nonEmpty, violatingFlows.toList)
+    } else (violatingFlows.nonEmpty, violatingFlows.toList)
+  }
+
+  def createDetailBlock(initialString: String, array: List[String]): String = {
+    val result = new StringBuilder
+    result.append(initialString)
+    for (string <- array) {
+      result.append("\t - ").append(string).append("\n")
     }
-    (false, List())
+    result.toString()
   }
 
   def getSources(cpg: Cpg): List[(String, List[SqlColumnNode])] = {
