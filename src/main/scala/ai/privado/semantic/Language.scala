@@ -72,7 +72,7 @@ object Language {
 
   implicit class SqlColumnObject(val node: SqlColumnNode) {
     def sqlTable: Option[SqlTableNode] = {
-      val property = node.out(EdgeTypes.AST)
+      val property = node.in(EdgeTypes.AST)
       if (property != null && property.hasNext) {
         val prop = property.next()
         if (prop.isInstanceOf[SqlTableNode]) {
