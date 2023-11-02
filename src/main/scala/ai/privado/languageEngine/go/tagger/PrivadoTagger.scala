@@ -11,6 +11,7 @@ import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.go.tagger.config.GoDBConfigTagger
+import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
 import ai.privado.tagger.sink.RegularSinkTagger
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
@@ -30,6 +31,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
     new GoDBConfigTagger(cpg).createAndApply()
+
+    new GoAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 

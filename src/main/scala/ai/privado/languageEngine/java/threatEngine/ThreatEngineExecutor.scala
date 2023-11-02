@@ -24,6 +24,7 @@
 package ai.privado.languageEngine.java.threatEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.ViolationModel
 import ai.privado.model.PolicyOrThreat
@@ -40,7 +41,8 @@ class ThreatEngineExecutor(
   repoPath: String,
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
-  dataFlowCache: DataFlowCache
+  dataFlowCache: DataFlowCache,
+  privadoInput: PrivadoInput
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -128,7 +130,7 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.CookieConsent.IsCookieConsentMgmtModuleImplemented" =>
-        CookieConsentMgmtModule.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache) match {
+        CookieConsentMgmtModule.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache, privadoInput) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -221,7 +223,7 @@ class ThreatEngineExecutor(
 
     val violationResponse = threatId match {
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
-        DataLeakageToNotifications.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache) match {
+        DataLeakageToNotifications.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache, privadoInput) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -229,7 +231,7 @@ class ThreatEngineExecutor(
           }
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
-        DataLeakageToLogs.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache) match {
+        DataLeakageToLogs.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache, privadoInput) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")

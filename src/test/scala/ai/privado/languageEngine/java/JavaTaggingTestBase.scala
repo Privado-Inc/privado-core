@@ -27,6 +27,7 @@ import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -47,6 +48,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     outputFile = File.newTemporaryFile()
     val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
     cpg = new JavaSrc2Cpg().createCpg(config).get
+    applyDefaultOverlays(cpg)
 
     // Caching Rule
     ruleCache.setRule(rule)

@@ -6,17 +6,16 @@ ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-
 val cpgVersion        = "1.4.25"
-val joernVersion      = "2.0.131"
+val joernVersion      = "2.0.140"
 val overflowdbVersion = "1.181"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
-val circeVersion   = "0.14.2"
-val jacksonVersion = "2.15.2"
-val mockitoVersion = "1.17.14"
+val circeVersion    = "0.14.2"
+val jacksonVersion  = "2.15.2"
+val mockitoVersion  = "1.17.14"
 val goAstGenVersion = "0.11.0"
 
 lazy val schema         = Projects.schema
@@ -28,11 +27,17 @@ libraryDependencies ++= Seq(
   "com.github.pathikrit" %% "better-files"  % "3.9.2",
   "com.github.scopt"     %% "scopt"         % "4.1.0",
   "io.joern"             %% "x2cpg"         % Versions.joern,
+  "io.joern"             %% "x2cpg"         % Versions.joern % Test classifier "tests",
   "io.joern"             %% "javasrc2cpg"   % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
+  "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
+<<<<<<< HEAD
   "io.joern"             %% "kotlin2cpg"   % Versions.joern,
   "io.joern"             %% "gosrc2cpg"   % Versions.joern,
+=======
+  "io.joern"             %% "gosrc2cpg"     % Versions.joern,
+>>>>>>> c7324bfd69b997f084de4a10778a83680df93fb9
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
@@ -63,7 +68,8 @@ libraryDependencies ++= Seq(
   "org.jruby"                        % "jruby-base"              % "9.4.3.0",
   "org.zeromq"                       % "jeromq"                  % "0.5.4",
   "org.sangria-graphql"             %% "sangria"                 % "4.0.0",
-  "com.michaelpollmeier"             % "versionsort"             % "1.0.11"
+  "com.michaelpollmeier"             % "versionsort"             % "1.0.11",
+  scalaOrganization.value           %% "scala3-compiler"         % scalaVersion.value
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -73,6 +79,7 @@ enablePlugins(JavaAppPackaging)
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
+fork                          := true
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
@@ -118,8 +125,7 @@ lazy val goAstGenDlUrl = settingKey[String]("goastgen download url")
 goAstGenDlUrl := s"https://github.com/Privado-Inc/goastgen/releases/download/v${goAstGenVersion}/"
 
 lazy val goAstGenBinaryNames = taskKey[Seq[String]]("goastgen binary names")
-goAstGenBinaryNames := {Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm)
-}
+goAstGenBinaryNames := { Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAstgenMac, GoAstgenMacArm) }
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
 goAstGenDlTask := {

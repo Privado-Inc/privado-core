@@ -25,6 +25,7 @@ package ai.privado.languageEngine.java.passes.read
 
 import ai.privado.cache.{DataFlowCache, TaggerCache}
 import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.joern.dataflowengineoss.language.Path
@@ -32,8 +33,12 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
 import io.shiftleft.semanticcpg.language.*
 
-class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCache: DataFlowCache)
-    extends PrivadoParallelCpgPass[String](cpg) {
+class MessagingConsumerReadPass(
+  cpg: Cpg,
+  taggerCache: TaggerCache,
+  dataFlowCache: DataFlowCache,
+  privadoInputConfig: PrivadoInput
+) extends PrivadoParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     List(Constants.jmsConsumerRuleId, Constants.kafkaConsumerRuleId).toArray
@@ -84,7 +89,7 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCach
 
     val dataflowSink =
       cpg.call.methodFullName("(?i)(.*ObjectMapper[.](readValue|convertValue):.*)|(.*gson[.](fromJson[\\w]*):.*)").l
-    val readFlow    = Dataflow.dataflowForSourceSinkPair(dataflowSource, dataflowSink)
+    val readFlow    = Dataflow.dataflowForSourceSinkPair(dataflowSource, dataflowSink, privadoInputConfig)
     val uniqueFlows = DuplicateFlowProcessor.getUniquePathsAfterDedup(readFlow)
     uniqueFlows.foreach { flow =>
       val readNode = flow.elements.last.asInstanceOf[Call]
@@ -123,7 +128,7 @@ class MessagingConsumerReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCach
       .map(_.asInstanceOf[CfgNode])
       .l
 
-    val dataflowReadFlows   = Dataflow.dataflowForSourceSinkPair(dataflowReadSource, dataflowReadSink)
+    val dataflowReadFlows = Dataflow.dataflowForSourceSinkPair(dataflowReadSource, dataflowReadSink, privadoInputConfig)
     val dataflowUniqueFlows = DuplicateFlowProcessor.getUniquePathsAfterDedup(dataflowReadFlows)
     dataflowUniqueFlows
       .foreach { flow =>
