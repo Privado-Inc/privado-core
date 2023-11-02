@@ -44,7 +44,7 @@ class GormParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
   val logger                   = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.method.where(_.parameter.typeFullName(GORM_PARAMETER_TYPE_RULE)).typeDecl.dedup.toArray
+    cpg.typeDecl.where(_.method.parameter.typeFullName(GORM_PARAMETER_TYPE_RULE)).dedup.toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, model: TypeDecl): Unit = {
@@ -86,7 +86,6 @@ class GormParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
         case ex: Exception =>
           ex.printStackTrace()
           println(s"Error while building sql nodes for GORM framework: ${ex.getMessage}")
-          None
       }
     }
   }
