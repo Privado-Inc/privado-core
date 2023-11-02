@@ -32,7 +32,7 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
     if (hasDataElements(cpg)) {
       val taggedSources = getSources(cpg)
       taggedSources.foreach(t => {
-        println(t)
+        println(t._1)
         t._2.foreach(col => println(col.sqlTable.get.name))
       })
     }
