@@ -50,6 +50,7 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.deprecated.passes.*
+import io.joern.rubysrc2cpg.passes.ConfigFileCreationPass
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
