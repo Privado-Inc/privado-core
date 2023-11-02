@@ -163,6 +163,7 @@ class PolicyExecutor(
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {
+    val sourceFilters = policy.dataFlow.sourceFilters
     var matchingSourceIds = policy.dataFlow.sources
       .flatMap(policySourceRegex => {
         if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
@@ -178,21 +179,24 @@ class PolicyExecutor(
       })
       .toSet
 
-    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
-      matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity)
-      )
+    if (sourceFilters.sensitivity.nonEmpty)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.sensitivity.equals(sourceFilters.sensitivity))
 
-    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
-      matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get
-      )
+    if (sourceFilters.isSensitive.isDefined)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.isSensitive == sourceFilters.isSensitive.get)
+
+    if (sourceFilters.name.nonEmpty)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.name.toLowerCase.contains(sourceFilters.name.toLowerCase))
 
     matchingSourceIds
   }
 
   private def getSinksMatchingRegex(policy: PolicyOrThreat) = {
-    policy.dataFlow.sinks
+    val sinkFilters = policy.dataFlow.sinkFilters
+    var matchingSinkIds = policy.dataFlow.sinks
       .flatMap(policySinkRegex => {
         if (policySinkRegex.equals(ALL_MATCH_REGEX)) {
           dataflowSinkIdMap.keys
@@ -207,6 +211,23 @@ class PolicyExecutor(
         }
       })
       .toSet
+    if (sinkFilters.sinkType.nonEmpty)
+      matchingSinkIds =
+        matchingSinkIds.filter(ruleCache.getRuleInfo(_).get.id.toLowerCase.contains(sinkFilters.sinkType.toLowerCase))
+
+    if (sinkFilters.domains.nonEmpty) {
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        println(ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty))
+        ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
+      }
+    }
+
+    if (sinkFilters.name.nonEmpty)
+      matchingSinkIds =
+        matchingSinkIds.filter(ruleCache.getRuleInfo(_).get.name.toLowerCase.contains(sinkFilters.name.toLowerCase))
+
+    matchingSinkIds
   }
 
 }
