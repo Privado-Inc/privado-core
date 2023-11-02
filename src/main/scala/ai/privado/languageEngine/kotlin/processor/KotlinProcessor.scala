@@ -9,9 +9,22 @@ import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, outputUnresolvedFilename}
+import ai.privado.model.Constants.{
+  cpgOutputFileName,
+  outputAuditFileName,
+  outputDirectoryName,
+  outputFileName,
+  outputIntermediateFileName,
+  outputUnresolvedFilename
+}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.{
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  SQLParser,
+  SQLPropertyPass
+}
 import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.kotlin.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
