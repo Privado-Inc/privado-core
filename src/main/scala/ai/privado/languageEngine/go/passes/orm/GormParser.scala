@@ -70,11 +70,7 @@ class GormParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
           model.columnNumber.getOrElse(Integer.valueOf(-1))
         )
         val sqlColumns: List[SQLColumn] = model.member.l.map(x =>
-          SQLColumn(
-            x.code,
-            x.lineNumber.getOrElse(Integer.valueOf(-1)),
-            x.columnNumber.getOrElse(Integer.valueOf(-1))
-          )
+          SQLColumn(x.code, x.lineNumber.getOrElse(Integer.valueOf(-1)), x.columnNumber.getOrElse(Integer.valueOf(-1)))
         )
         val queryModel = SQLQuery(SQLQueryType.CREATE, sqlTable, sqlColumns)
         SQLNodeBuilder.buildAndReturnIndividualQueryNode(
