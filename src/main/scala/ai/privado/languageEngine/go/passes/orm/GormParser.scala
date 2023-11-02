@@ -1,3 +1,25 @@
+/*
+ * This file is part of Privado OSS.
+ *
+ * Privado is an open source static code analysis tool to discover data flows in the code.
+ * Copyright (C) 2022 Privado, Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, contact support@privado.ai
+ *
+ */
 package ai.privado.languageEngine.go.passes.orm
 
 import ai.privado.cache.RuleCache
@@ -43,13 +65,13 @@ class GormParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
     Try {
       try {
         val sqlTable: SQLTable = SQLTable(
-          model.code.stripPrefix("\"").stripSuffix("\""),
+          model.code,
           model.lineNumber.getOrElse(Integer.valueOf(-1)),
           model.columnNumber.getOrElse(Integer.valueOf(-1))
         )
         val sqlColumns: List[SQLColumn] = model.member.l.map(x =>
           SQLColumn(
-            x.code.stripPrefix("\"").stripSuffix("\""),
+            x.code,
             x.lineNumber.getOrElse(Integer.valueOf(-1)),
             x.columnNumber.getOrElse(Integer.valueOf(-1))
           )
