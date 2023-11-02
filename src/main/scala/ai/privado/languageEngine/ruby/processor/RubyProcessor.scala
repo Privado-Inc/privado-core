@@ -55,7 +55,7 @@ import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.layers.*
-import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.base.{AstLinkerPass, FileCreationPass}
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
@@ -342,7 +342,7 @@ object RubyProcessor {
     val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
 
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigFileCreationPass(cpg).createAndApply()
+      new FileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
 
