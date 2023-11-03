@@ -350,13 +350,13 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                JavaProcessor.createJavaCpg(
+                new JavaProcessor(
                   getProcessedRule(Set(Language.JAVA)),
                   sourceRepoLocation,
-                  language,
+                  Language.JAVA,
                   dataFlowCache = getDataflowCache,
                   auditCache
-                )
+                ).processCpg()
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(
@@ -395,13 +395,13 @@ object ScanProcessor extends CommandProcessor {
                 )
               case language if language == Languages.KOTLIN =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
-                KotlinProcessor.createKotlinCpg(
+                new KotlinProcessor(
                   getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
                   sourceRepoLocation,
-                  lang,
+                  Language.KOTLIN,
                   dataFlowCache = getDataflowCache,
                   auditCache
-                )
+                ).processCpg()
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
@@ -409,13 +409,13 @@ object ScanProcessor extends CommandProcessor {
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
 
-                  JavaProcessor.createJavaCpg(
+                  new JavaProcessor(
                     getProcessedRule(Set(Language.JAVA)),
                     sourceRepoLocation,
-                    lang,
+                    Language.JAVA,
                     dataFlowCache = getDataflowCache,
                     auditCache
-                  )
+                  ).processCpg()
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation)
                 }
