@@ -21,6 +21,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.control.Breaks.{break, breakable}
+import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 object SqlCleaner {
   def clean(sql: String): String = {
@@ -184,7 +185,7 @@ object SQLNodeBuilder {
 
   def buildAndReturnIndividualQueryNode(
     builder: DiffGraphBuilder,
-    fileNode: NewFile,
+    fileNode: NodeOrDetachedNode,
     queryModel: SQLQuery,
     query: String,
     queryLineNumber: Int,
