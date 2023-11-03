@@ -2,8 +2,7 @@ package ai.privado.languageEngine.kotlin.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
@@ -52,11 +51,12 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 class KotlinProcessor(
   ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache
-) extends BaseProcessor(ruleCache, sourceRepoLocation, lang, dataFlowCache, auditCache) {
+) extends BaseProcessor(ruleCache, privadoInput, sourceRepoLocation, lang, dataFlowCache, auditCache) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
 
@@ -64,7 +64,7 @@ class KotlinProcessor(
     List(
       new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA),
       new JavaPropertyLinkerPass(cpg),
-      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy()),
+      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache)
     )
@@ -76,7 +76,7 @@ class KotlinProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache)
 
   override def processCpg(): Either[String, Unit] = {
 
@@ -87,7 +87,7 @@ class KotlinProcessor(
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
-    val cpgconfig = Config(downloadDependencies = !config.skipDownloadDependencies, includeJavaSourceFiles = true)
+    val cpgconfig = Config(downloadDependencies = !privadoInput.skipDownloadDependencies, includeJavaSourceFiles = true)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
     val xtocpg = new Kotlin2Cpg().createCpg(cpgconfig).map { cpg =>

@@ -352,6 +352,7 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
                 new JavaProcessor(
                   getProcessedRule(Set(Language.JAVA)),
+                  this.config,
                   sourceRepoLocation,
                   Language.JAVA,
                   dataFlowCache = getDataflowCache,
@@ -397,6 +398,7 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
                 new KotlinProcessor(
                   getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
+                  this.config,
                   sourceRepoLocation,
                   Language.KOTLIN,
                   dataFlowCache = getDataflowCache,
@@ -411,6 +413,7 @@ object ScanProcessor extends CommandProcessor {
 
                   new JavaProcessor(
                     getProcessedRule(Set(Language.JAVA)),
+                    this.config,
                     sourceRepoLocation,
                     Language.JAVA,
                     dataFlowCache = getDataflowCache,

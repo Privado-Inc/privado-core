@@ -25,8 +25,7 @@ package ai.privado.languageEngine.java.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.*
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
@@ -64,11 +63,12 @@ import scala.util.{Failure, Success, Try}
 
 class JavaProcessor(
   ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache
-) extends BaseProcessor(ruleCache, sourceRepoLocation, lang, dataFlowCache, auditCache) {
+) extends BaseProcessor(ruleCache, privadoInput, sourceRepoLocation, lang, dataFlowCache, auditCache) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
   private var cpgconfig       = Config()
@@ -77,19 +77,19 @@ class JavaProcessor(
     List(
       new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA),
       new JavaPropertyLinkerPass(cpg),
-      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy()),
+      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new DBTParserPass(cpg, sourceRepoLocation, ruleCache)
     )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, ScanProcessor.config, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
 
   override def processCpg(): Either[String, Unit] = {
     val excludeFileRegex = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
-    if (!config.skipDownloadDependencies)
+    if (!privadoInput.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
       println(s"${Calendar.getInstance().getTime} - Parsing source code...")
@@ -98,7 +98,7 @@ class JavaProcessor(
     createCpgFolder(sourceRepoLocation);
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-    cpgconfig = Config(fetchDependencies = !config.skipDownloadDependencies)
+    cpgconfig = Config(fetchDependencies = !privadoInput.skipDownloadDependencies)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
@@ -111,7 +111,7 @@ class JavaProcessor(
       AppCache.isLombokPresent = true
 
       // Creating a new CpgConfig which uses the delombokPath
-      cpgconfig = Config(fetchDependencies = !config.skipDownloadDependencies, delombokMode = Some("no-delombok"))
+      cpgconfig = Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
         .withInputPath(delombokPath)
         .withOutputPath(cpgOutputPath)
         .withIgnoredFilesRegex(excludeFileRegex)

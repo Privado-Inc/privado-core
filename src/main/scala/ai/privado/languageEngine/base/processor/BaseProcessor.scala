@@ -2,7 +2,7 @@ package ai.privado.languageEngine.base.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.*
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.cache.ModuleCache
@@ -36,6 +36,7 @@ import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 abstract class BaseProcessor(
   ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
@@ -93,7 +94,7 @@ abstract class BaseProcessor(
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    if (ScanProcessor.config.enableLambdaFlows)
+    if (privadoInput.enableLambdaFlows)
       new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
     logger.info("=====================")
     println(
@@ -115,7 +116,7 @@ abstract class BaseProcessor(
     )
 
     println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-    val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
+    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
     println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
         .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
     println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
@@ -154,7 +155,7 @@ abstract class BaseProcessor(
       ruleCache,
       taggerCache,
       dataFlowCache,
-      ScanProcessor.config
+      privadoInput
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -168,7 +169,7 @@ abstract class BaseProcessor(
 
   protected def auditReportExport(cpg: Cpg, taggerCache: TaggerCache): Unit = {
     // Exporting the Audit report
-    if (ScanProcessor.config.generateAuditReport) {
+    if (privadoInput.generateAuditReport) {
       val moduleCache: ModuleCache = new ModuleCache()
       new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
       new DependenciesNodePass(cpg, moduleCache).createAndApply()
@@ -212,7 +213,7 @@ abstract class BaseProcessor(
 
   protected def intermediateReportExport(cpg: Cpg): Unit = {
     // Exporting the Intermediate report
-    if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
+    if (privadoInput.testOutput || privadoInput.generateAuditReport) {
       JSONExporter.IntermediateFileExport(
         outputIntermediateFileName,
         sourceRepoLocation,
@@ -231,8 +232,8 @@ abstract class BaseProcessor(
 
   protected def reportUnresolvedMethods(cpg: Cpg, lang: Language): Unit = {
     // Unresolved function report
-    if (ScanProcessor.config.showUnresolvedFunctionsReport) {
-      val path = s"${ScanProcessor.config.sourceLocation.head}/$outputDirectoryName"
+    if (privadoInput.showUnresolvedFunctionsReport) {
+      val path = s"${privadoInput.sourceLocation.head}/$outputDirectoryName"
       UnresolvedReportUtility.reportUnresolvedMethods(Success(cpg), path, lang)
     }
   }
