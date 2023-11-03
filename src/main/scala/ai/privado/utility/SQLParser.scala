@@ -212,7 +212,7 @@ object SQLNodeBuilder {
       val columnNode = NewSqlColumnNode()
         .name(queryColumn.name)
         .code(queryColumn.name)
-        .lineNumber(queryLineNumber + queryColumn.lineNumber - 1)
+        .lineNumber(queryColumn.lineNumber)
         .columnNumber(queryColumn.columnNumber)
         .order(columnIndex)
       builder.addEdge(tableNode, columnNode, EdgeTypes.AST)

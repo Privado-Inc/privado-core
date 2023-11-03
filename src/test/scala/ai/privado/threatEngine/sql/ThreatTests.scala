@@ -1,11 +1,13 @@
-package ai.privado.threatEngine
+package ai.privado.threatEngine.sql
 
 import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.*
+import ai.privado.model.exporter.ViolationModel
 import ai.privado.passes.{SQLParser, SQLPropertyPass}
 import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.threatEngine.ThreatEngineExecutor
 import better.files.File
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -57,7 +59,7 @@ class ThreatTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       Array[String]()
     )
 
-    "first use case " in {
+    "When same data-element is part of multiple table in sql file" in {
 
       val threatEngine = code("""
           |CREATE TABLE IF NOT EXISTS Customer (
@@ -77,6 +79,7 @@ class ThreatTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
       val result = threatEngine.processProcessingViolations(threat)
       result should not be empty
+      result.get.policyId shouldBe "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables"
     }
   }
 

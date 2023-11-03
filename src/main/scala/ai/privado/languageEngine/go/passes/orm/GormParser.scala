@@ -64,7 +64,7 @@ class GormParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
   ): Unit = {
     try {
       val sqlTable: SQLTable = SQLTable(
-        model.code,
+        model.name,
         model.lineNumber.getOrElse(Integer.valueOf(-1)),
         model.columnNumber.getOrElse(Integer.valueOf(-1))
       )
