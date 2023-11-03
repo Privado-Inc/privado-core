@@ -62,31 +62,29 @@ class GormParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
     model: TypeDecl,
     fileNode: NodeOrDetachedNode
   ): Unit = {
-    Try {
-      try {
-        val sqlTable: SQLTable = SQLTable(
-          model.code,
-          model.lineNumber.getOrElse(Integer.valueOf(-1)),
-          model.columnNumber.getOrElse(Integer.valueOf(-1))
-        )
-        val sqlColumns: List[SQLColumn] = model.member.l.map(x =>
-          SQLColumn(x.code, x.lineNumber.getOrElse(Integer.valueOf(-1)), x.columnNumber.getOrElse(Integer.valueOf(-1)))
-        )
-        val queryModel = SQLQuery(SQLQueryType.CREATE, sqlTable, sqlColumns)
-        SQLNodeBuilder.buildAndReturnIndividualQueryNode(
-          builder,
-          fileNode,
-          queryModel,
-          model.code,
-          model.lineNumber.getOrElse(Integer.valueOf(-1)),
-          0
-        )
+    try {
+      val sqlTable: SQLTable = SQLTable(
+        model.code,
+        model.lineNumber.getOrElse(Integer.valueOf(-1)),
+        model.columnNumber.getOrElse(Integer.valueOf(-1))
+      )
+      val sqlColumns: List[SQLColumn] = model.member.l.map(x =>
+        SQLColumn(x.code, x.lineNumber.getOrElse(Integer.valueOf(-1)), x.columnNumber.getOrElse(Integer.valueOf(-1)))
+      )
+      val queryModel = SQLQuery(SQLQueryType.CREATE, sqlTable, sqlColumns)
+      SQLNodeBuilder.buildAndReturnIndividualQueryNode(
+        builder,
+        fileNode,
+        queryModel,
+        model.code,
+        model.lineNumber.getOrElse(Integer.valueOf(-1)),
+        0
+      )
 
-      } catch {
-        case ex: Exception =>
-          ex.printStackTrace()
-          println(s"Error while building sql nodes for GORM framework: ${ex.getMessage}")
-      }
+    } catch {
+      case ex: Exception =>
+        ex.printStackTrace()
+        println(s"Error while building sql nodes for GORM framework: ${ex.getMessage}")
     }
   }
 }
