@@ -50,7 +50,7 @@ abstract class BaseProcessor(
     */
   def processCpg(): Either[String, Unit] = ???
 
-  /** Taks care of consuming the Try[Cpg] and applying privado specific taggers and export json result
+  /** Takes care of consuming the Try[Cpg] and applying privado specific taggers and export json result
     * @param xtocpg
     * @return
     */
