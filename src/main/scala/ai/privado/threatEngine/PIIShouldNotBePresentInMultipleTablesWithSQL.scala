@@ -30,37 +30,42 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
     cpg: Cpg,
     taggerCache: TaggerCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
-    val violatingFlows          = ListBuffer[ViolationProcessingModel]()
+    val violatingFlows = ListBuffer[ViolationProcessingModel]()
 
     if (hasDataElements(cpg)) {
       val taggedSources = getSources(cpg)
       taggedSources.foreach(groupedSource => {
-        println(groupedSource._1)
-        val tableNames   = groupedSource._2.collect(col => col.sqlTable.get.name)
-        val piiName   = getPIINameFromSourceId(groupedSource._1)
+        val tableNames           = groupedSource._2.collect(col => col.sqlTable.get.name)
+        val piiName              = getPIINameFromSourceId(groupedSource._1)
         val violationDescription = s"${piiName} was found in the following tables:\n"
 
-        if (tableNames.size > 1) {
-          val additionalDetail = createDetailBlock(violationDescription, tableNames)
+        if (isUniqueElements(tableNames)) {
+          val detailedDescription = createDetailBlock(violationDescription, tableNames)
 
           ThreatUtility.convertToViolationProcessingModelAndAddToViolatingFlows(
             None,
             groupedSource._2.head,
             violatingFlows,
             piiName,
-            Some(additionalDetail)
+            Some(detailedDescription)
           )
         }
       })
-      (violatingFlows.nonEmpty, violatingFlows.toList)
-    } else (violatingFlows.nonEmpty, violatingFlows.toList)
+    }
+    (violatingFlows.nonEmpty, violatingFlows.toList)
   }
 
-  def createDetailBlock(initialString: String, array: List[String]): String = {
+  def isUniqueElements(tableNames: List[String]): Boolean = {
+    val lowercasedList = tableNames.map(_.toLowerCase)
+    val distinctList   = lowercasedList.distinct
+    distinctList.length > 1
+  }
+
+  def createDetailBlock(initialString: String, tableNames: List[String]): String = {
     val result = new StringBuilder
     result.append(initialString)
-    for (string <- array) {
-      result.append("\t - ").append(string).append("\n")
+    for (tableName <- tableNames) {
+      result.append("\t - ").append(tableName).append("\n")
     }
     result.toString()
   }

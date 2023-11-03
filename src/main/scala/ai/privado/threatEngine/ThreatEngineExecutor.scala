@@ -159,10 +159,8 @@ class ThreatEngineExecutor(
       case "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables" =>
         val result1 = PIIShouldNotBePresentInMultipleTablesWithSQL.getViolations(threat, cpg, taggerCache) match {
           case Success(res) => Some(res)
-          case Failure(e) =>{
-            println("----")
-            println(s"Error for ${threatId}: ${e}")
-            println("----")
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
             None
           }
         }
