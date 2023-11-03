@@ -4,7 +4,8 @@ name: Monitoring Stability and Comparing Results
 on:
   schedule:
     - cron: '15 3,8 * * *'
-
+  workflow_dispatch:
+    
 jobs:
   start_workflow:
     runs-on: ubuntu-latest
@@ -80,14 +81,14 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Post results to slack
-        uses: MeilCli/slack-upload-file@v3
+        uses: adrey/slack-file-upload-action@master
         with:
           thread_ts: ${{needs.start_workflow.outputs.init_message_ts}}
-          slack_token: ${{ secrets.SLACK_TOKEN }}
-          channel_id: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
-          file_path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}.zip"
+          channel: ${{ secrets.SLACK_CHANNEL_ID }} # check
+          path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}.zip"
           initial_comment: "Comparison Results generated on ${{github.event.repository.name}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
-          file_type: "zip"
+          filetype: "zip"
+          token: ${{ secrets.SLACK_TOKEN }}
 
       - name: Export workflow output
         run: cd ./temp/standalone-monitoring-stability && python3 ./workflow_check.py /home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/results/slack_summary.txt
