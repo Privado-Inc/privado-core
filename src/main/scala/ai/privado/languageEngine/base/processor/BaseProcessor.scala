@@ -29,7 +29,7 @@ import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.slf4j.Logger
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -43,7 +43,7 @@ abstract class BaseProcessor(
   auditCache: AuditCache
 ) {
 
-  val logger: Logger = ???
+  val logger: Logger = LoggerFactory.getLogger(getClass)
   val errorMsg       = new ListBuffer[String]()
 
   /** Entry method to read files and generate output
