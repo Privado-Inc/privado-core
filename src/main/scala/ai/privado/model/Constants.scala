@@ -167,4 +167,6 @@ object Constants {
 
   // Ruby defaults
   val defaultExpansionLimit = 100
+
+  val dummyFileName = "dummyFileName"
 }
