@@ -39,12 +39,21 @@ import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class GormParser(cpg: Cpg) extends BaseORMParser(cpg) {
-  val GORM_PARAMETER_TYPE_RULE = ".*github.com/jinzhu/gorm.*"
+class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
+  val GORP_PARAMETER_TYPE_RULE = "github.com/go-gorp/gorp.*"
   val logger                   = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.typeDecl.where(_.method.parameter.typeFullName(GORM_PARAMETER_TYPE_RULE)).dedup.toArray
+
+    val typeFullNames = cpg.call
+      .methodFullName(GORP_PARAMETER_TYPE_RULE)
+      .argument
+      .isCall
+      .typeFullName
+      .map(x => x.stripPrefix("*[]"))
+      .dedup
+      .l
+    cpg.typeDecl.fullName(typeFullNames.mkString("|")).dedup.toArray
   }
 
 }
