@@ -95,8 +95,16 @@ class GorpParserTest extends GoTaggingTestBase {
 
       val List(id, name, age) = cpg.sqlColumn.l
       id.code shouldBe "ID"
+      id.lineNumber.get shouldBe 15
+      id.columnNumber.get shouldBe 7
+
       name.code shouldBe "Name"
+      name.lineNumber.get shouldBe 16
+      name.columnNumber.get shouldBe 7
+
       age.code shouldBe "Age"
+      age.lineNumber.get shouldBe 17
+      age.columnNumber.get shouldBe 7
     }
 
   }
