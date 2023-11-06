@@ -81,7 +81,7 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](
     } catch {
       case ex: Exception =>
         ex.printStackTrace()
-        logger.info(s"Error while building SQL nodes: ${ex.getMessage}")
+        logger.error(s"Error while building SQL nodes: ${ex.getMessage}")
     }
   }
 }
