@@ -84,7 +84,7 @@ jobs:
         uses: adrey/slack-file-upload-action@master
         with:
           thread_ts: ${{needs.start_workflow.outputs.init_message_ts}}
-          channel: ${{ secrets.LANG_ENGINE_CHANNEL_ID }} # check
+          channel: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
           path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}.zip"
           initial_comment: "Comparison Results generated on ${{github.event.repository.name}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
           filetype: "zip"
