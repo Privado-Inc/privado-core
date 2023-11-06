@@ -87,6 +87,7 @@ class GormParserTest extends GoTaggingTestBase {
     "check table nodes" in {
       val tableNodes = cpg.sqlTable.l
       tableNodes.size shouldBe 1
+      tableNodes.head.name shouldBe "User"
     }
 
     "check column nodes" in {

@@ -22,18 +22,26 @@
  */
 package ai.privado.languageEngine.go.passes.orm
 
-import better.files.*
-import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
-class GormParser(cpg: Cpg) extends BaseORMParser(cpg) {
-  val GORM_PARAMETER_TYPE_RULE = ".*github.com/jinzhu/gorm.*"
+class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
+  val GORP_PARAMETER_TYPE_RULE = "github.com/go-gorp/gorp.*"
+  val ADDRESS_OF_OBJECT_SYMBOL = "*[]"
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.typeDecl.where(_.method.parameter.typeFullName(GORM_PARAMETER_TYPE_RULE)).dedup.toArray
+
+    val typeFullNames = cpg.call
+      .methodFullName(GORP_PARAMETER_TYPE_RULE)
+      .argument
+      .isCall
+      .typeFullName
+      .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
+      .dedup
+      .l
+    cpg.typeDecl.fullName(typeFullNames.mkString("|")).dedup.toArray
   }
 
 }
