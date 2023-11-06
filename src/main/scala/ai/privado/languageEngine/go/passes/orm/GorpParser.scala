@@ -41,6 +41,7 @@ import scala.util.{Failure, Success, Try}
 
 class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
   val GORP_PARAMETER_TYPE_RULE = "github.com/go-gorp/gorp.*"
+  val ADDRESS_OF_OBJECT_SYMBOL = "*[]"
   val logger                   = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] = {
@@ -50,7 +51,7 @@ class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
       .argument
       .isCall
       .typeFullName
-      .map(x => x.stripPrefix("*[]"))
+      .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
       .dedup
       .l
     cpg.typeDecl.fullName(typeFullNames.mkString("|")).dedup.toArray
