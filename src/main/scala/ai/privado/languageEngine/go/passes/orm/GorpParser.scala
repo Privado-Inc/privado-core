@@ -22,27 +22,14 @@
  */
 package ai.privado.languageEngine.go.passes.orm
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.Constants
-import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
-import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.SQLNodeBuilder
-import ai.privado.utility.SQLParser.createSQLTableItem
-import better.files.*
-import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
-
-import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 
 class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
   val GORP_PARAMETER_TYPE_RULE = "github.com/go-gorp/gorp.*"
   val ADDRESS_OF_OBJECT_SYMBOL = "*[]"
-  val logger                   = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] = {
 
