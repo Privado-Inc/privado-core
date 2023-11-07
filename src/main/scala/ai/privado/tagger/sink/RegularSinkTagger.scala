@@ -43,7 +43,10 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
   }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
-    val sinks = cacheCall.methodFullName(ruleInfo.combinedRulePattern).l
+    val combinedRegex = ruleInfo.combinedRulePattern
+    val sinks = cacheCall
+      .or(_.methodFullName(combinedRegex), _.filter(_.dynamicTypeHintFullName.exists(_.matches(combinedRegex))))
+      .l
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
       if (databaseDetails.isDefined) {

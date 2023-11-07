@@ -27,7 +27,6 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerC
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
-import ai.privado.languageEngine.java.processor.JavaProcessor.logger
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
@@ -50,6 +49,7 @@ import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.deprecated.passes.*
+import io.joern.rubysrc2cpg.passes.ConfigFileCreationPass
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
