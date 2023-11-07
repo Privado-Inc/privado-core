@@ -17,6 +17,7 @@ import net.sf.jsqlparser.statement.select.{PlainSelect, Select, SelectItem, SetO
 import net.sf.jsqlparser.statement.update.Update
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.NodeOrDetachedNode
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
@@ -184,7 +185,7 @@ object SQLNodeBuilder {
 
   def buildAndReturnIndividualQueryNode(
     builder: DiffGraphBuilder,
-    fileNode: NewFile,
+    fileNode: NodeOrDetachedNode,
     queryModel: SQLQuery,
     query: String,
     queryLineNumber: Int,
