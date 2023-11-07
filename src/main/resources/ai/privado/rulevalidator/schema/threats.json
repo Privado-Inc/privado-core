@@ -83,6 +83,12 @@
                   "pattern": "^.*$"
                 }
               },
+              "sourceFilters": {
+                "$id": "#root/policies/items/dataFlow/sourceFilters",
+                "title": "SourceFilters",
+                "type": "object",
+                "default": null
+              },
               "sinks": {
                 "$id": "#root/threats/items/dataFlow/sinks",
                 "title": "Sinks",
@@ -99,6 +105,18 @@
                   ],
                   "pattern": "^.*$"
                 }
+              },
+              "sinkFilters": {
+                "$id": "#root/policies/items/dataFlow/sinkFilters",
+                "title": "SinkFilters",
+                "type": "object",
+                "default": null
+              },
+              "collectionFilters": {
+                "$id": "#root/policies/items/dataFlow/collectionFilters",
+                "title": "CollectionFilters",
+                "type": "object",
+                "default": null
               }
             }
           },

@@ -11,6 +11,7 @@ import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.{
   CatLevelOne,
+  CollectionFilter,
   ConfigAndRules,
   DataFlow,
   Language,
@@ -19,6 +20,7 @@ import ai.privado.model.{
   PolicyOrThreat,
   PolicyThreatType,
   RuleInfo,
+  SinkFilter,
   SourceFilter
 }
 import ai.privado.model.sql.SQLQueryType
@@ -73,31 +75,92 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "",
       Language.JAVASCRIPT,
       Array()
+    ),
+    RuleInfo(
+      "ThirdParties.SDK.Sentry",
+      "Sentry",
+      "",
+      Array("sentry.io"),
+      List("(?i).*(sentry).*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVASCRIPT,
+      Array()
     )
   )
 
-  val policy = PolicyOrThreat(
-    "Policy.Deny.Sharing.LeakToConsole",
-    "Policy to restrict Contact Information being leaked to console",
-    "Example: Don't leak contact data",
-    "Talk to the Data Protection team: dataprotection@org.com",
-    PolicyThreatType.COMPLIANCE,
-    PolicyAction.DENY,
-    DataFlow(List("Data.Sensitive.ContactData.*"), SourceFilter(Option(true), ""), List("Leakages.Log.*")),
-    List(".*"),
-    Map[String, String](),
-    Map[String, String](),
-    "",
-    Array[String]()
-  )
-
-  "Policy Executor" should {
+  "Policy Executor: Leakages" should {
+    val policyLeakages = PolicyOrThreat(
+      "Policy.Deny.Sharing.LeakToConsole",
+      "Policy to restrict Contact Information being leaked to console",
+      "Example: Don't leak contact data",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List("Data.Sensitive.ContactData.*"),
+        SourceFilter(Option(true), "", ""),
+        List("Leakages.Log.*"),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
     val policyExecutor = code("""
         |let email = "abc@def.com";
         |console.error(email);
         |""".stripMargin)
 
-    val List(violationDataflowModel) = policyExecutor.getViolatingFlowsForPolicy(policy).toList
+    val List(violationDataflowModel) = policyExecutor.getViolatingFlowsForPolicy(policyLeakages).toList
+    "have a sourceId and sinkId" in {
+      violationDataflowModel.sourceId shouldBe "Data.Sensitive.ContactData.EmailAddress"
+      violationDataflowModel.sinkId shouldBe "Leakages.Log.Error"
+    }
+    "have non-empty pathIds" in {
+      violationDataflowModel.pathIds.size shouldBe 1
+    }
+    "have only unique path ids" in {
+      violationDataflowModel.pathIds.size == violationDataflowModel.pathIds.toSet.size shouldBe true
+    }
+  }
+
+  "Policy Executor: SinkFilters" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Sharing.LeakToConsole",
+      "Policy to restrict Contact Information being leaked to console",
+      "Example: Don't leak contact data",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List("Data.Sensitive.ContactData.*"),
+        SourceFilter(Option(true), "", ""),
+        List("Leakages.*"),
+        SinkFilter(List[String](), "Leakages", ""),
+        CollectionFilter("")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |let email = "abc@def.com";
+        |console.error(email);
+        |""".stripMargin)
+
+    val List(violationDataflowModel) = policyExecutor.getViolatingFlowsForPolicy(policySinkFilter).toList
     "have a sourceId and sinkId" in {
       violationDataflowModel.sourceId shouldBe "Data.Sensitive.ContactData.EmailAddress"
       violationDataflowModel.sinkId shouldBe "Leakages.Log.Error"
