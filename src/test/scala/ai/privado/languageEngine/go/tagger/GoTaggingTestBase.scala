@@ -110,9 +110,7 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
       "Collection",
       "",
       Array(),
-      List(
-        "((?i)(Get|Post)"
-      ),
+      List("((?i)(Get|Post)"),
       false,
       "",
       Map(),
