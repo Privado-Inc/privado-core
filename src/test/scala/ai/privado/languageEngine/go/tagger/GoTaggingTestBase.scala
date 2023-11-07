@@ -104,25 +104,6 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
     )
   )
 
-  val collectionRule = List(
-    RuleInfo(
-      "Collection.Rest",
-      "Collection",
-      "",
-      Array(),
-      List("((?i)(Get|Post)"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.COLLECTIONS,
-      catLevelTwo = Constants.default,
-      Language.GO,
-      Array()
-    )
-  )
-
   val systemConfig = List(
     SystemConfig(
       "apiHttpLibraries",
@@ -148,7 +129,7 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
   )
 
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
+    ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
 
   val taggerCache = new TaggerCache()
 }

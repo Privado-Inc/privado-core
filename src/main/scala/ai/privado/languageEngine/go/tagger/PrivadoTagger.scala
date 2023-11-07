@@ -27,10 +27,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    println("lklklklk---------")
-
-    println(ruleCache.getRule.collections)
-
     new LiteralTagger(cpg, ruleCache).createAndApply()
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
