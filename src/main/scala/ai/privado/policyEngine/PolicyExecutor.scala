@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 class PolicyExecutor(
@@ -188,8 +189,16 @@ class PolicyExecutor(
         matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.isSensitive == sourceFilters.isSensitive.get)
 
     if (sourceFilters.name.nonEmpty)
-      matchingSourceIds =
-        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.name.toLowerCase.contains(sourceFilters.name.toLowerCase))
+      val namePattern: Option[Regex] = sourceFilters.name match {
+        case "" => None
+        case name => Some(s"(?i)\\Q$name\\E".r)
+      }
+      matchingSourceIds = matchingSourceIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        namePattern.exists(pattern =>
+          ruleInfo.exists(info => pattern.findFirstIn(info.name.toLowerCase).nonEmpty)
+        )
+      }
 
     matchingSourceIds
   }
@@ -218,14 +227,21 @@ class PolicyExecutor(
     if (sinkFilters.domains.nonEmpty) {
       matchingSinkIds = matchingSinkIds.filter { sinkId =>
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
-        println(ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty))
         ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
       }
     }
 
     if (sinkFilters.name.nonEmpty)
-      matchingSinkIds =
-        matchingSinkIds.filter(ruleCache.getRuleInfo(_).get.name.toLowerCase.contains(sinkFilters.name.toLowerCase))
+      val namePattern: Option[Regex] = sinkFilters.name match {
+        case "" => None
+        case name => Some(s"(?i)\\Q$name\\E".r)
+      }
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        namePattern.exists(pattern =>
+          ruleInfo.exists(info => pattern.findFirstIn(info.name.toLowerCase).nonEmpty)
+        )
+      }
 
     matchingSinkIds
   }
