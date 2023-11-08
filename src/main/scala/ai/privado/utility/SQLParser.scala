@@ -63,15 +63,8 @@ object SQLParser {
         case selectStmt: Select =>
           selectStmt.getSelectBody match {
             case plainSelect: PlainSelect =>
-              Some(
-                List(
-                  SQLQuery(
-                    SQLQueryType.SELECT,
-                    createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table]),
-                    getColumns(plainSelect)
-                  )
-                )
-              )
+              val sqlTable = createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table])
+              Some(List(SQLQuery(SQLQueryType.SELECT, sqlTable, getColumns(plainSelect, sqlTable))))
             /*
             Example of SetOperation SQL Queries:
               -- SELECT column_name FROM table1
@@ -82,35 +75,37 @@ object SQLParser {
               val selectStmts = setOpList.getSelects.asScala.toList
               val tableNameColumnListMap = selectStmts.map { stmt =>
                 val plainSelect = stmt.asInstanceOf[PlainSelect]
-                val table       = plainSelect.getFromItem.asInstanceOf[Table]
-                (table, getColumns(plainSelect))
+                val sqlTable    = createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table])
+                (sqlTable, getColumns(plainSelect, sqlTable))
               }
 
               // Merge all column lists into a single list of unique columns
               Some(tableNameColumnListMap.map((i) => {
-                SQLQuery(SQLQueryType.SELECT, createSQLTableItem(i._1), i._2)
+                SQLQuery(SQLQueryType.SELECT, i._1, i._2)
               }))
 
             case _ => None
 
           }
         case insertStmt: Insert =>
+          val sqlTable = createSQLTableItem(insertStmt.getTable)
           Some(
             List(
               SQLQuery(
                 SQLQueryType.INSERT,
-                createSQLTableItem(insertStmt.getTable),
-                insertStmt.getColumns.asScala.map(createSQLColumnItem).toList
+                sqlTable,
+                insertStmt.getColumns.asScala.map(x => createSQLColumnItem(x, sqlTable)).toList
               )
             )
           )
         case updateStmt: Update =>
+          val sqlTable = createSQLTableItem(updateStmt.getTable)
           Some(
             List(
               SQLQuery(
                 SQLQueryType.UPDATE,
-                createSQLTableItem(updateStmt.getTable),
-                updateStmt.getColumns.asScala.map(createSQLColumnItem).toList
+                sqlTable,
+                updateStmt.getColumns.asScala.map(x => createSQLColumnItem(x, sqlTable)).toList
               )
             )
           )
@@ -118,11 +113,12 @@ object SQLParser {
           val columns: List[String] =
             createStmt.getColumnDefinitions.asScala.map(_.getColumnName).toList
 
+          val sqlTable = createSQLTableItem(createStmt.getTable)
           val columnList = columns.map(columnName => {
             val lineColumn = getLineAndColumnNumber(sqlQuery, columnName)
-            SQLColumn(columnName, lineColumn._1, lineColumn._2)
+            SQLColumn(columnName, lineColumn._1 + sqlTable.lineNumber, lineColumn._2)
           })
-          Some(List(SQLQuery(SQLQueryType.CREATE, createSQLTableItem(createStmt.getTable), columnList)))
+          Some(List(SQLQuery(SQLQueryType.CREATE, sqlTable, columnList)))
         case _ =>
           logger.debug("Something wrong: ", sqlQuery)
           None
@@ -137,29 +133,29 @@ object SQLParser {
     }
   }
 
-  def getColumns(plainSelect: PlainSelect): List[SQLColumn] = {
+  def getColumns(plainSelect: PlainSelect, sqlTable: SQLTable): List[SQLColumn] = {
     plainSelect.getSelectItems.asScala.flatMap { (item: SelectItem) =>
       item.toString match {
         case f: String if f.contains("(") =>
           val function = CCJSqlParserUtil.parseExpression(f).asInstanceOf[Function]
-          function.getParameters.getExpressions.asScala.map(column => createSQLColumnItem(column))
+          function.getParameters.getExpressions.asScala.map(column => createSQLColumnItem(column, sqlTable))
         case _ =>
-          List(createSQLColumnItem(item))
+          List(createSQLColumnItem(item, sqlTable))
       }
     }.toList
   }
 
-  private def createSQLTableItem(table: Table) = {
+  private def createSQLTableItem(table: Table): SQLTable = {
     val tableName: String = table.getName
     val tableLineNumber   = Try(table.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE)
     val tableColumnNumber = Try(table.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     SQLTable(tableName, tableLineNumber, tableColumnNumber)
   }
 
-  private def createSQLColumnItem(column: ASTNodeAccess) = {
+  private def createSQLColumnItem(column: ASTNodeAccess, sqlTable: SQLTable) = {
     SQLColumn(
       column.toString,
-      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE),
+      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE) + sqlTable.lineNumber,
       Try(column.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     )
   }
