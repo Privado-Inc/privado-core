@@ -37,12 +37,12 @@ import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import scala.util.{Failure, Success, Try}
 
-abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
+abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
 
   override def generateParts(): Array[_ <: AnyRef] = ???
   val logger                                       = LoggerFactory.getLogger(getClass)
 
-  override def runOnPart(builder: DiffGraphBuilder, model: TypeDecl): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, model: AstNode): Unit = {
     Try(model.file.head) match {
       case Success(fileNode) =>
         buildAndAddSqlQueryNodes(builder, model, fileNode)
@@ -52,18 +52,15 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](
     }
   }
 
-  private def buildAndAddSqlQueryNodes(
-    builder: DiffGraphBuilder,
-    model: TypeDecl,
-    fileNode: NodeOrDetachedNode
-  ): Unit = {
+  def buildAndAddSqlQueryNodes(builder: DiffGraphBuilder, model: AstNode, fileNode: NodeOrDetachedNode): Unit = {
+    val typeDeclNode = model.asInstanceOf[TypeDecl]
     try {
       val sqlTable: SQLTable = SQLTable(
-        model.name,
-        model.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
-        model.columnNumber.getOrElse(Integer.valueOf(defaultLineNumber))
+        typeDeclNode.name,
+        typeDeclNode.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
+        typeDeclNode.columnNumber.getOrElse(Integer.valueOf(defaultLineNumber))
       )
-      val sqlColumns: List[SQLColumn] = model.member.l.map(member =>
+      val sqlColumns: List[SQLColumn] = typeDeclNode.member.l.map(member =>
         SQLColumn(
           member.name,
           member.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
@@ -75,17 +72,17 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](
         builder,
         fileNode,
         queryModel,
-        model.code,
-        model.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
+        typeDeclNode.code,
+        typeDeclNode.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
         0
       )
     } catch {
       case ex: Exception =>
         logger.error(s"Error while building SQL nodes: ${ex.getMessage}")
         logger.debug(s"""Error while building SQL nodes for
-             |TypeDecl: name ${model.name} \n
-             |code: ${model.code} \n
-             |file: ${model.file.head.name}""".stripMargin)
+             |TypeDecl: name ${typeDeclNode.name} \n
+             |code: ${typeDeclNode.code} \n
+             |file: ${typeDeclNode.file.head.name}""".stripMargin)
     }
   }
 }

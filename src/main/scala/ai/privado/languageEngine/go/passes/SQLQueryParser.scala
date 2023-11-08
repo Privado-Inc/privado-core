@@ -24,8 +24,9 @@
 package ai.privado.languageEngine.go.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.go.passes.orm.BaseORMParser
 import ai.privado.model.Constants
-import ai.privado.model.Constants.{defaultLineNumber}
+import ai.privado.model.Constants.defaultLineNumber
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLNodeBuilder, Utilities, SQLParser as UtilitySQLParser}
@@ -47,10 +48,10 @@ import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
+class SQLQueryParser(cpg: Cpg) extends BaseORMParser(cpg) {
 
   val sqlQueryRegexPattern = "(?i).*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE).*"
-  val logger               = LoggerFactory.getLogger(getClass)
+  override val logger      = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[_ <: AnyRef] = {
     //    CPG query to fetch the Literal with SQL string
     //    'Repeat until' is used to combine multiline SQL queries into one
@@ -64,18 +65,9 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
 
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, queryNode: AstNode): Unit = {
-    Try(queryNode.file.head) match
-      case Success(fileNode) =>
-        buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
-      case Failure(_) =>
-        val fileNode = NewFile().name(Constants.Unknown)
-        buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
-  }
-
-  private def buildAndAddSqlQueryNodes(
-    queryLiteral: AstNode,
+  override def buildAndAddSqlQueryNodes(
     builder: DiffGraphBuilder,
+    queryLiteral: AstNode,
     fileNode: NodeOrDetachedNode
   ): Unit = Try {
 
