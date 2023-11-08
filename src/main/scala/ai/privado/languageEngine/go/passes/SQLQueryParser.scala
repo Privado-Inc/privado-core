@@ -25,6 +25,7 @@ package ai.privado.languageEngine.go.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
+import ai.privado.model.Constants.{defaultLineNumber}
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLNodeBuilder, Utilities, SQLParser as UtilitySQLParser}
@@ -78,8 +79,8 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
     fileNode: NodeOrDetachedNode
   ): Unit = Try {
 
-    val queryLineNumber = queryLiteral.lineNumber.getOrElse(Integer.valueOf(-1))
-    val query           = queryLiteral.code
+    val queryLineNumber = queryLiteral.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber))
+    val query           = queryLiteral.code.stripPrefix("`").stripSuffix("`").stripPrefix("\"").stripSuffix("\"")
     try {
       UtilitySQLParser.parseSqlQuery(query) match {
         case Some(parsedQueryList) =>
@@ -99,7 +100,7 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
       }
     } catch {
       case ex: Exception =>
-        println(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
+        logger.debug(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
         None
     }
 

@@ -123,10 +123,11 @@ class ThreatTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       val result = threatEngine.processProcessingViolations(threat)
       result should not be empty
       result.get.policyId shouldBe "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables"
+      result.get.processing.get.head.sourceId shouldBe "EmailAddress"
     }
   }
 
-  "No Threat  PIIShouldNotBePresentInMultipleTables when both model have different PII" should {
+  "No Threat PIIShouldNotBePresentInMultipleTables when both model have different PII" should {
     val threat = PolicyOrThreat(
       "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables",
       "{DataElement} was found in multiple tables",

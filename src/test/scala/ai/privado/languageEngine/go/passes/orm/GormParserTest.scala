@@ -35,10 +35,6 @@ class GormParserTest extends GoTaggingTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     X2Cpg.applyDefaultOverlays(cpg)
-
-    val context = new LayerCreatorContext(cpg)
-    val options = new OssDataFlowOptions()
-    new OssDataFlow(options).run(context)
     new GormParser(cpg).createAndApply()
   }
 
@@ -88,6 +84,12 @@ class GormParserTest extends GoTaggingTestBase {
       val tableNodes = cpg.sqlTable.l
       tableNodes.size shouldBe 1
       tableNodes.head.name shouldBe "User"
+    }
+
+    "check query nodes" in {
+      val queryNodes = cpg.sqlQuery.l
+      queryNodes.size shouldBe 1
+      queryNodes.head.name shouldBe "CREATE"
     }
 
     "check column nodes" in {

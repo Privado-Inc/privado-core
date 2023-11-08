@@ -29,6 +29,8 @@ import org.slf4j.LoggerFactory
 
 class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
   val GORP_PARAMETER_TYPE_RULE = "github.com/go-gorp/gorp.*"
+  // when we pass a object's variable as its address its written as like `&users`
+  // In joern its signatured as *[]packagename.User
   val ADDRESS_OF_OBJECT_SYMBOL = "*[]"
 
   override def generateParts(): Array[_ <: AnyRef] = {

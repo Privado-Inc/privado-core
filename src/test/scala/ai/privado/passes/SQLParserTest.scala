@@ -81,20 +81,32 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     }
 
     "SqlTable node check" in {
-      val List(x) = cpg.sqlTable.dedupBy(_.name).l
+      val List(x, y) = cpg.sqlTable.l
       x.name shouldBe "votes"
+      x.lineNumber shouldBe Some(2)
+
+      y.name shouldBe "votes"
+      y.lineNumber shouldBe Some(9)
     }
 
     "Traversal from query to table" in {
-      val List(x) = cpg.sqlQuery.sqlTable.dedupBy(_.name).l
+      val List(x, y) = cpg.sqlQuery.sqlTable.l
       x.name shouldBe "votes"
+      x.lineNumber shouldBe Some(2)
+
+      y.name shouldBe "votes"
+      y.lineNumber shouldBe Some(9)
     }
 
     "Traversal from table to column" in {
-      val List(id, created_at, candidate) = cpg.sqlQuery.sqlTable.dedupBy(_.name).sqlColumn.l
+      val List(id, created_at, candidate) = cpg.sqlQuery.sqlTable.lineNumber(2).sqlColumn.l
       id.name shouldBe "id"
       created_at.name shouldBe "created_at"
       candidate.name shouldBe "candidate"
+
+      val List(id1, candidate1) = cpg.sqlQuery.sqlTable.lineNumber(9).sqlColumn.l
+      id1.name shouldBe "id"
+      candidate1.name shouldBe "candidate"
     }
   }
 

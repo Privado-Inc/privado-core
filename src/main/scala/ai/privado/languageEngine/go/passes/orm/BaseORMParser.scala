@@ -23,6 +23,7 @@
 package ai.privado.languageEngine.go.passes.orm
 
 import ai.privado.model.Constants
+import ai.privado.model.Constants.{defaultLineNumber}
 import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLNodeBuilder
@@ -59,14 +60,14 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](
     try {
       val sqlTable: SQLTable = SQLTable(
         model.name,
-        model.lineNumber.getOrElse(Integer.valueOf(-1)),
-        model.columnNumber.getOrElse(Integer.valueOf(-1))
+        model.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
+        model.columnNumber.getOrElse(Integer.valueOf(defaultLineNumber))
       )
       val sqlColumns: List[SQLColumn] = model.member.l.map(member =>
         SQLColumn(
-          member.code,
-          member.lineNumber.getOrElse(Integer.valueOf(-1)),
-          member.columnNumber.getOrElse(Integer.valueOf(-1))
+          member.name,
+          member.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
+          member.columnNumber.getOrElse(Integer.valueOf(defaultLineNumber))
         )
       )
       val queryModel = SQLQuery(SQLQueryType.CREATE, sqlTable, sqlColumns)
@@ -75,13 +76,16 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](
         fileNode,
         queryModel,
         model.code,
-        model.lineNumber.getOrElse(Integer.valueOf(-1)),
+        model.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber)),
         0
       )
     } catch {
       case ex: Exception =>
-        ex.printStackTrace()
         logger.error(s"Error while building SQL nodes: ${ex.getMessage}")
+        logger.debug(s"""Error while building SQL nodes for
+             |TypeDecl: name ${model.name} \n
+             |code: ${model.code} \n
+             |file: ${model.file.head.name}""".stripMargin)
     }
   }
 }

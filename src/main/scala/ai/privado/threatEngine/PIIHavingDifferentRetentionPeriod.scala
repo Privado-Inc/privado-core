@@ -3,7 +3,7 @@ package ai.privado.threatEngine
 import ai.privado.cache.TaggerCache
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
-import ThreatUtility.{getPIINameFromSourceId, hasDataElements}
+import ai.privado.threatEngine.ThreatUtility.{getPIINameFromSourceId, hasDataElements}
 import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import io.shiftleft.codepropertygraph.generated.Cpg

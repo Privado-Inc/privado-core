@@ -13,10 +13,6 @@ class GorpParserTest extends GoTaggingTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     X2Cpg.applyDefaultOverlays(cpg)
-
-    val context = new LayerCreatorContext(cpg)
-    val options = new OssDataFlowOptions()
-    new OssDataFlow(options).run(context)
     new GorpParser(cpg).createAndApply()
   }
 
@@ -89,22 +85,29 @@ class GorpParserTest extends GoTaggingTestBase {
       tableNodes.head.name shouldBe "User"
     }
 
+    "check query nodes" in {
+      val queryNodes = cpg.sqlQuery.l
+      queryNodes.size shouldBe 1
+      queryNodes.head.name shouldBe "CREATE"
+      queryNodes.code.head shouldBe "User struct {\n\tID   int64\n\tName string\n\tAge  int\n}"
+    }
+
     "check column nodes" in {
       val columnNodes = cpg.sqlColumn.l
       columnNodes.size shouldBe 3
 
       val List(id, name, age) = cpg.sqlColumn.l
       id.code shouldBe "ID"
-      id.lineNumber.get shouldBe 15
-      id.columnNumber.get shouldBe 7
+      id.lineNumber shouldBe Some(15)
+      id.columnNumber shouldBe Some(7)
 
       name.code shouldBe "Name"
-      name.lineNumber.get shouldBe 16
-      name.columnNumber.get shouldBe 7
+      name.lineNumber shouldBe Some(16)
+      name.columnNumber shouldBe Some(7)
 
       age.code shouldBe "Age"
-      age.lineNumber.get shouldBe 17
-      age.columnNumber.get shouldBe 7
+      age.lineNumber shouldBe Some(17)
+      age.columnNumber shouldBe Some(7)
     }
 
   }

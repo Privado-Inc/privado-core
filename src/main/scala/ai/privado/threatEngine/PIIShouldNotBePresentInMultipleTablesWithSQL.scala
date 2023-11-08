@@ -35,7 +35,7 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
     if (hasDataElements(cpg)) {
       val taggedSources = getSources(cpg)
       taggedSources.foreach(groupedSource => {
-        val tableNames           = groupedSource._2.collect(col => col.sqlTable.get.name)
+        val tableNames           = groupedSource._2.collect(col => col.sqlTable.map(_.name).getOrElse("TableName"))
         val piiName              = getPIINameFromSourceId(groupedSource._1)
         val violationDescription = s"${piiName} was found in the following tables:\n"
 
