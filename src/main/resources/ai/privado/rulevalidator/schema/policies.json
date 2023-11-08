@@ -165,7 +165,7 @@
                       "format": "regex",
                       "default": "",
                       "examples": [
-                        "Data.Sharing.Slack"
+                        "slack.com"
                       ],
                       "pattern": "^.*$"
                     }

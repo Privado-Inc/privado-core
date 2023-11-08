@@ -236,7 +236,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List(".*"),
-        SourceFilter(Option(true), "", "email"),
+        SourceFilter(Option(true), "", "(?i).*email.*"),
         List(".*"),
         SinkFilter(List[String]("drive.google.com"), "", ""),
         CollectionFilter("")

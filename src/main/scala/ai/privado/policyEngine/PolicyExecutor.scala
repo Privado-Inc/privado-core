@@ -189,13 +189,10 @@ class PolicyExecutor(
         matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.isSensitive == sourceFilters.isSensitive.get)
 
     if (sourceFilters.name.nonEmpty)
-      val namePattern: Option[Regex] = sourceFilters.name match {
-        case ""   => None
-        case name => Some(s"(?i)\\Q$name\\E".r)
-      }
+      val namePattern: Option[Regex] = Some(sourceFilters.name.r)
       matchingSourceIds = matchingSourceIds.filter { sinkId =>
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
-        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name.toLowerCase).nonEmpty))
+        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
       }
 
     matchingSourceIds
@@ -230,13 +227,10 @@ class PolicyExecutor(
     }
 
     if (sinkFilters.name.nonEmpty)
-      val namePattern: Option[Regex] = sinkFilters.name match {
-        case ""   => None
-        case name => Some(s"(?i)\\Q$name\\E".r)
-      }
+      val namePattern: Option[Regex] = Some(sinkFilters.name.r)
       matchingSinkIds = matchingSinkIds.filter { sinkId =>
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
-        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name.toLowerCase).nonEmpty))
+        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
       }
 
     matchingSinkIds
