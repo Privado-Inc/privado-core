@@ -234,10 +234,12 @@ object PythonProcessor {
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
 
+    val excludeFileRegex = ruleCache.getExclusionRegex
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(File(".venv").path, true)
       .withInputPath(absoluteSourceLocation.toString)
       .withOutputPath(Paths.get(cpgOutputPath).toString)
+      .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
