@@ -27,6 +27,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, SqlColumnNode, SqlQueryNode, SqlTableNode, DbNode}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import overflowdb.traversal._
+import scala.util.Try
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -72,27 +73,13 @@ object Language {
 
   implicit class SqlColumnObject(val node: SqlColumnNode) {
     def sqlTable: Option[SqlTableNode] = {
-      val property = node.in(EdgeTypes.AST)
-      if (property != null && property.hasNext) {
-        val prop = property.next()
-        if (prop.isInstanceOf[SqlTableNode]) {
-          return Some(prop.asInstanceOf[SqlTableNode])
-        }
-      }
-      None
+      Some(node.start.in(EdgeTypes.AST).cast[SqlTableNode].head)
     }
   }
 
   implicit class SqlTableObject(val node: SqlTableNode) {
     def sqlQuery: Option[SqlQueryNode] = {
-      val property = node.out(EdgeTypes.AST)
-      if (property != null && property.hasNext) {
-        val prop = property.next()
-        if (prop.isInstanceOf[SqlQueryNode]) {
-          return Some(prop.asInstanceOf[SqlQueryNode])
-        }
-      }
-      None
+      Some(node.start.in(EdgeTypes.AST).cast[SqlQueryNode].head)
     }
   }
 
