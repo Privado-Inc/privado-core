@@ -83,6 +83,32 @@
                   "pattern": "^.*$"
                 }
               },
+              "sourceFilters": {
+                "$id": "#root/policies/items/dataFlow/sourceFilters",
+                "title": "SourceFilters",
+                "type": "object",
+                "default": null,
+                "properties": {
+                  "name": {
+                    "$id": "#root/policies/items/dataFlow/sourceFilters/name",
+                    "title": "Name",
+                    "type": "string",
+                    "default": ""
+                  },
+                  "sensitivity": {
+                    "$id": "#root/policies/items/dataFlow/sourceFilters/sensitivity",
+                    "title": "Sensitivity",
+                    "type": "string",
+                    "default": ""
+                  },
+                  "isSensitive": {
+                    "$id": "#root/policies/items/dataFlow/sourceFilters/isSensitive",
+                    "title": "isSensitive",
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              },
               "sinks": {
                 "$id": "#root/threats/items/dataFlow/sinks",
                 "title": "Sinks",
@@ -99,6 +125,49 @@
                   ],
                   "pattern": "^.*$"
                 }
+              },
+              "sinkFilters": {
+                "$id": "#root/policies/items/dataFlow/sinkFilters",
+                "title": "SinkFilters",
+                "type": "object",
+                "default": null,
+                "properties": {
+                  "sinkType": {
+                    "$id": "#root/policies/items/dataFlow/sinkFilters/sinkType",
+                    "title": "SinkType",
+                    "type": "string",
+                    "default": ""
+                  },
+                  "name": {
+                    "$id": "#root/policies/items/dataFlow/sinkFilters/name",
+                    "title": "Name",
+                    "type": "string",
+                    "default": ""
+                  },
+                  "domains": {
+                    "$id": "#root/policies/items/dataFlow/sinkFilters/domains",
+                    "title": "Domains",
+                    "type": "array",
+                    "default": [],
+                    "items":{
+                      "$id": "#root/policies/items/dataFlow/sinkFilters/domains/items",
+                      "title": "Items",
+                      "type": "string",
+                      "format": "regex",
+                      "default": "",
+                      "examples": [
+                        "slack.com"
+                      ],
+                      "pattern": "^.*$"
+                    }
+                  }
+                }
+              },
+              "collectionFilters": {
+                "$id": "#root/policies/items/dataFlow/collectionFilters",
+                "title": "CollectionFilters",
+                "type": "object",
+                "default": null
               }
             }
           },
