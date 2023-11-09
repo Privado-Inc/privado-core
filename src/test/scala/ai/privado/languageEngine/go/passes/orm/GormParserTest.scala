@@ -34,12 +34,9 @@ class GormParserTest extends GoTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    X2Cpg.applyDefaultOverlays(cpg)
-    new GormParser(cpg).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       package models
       |
       |import (
@@ -77,7 +74,7 @@ class GormParserTest extends GoTaggingTestBase {
       |	}
       |	return nil
       |}
-      |""".stripMargin
+      |""".stripMargin)
 
   "Adding sql nodes for GORM framework" should {
     "check table nodes" in {

@@ -36,8 +36,7 @@ class SQLQueryParserTest extends GoTaggingTestBase {
     new SQLQueryParser(cpg).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       package main
       |
       |func migrateDB(db *sql.DB) error {
@@ -51,7 +50,7 @@ class SQLQueryParserTest extends GoTaggingTestBase {
       |	return err
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "Check SQL nodes" should {
     "check column nodes" in {

@@ -16,8 +16,7 @@ class GorpParserTest extends GoTaggingTestBase {
     new GorpParser(cpg).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       package main
       |
       |import (
@@ -76,7 +75,7 @@ class GorpParserTest extends GoTaggingTestBase {
       |	}
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "Adding sql nodes for GORP framework" should {
     "check table nodes" in {

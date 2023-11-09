@@ -34,8 +34,7 @@ class GoIdentifierTaggingTest extends GoTaggingTestBase {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       package main
       |
       |type User struct {
@@ -55,7 +54,7 @@ class GoIdentifierTaggingTest extends GoTaggingTestBase {
       |	}
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "Tagging derived sources" should {
     "tag member in a structure" in {
