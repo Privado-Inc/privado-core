@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.go.tagger.collection
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.go.feeder.CollectionTaggerRule
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -128,34 +129,12 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     returnByName: Boolean = false
   ) = {
     collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, getCollectionRule, ruleCache)
+      addRuleTags(builder, collectionPoint, CollectionTaggerRule.rule, ruleCache)
       storeForTag(builder, collectionPoint, ruleCache)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
         getFinalEndPoint(collectionPoint, returnByName)
       )
     })
-  }
-
-  /*
-  collection Rule used for method tagging only
-   */
-  private def getCollectionRule: RuleInfo = {
-    RuleInfo(
-      "",
-      "",
-      "",
-      Array.empty,
-      List.empty,
-      false,
-      "",
-      HashMap[String, String](),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.COLLECTIONS,
-      "default",
-      Language.GO,
-      Array[String]()
-    )
   }
 
   private def getFinalEndPoint(collectionPoint: Method, returnByName: Boolean): String = {
