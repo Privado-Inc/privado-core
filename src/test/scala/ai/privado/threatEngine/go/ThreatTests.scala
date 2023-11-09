@@ -52,7 +52,13 @@ class ThreatTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         |""".stripMargin,
       PolicyThreatType.THREAT,
       PolicyAction.DENY,
-      DataFlow(List(), SourceFilter(Option(true), ""), List()),
+      DataFlow(
+        List(),
+        SourceFilter(Option(true), "", ""),
+        List[String](),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("")
+      ),
       List("**"),
       Map[String, String](),
       Map[String, String](),
@@ -138,7 +144,13 @@ class ThreatTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         |""".stripMargin,
       PolicyThreatType.THREAT,
       PolicyAction.DENY,
-      DataFlow(List(), SourceFilter(Option(true), ""), List()),
+      DataFlow(
+        List(),
+        SourceFilter(Option(true), "", ""),
+        List[String](),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("")
+      ),
       List("**"),
       Map[String, String](),
       Map[String, String](),
