@@ -1,33 +1,36 @@
 package ai.privado.languageEngine.go.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, InternalTag, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.utility.Utilities.*
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val methodUrlMap        = mutable.HashMap[Long, String]()
-  private val classUrlMap         = mutable.HashMap[Long, String]()
-  private val ROUTES_FILE_PATTERN = ".*(routes|routers).go"
+  private val methodUrlMap            = mutable.HashMap[Long, String]()
+  private val classUrlMap             = mutable.HashMap[Long, String]()
+  private val ROUTES_FILE_PATTERN     = ".*(routes|routers).go"
+  private val COLLECTION_FUNC_PATTERN = "(?i).*(Get|Post|Put|Patch|Delete).*"
+  private val COLLECTION_REST_PATTERN = "(?i)(Get|Post|Put|Patch|Delete)"
 
   override def generateParts(): Array[RuleInfo] =
-    ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
+    ruleCache.getRule.sources.toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
-    tagFuncCallCollection(builder, collectionRuleInfo)
-    tagRestCallCollection(builder, collectionRuleInfo)
+  override def runOnPart(builder: DiffGraphBuilder, sourceRuleInfo: RuleInfo): Unit = {
+    tagFuncCallCollection(builder, sourceRuleInfo)
+    tagRestCallCollection(builder, sourceRuleInfo)
   }
 
-  private def tagFuncCallCollection(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
+  private def tagFuncCallCollection(builder: DiffGraphBuilder, sourceRuleInfo: RuleInfo): Unit = {
     val collectionCallMethod = cpg.call
       .name("Methods")
-      .where(_.astChildren.isLiteral.code("(?i).*(Get|Post|Put|Patch|Delete).*"))
+      .where(_.astChildren.isLiteral.code(COLLECTION_FUNC_PATTERN))
       .astChildren
       .isCall
       .name("HandleFunc")
@@ -53,13 +56,13 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .l
       .flatten(method => method)
 
-    tagDirectSource(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+    tagDirectSource(cpg, builder, collectionMethodsCache.l, sourceRuleInfo)
   }
 
-  private def tagRestCallCollection(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
+  private def tagRestCallCollection(builder: DiffGraphBuilder, sourceRuleInfo: RuleInfo): Unit = {
 
     val collectionCallMethod = cpg
-      .call("(?i)(Get|Post|Put|Patch|Delete)")
+      .call(COLLECTION_REST_PATTERN)
       .where(_.file.name(ROUTES_FILE_PATTERN))
       .l
 
@@ -83,56 +86,76 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .l
       .flatten(method => method)
 
-    tagDirectSource(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+    tagDirectSource(cpg, builder, collectionMethodsCache.l, sourceRuleInfo)
   }
 
   private def tagDirectSource(
     cpg: Cpg,
     builder: DiffGraphBuilder,
     collectionMethods: List[Method],
-    collectionRuleInfo: RuleInfo
+    sourceRuleInfo: RuleInfo
   ): Unit = {
     val collectionPoints = collectionMethods.flatMap(collectionMethod => {
-      ruleCache.getRule.sources.flatMap(sourceRule => {
-        val parameters = collectionMethod.parameter
-        val locals     = collectionMethod.local
-        val literals   = collectionMethod.literal
+      val parameters = collectionMethod.parameter
+      val locals     = collectionMethod.local
+      val literals   = collectionMethod.literal
 
-        val matchingParameters = parameters.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("self")).l
-        val matchingLocals     = locals.code(sourceRule.combinedRulePattern).l
-        val matchingLiterals = literals
-          .code(sourceRule.combinedRulePattern)
-          .l
+      val matchingParameters = parameters.where(_.name(sourceRuleInfo.combinedRulePattern)).whereNot(_.code("self")).l
+      val matchingLocals     = locals.code(sourceRuleInfo.combinedRulePattern).l
+      val matchingLiterals = literals
+        .code(sourceRuleInfo.combinedRulePattern)
+        .l
 
-        if (!(matchingParameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
-          matchingParameters.foreach(parameter =>
-            storeForTag(builder, parameter, ruleCache)(Constants.id, sourceRule.id)
-          )
-          matchingLocals.foreach(local => storeForTag(builder, local, ruleCache)(Constants.id, sourceRule.id))
-          matchingLiterals.foreach(literal => storeForTag(builder, literal, ruleCache)(Constants.id, sourceRule.id))
-          Some(collectionMethod)
-        } else {
-          None
-        }
-      })
+      if (!(matchingParameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
+        matchingParameters.foreach(parameter =>
+          storeForTag(builder, parameter, ruleCache)(Constants.id, sourceRuleInfo.id)
+        )
+        matchingLocals.foreach(local => storeForTag(builder, local, ruleCache)(Constants.id, sourceRuleInfo.id))
+        matchingLiterals.foreach(literal => storeForTag(builder, literal, ruleCache)(Constants.id, sourceRuleInfo.id))
+        Some(collectionMethod)
+      } else {
+        None
+      }
     })
 
-    tagMethodEndpoints(builder, collectionPoints.l, collectionRuleInfo)
+    tagMethodEndpoints(builder, collectionPoints.l, sourceRuleInfo)
   }
 
   private def tagMethodEndpoints(
     builder: DiffGraphBuilder,
     collectionPoints: List[Method],
-    collectionRuleInfo: RuleInfo,
+    sourceRuleInfo: RuleInfo,
     returnByName: Boolean = false
   ) = {
     collectionPoints.foreach(collectionPoint => {
-      addRuleTags(builder, collectionPoint, collectionRuleInfo, ruleCache)
+      addRuleTags(builder, collectionPoint, getCollectionRule, ruleCache)
       storeForTag(builder, collectionPoint, ruleCache)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
         getFinalEndPoint(collectionPoint, returnByName)
       )
     })
+  }
+
+  /*
+  collection Rule used for method tagging only
+   */
+  private def getCollectionRule: RuleInfo = {
+    RuleInfo(
+      "",
+      "",
+      "",
+      Array.empty,
+      List.empty,
+      false,
+      "",
+      HashMap[String, String](),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      "default",
+      Language.GO,
+      Array[String]()
+    )
   }
 
   private def getFinalEndPoint(collectionPoint: Method, returnByName: Boolean): String = {
