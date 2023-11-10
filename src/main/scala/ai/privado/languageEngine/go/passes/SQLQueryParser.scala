@@ -48,10 +48,10 @@ import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
-class SQLQueryParser(cpg: Cpg) extends BaseORMParser(cpg) {
+class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
 
   val sqlQueryRegexPattern = "(?i).*(SELECT|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|TRUNCATE).*"
-  override val logger      = LoggerFactory.getLogger(getClass)
+  val logger               = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[_ <: AnyRef] = {
     //    CPG query to fetch the Literal with SQL string
     //    'Repeat until' is used to combine multiline SQL queries into one
@@ -65,14 +65,20 @@ class SQLQueryParser(cpg: Cpg) extends BaseORMParser(cpg) {
 
   }
 
-  override def buildAndAddSqlQueryNodes(
-    builder: DiffGraphBuilder,
-    queryLiteral: AstNode,
-    fileNode: NodeOrDetachedNode
-  ): Unit = Try {
+  def runOnPart(builder: DiffGraphBuilder, node: AstNode): Unit = {
+    Try(node.file.head) match {
+      case Success(fileNode) =>
+        buildAndAddSqlQueryNodes(builder, node, fileNode)
+      case Failure(_) =>
+        val fileNode = NewFile().name(Constants.Unknown)
+        buildAndAddSqlQueryNodes(builder, node, fileNode)
+    }
+  }
 
-    val queryLineNumber = queryLiteral.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber))
-    val query           = queryLiteral.code.stripPrefix("`").stripSuffix("`").stripPrefix("\"").stripSuffix("\"")
+  def buildAndAddSqlQueryNodes(builder: DiffGraphBuilder, node: AstNode, fileNode: NodeOrDetachedNode): Unit = Try {
+
+    val queryLineNumber = node.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber))
+    val query           = node.code.stripPrefix("`").stripSuffix("`").stripPrefix("\"").stripSuffix("\"")
     try {
       UtilitySQLParser.parseSqlQuery(query) match {
         case Some(parsedQueryList) =>
@@ -92,7 +98,10 @@ class SQLQueryParser(cpg: Cpg) extends BaseORMParser(cpg) {
       }
     } catch {
       case ex: Exception =>
-        logger.debug(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
+        logger.debug(
+          s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}" +
+            s"query : ${node}"
+        )
         None
     }
 

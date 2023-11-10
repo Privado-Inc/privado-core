@@ -7,7 +7,7 @@ import ai.privado.semantic.Language._
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
+import io.shiftleft.semanticcpg.language._
 
 import java.util.UUID
 

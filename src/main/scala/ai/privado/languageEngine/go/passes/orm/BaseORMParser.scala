@@ -37,12 +37,12 @@ import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import scala.util.{Failure, Success, Try}
 
-abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
+abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
 
   override def generateParts(): Array[_ <: AnyRef] = ???
   val logger                                       = LoggerFactory.getLogger(getClass)
 
-  override def runOnPart(builder: DiffGraphBuilder, model: AstNode): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, model: TypeDecl): Unit = {
     Try(model.file.head) match {
       case Success(fileNode) =>
         buildAndAddSqlQueryNodes(builder, model, fileNode)
@@ -52,8 +52,11 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](c
     }
   }
 
-  def buildAndAddSqlQueryNodes(builder: DiffGraphBuilder, model: AstNode, fileNode: NodeOrDetachedNode): Unit = {
-    val typeDeclNode = model.asInstanceOf[TypeDecl]
+  def buildAndAddSqlQueryNodes(
+    builder: DiffGraphBuilder,
+    typeDeclNode: TypeDecl,
+    fileNode: NodeOrDetachedNode
+  ): Unit = {
     try {
       val sqlTable: SQLTable = SQLTable(
         typeDeclNode.name,
