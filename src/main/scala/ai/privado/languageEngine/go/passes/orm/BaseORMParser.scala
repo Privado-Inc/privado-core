@@ -85,7 +85,7 @@ abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](
         logger.debug(s"""Error while building SQL nodes for
              |TypeDecl: name ${typeDeclNode.name} \n
              |code: ${typeDeclNode.code} \n
-             |file: ${typeDeclNode.file.head.name}""".stripMargin)
+             |file: ${typeDeclNode.file.headOption.getOrElse("unknown file")}""".stripMargin)
     }
   }
 }
