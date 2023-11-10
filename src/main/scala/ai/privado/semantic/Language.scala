@@ -71,16 +71,18 @@ object Language {
 
   }
 
+  // when there is no node of type AST then collectFirst method will return None
+
   implicit class SqlColumnObject(val node: SqlColumnNode) {
-    def sqlTable: Option[SqlTableNode] = {
-      Some(node.start.in(EdgeTypes.AST).cast[SqlTableNode].head)
-    }
+    def sqlTable: Option[SqlTableNode] =
+      node.start.in(EdgeTypes.AST).collectFirst { case sqlNode: SqlTableNode => sqlNode }
+
   }
 
   implicit class SqlTableObject(val node: SqlTableNode) {
-    def sqlQuery: Option[SqlQueryNode] = {
-      Some(node.start.in(EdgeTypes.AST).cast[SqlQueryNode].head)
-    }
+    def sqlQuery: Option[SqlQueryNode] =
+      node.start.in(EdgeTypes.AST).collectFirst { case sqlNode: SqlQueryNode => sqlNode }
+
   }
 
 }
