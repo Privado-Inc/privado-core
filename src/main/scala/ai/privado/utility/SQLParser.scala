@@ -155,7 +155,7 @@ object SQLParser {
   private def createSQLColumnItem(column: ASTNodeAccess, sqlTable: SQLTable) = {
     SQLColumn(
       column.toString,
-      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE) + sqlTable.lineNumber,
+      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE) + sqlTable.lineNumber - 1,
       Try(column.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     )
   }
