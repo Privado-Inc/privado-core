@@ -89,7 +89,7 @@ class KotlinProcessor(
     createCpgFolder(sourceRepoLocation);
     val excludeFileRegex = ruleCache.getExclusionRegex
 
-    val cpgconfig = Config(downloadDependencies = !privadoInput.skipDownloadDependencies, includeJavaSourceFiles = true)
+    val cpgconfig = Config(includeJavaSourceFiles = true)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
