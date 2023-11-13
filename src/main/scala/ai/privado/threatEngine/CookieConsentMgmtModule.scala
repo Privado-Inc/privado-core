@@ -1,8 +1,8 @@
-package ai.privado.languageEngine.java.threatEngine
+package ai.privado.threatEngine
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.threatEngine.ThreatUtility.hasDataElements
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.hasDataElements
 import ai.privado.model.PolicyOrThreat
 import ai.privado.model.exporter.ViolationProcessingModel
 import ai.privado.policyEngine.PolicyExecutor

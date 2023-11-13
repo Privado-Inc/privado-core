@@ -1,8 +1,5 @@
 package ai.privado.policyEngine
 
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
@@ -10,21 +7,14 @@ import ai.privado.languageEngine.java.tagger.source.InSensitiveCallTagger
 import ai.privado.languageEngine.javascript.tagger.sink.{JSAPITagger, RegularSinkTagger}
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
-import ai.privado.model.sql.SQLQueryType
 import better.files.File
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.semantic.Language.*
-import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-
-import scala.collection.mutable
 
 class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   val sourceRule: List[RuleInfo] = List(

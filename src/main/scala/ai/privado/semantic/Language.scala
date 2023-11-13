@@ -27,6 +27,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, SqlColumnNode, SqlQueryNode, SqlTableNode, DbNode}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import overflowdb.traversal._
+import scala.util.Try
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -56,17 +57,32 @@ object Language {
 
   }
   implicit class StepsForPropertyForSqlQueryNode(val trav: Traversal[SqlQueryNode]) extends AnyVal {
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
-
+    def file: Traversal[File]             = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def sqlTable: Traversal[SqlTableNode] = trav.out(EdgeTypes.AST).cast[SqlTableNode]
   }
 
   implicit class StepsForPropertyForSqlTableNode(val trav: Traversal[SqlTableNode]) extends AnyVal {
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
-
+    def file: Traversal[File]               = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def sqlColumn: Traversal[SqlColumnNode] = trav.out(EdgeTypes.AST).cast[SqlColumnNode]
   }
 
   implicit class StepsForPropertyForSqlColumnNode(val trav: Traversal[SqlColumnNode]) extends AnyVal {
     def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
 
   }
+
+  // when there is no node of type AST then collectFirst method will return None
+
+  implicit class SqlColumnObject(val node: SqlColumnNode) {
+    def sqlTable: Option[SqlTableNode] =
+      node.start.in(EdgeTypes.AST).collectFirst { case sqlNode: SqlTableNode => sqlNode }
+
+  }
+
+  implicit class SqlTableObject(val node: SqlTableNode) {
+    def sqlQuery: Option[SqlQueryNode] =
+      node.start.in(EdgeTypes.AST).collectFirst { case sqlNode: SqlQueryNode => sqlNode }
+
+  }
+
 }

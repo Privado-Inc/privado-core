@@ -32,12 +32,9 @@ class GoAPITaggerTestCase1 extends GoTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new GoAPITagger(cpg, ruleCache, privadoInput).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       | package main
       |
       |import (
@@ -95,7 +92,7 @@ class GoAPITaggerTestCase1 extends GoTaggingTestBase {
       |	}
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "Tagging api sink: When nothing is matching(identifier or url) it should tagged with API" should {
 
@@ -106,13 +103,12 @@ class GoAPITaggerTestCase1 extends GoTaggingTestBase {
 
       val List(postCallNode) = cpg.call("Post").l
 
-      postCallNode.tag.size shouldBe 6
-      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API"
+      postCallNode.tag.size shouldBe 9
+      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API.api.example.com"
       postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
       postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
       postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
-      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API"
-      postCallNode.tag.nameExact("apiUrlSinks.ThirdParties.API").value.head shouldBe "API"
+      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API.api.example.com"
     }
 
   }
@@ -123,12 +119,9 @@ class GoAPITaggerTestCase2 extends GoTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new GoAPITagger(cpg, ruleCache, privadoInput).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       | package main
       |
       |import (
@@ -186,28 +179,23 @@ class GoAPITaggerTestCase2 extends GoTaggingTestBase {
       |	}
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
 
-    "check tag of api sink" ignore {
+    "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
-      postCallNode.tag.size shouldBe 6
-      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API"
+      postCallNode.tag.size shouldBe 9
+      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API.gmail.com"
       postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
       postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
       postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
-      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API"
-      postCallNode.tag.nameExact("apiUrlSinks.ThirdParties.API").value.head shouldBe "gateway_url"
-      // TODO: check tags on postCallNode for below cases
-      // 1. When literal holds some url
-      // 2. When Identifier is matching with apiIdentifier pattern
-      // 3. When nothing is matching it should tagged with "API"
+      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API.gmail.com"
     }
 
   }
@@ -218,12 +206,9 @@ class GoAPITaggerTestCase3 extends GoTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new GoAPITagger(cpg, ruleCache, privadoInput).createAndApply()
   }
 
-  override val goFileContents =
-    """
+  cpg = code("""
       | package main
       |
       |import (
@@ -240,7 +225,7 @@ class GoAPITaggerTestCase3 extends GoTaggingTestBase {
       |	Email    string
       |}
       |func (client *APIClient) SendUser(user User) error {
-      |	url := "https://api.example.com"
+      |	gateway_url := "https://api.example.com"
       |	payload, err := json.Marshal(user)
       |	if err != nil {
       |		return err
@@ -266,7 +251,7 @@ class GoAPITaggerTestCase3 extends GoTaggingTestBase {
       |		Name:     "John Doe",
       |		Age:      25,
       |		Location: "New York",
-      |		Email: "abc@gmail.com",
+      |		Email: "abc@gmailin.com",
       |	}
       |
       |	// Create a new API client
@@ -281,28 +266,23 @@ class GoAPITaggerTestCase3 extends GoTaggingTestBase {
       |	}
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
 
   "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
 
-    "check tag of api sink" ignore {
+    "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
       identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
-      postCallNode.tag.size shouldBe 6
-      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API"
+      postCallNode.tag.size shouldBe 9
+      postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API.api.example.com"
       postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
       postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
       postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
-      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API"
-      postCallNode.tag.nameExact("apiUrlSinks.ThirdParties.API").value.head shouldBe "https://api.example.com"
-      // TODO: check tags on postCallNode for below cases
-      // 1. When literal holds some url
-      // 2. When Identifier is matching with apiIdentifier pattern
-      // 3. When nothing is matching it should tagged with "API"
+      postCallNode.tag.nameExact("third_partiesapi").value.head shouldBe "Sinks.ThirdParties.API.api.example.com"
     }
 
   }

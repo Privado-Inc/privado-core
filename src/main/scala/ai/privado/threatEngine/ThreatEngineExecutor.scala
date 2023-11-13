@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.java.threatEngine
+package ai.privado.threatEngine
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
@@ -65,7 +65,7 @@ class ThreatEngineExecutor(
     threats.flatMap(threat => processDataflowViolations(threat))
   }
 
-  private def processProcessingViolations(threat: PolicyOrThreat) = {
+  def processProcessingViolations(threat: PolicyOrThreat): Option[ViolationModel] = {
     val threatId = threat.id
     logger.info(s"Processing 'processing' threat: ${threatId}")
     // process android threats
@@ -157,12 +157,23 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables" =>
-        PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache) match {
+        val result1 = PIIShouldNotBePresentInMultipleTablesWithSQL.getViolations(threat, cpg, taggerCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
             None
           }
+        }
+        val result2 = PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache) match {
+          case Success(res) => Some(res)
+          case Failure(e) => {
+            logger.debug(s"Error for ${threatId}: ${e}")
+            None
+          }
+        }
+        (result1, result2) match {
+          case (Some((b1, list1)), Some((b2, list2))) => Some((b1 || b2, list1 ++ list2))
+          case _                                      => None
         }
 
       case "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod" =>
