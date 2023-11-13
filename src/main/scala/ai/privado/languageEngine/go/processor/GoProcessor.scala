@@ -209,7 +209,7 @@ object GoProcessor {
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
     val cpgOutputPath          = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
+    val excludeFileRegex       = ruleCache.getExclusionRegex
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
