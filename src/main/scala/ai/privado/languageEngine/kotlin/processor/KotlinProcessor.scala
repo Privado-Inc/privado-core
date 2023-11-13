@@ -87,9 +87,13 @@ class KotlinProcessor(
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
+    val excludeFileRegex = ruleCache.getExclusionRegex
+
     val cpgconfig = Config(includeJavaSourceFiles = true)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
+      .withIgnoredFilesRegex(excludeFileRegex)
+
     val xtocpg = new Kotlin2Cpg().createCpg(cpgconfig).map { cpg =>
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"

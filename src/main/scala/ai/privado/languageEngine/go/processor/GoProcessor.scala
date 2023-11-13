@@ -30,6 +30,7 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.go.passes.orm.{GormParser, GorpParser}
 
 import java.nio.file.Paths
 import java.util.Calendar
@@ -73,6 +74,8 @@ object GoProcessor {
             val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
             UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.GO)
           }
+          new GormParser(cpg).createAndApply()
+          new GorpParser(cpg).createAndApply()
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
@@ -206,7 +209,7 @@ object GoProcessor {
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
     val cpgOutputPath          = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
+    val excludeFileRegex       = ruleCache.getExclusionRegex
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);

@@ -328,7 +328,7 @@ object RubyProcessor {
 
     // Need to convert path to absolute path as ruby cpg needs abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
-    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
+    val excludeFileRegex       = ruleCache.getExclusionRegex
 
     cpgconfig = Config()
       .withInputPath(absoluteSourceLocation)
