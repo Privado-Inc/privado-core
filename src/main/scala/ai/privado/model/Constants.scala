@@ -168,6 +168,7 @@ object Constants {
   val annotations       = "annotations"
   val default           = "default"
   val semanticDelimeter = "_A_"
+  val thisConstant      = "this"
 
   // Ruby defaults
   val defaultExpansionLimit = 100

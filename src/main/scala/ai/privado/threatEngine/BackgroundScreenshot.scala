@@ -49,6 +49,7 @@ object BackgroundScreenshot {
       val safeFlagCalls = cpg.method
         .fullName(SET_FLAG_METHOD_PATTERN)
         .callIn
+        .dedup
         .where(_.argument.code(s".*$SAFE_FLAG.*"))
 
       // violation if empty
