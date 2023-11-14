@@ -26,7 +26,7 @@ package ai.privado.languageEngine.java.tagger.source
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.*
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodParameterIn, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, MethodParameterIn, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate
@@ -275,12 +275,14 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     isDerived: Boolean = false
   ): Unit = {
 
-    getFieldAccessCallsMatchingRegex(cpg, typeDeclVal, s"($typeDeclMemberName)").foreach(impactedGetter => {
-      storeForTag(builder, impactedGetter, ruleCache)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
-      addRuleTags(builder, impactedGetter, ruleInfo, ruleCache)
-      if (isDerived)
-        storeForTag(builder, impactedGetter, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-    })
+    getFieldAccessCallsMatchingRegex(cpg, typeDeclVal, s"($typeDeclMemberName)", Option(cachedFieldAccess)).foreach(
+      impactedGetter => {
+        storeForTag(builder, impactedGetter, ruleCache)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
+        addRuleTags(builder, impactedGetter, ruleInfo, ruleCache)
+        if (isDerived)
+          storeForTag(builder, impactedGetter, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+      }
+    )
 
     val impactedReturnMethods = getCallsMatchingReturnRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
     impactedReturnMethods
