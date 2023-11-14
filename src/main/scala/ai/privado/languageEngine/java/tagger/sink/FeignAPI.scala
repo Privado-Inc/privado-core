@@ -80,6 +80,7 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
       .filterNot(item => feignClientTypeDeclWithUrl.contains(item.fullName))
       .method
       .callIn
+      .dedup
       .l
     feignAPISinks
   }
@@ -186,7 +187,7 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
       if (typeDecls.nonEmpty) {
         val typeDecl   = typeDecls.head
         var apiLiteral = entrySet._2.stripPrefix("\"").stripSuffix("\"")
-        val apiCalls   = typeDecl.method.callIn.l
+        val apiCalls   = typeDecl.method.callIn.dedup.l
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) {
           if (apiLiteral.matches(ruleInfo.combinedRulePattern)) {
             apiCalls.foreach(apiNode => {
