@@ -23,46 +23,54 @@
 
 package ai.privado.languageEngine.go.tagger
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{Constants, SystemConfig}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.dataflow.Dataflow
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.languageEngine.go.passes.SQLQueryParser
+import ai.privado.languageEngine.go.passes.orm.GormParser
+import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
+import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
+import ai.privado.model.{
+  CatLevelOne,
+  CollectionFilter,
+  ConfigAndRules,
+  Constants,
+  DataFlow,
+  Language,
+  NodeType,
+  PolicyAction,
+  PolicyOrThreat,
+  PolicyThreatType,
+  RuleInfo,
+  SinkFilter,
+  SourceFilter,
+  SystemConfig
+}
+import ai.privado.tagger.source.SqlQueryTagger
 import better.files.File
+import ai.privado.passes.{HTMLParserPass, SQLParser}
+import io.joern.x2cpg.X2Cpg
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
+import org.scalatest.BeforeAndAfter
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import io.joern.dataflowengineoss.language.Path
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 
-abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
 
-  var cpg: Cpg = _
-  val goFileContents: String
-  var inputDir: File   = _
-  var outputFile: File = _
-  val ruleCache        = new RuleCache()
-  val privadoInput     = PrivadoInput()
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / "generalFile.go").write(goFileContents)
-    (inputDir / "unrelated.file").write("foo")
-    outputFile = File.newTemporaryFile()
-    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
-    cpg = new GoSrc2Cpg().createCpg(config).get
-
-    // Caching Rule
-    ruleCache.setRule(rule)
-    AppCache.repoLanguage = Language.GO
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    cpg.close()
-    outputFile.delete()
-    super.afterAll()
-  }
+  val ruleCache                    = new RuleCache()
+  val privadoInput                 = PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
+  val dataFlows: Map[String, Path] = Map()
+  val auditCache                   = new AuditCache
+  val dataFlowCache                = new DataFlowCache(auditCache)
+  var inputDir: File               = File.newTemporaryDirectory()
+  var outputFile: File             = File.newTemporaryFile()
+  var config: Config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+  var cpg: Cpg       = new GoSrc2Cpg().createCpg(config).get
 
   val sourceRule = List(
     RuleInfo(
@@ -80,7 +88,47 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
       "",
       Language.GO,
       Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.ContactData.EmailAddress",
+      "EmailAddress",
+      "",
+      Array(),
+      List("(?i).*email.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVASCRIPT,
+      Array()
     )
+  )
+
+  val threat = PolicyOrThreat(
+    "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables",
+    "{DataElement} was found in multiple tables",
+    "{DataElement} found in multiple tables",
+    """
+      |Avoid storing same PII in multiple tables.
+      |Reference link: https://github.com/OWASP/owasp-mstg/blob/v1.4.0/Document/0x05d-Testing-Data-Storage.md#testing-local-storage-for-sensitive-data-mstg-storage-1-and-mstg-storage-2
+      |""".stripMargin,
+    PolicyThreatType.THREAT,
+    PolicyAction.DENY,
+    DataFlow(
+      List(),
+      SourceFilter(Option(true), "", ""),
+      List[String](),
+      SinkFilter(List[String](), "", ""),
+      CollectionFilter("")
+    ),
+    List("**"),
+    Map[String, String](),
+    Map[String, String](),
+    "",
+    Array[String]()
   )
 
   val sinkRule = List(
@@ -128,8 +176,33 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
     )
   )
 
-  val rule: ConfigAndRules =
+  val configAndRules: ConfigAndRules =
     ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
 
   val taggerCache = new TaggerCache()
+
+  def code(code: String, fileExtension: String = ".go"): Cpg = {
+    inputDir = File.newTemporaryDirectory()
+    (inputDir / s"generalFile${fileExtension}").write(code)
+    (inputDir / "unrelated.file").write("foo")
+    config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+
+    ScanProcessor.config = privadoInput
+    ruleCache.setRule(configAndRules)
+    cpg = new GoSrc2Cpg().createCpg(config).get
+    AppCache.repoLanguage = Language.GO
+
+    X2Cpg.applyDefaultOverlays(cpg)
+    val context = new LayerCreatorContext(cpg)
+    val options = new OssDataFlowOptions()
+    new OssDataFlow(options).run(context)
+    new GormParser(cpg).createAndApply()
+    new SQLParser(cpg, inputDir.pathAsString, ruleCache).createAndApply()
+    new SqlQueryTagger(cpg, ruleCache).createAndApply()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new GoAPITagger(cpg, ruleCache, privadoInput).createAndApply()
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+
+    cpg
+  }
 }

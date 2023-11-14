@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.java.threatEngine
+package ai.privado.threatEngine
 
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -49,6 +49,7 @@ object BackgroundScreenshot {
       val safeFlagCalls = cpg.method
         .fullName(SET_FLAG_METHOD_PATTERN)
         .callIn
+        .dedup
         .where(_.argument.code(s".*$SAFE_FLAG.*"))
 
       // violation if empty

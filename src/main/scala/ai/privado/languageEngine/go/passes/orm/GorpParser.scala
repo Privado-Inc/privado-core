@@ -20,22 +20,30 @@
  * For more information, contact support@privado.ai
  *
  */
+package ai.privado.languageEngine.go.passes.orm
 
-package ai.privado.languageEngine.java.tagger.Utility
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
-import io.shiftleft.semanticcpg.language._
+class GorpParser(cpg: Cpg) extends BaseORMParser(cpg) {
+  val GORP_PARAMETER_TYPE_RULE = "github.com/go-gorp/gorp.*"
+  // when we pass a object's variable as its address its written as like `&users`
+  // In joern its signatured as *[]packagename.User
+  val ADDRESS_OF_OBJECT_SYMBOL = "*[]"
 
-object SOAPTaggerUtility {
+  override def generateParts(): Array[_ <: AnyRef] = {
 
-  def getAPIMethods(cpg: Cpg): List[Method] = {
-    cpg.annotation.name("WebService").typeDecl.method.l
-  }
-
-  def getAPICallNodes(cpg: Cpg): List[Call] = {
-    implicit val resolver: ICallResolver = NoResolve
-    getAPIMethods(cpg).callIn.dedup.l
+    val typeFullNames = cpg.call
+      .methodFullName(GORP_PARAMETER_TYPE_RULE)
+      .argument
+      .isCall
+      .typeFullName
+      .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
+      .dedup
+      .l
+    cpg.typeDecl.fullName(typeFullNames.mkString("|")).dedup.toArray
   }
 
 }

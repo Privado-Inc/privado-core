@@ -24,7 +24,7 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg.*
-import io.joern.pysrc2cpg.ImportResolverPass
+import io.joern.pysrc2cpg.PythonImportResolverPass
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -61,7 +61,7 @@ object PythonProcessor {
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
           new ImportsPass(cpg).createAndApply()
-          new ImportResolverPass(cpg).createAndApply()
+          new PythonImportResolverPass(cpg).createAndApply()
           new PythonInheritanceNamePass(cpg).createAndApply()
           println(
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -234,10 +234,12 @@ object PythonProcessor {
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
 
+    val excludeFileRegex = ruleCache.getExclusionRegex
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
     val cpgconfig = Py2CpgOnFileSystemConfig(File(".venv").path, true)
       .withInputPath(absoluteSourceLocation.toString)
       .withOutputPath(Paths.get(cpgOutputPath).toString)
+      .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"

@@ -20,22 +20,20 @@
  * For more information, contact support@privado.ai
  *
  */
+package ai.privado.languageEngine.go.passes.orm
 
-package ai.privado.languageEngine.java.tagger.Utility
+import better.files.*
+import io.joern.x2cpg.SourceFiles
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
-import io.shiftleft.semanticcpg.language._
+class GormParser(cpg: Cpg) extends BaseORMParser(cpg) {
+  val GORM_PARAMETER_TYPE_RULE = ".*github.com/jinzhu/gorm.*"
 
-object SOAPTaggerUtility {
-
-  def getAPIMethods(cpg: Cpg): List[Method] = {
-    cpg.annotation.name("WebService").typeDecl.method.l
-  }
-
-  def getAPICallNodes(cpg: Cpg): List[Call] = {
-    implicit val resolver: ICallResolver = NoResolve
-    getAPIMethods(cpg).callIn.dedup.l
+  override def generateParts(): Array[_ <: AnyRef] = {
+    cpg.typeDecl.where(_.method.parameter.typeFullName(GORM_PARAMETER_TYPE_RULE)).dedup.toArray
   }
 
 }

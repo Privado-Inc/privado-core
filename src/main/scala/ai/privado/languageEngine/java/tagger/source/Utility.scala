@@ -50,6 +50,7 @@ object Utility {
       .code(s"return (?i)(this.)?$regexString(;)?")
       .method
       .callIn
+      .dedup
       .l ++ cpg.identifier
       .typeFullName(typeDeclFullName)
       .astParent
@@ -79,6 +80,7 @@ object Utility {
       .where(_.fullName(typeDeclFullName))
       .method
       .callIn
+      .dedup
       .typeFullName(returnType)
       .name(setterRegex)
       .l ++ cpg.identifier
@@ -103,6 +105,7 @@ object Utility {
     cpg.method
       .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
       .callIn
+      .dedup
       .where(_.argument(1).isIdentifier.typeFullName(typeDeclFullName))
       .where(_.argument(2).code(s"(?i)$regexString"))
       .l
