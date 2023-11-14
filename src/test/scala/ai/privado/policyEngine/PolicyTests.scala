@@ -287,11 +287,12 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     )
 
     val policyExecutor = code("""
+        |const axios = require('axios');
         |const emailAddress = "jhgjbk@gfdghch";
         |const apiUrl = `https://123.axios.com/todos/${emailAddress}`;
         |
         |// Make an API request using Fetch
-        |fetch(apiUrl).then((response) => { return response.json(); })
+        |axios.get(apiUrl).then((response) => { return response.json(); })
         |""".stripMargin)
 
     val List(violationDataflowModel) = policyExecutor.getViolatingFlowsForPolicy(policySinkFilter).toList
