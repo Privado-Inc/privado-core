@@ -274,6 +274,49 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "Policy Executor: SinkFilters by domains with regex" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Sharing.ThirdParties.SDK.Google.Drive",
+      "Policy to restrict Contact Information being send to thirdparty sdk",
+      "Example: Don't send contact data to thirdparty sdk",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List(".*"),
+        SourceFilter(Option(true), "", ""),
+        List(".*"),
+        SinkFilter(List[String]("axios.com"), "", ""),
+        CollectionFilter("")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |const emailAddress = "jhgjbk@gfdghch";
+        |const apiUrl = `https://123.axios.com/todos/${emailAddress}`;
+        |
+        |// Make an API request using Fetch
+        |fetch(apiUrl).then((response) => { return response.json(); })
+        |""".stripMargin)
+
+    val List(violationDataflowModel) = policyExecutor.getViolatingFlowsForPolicy(policySinkFilter).toList
+    "have a sourceId and sinkId" in {
+      violationDataflowModel.sourceId shouldBe "Data.Sensitive.ContactData.EmailAddress"
+      violationDataflowModel.sinkId shouldBe "Sinks.ThirdParties.API.123.axios.com"
+    }
+    "have non-empty pathIds" in {
+      violationDataflowModel.pathIds.size shouldBe 1
+    }
+    "have only unique path ids" in {
+      violationDataflowModel.pathIds.size == violationDataflowModel.pathIds.toSet.size shouldBe true
+    }
+  }
+
   def code(code: String): PolicyExecutor = {
     val inputDir = File.newTemporaryDirectory()
     (inputDir / "sample.js").write(code)

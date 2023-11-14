@@ -230,9 +230,12 @@ class PolicyExecutor(
         // Sinks.API.InternalAPI
         // Sinks.ThirdParties.API
         if (sinkId.contains(f"${Constants.thirdPartiesAPIRuleId}.")) {
-          val parts = sinkId.split("\\.")
-          val domain = parts.slice(parts.length - 2, parts.length).mkString(".")
-          sinkFilters.domains.toSet.intersect(Set(domain)).nonEmpty
+          sinkFilters.domains
+            .filter(d => {
+              val domainPattern: Regex = d.r
+              domainPattern.findFirstIn(sinkId).nonEmpty
+            })
+            .nonEmpty
         } else {
           ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
         }
