@@ -222,7 +222,23 @@ class PolicyExecutor(
     if (sinkFilters.domains.nonEmpty) {
       matchingSinkIds = matchingSinkIds.filter { sinkId =>
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
-        ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
+        // ----------------Covering Cases:
+        // Sinks.ThirdParties.API.mediaconvert.awsRegion.amazonaws.com
+        // Sinks.ThirdParties.API.axios.com
+        // ThirdParties.SDK.Sendgrid
+        // ----------------Not covered:
+        // Sinks.API.InternalAPI
+        // Sinks.ThirdParties.API
+        if (sinkId.contains(f"${Constants.thirdPartiesAPIRuleId}.")) {
+          sinkFilters.domains
+            .filter(d => {
+              val domainPattern: Regex = d.r
+              domainPattern.findFirstIn(sinkId).nonEmpty
+            })
+            .nonEmpty
+        } else {
+          ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
+        }
       }
     }
 
