@@ -100,12 +100,23 @@ object Utility {
     * @param regexString
     * @return
     */
-  def getFieldAccessCallsMatchingRegex(cpg: Cpg, typeDeclFullName: String, regexString: String): List[Call] = {
+  def getFieldAccessCallsMatchingRegex(
+    cpg: Cpg,
+    typeDeclFullName: String,
+    regexString: String,
+    cachedFieldAccess: Option[List[Call]] = None
+  ): List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
-    cpg.method
-      .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
-      .callIn
-      .dedup
+
+    val fieldAccessCalls = cachedFieldAccess.getOrElse(
+      cpg.method
+        .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+        .callIn
+        .dedup
+        .l
+    )
+
+    fieldAccessCalls
       .where(_.argument(1).isIdentifier.typeFullName(typeDeclFullName))
       .where(_.argument(2).code(s"(?i)$regexString"))
       .l
