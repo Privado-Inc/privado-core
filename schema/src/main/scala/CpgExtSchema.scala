@@ -165,6 +165,39 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   templateDOM.addOutEdge(edge = sourceFile, inNode = file)
 
+  // Nodes and edges for Android res/layout/*.xml files and
+  // Android manifest.xml files for <uses-permission>
+
+  // Android XML Layout Node - Begin
+  val androidLayoutNode = builder
+    .addNodeType(CpgSchemaConstants.ANDROID_XML_LAYOUT_NODE_NAME)
+    .addProperty(name)            // this is "android-id" used in code eg. "emailEditText"
+    .addProperty(typeFullName)    // type in code derived from tag eg. <EditText>
+    .extendz(astNode)
+
+  androidLayoutNode.addOutEdge(edge = sourceFile, inNode = file)
+  androidLayoutNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  dbNode.addOutEdge(edge = ast, inNode = sqlQueryNode)
+  // Android XML Layout Node - End
+
+  // Android XML Permission Node - Begin
+  val permissionType = builder
+    .addProperty(name = CpgSchemaConstants.ANDROID_PERMISSION_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+
+  val androidPermissionNode = builder
+    .addNodeType(CpgSchemaConstants.ANDROID_XML_PERMISSION_NODE_NAME)
+    .addProperty(name)              // this is tag name eg. <uses-permission>
+    .addProperty(permissionType)    // value of permission eg. "android.permission.READ_CONTACTS"
+    .extendz(astNode)
+
+  androidPermissionNode.addOutEdge(edge = sourceFile, inNode = file)
+  androidPermissionNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  dbNode.addOutEdge(edge = ast, inNode = sqlQueryNode)
+  // Android XML Permission Node - End
+
 }
 
 object CpgExtSchema {

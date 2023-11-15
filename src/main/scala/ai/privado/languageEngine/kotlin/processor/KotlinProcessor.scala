@@ -8,6 +8,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
+import ai.privado.languageEngine.kotlin.passes.config.AndroidXmlParserPass
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{
   cpgOutputFileName,
@@ -66,7 +67,8 @@ class KotlinProcessor(
       new JavaPropertyLinkerPass(cpg),
       new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
-      new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache)
+      new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache),
+      new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
     )
   }
 
