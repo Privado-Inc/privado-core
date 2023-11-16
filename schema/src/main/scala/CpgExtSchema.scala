@@ -178,12 +178,11 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   androidLayoutNode.addOutEdge(edge = sourceFile, inNode = file)
   androidLayoutNode.addOutEdge(edge = taggedBy, inNode = tag)
 
-  dbNode.addOutEdge(edge = ast, inNode = sqlQueryNode)
   // Android XML Layout Node - End
 
   // Android XML Permission Node - Begin
   val permissionType = builder
-    .addProperty(name = CpgSchemaConstants.ANDROID_PERMISSION_NAME, valueType = ValueType.String)
+    .addProperty(name = CpgSchemaConstants.ANDROID_PERMISSION_TYPE, valueType = ValueType.String)
     .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
   val androidPermissionNode = builder
@@ -195,7 +194,6 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   androidPermissionNode.addOutEdge(edge = sourceFile, inNode = file)
   androidPermissionNode.addOutEdge(edge = taggedBy, inNode = tag)
 
-  dbNode.addOutEdge(edge = ast, inNode = sqlQueryNode)
   // Android XML Permission Node - End
 
 }
