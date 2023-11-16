@@ -12,10 +12,7 @@ import io.shiftleft.semanticcpg.language.*
 class AndroidXMLPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules: List[MiniatureRuleModel])
     extends PrivadoParallelCpgPass[MiniatureRuleModel](cpg) {
 
-  override def generateParts(): Array[MiniatureRuleModel] = {
-    val item = permissionRules.toArray
-    item
-  }
+  override def generateParts(): Array[MiniatureRuleModel] = permissionRules.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, permissionRule: MiniatureRuleModel): Unit = {
 
