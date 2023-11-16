@@ -71,7 +71,7 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
   private def buildAndAddPermissionXMLNodes(file: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = {
     val parsedNodes = parseManifestXMLFile(file)
     parsedNodes.foreach { typ =>
-      val permissionNode = NewAndroidXmlPermissionNode().name("uses-permission").permissionType(typ)
+      val permissionNode = NewAndroidXmlPermissionNode().name("uses-permission").permissionType(typ).code(typ)
       builder.addNode(permissionNode)
       builder.addEdge(permissionNode, fileNode, EdgeTypes.SOURCE_FILE)
     }
@@ -87,7 +87,7 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       permissionNodes.foreach(node => {
         val permissionType = node.attributes.find(_.key == "name") match {
           case Some(attr) if attr.value.nonEmpty =>
-            attr.value.toString.split("android.permission.").last.stripSuffix("\"")
+            attr.value.toString.stripSuffix("\"").stripPrefix(("\""))
           case _ => ""
         }
         if (permissionType.nonEmpty) {

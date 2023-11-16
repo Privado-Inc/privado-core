@@ -6,8 +6,9 @@ import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
-import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
+import ai.privado.languageEngine.kotlin.feeder.{PermissionSourceRule, StorageAnnotationRule}
 import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
+import ai.privado.languageEngine.kotlin.tagger.source.AndroidXMLPermissionTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
@@ -35,6 +36,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
+
+    new AndroidXMLPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
     new JavaDBConfigTagger(cpg).createAndApply()
 
