@@ -90,6 +90,10 @@ object Constants {
   val gitMetaData                  = "gitMetaData"
   val sources                      = "sources"
   val sourceFilters                = "sourceFilters"
+  val sinkFilters                  = "sinkFilters"
+  val sinkType                     = "sinkType"
+  val collectionFilters            = "collectionFilters"
+  val collectionType               = "collectionType"
   val localScanPath                = "localScanPath"
   val processing                   = "processing"
   val sinkProcessing               = "sinkProcessing"
@@ -164,9 +168,10 @@ object Constants {
   val annotations       = "annotations"
   val default           = "default"
   val semanticDelimeter = "_A_"
+  val thisConstant      = "this"
 
   // Ruby defaults
   val defaultExpansionLimit = 100
 
-  val dummyFileName = "dummyFileName"
+  val defaultLineNumber = -1
 }

@@ -24,7 +24,9 @@
 package ai.privado.languageEngine.go.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.go.passes.orm.BaseORMParser
 import ai.privado.model.Constants
+import ai.privado.model.Constants.defaultLineNumber
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{SQLNodeBuilder, Utilities, SQLParser as UtilitySQLParser}
@@ -63,23 +65,20 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
 
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, queryNode: AstNode): Unit = {
-    Try(queryNode.file.head) match
+  def runOnPart(builder: DiffGraphBuilder, node: AstNode): Unit = {
+    Try(node.file.head) match {
       case Success(fileNode) =>
-        buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
+        buildAndAddSqlQueryNodes(builder, node, fileNode)
       case Failure(_) =>
         val fileNode = NewFile().name(Constants.Unknown)
-        buildAndAddSqlQueryNodes(queryNode, builder, fileNode)
+        buildAndAddSqlQueryNodes(builder, node, fileNode)
+    }
   }
 
-  private def buildAndAddSqlQueryNodes(
-    queryLiteral: AstNode,
-    builder: DiffGraphBuilder,
-    fileNode: NodeOrDetachedNode
-  ): Unit = Try {
+  def buildAndAddSqlQueryNodes(builder: DiffGraphBuilder, node: AstNode, fileNode: NodeOrDetachedNode): Unit = Try {
 
-    val queryLineNumber = queryLiteral.lineNumber.getOrElse(Integer.valueOf(-1))
-    val query           = queryLiteral.code
+    val queryLineNumber = node.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber))
+    val query           = node.code.stripPrefix("`").stripSuffix("`").stripPrefix("\"").stripSuffix("\"")
     try {
       UtilitySQLParser.parseSqlQuery(query) match {
         case Some(parsedQueryList) =>
@@ -99,7 +98,10 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
       }
     } catch {
       case ex: Exception =>
-        println(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
+        logger.debug(
+          s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}" +
+            s"query : ${node}"
+        )
         None
     }
 

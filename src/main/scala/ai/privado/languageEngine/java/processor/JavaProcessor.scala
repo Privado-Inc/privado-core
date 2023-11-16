@@ -87,7 +87,7 @@ class JavaProcessor(
     cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
 
   override def processCpg(): Either[String, Unit] = {
-    val excludeFileRegex = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
+    val excludeFileRegex = ruleCache.getExclusionRegex
     println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
     if (!privadoInput.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")

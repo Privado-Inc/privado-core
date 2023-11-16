@@ -25,7 +25,7 @@ package ai.privado.policyEngine
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.getSourceNode
+import ai.privado.threatEngine.ThreatUtility.getSourceNode
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
 import ai.privado.exporter.SourceExporter
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 class PolicyExecutor(
@@ -163,6 +164,7 @@ class PolicyExecutor(
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {
+    val sourceFilters = policy.dataFlow.sourceFilters
     var matchingSourceIds = policy.dataFlow.sources
       .flatMap(policySourceRegex => {
         if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
@@ -178,21 +180,27 @@ class PolicyExecutor(
       })
       .toSet
 
-    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
-      matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity)
-      )
+    if (sourceFilters.sensitivity.nonEmpty)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.sensitivity.equals(sourceFilters.sensitivity))
 
-    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
-      matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get
-      )
+    if (sourceFilters.isSensitive.isDefined)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.isSensitive == sourceFilters.isSensitive.get)
+
+    if (sourceFilters.name.nonEmpty)
+      val namePattern: Option[Regex] = Some(sourceFilters.name.r)
+      matchingSourceIds = matchingSourceIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
+      }
 
     matchingSourceIds
   }
 
   private def getSinksMatchingRegex(policy: PolicyOrThreat) = {
-    policy.dataFlow.sinks
+    val sinkFilters = policy.dataFlow.sinkFilters
+    var matchingSinkIds = policy.dataFlow.sinks
       .flatMap(policySinkRegex => {
         if (policySinkRegex.equals(ALL_MATCH_REGEX)) {
           dataflowSinkIdMap.keys
@@ -207,6 +215,41 @@ class PolicyExecutor(
         }
       })
       .toSet
+    if (sinkFilters.sinkType.nonEmpty)
+      matchingSinkIds =
+        matchingSinkIds.filter(ruleCache.getRuleInfo(_).get.id.toLowerCase.contains(sinkFilters.sinkType.toLowerCase))
+
+    if (sinkFilters.domains.nonEmpty) {
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        // ----------------Covering Cases:
+        // Sinks.ThirdParties.API.mediaconvert.awsRegion.amazonaws.com
+        // Sinks.ThirdParties.API.axios.com
+        // ThirdParties.SDK.Sendgrid
+        // ----------------Not covered:
+        // Sinks.API.InternalAPI
+        // Sinks.ThirdParties.API
+        if (sinkId.contains(f"${Constants.thirdPartiesAPIRuleId}.")) {
+          sinkFilters.domains
+            .filter(d => {
+              val domainPattern: Regex = d.r
+              domainPattern.findFirstIn(sinkId).nonEmpty
+            })
+            .nonEmpty
+        } else {
+          ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
+        }
+      }
+    }
+
+    if (sinkFilters.name.nonEmpty)
+      val namePattern: Option[Regex] = Some(sinkFilters.name.r)
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
+      }
+
+    matchingSinkIds
   }
 
 }

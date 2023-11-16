@@ -25,9 +25,9 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.threatEngine.ThreatEngineExecutor
 import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
 import ai.privado.policyEngine.PolicyExecutor
+import ai.privado.threatEngine.ThreatEngineExecutor
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode

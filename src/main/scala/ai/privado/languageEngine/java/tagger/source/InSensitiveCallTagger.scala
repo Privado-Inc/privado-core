@@ -26,13 +26,20 @@ package ai.privado.languageEngine.java.tagger.source
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{Constants, InternalTag}
 import ai.privado.utility.Utilities.storeForTag
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
-import ai.privado.languageEngine.java.tagger.source.Utility._
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.semanticcpg.language.*
+import ai.privado.languageEngine.java.tagger.source.Utility.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 
 class InSensitiveCallTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     extends PrivadoParallelCpgPass[String](cpg) {
+
+  implicit val resolver: ICallResolver = NoResolve
+  private val cachedFieldAccess = cpg.method
+    .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+    .callIn
+    .dedup
+    .l
 
   override def generateParts(): Array[String] = taggerCache.typeDeclMemberCache.keys.toArray
 
@@ -53,14 +60,15 @@ class InSensitiveCallTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerC
         storeForTag(builder, _, ruleCache)(InternalTag.INSENSITIVE_SETTER.toString)
       )
 
-      getFieldAccessCallsMatchingRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString).foreach(impactedAccess => {
-        if (impactedAccess.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedAccess, ruleCache)(
-            InternalTag.INSENSITIVE_FIELD_ACCESS.toString,
-            "Data.Sensitive.NonPersonal.MemberAccess"
-          )
-        }
-      })
+      getFieldAccessCallsMatchingRegex(cpg, typeDeclFullName, nonPersonalMembersRegexString, Option(cachedFieldAccess))
+        .foreach(impactedAccess => {
+          if (impactedAccess.tag.nameExact(Constants.id).l.isEmpty) {
+            storeForTag(builder, impactedAccess, ruleCache)(
+              InternalTag.INSENSITIVE_FIELD_ACCESS.toString,
+              "Data.Sensitive.NonPersonal.MemberAccess"
+            )
+          }
+        })
     }
 
     if (personalMembers.nonEmpty)

@@ -75,6 +75,7 @@ object DatabaseReadUtility {
           cpg.method
             .fullName("org[.]hibernate[.].*create[a-zA-Z]{0,10}Query:.*")
             .callIn
+            .dedup
             .where(_.argument.code("(\"){0,1}" + nameOfNamedQuery + "(\"){0,1}"))
             .l
         } else
