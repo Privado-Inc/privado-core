@@ -36,7 +36,7 @@ class ThreatTests extends GoTaggingTestBase {
 
     "When same data-element is part of multiple table in go file" in {
 
-      val cpg = code("""
+      val (cpg, threatEngine) = code("""
           |package models
           |
           |import (
@@ -94,8 +94,6 @@ class ThreatTests extends GoTaggingTestBase {
           |
           |""".stripMargin)
 
-      val threatEngine =
-        new ThreatEngineExecutor(cpg, dataFlows, config.inputPath, ruleCache, null, dataFlowCache, privadoInput)
       val result = threatEngine.processProcessingViolations(threat)
       result should not be empty
       result.get.policyId shouldBe "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables"
@@ -104,7 +102,7 @@ class ThreatTests extends GoTaggingTestBase {
 
     "When same data-element is not part of multiple table in go file" in {
 
-      val cpg = code("""
+      val (cpg, threatEngine) = code("""
           |package models
           |
           |import (
@@ -158,8 +156,6 @@ class ThreatTests extends GoTaggingTestBase {
           |
           |""".stripMargin)
 
-      val threatEngine =
-        new ThreatEngineExecutor(cpg, dataFlows, config.inputPath, ruleCache, null, dataFlowCache, privadoInput)
       val result = threatEngine.processProcessingViolations(threat)
       assert(result.isEmpty)
     }
