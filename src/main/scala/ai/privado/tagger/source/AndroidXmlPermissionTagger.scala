@@ -40,7 +40,39 @@ class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules
       Array(),
       List(""),
       false,
+      "high",
+      Map(),
+      NodeType.REGULAR,
       "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.UserContentData.Calendar",
+      "Calendar",
+      "User Content Data",
+      Array(),
+      List(""),
+      false,
+      "medium",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.UserContentData.DeviceStorage",
+      "Device Storage",
+      "User Content Data",
+      Array(),
+      List(""),
+      false,
+      "low",
       Map(),
       NodeType.REGULAR,
       "",
@@ -50,5 +82,4 @@ class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules
       Array()
     )
   )
-
 }

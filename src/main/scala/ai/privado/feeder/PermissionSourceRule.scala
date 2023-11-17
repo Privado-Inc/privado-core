@@ -18,7 +18,10 @@ object PermissionSourceRule {
       "Data.Sensitive.LocationData.PreciseLocation",
       "(android[.]permission[.]){0,1}(ACCESS_BACKGROUND_LOCATION|ACCESS_FINE_LOCATION|ACCESS_MEDIA_LOCATION|ACCESS_LOCATION_EXTRA_COMMANDS|LOCATION_HARDWARE)"
     ),
-    MiniatureRuleModel("<<<Calender>>", ""),
+    MiniatureRuleModel(
+      "Data.Sensitive.UserContentData.Calendar",
+      "(android[.]permission[.]){0,1}(READ_CALENDAR|WRITE_CALENDAR)"
+    ),
     MiniatureRuleModel(
       "Data.Sensitive.ContactData.PhoneNumber",
       "(android[.]permission[.]){0,1}(READ_CONTACTS|WRITE_CONTACTS|READ_PHONE_NUMBERS)"
@@ -31,16 +34,25 @@ object PermissionSourceRule {
       "Data.Sensitive.AudioVisualAndSensoryData.AudioRecordings",
       "(android[.]permission[.]){0,1}(RECORD_AUDIO|MODIFY_AUDIO_SETTINGS)"
     ),
-    MiniatureRuleModel("<<<STORAGE>>>", ""),
+    MiniatureRuleModel(
+      "Data.Sensitive.UserContentData.DeviceStorage",
+      "(android[.]permission[.]){0,1}(READ_EXTERNAL_STORAGE|WRITE_EXTERNAL_STORAGE)"
+    ),
     MiniatureRuleModel(
       "Data.Sensitive.AudioVisualAndSensoryData.IoTorSensorData",
       "(android[.]permission[.]){0,1}(ACTIVITY_RECOGNITION|BODY_SENSORS)"
     ),
-    MiniatureRuleModel("<<<BLUETOOTH>>>", ""),
+    MiniatureRuleModel(
+      "Data.Sensitive.AudioVisualAndSensoryData.IoTorSensorData",
+      "(android[.]permission[.]){0,1}BLUETOOTH(_ADMIN|_ADVERTISE|_CONNECT|_SCAN){0,1}"
+    ),
     MiniatureRuleModel(
       "Data.Sensitive.AccountData.AccountID",
       "(android[.]permission[.]){0,1}(GET_ACCOUNTS|READ_PHONE_STATE)"
     ),
-    MiniatureRuleModel("<<<NFC>>>", "")
+    MiniatureRuleModel(
+      "Data.Sensitive.AudioVisualAndSensoryData.IoTorSensorData",
+      "(android[.]permission[.]){0,1}(NFC|NFC_PREFERRED_PAYMENT_INFO|NFC_TRANSACTION_EVENT)"
+    )
   )
 }
