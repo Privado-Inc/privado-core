@@ -11,8 +11,12 @@ object PermissionSourceRule {
       "(android[.]permission[.]){0,1}(CAMERA|CAMERA_DISABLE_TRANSMIT_LED)"
     ),
     MiniatureRuleModel(
+      "Data.Sensitive.LocationData.ApproximateLocation",
+      "(android[.]permission[.]){0,1}(ACCESS_COARSE_LOCATION)"
+    ),
+    MiniatureRuleModel(
       "Data.Sensitive.LocationData.PreciseLocation",
-      "(android[.]permission[.]){0,1}(ACCESS_BACKGROUND_LOCATION|ACCESS_COARSE_LOCATION|ACCESS_FINE_LOCATION|ACCESS_MEDIA_LOCATION|ACCESS_LOCATION_EXTRA_COMMANDS|LOCATION_HARDWARE)"
+      "(android[.]permission[.]){0,1}(ACCESS_BACKGROUND_LOCATION|ACCESS_FINE_LOCATION|ACCESS_MEDIA_LOCATION|ACCESS_LOCATION_EXTRA_COMMANDS|LOCATION_HARDWARE)"
     ),
     MiniatureRuleModel("<<<Calender>>", ""),
     MiniatureRuleModel(

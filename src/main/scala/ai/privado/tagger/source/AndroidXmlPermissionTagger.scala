@@ -2,7 +2,7 @@ package ai.privado.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.feeder.MiniatureRuleModel
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.model.{CatLevelOne, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
@@ -12,7 +12,12 @@ import io.shiftleft.semanticcpg.language.*
 class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules: List[MiniatureRuleModel])
     extends PrivadoParallelCpgPass[MiniatureRuleModel](cpg) {
 
-  override def generateParts(): Array[MiniatureRuleModel] = permissionRules.toArray
+  override def generateParts(): Array[MiniatureRuleModel] = {
+
+    // Create and add extra rules which are not present in Data element rules
+    extraRules.foreach(ruleCache.setRuleInfo)
+    permissionRules.toArray
+  }
 
   override def runOnPart(builder: DiffGraphBuilder, permissionRule: MiniatureRuleModel): Unit = {
 
@@ -26,5 +31,24 @@ class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules
           })
       case None =>
   }
+
+  private val extraRules = List(
+    RuleInfo(
+      "Data.Sensitive.LocationData.ApproximateLocation",
+      "Approximate Location",
+      "Location Data",
+      Array(),
+      List(""),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    )
+  )
 
 }
