@@ -137,11 +137,10 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
             val col  = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
             permissions.addOne(XmlNodeInfo(permissionType, line.toInt, col.toInt))
           }
-        } match
+        }: @unchecked match {
           case Failure(e) =>
             logger.debug(s"Error parsing permission node in Android layout XML file: $filePath, ${e.getMessage}")
-          case Success(_)
-            =>
+        }
       )
       permissions.toList
     } catch {
@@ -175,11 +174,10 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
               nodeMap.addOne(nodeName, ListBuffer(XmlNodeInfo(id, line.toInt, col.toInt)))
             }
           }
-        } match
+        }: @unchecked match {
           case Failure(e) =>
             logger.debug(s"Error parsing layout node in Android layout XML file: $filePath, ${e.getMessage}")
-          case Success(_)
-            =>
+        }
       )
       nodeMap.map(item => (item._1, item._2.toList)).toMap
     } catch {
