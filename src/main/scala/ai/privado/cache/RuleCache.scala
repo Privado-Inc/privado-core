@@ -105,7 +105,10 @@ class RuleCache {
   }
 
   def getExclusionRegex: String = {
-    rule.exclusions.map(rule => rule.patterns.mkString("(", "|", ")")).mkString("|")
+    if (rule.exclusions.size == 1)
+      rule.exclusions.head.patterns.mkString("|")
+    else
+      rule.exclusions.map(rule => rule.patterns.mkString("(", "|", ")")).mkString("|")
   }
 
   def getSystemConfigByKey(key: String, raw: Boolean = false): String = {
