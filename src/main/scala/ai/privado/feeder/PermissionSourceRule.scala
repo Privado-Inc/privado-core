@@ -1,4 +1,6 @@
-package ai.privado.languageEngine.kotlin.feeder
+package ai.privado.feeder
+
+import ai.privado.feeder.MiniatureRuleModel
 
 case class MiniatureRuleModel(id: String, pattern: String)
 object PermissionSourceRule {

@@ -1,4 +1,4 @@
-package ai.privado.languageEngine.kotlin.passes.config
+package ai.privado.passes
 
 /*
  * This file is part of Privado OSS.
@@ -25,23 +25,21 @@ package ai.privado.languageEngine.kotlin.passes.config
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
-import ai.privado.utility.*
 import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.utility.*
 import better.files.*
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAndroidXmlLayoutNode, NewAndroidXmlPermissionNode, NewFile}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import org.slf4j.{Logger, LoggerFactory}
+import org.xml.sax.Locator
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
+import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.util.{Failure, Success, Try}
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ListBuffer
-import org.xml.sax.Locator
-
 import scala.xml.*
-import parsing.NoBindingFactoryAdapter
+import scala.xml.parsing.NoBindingFactoryAdapter
 
 // Needed for getting line and column numbers
 // Ref: https://stackoverflow.com/questions/4446137/how-to-track-the-source-line-location-of-an-xml-element

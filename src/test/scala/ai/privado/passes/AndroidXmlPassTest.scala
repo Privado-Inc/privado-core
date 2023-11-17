@@ -24,10 +24,8 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.kotlin.feeder.PermissionSourceRule
+import ai.privado.feeder.PermissionSourceRule
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
-import ai.privado.languageEngine.kotlin.passes.config.AndroidXmlParserPass
-import ai.privado.languageEngine.kotlin.tagger.source.AndroidXMLPermissionTagger
 import better.files.File
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.Kotlin2Cpg
@@ -39,6 +37,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.semantic.Language.*
+import ai.privado.tagger.source.AndroidXmlPermissionTagger
 
 import scala.collection.mutable
 
@@ -155,7 +154,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     }
 
     "have tagged permission node" in {
-      new AndroidXMLPermissionTagger(
+      new AndroidXmlPermissionTagger(
         cpg,
         ruleCache = ruleCache,
         permissionRules = PermissionSourceRule.miniatureRuleList

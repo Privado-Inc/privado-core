@@ -1,15 +1,15 @@
-package ai.privado.languageEngine.kotlin.tagger.source
+package ai.privado.tagger.source
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.kotlin.feeder.MiniatureRuleModel
+import ai.privado.feeder.MiniatureRuleModel
 import ai.privado.model.{InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.semantic.Language.*
+import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class AndroidXMLPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules: List[MiniatureRuleModel])
+class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules: List[MiniatureRuleModel])
     extends PrivadoParallelCpgPass[MiniatureRuleModel](cpg) {
 
   override def generateParts(): Array[MiniatureRuleModel] = permissionRules.toArray

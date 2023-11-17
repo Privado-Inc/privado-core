@@ -8,7 +8,6 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
-import ai.privado.languageEngine.kotlin.passes.config.AndroidXmlParserPass
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{
   cpgOutputFileName,
@@ -20,6 +19,7 @@ import ai.privado.model.Constants.{
 }
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{
+  AndroidXmlParserPass,
   DBTParserPass,
   ExperimentalLambdaDataFlowSupportPass,
   HTMLParserPass,
