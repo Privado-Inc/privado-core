@@ -24,21 +24,23 @@ package ai.privado.languageEngine.kotlin.passes.config
  */
 
 import ai.privado.cache.RuleCache
-import ai.privado.utility._
+import ai.privado.model.Constants
+import ai.privado.utility.*
 import ai.privado.tagger.PrivadoParallelCpgPass
-import better.files._
+import better.files.*
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewAndroidXmlLayoutNode, NewAndroidXmlPermissionNode}
-import org.slf4j.LoggerFactory
+import io.shiftleft.codepropertygraph.generated.nodes.{NewAndroidXmlLayoutNode, NewAndroidXmlPermissionNode, NewFile}
+import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
 import org.xml.sax.Locator
-import scala.xml._
+
+import scala.xml.*
 import parsing.NoBindingFactoryAdapter
 
 // Needed for getting line and column numbers
@@ -74,7 +76,7 @@ case class XmlNodeInfo(name: String, lineNum: Int, columnNum: Int)
 class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     extends PrivadoParallelCpgPass[String](cpg) {
 
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger: Logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] =
     // filter layout/*.xml and AndroidManifest
@@ -118,68 +120,80 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     }
   }
 
-  private def parseManifestXMLFile(filePath: String): ListBuffer[XmlNodeInfo] = {
+  private def parseManifestXMLFile(filePath: String): List[XmlNodeInfo] = {
     try {
       val xml             = CustomXMLLoader.loadFile(filePath)
       val nodes           = xml \\ "_"
       val permissionNodes = nodes.filter(node => node.label.contains("uses-permission"))
       val permissions     = new ListBuffer[XmlNodeInfo]()
 
-      permissionNodes.foreach(node => {
-        val permissionType = node.attributes.find(_.key == "name") match {
-          case Some(attr) if attr.value.nonEmpty =>
-            attr.value.toString.stripSuffix("\"").stripPrefix(("\""))
-          case _ => ""
-        }
-        if (permissionType.nonEmpty) {
-          val line = node.attribute("line").getOrElse(-1).toString
-          val col  = node.attribute("column").getOrElse(-1).toString
-          permissions.addOne(XmlNodeInfo(permissionType, line.toInt, col.toInt))
-        }
-      })
-      permissions
+      permissionNodes.foreach(node =>
+        Try {
+          val permissionType = node.attributes.find(_.key == "name") match {
+            case Some(attr) if attr.value.nonEmpty =>
+              attr.value.toString.stripSuffix("\"").stripPrefix(("\""))
+            case _ => ""
+          }
+          if (permissionType.nonEmpty) {
+            val line = node.attribute("line").getOrElse(Constants.defaultLineNumber).toString
+            val col  = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
+            permissions.addOne(XmlNodeInfo(permissionType, line.toInt, col.toInt))
+          }
+        } match
+          case Failure(e) =>
+            logger.debug(s"Error parsing permission node in Android layout XML file: $filePath, ${e.getMessage}")
+          case Success(_)
+            =>
+      )
+      permissions.toList
     } catch {
       case e: Exception =>
-        println(s"Error parsing Android layout XML file: ${e.getMessage}")
-        new ListBuffer[XmlNodeInfo]()
+        logger.debug(s"Error parsing Android layout XML file: $filePath, ${e.getMessage}")
+        List[XmlNodeInfo]()
     }
   }
 
   // Returns a map (EditText -> emailEditText)
-  private def parseLayoutXMLFile(filePath: String): HashMap[String, ListBuffer[XmlNodeInfo]] = {
+  private def parseLayoutXMLFile(filePath: String): Map[String, List[XmlNodeInfo]] = {
     try {
       val xml           = CustomXMLLoader.loadFile(filePath)
       val nodes         = xml \\ "_"
       val editTextNodes = nodes.filter(node => node.label.contains("EditText")) // variations of *editText as well
-      val nodeMap       = new HashMap[String, ListBuffer[XmlNodeInfo]]()
+      val nodeMap       = new mutable.HashMap[String, ListBuffer[XmlNodeInfo]]()
 
-      editTextNodes.foreach(node => {
-        val id = node.attributes.find(_.key == "id") match {
-          case Some(attr) if attr.value.nonEmpty => attr.value.toString.split("/").last.stripSuffix("\"")
-          case _                                 => ""
-        }
-        if (id.nonEmpty) {
-          val nodeName = node.label
-          val line     = node.attribute("line").getOrElse(-1).toString
-          val col      = node.attribute("column").getOrElse(-1).toString
-          if (nodeMap.contains(nodeName)) {
-            nodeMap(nodeName) += XmlNodeInfo(id, line.toInt, line.toInt)
-          } else {
-            nodeMap += (nodeName -> ListBuffer(XmlNodeInfo(id, line.toInt, col.toInt)))
+      editTextNodes.foreach(node =>
+        Try {
+          val id = node.attributes.find(_.key == "id") match {
+            case Some(attr) if attr.value.nonEmpty => attr.value.toString.split("/").last.stripSuffix("\"")
+            case _                                 => ""
           }
-        }
-      })
-      nodeMap
+          if (id.nonEmpty) {
+            val nodeName = node.label
+            val line     = node.attribute("line").getOrElse(Constants.defaultLineNumber).toString
+            val col      = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
+            if (nodeMap.contains(nodeName)) {
+              nodeMap(nodeName).addOne(XmlNodeInfo(id, line.toInt, line.toInt))
+            } else {
+              nodeMap.addOne(nodeName, ListBuffer(XmlNodeInfo(id, line.toInt, col.toInt)))
+            }
+          }
+        } match
+          case Failure(e) =>
+            logger.debug(s"Error parsing layout node in Android layout XML file: $filePath, ${e.getMessage}")
+          case Success(_)
+            =>
+      )
+      nodeMap.map(item => (item._1, item._2.toList)).toMap
     } catch {
       case e: Exception =>
-        println(s"Error parsing Android layout XML file: ${e.getMessage}")
-        new HashMap[String, ListBuffer[XmlNodeInfo]]()
+        logger.debug(s"Error parsing Android layout XML file: $filePath, ${e.getMessage}")
+        Map[String, List[XmlNodeInfo]]()
     }
   }
 
   private def getXMLFiles(projectRoot: String, extensions: Set[String], allowedFiles: String): List[String] = {
     SourceFiles
-      .determine(projectRoot, extensions, None, Some(ruleCache.getExclusionRegex.r), None)
+      .determine(projectRoot, extensions, ignoredFilesRegex = Option(ruleCache.getExclusionRegex.r))
       .filter(_.matches(allowedFiles))
   }
 

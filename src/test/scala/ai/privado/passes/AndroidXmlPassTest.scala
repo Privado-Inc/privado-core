@@ -24,8 +24,10 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{ConfigAndRules, Constants}
+import ai.privado.languageEngine.kotlin.feeder.PermissionSourceRule
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
 import ai.privado.languageEngine.kotlin.passes.config.AndroidXmlParserPass
+import ai.privado.languageEngine.kotlin.tagger.source.AndroidXMLPermissionTagger
 import better.files.File
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.Kotlin2Cpg
@@ -36,7 +38,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.semantic.Language._
+import ai.privado.semantic.Language.*
 
 import scala.collection.mutable
 
@@ -44,6 +46,26 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
   private val inputDirs   = mutable.ArrayBuffer.empty[File]
+  private val ruleCache   = new RuleCache()
+
+  private val sources = List(
+    RuleInfo(
+      "Data.Sensitive.UserContentData.EmailsorTextMessages",
+      "Emails or Text Messages",
+      "User Content",
+      Array(),
+      List(""),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
 
   case class Codes(layoutXmlCode: String, manifestXmlCode: String, kotlinCode: String)
 
@@ -120,16 +142,29 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
     "have correct number of layout nodes" in {
       cpg.androidXmlLayoutNode.l.size shouldBe 1
-      cpg.androidXmlLayoutNode.head.name shouldBe "emailEditText"
-      cpg.androidXmlLayoutNode.head.lineNumber.get shouldBe 20   // goes to end of node :(
-      cpg.androidXmlLayoutNode.head.columnNumber.get shouldBe 55 // ditto
+      cpg.androidXmlLayoutNode.name.headOption shouldBe Some("emailEditText")
+      cpg.androidXmlLayoutNode.lineNumber.headOption shouldBe Some(20)   // goes to end of node :(
+      cpg.androidXmlLayoutNode.columnNumber.headOption shouldBe Some(55) // ditto
     }
 
     "have correct number of permission nodes" in {
       cpg.androidXmlPermissionNode.l.size shouldBe 1
-      cpg.androidXmlPermissionNode.head.permissionType shouldBe "READ_SMS"
-      cpg.androidXmlPermissionNode.head.lineNumber.get shouldBe 5
-      cpg.androidXmlPermissionNode.head.columnNumber.get shouldBe 67
+      cpg.androidXmlPermissionNode.permissionType.headOption shouldBe Some("android.permission.READ_SMS")
+      cpg.androidXmlPermissionNode.lineNumber.headOption shouldBe Some(5)
+      cpg.androidXmlPermissionNode.columnNumber.headOption shouldBe Some(67)
+    }
+
+    "have tagged permission node" in {
+      new AndroidXMLPermissionTagger(
+        cpg,
+        ruleCache = ruleCache,
+        permissionRules = PermissionSourceRule.miniatureRuleList
+      ).createAndApply()
+      val taggedNodes = cpg.androidXmlPermissionNode.where(_.tag).l
+      taggedNodes.tag.where(_.nameExact(Constants.id)).value.headOption shouldBe Some(
+        "Data.Sensitive.UserContentData.EmailsorTextMessages"
+      )
+      taggedNodes.tag.where(_.nameExact(Constants.catLevelOne)).value.headOption shouldBe Some(CatLevelOne.SOURCES.name)
     }
   }
 
@@ -144,8 +179,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     val outputFile = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
-      ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List(), List())
-    val ruleCache = new RuleCache()
+      ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List(), List(), List())
     ruleCache.setRule(rule)
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new Kotlin2Cpg().createCpgWithOverlays(config).get
