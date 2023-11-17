@@ -101,34 +101,8 @@ class ThreatTests extends GoTaggingTestBase {
       result.get.policyId shouldBe "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables"
       result.get.processing.get.head.sourceId shouldBe "EmailAddress"
     }
-  }
 
-  "No Threat PIIShouldNotBePresentInMultipleTables when both model have different PII" should {
-    val threat = PolicyOrThreat(
-      "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables",
-      "{DataElement} was found in multiple tables",
-      "{DataElement} found in multiple tables",
-      """
-        |Avoid storing same PII in multiple tables.
-        |Reference link: https://github.com/OWASP/owasp-mstg/blob/v1.4.0/Document/0x05d-Testing-Data-Storage.md#testing-local-storage-for-sensitive-data-mstg-storage-1-and-mstg-storage-2
-        |""".stripMargin,
-      PolicyThreatType.THREAT,
-      PolicyAction.DENY,
-      DataFlow(
-        List(),
-        SourceFilter(Option(true), "", ""),
-        List[String](),
-        SinkFilter(List[String](), "", ""),
-        CollectionFilter("")
-      ),
-      List("**"),
-      Map[String, String](),
-      Map[String, String](),
-      "",
-      Array[String]()
-    )
-
-    "When same data-element is part of multiple table in go file" in {
+    "When same data-element is not part of multiple table in go file" in {
 
       val cpg = code("""
           |package models
@@ -190,5 +164,4 @@ class ThreatTests extends GoTaggingTestBase {
       assert(result.isEmpty)
     }
   }
-
 }
