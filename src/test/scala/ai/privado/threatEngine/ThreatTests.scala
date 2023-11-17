@@ -1,4 +1,4 @@
-package ai.privado.threatEngine.go
+package ai.privado.threatEngine
 
 import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
 import ai.privado.model.*
@@ -93,6 +93,33 @@ class ThreatTests extends GoTaggingTestBase {
           |}
           |
           |""".stripMargin)
+
+      val result = threatEngine.processProcessingViolations(threat)
+      result should not be empty
+      result.get.policyId shouldBe "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables"
+      result.get.processing.get.head.sourceId shouldBe "EmailAddress"
+    }
+
+    "When same data-element is part of multiple table in sql file" in {
+
+      val (cpg, threatEngine) = code(
+        """
+          |CREATE TABLE IF NOT EXISTS Customer (
+          |		id SERIAL NOT NULL,
+          |		created_at datetime NOT NULL,
+          |		email VARCHAR(6) NOT NULL,
+          |		PRIMARY KEY (id)
+          |	);
+          |
+          |CREATE TABLE IF NOT EXISTS User (
+          |		id SERIAL NOT NULL,
+          |		created_at datetime NOT NULL,
+          |		email VARCHAR(6) NOT NULL,
+          |		PRIMARY KEY (id)
+          |	);
+          |""".stripMargin,
+        ".sql"
+      )
 
       val result = threatEngine.processProcessingViolations(threat)
       result should not be empty
