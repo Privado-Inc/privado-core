@@ -1,20 +1,10 @@
 package ai.privado.languageEngine.go.passes.orm
 
 import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
-import ai.privado.model.*
 import ai.privado.semantic.Language.*
-import io.joern.x2cpg.X2Cpg
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 
 class GorpParserTest extends GoTaggingTestBase {
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    X2Cpg.applyDefaultOverlays(cpg)
-    new GorpParser(cpg).createAndApply()
-  }
 
   cpg = code("""
       package main

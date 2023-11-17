@@ -1,25 +1,9 @@
 package ai.privado.threatEngine.go
 
-import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache}
-import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.languageEngine.go.passes.orm.GormParser
 import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
 import ai.privado.model.*
 import ai.privado.model.exporter.ViolationModel
-import ai.privado.passes.{SQLParser, SQLPropertyPass}
-import ai.privado.tagger.source.SqlQueryTagger
 import ai.privado.threatEngine.ThreatEngineExecutor
-import better.files.File
-import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
-import io.joern.x2cpg.X2Cpg
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.cache.{AppCache, AuditCache}
 
 import scala.collection.immutable.Map
 
