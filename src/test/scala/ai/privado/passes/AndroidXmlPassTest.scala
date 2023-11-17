@@ -121,11 +121,15 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     "have correct number of layout nodes" in {
       cpg.androidXmlLayoutNode.l.size shouldBe 1
       cpg.androidXmlLayoutNode.head.name shouldBe "emailEditText"
+      cpg.androidXmlLayoutNode.head.lineNumber.get shouldBe 20   // goes to end of node :(
+      cpg.androidXmlLayoutNode.head.columnNumber.get shouldBe 55 // ditto
     }
 
     "have correct number of permission nodes" in {
       cpg.androidXmlPermissionNode.l.size shouldBe 1
       cpg.androidXmlPermissionNode.head.permissionType shouldBe "READ_SMS"
+      cpg.androidXmlPermissionNode.head.lineNumber.get shouldBe 5
+      cpg.androidXmlPermissionNode.head.columnNumber.get shouldBe 67
     }
   }
 
