@@ -170,6 +170,38 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
       "",
       Language.GO,
       Array()
+    ),
+    RuleInfo(
+      "Storages.MongoDB.Read",
+      "MongoDB(Read)",
+      "",
+      Array("mongodb.com"),
+      List("(?i)(go.mongodb.org/mongo-driver/mongo).*(Find)"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.MongoDB.Write",
+      "MongoDB(Write)",
+      "",
+      Array("mongodb.com"),
+      List("(?i)(go.mongodb.org/mongo-driver/mongo).*(InsertOne|DeleteOne|UpdateOne)"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
     )
   )
 
@@ -202,7 +234,11 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
 
   val taggerCache = new TaggerCache()
 
-  def code(code: String, fileExtension: String = ".go"): (Cpg, ThreatEngineExecutor) = {
+  def code(
+    code: String,
+    downloadDependency: Boolean = false,
+    fileExtension: String = ".go"
+  ): (Cpg, ThreatEngineExecutor) = {
     val ruleCache                    = new RuleCache()
     val dataFlows: Map[String, Path] = Map()
     val auditCache                   = new AuditCache
@@ -215,7 +251,10 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
     (inputDir / "unrelated.file").write("foo")
     val outputFile: File = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
-    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+    val config = Config()
+      .withInputPath(inputDir.pathAsString)
+      .withOutputPath(outputFile.pathAsString)
+      .withFetchDependencies(downloadDependency)
 
     ScanProcessor.config = privadoInput
     ruleCache.setRule(configAndRules)

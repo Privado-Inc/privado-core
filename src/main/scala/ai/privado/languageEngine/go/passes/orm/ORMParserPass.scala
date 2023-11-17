@@ -47,11 +47,15 @@ class ORMParserPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
       .filter(rule => rule.id.matches("Storages.*"))
       .map(_.combinedRulePattern)
       .mkString("|")
-    val typeFullNames = cpg.call
+    val arguments = cpg.call
       .methodFullName(storageRule)
       .argument
-      .isCall
-      .typeFullName
+      .l
+    val typeFullNames = arguments.isCall.typeFullName
+      .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
+      .map(x => x.stripPrefix("*"))
+      .dedup
+      .l ++ arguments.isIdentifier.typeFullName
       .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
       .map(x => x.stripPrefix("*"))
       .dedup

@@ -186,4 +186,90 @@ class ORMParserTest extends GoTaggingTestBase {
       age.columnNumber shouldBe Some(7)
     }
   }
+
+  "SQL Node checks for Mongo" should {
+    val (cpg, _) = code(
+      """
+        |package main
+        |
+        |import (
+        |    "context"
+        |    "fmt"
+        |    "log"
+        |
+        |    "go.mongodb.org/mongo-driver/bson"
+        |    "go.mongodb.org/mongo-driver/mongo"
+        |    "go.mongodb.org/mongo-driver/mongo/options"
+        |)
+        |
+        |// Book - We will be using this Book type to perform crud operations
+        |type Book struct {
+        |  Title     string
+        |  Author    string
+        |  ISBN      string
+        |  Publisher string
+        |  Copies     int
+        |}
+        |
+        |func main() {
+        |
+        |  // Set client options
+        |  clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+        |
+        |  // Connect to MongoDB
+        |  client, err := mongo.Connect(context.TODO(), clientOptions)
+        |
+        |  if err != nil {
+        |    log.Fatal(err)
+        |  }
+        |
+        |  // Check the connection
+        |  err = client.Ping(context.TODO(), nil)
+        |
+        |  if err != nil {
+        |    log.Fatal(err)
+        |  }
+        |
+        |  fmt.Println("Connected to MongoDB!")
+        |  booksCollection := client.Database("testdb").Collection("books")
+        |  // Insert One document
+        |  book1 := Book{"Animal Farm", "George Orwell", "0451526341", "Signet Classics", 100}
+        |  insertResult, err := booksCollection.InsertOne(context.TODO(), book1)
+        |  if err != nil {
+        |      log.Fatal(err)
+        |  }
+        |
+        |  fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+        |}
+        |""".stripMargin,
+      downloadDependency = true
+    )
+
+    "check table nodes" in {
+      val tableNodes = cpg.sqlTable.l
+      tableNodes.size shouldBe 1
+      tableNodes.head.name shouldBe "Book"
+    }
+
+    "check column nodes" in {
+      val columnNodes = cpg.sqlColumn.l
+      columnNodes.size shouldBe 5
+
+      val List(title, auther, isbn, publisher, copies) = cpg.sqlColumn.l
+      title.code shouldBe "Title"
+      title.lineNumber shouldBe Some(16)
+
+      auther.code shouldBe "Author"
+      auther.lineNumber shouldBe Some(17)
+
+      isbn.code shouldBe "ISBN"
+      isbn.lineNumber shouldBe Some(18)
+
+      publisher.code shouldBe "Publisher"
+      publisher.lineNumber shouldBe Some(19)
+
+      copies.code shouldBe "Copies"
+      copies.lineNumber shouldBe Some(20)
+    }
+  }
 }

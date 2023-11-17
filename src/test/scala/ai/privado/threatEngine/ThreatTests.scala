@@ -118,7 +118,7 @@ class ThreatTests extends GoTaggingTestBase {
           |		PRIMARY KEY (id)
           |	);
           |""".stripMargin,
-        ".sql"
+        fileExtension = ".sql"
       )
 
       val result = threatEngine.processProcessingViolations(threat)
