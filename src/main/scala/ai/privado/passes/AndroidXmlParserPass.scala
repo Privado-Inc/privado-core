@@ -126,20 +126,15 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       val permissions     = new ListBuffer[XmlNodeInfo]()
 
       permissionNodes.foreach(node =>
-        Try {
-          val permissionType = node.attributes.find(_.key == "name") match {
-            case Some(attr) if attr.value.nonEmpty =>
-              attr.value.toString.stripSuffix("\"").stripPrefix(("\""))
-            case _ => ""
-          }
-          if (permissionType.nonEmpty) {
-            val line = node.attribute("line").getOrElse(Constants.defaultLineNumber).toString
-            val col  = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
-            permissions.addOne(XmlNodeInfo(permissionType, line.toInt, col.toInt))
-          }
-        }: @unchecked match {
-          case Failure(e) =>
-            logger.debug(s"Error parsing permission node in Android layout XML file: $filePath, ${e.getMessage}")
+        val permissionType = node.attributes.find(_.key == "name") match {
+          case Some(attr) if attr.value.nonEmpty =>
+            attr.value.toString.stripSuffix("\"").stripPrefix(("\""))
+          case _ => ""
+        }
+        if (permissionType.nonEmpty) {
+          val line = node.attribute("line").getOrElse(Constants.defaultLineNumber).toString
+          val col  = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
+          permissions.addOne(XmlNodeInfo(permissionType, line.toInt, col.toInt))
         }
       )
       permissions.toList
@@ -159,24 +154,19 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       val nodeMap       = new mutable.HashMap[String, ListBuffer[XmlNodeInfo]]()
 
       editTextNodes.foreach(node =>
-        Try {
-          val id = node.attributes.find(_.key == "id") match {
-            case Some(attr) if attr.value.nonEmpty => attr.value.toString.split("/").last.stripSuffix("\"")
-            case _                                 => ""
+        val id = node.attributes.find(_.key == "id") match {
+          case Some(attr) if attr.value.nonEmpty => attr.value.toString.split("/").last.stripSuffix("\"")
+          case _                                 => ""
+        }
+        if (id.nonEmpty) {
+          val nodeName = node.label
+          val line     = node.attribute("line").getOrElse(Constants.defaultLineNumber).toString
+          val col      = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
+          if (nodeMap.contains(nodeName)) {
+            nodeMap(nodeName).addOne(XmlNodeInfo(id, line.toInt, line.toInt))
+          } else {
+            nodeMap.addOne(nodeName, ListBuffer(XmlNodeInfo(id, line.toInt, col.toInt)))
           }
-          if (id.nonEmpty) {
-            val nodeName = node.label
-            val line     = node.attribute("line").getOrElse(Constants.defaultLineNumber).toString
-            val col      = node.attribute("column").getOrElse(Constants.defaultLineNumber).toString
-            if (nodeMap.contains(nodeName)) {
-              nodeMap(nodeName).addOne(XmlNodeInfo(id, line.toInt, line.toInt))
-            } else {
-              nodeMap.addOne(nodeName, ListBuffer(XmlNodeInfo(id, line.toInt, col.toInt)))
-            }
-          }
-        }: @unchecked match {
-          case Failure(e) =>
-            logger.debug(s"Error parsing layout node in Android layout XML file: $filePath, ${e.getMessage}")
         }
       )
       nodeMap.map(item => (item._1, item._2.toList)).toMap
