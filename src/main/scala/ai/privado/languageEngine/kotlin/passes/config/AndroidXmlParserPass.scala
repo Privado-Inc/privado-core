@@ -37,7 +37,39 @@ import scala.collection.mutable
 import scala.util.Try
 import scala.collection.mutable.HashMap
 import scala.collection.mutable.ListBuffer
-import scala.xml.XML
+import org.xml.sax.Locator
+import scala.xml._
+import parsing.NoBindingFactoryAdapter
+
+// Needed for getting line and column numbers
+// Ref: https://stackoverflow.com/questions/4446137/how-to-track-the-source-line-location-of-an-xml-element
+trait WithLocation extends NoBindingFactoryAdapter {
+  var locator: org.xml.sax.Locator = _
+
+  abstract override def setDocumentLocator(locator: Locator): Unit = {
+    this.locator = locator
+    super.setDocumentLocator(locator)
+  }
+
+  abstract override def createNode(
+    pre: String,
+    label: String,
+    attrs: MetaData,
+    scope: NamespaceBinding,
+    children: List[Node]
+  ): Elem = (
+    // This adds line and column as attributes to each node. Hopefully doesn't increase the xml object size :-|
+    super.createNode(pre, label, attrs, scope, children)
+      % Attribute("line", Text(locator.getLineNumber.toString), Null)
+      % Attribute("column", Text(locator.getColumnNumber.toString), Null)
+  )
+}
+
+object CustomXMLLoader extends factory.XMLLoader[Elem] {
+  override def adapter = new parsing.NoBindingFactoryAdapter with parsing.ConsoleErrorHandler with WithLocation
+}
+
+case class XmlNodeInfo(name: String, lineNum: Int, columnNum: Int)
 
 class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     extends PrivadoParallelCpgPass[String](cpg) {
@@ -59,9 +91,13 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
   private def buildAndAddLayoutXMLNodes(file: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = {
     val parsedNodes = parseLayoutXMLFile(file)
-    parsedNodes.flatMap { case (nodeType, nodeNames) =>
-      nodeNames.map { nodeName =>
-        val layoutNode = NewAndroidXmlLayoutNode().name(nodeName).typeFullName(nodeType)
+    parsedNodes.flatMap { case (nodeType, nodeInfo) =>
+      nodeInfo.map { nodeInfo =>
+        val layoutNode = NewAndroidXmlLayoutNode()
+          .name(nodeInfo.name)
+          .typeFullName(nodeType)
+          .lineNumber(nodeInfo.lineNum)
+          .columnNumber(nodeInfo.columnNum)
         builder.addNode(layoutNode)
         builder.addEdge(layoutNode, fileNode, EdgeTypes.SOURCE_FILE)
       }
@@ -70,19 +106,24 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
 
   private def buildAndAddPermissionXMLNodes(file: String, builder: DiffGraphBuilder, fileNode: NewFile): Unit = {
     val parsedNodes = parseManifestXMLFile(file)
-    parsedNodes.foreach { typ =>
-      val permissionNode = NewAndroidXmlPermissionNode().name("uses-permission").permissionType(typ).code(typ)
+    parsedNodes.foreach { nodeInfo =>
+      val permissionNode = NewAndroidXmlPermissionNode()
+        .name("uses-permission")
+        .permissionType(nodeInfo.name)
+        .code(nodeInfo.name)
+        .lineNumber(nodeInfo.lineNum)
+        .columnNumber(nodeInfo.columnNum)
       builder.addNode(permissionNode)
       builder.addEdge(permissionNode, fileNode, EdgeTypes.SOURCE_FILE)
     }
   }
 
-  private def parseManifestXMLFile(filePath: String): ListBuffer[String] = {
+  private def parseManifestXMLFile(filePath: String): ListBuffer[XmlNodeInfo] = {
     try {
-      val xml             = XML.loadFile(filePath)
+      val xml             = CustomXMLLoader.loadFile(filePath)
       val nodes           = xml \\ "_"
       val permissionNodes = nodes.filter(node => node.label.contains("uses-permission"))
-      val permissions     = new ListBuffer[String]()
+      val permissions     = new ListBuffer[XmlNodeInfo]()
 
       permissionNodes.foreach(node => {
         val permissionType = node.attributes.find(_.key == "name") match {
@@ -91,24 +132,26 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
           case _ => ""
         }
         if (permissionType.nonEmpty) {
-          permissions.addOne(permissionType)
+          val line = node.attribute("line").getOrElse(-1).toString
+          val col  = node.attribute("column").getOrElse(-1).toString
+          permissions.addOne(XmlNodeInfo(permissionType, line.toInt, col.toInt))
         }
       })
       permissions
     } catch {
       case e: Exception =>
         println(s"Error parsing Android layout XML file: ${e.getMessage}")
-        new ListBuffer[String]()
+        new ListBuffer[XmlNodeInfo]()
     }
   }
 
   // Returns a map (EditText -> emailEditText)
-  private def parseLayoutXMLFile(filePath: String): HashMap[String, ListBuffer[String]] = {
+  private def parseLayoutXMLFile(filePath: String): HashMap[String, ListBuffer[XmlNodeInfo]] = {
     try {
-      val xml           = XML.loadFile(filePath)
+      val xml           = CustomXMLLoader.loadFile(filePath)
       val nodes         = xml \\ "_"
       val editTextNodes = nodes.filter(node => node.label.contains("EditText")) // variations of *editText as well
-      val nodeMap       = new HashMap[String, ListBuffer[String]]()
+      val nodeMap       = new HashMap[String, ListBuffer[XmlNodeInfo]]()
 
       editTextNodes.foreach(node => {
         val id = node.attributes.find(_.key == "id") match {
@@ -117,10 +160,12 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
         }
         if (id.nonEmpty) {
           val nodeName = node.label
+          val line     = node.attribute("line").getOrElse(-1).toString
+          val col      = node.attribute("column").getOrElse(-1).toString
           if (nodeMap.contains(nodeName)) {
-            nodeMap(nodeName) += id
+            nodeMap(nodeName) += XmlNodeInfo(id, line.toInt, line.toInt)
           } else {
-            nodeMap += (nodeName -> ListBuffer(id))
+            nodeMap += (nodeName -> ListBuffer(XmlNodeInfo(id, line.toInt, col.toInt)))
           }
         }
       })
@@ -128,7 +173,7 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     } catch {
       case e: Exception =>
         println(s"Error parsing Android layout XML file: ${e.getMessage}")
-        new HashMap[String, ListBuffer[String]]()
+        new HashMap[String, ListBuffer[XmlNodeInfo]]()
     }
   }
 
