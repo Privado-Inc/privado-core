@@ -80,7 +80,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       "",
       Language.KOTLIN,
       Array()
-    ),
+    )
   )
 
   case class Codes(layoutXmlCode: String, manifestXmlCode: String, kotlinCode: String)
@@ -184,10 +184,9 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     }
 
     "have tagged layout collection nodes" in {
-      val taggedNodes = cpg.fieldAccess
-        .astChildren
-        .isFieldIdentifier
+      val taggedNodes = cpg.fieldAccess.astChildren.isFieldIdentifier
         .canonicalName("emailEditText")
+        .l
 
       taggedNodes.tag.where(_.nameExact(Constants.collectionSource)).value.headOption shouldBe Some("emailEditText")
       taggedNodes.tag.where(_.nameExact(Constants.id)).value.headOption shouldBe Some("Data.Sensitive.Email")

@@ -17,7 +17,7 @@ import scala.collection.mutable.ListBuffer
 import scala.xml.XML
 
 class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
-  extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] =
@@ -44,27 +44,19 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
      * */
 
     // For case (1), we want to tag the `fieldIdentifiers` here (`binding.emailEditText`).
-    // The collection "URL" equivalent will be `emailEditText` here that we will add as a tag
-    ruleCache.getRule.sources.foreach(sourceRule => {
-      val fieldIdentifiers = cpg.androidXmlLayoutNode.name(sourceRule.combinedRulePattern).flatMap { elem =>
-        getFormCollectionIdentifier(cpg, elem.name)
-      }.toList
-      if (fieldIdentifiers.nonEmpty) {
-        fieldIdentifiers.foreach(node => {
-          storeForTag(builder, node, ruleCache)(Constants.collectionSource, node.canonicalName)
-          addRuleTags(builder, node, sourceRule, ruleCache)
-        })
+    val fieldIdentifiers = cpg.androidXmlLayoutNode
+      .name(sourceRuleInfo.combinedRulePattern)
+      .flatMap { elem =>
+        cpg.fieldAccess.astChildren.isFieldIdentifier.where(_.canonicalName(elem.name)).l
       }
-    })
+      .toList
+    if (fieldIdentifiers.nonEmpty) {
+      fieldIdentifiers.foreach(node => {
+        storeForTag(builder, node, ruleCache)(Constants.collectionSource, node.canonicalName)
+        addRuleTags(builder, node, sourceRuleInfo, ruleCache)
+      })
+    }
     // TODO: for case (2), fieldIdentifier approach works for now, but we should ideally tag findViewById
   }
 
-  private def getFormCollectionIdentifier(cpg: Cpg, id: String): List[FieldIdentifier] = {
-    // find a fieldIdentifier like `emailEditText` in the fieldAccess call `binding.emailEditText`
-    cpg.fieldAccess
-      .astChildren
-      .isFieldIdentifier
-      .where(_.canonicalName(id))
-      .l
-  }
 }
