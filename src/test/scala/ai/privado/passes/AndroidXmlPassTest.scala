@@ -25,6 +25,7 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.feeder.PermissionSourceRule
+import ai.privado.languageEngine.kotlin.tagger.collection.AndroidCollectionTagger
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.kotlin2cpg.Config
@@ -63,7 +64,23 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       "",
       Language.JAVA,
       Array()
-    )
+    ),
+    RuleInfo(
+      "Data.Sensitive.Email",
+      "Email",
+      "",
+      Array(),
+      List("(?i).*email.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.KOTLIN,
+      Array()
+    ),
   )
 
   case class Codes(layoutXmlCode: String, manifestXmlCode: String, kotlinCode: String)
@@ -165,6 +182,16 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       )
       taggedNodes.tag.where(_.nameExact(Constants.catLevelOne)).value.headOption shouldBe Some(CatLevelOne.SOURCES.name)
     }
+
+    "have tagged layout collection nodes" in {
+      val taggedNodes = cpg.fieldAccess
+        .astChildren
+        .isFieldIdentifier
+        .canonicalName("emailEditText")
+
+      taggedNodes.tag.where(_.nameExact(Constants.collectionSource)).value.headOption shouldBe Some("emailEditText")
+      taggedNodes.tag.where(_.nameExact(Constants.id)).value.headOption shouldBe Some("Data.Sensitive.Email")
+    }
   }
 
   def code(codes: Codes): Cpg = {
@@ -183,6 +210,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new Kotlin2Cpg().createCpgWithOverlays(config).get
     new AndroidXmlParserPass(cpg, inputDir.toString(), ruleCache).createAndApply()
+    new AndroidCollectionTagger(cpg, inputDir.toString(), ruleCache).createAndApply()
     cpgs.addOne(cpg)
     cpg
   }
