@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.go.tagger
+package ai.privado.languageEngine.go
 
 import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
@@ -47,7 +47,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.collection.mutable
 
-abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
+abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
 
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
   private val outPutFiles = mutable.ArrayBuffer.empty[File]

@@ -1,13 +1,13 @@
 package ai.privado.threatEngine
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.*
 import ai.privado.model.exporter.ViolationModel
 import ai.privado.threatEngine.ThreatEngineExecutor
 
 import scala.collection.immutable.Map
 
-class ThreatTests extends GoTaggingTestBase {
+class GoThreatTests extends GoTestBase {
 
   "Validate Threat  PIIShouldNotBePresentInMultipleTables" should {
     val threat = PolicyOrThreat(
@@ -36,7 +36,7 @@ class ThreatTests extends GoTaggingTestBase {
 
     "When same data-element is part of multiple table in go file" in {
 
-      val (cpg, threatEngine) = code("""
+      val (_, threatEngine) = code("""
           |package models
           |
           |import (
@@ -102,7 +102,7 @@ class ThreatTests extends GoTaggingTestBase {
 
     "When same data-element is part of multiple table in sql file" in {
 
-      val (cpg, threatEngine) = code(
+      val (_, threatEngine) = code(
         """
           |CREATE TABLE IF NOT EXISTS Customer (
           |		id SERIAL NOT NULL,
@@ -129,7 +129,7 @@ class ThreatTests extends GoTaggingTestBase {
 
     "When same data-element is not part of multiple table in go file" in {
 
-      val (cpg, threatEngine) = code("""
+      val (_, threatEngine) = code("""
           |package models
           |
           |import (
@@ -187,4 +187,118 @@ class ThreatTests extends GoTaggingTestBase {
       assert(result.isEmpty)
     }
   }
+
+  "Threat  DifferentKindOfPIIStoredInDifferentTables" ignore {
+    val threat = PolicyOrThreat(
+      "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables",
+      "Table containing multiple PIIs must be of same category",
+      "Multiple PII categories saved to {TableName}",
+      "Create separate tables for fields belongs to different categories.",
+      PolicyThreatType.THREAT,
+      PolicyAction.DENY,
+      DataFlow(
+        List(),
+        SourceFilter(Option(true), "", ""),
+        List[String](),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("")
+      ),
+      List("**"),
+      Map[String, String](),
+      Map[String, String](
+        "PersonalCharacteristics" -> "Data.Sensitive.PersonalIdentification.FirstName,Data.Sensitive.PersonalIdentification.LastName,Data.Sensitive.PersonalIdentification.DateofBirth,Data.Sensitive.PersonalCharacteristics.Height,Data.Sensitive.PersonalCharacteristics.Weigth,Data.Sensitive.ContactData.PhoneNumber,Data.Sensitive.ContactData.Address,Data.Sensitive.NationalIdentificationNumbers.SocialSecurityNumber,Data.Sensitive.NationalIdentificationNumbers.TaxpayerIdentificationNumber",
+        "PurchaseData" -> "Data.Sensitive.PurchaseData.OrderDetails,Data.Sensitive.PurchaseData.OfferDetails,Data.Sensitive.PurchaseData.ProductReturnHistory,Data.Sensitive.PurchaseData.PurchaseHistory",
+        "FinancialData" -> "Data.Sensitive.FinancialData.BankAccountDetails,Data.Sensitive.FinancialData.CardNumber,Data.Sensitive.FinancialData.CreditScore,Data.Sensitive.FinancialData.Salary"
+      ),
+      "",
+      Array[String]()
+    )
+
+    "Identify violation when multiple PIIs of different category stored in the same table in SQL Code" in {
+      val (_, threatEngine) = code(
+        """
+          |CREATE TABLE IF NOT EXISTS Customer (
+          |		id SERIAL NOT NULL,
+          |		created_at datetime NOT NULL,
+          |		address VARCHAR(6) NOT NULL,
+          |		PRIMARY KEY (id)
+          |	);
+          |
+          |CREATE TABLE IF NOT EXISTS User (
+          |		id SERIAL NOT NULL,
+          |		created_at datetime NOT NULL,
+          |		email VARCHAR(6) NOT NULL,
+          |     salary int,
+          |		PRIMARY KEY (id)
+          |	);
+          |""".stripMargin,
+        fileExtension = ".sql"
+      )
+      val result = threatEngine.processProcessingViolations(threat)
+      result should not be empty
+      result.get.policyId shouldBe "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables"
+    }
+  }
+
+  "Threat PIIHavingDifferentRetentionPeriod" ignore {
+    val threat = PolicyOrThreat(
+      "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod",
+      "If table has multiple PII elements in the same row with different retention policies, store elements in a different table with elements that share the same retention policy",
+      "Retention policies for all field must match",
+      "Create separate tables for fields having different retention period",
+      PolicyThreatType.THREAT,
+      PolicyAction.DENY,
+      DataFlow(
+        List(),
+        SourceFilter(Option(true), "", ""),
+        List[String](),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("")
+      ),
+      List("**"),
+      Map[String, String](),
+      Map[String, String](
+        "Data.Sensitive.NationalIdentificationNumbers.SocialSecurityNumber"         -> "7",
+        "Data.Sensitive.NationalIdentificationNumbers.TaxpayerIdentificationNumber" -> "7",
+        "Data.Sensitive.AccountData.AccountID"                                      -> "7",
+        "Data.Sensitive.PersonalIdentification.FirstName"                           -> "7",
+        "Data.Sensitive.PersonalIdentification.LastName"                            -> "7",
+        "Data.Sensitive.ContactData.PhoneNumber"                                    -> "30",
+        "Data.Sensitive.ContactData.Address"                                        -> "30",
+        "Data.Sensitive.PersonalIdentification.DateofBirth"                         -> "7",
+        "Data.Sensitive.PersonalCharacteristics.Height"                             -> "30",
+        "Data.Sensitive.PersonalCharacteristics.Weigth"                             -> "30",
+        "Data.Sensitive.PurchaseData.OrderDetails"                                  -> "30"
+      ),
+      "",
+      Array[String]()
+    )
+
+    "Identify violation when multiple PIIs of different retention period stored in the same table in SQL Code" in {
+      val (_, threatEngine) = code(
+        """
+          |CREATE TABLE IF NOT EXISTS Customer (
+          |		id SERIAL NOT NULL,
+          |		created_at datetime NOT NULL,
+          |		address VARCHAR(6) NOT NULL,
+          |		PRIMARY KEY (id)
+          |	);
+          |
+          |CREATE TABLE IF NOT EXISTS User (
+          |		id SERIAL NOT NULL,
+          |		created_at datetime NOT NULL,
+          |     firstName VARCHAR(100),
+          |		email VARCHAR(6) NOT NULL,
+          |     phone VARCHAR(100),
+          |		PRIMARY KEY (id)
+          |	);
+          |""".stripMargin,
+        fileExtension = ".sql"
+      )
+      val result = threatEngine.processProcessingViolations(threat)
+      result should not be empty
+      result.get.policyId shouldBe "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod"
+    }
+  }
+
 }

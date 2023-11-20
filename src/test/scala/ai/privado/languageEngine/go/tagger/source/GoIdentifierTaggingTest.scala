@@ -22,11 +22,11 @@
  */
 package ai.privado.languageEngine.go.tagger.source
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
-class GoIdentifierTaggingTest extends GoTaggingTestBase {
+class GoIdentifierTaggingTest extends GoTestBase {
 
   "Tagging derived sources" should {
     val (cpg, _) = code("""

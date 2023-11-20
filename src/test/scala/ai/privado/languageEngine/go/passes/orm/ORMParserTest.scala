@@ -22,11 +22,11 @@
  */
 package ai.privado.languageEngine.go.passes.orm
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.semantic.Language.*
 import io.shiftleft.semanticcpg.language.*
 
-class ORMParserTest extends GoTaggingTestBase {
+class ORMParserTest extends GoTestBase {
 
   "Adding sql nodes for GORM framework" should {
     val (cpg, _) = code("""
