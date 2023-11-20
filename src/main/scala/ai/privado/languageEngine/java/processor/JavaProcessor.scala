@@ -37,7 +37,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser}
+import ai.privado.passes.{AndroidXmlParserPass, DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser}
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.createCpgFolder
@@ -79,7 +79,8 @@ class JavaProcessor(
       new JavaPropertyLinkerPass(cpg),
       new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
-      new DBTParserPass(cpg, sourceRepoLocation, ruleCache)
+      new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+      new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
     )
   }
 

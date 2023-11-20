@@ -25,13 +25,9 @@ package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
-import ai.privado.languageEngine.java.passes.read.{
-  DatabaseQueryReadPass,
-  DatabaseRepositoryReadPass,
-  EntityMapper,
-  MessagingConsumerReadPass
-}
+import ai.privado.languageEngine.java.passes.read.{DatabaseQueryReadPass, DatabaseRepositoryReadPass, EntityMapper, MessagingConsumerReadPass}
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
@@ -39,7 +35,7 @@ import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensiti
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -92,6 +88,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new GrpcCollectionTagger(cpg, ruleCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+
+    new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
     logger.info("Done with tagging")
 
