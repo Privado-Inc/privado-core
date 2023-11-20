@@ -5,34 +5,25 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.go.passes.SQLQueryParser
+import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.metric.MetricHandler
-import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{
-  DBTParserPass,
-  ExperimentalLambdaDataFlowSupportPass,
-  HTMLParserPass,
-  SQLParser,
-  SQLPropertyPass
-}
+import ai.privado.passes.*
 import ai.privado.semantic.Language.*
+import ai.privado.utility.UnresolvedReportUtility
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.go.passes.orm.{GormParser, GorpParser}
 
-import java.nio.file.Paths
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
@@ -74,8 +65,7 @@ object GoProcessor {
             val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
             UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.GO)
           }
-          new GormParser(cpg).createAndApply()
-          new GorpParser(cpg).createAndApply()
+          new ORMParserPass(cpg, ruleCache).createAndApply()
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")

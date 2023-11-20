@@ -1,15 +1,12 @@
 package ai.privado.languageEngine.go.passes
 
 import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
-import ai.privado.model.{Constants}
+import ai.privado.model.Constants
+import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.semantic.Language._
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.semanticcpg.language._
-
-import java.util.UUID
+import io.shiftleft.semanticcpg.language.*
 
 // Pass will add a column node in cpg without edge to table node
 class SQLColumnNodePass(cpg: Cpg) extends PrivadoParallelCpgPass[Integer](cpg) {
@@ -29,14 +26,10 @@ class SQLColumnNodePass(cpg: Cpg) extends PrivadoParallelCpgPass[Integer](cpg) {
 
 class SQLNodeIteratorTest extends GoTaggingTestBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    new SQLColumnNodePass(cpg).createAndApply()
-  }
-
-  cpg = code("".stripMargin)
-
   "Check and iterate over column node" should {
+    val (cpg, _) = code("".stripMargin)
+    new SQLColumnNodePass(cpg).createAndApply()
+
     "check column nodes" in {
       val columnNodes = cpg.sqlColumn.l
       columnNodes.size shouldBe 1
@@ -50,7 +43,5 @@ class SQLNodeIteratorTest extends GoTaggingTestBase {
       val sqlTable = cpg.sqlColumn.head.sqlTable
       assert(sqlTable.isEmpty)
     }
-
   }
-
 }
