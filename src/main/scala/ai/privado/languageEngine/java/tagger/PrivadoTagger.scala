@@ -27,7 +27,12 @@ import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
-import ai.privado.languageEngine.java.passes.read.{DatabaseQueryReadPass, DatabaseRepositoryReadPass, EntityMapper, MessagingConsumerReadPass}
+import ai.privado.languageEngine.java.passes.read.{
+  DatabaseQueryReadPass,
+  DatabaseRepositoryReadPass,
+  EntityMapper,
+  MessagingConsumerReadPass
+}
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
