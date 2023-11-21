@@ -64,7 +64,6 @@ class GoThreatTests extends GoTestBase {
           |	ID      string `gorm:"PRIMARY KEY; UNIQUE" json:"id"`
           |	Name    string `gorm:"type:varchar(255); NOT NULL" json:"name" validate:"required"`
           |	Email   string `gorm:"type:varchar(255)" json:"email"`
-          |	Phone   string `gorm:"type:varchar(100); NOT NULL; UNIQUE; UNIQUE_INDEX" json:"phone" validate:"required"`
           |	Address string `gorm:"type:text" json:"address"`
           |	MyModel
           |}
@@ -240,7 +239,7 @@ class GoThreatTests extends GoTestBase {
     }
   }
 
-  "Threat PIIHavingDifferentRetentionPeriod" ignore {
+  "Threat   PIIHavingDifferentRetentionPeriod" should {
     val threat = PolicyOrThreat(
       "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod",
       "If table has multiple PII elements in the same row with different retention policies, store elements in a different table with elements that share the same retention policy",
@@ -298,7 +297,129 @@ class GoThreatTests extends GoTestBase {
       val result = threatEngine.processProcessingViolations(threat)
       result should not be empty
       result.get.policyId shouldBe "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod"
+      result.get.processing.get.head.sourceId shouldBe "User"
+    }
+
+    "Identify violation when multiple PIIs of different retention period stored in the same table with Go Mongo driver" in {
+      val (_, threatEngine) = code(
+        """
+          |package main
+          |
+          |import (
+          |    "context"
+          |    "fmt"
+          |    "log"
+          |
+          |    "go.mongodb.org/mongo-driver/bson"
+          |    "go.mongodb.org/mongo-driver/mongo"
+          |    "go.mongodb.org/mongo-driver/mongo/options"
+          |)
+          |
+          |// Book - We will be using this Book type to perform crud operations
+          |type UserMongo struct {
+          |  firstName     string
+          |  email    string
+          |  phone      string
+          |  lastName string
+          |}
+          |
+          |func main() {
+          |
+          |  // Set client options
+          |  clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+          |
+          |  // Connect to MongoDB
+          |  client, err := mongo.Connect(context.TODO(), clientOptions)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  // Check the connection
+          |  err = client.Ping(context.TODO(), nil)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Connected to MongoDB!")
+          |  usersCollection := client.Database("testdb").Collection("users")
+          |  // Insert One document
+          |  user1 := UserMongo{"Some first name", "test@email.com", "1234567890", "Some last name"}
+          |  insertResult, err := usersCollection.InsertOne(context.TODO(), user1)
+          |  if err != nil {
+          |      log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+          |}
+          |""".stripMargin,
+        downloadDependency = true
+      )
+      val result = threatEngine.processProcessingViolations(threat)
+      result should not be empty
+      result.get.policyId shouldBe "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod"
+      result.get.processing.get.head.sourceId shouldBe "UserMongo"
+    }
+
+    "No violation reported when multiple PIIs of same retention period stored in the same table with Go Mongo driver" in {
+      val (_, threatEngine) = code(
+        """
+          |package main
+          |
+          |import (
+          |    "context"
+          |    "fmt"
+          |    "log"
+          |
+          |    "go.mongodb.org/mongo-driver/bson"
+          |    "go.mongodb.org/mongo-driver/mongo"
+          |    "go.mongodb.org/mongo-driver/mongo/options"
+          |)
+          |
+          |// Book - We will be using this Book type to perform crud operations
+          |type UserMongo struct {
+          |  firstName     string
+          |  email    string
+          |  dob      string
+          |  lastName string
+          |}
+          |
+          |func main() {
+          |
+          |  // Set client options
+          |  clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+          |
+          |  // Connect to MongoDB
+          |  client, err := mongo.Connect(context.TODO(), clientOptions)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  // Check the connection
+          |  err = client.Ping(context.TODO(), nil)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Connected to MongoDB!")
+          |  usersCollection := client.Database("testdb").Collection("users")
+          |  // Insert One document
+          |  user1 := UserMongo{"Some first name", "test@email.com", "1234567890", "Some last name"}
+          |  insertResult, err := usersCollection.InsertOne(context.TODO(), user1)
+          |  if err != nil {
+          |      log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+          |}
+          |""".stripMargin,
+        downloadDependency = true
+      )
+      val result = threatEngine.processProcessingViolations(threat)
+      result shouldBe empty
     }
   }
-
 }

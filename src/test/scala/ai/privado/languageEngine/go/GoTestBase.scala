@@ -55,11 +55,43 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
 
   val sourceRule = List(
     RuleInfo(
-      "Data.Sensitive.FirstName",
+      "Data.Sensitive.PersonalIdentification.FirstName",
       "FirstName",
       "",
       Array(),
       List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.LastName",
+      "LastName",
+      "",
+      Array(),
+      List("(?i).*lastName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.DateofBirth",
+      "Date of Birth",
+      "",
+      Array(),
+      List("(?i).*dob.*"),
       false,
       "",
       Map(),
@@ -76,6 +108,22 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       "",
       Array(),
       List("(?i).*email.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.ContactData.PhoneNumber",
+      "Phone",
+      "",
+      Array(),
+      List("(?i).*phone.*"),
       true,
       "",
       Map(),
@@ -248,7 +296,6 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     val inputDir     = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)
     (inputDir / s"generalFile${fileExtension}").write(code)
-    (inputDir / "unrelated.file").write("foo")
     val outputFile: File = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
     val config = Config()
