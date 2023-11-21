@@ -237,6 +237,128 @@ class GoThreatTests extends GoTestBase {
       val result = threatEngine.processProcessingViolations(threat)
       result should not be empty
       result.get.policyId shouldBe "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables"
+      result.get.processing.get.head.sourceId shouldBe "User"
+    }
+
+    "Identify violation when multiple PIIs of different category stored in the same table with Go Mongo driver" in {
+      val (_, threatEngine) = code(
+        """
+          |package main
+          |
+          |import (
+          |    "context"
+          |    "fmt"
+          |    "log"
+          |
+          |    "go.mongodb.org/mongo-driver/bson"
+          |    "go.mongodb.org/mongo-driver/mongo"
+          |    "go.mongodb.org/mongo-driver/mongo/options"
+          |)
+          |
+          |// Book - We will be using this Book type to perform crud operations
+          |type UserMongo struct {
+          |  firstName     string
+          |  email    string
+          |  salary      string
+          |  lastName string
+          |}
+          |
+          |func main() {
+          |
+          |  // Set client options
+          |  clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+          |
+          |  // Connect to MongoDB
+          |  client, err := mongo.Connect(context.TODO(), clientOptions)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  // Check the connection
+          |  err = client.Ping(context.TODO(), nil)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Connected to MongoDB!")
+          |  usersCollection := client.Database("testdb").Collection("users")
+          |  // Insert One document
+          |  user1 := UserMongo{"Some first name", "test@email.com", "10000", "Some last name"}
+          |  insertResult, err := usersCollection.InsertOne(context.TODO(), user1)
+          |  if err != nil {
+          |      log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+          |}
+          |""".stripMargin,
+        downloadDependency = true
+      )
+      val result = threatEngine.processProcessingViolations(threat)
+      result should not be empty
+      result.get.policyId shouldBe "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables"
+      result.get.processing.get.head.sourceId shouldBe "UserMongo"
+    }
+    "No violation reported when multiple PIIs of same kind stored in the same table with Go Mongo driver" in {
+      val (_, threatEngine) = code(
+        """
+          |package main
+          |
+          |import (
+          |    "context"
+          |    "fmt"
+          |    "log"
+          |
+          |    "go.mongodb.org/mongo-driver/bson"
+          |    "go.mongodb.org/mongo-driver/mongo"
+          |    "go.mongodb.org/mongo-driver/mongo/options"
+          |)
+          |
+          |// Book - We will be using this Book type to perform crud operations
+          |type UserMongo struct {
+          |  firstName     string
+          |  email    string
+          |  dob      string
+          |  lastName string
+          |}
+          |
+          |func main() {
+          |
+          |  // Set client options
+          |  clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+          |
+          |  // Connect to MongoDB
+          |  client, err := mongo.Connect(context.TODO(), clientOptions)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  // Check the connection
+          |  err = client.Ping(context.TODO(), nil)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Connected to MongoDB!")
+          |  usersCollection := client.Database("testdb").Collection("users")
+          |  // Insert One document
+          |  user1 := UserMongo{"Some first name", "test@email.com", "1234567890", "Some last name"}
+          |  insertResult, err := usersCollection.InsertOne(context.TODO(), user1)
+          |  if err != nil {
+          |      log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+          |}
+          |""".stripMargin,
+        downloadDependency = true
+      )
+      val result = threatEngine.processProcessingViolations(threat)
+      result shouldBe empty
     }
   }
 
