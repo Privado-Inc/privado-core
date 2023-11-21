@@ -91,7 +91,7 @@ class GoAPITaggerTestCase1 extends GoTestBase {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -172,7 +172,7 @@ class GoAPITaggerTestCase2 extends GoTestBase {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -254,7 +254,7 @@ class GoAPITaggerTestCase3 extends GoTestBase {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 

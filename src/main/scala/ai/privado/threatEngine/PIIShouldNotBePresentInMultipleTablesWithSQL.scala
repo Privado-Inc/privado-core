@@ -19,12 +19,6 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  /** Check for violation for data leakage to logs threat - consumes already generated dataflows
-    *
-    * @param cpg
-    *   cpg
-    * @return
-    */
   def getViolations(
     threat: PolicyOrThreat,
     cpg: Cpg,

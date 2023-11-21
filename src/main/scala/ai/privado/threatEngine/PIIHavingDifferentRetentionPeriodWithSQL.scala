@@ -15,16 +15,10 @@ import scala.collection.mutable
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.Try
 
-object PIIHavingDifferentRetentionPeriodWithSQL {
+object PIIHavingDifferentRetentionPeriodWithSQL extends BasePIIThreatEvaluator {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  /** Check for violation for data leakage to logs threat - consumes already generated dataflows
-    *
-    * @param cpg
-    *   cpg
-    * @return
-    */
   def getViolations(
     threat: PolicyOrThreat,
     cpg: Cpg,
@@ -33,7 +27,7 @@ object PIIHavingDifferentRetentionPeriodWithSQL {
     if (hasDataElements(cpg)) {
       val violatingFlows                               = ListBuffer[ViolationProcessingModel]()
       val sourceIdRetentionPeriodMap: Map[String, Int] = getSourceIdRetentionMap(threat.config)
-      val tablesWithPIIS                               = getSources(cpg)
+      val tablesWithPIIS                               = getTablesMappedToPIIColumns(cpg)
 
       tablesWithPIIS.foreach((table, columns) => {
         val tableName                   = table.name
@@ -68,27 +62,6 @@ object PIIHavingDifferentRetentionPeriodWithSQL {
       })
       (violatingFlows.nonEmpty, violatingFlows.toList)
     } else (false, List())
-  }
-
-  private def getSourceId(node: StoredNode): String = {
-    node.tag.nameExact(Constants.id).value.headOption.getOrElse(UUID.randomUUID().toString)
-  }
-
-  private def getSources(cpg: Cpg): List[(SqlTableNode, List[SqlColumnNode])] = {
-    def filterSources(traversal: Traversal[StoredNode]) = {
-      traversal.tag
-        .nameExact(Constants.catLevelOne)
-        .valueExact(Constants.sources)
-    }
-
-    def groupBy(node: SqlColumnNode): SqlTableNode = {
-      node.sqlTable.get
-    }
-
-    cpg.sqlColumn
-      .where(filterSources)
-      .groupBy(groupBy)
-      .l
   }
 
   private def getSourceIdRetentionMap(config: Map[String, String]): Map[String, Int] = {

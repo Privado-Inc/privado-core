@@ -187,7 +187,7 @@ class GoThreatTests extends GoTestBase {
     }
   }
 
-  "Threat  DifferentKindOfPIIStoredInDifferentTables" ignore {
+  "Threat DifferentKindOfPIIStoredInDifferentTables" should {
     val threat = PolicyOrThreat(
       "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables",
       "Table containing multiple PIIs must be of same category",
@@ -226,7 +226,8 @@ class GoThreatTests extends GoTestBase {
           |CREATE TABLE IF NOT EXISTS User (
           |		id SERIAL NOT NULL,
           |		created_at datetime NOT NULL,
-          |		email VARCHAR(6) NOT NULL,
+          |     firstName VARCHAR(50) NOT NULL
+          |		email VARCHAR(50) NOT NULL,
           |     salary int,
           |		PRIMARY KEY (id)
           |	);
@@ -239,7 +240,7 @@ class GoThreatTests extends GoTestBase {
     }
   }
 
-  "Threat   PIIHavingDifferentRetentionPeriod" should {
+  "Threat PIIHavingDifferentRetentionPeriod" should {
     val threat = PolicyOrThreat(
       "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod",
       "If table has multiple PII elements in the same row with different retention policies, store elements in a different table with elements that share the same retention policy",

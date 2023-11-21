@@ -133,6 +133,22 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       "",
       Language.UNKNOWN,
       Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.FinancialData.Salary",
+      "Salary",
+      "",
+      Array(),
+      List("(?i).*salary.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
     )
   )
 
