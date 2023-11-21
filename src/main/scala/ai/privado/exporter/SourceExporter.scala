@@ -107,7 +107,7 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
           .where(filterSource)
           .l ++ cpg.sqlColumn
           .where(filterSource)
-          .l
+          .l ++ cpg.androidXmlPermissionNode.where(filterSource).l
     sources
   }
 
