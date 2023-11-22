@@ -22,25 +22,46 @@
  */
 package ai.privado.languageEngine.go.passes.orm
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
-import ai.privado.model.Constants.{defaultLineNumber}
+import ai.privado.model.Constants.defaultLineNumber
 import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLNodeBuilder
-import better.files.*
-import io.joern.x2cpg.SourceFiles
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import scala.util.{Failure, Success, Try}
 
-abstract class BaseORMParser(cpg: Cpg) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
+class ORMParserPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[TypeDecl](cpg) {
 
-  override def generateParts(): Array[_ <: AnyRef] = ???
-  val logger                                       = LoggerFactory.getLogger(getClass)
+  val logger = LoggerFactory.getLogger(getClass)
+  // when we pass a object's variable as its address its written as like `&users`
+  // In joern its signatured as *[]packagename.User
+  val ADDRESS_OF_OBJECT_SYMBOL = "*[]"
+  override def generateParts(): Array[_ <: AnyRef] = {
+    val storageRule = ruleCache.getRule.sinks
+      .filter(rule => rule.id.matches("Storages.*"))
+      .map(_.combinedRulePattern)
+      .mkString("|")
+    val arguments = cpg.call
+      .methodFullName(storageRule)
+      .argument
+      .l
+    val typeFullNames = arguments.isCall.typeFullName
+      .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
+      .map(x => x.stripPrefix("*"))
+      .dedup
+      .l ++ arguments.isIdentifier.typeFullName
+      .map(x => x.stripPrefix(ADDRESS_OF_OBJECT_SYMBOL))
+      .map(x => x.stripPrefix("*"))
+      .dedup
+      .l
+    cpg.typeDecl.fullName(typeFullNames.mkString("|")).dedup.toArray
+  }
 
   override def runOnPart(builder: DiffGraphBuilder, model: TypeDecl): Unit = {
     Try(model.file.head) match {

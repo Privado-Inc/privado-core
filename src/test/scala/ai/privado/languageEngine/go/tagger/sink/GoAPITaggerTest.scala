@@ -22,80 +22,72 @@
  */
 package ai.privado.languageEngine.go.tagger.sink
 
-import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
-import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
 class GoAPITaggerTestCase1 extends GoTaggingTestBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-  }
-
-  cpg = code("""
-      | package main
-      |
-      |import (
-      |	"bytes"
-      |	"encoding/json"
-      |	"fmt"
-      |	"net/http"
-      |)
-      |
-      |type User struct {
-      |	FirstName     string
-      |	Age      int
-      |	Location string
-      |	Email    string
-      |}
-      |func (client *APIClient) SendUser(user User) error {
-      |	http_url := client.BaseURL + "/users"
-      |	payload, err := json.Marshal(user)
-      |	if err != nil {
-      |		return err
-      |	}
-      |
-      |	resp, err := http.Post(http_url, "application/json", bytes.NewBuffer(payload))
-      |	if err != nil {
-      |		return err
-      |	}
-      |	defer resp.Body.Close()
-      |
-      |	if resp.StatusCode != http.StatusOK {
-      |		return fmt.Errorf("failed to send user: %s", resp.Status)
-      |	}
-      |
-      |	fmt.Println("User sent successfully!")
-      |	return nil
-      |}
-      |
-      |func main() {
-      |	// Create a new User object
-      |	user := User{
-      |		Name:     "John Doe",
-      |		Age:      25,
-      |		Location: "New York",
-      |		Email: "abc@gmail.com",
-      |	}
-      |
-      |	// Create a new API client
-      |	client := APIClient{
-      |		BaseURL: "https://api.example.com",
-      |	}
-      |
-      |	// Send the User object to the API client
-      |	err := client.SendUser(user)
-      |	if err != nil {
-      |		fmt.Printf("Error sending user: %s\n", err.Error())
-      |	}
-      |}
-      |
-      |""".stripMargin)
-
   "Tagging api sink: When nothing is matching(identifier or url) it should tagged with API" should {
-
+    val (cpg, _) = code("""
+        | package main
+        |
+        |import (
+        |	"bytes"
+        |	"encoding/json"
+        |	"fmt"
+        |	"net/http"
+        |)
+        |
+        |type User struct {
+        |	FirstName     string
+        |	Age      int
+        |	Location string
+        |	Email    string
+        |}
+        |func (client *APIClient) SendUser(user User) error {
+        |	http_url := client.BaseURL + "/users"
+        |	payload, err := json.Marshal(user)
+        |	if err != nil {
+        |		return err
+        |	}
+        |
+        |	resp, err := http.Post(http_url, "application/json", bytes.NewBuffer(payload))
+        |	if err != nil {
+        |		return err
+        |	}
+        |	defer resp.Body.Close()
+        |
+        |	if resp.StatusCode != http.StatusOK {
+        |		return fmt.Errorf("failed to send user: %s", resp.Status)
+        |	}
+        |
+        |	fmt.Println("User sent successfully!")
+        |	return nil
+        |}
+        |
+        |func main() {
+        |	// Create a new User object
+        |	user := User{
+        |		Name:     "John Doe",
+        |		Age:      25,
+        |		Location: "New York",
+        |		Email: "abc@gmail.com",
+        |	}
+        |
+        |	// Create a new API client
+        |	client := APIClient{
+        |		BaseURL: "https://api.example.com",
+        |	}
+        |
+        |	// Send the User object to the API client
+        |	err := client.SendUser(user)
+        |	if err != nil {
+        |		fmt.Printf("Error sending user: %s\n", err.Error())
+        |	}
+        |}
+        |
+        |""".stripMargin)
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
@@ -117,72 +109,66 @@ class GoAPITaggerTestCase1 extends GoTaggingTestBase {
 
 class GoAPITaggerTestCase2 extends GoTaggingTestBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-  }
-
-  cpg = code("""
-      | package main
-      |
-      |import (
-      |	"bytes"
-      |	"encoding/json"
-      |	"fmt"
-      |	"net/http"
-      |)
-      |
-      |type User struct {
-      |	FirstName     string
-      |	Age      int
-      |	Location string
-      |	Email    string
-      |}
-      |func (client *APIClient) SendUser(user User) error {
-      |	gateway_url := "its not a url"
-      |	payload, err := json.Marshal(user)
-      |	if err != nil {
-      |		return err
-      |	}
-      |
-      |	resp, err := http.Post(gateway_url, "application/json", bytes.NewBuffer(payload))
-      |	if err != nil {
-      |		return err
-      |	}
-      |	defer resp.Body.Close()
-      |
-      |	if resp.StatusCode != http.StatusOK {
-      |		return fmt.Errorf("failed to send user: %s", resp.Status)
-      |	}
-      |
-      |	fmt.Println("User sent successfully!")
-      |	return nil
-      |}
-      |
-      |func main() {
-      |	// Create a new User object
-      |	user := User{
-      |		Name:     "John Doe",
-      |		Age:      25,
-      |		Location: "New York",
-      |		Email: "abc@gmail.com",
-      |	}
-      |
-      |	// Create a new API client
-      |	client := APIClient{
-      |		BaseURL: "https://api.example.com",
-      |	}
-      |
-      |	// Send the User object to the API client
-      |	err := client.SendUser(user)
-      |	if err != nil {
-      |		fmt.Printf("Error sending user: %s\n", err.Error())
-      |	}
-      |}
-      |
-      |""".stripMargin)
-
   "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
-
+    val (cpg, _) = code("""
+        | package main
+        |
+        |import (
+        |	"bytes"
+        |	"encoding/json"
+        |	"fmt"
+        |	"net/http"
+        |)
+        |
+        |type User struct {
+        |	FirstName     string
+        |	Age      int
+        |	Location string
+        |	Email    string
+        |}
+        |func (client *APIClient) SendUser(user User) error {
+        |	gateway_url := "its not a url"
+        |	payload, err := json.Marshal(user)
+        |	if err != nil {
+        |		return err
+        |	}
+        |
+        |	resp, err := http.Post(gateway_url, "application/json", bytes.NewBuffer(payload))
+        |	if err != nil {
+        |		return err
+        |	}
+        |	defer resp.Body.Close()
+        |
+        |	if resp.StatusCode != http.StatusOK {
+        |		return fmt.Errorf("failed to send user: %s", resp.Status)
+        |	}
+        |
+        |	fmt.Println("User sent successfully!")
+        |	return nil
+        |}
+        |
+        |func main() {
+        |	// Create a new User object
+        |	user := User{
+        |		Name:     "John Doe",
+        |		Age:      25,
+        |		Location: "New York",
+        |		Email: "abc@gmail.com",
+        |	}
+        |
+        |	// Create a new API client
+        |	client := APIClient{
+        |		BaseURL: "https://api.example.com",
+        |	}
+        |
+        |	// Send the User object to the API client
+        |	err := client.SendUser(user)
+        |	if err != nil {
+        |		fmt.Printf("Error sending user: %s\n", err.Error())
+        |	}
+        |}
+        |
+        |""".stripMargin)
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
@@ -204,71 +190,66 @@ class GoAPITaggerTestCase2 extends GoTaggingTestBase {
 
 class GoAPITaggerTestCase3 extends GoTaggingTestBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-  }
-
-  cpg = code("""
-      | package main
-      |
-      |import (
-      |	"bytes"
-      |	"encoding/json"
-      |	"fmt"
-      |	"net/http"
-      |)
-      |
-      |type User struct {
-      |	FirstName     string
-      |	Age      int
-      |	Location string
-      |	Email    string
-      |}
-      |func (client *APIClient) SendUser(user User) error {
-      |	gateway_url := "https://api.example.com"
-      |	payload, err := json.Marshal(user)
-      |	if err != nil {
-      |		return err
-      |	}
-      |
-      |	resp, err := http.Post(gateway_url, "application/json", bytes.NewBuffer(payload))
-      |	if err != nil {
-      |		return err
-      |	}
-      |	defer resp.Body.Close()
-      |
-      |	if resp.StatusCode != http.StatusOK {
-      |		return fmt.Errorf("failed to send user: %s", resp.Status)
-      |	}
-      |
-      |	fmt.Println("User sent successfully!")
-      |	return nil
-      |}
-      |
-      |func main() {
-      |	// Create a new User object
-      |	user := User{
-      |		Name:     "John Doe",
-      |		Age:      25,
-      |		Location: "New York",
-      |		Email: "abc@gmailin.com",
-      |	}
-      |
-      |	// Create a new API client
-      |	client := APIClient{
-      |		BaseURL: "https://api.example.com",
-      |	}
-      |
-      |	// Send the User object to the API client
-      |	err := client.SendUser(user)
-      |	if err != nil {
-      |		fmt.Printf("Error sending user: %s\n", err.Error())
-      |	}
-      |}
-      |
-      |""".stripMargin)
-
   "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
+    val (cpg, _) = code("""
+        | package main
+        |
+        |import (
+        |	"bytes"
+        |	"encoding/json"
+        |	"fmt"
+        |	"net/http"
+        |)
+        |
+        |type User struct {
+        |	FirstName     string
+        |	Age      int
+        |	Location string
+        |	Email    string
+        |}
+        |func (client *APIClient) SendUser(user User) error {
+        |	gateway_url := "https://api.example.com"
+        |	payload, err := json.Marshal(user)
+        |	if err != nil {
+        |		return err
+        |	}
+        |
+        |	resp, err := http.Post(gateway_url, "application/json", bytes.NewBuffer(payload))
+        |	if err != nil {
+        |		return err
+        |	}
+        |	defer resp.Body.Close()
+        |
+        |	if resp.StatusCode != http.StatusOK {
+        |		return fmt.Errorf("failed to send user: %s", resp.Status)
+        |	}
+        |
+        |	fmt.Println("User sent successfully!")
+        |	return nil
+        |}
+        |
+        |func main() {
+        |	// Create a new User object
+        |	user := User{
+        |		Name:     "John Doe",
+        |		Age:      25,
+        |		Location: "New York",
+        |		Email: "abc@gmailin.com",
+        |	}
+        |
+        |	// Create a new API client
+        |	client := APIClient{
+        |		BaseURL: "https://api.example.com",
+        |	}
+        |
+        |	// Send the User object to the API client
+        |	err := client.SendUser(user)
+        |	if err != nil {
+        |		fmt.Printf("Error sending user: %s\n", err.Error())
+        |	}
+        |}
+        |
+        |""".stripMargin)
 
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
