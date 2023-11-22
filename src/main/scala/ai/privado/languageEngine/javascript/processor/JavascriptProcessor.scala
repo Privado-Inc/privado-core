@@ -33,7 +33,13 @@ import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser}
+import ai.privado.passes.{
+  AndroidXmlParserPass,
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  SQLParser
+}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -74,6 +80,7 @@ object JavascriptProcessor {
         new JSPropertyLinkerPass(cpg).createAndApply()
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
         new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
