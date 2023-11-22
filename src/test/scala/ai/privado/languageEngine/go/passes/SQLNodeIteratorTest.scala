@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.go.passes
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.Constants
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
@@ -24,7 +24,7 @@ class SQLColumnNodePass(cpg: Cpg) extends PrivadoParallelCpgPass[Integer](cpg) {
   }
 }
 
-class SQLNodeIteratorTest extends GoTaggingTestBase {
+class SQLNodeIteratorTest extends GoTestBase {
 
   "Check and iterate over column node" should {
     val (cpg, _) = code("".stripMargin)

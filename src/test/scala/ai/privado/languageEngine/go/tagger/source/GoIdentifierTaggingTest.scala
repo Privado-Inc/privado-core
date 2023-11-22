@@ -22,11 +22,11 @@
  */
 package ai.privado.languageEngine.go.tagger.source
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
-class GoIdentifierTaggingTest extends GoTaggingTestBase {
+class GoIdentifierTaggingTest extends GoTestBase {
 
   "Tagging derived sources" should {
     val (cpg, _) = code("""
@@ -54,7 +54,7 @@ class GoIdentifierTaggingTest extends GoTaggingTestBase {
     "tag member in a structure" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
     }
 
     "tag user(of type structure) object" in {
@@ -62,7 +62,7 @@ class GoIdentifierTaggingTest extends GoTaggingTestBase {
       userIdentifier.tag
         .where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
         .value
-        .head shouldBe "Data.Sensitive.FirstName"
+        .head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
       userIdentifier.tag.where(_.nameExact(Constants.id)).size shouldBe 1
       userIdentifier.tag.where(_.nameExact(Constants.catLevelOne)).value.head shouldBe "DerivedSources"
     }

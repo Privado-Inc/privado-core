@@ -22,11 +22,11 @@
  */
 package ai.privado.languageEngine.go.passes
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.semantic.Language.*
 import io.shiftleft.semanticcpg.language.*
 
-class SQLQueryParserTest extends GoTaggingTestBase {
+class SQLQueryParserTest extends GoTestBase {
 
   "Check SQL nodes" should {
     val (cpg, _) = code("""

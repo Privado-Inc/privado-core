@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.go.tagger
+package ai.privado.languageEngine.go
 
 import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
@@ -47,7 +47,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import scala.collection.mutable
 
-abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
+abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
 
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
@@ -55,11 +55,43 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
 
   val sourceRule = List(
     RuleInfo(
-      "Data.Sensitive.FirstName",
+      "Data.Sensitive.PersonalIdentification.FirstName",
       "FirstName",
       "",
       Array(),
       List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.LastName",
+      "LastName",
+      "",
+      Array(),
+      List("(?i).*lastName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.DateofBirth",
+      "Date of Birth",
+      "",
+      Array(),
+      List("(?i).*dob.*"),
       false,
       "",
       Map(),
@@ -76,6 +108,38 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
       "",
       Array(),
       List("(?i).*email.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.ContactData.PhoneNumber",
+      "Phone",
+      "",
+      Array(),
+      List("(?i).*phone.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.FinancialData.Salary",
+      "Salary",
+      "",
+      Array(),
+      List("(?i).*salary.*"),
       true,
       "",
       Map(),
@@ -248,7 +312,6 @@ abstract class GoTaggingTestBase extends AnyWordSpec with Matchers with BeforeAn
     val inputDir     = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)
     (inputDir / s"generalFile${fileExtension}").write(code)
-    (inputDir / "unrelated.file").write("foo")
     val outputFile: File = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
     val config = Config()

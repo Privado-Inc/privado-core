@@ -22,11 +22,11 @@
  */
 package ai.privado.languageEngine.go.tagger.sink
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
+import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
-class GoAPITaggerTestCase1 extends GoTaggingTestBase {
+class GoAPITaggerTestCase1 extends GoTestBase {
 
   "Tagging api sink: When nothing is matching(identifier or url) it should tagged with API" should {
     val (cpg, _) = code("""
@@ -91,7 +91,7 @@ class GoAPITaggerTestCase1 extends GoTaggingTestBase {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -107,7 +107,7 @@ class GoAPITaggerTestCase1 extends GoTaggingTestBase {
 
 }
 
-class GoAPITaggerTestCase2 extends GoTaggingTestBase {
+class GoAPITaggerTestCase2 extends GoTestBase {
 
   "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
     val (cpg, _) = code("""
@@ -172,7 +172,7 @@ class GoAPITaggerTestCase2 extends GoTaggingTestBase {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -188,7 +188,7 @@ class GoAPITaggerTestCase2 extends GoTaggingTestBase {
 
 }
 
-class GoAPITaggerTestCase3 extends GoTaggingTestBase {
+class GoAPITaggerTestCase3 extends GoTestBase {
 
   "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
     val (cpg, _) = code("""
@@ -254,7 +254,7 @@ class GoAPITaggerTestCase3 extends GoTaggingTestBase {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
