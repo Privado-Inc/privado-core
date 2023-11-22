@@ -67,7 +67,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .where(_.file.name(ROUTES_FILE_PATTERN))
       .l
 
-    // sample route -> r.Get("/user/{id}", getUser)
+    // sample route -> r.Get("/user/{id}", getUser), r.Get("/user/{id}", handler.getUser)
     val collectionMethodsCache = collectionCallMethod
       .map { m =>
         if (m.argument.size >= 2) {
@@ -75,7 +75,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
             m.argument(1).code
 
           if (targetCollectionUrl.nonEmpty) {
-            val methodName             = m.argument(2).code
+            val methodName             = m.argument(2).code.split("\\.").lastOption.getOrElse("")
             val targetCollectionMethod = cpg.method.name(methodName).l
             if (targetCollectionMethod.nonEmpty) {
               methodUrlMap.addOne(targetCollectionMethod.head.id -> m.argument(1).code)
