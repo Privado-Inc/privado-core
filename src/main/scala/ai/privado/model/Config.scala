@@ -64,7 +64,7 @@ case class SourceFilter(isSensitive: Option[Boolean], sensitivity: String, name:
 
 case class SinkFilter(domains: List[String], sinkType: String, name: String)
 
-case class CollectionFilter(collectionType: String)
+case class CollectionFilter(collectionType: String, endPoint: String)
 
 case class DataFlow(
   sources: List[String],
@@ -133,7 +133,7 @@ object CirceEnDe {
               SourceFilter(None, "", ""),
               List[String](),
               SinkFilter(List[String](), "", ""),
-              CollectionFilter("")
+              CollectionFilter("", "")
             )
           ),
           repositories = repositories.getOrElse(List[String]()),
@@ -172,7 +172,12 @@ object CirceEnDe {
 
   implicit val decodeCollectionFilter: Decoder[CollectionFilter] = new Decoder[CollectionFilter] {
     override def apply(c: HCursor): Result[CollectionFilter] = {
-      Right(CollectionFilter(collectionType = c.downField(Constants.collectionType).as[String].getOrElse("")))
+      Right(
+        CollectionFilter(
+          collectionType = c.downField(Constants.collectionType).as[String].getOrElse(""),
+          endPoint = c.downField(Constants.endPoint).as[String].getOrElse("")
+        )
+      )
     }
   }
 
@@ -189,7 +194,7 @@ object CirceEnDe {
           sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "", "")),
           sinks = sinks.getOrElse(List[String]()),
           sinkFilters = sinkFilter.getOrElse(SinkFilter(List[String](), "", "")),
-          collectionFilters = collectionFilter.getOrElse(CollectionFilter(""))
+          collectionFilters = collectionFilter.getOrElse(CollectionFilter("", ""))
         )
       )
     }

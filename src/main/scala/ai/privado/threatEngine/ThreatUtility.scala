@@ -138,6 +138,32 @@ object ThreatUtility {
         }
     }
   }
+
+  def getCollectionNode(cpg: Cpg, collectionSourceId: String): Option[(String, CfgNode)] = {
+    println(collectionSourceId)
+    println(cpg.tag.where(_.nameExact(Constants.collectionSource)).value.toList)
+
+    def filterByCollectionSource(tag: Traversal[Tag]): Traversal[Tag] =
+      tag.where(_.nameExact(Constants.collectionSource)).where(_.valueExact(collectionSourceId))
+
+    Try(cpg.tag.where(filterByCollectionSource).identifier.head) match {
+      case Success(identifierNode) => Some(collectionSourceId, identifierNode)
+      case Failure(_) =>
+        Try(cpg.tag.where(filterByCollectionSource).literal.head) match {
+          case Success(literalNode) => Some(collectionSourceId, literalNode)
+          case Failure(_) =>
+            Try(cpg.tag.where(filterByCollectionSource).call.head) match {
+              case Success(callNode) => Some(collectionSourceId, callNode)
+              case Failure(_)        => None
+//                Try(cpg.tag.where(filterByCollectionSource).local.head) match {
+//                  case Success(localNode) => Some(collectionSourceId, localNode)
+//                  case Failure(_) => None
+//                }
+            }
+        }
+    }
+  }
+
   def getPIINameFromSourceId(input: String): String = {
     val words = input.split("\\.")
     words.lastOption.getOrElse(input)

@@ -176,7 +176,21 @@
                 "$id": "#root/policies/items/dataFlow/collectionFilters",
                 "title": "CollectionFilters",
                 "type": "object",
-                "default": null
+                "default": null,
+                "properties": {
+                  "collectionType": {
+                    "$id": "#root/policies/items/dataFlow/collectionFilters/sinkType",
+                    "title": "CollectionType",
+                    "type": "string",
+                    "default": ""
+                  },
+                  "endpoint": {
+                    "$id": "#root/policies/items/dataFlow/collectionFilters/endPoint",
+                    "title": "Endpoint",
+                    "type": "string",
+                    "default": ""
+                  }
+                }
               }
             }
           },
