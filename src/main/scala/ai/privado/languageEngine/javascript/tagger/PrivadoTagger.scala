@@ -25,6 +25,7 @@ package ai.privado.languageEngine.javascript.tagger
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
@@ -32,7 +33,7 @@ import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPI
 import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
-import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.tagger.source.{AndroidXmlPermissionTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -72,6 +73,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
     new CollectionTagger(cpg, ruleCache).createAndApply()
+
+    new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
     logger.info("Done with tagging")
 
