@@ -38,6 +38,7 @@ object Constants {
   val underScore       = "_"
   val apiUrl           = "apiUrl"
   val collectionSource = "collectionSource"
+  val android          = "android"
 
   // semantic
   val signature = "signature"
