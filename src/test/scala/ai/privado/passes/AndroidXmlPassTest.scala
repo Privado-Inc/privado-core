@@ -64,10 +64,13 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       "",
       Language.JAVA,
       Array()
-    ),
+    )
+  )
+
+  private val collections = List(
     RuleInfo(
-      "Data.Sensitive.Email",
-      "Email",
+      "Collections.Android.Form.Email",
+      "Android app email input",
       "",
       Array(),
       List("(?i).*email.*"),
@@ -76,8 +79,8 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       Map(),
       NodeType.REGULAR,
       "",
-      CatLevelOne.SOURCES,
-      "",
+      CatLevelOne.COLLECTIONS,
+      "android",
       Language.KOTLIN,
       Array()
     )
@@ -189,7 +192,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         .l
 
       taggedNodes.tag.where(_.nameExact(Constants.collectionSource)).value.headOption shouldBe Some("emailEditText")
-      taggedNodes.tag.where(_.nameExact(Constants.id)).value.headOption shouldBe Some("Data.Sensitive.Email")
+      taggedNodes.tag.where(_.nameExact(Constants.id)).value.headOption shouldBe Some("Collections.Android.Form.Email")
     }
   }
 
@@ -204,7 +207,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     val outputFile = File.newTemporaryFile()
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
-      ConfigAndRules(sources, List(), List(), List(), List(), List(), List(), List(), List(), List())
+      ConfigAndRules(sources, List(), collections, List(), List(), List(), List(), List(), List(), List())
     ruleCache.setRule(rule)
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new Kotlin2Cpg().createCpgWithOverlays(config).get

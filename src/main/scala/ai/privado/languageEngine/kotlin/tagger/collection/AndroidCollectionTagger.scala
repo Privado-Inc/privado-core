@@ -21,9 +21,9 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def generateParts(): Array[RuleInfo] =
-    ruleCache.getRule.sources.toArray
+    ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.android).toArray
 
-  override def runOnPart(builder: DiffGraphBuilder, sourceRuleInfo: RuleInfo): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, collectionRuleInfo: RuleInfo): Unit = {
     /* We have all the XML layout nodes in cpg.androidXmlLayoutNodes containing
      * parsed id (eg. `emailEditText`), node type (`<ExitText>`), line and col number. We now
      * find all points in code where the id is used and tag those nodes as collection points.
@@ -45,7 +45,7 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
 
     // For case (1), we want to tag the `fieldIdentifiers` here (`binding.emailEditText`).
     val fieldIdentifiers = cpg.androidXmlLayoutNode
-      .name(sourceRuleInfo.combinedRulePattern)
+      .name(collectionRuleInfo.combinedRulePattern)
       .flatMap { elem =>
         cpg.fieldAccess.astChildren.isFieldIdentifier.where(_.canonicalName(elem.name)).l
       }
@@ -53,7 +53,7 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
     if (fieldIdentifiers.nonEmpty) {
       fieldIdentifiers.foreach(node => {
         storeForTag(builder, node, ruleCache)(Constants.collectionSource, node.canonicalName)
-        addRuleTags(builder, node, sourceRuleInfo, ruleCache)
+        addRuleTags(builder, node, collectionRuleInfo, ruleCache)
       })
     }
     // TODO: for case (2), fieldIdentifier approach works for now, but we should ideally tag findViewById
