@@ -3,10 +3,13 @@ package ai.privado.policyEngine
 import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.exporter.CollectionExporter
 import ai.privado.languageEngine.java.tagger.source.InSensitiveCallTagger
+import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.sink.{JSAPITagger, RegularSinkTagger}
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
+import ai.privado.tagger.collection.WebFormsCollectionTagger
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
@@ -25,6 +28,38 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       Array(),
       List("(?i).*email.*"),
       true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVASCRIPT,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.Password",
+      "Password",
+      "",
+      Array(),
+      List("(?i).*password.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVASCRIPT,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.AccountName",
+      "Account Name",
+      "",
+      Array(),
+      List("(?i).*(user[^\\s/(;)#|,=!>]{0,5}name)"),
+      false,
       "",
       Map(),
       NodeType.REGULAR,
@@ -87,6 +122,43 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       CatLevelOne.SINKS,
       catLevelTwo = Constants.third_parties,
       Language.JAVASCRIPT,
+      Array()
+    )
+  )
+
+  val collectionRule = List(
+    RuleInfo(
+      "Collections.Express",
+      "Express framework restendpoint",
+      "",
+      Array(),
+      List("post|get|all|delete|put|patch|head|subscribe|unsubscribe"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.default,
+      Language.JAVASCRIPT,
+      Array()
+    ),
+    RuleInfo(
+      "Collections.Webforms",
+      "Webform data collection",
+      "",
+      Array(),
+      List(
+        "^<(?i)(?:\\w{0,}(input|upload)\\w{0,}|\\w{0,}(textarea|Text|TextBox|Select|Field|Autocomplete|Checkbox))[^>]*.*"
+      ),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      "webforms",
+      Language.DEFAULT,
       Array()
     )
   )
@@ -308,6 +380,268 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "Policy Executor: Collection Violations (API) with specific endPoint" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Sharing.Collection.API",
+      "Policy to restrict PII being collected to API endpoint",
+      "Example: Don't collect PII to API endpoint",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List(".*"),
+        SourceFilter(Option(false), "", ""),
+        List(".*"),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("api", "/v1/auth0/user/reset-pass")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |import ServerRoute from "@hapi/hapi";
+        |
+        |interface Auth0UserHandler {
+        |    resetPassword: (password) => string;
+        |    updateEmail: (emailId: string) => string;
+        |}
+        |
+        |export const v1Auth0UserRoutes = (handler: Auth0UserHandler): ServerRoute[] => [
+        |    {
+        |        method: "POST",
+        |        url: "/v1/auth0/user/reset-password",
+        |        handler: (password) => {
+        |            handler.resetPassword(password);
+        |        },
+        |        options: {
+        |            description: "Triggers a password reset email to be send to the provided email address.",
+        |            notes: ["Will return a success regardless if the email address is valid or not"],
+        |            auth: false
+        |        },
+        |    },
+        |    {
+        |        method: "GET",
+        |        path: "/v1/auth0/user/update-email",
+        |        handler: (emailId, userName) => {
+        |            console.log(emailId, userName);
+        |        },
+        |        options: {
+        |            description: "ADMIN ONLY. Updates the user's email address in Auth0 _only_.",
+        |            notes: ["To change a user's email address everywhere, use the profile-service endpoints"]
+        |        },
+        |    }
+        |]
+        |""".stripMargin)
+
+    val List(violationDataflowModel) = policyExecutor.getCollectionFlowsForPolicy(policySinkFilter).toList
+    "have a sourceId and violation dataflow model matched" in {
+      violationDataflowModel.sourceId shouldBe "Data.Sensitive.Password"
+      violationDataflowModel.detail shouldBe Some("\"/v1/auth0/user/reset-password\"")
+      violationDataflowModel.occurrence.get.sample shouldBe "password"
+      violationDataflowModel.occurrence.get.lineNumber shouldBe 13
+      violationDataflowModel.occurrence.get.columnNumber shouldBe 18
+      violationDataflowModel.occurrence.get.fileName shouldBe "sample.js"
+    }
+  }
+
+  "Policy Executor: Collections API Violations with source filters applied" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Collecting.AccountPassword.API",
+      "Policy to restrict Account Password being collected to API endpoint",
+      "Example: Don't process Account Password",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List("**"),
+        SourceFilter(Option(false), "", ""),
+        List(),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("", "")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |const axios = require('axios');
+        |const slack_web_url = 'https://axios.com/todos/1';
+        |
+        |interface Auth0UserHandler {
+        |    resetPassword: (password) => string;
+        |    updateEmail: (emailId: string) => string;
+        |}
+        |axios.get(slack_web_url, { "email": "XXXXXXXX"  })
+        |  .then((response: Auth0UserHandler) => {
+        |    console.log(response);
+        |  })
+        |  .catch((error) => {
+        |    console.error(error);
+        |  });
+        |""".stripMargin)
+    "have a processing sourceId matched" in {
+      val processingViolations = policyExecutor.getSourcesMatchingRegexForProcessing(policySinkFilter).toList
+      processingViolations shouldBe List("Data.Sensitive.Password")
+    }
+  }
+
+  "Policy Executor: Collection Violations (Form)" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Sharing.Collection.Form",
+      "Policy to restrict PII being collected from Form",
+      "Example: Don't collect PII from Forms",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List("**"),
+        SourceFilter(Option(false), "", ""),
+        List(".*"),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("form", "")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |import React from "react";
+        |import { Container } from "react-bootstrap";
+        |import { useAuthState } from "react-firebase-hooks/auth";
+        |import { useNavigate, useParams } from "react-router-dom";
+        |import { toast } from 'react-toastify';
+        |import PageTitle from "../../../Components/Shared/PageTitle/PageTitle";
+        |import auth from "../../../firebase.init";
+        |import useCourseDetails from "../../../hooks/useCourseDetails/useCourseDetails";
+        |import "./CheckOut.css";
+        |
+        |const CheckOut = () => {
+        |  const { serviceId } = useParams();
+        |  const [course] = useCourseDetails(serviceId);
+        |  const [user] = useAuthState(auth);
+        |  const navigate = useNavigate();
+        |  const handlePlaceOrder = event =>{
+        |    event.preventDefault();
+        |  }
+        |
+        |  return (
+        |    <Container className="w-50 mx-auto">
+        |      <PageTitle title="CheckOut"></PageTitle>
+        |              <form onSubmit={handlePlaceOrder}>
+        |                <input
+        |                  className="form-control"
+        |                  type="text"
+        |                  name="name"
+        |                  value={user.displayName}
+        |                  required readOnly
+        |                />
+        |
+        |                <input
+        |                  className="form-control"
+        |                  type="email"
+        |                  name="email"
+        |                  value={user.email}
+        |                  placeholder="E-mail Address"
+        |                  required readOnly
+        |                />
+        |                <input
+        |                  className="form-control"
+        |                  type="number"
+        |                  name="phone"
+        |                  autoComplete="off"
+        |                  required
+        |                  placeholder="01xxxxxxxxx"
+        |                />
+        |                <input id='submit' className="btn-danger fw-bold mt-3 w-50" value='Place Order' type="submit" />
+        |              </form>
+        |    </Container>
+        |  );
+        |};
+        |
+        |export default CheckOut;
+        |""".stripMargin)
+
+    val List(violationDataflowModel) = policyExecutor.getCollectionFlowsForPolicy(policySinkFilter).toList
+    "have a sourceId and violation dataflow model matched" in {
+      violationDataflowModel.sourceId shouldBe "Data.Sensitive.ContactData.EmailAddress"
+      violationDataflowModel.detail shouldBe Some("sample.js")
+      violationDataflowModel.occurrence.get.sample shouldBe "<input\n                  className=\"form-control\"\n                  type=\"email\"\n                  name=\"email\"\n                  value={user.email}\n                  placeholder=\"E-mail Address\"\n                  required readOnly\n                />"
+      violationDataflowModel.occurrence.get.lineNumber shouldBe 33
+      violationDataflowModel.occurrence.get.columnNumber shouldBe 16
+      violationDataflowModel.occurrence.get.fileName shouldBe "sample.js"
+    }
+  }
+
+  "Policy Executor: Get only Processing Violations" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Processing.PIIs",
+      "Policy to restrict PIIs being processed",
+      "Example: Don't process piis",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List("Data.Sensitive.Password"),
+        SourceFilter(Option(false), "", ""),
+        List(),
+        SinkFilter(List[String](), "", ""),
+        CollectionFilter("api", "")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |const axios = require('axios');
+        |const slack_web_url = 'https://axios.com/todos/1';
+        |
+        |interface Auth0UserHandler {
+        |    resetPassword: (password) => string;
+        |    updateEmail: (emailId: string) => string;
+        |}
+        |
+        |export const v1Auth0UserRoutes = (handler: Auth0UserHandler): ServerRoute[] => [
+        |    {
+        |        method: "POST",
+        |        url: "/v1/auth0/user/reset-password",
+        |        handler: (password) => {
+        |            handler.resetPassword(password);
+        |        }
+        |    }
+        |]
+        |
+        |axios.get(slack_web_url, { "email": "XXXXXXXX"  })
+        |  .then((response: Auth0UserHandler) => {
+        |    console.log(response);
+        |  })
+        |  .catch((error) => {
+        |    console.error(error);
+        |  });
+        |""".stripMargin)
+    val List(violationDataflowModel) = policyExecutor.getCollectionFlowsForPolicy(policySinkFilter).toList
+    "have a sourceId and violation dataflow model matched" in {
+      violationDataflowModel.sourceId shouldBe "Data.Sensitive.Password"
+      violationDataflowModel.detail shouldBe Some("\"/v1/auth0/user/reset-password\"")
+      violationDataflowModel.occurrence.get.sample shouldBe "password"
+      violationDataflowModel.occurrence.get.lineNumber shouldBe 14
+      violationDataflowModel.occurrence.get.columnNumber shouldBe 18
+      violationDataflowModel.occurrence.get.fileName shouldBe "sample.js"
+    }
+  }
+
   def code(code: String): PolicyExecutor = {
     val inputDir = File.newTemporaryDirectory()
     (inputDir / "sample.js").write(code)
@@ -316,7 +650,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val privadoInput =
       PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
     val configAndRules =
-      ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
+      ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
     ScanProcessor.config = privadoInput
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
@@ -331,10 +665,13 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new IdentifierTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
     new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+    new CollectionTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
-
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache, privadoInput)
+    val collectionExporter = new CollectionExporter(cpg, ruleCache).getCollections
+    val policyExecutor =
+      new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache, privadoInput, collectionExporter)
     policyExecutor
   }
 }

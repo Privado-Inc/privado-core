@@ -100,9 +100,8 @@ class PolicyExecutor(
   /** Processes Processing style of policy and returns affected SourceIds
     */
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
-    val processingTypePolicy = policies.filter(policy =>
-      policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.equals(("", ""))
-    )
+    val processingTypePolicy =
+      policies.filter(policy => policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.equals(("", "")))
     val processingResult = processingTypePolicy
       .map(policy =>
         (
@@ -115,7 +114,9 @@ class PolicyExecutor(
   }
 
   def getCollectionViolations: Map[String, List[ViolationProcessingModel]] = {
-    val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.collectionType.nonEmpty)
+    val processingTypePolicy = policies.filter(policy =>
+      policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.collectionType.nonEmpty
+    )
     val collectionResult = processingTypePolicy
       .map(policy => (policy.id, getCollectionFlowsForPolicy(policy).toList))
       .toMap
@@ -138,7 +139,6 @@ class PolicyExecutor(
     val collectionEndpoint             = policy.dataFlow.collectionFilters.endPoint
     val endpointPattern: Option[Regex] = Some(collectionEndpoint.r)
     val FORM_TYPE_ID                   = "Collections.Webforms"
-
     val filteredCollections = collections.filter { collectionModel =>
       if (isCollectionOfFormType) collectionModel.collectionId == FORM_TYPE_ID
       else !collectionModel.collectionId.equals(FORM_TYPE_ID)
@@ -169,14 +169,17 @@ class PolicyExecutor(
     filteredCollections.foreach { cM =>
       cM.collections.foreach { collection =>
         val sourceId = collection.sourceId
-        if (sourceMatchingIds.contains(sourceId)) {
+        if (sourceMatchingIds.isEmpty) {
+          collection.occurrences.foreach { oc =>
+            checkAndAddViolationModel(sourceId, oc)
+          }
+        } else if (sourceMatchingIds.contains(sourceId)) {
           collection.occurrences.foreach { oc =>
             checkAndAddViolationModel(sourceId, oc)
           }
         }
       }
     }
-
     violatingProcessingList
   }
 
