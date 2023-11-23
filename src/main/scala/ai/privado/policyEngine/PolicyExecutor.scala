@@ -25,7 +25,7 @@ package ai.privado.policyEngine
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
-import ai.privado.threatEngine.ThreatUtility.{getCollectionNode, getSourceNode}
+import ai.privado.threatEngine.ThreatUtility.{getSourceNode}
 import ai.privado.model.exporter.{
   CollectionModel,
   CollectionOccurrenceDetailModel,
@@ -101,7 +101,7 @@ class PolicyExecutor(
     */
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
     val processingTypePolicy = policies.filter(policy =>
-      policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.collectionType.isEmpty
+      policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.equals(("", ""))
     )
     val processingResult = processingTypePolicy
       .map(policy =>
@@ -115,7 +115,7 @@ class PolicyExecutor(
   }
 
   def getCollectionViolations: Map[String, List[ViolationProcessingModel]] = {
-    val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
+    val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.collectionType.nonEmpty)
     val collectionResult = processingTypePolicy
       .map(policy => (policy.id, getCollectionFlowsForPolicy(policy).toList))
       .toMap

@@ -25,7 +25,7 @@ class GoThreatTests extends GoTestBase {
         SourceFilter(Option(true), "", ""),
         List[String](),
         SinkFilter(List[String](), "", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List("**"),
       Map[String, String](),
@@ -200,7 +200,7 @@ class GoThreatTests extends GoTestBase {
         SourceFilter(Option(true), "", ""),
         List[String](),
         SinkFilter(List[String](), "", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List("**"),
       Map[String, String](),
@@ -375,7 +375,7 @@ class GoThreatTests extends GoTestBase {
         SourceFilter(Option(true), "", ""),
         List[String](),
         SinkFilter(List[String](), "", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List("**"),
       Map[String, String](),

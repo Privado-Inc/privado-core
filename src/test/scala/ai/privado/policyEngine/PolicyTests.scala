@@ -142,7 +142,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         SourceFilter(Option(true), "", ""),
         List("Leakages.Log.*"),
         SinkFilter(List[String](), "", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List(".*"),
       Map[String, String](),
@@ -181,7 +181,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         SourceFilter(Option(true), "", ""),
         List(".*"),
         SinkFilter(List[String](), "ThirdParties.API", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List(".*"),
       Map[String, String](),
@@ -229,7 +229,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         SourceFilter(Option(true), "", "(?i).*email.*"),
         List(".*"),
         SinkFilter(List[String]("drive.google.com"), "", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List(".*"),
       Map[String, String](),
@@ -277,7 +277,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         SourceFilter(Option(true), "", ""),
         List(".*"),
         SinkFilter(List[String]("axios.com"), "", ""),
-        CollectionFilter("")
+        CollectionFilter("", "")
       ),
       List(".*"),
       Map[String, String](),
