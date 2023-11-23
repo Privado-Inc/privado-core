@@ -138,6 +138,7 @@ object ThreatUtility {
         }
     }
   }
+
   def getPIINameFromSourceId(input: String): String = {
     val words = input.split("\\.")
     words.lastOption.getOrElse(input)

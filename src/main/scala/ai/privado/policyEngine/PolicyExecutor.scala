@@ -25,8 +25,15 @@ package ai.privado.policyEngine
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
-import ai.privado.threatEngine.ThreatUtility.getSourceNode
-import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
+import ai.privado.threatEngine.ThreatUtility.{getSourceNode}
+import ai.privado.model.exporter.{
+  CollectionModel,
+  CollectionOccurrenceDetailModel,
+  CollectionOccurrenceModel,
+  DataFlowSubCategoryPathExcerptModel,
+  ViolationDataFlowModel,
+  ViolationProcessingModel
+}
 import ai.privado.exporter.SourceExporter
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
@@ -45,7 +52,8 @@ class PolicyExecutor(
   dataFlowCache: DataFlowCache,
   repoName: String,
   ruleCache: RuleCache,
-  privadoInput: PrivadoInput
+  privadoInput: PrivadoInput,
+  collections: List[CollectionModel] = List[CollectionModel]()
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -92,7 +100,8 @@ class PolicyExecutor(
   /** Processes Processing style of policy and returns affected SourceIds
     */
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
-    val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
+    val processingTypePolicy =
+      policies.filter(policy => policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.equals(("", "")))
     val processingResult = processingTypePolicy
       .map(policy =>
         (
@@ -104,6 +113,16 @@ class PolicyExecutor(
     processingResult
   }
 
+  def getCollectionViolations: Map[String, List[ViolationProcessingModel]] = {
+    val processingTypePolicy = policies.filter(policy =>
+      policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.collectionType.nonEmpty
+    )
+    val collectionResult = processingTypePolicy
+      .map(policy => (policy.id, getCollectionFlowsForPolicy(policy).toList))
+      .toMap
+    collectionResult
+  }
+
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
   def getDataflowViolations: Map[String, mutable.HashSet[ViolationDataFlowModel]] = {
@@ -111,6 +130,57 @@ class PolicyExecutor(
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
       .toMap
     dataflowResult
+  }
+
+  def getCollectionFlowsForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationProcessingModel] = {
+    val violatingProcessingList        = mutable.HashSet[ViolationProcessingModel]()
+    val sourceMatchingIds              = getSourcesMatchingRegex(policy)
+    val isCollectionOfFormType         = policy.dataFlow.collectionFilters.collectionType.equals("form")
+    val collectionEndpoint             = policy.dataFlow.collectionFilters.endPoint
+    val endpointPattern: Option[Regex] = Some(collectionEndpoint.r)
+    val FORM_TYPE_ID                   = "Collections.Webforms"
+    val filteredCollections = collections.filter { collectionModel =>
+      if (isCollectionOfFormType) collectionModel.collectionId == FORM_TYPE_ID
+      else !collectionModel.collectionId.equals(FORM_TYPE_ID)
+    }
+
+    def createViolationProcessingModel(sourceId: String, oc: CollectionOccurrenceModel): ViolationProcessingModel =
+      ViolationProcessingModel(
+        sourceId = sourceId,
+        occurrence = Some(
+          DataFlowSubCategoryPathExcerptModel(
+            sample = oc.sample,
+            lineNumber = oc.lineNumber,
+            columnNumber = oc.columnNumber,
+            fileName = oc.fileName,
+            excerpt = oc.excerpt
+          )
+        ),
+        detail = Some(oc.endPoint)
+      )
+
+    def checkAndAddViolationModel(sourceId: String, oc: CollectionOccurrenceModel): Unit = {
+      val endpoint                 = oc.endPoint
+      val violationProcessingModel = createViolationProcessingModel(sourceId, oc)
+      if (collectionEndpoint.isEmpty || endpointPattern.exists(pattern => pattern.findFirstIn(endpoint).nonEmpty))
+        violatingProcessingList.add(violationProcessingModel)
+    }
+
+    filteredCollections.foreach { cM =>
+      cM.collections.foreach { collection =>
+        val sourceId = collection.sourceId
+        if (sourceMatchingIds.isEmpty) {
+          collection.occurrences.foreach { oc =>
+            checkAndAddViolationModel(sourceId, oc)
+          }
+        } else if (sourceMatchingIds.contains(sourceId)) {
+          collection.occurrences.foreach { oc =>
+            checkAndAddViolationModel(sourceId, oc)
+          }
+        }
+      }
+    }
+    violatingProcessingList
   }
 
   def getViolatingFlowsForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationDataFlowModel] = {
