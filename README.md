@@ -62,5 +62,6 @@ When this library is opened in settings, right click on it again, click on the d
 
 ![image](./screenshots/java_lib_rm2.png)
 
+
 ## License
 Privado OSS is distributed under the GNU LESSER GENERAL PUBLIC LICENSE (LGPL 3.0).  This application may only be used in compliance with the License. In lieu of applicable law or written agreement, software distributed under the License is distributed "AS IS", VOID OF ALL WARRANTIES OR CONDITIONS. For specific details regarding permissions and restrictions, see [COPYING](/COPYING) and [COPYING.LESSER](/COPYING.LESSER)
