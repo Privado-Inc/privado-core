@@ -24,7 +24,15 @@ package ai.privado.semantic
 
 import ai.privado.dataflow.Dataflow
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{File, SqlColumnNode, SqlQueryNode, SqlTableNode, DbNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  File,
+  SqlColumnNode,
+  SqlQueryNode,
+  SqlTableNode,
+  DbNode,
+  AndroidXmlLayoutNode,
+  AndroidXmlPermissionNode
+}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import overflowdb.traversal._
 import scala.util.Try
@@ -83,6 +91,16 @@ object Language {
     def sqlQuery: Option[SqlQueryNode] =
       node.start.in(EdgeTypes.AST).collectFirst { case sqlNode: SqlQueryNode => sqlNode }
 
+  }
+
+  implicit class NodeStarterForAndroidXmlLayoutNode(cpg: Cpg) {
+    def androidXmlLayoutNode: Traversal[AndroidXmlLayoutNode] =
+      cpg.graph.nodes(NodeTypes.ANDROID_XML_LAYOUT_NODE).asScala.cast[AndroidXmlLayoutNode]
+  }
+
+  implicit class NodeStarterForAndroidXmlPermissionNode(cpg: Cpg) {
+    def androidXmlPermissionNode: Traversal[AndroidXmlPermissionNode] =
+      cpg.graph.nodes(NodeTypes.ANDROID_XML_PERMISSION_NODE).asScala.cast[AndroidXmlPermissionNode]
   }
 
 }

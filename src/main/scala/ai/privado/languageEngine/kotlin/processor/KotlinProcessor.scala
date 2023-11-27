@@ -19,6 +19,7 @@ import ai.privado.model.Constants.{
 }
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{
+  AndroidXmlParserPass,
   DBTParserPass,
   ExperimentalLambdaDataFlowSupportPass,
   HTMLParserPass,
@@ -66,7 +67,8 @@ class KotlinProcessor(
       new JavaPropertyLinkerPass(cpg),
       new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
-      new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache)
+      new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache),
+      new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
     )
   }
 

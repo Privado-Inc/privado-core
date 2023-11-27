@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.go.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.go.passes.orm.BaseORMParser
+import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.model.Constants
 import ai.privado.model.Constants.defaultLineNumber
 import ai.privado.model.sql.{SQLColumn, SQLQuery}

@@ -63,7 +63,7 @@ private class RecoverForRubyFile(
     resolvedImport <- i.call.tag
     alias          <- i.importedAs
   } {
-    import io.joern.x2cpg.passes.frontend.ImportsPass._
+    import io.shiftleft.semanticcpg.language.importresolver._
     EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
       case ResolvedTypeDecl(fullName, _) =>
         symbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(alias)), fullName)

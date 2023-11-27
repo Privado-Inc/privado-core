@@ -25,13 +25,13 @@ package ai.privado.languageEngine.ruby.passes
 
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.passes.frontend.{CallAlias, ImportsPass, LocalKey, LocalVar, SymbolTable, XImportsPass}
+import io.joern.x2cpg.passes.frontend.{CallAlias, LocalKey, LocalVar, SymbolTable, XImportsPass}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Imports.createImportNodeAndLink
-import io.joern.x2cpg.passes.frontend.ImportsPass.{ResolvedMethod, ResolvedTypeDecl}
+import io.shiftleft.semanticcpg.language.importresolver.{ResolvedMethod, ResolvedTypeDecl}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, NewCall, NewFile}
 import io.shiftleft.semanticcpg.language.*
 
