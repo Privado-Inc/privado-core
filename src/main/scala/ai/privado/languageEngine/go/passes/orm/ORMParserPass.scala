@@ -60,7 +60,8 @@ class ORMParserPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
       .map(x => x.stripPrefix("*"))
       .dedup
       .l
-    cpg.typeDecl.fullName(typeFullNames.mkString("|")).dedup.toArray
+    val typeFullNameRegex = typeFullNames.mkString("|").replace("[]", "").replace("*", "")
+    cpg.typeDecl.fullName(typeFullNameRegex).dedup.toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, model: TypeDecl): Unit = {

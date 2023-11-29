@@ -48,7 +48,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
   /** Processes collection points and return final output
     */
   def getCollections: List[CollectionModel] = {
-    getCollectionsByMethods ++ getCollectionsByTemplateDom
+    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds
   }
 
   def getCollectionsByTemplateDom: List[CollectionModel] = {
@@ -58,6 +58,52 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       .groupBy(collectionTemplateDom => collectionTemplateDom.tag.nameExact(Constants.id).value.head)
 
     collectionMapByCollectionId.map(entrySet => processByCollectionIdForTemplateDom(entrySet._1, entrySet._2)).toList
+  }
+
+  def getCollectionsByAndroidXmlFieldIds: List[CollectionModel] = {
+    val collectionMapByCollectionId = cpg.fieldAccess.astChildren.isFieldIdentifier
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+      .l
+      .groupBy(collectionTemplateDom => collectionTemplateDom.tag.nameExact(Constants.id).value.head)
+
+    collectionMapByCollectionId
+      .map(entrySet => processByCollectionIdForAndroidXmlFieldIds(entrySet._1, entrySet._2))
+      .toList
+  }
+
+  private def processByCollectionIdForAndroidXmlFieldIds(
+    collectionId: String,
+    collectionAndroidXmlFieldIds: List[FieldIdentifier]
+  ) = {
+
+    val collectionAndroidXmlFieldIdMapById = mutable.HashMap[String, ListBuffer[FieldIdentifier]]()
+
+    collectionAndroidXmlFieldIds.foreach(fieldId => {
+      try {
+        fieldId.tag
+          .nameExact(Constants.collectionSource)
+          .value
+          .foreach(x => addToMap(x, collectionAndroidXmlFieldIdMapById, fieldId))
+      } catch {
+        case e: Exception => logger.debug("Exception : ", e)
+      }
+    })
+
+    def addToMap[T](literalId: String, mapper: mutable.HashMap[String, ListBuffer[T]], node: T): Unit = {
+      if (!mapper.contains(literalId))
+        mapper(literalId) = ListBuffer()
+      mapper(literalId).append(node)
+    }
+
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
+    CollectionModel(
+      collectionId,
+      ruleInfo.name,
+      ruleInfo.isSensitive,
+      collectionAndroidXmlFieldIdMapById
+        .map(entrySet => processByAndroidXmlFieldIds(entrySet._1, entrySet._2.toList))
+        .toList
+    )
   }
 
   private def processByCollectionIdForTemplateDom(collectionId: String, collectionTemplateDoms: List[TemplateDom]) = {
@@ -232,6 +278,33 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
               Some(
                 CollectionOccurrenceModel(
                   templateDom.file.name.headOption.getOrElse(""),
+                  pathElement.sample,
+                  pathElement.lineNumber,
+                  pathElement.columnNumber,
+                  pathElement.fileName,
+                  pathElement.excerpt
+                )
+              )
+            case None => None
+          }
+        })
+    )
+  }
+
+  def processByAndroidXmlFieldIds(
+    fieldIdentifierId: String,
+    fieldIdentiferOccurances: List[FieldIdentifier]
+  ): CollectionOccurrenceDetailModel = {
+
+    CollectionOccurrenceDetailModel(
+      fieldIdentifierId,
+      fieldIdentiferOccurances
+        .flatMap(fieldId => {
+          ExporterUtility.convertIndividualPathElement(fieldId) match {
+            case Some(pathElement) =>
+              Some(
+                CollectionOccurrenceModel(
+                  fieldId.file.name.headOption.getOrElse(""),
                   pathElement.sample,
                   pathElement.lineNumber,
                   pathElement.columnNumber,
