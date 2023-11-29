@@ -365,7 +365,7 @@ class ORMParserTest extends GoTestBase {
           |  booksCollection := client.Database("testdb").Collection("books")
           |  book1 := Book{"Animal Farm", "George Orwell", "0451526341", "Signet Classics", 100}
           |  book2 := &book1
-          |  insertResult, err := booksCollection.InsertOne(context.TODO(), book2)
+          |  insertResult, err := booksCollection.InsertOne(context.TODO(), &book2)
           |  if err != nil {
           |      log.Fatal(err)
           |  }
