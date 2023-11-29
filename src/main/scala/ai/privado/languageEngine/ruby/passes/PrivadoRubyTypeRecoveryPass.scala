@@ -150,7 +150,7 @@ private class RecoverForRubyFile(
   override def visitStatementsInBlock(b: Block, assignmentTarget: Option[Identifier] = None): Set[String] = {
     b.astChildren
       .map {
-        case x: Call if x.name.startsWith(Operators.assignment) => visitAssignments(new Assignment(x))
+        case x: Call if x.name.startsWith(Operators.assignment) => visitAssignments(x.asInstanceOf[Assignment])
         case x: Call if x.name.startsWith("<operator>") && assignmentTarget.isDefined =>
           visitIdentifierAssignedToOperator(assignmentTarget.get, x, x.name)
         case x: Identifier if symbolTable.contains(x)       => symbolTable.get(x)
@@ -248,8 +248,8 @@ private class RecoverForRubyFile(
   override def getTypesFromCall(c: Call): Set[String] = c.name match {
     case Operators.fieldAccess =>
       symbolTable
-        .get(LocalVar(getFieldName(new FieldAccess(c))))
-        .union(globalSymbolTable.get(LocalVar(getFieldName(new FieldAccess(c)))))
+        .get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
+        .union(globalSymbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess]))))
     case _ if symbolTable.contains(c)       => methodReturnValues(symbolTable.get(c).toSeq)
     case _ if globalSymbolTable.contains(c) => globalSymbolTable.get(c)
     case Operators.indexAccess              => getIndexAccessTypes(c)
@@ -295,7 +295,7 @@ private class RecoverForRubyFile(
           Set.empty
       }
     } else if (c.name.equals(Operators.fieldAccess)) {
-      val fa        = new FieldAccess(c)
+      val fa        = c.asInstanceOf[FieldAccess]
       val fieldName = getFieldName(fa)
       associateTypes(LocalVar(fieldName), fa, getLiteralType(l))
     } else {
@@ -325,7 +325,7 @@ private class RecoverForRubyFile(
         val dummyTypes = Set(s"$fieldName$pathSep${XTypeRecovery.DummyReturnType}")
         associateInterproceduralTypes(i, base, fi, fieldName, dummyTypes)
       case ::(c: Call, ::(fi: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
-        val baseName = getFieldName(new FieldAccess(c))
+        val baseName = getFieldName(c.asInstanceOf[FieldAccess])
         // Build type regardless of length
         // TODO: This is more prone to giving dummy values as it does not do global look-ups
         //  but this is okay for now
@@ -377,7 +377,7 @@ private class RecoverForRubyFile(
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
         Set(head.typeFullName)
       case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
-        val fieldAccess = new FieldAccess(head)
+        val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
         val cpgTypes = cpg.typeDecl
           .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
@@ -518,7 +518,7 @@ private class RecoverForRubyFile(
       // Case 3: 'i' is the receiver for a field access on member 'f'
       case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
           if fieldAccess.name == Operators.fieldAccess =>
-        setTypeForFieldAccess(new FieldAccess(fieldAccess), i, f)
+        setTypeForFieldAccess(fieldAccess.asInstanceOf[FieldAccess], i, f)
       case _ =>
     }
     // Handle the node itself
