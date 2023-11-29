@@ -272,4 +272,123 @@ class ORMParserTest extends GoTestBase {
       copies.lineNumber shouldBe Some(20)
     }
   }
+
+  "Adding sql nodes for GORM framework having array object passed into db" should {
+    val (cpg, _) = code("""
+        package models
+        |
+        |import (
+        |	"github.com/jinzhu/gorm"
+        |)
+        |
+        |type User struct {
+        |	ID      string `gorm:"PRIMARY KEY; UNIQUE" json:"id"`
+        |	MyModel
+        |}
+        |
+        |var _ Model = &User{}
+        |
+        |func (u *User) Save(db *gorm.DB) error {
+        |	uuidResult, err := uuid.NewRandom()
+        |	if err != nil {
+        |		log.Fatal(err)
+        |	}
+        |
+        | users := []User{
+        |     {ID: 1, Name: "Alice", Age: 25},
+        |     {ID: 2, Name: "Bob", Age: 30},
+        |     {ID: 3, Name: "Charlie", Age: 22},
+        |  }
+        |
+        |	err = db.Save(users).Error
+        |	if err != nil {
+        |		return err
+        |	}
+        |	return nil
+        |}
+        |""".stripMargin)
+
+    "check table nodes" in {
+      val tableNodes = cpg.sqlTable.l
+      tableNodes.size shouldBe 1
+      tableNodes.head.name shouldBe "User"
+    }
+
+    "check query nodes" in {
+      val queryNodes = cpg.sqlQuery.l
+      queryNodes.size shouldBe 1
+      queryNodes.head.name shouldBe "CREATE"
+    }
+
+    "check column nodes" in {
+      val columnNodes = cpg.sqlColumn.l
+      columnNodes.size shouldBe 1
+
+      val List(id) = cpg.sqlColumn.l
+      id.code shouldBe "ID"
+    }
+  }
+
+  "SQL Node checks for Mongo having double pointer passed into db" should {
+    val (cpg, _) = code(
+      """
+          |package main
+          |
+          |import (
+          |    "context"
+          |    "fmt"
+          |    "log"
+          |
+          |    "go.mongodb.org/mongo-driver/bson"
+          |    "go.mongodb.org/mongo-driver/mongo"
+          |    "go.mongodb.org/mongo-driver/mongo/options"
+          |)
+          |
+          |type Book struct {
+          |  Title     string
+          |}
+          |
+          |func main() {
+          |  clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+          |  client, err := mongo.Connect(context.TODO(), clientOptions)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  err = client.Ping(context.TODO(), nil)
+          |
+          |  if err != nil {
+          |    log.Fatal(err)
+          |  }
+          |
+          |  booksCollection := client.Database("testdb").Collection("books")
+          |  book1 := Book{"Animal Farm", "George Orwell", "0451526341", "Signet Classics", 100}
+          |  book2 := &book1
+          |  insertResult, err := booksCollection.InsertOne(context.TODO(), &book2)
+          |  if err != nil {
+          |      log.Fatal(err)
+          |  }
+          |
+          |  fmt.Println("Inserted a single document: ", insertResult.InsertedID)
+          |}
+          |""".stripMargin,
+      downloadDependency = true
+    )
+
+    "check table nodes" in {
+      val tableNodes = cpg.sqlTable.l
+      tableNodes.size shouldBe 1
+      tableNodes.head.name shouldBe "Book"
+    }
+
+    "check column nodes" in {
+      val columnNodes = cpg.sqlColumn.l
+      columnNodes.size shouldBe 1
+
+      val List(title) = cpg.sqlColumn.l
+      title.code shouldBe "Title"
+      title.lineNumber shouldBe Some(15)
+    }
+  }
 }
