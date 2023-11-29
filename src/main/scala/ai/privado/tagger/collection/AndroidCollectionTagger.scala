@@ -1,19 +1,17 @@
-package ai.privado.languageEngine.kotlin.tagger.collection
+package ai.privado.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.*
 import ai.privado.passes.FileExtensions
-import ai.privado.semantic.Language._
-import ai.privado.utility.Utilities.*
-import org.slf4j.LoggerFactory
+import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.FieldIdentifier
+import org.slf4j.LoggerFactory
 
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.XML
 
 class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
