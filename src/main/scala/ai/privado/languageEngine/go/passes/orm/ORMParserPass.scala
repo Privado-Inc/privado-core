@@ -60,7 +60,7 @@ class ORMParserPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
       .map(x => x.stripPrefix("*"))
       .dedup
       .l
-    val typeFullNameRegex = typeFullNames.mkString("|").replace("[]", "")
+    val typeFullNameRegex = typeFullNames.mkString("|").replace("[]", "").replace("*", "")
     cpg.typeDecl.fullName(typeFullNameRegex).dedup.toArray
   }
 
