@@ -25,7 +25,6 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.feeder.PermissionSourceRule
-import ai.privado.languageEngine.kotlin.tagger.collection.AndroidCollectionTagger
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.kotlin2cpg.Config
@@ -38,6 +37,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.semantic.Language.*
+import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.source.AndroidXmlPermissionTagger
 
 import scala.collection.mutable
