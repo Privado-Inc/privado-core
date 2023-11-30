@@ -75,7 +75,6 @@ enablePlugins(JavaAppPackaging)
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-fork                          := true
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,
