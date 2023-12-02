@@ -25,6 +25,7 @@ package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.passes.read.{
   DatabaseQueryReadPass,
@@ -37,14 +38,16 @@ import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.collection.WebFormsCollectionTagger
+import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollectionTagger}
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+
+import java.nio.file.Paths
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -72,7 +75,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
     // Custom Rule tagging
-    if (!ScanProcessor.config.ignoreInternalRules) {
+    if (!privadoInputConfig.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
@@ -92,6 +95,14 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new GrpcCollectionTagger(cpg, ruleCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+
+    new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
+
+    new AndroidCollectionTagger(
+      cpg,
+      Paths.get(privadoInputConfig.sourceLocation.head).toAbsolutePath.toString,
+      ruleCache
+    ).createAndApply()
 
     logger.info("Done with tagging")
 

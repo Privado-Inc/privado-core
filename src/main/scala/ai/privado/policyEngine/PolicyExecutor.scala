@@ -25,8 +25,15 @@ package ai.privado.policyEngine
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
-import ai.privado.languageEngine.java.threatEngine.ThreatUtility.getSourceNode
-import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationProcessingModel}
+import ai.privado.threatEngine.ThreatUtility.{getSourceNode}
+import ai.privado.model.exporter.{
+  CollectionModel,
+  CollectionOccurrenceDetailModel,
+  CollectionOccurrenceModel,
+  DataFlowSubCategoryPathExcerptModel,
+  ViolationDataFlowModel,
+  ViolationProcessingModel
+}
 import ai.privado.exporter.SourceExporter
 import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
@@ -37,6 +44,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 class PolicyExecutor(
@@ -44,7 +52,8 @@ class PolicyExecutor(
   dataFlowCache: DataFlowCache,
   repoName: String,
   ruleCache: RuleCache,
-  privadoInput: PrivadoInput
+  privadoInput: PrivadoInput,
+  collections: List[CollectionModel] = List[CollectionModel]()
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -91,7 +100,8 @@ class PolicyExecutor(
   /** Processes Processing style of policy and returns affected SourceIds
     */
   def getProcessingViolations: Map[String, List[(String, CfgNode)]] = {
-    val processingTypePolicy = policies.filter(policy => policy.dataFlow.sinks.isEmpty)
+    val processingTypePolicy =
+      policies.filter(policy => policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.equals(("", "")))
     val processingResult = processingTypePolicy
       .map(policy =>
         (
@@ -103,6 +113,16 @@ class PolicyExecutor(
     processingResult
   }
 
+  def getCollectionViolations: Map[String, List[ViolationProcessingModel]] = {
+    val processingTypePolicy = policies.filter(policy =>
+      policy.dataFlow.sinks.isEmpty && policy.dataFlow.collectionFilters.collectionType.nonEmpty
+    )
+    val collectionResult = processingTypePolicy
+      .map(policy => (policy.id, getCollectionFlowsForPolicy(policy).toList))
+      .toMap
+    collectionResult
+  }
+
   /** Processes Dataflow style of policy and returns affected SourceIds
     */
   def getDataflowViolations: Map[String, mutable.HashSet[ViolationDataFlowModel]] = {
@@ -110,6 +130,57 @@ class PolicyExecutor(
       .map(policy => (policy.id, getViolatingFlowsForPolicy(policy)))
       .toMap
     dataflowResult
+  }
+
+  def getCollectionFlowsForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationProcessingModel] = {
+    val violatingProcessingList        = mutable.HashSet[ViolationProcessingModel]()
+    val sourceMatchingIds              = getSourcesMatchingRegex(policy)
+    val isCollectionOfFormType         = policy.dataFlow.collectionFilters.collectionType.equals("form")
+    val collectionEndpoint             = policy.dataFlow.collectionFilters.endPoint
+    val endpointPattern: Option[Regex] = Some(collectionEndpoint.r)
+    val FORM_TYPE_ID                   = "Collections.Webforms"
+    val filteredCollections = collections.filter { collectionModel =>
+      if (isCollectionOfFormType) collectionModel.collectionId == FORM_TYPE_ID
+      else !collectionModel.collectionId.equals(FORM_TYPE_ID)
+    }
+
+    def createViolationProcessingModel(sourceId: String, oc: CollectionOccurrenceModel): ViolationProcessingModel =
+      ViolationProcessingModel(
+        sourceId = sourceId,
+        occurrence = Some(
+          DataFlowSubCategoryPathExcerptModel(
+            sample = oc.sample,
+            lineNumber = oc.lineNumber,
+            columnNumber = oc.columnNumber,
+            fileName = oc.fileName,
+            excerpt = oc.excerpt
+          )
+        ),
+        detail = Some(oc.endPoint)
+      )
+
+    def checkAndAddViolationModel(sourceId: String, oc: CollectionOccurrenceModel): Unit = {
+      val endpoint                 = oc.endPoint
+      val violationProcessingModel = createViolationProcessingModel(sourceId, oc)
+      if (collectionEndpoint.isEmpty || endpointPattern.exists(pattern => pattern.findFirstIn(endpoint).nonEmpty))
+        violatingProcessingList.add(violationProcessingModel)
+    }
+
+    filteredCollections.foreach { cM =>
+      cM.collections.foreach { collection =>
+        val sourceId = collection.sourceId
+        if (sourceMatchingIds.isEmpty) {
+          collection.occurrences.foreach { oc =>
+            checkAndAddViolationModel(sourceId, oc)
+          }
+        } else if (sourceMatchingIds.contains(sourceId)) {
+          collection.occurrences.foreach { oc =>
+            checkAndAddViolationModel(sourceId, oc)
+          }
+        }
+      }
+    }
+    violatingProcessingList
   }
 
   def getViolatingFlowsForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationDataFlowModel] = {
@@ -163,6 +234,7 @@ class PolicyExecutor(
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {
+    val sourceFilters = policy.dataFlow.sourceFilters
     var matchingSourceIds = policy.dataFlow.sources
       .flatMap(policySourceRegex => {
         if (policySourceRegex.equals(ALL_MATCH_REGEX)) {
@@ -178,21 +250,27 @@ class PolicyExecutor(
       })
       .toSet
 
-    if (policy.dataFlow.sourceFilters.sensitivity.nonEmpty)
-      matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.sensitivity.equals(policy.dataFlow.sourceFilters.sensitivity)
-      )
+    if (sourceFilters.sensitivity.nonEmpty)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.sensitivity.equals(sourceFilters.sensitivity))
 
-    if (policy.dataFlow.sourceFilters.isSensitive.isDefined)
-      matchingSourceIds = matchingSourceIds.filter(
-        ruleCache.getRuleInfo(_).get.isSensitive == policy.dataFlow.sourceFilters.isSensitive.get
-      )
+    if (sourceFilters.isSensitive.isDefined)
+      matchingSourceIds =
+        matchingSourceIds.filter(ruleCache.getRuleInfo(_).get.isSensitive == sourceFilters.isSensitive.get)
+
+    if (sourceFilters.name.nonEmpty)
+      val namePattern: Option[Regex] = Some(sourceFilters.name.r)
+      matchingSourceIds = matchingSourceIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
+      }
 
     matchingSourceIds
   }
 
   private def getSinksMatchingRegex(policy: PolicyOrThreat) = {
-    policy.dataFlow.sinks
+    val sinkFilters = policy.dataFlow.sinkFilters
+    var matchingSinkIds = policy.dataFlow.sinks
       .flatMap(policySinkRegex => {
         if (policySinkRegex.equals(ALL_MATCH_REGEX)) {
           dataflowSinkIdMap.keys
@@ -207,6 +285,41 @@ class PolicyExecutor(
         }
       })
       .toSet
+    if (sinkFilters.sinkType.nonEmpty)
+      matchingSinkIds =
+        matchingSinkIds.filter(ruleCache.getRuleInfo(_).get.id.toLowerCase.contains(sinkFilters.sinkType.toLowerCase))
+
+    if (sinkFilters.domains.nonEmpty) {
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        // ----------------Covering Cases:
+        // Sinks.ThirdParties.API.mediaconvert.awsRegion.amazonaws.com
+        // Sinks.ThirdParties.API.axios.com
+        // ThirdParties.SDK.Sendgrid
+        // ----------------Not covered:
+        // Sinks.API.InternalAPI
+        // Sinks.ThirdParties.API
+        if (sinkId.contains(f"${Constants.thirdPartiesAPIRuleId}.")) {
+          sinkFilters.domains
+            .filter(d => {
+              val domainPattern: Regex = d.r
+              domainPattern.findFirstIn(sinkId).nonEmpty
+            })
+            .nonEmpty
+        } else {
+          ruleInfo.exists(info => info.domains.intersect(sinkFilters.domains).nonEmpty)
+        }
+      }
+    }
+
+    if (sinkFilters.name.nonEmpty)
+      val namePattern: Option[Regex] = Some(sinkFilters.name.r)
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
+      }
+
+    matchingSinkIds
   }
 
 }

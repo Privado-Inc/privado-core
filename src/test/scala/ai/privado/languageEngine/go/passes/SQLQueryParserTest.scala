@@ -22,38 +22,29 @@
  */
 package ai.privado.languageEngine.go.passes
 
-import ai.privado.languageEngine.go.tagger.GoTaggingTestBase
-import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
-import ai.privado.model.*
-import ai.privado.semantic.Language._
-import io.shiftleft.semanticcpg.language._
-import ai.privado.languageEngine.go.passes.SQLQueryParser
+import ai.privado.languageEngine.go.GoTestBase
+import ai.privado.semantic.Language.*
+import io.shiftleft.semanticcpg.language.*
 
-class SQLQueryParserTest extends GoTaggingTestBase {
-
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    new SQLQueryParser(cpg).createAndApply()
-  }
-
-  override val goFileContents =
-    """
-      package main
-      |
-      |func migrateDB(db *sql.DB) error {
-      |	createVotes := `CREATE TABLE IF NOT EXISTS votes (
-      |		id SERIAL NOT NULL,
-      |		created_at datetime NOT NULL,
-      |		candidate VARCHAR(6) NOT NULL,
-      |		PRIMARY KEY (id)
-      |	);`
-      |	_, err := db.Exec(createVotes)
-      |	return err
-      |}
-      |
-      |""".stripMargin
+class SQLQueryParserTest extends GoTestBase {
 
   "Check SQL nodes" should {
+    val (cpg, _) = code("""
+        package main
+        |
+        |func migrateDB(db *sql.DB) error {
+        |	createVotes := `CREATE TABLE IF NOT EXISTS votes (
+        |		id SERIAL NOT NULL,
+        |		created_at datetime NOT NULL,
+        |		candidate VARCHAR(6) NOT NULL,
+        |		PRIMARY KEY (id)
+        |	);`
+        |	_, err := db.Exec(createVotes)
+        |	return err
+        |}
+        |
+        |""".stripMargin)
+
     "check column nodes" in {
       val columnNodes = cpg.sqlColumn.l
       columnNodes.size shouldBe 3
@@ -68,7 +59,5 @@ class SQLQueryParserTest extends GoTaggingTestBase {
       val tableNodes = cpg.sqlTable.l
       tableNodes.size shouldBe 1
     }
-
   }
-
 }

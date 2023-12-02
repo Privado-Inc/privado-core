@@ -25,7 +25,7 @@ package ai.privado.languageEngine.ruby.passes
 
 import better.files.File
 import io.joern.rubysrc2cpg.deprecated.utils.{MethodTableModel, PackageTable}
-import io.joern.x2cpg.passes.frontend.ImportsPass.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
@@ -47,10 +47,10 @@ class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends X
     diffGraph: DiffGraphBuilder
   ): Unit = {
 
-    resolveEntities(importedEntity, importCall, fileName).foreach(x => resolvedImportToTag(x, importCall, diffGraph))
+    resolveEntities(importedEntity, importCall, fileName).foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
   }
 
-  private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[ResolvedImport] = {
+  private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[EvaluatedImport] = {
 
     // TODO
     /* Currently we are considering only case where exposed module are Classes,
@@ -120,13 +120,13 @@ class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends X
     }
 
     finalResolved
-  }
+  }.collectAll[EvaluatedImport].toSet
 
   def getResolvedPath(expEntity: String, fileName: String) = {
     val rawEntity   = expEntity.stripPrefix("./")
     val matcher     = pathPattern.matcher(rawEntity)
     val sep         = Matcher.quoteReplacement(JFile.separator)
-    val root        = s"$codeRoot${JFile.separator}"
+    val root        = s"$codeRootDir${JFile.separator}"
     val currentFile = s"$root$fileName"
     val entity      = if (matcher.find()) matcher.group(1) else rawEntity
     val resolvedPath = better.files

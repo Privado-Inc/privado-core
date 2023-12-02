@@ -50,6 +50,7 @@ object Utility {
       .code(s"return (?i)(this.)?$regexString(;)?")
       .method
       .callIn
+      .dedup
       .l ++ cpg.identifier
       .typeFullName(typeDeclFullName)
       .astParent
@@ -79,6 +80,7 @@ object Utility {
       .where(_.fullName(typeDeclFullName))
       .method
       .callIn
+      .dedup
       .typeFullName(returnType)
       .name(setterRegex)
       .l ++ cpg.identifier
@@ -98,11 +100,23 @@ object Utility {
     * @param regexString
     * @return
     */
-  def getFieldAccessCallsMatchingRegex(cpg: Cpg, typeDeclFullName: String, regexString: String): List[Call] = {
+  def getFieldAccessCallsMatchingRegex(
+    cpg: Cpg,
+    typeDeclFullName: String,
+    regexString: String,
+    cachedFieldAccess: Option[List[Call]] = None
+  ): List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
-    cpg.method
-      .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
-      .callIn
+
+    val fieldAccessCalls = cachedFieldAccess.getOrElse(
+      cpg.method
+        .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
+        .callIn
+        .dedup
+        .l
+    )
+
+    fieldAccessCalls
       .where(_.argument(1).isIdentifier.typeFullName(typeDeclFullName))
       .where(_.argument(2).code(s"(?i)$regexString"))
       .l

@@ -24,7 +24,7 @@ class PrivadoPySrcTestCpg extends PySrcTestCpg {
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
     new ImportsPass(this).createAndApply()
-    new ImportResolverPass(this).createAndApply()
+    new PythonImportResolverPass(this).createAndApply()
     new PythonInheritanceNamePass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
     new PythonTypeRecoveryPass(this).createAndApply()

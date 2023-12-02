@@ -28,7 +28,7 @@ jobs:
     needs: start_workflow
     strategy:
       matrix:
-        language: ['java', 'python', 'js', 'ruby-1', 'ruby-2']
+        language: ['java', 'python', 'js', 'ruby-1', 'ruby-2', 'go']
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
@@ -84,7 +84,7 @@ jobs:
         uses: adrey/slack-file-upload-action@master
         with:
           thread_ts: ${{needs.start_workflow.outputs.init_message_ts}}
-          channel: ${{ secrets.LANG_ENGINE_CHANNEL_ID }}
+          channel: ${{ secrets.LANG_ENGINE_CHANNEL_ID }} # check
           path: "/home/runner/work/privado-core/privado-core/temp/standalone-monitoring-stability/result-${{matrix.language}}.zip"
           initial_comment: "Comparison Results generated on ${{github.event.repository.name}}\n Language: ${{matrix.language}} \nSummary Report:\n ${{ env.MESSAGE }}"
           filetype: "zip"

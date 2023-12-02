@@ -25,9 +25,9 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.threatEngine.ThreatEngineExecutor
-import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
+import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel, CollectionModel}
 import ai.privado.policyEngine.PolicyExecutor
+import ai.privado.threatEngine.ThreatEngineExecutor
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
@@ -46,8 +46,11 @@ class PolicyAndThreatExporter(
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def getViolations(repoPath: String): List[ViolationModel] = {
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache, privadoInput)
+  def getViolations(
+    repoPath: String,
+    collections: List[CollectionModel] = List[CollectionModel]()
+  ): List[ViolationModel] = {
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache, privadoInput, collections)
     val threatExecutor =
       new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache, dataFlowCache, privadoInput)
 
@@ -60,6 +63,10 @@ class PolicyAndThreatExporter(
         .filter(entrySet => entrySet._2.nonEmpty)
         .map(policyViolationEntrySet =>
           convertDataflowPolicyViolation(policyViolationEntrySet._1, policyViolationEntrySet._2)
+        ) ++ policyExecutor.getCollectionViolations
+        .filter(entrySet => entrySet._2.nonEmpty)
+        .map(policyViolationEntrySet =>
+          convertCollectionPolicyViolation(policyViolationEntrySet._1, policyViolationEntrySet._2)
         )
     } catch {
       case e: Exception =>
@@ -74,6 +81,18 @@ class PolicyAndThreatExporter(
       ExporterUtility.getPolicyInfoForExporting(ruleCache, policyId),
       None,
       Some(sourceNodes.map(sourceNode => convertProcessingSources(sourceNode)))
+    )
+  }
+
+  def convertCollectionPolicyViolation(
+    policyId: String,
+    collectionViolationList: List[ViolationProcessingModel]
+  ): ViolationModel = {
+    ViolationModel(
+      policyId,
+      ExporterUtility.getPolicyInfoForExporting(ruleCache, policyId),
+      None,
+      Some(collectionViolationList)
     )
   }
 

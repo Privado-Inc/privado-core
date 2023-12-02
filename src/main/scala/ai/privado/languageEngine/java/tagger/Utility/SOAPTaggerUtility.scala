@@ -35,7 +35,7 @@ object SOAPTaggerUtility {
 
   def getAPICallNodes(cpg: Cpg): List[Call] = {
     implicit val resolver: ICallResolver = NoResolve
-    getAPIMethods(cpg).callIn.l
+    getAPIMethods(cpg).callIn.dedup.l
   }
 
 }

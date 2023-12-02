@@ -104,6 +104,13 @@ class RuleCache {
     }
   }
 
+  def getExclusionRegex: String = {
+    if (rule.exclusions.size == 1)
+      rule.exclusions.head.patterns.mkString("|")
+    else
+      rule.exclusions.map(rule => rule.patterns.mkString("(", "|", ")")).mkString("|")
+  }
+
   def getSystemConfigByKey(key: String, raw: Boolean = false): String = {
     if (rule.systemConfig.exists(config => config.key.equals(key))) {
       val valueList = rule.systemConfig.filter(config => config.key.equals(key)).map(config => config.value)

@@ -127,7 +127,10 @@ object JSONExporter {
         _collections
       }
 
-      val violationResult = Try(policyAndThreatExporter.getViolations(repoPath)).getOrElse(List[ViolationModel]())
+      val finalCollections = Await.result(collections, Duration.Inf)
+
+      val violationResult =
+        Try(policyAndThreatExporter.getViolations(repoPath, finalCollections)).getOrElse(List[ViolationModel]())
       output.addOne(Constants.violations -> violationResult.asJson)
 
       val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
@@ -172,7 +175,7 @@ object JSONExporter {
         Await.result(sources, Duration.Inf),
         Await.result(sinks, Duration.Inf),
         Await.result(processing, Duration.Inf),
-        Await.result(collections, Duration.Inf),
+        finalCollections,
         complianceViolations.size
       )
 

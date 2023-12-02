@@ -60,9 +60,19 @@ case class ConfigAndRules(
   auditConfig: List[RuleInfo]
 )
 
-case class SourceFilter(isSensitive: Option[Boolean], sensitivity: String)
+case class SourceFilter(isSensitive: Option[Boolean], sensitivity: String, name: String)
 
-case class DataFlow(sources: List[String], sourceFilters: SourceFilter, sinks: List[String])
+case class SinkFilter(domains: List[String], sinkType: String, name: String)
+
+case class CollectionFilter(collectionType: String, endPoint: String)
+
+case class DataFlow(
+  sources: List[String],
+  sourceFilters: SourceFilter,
+  sinks: List[String],
+  sinkFilters: SinkFilter,
+  collectionFilters: CollectionFilter
+)
 
 case class PolicyOrThreat(
   id: String,
@@ -117,7 +127,15 @@ object CirceEnDe {
           policyOrThreatType = PolicyThreatType.withNameDefaultHandler(policyOrThreatType.getOrElse("")),
           description = description.getOrElse(""),
           action = PolicyAction.withNameDefaultHandler(action.getOrElse("")),
-          dataFlow = dataFlow.getOrElse(DataFlow(List[String](), SourceFilter(None, ""), List[String]())),
+          dataFlow = dataFlow.getOrElse(
+            DataFlow(
+              List[String](),
+              SourceFilter(None, "", ""),
+              List[String](),
+              SinkFilter(List[String](), "", ""),
+              CollectionFilter("", "")
+            )
+          ),
           repositories = repositories.getOrElse(List[String]()),
           tags = tags.getOrElse(HashMap[String, String]()),
           config = config.getOrElse(HashMap[String, String]()),
@@ -133,7 +151,31 @@ object CirceEnDe {
       Right(
         SourceFilter(
           isSensitive = c.downField(Constants.isSensitive).as[Option[Boolean]].getOrElse(None),
-          sensitivity = c.downField(Constants.sensitivity).as[String].getOrElse("")
+          sensitivity = c.downField(Constants.sensitivity).as[String].getOrElse(""),
+          name = c.downField(Constants.name).as[String].getOrElse("")
+        )
+      )
+    }
+  }
+
+  implicit val decodeSinkFilter: Decoder[SinkFilter] = new Decoder[SinkFilter] {
+    override def apply(c: HCursor): Result[SinkFilter] = {
+      Right(
+        SinkFilter(
+          domains = c.downField(Constants.domains).as[List[String]].getOrElse(List[String]()),
+          sinkType = c.downField(Constants.sinkType).as[String].getOrElse(""),
+          name = c.downField(Constants.name).as[String].getOrElse("")
+        )
+      )
+    }
+  }
+
+  implicit val decodeCollectionFilter: Decoder[CollectionFilter] = new Decoder[CollectionFilter] {
+    override def apply(c: HCursor): Result[CollectionFilter] = {
+      Right(
+        CollectionFilter(
+          collectionType = c.downField(Constants.collectionType).as[String].getOrElse(""),
+          endPoint = c.downField(Constants.endPoint).as[String].getOrElse("")
         )
       )
     }
@@ -141,14 +183,18 @@ object CirceEnDe {
 
   implicit val decodeDataFlow: Decoder[DataFlow] = new Decoder[DataFlow] {
     override def apply(c: HCursor): Result[DataFlow] = {
-      val sources      = c.downField(Constants.sources).as[List[String]]
-      val sourceFilter = c.downField(Constants.sourceFilters).as[SourceFilter]
-      val sinks        = c.downField(Constants.sinks).as[List[String]]
+      val sources          = c.downField(Constants.sources).as[List[String]]
+      val sourceFilter     = c.downField(Constants.sourceFilters).as[SourceFilter]
+      val sinks            = c.downField(Constants.sinks).as[List[String]]
+      val sinkFilter       = c.downField(Constants.sinkFilters).as[SinkFilter]
+      val collectionFilter = c.downField(Constants.collectionFilters).as[CollectionFilter]
       Right(
         DataFlow(
           sources = sources.getOrElse(List[String]()),
-          sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "")),
-          sinks = sinks.getOrElse(List[String]())
+          sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "", "")),
+          sinks = sinks.getOrElse(List[String]()),
+          sinkFilters = sinkFilter.getOrElse(SinkFilter(List[String](), "", "")),
+          collectionFilters = collectionFilter.getOrElse(CollectionFilter("", ""))
         )
       )
     }

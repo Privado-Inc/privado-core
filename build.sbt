@@ -6,8 +6,8 @@ ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.4.25"
-val joernVersion      = "2.0.140"
+val cpgVersion        = "1.4.30"
+val joernVersion      = "2.0.171"
 val overflowdbVersion = "1.181"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -32,7 +32,8 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "gosrc2cpg"     % Versions.joern,
+  "io.joern"             %% "kotlin2cpg"   % Versions.joern,
+  "io.joern"             %% "gosrc2cpg"   % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
@@ -74,7 +75,6 @@ enablePlugins(JavaAppPackaging)
 ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 
 Global / onChangedBuildSource := ReloadOnSourceChanges
-fork                          := true
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,

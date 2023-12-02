@@ -33,7 +33,13 @@ import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser}
+import ai.privado.passes.{
+  AndroidXmlParserPass,
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  SQLParser
+}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -74,6 +80,7 @@ object JavascriptProcessor {
         new JSPropertyLinkerPass(cpg).createAndApply()
         new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
         new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
         // Unresolved function report
         if (config.showUnresolvedFunctionsReport) {
@@ -211,8 +218,12 @@ object JavascriptProcessor {
 
     // Need to convert path to absolute path as javaScriptCpg need abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
+    val excludeFileRegex       = ruleCache.getExclusionRegex
     val cpgconfig =
-      Config().withInputPath(absoluteSourceLocation).withOutputPath(cpgOutputPath)
+      Config()
+        .withInputPath(absoluteSourceLocation)
+        .withOutputPath(cpgOutputPath)
+        .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
     processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
   }
