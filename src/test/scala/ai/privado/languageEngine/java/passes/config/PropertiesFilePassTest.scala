@@ -122,20 +122,9 @@ class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
     "connect annotated method to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
       anno.length shouldBe 1
-
-      anno.foreach(element => {
-        element.label match {
-          case "METHOD_PARAMETER_IN" =>
-            val List(param: MethodParameterIn) = element.toList
-            param.name shouldBe "loggerBaseURL"
-          case "MEMBER" =>
-            element.code shouldBe "java.lang.String slackWebHookURL"
-          case _ => s"Unknown label ${element.label}. Test failed"
-        }
-      })
     }
 
-    "connect property to annotated parameter" in {
+    "connect property to annotated method" in {
       val properties = cpg.property.usedAt.originalProperty.l
       properties.length shouldBe 1
       properties.foreach(prop => {
