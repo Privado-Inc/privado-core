@@ -36,8 +36,9 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   implicit val resolver: NoResolve.type = NoResolve
 
-  override def generateParts(): Array[_ <: AnyRef] =
+  override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.iterator.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
+  }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
     connectProperties(property, builder)
@@ -66,11 +67,29 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
         builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
         builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
       }
+
+    val annotatedMethodsList = annotatedMethods()
+
+    annotatedMethodsList
+      .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
+      .foreach { case (_, value) =>
+        builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
+        builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+      }
   }
+
+  /** List of all methods annotated with Spring's `Value` annotation
+    */
+  private def annotatedMethods(): List[(AnnotationParameterAssign, Method)] = cpg.annotation
+    .fullName(".*Value.*")
+    .filter(_.method.nonEmpty)
+    .filter(_.parameterAssign.nonEmpty)
+    .map { x => (x.parameterAssign.next(), x.method.next()) }
+    .toList
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
-  def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
+  private def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
     .fullName("org.springframework.*Value")
     .filter(_.parameter.nonEmpty)
     .filter(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\"").nonEmpty)

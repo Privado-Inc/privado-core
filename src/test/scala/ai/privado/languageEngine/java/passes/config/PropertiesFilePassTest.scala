@@ -94,6 +94,60 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   }
 }
 
+/* Test for annotation of methods */
+class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
+  override val configFileContents: String =
+    """
+      |sample:
+      |  url: http://www.somedomain.com/
+      |""".stripMargin
+
+  override val propertyFileContents = ""
+  override val codeFileContents: String =
+    """
+      |
+      |import org.springframework.beans.factory.annotation.Value;
+      |
+      |class Foo {
+      |
+      |@Value("${sample.url}")
+      |public void setUrl( String sampleUrl )
+      |{
+      |    String url = sampleUrl;
+      |}
+      |}
+      |""".stripMargin
+
+  "ConfigFilePass" should {
+    "connect annotated method to property" in {
+      val anno: List[AstNode] = cpg.property.usedAt.l
+      anno.length shouldBe 1
+
+      anno.foreach(element => {
+        element.label match {
+          case "METHOD_PARAMETER_IN" =>
+            val List(param: MethodParameterIn) = element.toList
+            param.name shouldBe "loggerBaseURL"
+          case "MEMBER" =>
+            element.code shouldBe "java.lang.String slackWebHookURL"
+          case _ => s"Unknown label ${element.label}. Test failed"
+        }
+      })
+    }
+
+    "connect property to annotated parameter" in {
+      val properties = cpg.property.usedAt.originalProperty.l
+      properties.length shouldBe 1
+      properties.foreach(prop => {
+        prop.name match {
+          case "sample.url" => prop.value shouldBe ("http://www.somedomain.com/")
+          case _            => s"Unknown value ${prop.value}. Test failed"
+        }
+      })
+    }
+  }
+}
+
 class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
