@@ -24,14 +24,14 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, MethodParameterIn}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, Method, MethodParameterIn}
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -122,6 +122,14 @@ class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
     "connect annotated method to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
       anno.length shouldBe 1
+
+      anno.foreach(element => {
+        element.label match {
+          case "METHOD" =>
+            val List(methodNode: Method) = element.toList
+            methodNode.name shouldBe "setUrl"
+        }
+      })
     }
 
     "connect property to annotated method" in {
