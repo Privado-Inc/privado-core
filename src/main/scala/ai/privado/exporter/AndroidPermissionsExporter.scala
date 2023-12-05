@@ -14,6 +14,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache) {
@@ -27,24 +28,42 @@ class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache) {
       cpg.androidXmlPermissionNode
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(Constants.sources))
         .foreach(node => {
-          permissions.addOne(
-            AndroidPermissionModel(
-              permissionType = node.permissionType,
-              isUsed = true, // we consider permission to be used always
-              permissionDetail = getPermissionDetail(node)
+          val detail = getPermissionDetail(node).get
+          if (detail.occurrences.nonEmpty) {
+            permissions.addOne(
+              AndroidPermissionModel(
+                permissionType = node.permissionType,
+                isUsed = true, // we consider permission to be used always
+                permissionDetail = detail
+              )
             )
-          )
+          }
         })
     } catch {
       case e: Exception => logger.debug("Exception : ", e)
     }
-    permissions.toList
+    // group and merge
+    val groupedPermissions = permissions
+      .groupBy(_.permissionType)
+      .map { case (permTypes, permModels) =>
+        val combinedPathElements = permModels.flatMap(_.permissionDetail.occurrences).distinct
+        val combinedDetailModel =
+          AndroidPermissionDetailModel(permModels.head.permissionDetail.sourceId, combinedPathElements.toList)
+        AndroidPermissionModel(permTypes, permModels.head.isUsed, combinedDetailModel)
+      }
+      .toList
+    groupedPermissions
   }
 
-  private def getPermissionDetail(node: AndroidXmlPermissionNode): AndroidPermissionDetailModel = {
-    AndroidPermissionDetailModel(
-      sourceId = node.tag.nameExact(Constants.id).value.headOption.getOrElse(""),
-      occurrence = ExporterUtility.convertIndividualPathElement(node).get
+  private def getPermissionDetail(node: AndroidXmlPermissionNode): Some[AndroidPermissionDetailModel] = {
+    Some(
+      AndroidPermissionDetailModel(
+        node.tag.nameExact(Constants.id).value.headOption.getOrElse(""),
+        ExporterUtility.convertIndividualPathElement(node) match {
+          case Some(pathElement) => List(pathElement)
+          case None              => List()
+        }
+      )
     )
   }
 }

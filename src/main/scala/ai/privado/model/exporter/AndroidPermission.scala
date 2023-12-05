@@ -9,9 +9,14 @@ case class AndroidPermissionModel(
   permissionDetail: AndroidPermissionDetailModel
 )
 
-case class AndroidPermissionDetailModel(sourceId: String, occurrence: DataFlowSubCategoryPathExcerptModel)
+case class AndroidPermissionDetailModel(sourceId: String, occurrences: List[DataFlowSubCategoryPathExcerptModel])
 
 object AndroidPermissionsEncoderDecoder {
+
+  implicit val dataFlowSubCategoryPathExcerptModelDecoder: Decoder[DataFlowSubCategoryPathExcerptModel] =
+    deriveDecoder[DataFlowSubCategoryPathExcerptModel]
+  implicit val dataFlowSubCategoryPathExcerptModelEncoder: Encoder[DataFlowSubCategoryPathExcerptModel] =
+    deriveEncoder[DataFlowSubCategoryPathExcerptModel]
 
   implicit val androidPermissionModelDecoder: Decoder[AndroidPermissionModel] = deriveDecoder[AndroidPermissionModel]
   implicit val androidPermissionModelEncoder: Encoder[AndroidPermissionModel] = deriveEncoder[AndroidPermissionModel]
