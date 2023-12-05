@@ -51,6 +51,7 @@ import java.util.regex.{Pattern, PatternSyntaxException}
 import scala.util.{Failure, Success, Try}
 import java.nio.file.Files
 import scala.util.matching.Regex
+import better.files.File.VisitOptions
 
 import scala.Int.MaxValue
 
@@ -268,7 +269,11 @@ object Utilities {
   ): Option[List[String]] = {
     try {
       if (File(folderPath).isDirectory)
-        Some(SourceFiles.determine(Set(folderPath), extensions).filter(isFileProcessable(_, ruleCache)))
+        Some(
+          SourceFiles
+            .determine(Set(folderPath), extensions)(VisitOptions.default)
+            .filter(isFileProcessable(_, ruleCache))
+        )
       else
         None
     } catch {
@@ -415,7 +420,7 @@ object Utilities {
     ruleCache: RuleCache
   ): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), extensions)
+      .determine(Set(projectRoot), extensions)(VisitOptions.default)
       .filter(Utilities.isFileProcessable(_, ruleCache))
   }
 

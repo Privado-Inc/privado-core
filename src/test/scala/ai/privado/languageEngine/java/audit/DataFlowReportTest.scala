@@ -120,14 +120,14 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         SourcePathInfo(
           "Data.Sensitive.AccountData.AccountPassword",
           "Leakages.Log.Info",
-          "person1 -> person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> info(firstName)"
+          "person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> info(firstName)"
         )
       ) shouldBe ("YES")
       workflowdedup1Result(
         SourcePathInfo(
           "Data.Sensitive.AccountData.AccountPassword",
           "Leakages.Log.Info",
-          "person1 -> person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> info(firstName)"
+          "person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> info(firstName)"
         )
       ) shouldBe ("--")
 
