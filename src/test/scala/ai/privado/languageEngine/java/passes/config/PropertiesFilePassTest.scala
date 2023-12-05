@@ -80,7 +80,8 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
 
     "connect property to annotated parameter" in {
       cpg.property.usedAt.originalProperty.l.length shouldBe 2
-      cpg.property.usedAt.originalProperty.name.l shouldBe List(
+      cpg.property.usedAt.originalProperty.name.l shouldBe List("internal.logger.api.base", "slack.base.url")
+      cpg.property.usedAt.originalProperty.value.l shouldBe List(
         "https://logger.privado.ai/",
         "https://hooks.slack.com/services/some/leaking/url"
       )
@@ -127,7 +128,9 @@ class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
 
     "connect property to annotated method" in {
       cpg.property.usedAt.originalProperty.l.size shouldBe 1
-      cpg.property.usedAt.originalProperty.name.l shouldBe List("http://www.somedomain.com/")
+      cpg.property.usedAt.originalProperty.name.l shouldBe List("sample.url")
+      cpg.property.usedAt.originalProperty.value.l shouldBe List("http://www.somedomain.com/")
+
     }
   }
 }
