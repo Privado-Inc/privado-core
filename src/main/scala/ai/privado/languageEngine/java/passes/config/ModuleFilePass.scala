@@ -16,6 +16,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.io.Source
 import scala.util.Try
+import better.files.File.VisitOptions
 
 class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache, ruleCache: RuleCache)
     extends ConcurrentWriterCpgPass[String](cpg) {
@@ -75,7 +76,7 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache, ru
 
   private def ModuleFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     val filePath = SourceFiles
-      .determine(Set(projectRoot), extensions)
+      .determine(Set(projectRoot), extensions)(VisitOptions.default)
       .filter(Utilities.isFileProcessable(_, ruleCache))
 
     val moduleFile = ListBuffer[String]()
