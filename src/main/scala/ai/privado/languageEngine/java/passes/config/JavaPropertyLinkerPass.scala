@@ -83,7 +83,7 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
   /** List of all methods annotated with Spring's `Value` annotation
     */
   private def annotatedMethods(): List[(AnnotationParameterAssign, Method)] = cpg.annotation
-    .name(".*Value.*")
+    .name("Value")
     .filter(_.method.nonEmpty)
     .filter(_.parameterAssign.nonEmpty)
     .map { x => (x.parameterAssign.next(), x.method.next()) }
@@ -92,7 +92,7 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
   private def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
-    .name(".*Value.*")
+    .name("Value")
     .filter(_.parameter.nonEmpty)
     .filter(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\"").nonEmpty)
     .map { x =>
@@ -100,12 +100,15 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
       val value       = Option(literalName.slice(3, literalName.length - 2)).getOrElse("")
       (x.parameter.next(), value)
     }
+    .filter { (_, value) =>
+      value.nonEmpty
+    }
     .toList
 
   /** List of all members annotated with Spring's `Value` annotation, along with the property name.
     */
   private def annotatedMembers(): List[(AnnotationParameterAssign, Member)] = cpg.annotation
-    .name(".*Value.*")
+    .name("Value")
     .filter(_.member.nonEmpty)
     .filter(_.parameterAssign.nonEmpty)
     .map { x => (x.parameterAssign.next(), x.member.next()) }
