@@ -380,6 +380,7 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
                 RubyProcessor.createRubyCpg(
                   getProcessedRule(Set(Language.RUBY)),
+                  this.config,
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,

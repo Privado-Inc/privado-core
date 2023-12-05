@@ -25,7 +25,7 @@ package ai.privado.languageEngine.ruby.processor
 
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
@@ -83,6 +83,7 @@ object RubyProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache
@@ -184,6 +185,11 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting
+          if (privadoInput.isMonolith) {
+            // Export privado json for individual subProject/Repository Item
+
+          }
+
           JSONExporter.fileExport(
             cpg,
             outputFileName,
@@ -192,7 +198,7 @@ object RubyProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache,
-            ScanProcessor.config
+            privadoInput
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -313,6 +319,7 @@ object RubyProcessor {
     */
   def createRubyCpg(
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
@@ -355,7 +362,7 @@ object RubyProcessor {
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
+    processCPG(xtocpg, ruleCache, privadoInput, sourceRepoLocation, dataFlowCache, auditCache)
 
   }
 

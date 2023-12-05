@@ -78,105 +78,28 @@ object JSONExporter {
     dataFlowCache: DataFlowCache,
     privadoInput: PrivadoInput
   ): Either[String, Unit] = {
-    logger.info("Initiated exporter engine")
-    val sourceExporter       = new SourceExporter(cpg, ruleCache, privadoInput)
-    val sinkExporter         = new SinkExporter(cpg, ruleCache)
-    val dataflowExporter     = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache)
-    val collectionExporter   = new CollectionExporter(cpg, ruleCache)
-    val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath)
-    val policyAndThreatExporter =
-      new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache, privadoInput)
-    val output = mutable.LinkedHashMap[String, Json]()
+
     try {
 
-      output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
-      output.addOne(Constants.cliVersion  -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
-      output.addOne(Constants.mainVersion -> AppCache.privadoVersionMain.asJson)
-      output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
-      output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
-      output.addOne(Constants.repoName                     -> AppCache.repoName.asJson)
-      output.addOne(Constants.language                     -> AppCache.repoLanguage.toString.asJson)
-      output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-      output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
-      output.addOne(Constants.probableSinks                -> probableSinkExporter.getProbableSinks.asJson)
-
-      // Future creates a thread and starts resolving the function call asynchronously
-      val sources = Future {
-        val _sources = Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
-        output.addOne(Constants.sources -> _sources.asJson)
-        _sources
-      }
-      val processing = Future {
-        val _processing = Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
-        output.addOne(Constants.processing -> _processing.asJson)
-        _processing
-      }
-      val sinks = Future {
-        val _sinks = Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
-        output.addOne(Constants.sinks -> _sinks.asJson)
-        _sinks
-      }
-      val processingSinks = Future {
-        val _processingSinks = Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
-        output.addOne(Constants.sinkProcessing -> _processingSinks.asJson)
-        _processingSinks
-      }
-      val collections = Future {
-        val _collections = Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
-        output.addOne(Constants.collections -> _collections.asJson)
-        _collections
-      }
-
-      val finalCollections = Await.result(collections, Duration.Inf)
-
-      val violationResult =
-        Try(policyAndThreatExporter.getViolations(repoPath, finalCollections)).getOrElse(List[ViolationModel]())
-      output.addOne(Constants.violations -> violationResult.asJson)
-
-      val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-      ruleCache.getRule.sinks.foreach(sinkRule => {
-        if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
-          sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
-        sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
-      })
-
-      val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
-      sinkSubCategories.foreach(sinkSubTypeEntry => {
-        dataflowsOutput.addOne(
-          sinkSubTypeEntry._1 -> dataflowExporter
-            .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowCache)
-            .toList
+      val (output, sources, sinks, processing, dataflowsOutput, finalCollections, complianceViolationSize) =
+        generateIndividualComponent(
+          cpg,
+          outputFileName,
+          repoPath,
+          dataflows,
+          ruleCache,
+          taggerCache,
+          dataFlowCache,
+          privadoInput
         )
-      })
-
-      output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
-      logger.info("Completed Sink Exporting")
-
-      logger.info("Completed Collections Exporting")
-
-      MetricHandler.metricsData("policyViolations") = violationResult.size.asJson
-      violationResult.foreach(violation => {
-        MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
-      })
-
-      //  Compliance Violations
-      val complianceViolations = violationResult.filter(violation =>
-        violation.policyDetails match {
-          case Some(policyDetail) => policyDetail.policyType.equals(PolicyThreatType.COMPLIANCE.toString)
-          case None               => false
-        }
-      )
-
-      // We need to wait till this get completed before moving ahead to export the result
-      Await.result(processingSinks, Duration.Inf)
 
       ConsoleExporter.exportConsoleSummary(
         dataflowsOutput,
-        Await.result(sources, Duration.Inf),
-        Await.result(sinks, Duration.Inf),
-        Await.result(processing, Duration.Inf),
+        sources,
+        sinks,
+        processing,
         finalCollections,
-        complianceViolations.size
+        complianceViolationSize
       )
 
       logger.debug(
@@ -189,15 +112,12 @@ object JSONExporter {
 
       logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")
 
-      logger.info("Completed exporting policy violations")
-      val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
-      val f               = File(s"$repoPath/$outputDirectoryName/$outputFileName")
-
       // Post export Trigger
       ExternalScalaScriptRunner
         .postExportTrigger(cpg, ruleCache, output)
 
-      f.write(output.asJson.toString())
+      val jsonFile = writeJsonToFile(cpg, outputFileName, repoPath, ruleCache, output)
+
       logger.info("Shutting down Exporter engine")
       logger.info("Scanning Completed...")
 
@@ -210,7 +130,7 @@ object JSONExporter {
           logger.error("Error fetching the size of repo")
           logger.debug("Error in getting size of repo ", e)
       }
-      MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(f.size / 1024)
+      MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(jsonFile.size / 1024)
       Right(())
 
     } catch {
@@ -219,6 +139,132 @@ object JSONExporter {
         logger.debug("Failed to export output", ex)
         Left(ex.toString)
     }
+
+  }
+
+  def writeJsonToFile(
+    cpg: Cpg,
+    outputFileName: String,
+    repoPath: String,
+    ruleCache: RuleCache,
+    output: mutable.LinkedHashMap[String, Json]
+  ): File = {
+    val outputDirectory = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+    val f               = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+    f.write(output.asJson.toString())
+    f
+  }
+
+  def generateIndividualComponent(
+    cpg: Cpg,
+    outputFileName: String,
+    repoPath: String,
+    dataflows: Map[String, Path],
+    ruleCache: RuleCache,
+    taggerCache: TaggerCache = new TaggerCache(),
+    dataFlowCache: DataFlowCache,
+    privadoInput: PrivadoInput
+  ) = {
+    logger.info("Initiated exporter engine")
+    val sourceExporter       = new SourceExporter(cpg, ruleCache, privadoInput)
+    val sinkExporter         = new SinkExporter(cpg, ruleCache)
+    val dataflowExporter     = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache)
+    val collectionExporter   = new CollectionExporter(cpg, ruleCache)
+    val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath)
+    val policyAndThreatExporter =
+      new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache, privadoInput)
+    val output = mutable.LinkedHashMap[String, Json]()
+
+    output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
+    output.addOne(Constants.cliVersion  -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
+    output.addOne(Constants.mainVersion -> AppCache.privadoVersionMain.asJson)
+    output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
+    output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
+    output.addOne(Constants.repoName                     -> AppCache.repoName.asJson)
+    output.addOne(Constants.language                     -> AppCache.repoLanguage.toString.asJson)
+    output.addOne(Constants.gitMetadata                  -> GitMetaDataExporter.getMetaData(repoPath).asJson)
+    output.addOne(Constants.localScanPath                -> AppCache.localScanPath.asJson)
+    output.addOne(Constants.probableSinks                -> probableSinkExporter.getProbableSinks.asJson)
+
+    // Future creates a thread and starts resolving the function call asynchronously
+    val sources = Future {
+      val _sources = Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
+      output.addOne(Constants.sources -> _sources.asJson)
+      _sources
+    }
+    val processing = Future {
+      val _processing = Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
+      output.addOne(Constants.processing -> _processing.asJson)
+      _processing
+    }
+    val sinks = Future {
+      val _sinks = Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
+      output.addOne(Constants.sinks -> _sinks.asJson)
+      _sinks
+    }
+    val processingSinks = Future {
+      val _processingSinks = Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
+      output.addOne(Constants.sinkProcessing -> _processingSinks.asJson)
+      _processingSinks
+    }
+    val collections = Future {
+      val _collections = Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
+      output.addOne(Constants.collections -> _collections.asJson)
+      _collections
+    }
+
+    val finalCollections = Await.result(collections, Duration.Inf)
+
+    val violationResult =
+      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections)).getOrElse(List[ViolationModel]())
+    output.addOne(Constants.violations -> violationResult.asJson)
+
+    val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
+    ruleCache.getRule.sinks.foreach(sinkRule => {
+      if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
+        sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
+      sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
+    })
+
+    val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
+    sinkSubCategories.foreach(sinkSubTypeEntry => {
+      dataflowsOutput.addOne(
+        sinkSubTypeEntry._1 -> dataflowExporter
+          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowCache)
+          .toList
+      )
+    })
+
+    output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
+    logger.info("Completed Sink Exporting")
+
+    logger.info("Completed Collections Exporting")
+
+    MetricHandler.metricsData("policyViolations") = violationResult.size.asJson
+    violationResult.foreach(violation => {
+      MetricHandler.internalPoliciesOrThreatsMatched.addOne(violation.policyId)
+    })
+
+    //  Compliance Violations
+    val complianceViolations = violationResult.filter(violation =>
+      violation.policyDetails match {
+        case Some(policyDetail) => policyDetail.policyType.equals(PolicyThreatType.COMPLIANCE.toString)
+        case None               => false
+      }
+    )
+
+    // We need to wait till this get completed before moving ahead to export the result
+    Await.result(processingSinks, Duration.Inf)
+
+    (
+      output,
+      Await.result(sources, Duration.Inf),
+      Await.result(sinks, Duration.Inf),
+      Await.result(processing, Duration.Inf),
+      dataflowsOutput,
+      finalCollections,
+      complianceViolations.size
+    )
   }
 
   def IntermediateFileExport(
