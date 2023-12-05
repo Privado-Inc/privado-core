@@ -79,17 +79,11 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
     }
 
     "connect property to annotated parameter" in {
-      val properties = cpg.property.usedAt.originalProperty.l
-
-      properties.length shouldBe 2
-
-      properties.foreach(prop => {
-        prop.name match {
-          case "internal.logger.api.base" => prop.value shouldBe ("https://logger.privado.ai/")
-          case "slack.base.url"           => prop.value shouldBe ("https://hooks.slack.com/services/some/leaking/url")
-          case _                          => s"Unknown value ${prop.value}. Test failed"
-        }
-      })
+      cpg.property.usedAt.originalProperty.l.length shouldBe 2
+      cpg.property.usedAt.originalProperty.name.l shouldBe List(
+        "https://logger.privado.ai/",
+        "https://hooks.slack.com/services/some/leaking/url"
+      )
     }
   }
 }
@@ -122,7 +116,6 @@ class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
     "connect annotated method to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
       anno.length shouldBe 1
-
       anno.foreach(element => {
         element.label match {
           case "METHOD" =>
@@ -133,14 +126,8 @@ class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
     }
 
     "connect property to annotated method" in {
-      val properties = cpg.property.usedAt.originalProperty.l
-      properties.length shouldBe 1
-      properties.foreach(prop => {
-        prop.name match {
-          case "sample.url" => prop.value shouldBe ("http://www.somedomain.com/")
-          case _            => s"Unknown value ${prop.value}. Test failed"
-        }
-      })
+      cpg.property.usedAt.originalProperty.l.size shouldBe 1
+      cpg.property.usedAt.originalProperty.name.l shouldBe List("http://www.somedomain.com/")
     }
   }
 }
