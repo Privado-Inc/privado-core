@@ -30,6 +30,7 @@ import scala.jdk.CollectionConverters.*
 import ai.privado.model.Language
 import ai.privado.tagger.PrivadoParallelCpgPass
 import org.yaml.snakeyaml.constructor.SafeConstructor
+import better.files.File.VisitOptions
 
 import scala.collection.mutable.ListBuffer
 
@@ -396,7 +397,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     }
 
     SourceFiles
-      .determine(Set(projectRoot), extensions)
+      .determine(Set(projectRoot), extensions)(VisitOptions.default)
       .concat(
         getListOfFiles(projectRoot)
           .map(f => {

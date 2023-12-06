@@ -36,8 +36,9 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   implicit val resolver: NoResolve.type = NoResolve
 
-  override def generateParts(): Array[_ <: AnyRef] =
+  override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.iterator.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
+  }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
     connectProperties(property, builder)
@@ -61,30 +62,53 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     val membersAndValues = annotatedMembers()
 
     membersAndValues
-      .filter { case (key, _) => propertyNode.name == key.code.slice(3, key.code.length - 2) }
+      .filter { case (key, _) => propertyNode.name == Option(key.code.slice(3, key.code.length - 2)).getOrElse("") }
+      .foreach { case (_, value) =>
+        builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
+        builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+      }
+
+    val annotatedMethodsList = annotatedMethods()
+
+    annotatedMethodsList
+      .filter { case (key, _) =>
+        propertyNode.name == Option(key.code.slice(3, key.code.length - 2)).getOrElse("")
+      }
       .foreach { case (_, value) =>
         builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
         builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
       }
   }
 
+  /** List of all methods annotated with Spring's `Value` annotation
+    */
+  private def annotatedMethods(): List[(AnnotationParameterAssign, Method)] = cpg.annotation
+    .nameExact("Value")
+    .filter(_.method.nonEmpty)
+    .filter(_.parameterAssign.nonEmpty)
+    .map { x => (x.parameterAssign.next(), x.method.next()) }
+    .toList
+
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.
     */
-  def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
-    .fullName("org.springframework.*Value")
+  private def annotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
+    .nameExact("Value")
     .filter(_.parameter.nonEmpty)
     .filter(_.parameterAssign.code("\\\"\\$\\{.*\\}\\\"").nonEmpty)
     .map { x =>
       val literalName = x.parameterAssign.code.next()
-      val value       = literalName.slice(3, literalName.length - 2)
+      val value       = Option(literalName.slice(3, literalName.length - 2)).getOrElse("")
       (x.parameter.next(), value)
+    }
+    .filter { (_, value) =>
+      value.nonEmpty
     }
     .toList
 
   /** List of all members annotated with Spring's `Value` annotation, along with the property name.
     */
   private def annotatedMembers(): List[(AnnotationParameterAssign, Member)] = cpg.annotation
-    .fullName(".*Value.*")
+    .nameExact("Value")
     .filter(_.member.nonEmpty)
     .filter(_.parameterAssign.nonEmpty)
     .map { x => (x.parameterAssign.next(), x.member.next()) }
