@@ -30,6 +30,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
 import ai.privado.model.exporter.{
   CollectionModel,
+  AndroidPermissionModel,
   DataFlowSourceIntermediateModel,
   DataFlowSubCategoryModel,
   SinkModel,
@@ -43,6 +44,7 @@ import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
 import ai.privado.model.exporter.CollectionEncoderDecoder.*
+import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.script.ExternalScalaScriptRunner
 import better.files.File
@@ -81,7 +83,6 @@ object JSONExporter {
   ): Either[String, Unit] = {
 
     try {
-
       val (
         output: mutable.LinkedHashMap[String, Json],
         sources: List[SourceModel],

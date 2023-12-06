@@ -29,22 +29,12 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.{CatLevelOne, Constants, Language, PolicyThreatType}
-import ai.privado.model.exporter.{
-  CollectionModel,
-  DataFlowSubCategoryModel,
-  DataFlowSubCategoryPathExcerptModel,
-  RuleInfo,
-  SinkModel,
-  SinkProcessingModel,
-  SourceModel,
-  SourceProcessingModel,
-  ViolationModel,
-  ViolationPolicyDetailsModel
-}
+import ai.privado.model.exporter.{AndroidPermissionModel, CollectionModel, DataFlowSubCategoryModel, DataFlowSubCategoryPathExcerptModel, RuleInfo, SinkModel, SinkProcessingModel, SourceModel, SourceProcessingModel, ViolationModel, ViolationPolicyDetailsModel}
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
 import ai.privado.model.exporter.CollectionEncoderDecoder.*
+import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
@@ -327,6 +317,7 @@ object ExporterUtility {
     val sinkExporter         = new SinkExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val dataflowExporter     = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache) // TODO
     val collectionExporter   = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache) // TODO
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
       new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache, privadoInput) // TODO
@@ -402,6 +393,14 @@ object ExporterUtility {
     logger.info("Completed Sink Exporting")
 
     logger.info("Completed Collections Exporting")
+
+    val androidPermissions = Future {
+      val _permissions = Try(androidPermissionsExporter.getPermissions).getOrElse(List[AndroidPermissionModel]())
+      output.addOne(Constants.androidPermissions -> _permissions.asJson)
+      _permissions
+    }
+
+    logger.info("Completed Android Permissions Exporting")
 
     MetricHandler.metricsData("policyViolations") = violationResult.size.asJson
     violationResult.foreach(violation => {
