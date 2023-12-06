@@ -28,8 +28,20 @@ import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, Tagger
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.{CatLevelOne, Constants, Language, PolicyThreatType}
-import ai.privado.model.exporter.{AndroidPermissionModel, CollectionModel, DataFlowSubCategoryModel, DataFlowSubCategoryPathExcerptModel, RuleInfo, SinkModel, SinkProcessingModel, SourceModel, SourceProcessingModel, ViolationModel, ViolationPolicyDetailsModel}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, Language, PolicyThreatType}
+import ai.privado.model.exporter.{
+  AndroidPermissionModel,
+  CollectionModel,
+  DataFlowSubCategoryModel,
+  DataFlowSubCategoryPathExcerptModel,
+  RuleInfo,
+  SinkModel,
+  SinkProcessingModel,
+  SourceModel,
+  SourceProcessingModel,
+  ViolationModel,
+  ViolationPolicyDetailsModel
+}
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
@@ -300,7 +312,7 @@ object ExporterUtility {
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
-    dataFlowCache: DataFlowCache,
+    dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
     repoItemTagName: Option[String] = None
   ): (
@@ -313,14 +325,14 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
-    val sourceExporter       = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
-    val sinkExporter         = new SinkExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val dataflowExporter     = new DataflowExporter(cpg, dataflows, taggerCache, dataFlowCache) // TODO
-    val collectionExporter   = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache) // TODO
+    val sourceExporter             = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
+    val sinkExporter               = new SinkExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val dataflowExporter           = new DataflowExporter(dataflows, taggerCache) // TODO
+    val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
-      new PolicyAndThreatExporter(cpg, ruleCache, dataflows, taggerCache, dataFlowCache, privadoInput) // TODO
+      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput) // TODO
     val output = mutable.LinkedHashMap[String, Json]()
 
     output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
@@ -384,7 +396,7 @@ object ExporterUtility {
     sinkSubCategories.foreach(sinkSubTypeEntry => {
       dataflowsOutput.addOne(
         sinkSubTypeEntry._1 -> dataflowExporter
-          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowCache)
+          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowModel)
           .toList
       )
     })

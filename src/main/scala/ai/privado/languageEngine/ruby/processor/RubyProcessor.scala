@@ -201,7 +201,7 @@ object RubyProcessor {
                   dataflowMap,
                   ruleCache,
                   taggerCache,
-                  dataFlowCache,
+                  dataFlowCache.getDataflow,
                   privadoInput
                 )
               )
@@ -215,7 +215,7 @@ object RubyProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache,
+            dataFlowCache.getDataflow,
             privadoInput,
             monolithPrivadoJsonPaths = monolithPrivadoJsonPaths
           ) match {

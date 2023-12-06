@@ -29,8 +29,8 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
 import ai.privado.model.exporter.{
-  CollectionModel,
   AndroidPermissionModel,
+  CollectionModel,
   DataFlowSourceIntermediateModel,
   DataFlowSubCategoryModel,
   SinkModel,
@@ -39,7 +39,7 @@ import ai.privado.model.exporter.{
   SourceProcessingModel,
   ViolationModel
 }
-import ai.privado.model.{Constants, PolicyThreatType}
+import ai.privado.model.{Constants, DataFlowPathModel, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
@@ -77,7 +77,7 @@ object JSONExporter {
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
-    dataFlowCache: DataFlowCache,
+    dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
     monolithPrivadoJsonPaths: List[String] = List()
   ): Either[String, Unit] = {
@@ -98,7 +98,7 @@ object JSONExporter {
         dataflows,
         ruleCache,
         taggerCache,
-        dataFlowCache,
+        dataFlowModel,
         privadoInput
       )
 
@@ -119,7 +119,7 @@ object JSONExporter {
           s"Total flows before FP: ${AppCache.totalFlowFromReachableBy}\n" +
           s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
           s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
-          s"Total flows after complete computation : ${dataFlowCache.getDataflow.size}"
+          s"Total flows after complete computation : ${dataFlowModel.size}"
       )
 
       logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")

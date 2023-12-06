@@ -109,7 +109,7 @@ object JavascriptProcessor {
           dataflowMap,
           ruleCache,
           taggerCache,
-          dataFlowCache,
+          dataFlowCache.getDataflow,
           ScanProcessor.config
         ) match {
           case Left(err) =>

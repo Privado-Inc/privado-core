@@ -154,7 +154,7 @@ abstract class BaseProcessor(
       dataflowMap,
       ruleCache,
       taggerCache,
-      dataFlowCache,
+      dataFlowCache.getDataflow,
       privadoInput
     ) match {
       case Left(err) =>
