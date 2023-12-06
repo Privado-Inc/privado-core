@@ -28,19 +28,21 @@ class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache) {
       cpg.androidXmlPermissionNode
         .where(_.tag.nameExact(Constants.catLevelOne).valueExact(Constants.sources))
         .foreach(node => {
-          val detail = getPermissionDetail(node).get
-          if (detail.occurrences.nonEmpty) {
-            permissions.addOne(
-              AndroidPermissionModel(
-                permissionType = node.permissionType,
-                isUsed = true, // we consider permission to be used always
-                permissionDetail = detail
+          getPermissionDetail(node) match
+            case Some(permissionDetail) =>
+              permissions.addOne(
+                AndroidPermissionModel(
+                  permissionType = node.permissionType,
+                  isUsed = true, // we consider permission to be used always
+                  permissionDetail = permissionDetail
+                )
               )
-            )
-          }
+            case None =>
         })
     } catch {
-      case e: Exception => logger.debug("Exception : ", e)
+      case e: Exception =>
+        logger.debug("Exception : ", e)
+        logger.error("Exception caught : ", e.getMessage)
     }
     // group and merge
     val groupedPermissions = permissions
@@ -55,15 +57,16 @@ class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache) {
     groupedPermissions
   }
 
-  private def getPermissionDetail(node: AndroidXmlPermissionNode): Some[AndroidPermissionDetailModel] = {
-    Some(
-      AndroidPermissionDetailModel(
-        node.tag.nameExact(Constants.id).value.headOption.getOrElse(""),
-        ExporterUtility.convertIndividualPathElement(node) match {
-          case Some(pathElement) => List(pathElement)
-          case None              => List()
-        }
-      )
-    )
+  private def getPermissionDetail(node: AndroidXmlPermissionNode): Option[AndroidPermissionDetailModel] = {
+    ExporterUtility.convertIndividualPathElement(node) match {
+      case Some(pathElement) =>
+        Some(
+          AndroidPermissionDetailModel(
+            node.tag.nameExact(Constants.id).value.headOption.getOrElse(""),
+            List(pathElement)
+          )
+        )
+      case None => None
+    }
   }
 }

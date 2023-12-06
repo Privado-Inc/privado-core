@@ -2,6 +2,7 @@ package ai.privado.model.exporter
 
 import io.circe.{Decoder, Encoder}
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
+import ai.privado.model.exporter.DataFlowEncoderDecoder._
 
 case class AndroidPermissionModel(
   permissionType: String,
@@ -12,11 +13,6 @@ case class AndroidPermissionModel(
 case class AndroidPermissionDetailModel(sourceId: String, occurrences: List[DataFlowSubCategoryPathExcerptModel])
 
 object AndroidPermissionsEncoderDecoder {
-
-  implicit val dataFlowSubCategoryPathExcerptModelDecoder: Decoder[DataFlowSubCategoryPathExcerptModel] =
-    deriveDecoder[DataFlowSubCategoryPathExcerptModel]
-  implicit val dataFlowSubCategoryPathExcerptModelEncoder: Encoder[DataFlowSubCategoryPathExcerptModel] =
-    deriveEncoder[DataFlowSubCategoryPathExcerptModel]
 
   implicit val androidPermissionModelDecoder: Decoder[AndroidPermissionModel] = deriveDecoder[AndroidPermissionModel]
   implicit val androidPermissionModelEncoder: Encoder[AndroidPermissionModel] = deriveEncoder[AndroidPermissionModel]
