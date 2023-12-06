@@ -318,7 +318,7 @@ object ScanProcessor extends CommandProcessor {
 
   private val auditCache = new AuditCache
   private def getDataflowCache: DataFlowCache = {
-    new DataFlowCache(auditCache)
+    new DataFlowCache(config, auditCache)
   }
 
   /** Helper function to process rule for a language

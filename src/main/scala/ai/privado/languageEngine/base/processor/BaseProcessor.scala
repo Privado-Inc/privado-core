@@ -118,7 +118,7 @@ abstract class BaseProcessor(
     println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
     val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
     println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-        .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
+        .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
     println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
 
     applyFinalExport(cpg, taggerCache, dataflowMap)
@@ -154,7 +154,7 @@ abstract class BaseProcessor(
       dataflowMap,
       ruleCache,
       taggerCache,
-      dataFlowCache.getDataflow,
+      dataFlowCache.getDataflowAfterDedup,
       privadoInput
     ) match {
       case Left(err) =>

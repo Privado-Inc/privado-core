@@ -85,7 +85,7 @@ object DefaultProcessor {
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
           )
@@ -100,7 +100,7 @@ object DefaultProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache.getDataflow,
+            dataFlowCache.getDataflowAfterDedup,
             ScanProcessor.config
           ) match {
             case Left(err) =>

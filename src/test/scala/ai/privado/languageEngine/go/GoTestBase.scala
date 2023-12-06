@@ -306,7 +306,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     val ruleCache                    = new RuleCache()
     val dataFlows: Map[String, Path] = Map()
     val auditCache                   = new AuditCache
-    val dataFlowCache                = new DataFlowCache(auditCache)
+    val dataFlowCache                = new DataFlowCache(config, auditCache)
 
     val privadoInput = PrivadoInput()
     val inputDir     = File.newTemporaryDirectory()

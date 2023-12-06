@@ -156,9 +156,7 @@ class AuditCache {
   def checkFlowExistInFirstDedup(sourcePathInfo: SourcePathInfo): Boolean =
     flowPathBeforeFirstDedup.contains(sourcePathInfo)
 
-  def addIntoBeforeSecondDedup(
-    dataFlow: mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]
-  ): Unit = {
+  def addIntoBeforeSecondDedup(dataFlow: Map[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]): Unit = {
     dataFlow.foreach(flow => {
       flow._2.foreach(fileInfo => {
         fileInfo._2.foreach(dataflowModel => {
