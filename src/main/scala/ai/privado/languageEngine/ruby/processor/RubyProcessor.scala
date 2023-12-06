@@ -27,6 +27,7 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerC
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
+import ai.privado.exporter.monolith.MonolithExporter
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
@@ -185,10 +186,27 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting
-          if (privadoInput.isMonolith) {
+          val monolithPrivadoJsonPaths: List[String] = if (privadoInput.isMonolith) {
             // Export privado json for individual subProject/Repository Item
-
-          }
+            cpg.tag
+              .nameExact(Constants.monolithRepoItem)
+              .value
+              .dedup
+              .flatMap(repoItemName =>
+                MonolithExporter.fileExport(
+                  cpg,
+                  repoItemName,
+                  outputFileName,
+                  sourceRepoLocation,
+                  dataflowMap,
+                  ruleCache,
+                  taggerCache,
+                  dataFlowCache,
+                  privadoInput
+                )
+              )
+              .l
+          } else List()
 
           JSONExporter.fileExport(
             cpg,
@@ -198,7 +216,8 @@ object RubyProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache,
-            privadoInput
+            privadoInput,
+            monolithPrivadoJsonPaths = monolithPrivadoJsonPaths
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)

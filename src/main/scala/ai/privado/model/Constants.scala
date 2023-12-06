@@ -40,6 +40,7 @@ object Constants {
   val collectionSource = "collectionSource"
   val android          = "android"
   val monolithRepoItem = "monolithRepoItem"
+  val monolithJsonPath = "monolithJsonPath"
 
   // semantic
   val signature = "signature"

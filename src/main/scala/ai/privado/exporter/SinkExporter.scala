@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
+class SinkExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option[String] = None) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
   lazy val sinkTagList: List[List[Tag]] = sinkList.map(_.tag.l)
@@ -119,7 +119,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
           .where(filterSink)
           .l
-    sinks
+    ExporterUtility.filterNodeBasedOnRepoItemTagName(sinks, repoItemTagName)
   }
 
   private def convertSinkList(sinks: List[List[Tag]]) = {

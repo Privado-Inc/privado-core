@@ -10,12 +10,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, File}
 import io.shiftleft.semanticcpg.language.*
 class MonolithTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[File](cpg) {
   override def generateParts(): Array[File] = {
-    cpg.file.name(".*_controller.rb").toArray
+    cpg.file.name(".*_controller.rb").filterNot(_.name.startsWith("/")).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, fileNode: File): Unit = {
 
-    fileNode.ast.where(_.tag).foreach(storeForTag(builder, _, ruleCache)(Constants.monolithRepoItem, fileNode.name))
+    val repoItemName = fileNode.name.replaceAll("/", "--").stripSuffix("_controller.rb")
+    storeForTag(builder, fileNode, ruleCache)(Constants.monolithRepoItem, repoItemName)
+    fileNode.ast.where(_.tag).foreach(storeForTag(builder, _, ruleCache)(Constants.monolithRepoItem, repoItemName))
   }
 
 }
