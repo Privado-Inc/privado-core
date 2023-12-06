@@ -327,12 +327,12 @@ object ExporterUtility {
     logger.info("Initiated exporter engine")
     val sourceExporter             = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
     val sinkExporter               = new SinkExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val dataflowExporter           = new DataflowExporter(dataflows, taggerCache) // TODO
+    val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
     val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
-      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput) // TODO
+      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput)
     val output = mutable.LinkedHashMap[String, Json]()
 
     output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
