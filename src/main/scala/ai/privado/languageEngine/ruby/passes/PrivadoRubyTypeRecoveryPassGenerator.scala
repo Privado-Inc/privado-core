@@ -15,26 +15,25 @@ import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import scala.annotation.tailrec
 import scala.collection.{Seq, mutable}
 
-class PrivadoRubyTypeRecoveryPass(
+class PrivadoRubyTypeRecoveryPassGenerator(
   cpg: Cpg,
   globalSymbolTable: SymbolTable[LocalKey],
   config: XTypeRecoveryConfig = XTypeRecoveryConfig()
-) extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new RubyTypeRecovery(cpg, globalSymbolTable, state)
+) extends XTypeRecoveryPassGenerator[File](cpg, config) {
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[File] =
+    new RubyTypeRecovery(cpg, globalSymbolTable, state, iteration)
 }
 
-private class RubyTypeRecovery(cpg: Cpg, globalSymbolTable: SymbolTable[LocalKey], state: XTypeRecoveryState)
-    extends XTypeRecovery[File](cpg, state) {
+private class RubyTypeRecovery(cpg: Cpg, globalSymbolTable: SymbolTable[LocalKey], state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def compilationUnit: Traversal[File] = cpg.file.iterator
+  override def compilationUnits: Traversal[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForRubyFile(cpg, globalSymbolTable, unit, builder, state.copy(config = newConfig))
+    new RecoverForRubyFile(cpg, globalSymbolTable, unit, builder, state)
   }
 }
 
@@ -497,7 +496,7 @@ private class RecoverForRubyFile(
       storeNodeTypeInfo(x, filteredTypes.toSeq)
       x match {
         case i: Identifier if symbolTable.contains(i) || globalSymbolTable.contains(i) =>
-          if (isField(i)) persistMemberType(i, filteredTypes)
+          if (isFieldUncached(i)) persistMemberType(i, filteredTypes)
           handlePotentialFunctionPointer(i, filteredTypes, i.name)
         case _ =>
       }
@@ -543,9 +542,7 @@ private class RecoverForRubyFile(
         case l: Local                                    => storeLocalTypeInfoPrivado(l, types)
         case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfoPrivado(c, types)
         case _: Call                                     =>
-        case n =>
-          state.changesWereMade.compareAndSet(false, true)
-          setTypesPrivado(n, types)
+        case n => setTypesPrivado(n, types)
       }
     }
   }
@@ -557,7 +554,6 @@ private class RecoverForRubyFile(
     */
   def storeDefaultTypeInfoPrivado(n: StoredNode, types: Seq[String]): Unit =
     if (types.toSet != n.getKnownTypes) {
-      state.changesWereMade.compareAndSet(false, true)
       setTypesPrivado(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
     }
 
@@ -576,7 +572,6 @@ private class RecoverForRubyFile(
 
   def storeCallTypeInfoPrivado(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(
         c,
         PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,

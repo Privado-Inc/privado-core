@@ -11,7 +11,7 @@ import io.joern.pysrc2cpg.{
   Py2CpgOnFileSystem,
   Py2CpgOnFileSystemConfig,
   PythonTypeHintCallLinker,
-  PythonTypeRecoveryPass
+  PythonTypeRecoveryPassGenerator
 }
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -315,7 +315,7 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     // Apply default overlays
     X2Cpg.applyDefaultOverlays(cpg)
     new ImportsPass(cpg).createAndApply()
-    new PythonTypeRecoveryPass(cpg).createAndApply()
+    new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new NaiveCallLinker(cpg).createAndApply()
 
