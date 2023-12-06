@@ -1,6 +1,6 @@
 package ai.privado.exporter.monolith
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.{Constants, DataFlowPathModel}
@@ -31,7 +31,7 @@ object MonolithExporter {
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
-    dataFlowModelList: List[DataFlowPathModel],
+    dataFlowCache: DataFlowCache,
     privadoInput: PrivadoInput
   ): Option[String] = {
 
@@ -51,7 +51,7 @@ object MonolithExporter {
         dataflows,
         ruleCache,
         taggerCache,
-        filterRepoItemDataflows(dataFlowModelList, dataflows, repoItemTagName),
+        filterRepoItemDataflows(dataFlowCache, dataflows, repoItemTagName, privadoInput),
         privadoInput,
         repoItemTagName = Option(repoItemTagName)
       )
@@ -80,20 +80,29 @@ object MonolithExporter {
     * @param repoItemTagName
     */
   def filterRepoItemDataflows(
-    dataflowModelList: List[DataFlowPathModel],
+    dataFlowCache: DataFlowCache,
     dataflows: Map[String, Path],
-    repoItemTagName: String
+    repoItemTagName: String,
+    privadoInput: PrivadoInput
   ): List[DataFlowPathModel] = {
 
-    dataflowModelList.filter(model =>
-      dataflows.get(model.pathId) match
-        case Some(path) =>
-          path.elements.headOption.exists(
-            _.tag.nameExact(Constants.monolithRepoItem).valueExact(repoItemTagName).nonEmpty
-          )
-        case None => false
-    )
+    // Keep generate audit false as well don't need audit report for individual repo Item
+    val localDataflowCache =
+      new DataFlowCache(privadoInput = privadoInput.copy(generateAuditReport = false), auditCache = new AuditCache)
+    // Set up local dataflow cache
+    localDataflowCache.dataflowsMapByType.putAll(dataFlowCache.dataflowsMapByType)
 
+    dataFlowCache.getDataflowBeforeDedup
+      .filter(model =>
+        dataflows.get(model.pathId) match
+          case Some(path) =>
+            path.elements.headOption
+              .exists(_.tag.nameExact(Constants.monolithRepoItem).valueExact(repoItemTagName).nonEmpty)
+          case None => false
+      )
+      .foreach(dataflowModel => localDataflowCache.setDataflow(dataflowModel))
+
+    localDataflowCache.getDataflowAfterDedup
   }
 
 }

@@ -176,7 +176,7 @@ class Dataflow(cpg: Cpg) {
         auditCache
       )
       println(s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.getDataflowWithoutDedup.size}")
+          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.getDataflowBeforeDedup.size}")
     }
     // Need to return the filtered result
     println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")

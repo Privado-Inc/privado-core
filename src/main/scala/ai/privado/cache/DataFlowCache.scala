@@ -75,8 +75,8 @@ class DataFlowCache(privadoInput: PrivadoInput, auditCache: AuditCache) {
     dataflow(sourceId)(fileLineNo).append(dataFlowPathModel)
   }
 
-  def getDataflowAfterDedup: List[DataFlowPathModel]   = finalDataflow
-  def getDataflowWithoutDedup: List[DataFlowPathModel] = dataflow.flatMap(_._2.values.flatMap(_.toList)).toList
+  def getDataflowAfterDedup: List[DataFlowPathModel]  = finalDataflow
+  def getDataflowBeforeDedup: List[DataFlowPathModel] = dataflow.flatMap(_._2.values.flatMap(_.toList)).toList
 
   def getIntermediateDataFlow(): List[DataFlowPathIntermediateModel] = intermediateDataFlow
 

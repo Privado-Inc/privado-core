@@ -201,7 +201,7 @@ object RubyProcessor {
                   dataflowMap,
                   ruleCache,
                   taggerCache,
-                  dataFlowCache.getDataflowAfterDedup,
+                  dataFlowCache,
                   privadoInput
                 )
               )
