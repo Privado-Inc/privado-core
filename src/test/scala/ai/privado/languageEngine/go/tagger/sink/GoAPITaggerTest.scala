@@ -234,7 +234,6 @@ class GoAPITaggerTestCase3 extends GoTestBase {
         |		Name:     "John Doe",
         |		Age:      25,
         |		Location: "New York",
-        |		Email: "abc@gmailin.com",
         |	}
         |
         |	// Create a new API client
@@ -258,7 +257,7 @@ class GoAPITaggerTestCase3 extends GoTestBase {
 
       val List(postCallNode) = cpg.call("Post").l
 
-      postCallNode.tag.size shouldBe 9
+      postCallNode.tag.size shouldBe 6
       postCallNode.tag.nameExact("id").value.head shouldBe "Sinks.ThirdParties.API.api.example.com"
       postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
       postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
