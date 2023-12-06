@@ -24,8 +24,12 @@ class PrivadoRubyTypeRecoveryPassGenerator(
     new RubyTypeRecovery(cpg, globalSymbolTable, state, iteration)
 }
 
-private class RubyTypeRecovery(cpg: Cpg, globalSymbolTable: SymbolTable[LocalKey], state: XTypeRecoveryState, iteration: Int)
-    extends XTypeRecovery[File](cpg, state, iteration) {
+private class RubyTypeRecovery(
+  cpg: Cpg,
+  globalSymbolTable: SymbolTable[LocalKey],
+  state: XTypeRecoveryState,
+  iteration: Int
+) extends XTypeRecovery[File](cpg, state, iteration) {
 
   override def compilationUnits: Traversal[File] = cpg.file.iterator
 
@@ -542,7 +546,7 @@ private class RecoverForRubyFile(
         case l: Local                                    => storeLocalTypeInfoPrivado(l, types)
         case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfoPrivado(c, types)
         case _: Call                                     =>
-        case n => setTypesPrivado(n, types)
+        case n                                           => setTypesPrivado(n, types)
       }
     }
   }
