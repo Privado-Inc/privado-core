@@ -45,7 +45,14 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
     val fieldIdentifiers = cpg.androidXmlLayoutNode
       .name(collectionRuleInfo.combinedRulePattern)
       .flatMap { elem =>
-        cpg.fieldAccess.astChildren.isFieldIdentifier.where(_.canonicalName(elem.name)).l
+        cpg.fieldAccess.astChildren.isFieldIdentifier
+          .where(_.canonicalName(elem.name))
+          .groupBy(_.file.name.l)
+          .flatMap(
+            _._2.l
+              .distinctBy(_.canonicalName) // for each file, we select unique field identifiers only
+          )
+          .toList
       }
       .toList
     if (fieldIdentifiers.nonEmpty) {
