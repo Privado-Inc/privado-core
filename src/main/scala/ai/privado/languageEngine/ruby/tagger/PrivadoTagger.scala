@@ -59,7 +59,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new APITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
     new RubyDBConfigTagger(cpg).createAndApply()
-    if (!ScanProcessor.config.ignoreInternalRules) {
+    if (!privadoInputConfig.ignoreInternalRules) {
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
 

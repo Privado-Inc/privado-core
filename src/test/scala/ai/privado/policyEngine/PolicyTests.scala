@@ -651,7 +651,6 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
     val configAndRules =
       ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
-    ScanProcessor.config = privadoInput
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
     val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get

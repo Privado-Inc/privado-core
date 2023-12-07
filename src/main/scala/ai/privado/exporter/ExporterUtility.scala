@@ -326,7 +326,7 @@ object ExporterUtility {
   ) = {
     logger.info("Initiated exporter engine")
     val sourceExporter             = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
-    val sinkExporter               = new SinkExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val sinkExporter               = new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
     val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
     val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
