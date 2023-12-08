@@ -95,13 +95,14 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       mapper(literalId).append(node)
     }
 
-    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
+    val ruleInfo       = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
+    val linkedSourceId = Option(ruleInfo.tags("sourceId"))
     CollectionModel(
       collectionId,
       ruleInfo.name,
       ruleInfo.isSensitive,
       collectionAndroidXmlFieldIdMapById
-        .map(entrySet => processByAndroidXmlFieldIds(entrySet._1, entrySet._2.toList))
+        .map(entrySet => processByAndroidXmlFieldIds(linkedSourceId.getOrElse(""), entrySet._2.toList))
         .toList
     )
   }
@@ -292,12 +293,12 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
   }
 
   def processByAndroidXmlFieldIds(
-    fieldIdentifierId: String,
+    sourceId: String,
     fieldIdentiferOccurances: List[FieldIdentifier]
   ): CollectionOccurrenceDetailModel = {
 
     CollectionOccurrenceDetailModel(
-      fieldIdentifierId,
+      sourceId,
       fieldIdentiferOccurances
         .flatMap(fieldId => {
           ExporterUtility.convertIndividualPathElement(fieldId) match {

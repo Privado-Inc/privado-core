@@ -44,6 +44,7 @@ import scala.util.{Failure, Success, Try}
 import java.nio.file.{Files, Path, Paths}
 import scala.util.control.Breaks.*
 import scala.util.matching.Regex
+import better.files.File.VisitOptions
 
 object FileExtensions {
   val YAML = ".yaml"
@@ -448,7 +449,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     allowedFiles: Set[String] = Set()
   ): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), extensions)
+      .determine(Set(projectRoot), extensions)(VisitOptions.default)
       .filter(_.matches(f".*(${allowedFiles.mkString("|")})"))
       .filter(file => Utilities.isFileProcessable(file, ruleCache))
       .distinct

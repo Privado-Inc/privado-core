@@ -6,8 +6,8 @@ ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.4.30"
-val joernVersion      = "2.0.171"
+val cpgVersion        = "1.4.32"
+val joernVersion      = "2.0.181"
 val overflowdbVersion = "1.181"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -52,7 +52,7 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion exclude ("org.yaml", "snakeyaml"),
   "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
   "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
-  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0" % Runtime,
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0",
   "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",

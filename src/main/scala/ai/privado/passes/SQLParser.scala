@@ -34,6 +34,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+import better.files.File.VisitOptions
 
 import scala.collection.mutable
 import scala.util.Try
@@ -107,7 +108,7 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
   }
   private def getSQLFiles(projectRoot: String, extensions: Set[String]): List[String] = {
     SourceFiles
-      .determine(Set(projectRoot), extensions)
+      .determine(Set(projectRoot), extensions)(VisitOptions.default)
       .filter(Utilities.isFileProcessable(_, ruleCache))
   }
 
