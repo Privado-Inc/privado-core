@@ -29,6 +29,7 @@ import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
 import ai.privado.languageEngine.ruby.tagger.source.{IdentifierDerivedTagger, IdentifierTagger}
 import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
+import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
@@ -65,6 +66,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       LeakageRule.rules.foreach(ruleCache.setRuleInfo)
       new LeakageTagger(cpg, ruleCache).createAndApply()
     }
+
+    // Run monolith tagger at the end
+    new MonolithTagger(cpg, ruleCache).createAndApply()
     logger.info("Done with tagging")
     cpg.tag
   }

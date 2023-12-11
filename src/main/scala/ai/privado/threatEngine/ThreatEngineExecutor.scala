@@ -27,7 +27,7 @@ import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.ViolationModel
-import ai.privado.model.PolicyOrThreat
+import ai.privado.model.{DataFlowPathModel, PolicyOrThreat}
 import ai.privado.utility.Utilities.*
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -37,11 +37,10 @@ import scala.util.{Failure, Success}
 
 class ThreatEngineExecutor(
   cpg: Cpg,
-  dataflows: Map[String, Path],
   repoPath: String,
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
-  dataFlowCache: DataFlowCache,
+  dataFlowModel: List[DataFlowPathModel],
   privadoInput: PrivadoInput
 ) {
 
@@ -130,7 +129,7 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.CookieConsent.IsCookieConsentMgmtModuleImplemented" =>
-        CookieConsentMgmtModule.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache, privadoInput) match {
+        CookieConsentMgmtModule.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -251,7 +250,7 @@ class ThreatEngineExecutor(
 
     val violationResponse = threatId match {
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
-        DataLeakageToNotifications.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache, privadoInput) match {
+        DataLeakageToNotifications.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -259,7 +258,7 @@ class ThreatEngineExecutor(
           }
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
-        DataLeakageToLogs.getViolations(threat, cpg, dataflows, ruleCache, dataFlowCache, privadoInput) match {
+        DataLeakageToLogs.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
