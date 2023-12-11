@@ -268,3 +268,79 @@ class GoAPITaggerTestCase3 extends GoTestBase {
   }
 
 }
+
+class GoAPITaggerTestCase4 extends GoTestBase {
+  "Tagging api sink: using go-resty" should {
+    val (cpg, _) = code(
+      """
+        |package main
+        |
+        |import (
+        | "fmt"
+        | "github.com/go-resty/resty"
+        |)
+        |type User struct {
+        |	FirstName     string
+        |	Age      int
+        |	Location string
+        |	Email    string
+        |}
+        |
+        |func (apiClient *APIClient) SendUser(user User) error {
+        | client := resty.New()
+        | http_url := "https://api.example.com/users"
+        |
+        | response, err := client.R().
+        |		SetHeader("Content-Type", "application/json").
+        |		SetBody(user).
+        |		Post(http_url)
+        |
+        |  if err != nil {
+        |   return err
+        |  }
+        |
+        |	fmt.Println("User sent successfully!")
+        |	return nil
+        |}
+        |
+        |func main() {
+        | user = User{
+        |   Name:     "John Doe",
+        |		Age:      25,
+        |		Location: "New York",
+        |		Email: "abc@gmail.com",
+        | }
+        |
+        | client := APIClient{
+        |		BaseURL: "https://api.example.com",
+        |	}
+        |
+        | err := client.SendUser(user)
+        | if err != nil {
+        |   fmt.Printf("Error sending user: %s\n", err.Error())
+        | }
+        |}
+        |""".stripMargin,
+      downloadDependency = true
+    )
+
+    "check tag of api sink" in {
+      val identifierNode = cpg.member("FirstName").tag.nameExact(Constants.id).l
+      identifierNode.size shouldBe 1
+      identifierNode.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+
+      val List(postCallNode) = cpg.call("Post").l
+
+      postCallNode.tag.size shouldBe 9
+      val idTags = postCallNode.tag.nameExact("id").value.l
+      idTags should contain("Sinks.ThirdParties.API.gmail.com")
+      idTags should contain("Sinks.ThirdParties.API.api.example.com")
+      postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
+      postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
+      postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
+      val thirdPartyTags = postCallNode.tag.nameExact("third_partiesapi").value.l
+      thirdPartyTags should contain("Sinks.ThirdParties.API.gmail.com")
+      thirdPartyTags should contain("Sinks.ThirdParties.API.api.example.com")
+    }
+  }
+}
