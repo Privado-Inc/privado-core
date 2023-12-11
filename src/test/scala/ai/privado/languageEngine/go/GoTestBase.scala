@@ -348,14 +348,6 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     (cpg, threatEngine)
   }
 
-  override def beforeEach(): Unit = {
-    GoGlobal.methodFullNameReturnTypeMap.clear()
-    GoGlobal.aliasToNameSpaceMapping.clear()
-    GoGlobal.structTypeMemberTypeMapping.clear()
-    GoGlobal.lambdaSignatureToLambdaTypeMap.clear()
-    GoGlobal.pkgLevelVarAndConstantAstMap.clear()
-  }
-
   override def afterAll(): Unit = {
     cpgs.foreach(_.close())
     outPutFiles.foreach(_.delete())
