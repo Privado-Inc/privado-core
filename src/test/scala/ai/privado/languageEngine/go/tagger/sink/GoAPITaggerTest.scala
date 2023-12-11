@@ -344,3 +344,96 @@ class GoAPITaggerTestCase4 extends GoTestBase {
     }
   }
 }
+
+class GoAPITaggerForSOAPAPI extends GoTestBase {
+  "Tagging api sink: having SOAP API" should {
+    val (cpg, _) = code("""
+        |package main
+        |
+        |import (
+        |	"bytes"
+        |	"crypto/tls"
+        |	"encoding/xml"
+        |	"fmt"
+        |	"io/ioutil"
+        |	"net/http"
+        |	"strings"
+        |)
+        |
+        |type SoapHeader struct {
+        |	XMLName xml.Name `xml:"x:Header"`
+        |}
+        |
+        |type SoapBody struct {
+        |	XMLName xml.Name `xml:"x:Body"`
+        |	Request interface{}
+        |}
+        |
+        |type SoapRoot struct {
+        |	XMLName xml.Name `xml:"x:Envelope"`
+        |	X       string   `xml:"xmlns:x,attr"`
+        |	Sch     string   `xml:"xmlns:sch,attr"`
+        |	Header  SoapHeader
+        |	Body    SoapBody
+        |}
+        |
+        |type GetCitiesRequest struct {
+        |	XMLName xml.Name `xml:"sch:GetCitiesRequest"`
+        |}
+        |
+        |type GetCitiesResponse struct {
+        |	XMLName xml.Name `xml:"ns3:GetCitiesResponse"`
+        |	result  struct{} `xml:result`
+        |	cities  struct{} `xml:cities`
+        |}
+        |
+        |func SoapCall(service string, request interface{}) string {
+        |	var root = SoapRoot{}
+        |	root.X = "http://schemas.xmlsoap.org/soap/envelope/"
+        |	root.Sch = "http://www.n11.com/ws/schemas"
+        |	root.Header = SoapHeader{}
+        |	root.Body = SoapBody{}
+        |	root.Body.Request = request
+        |
+        |	out, _ := xml.MarshalIndent(&root, " ", "  ")
+        |	body := string(out)
+        |
+        |	client := &http.Client{
+        |		Transport: &http.Transport{
+        |			TLSClientConfig: &tls.Config{
+        |				InsecureSkipVerify: true,
+        |			},
+        |		},
+        |	}
+        |	response, err := client.Post(service, "text/xml", bytes.NewBufferString(body))
+        |
+        |	if err != nil {
+        |		fmt.Println(err)
+        |	}
+        |	defer response.Body.Close()
+        |
+        |	content, _ := ioutil.ReadAll(response.Body)
+        |	s := strings.TrimSpace(string(content))
+        |	return s
+        |}
+        |
+        |func main() {
+        | http_url := "https://api.example.com/users"
+        |	SoapCall(http_url, GetCitiesRequest{})
+        |}
+        |""".stripMargin)
+
+    "check tag of api sink" in {
+      val List(postCallNode) = cpg.call("Post").l
+
+      postCallNode.tag.size shouldBe 12
+      val idTags = postCallNode.tag.nameExact("id").value.l
+      idTags should contain("Sinks.ThirdParties.API.api.example.com")
+      postCallNode.tag.nameExact("nodeType").value.head shouldBe "api"
+      postCallNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
+      postCallNode.tag.nameExact("catLevelTwo").value.head shouldBe "third_parties"
+      val thirdPartyTags = postCallNode.tag.nameExact("third_partiesapi").value.l
+      thirdPartyTags should contain("Sinks.ThirdParties.API.api.example.com")
+    }
+  }
+}
