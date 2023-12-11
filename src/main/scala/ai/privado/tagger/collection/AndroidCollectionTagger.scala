@@ -47,13 +47,27 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
       .flatMap { elem =>
         cpg.fieldAccess.astChildren.isFieldIdentifier
           .where(_.canonicalName(elem.name))
-          .where(_.astSiblings.code(".*binding|R\\.id.*"))
+          .where(_.astSiblings.code(".*binding.*"))
           .groupBy(_.file.name.l)
           .flatMap(
             _._2.l
               .distinctBy(_.canonicalName) // for each file, we select unique field identifiers only
           )
-          .toList
+          .toList ++
+          cpg.call
+            .where(_.methodFullName(".*android.view.View.findViewById.*"))
+            .argument
+            .isCall
+            .argument
+            .isFieldIdentifier
+            .where(_.canonicalName(elem.name))
+            .where(_.astSiblings.code(".*R\\.id.*"))
+            .groupBy(_.file.name.l)
+            .flatMap(
+              _._2.l
+                .distinctBy(_.canonicalName)
+            )
+            .toList
       }
       .toList
     if (fieldIdentifiers.nonEmpty) {
