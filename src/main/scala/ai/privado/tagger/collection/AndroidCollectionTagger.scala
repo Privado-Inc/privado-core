@@ -47,10 +47,9 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
       .flatMap { elem =>
         cpg.graph
           .nodes(NodeTypes.FIELD_IDENTIFIER)
-          .asScala
-          .cast[FieldIdentifier]
+          .map(_.asInstanceOf[FieldIdentifier])
           .where(_.canonicalName(elem.name))
-          .where(_.astSiblings.code(".*(binding|R\\.id.*"))
+          .where(_.astSiblings.code(".*(binding|R\\.id).*"))
           .groupBy(_.file.name.l)
           .flatMap(
             _._2.l
