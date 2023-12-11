@@ -306,10 +306,10 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     val ruleCache                    = new RuleCache()
     val dataFlows: Map[String, Path] = Map()
     val auditCache                   = new AuditCache
-    val dataFlowCache                = new DataFlowCache(auditCache)
+    val privadoInput                 = PrivadoInput()
+    val dataFlowCache                = new DataFlowCache(privadoInput, auditCache)
 
-    val privadoInput = PrivadoInput()
-    val inputDir     = File.newTemporaryDirectory()
+    val inputDir = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)
     (inputDir / s"generalFile${fileExtension}").write(code)
     val outputFile: File = File.newTemporaryFile()
@@ -319,7 +319,6 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       .withOutputPath(outputFile.pathAsString)
       .withFetchDependencies(downloadDependency)
 
-    ScanProcessor.config = privadoInput
     ruleCache.setRule(configAndRules)
     val cpg = new GoSrc2Cpg().createCpg(config).get
     AppCache.repoLanguage = Language.GO
@@ -337,7 +336,14 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
     cpgs.addOne(cpg)
     val threatEngine =
-      new ThreatEngineExecutor(cpg, dataFlows, config.inputPath, ruleCache, null, dataFlowCache, privadoInput)
+      new ThreatEngineExecutor(
+        cpg,
+        config.inputPath,
+        ruleCache,
+        null,
+        dataFlowCache.getDataflowAfterDedup,
+        privadoInput
+      )
     (cpg, threatEngine)
   }
 
