@@ -65,8 +65,8 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
       sinkSet should contain("<unresolvedNamespace>.firstName:<unresolvedSignature>(1)")
 
       // Test code snippet info
-      codeSnippet should contain("firstName -> builder() -> firstName(firstName)")
-      codeSnippet should contain("firstName -> firstName -> builder() -> firstName(firstName)")
+      codeSnippet should contain("firstName -> builder() -> builder().firstName(firstName)")
+      codeSnippet should contain("firstName -> firstName -> builder() -> builder().firstName(firstName)")
     }
   }
 }
