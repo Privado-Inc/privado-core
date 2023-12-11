@@ -323,6 +323,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
             .name
             .headOption
             .getOrElse("")
+            .stripPrefix(cpg.metaData.root.headOption.getOrElse("") + "/")
+
           ExporterUtility
             .convertIndividualPathElement(fieldId, messageInExcerpt = "Android Form: " + androidXmlFileName) match {
             case Some(pathElement) =>
