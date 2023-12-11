@@ -319,7 +319,6 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       .withOutputPath(outputFile.pathAsString)
       .withFetchDependencies(downloadDependency)
 
-    ScanProcessor.config = privadoInput
     ruleCache.setRule(configAndRules)
     val cpg = new GoSrc2Cpg().createCpg(config).get
     AppCache.repoLanguage = Language.GO

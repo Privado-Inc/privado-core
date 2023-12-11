@@ -1,6 +1,6 @@
 package ai.privado.audit
 
-import ai.privado.cache.{AuditCache, DataFlowCache}
+import ai.privado.cache.AuditCache
 
 import scala.collection.mutable.ListBuffer
 
