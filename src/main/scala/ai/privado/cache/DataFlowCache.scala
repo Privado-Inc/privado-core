@@ -154,7 +154,7 @@ object DataFlowCache {
     }
 
     if (privadoInput.generateAuditReport) {
-      auditCache.addIntoBeforeFirstDedup(dataflowAfterDedup)
+      auditCache.addIntoBeforeFirstDedup(dataflow)
     }
 
     val filteredSourceIdMap = dataflow.map(entrySet => {
@@ -168,7 +168,7 @@ object DataFlowCache {
       })
       (sourceId, filteredFileLineNumberMap)
     })
-    val flowsWithAppyDedupFalse = dataflow.flatMap(_._2.values.flatMap(_.filterNot(_.applyDedup).toList)).toList
+    val flowsWithApplyDedupFalse = dataflow.flatMap(_._2.values.flatMap(_.filterNot(_.applyDedup).toList)).toList
 
     if (privadoInput.generateAuditReport) {
       auditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
@@ -179,6 +179,6 @@ object DataFlowCache {
         fileLineNoEntry._2.foreach(dfpm => addToMap(dfpm))
       })
     })
-    dataflowAfterDedup.flatMap(_._2.values.flatMap(_.toList)).toList ::: flowsWithAppyDedupFalse
+    dataflowAfterDedup.flatMap(_._2.values.flatMap(_.toList)).toList ::: flowsWithApplyDedupFalse
   }
 }
