@@ -36,7 +36,12 @@ import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 
-class SourceExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput) {
+class SourceExporter(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  repoItemTagName: Option[String] = None
+) {
 
   lazy val sourcesList: List[AstNode]      = getSourcesList
   lazy val sourcesTagList: List[List[Tag]] = sourcesList.map(_.tag.l)
@@ -91,7 +96,7 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
             .valueExact(CatLevelOne.SOURCES.name)
         )
     }
-    val sources =
+    val sources: List[AstNode] =
       cpg.identifier
         .where(filterSource)
         .l ++
@@ -108,7 +113,7 @@ class SourceExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
           .l ++ cpg.sqlColumn
           .where(filterSource)
           .l ++ cpg.androidXmlPermissionNode.where(filterSource).l
-    sources
+    ExporterUtility.filterNodeBasedOnRepoItemTagName(sources, repoItemTagName)
   }
 
   private def convertSourcesList(sources: List[List[Tag]]): List[SourceModel] = {

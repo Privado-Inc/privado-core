@@ -40,7 +40,7 @@ import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache) {
+class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option[String] = None) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -48,8 +48,14 @@ class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache) {
     val permissions = ListBuffer[AndroidPermissionModel]()
     try {
       // take only those nodes that have source tags
-      cpg.androidXmlPermissionNode
-        .where(_.tag.nameExact(Constants.catLevelOne).valueExact(Constants.sources))
+      ExporterUtility
+        .filterNodeBasedOnRepoItemTagName(
+          cpg.androidXmlPermissionNode
+            .where(_.tag.nameExact(Constants.catLevelOne).valueExact(Constants.sources))
+            .l,
+          repoItemTagName
+        )
+        .collectAll[AndroidXmlPermissionNode]
         .foreach(node => {
           getPermissionDetail(node) match
             case Some(permissionDetail) =>

@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -126,7 +127,8 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
   val rule: ConfigAndRules =
     ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List(), List())
 
+  val privadoInput  = PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
   val taggerCache   = new TaggerCache()
   val auditCache    = new AuditCache
-  val dataFlowCache = new DataFlowCache(auditCache)
+  val dataFlowCache = new DataFlowCache(privadoInput, auditCache)
 }

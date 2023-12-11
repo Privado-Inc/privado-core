@@ -175,14 +175,12 @@ class Dataflow(cpg: Cpg) {
         dataFlowCache,
         auditCache
       )
-      println(
-        s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
-            .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.dataflow.values.flatMap(_.values).flatten.size}"
-      )
+      println(s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
+          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.getDataflowBeforeDedup.size}")
     }
     // Need to return the filtered result
     println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
-    val dataflowFromCache = dataFlowCache.getDataflow
+    val dataflowFromCache = dataFlowCache.getDataflowAfterDedup
     println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
         .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
     auditCache.addIntoFinalPath(dataflowFromCache)
