@@ -36,6 +36,8 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
+import ai.privado.semantic.Language.*
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -64,7 +66,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
     val collectionMapByCollectionId = cpg.fieldAccess.astChildren.isFieldIdentifier
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
       .l
-      .groupBy(collectionTemplateDom => collectionTemplateDom.tag.nameExact(Constants.id).value.head)
+      .groupBy(collectionAndroidXml => collectionAndroidXml.tag.nameExact(Constants.id).value.head)
 
     collectionMapByCollectionId
       .map(entrySet => processByCollectionIdForAndroidXmlFieldIds(entrySet._1, entrySet._2))
@@ -301,7 +303,14 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       sourceId,
       fieldIdentiferOccurances
         .flatMap(fieldId => {
-          ExporterUtility.convertIndividualPathElement(fieldId) match {
+          val androidXmlFileName = cpg.androidXmlLayoutNode
+            .name(fieldId.canonicalName)
+            .file
+            .name
+            .headOption
+            .getOrElse("")
+          ExporterUtility
+            .convertIndividualPathElement(fieldId, messageInExcerpt = "Android Form: " + androidXmlFileName) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(
