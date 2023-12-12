@@ -32,8 +32,8 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "kotlin2cpg"   % Versions.joern,
-  "io.joern"             %% "gosrc2cpg"   % Versions.joern,
+  "io.joern"             %% "kotlin2cpg"    % Versions.joern,
+  "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
@@ -124,7 +124,7 @@ goAstGenBinaryNames := { Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAst
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
 goAstGenDlTask := {
-  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
+  val goAstGenDir = baseDirectory.value / "bin" / "goastgen"
   goAstGenDir.mkdirs()
 
   goAstGenBinaryNames.value.foreach { fileName =>
@@ -136,7 +136,7 @@ goAstGenDlTask := {
     }
   }
 
-  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "goastgen"
   distDir.mkdirs()
   IO.copyDirectory(goAstGenDir, distDir)
 
