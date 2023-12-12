@@ -124,7 +124,7 @@ goAstGenBinaryNames := { Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAst
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
 goAstGenDlTask := {
-  val goAstGenDir = baseDirectory.value / "bin" / "goastgen"
+  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
   goAstGenDir.mkdirs()
 
   goAstGenBinaryNames.value.foreach { fileName =>
@@ -136,7 +136,7 @@ goAstGenDlTask := {
     }
   }
 
-  val distDir = (Universal / stagingDirectory).value / "bin" / "goastgen"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(goAstGenDir, distDir)
 
