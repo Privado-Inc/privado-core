@@ -273,7 +273,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
   val systemConfig = List(
     SystemConfig(
       "apiHttpLibraries",
-      "^(?i)(net/http|github.com/parnurzeal/gorequest|gopkg.in/resty|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
+      "^(?i)(net/http|github.com/parnurzeal/gorequest|(gopkg.in|github.com/go-resty)/resty|valyala/fasthttp|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
       Language.GO,
       "",
       Array()
