@@ -23,7 +23,7 @@
 package ai.privado.cache
 
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.exporter.{
   DataFlowPathIntermediateModel,
   DataFlowSinkIntermediateModel,
@@ -40,21 +40,20 @@ import java.util.concurrent.{ConcurrentHashMap, ConcurrentMap}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class DataFlowCache(auditCache: AuditCache) {
+class DataFlowCache(privadoInput: PrivadoInput, auditCache: AuditCache) {
 
   val dataflowsMapByType: ConcurrentMap[String, Path] = new ConcurrentHashMap[String, Path]()
 
-  val dataflow = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
+  // Contains all the dataflow mapping without applying Deduplication
+  private val dataflow: mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]] =
+    mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
 
-  lazy val finalDataflow: List[DataFlowPathModel] = {
-    val extraFlows = {
-      if (!ScanProcessor.config.disableDeDuplication)
-        setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse(auditCache)
-      else
-        List()
-    }
-
-    dataflow.flatMap(_._2.values.flatMap(_.toList)).toList ::: extraFlows
+  // Contains all the dataflows after looking at the necessary dedup flag
+  private lazy val finalDataflow: List[DataFlowPathModel] = {
+    if (!privadoInput.disableDeDuplication)
+      DataFlowCache.getDataflowAfterApplyingDedupLogic(privadoInput, auditCache, dataflowsMapByType, dataflow.toMap)
+    else
+      dataflow.flatMap(_._2.values.flatMap(_.toList)).toList
   }
 
   var intermediateDataFlow: List[DataFlowPathIntermediateModel] = List[DataFlowPathIntermediateModel]()
@@ -76,7 +75,8 @@ class DataFlowCache(auditCache: AuditCache) {
     dataflow(sourceId)(fileLineNo).append(dataFlowPathModel)
   }
 
-  def getDataflow: List[DataFlowPathModel] = finalDataflow
+  def getDataflowAfterDedup: List[DataFlowPathModel]  = finalDataflow
+  def getDataflowBeforeDedup: List[DataFlowPathModel] = dataflow.flatMap(_._2.values.flatMap(_.toList)).toList
 
   def getIntermediateDataFlow(): List[DataFlowPathIntermediateModel] = intermediateDataFlow
 
@@ -100,9 +100,25 @@ class DataFlowCache(auditCache: AuditCache) {
     intermediateSourceResult.toList
   }
 
-  private def setDataflowWithdedupAndReturnDataflowsWithApplyDedupFalse(auditCache: AuditCache) = {
+}
+
+object DataFlowCache {
+
+  /** Returns all the dataflows after applying dedup logic
+    *
+    * @param auditCache
+    * @return
+    */
+  def getDataflowAfterApplyingDedupLogic(
+    privadoInput: PrivadoInput,
+    auditCache: AuditCache,
+    dataflowsMapByType: ConcurrentMap[String, Path],
+    dataflow: Map[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]
+  ) = {
 
     println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
+    val dataflowAfterDedup = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
+
     def addToMap(dataFlowPathModel: DataFlowPathModel): Unit = {
 
       val pathId               = dataFlowPathModel.pathId
@@ -112,14 +128,14 @@ class DataFlowCache(auditCache: AuditCache) {
       val flowSize = dataflowsMapByType.get(pathId).elements.size
       val sourceId = dataFlowPathModel.sourceId
 
-      if (!dataflow.contains(sourceId)) {
-        dataflow(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
-      } else if (!dataflow(sourceId).contains(fileLineNo)) {
-        dataflow(sourceId)(fileLineNo) = ListBuffer()
+      if (!dataflowAfterDedup.contains(sourceId)) {
+        dataflowAfterDedup(sourceId) = new mutable.HashMap().addOne(fileLineNo, ListBuffer())
+      } else if (!dataflowAfterDedup(sourceId).contains(fileLineNo)) {
+        dataflowAfterDedup(sourceId)(fileLineNo) = ListBuffer()
       }
 
-      if (dataflow(sourceId)(fileLineNo).nonEmpty) {
-        val currentDataFlowPathModel    = dataflow(sourceId)(fileLineNo).head
+      if (dataflowAfterDedup(sourceId)(fileLineNo).nonEmpty) {
+        val currentDataFlowPathModel    = dataflowAfterDedup(sourceId)(fileLineNo).head
         val currentPathId               = currentDataFlowPathModel.pathId
         val currentSinkNodeWithLocation = dataflowsMapByType.get(currentPathId).elements.last.location
 
@@ -127,17 +143,17 @@ class DataFlowCache(auditCache: AuditCache) {
           currentSinkNodeWithLocation.lineNumber
             .getOrElse(0)
             .toString + currentSinkNodeWithLocation.filename + currentDataFlowPathModel.sinkId
-        val currentFlowSize = dataflowsMapByType.get(dataflow(sourceId)(fileLineNo).head.pathId).elements.size
+        val currentFlowSize = dataflowsMapByType.get(dataflowAfterDedup(sourceId)(fileLineNo).head.pathId).elements.size
         if (currentFileLineNo.equals(fileLineNo) && flowSize < currentFlowSize) {
-          dataflow(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)
+          dataflowAfterDedup(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)
         }
       } else {
-        dataflow(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)
+        dataflowAfterDedup(sourceId)(fileLineNo) = ListBuffer[DataFlowPathModel](dataFlowPathModel)
       }
 
     }
 
-    if (ScanProcessor.config.generateAuditReport) {
+    if (privadoInput.generateAuditReport) {
       auditCache.addIntoBeforeFirstDedup(dataflow)
     }
 
@@ -152,11 +168,9 @@ class DataFlowCache(auditCache: AuditCache) {
       })
       (sourceId, filteredFileLineNumberMap)
     })
-    val flowsWithAppyDataflowFalse = dataflow.flatMap(_._2.values.flatMap(_.filterNot(_.applyDedup).toList)).toList
-    // clear the content and set fresh content
-    dataflow.clear()
+    val flowsWithApplyDedupFalse = dataflow.flatMap(_._2.values.flatMap(_.filterNot(_.applyDedup).toList)).toList
 
-    if (ScanProcessor.config.generateAuditReport) {
+    if (privadoInput.generateAuditReport) {
       auditCache.addIntoBeforeSecondDedup(filteredSourceIdMap)
     }
 
@@ -165,7 +179,6 @@ class DataFlowCache(auditCache: AuditCache) {
         fileLineNoEntry._2.foreach(dfpm => addToMap(dfpm))
       })
     })
-    flowsWithAppyDataflowFalse
+    dataflowAfterDedup.flatMap(_._2.values.flatMap(_.toList)).toList ::: flowsWithApplyDedupFalse
   }
-
 }

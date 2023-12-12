@@ -71,7 +71,7 @@ object PythonProcessor {
             .createAndApply()
 
           new DynamicTypeHintFullNamePass(cpg).createAndApply()
-          new PythonTypeRecoveryPass(cpg).createAndApply()
+          new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -111,7 +111,7 @@ object PythonProcessor {
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.finalDataflow.size}")
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
@@ -124,7 +124,7 @@ object PythonProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache,
+            dataFlowCache.getDataflowAfterDedup,
             ScanProcessor.config
           ) match {
             case Left(err) =>

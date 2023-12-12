@@ -318,7 +318,7 @@ object ScanProcessor extends CommandProcessor {
 
   private val auditCache = new AuditCache
   private def getDataflowCache: DataFlowCache = {
-    new DataFlowCache(auditCache)
+    new DataFlowCache(config, auditCache)
   }
 
   /** Helper function to process rule for a language
@@ -380,6 +380,7 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
                 RubyProcessor.createRubyCpg(
                   getProcessedRule(Set(Language.RUBY)),
+                  this.config,
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,

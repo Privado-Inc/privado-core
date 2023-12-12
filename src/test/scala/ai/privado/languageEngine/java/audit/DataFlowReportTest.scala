@@ -20,10 +20,6 @@ class DataFlowReportTest extends DataFlowReportTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val privadoInput = PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
-
-    // TODO Instead of assigning config directly need to pass instance.
-    ScanProcessor.config = privadoInput
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
@@ -104,14 +100,14 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> newValue2 -> info(newValue2)"
+          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> newValue2 -> com.test.privado.audit.BaseClass.logger.info(newValue2)"
         )
       ) shouldBe ("YES")
       workflowFilter1Result(
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> newValue2 -> info(newValue2)"
+          "b -> b -> b -> b -> b -> b -> this -> this.id -> return id; -> RET -> b.getId() -> newValue2 -> newValue2 -> com.test.privado.audit.BaseClass.logger.info(newValue2)"
         )
       ) shouldBe ("--")
 
@@ -120,23 +116,31 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         SourcePathInfo(
           "Data.Sensitive.AccountData.AccountPassword",
           "Leakages.Log.Info",
-          "person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> info(firstName)"
+          "person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> com.test.privado.audit.Filter2File.logger.info(firstName)"
         )
       ) shouldBe ("YES")
       workflowdedup1Result(
         SourcePathInfo(
           "Data.Sensitive.AccountData.AccountPassword",
           "Leakages.Log.Info",
-          "person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> info(firstName)"
+          "person1 -> person1 -> this -> this.firstName -> return firstName; -> RET -> person1.getFirstName() -> firstName -> firstName -> com.test.privado.audit.Filter2File.logger.info(firstName)"
         )
       ) shouldBe ("--")
 
       // Check dedup1
       workflowdedup1Result(
-        SourcePathInfo("Data.Sensitive.FirstName", "Leakages.Log.Info", "firstName -> firstName -> info(firstName)")
+        SourcePathInfo(
+          "Data.Sensitive.FirstName",
+          "Leakages.Log.Info",
+          "firstName -> firstName -> com.test.privado.audit.Filter2File.logger.info(firstName)"
+        )
       ) shouldBe ("YES")
       workflowdedup2Result(
-        SourcePathInfo("Data.Sensitive.FirstName", "Leakages.Log.Info", "firstName -> firstName -> info(firstName)")
+        SourcePathInfo(
+          "Data.Sensitive.FirstName",
+          "Leakages.Log.Info",
+          "firstName -> firstName -> com.test.privado.audit.Filter2File.logger.info(firstName)"
+        )
       ) shouldBe ("--")
 
       // Check dedup2
@@ -144,14 +148,14 @@ class DataFlowReportTest extends DataFlowReportTestBase {
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> name -> info(name)"
+          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> name -> com.test.privado.audit.Dedup2File.logger.info(name)"
         )
       ) shouldBe ("YES")
       workflowfinalResult(
         SourcePathInfo(
           "Data.Sensitive.FirstName",
           "Leakages.Log.Info",
-          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> name -> info(name)"
+          "firstName1 -> firstName1 -> firstName1 + \"value\" -> firstName1 -> firstName1 -> String name -> name -> com.test.privado.audit.Dedup2File.logger.info(name)"
         )
       ) shouldBe ("--")
     }

@@ -36,12 +36,14 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
+import ai.privado.semantic.Language.*
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
+class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option[String] = None) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -52,22 +54,32 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
   }
 
   def getCollectionsByTemplateDom: List[CollectionModel] = {
-    val collectionMapByCollectionId = cpg.templateDom
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
-      .l
-      .groupBy(collectionTemplateDom => collectionTemplateDom.tag.nameExact(Constants.id).value.head)
-
-    collectionMapByCollectionId.map(entrySet => processByCollectionIdForTemplateDom(entrySet._1, entrySet._2)).toList
-  }
-
-  def getCollectionsByAndroidXmlFieldIds: List[CollectionModel] = {
-    val collectionMapByCollectionId = cpg.fieldAccess.astChildren.isFieldIdentifier
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
-      .l
+    val collectionMapByCollectionId = ExporterUtility
+      .filterNodeBasedOnRepoItemTagName(
+        cpg.templateDom
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .l,
+        repoItemTagName
+      )
       .groupBy(collectionTemplateDom => collectionTemplateDom.tag.nameExact(Constants.id).value.head)
 
     collectionMapByCollectionId
-      .map(entrySet => processByCollectionIdForAndroidXmlFieldIds(entrySet._1, entrySet._2))
+      .map(entrySet => processByCollectionIdForTemplateDom(entrySet._1, entrySet._2.isTemplateDom.l))
+      .toList
+  }
+
+  def getCollectionsByAndroidXmlFieldIds: List[CollectionModel] = {
+    val collectionMapByCollectionId = ExporterUtility
+      .filterNodeBasedOnRepoItemTagName(
+        cpg.fieldAccess.astChildren.isFieldIdentifier
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .l,
+        repoItemTagName
+      )
+      .groupBy(collectionAndroidXml => collectionAndroidXml.tag.nameExact(Constants.id).value.head)
+
+    collectionMapByCollectionId
+      .map(entrySet => processByCollectionIdForAndroidXmlFieldIds(entrySet._1, entrySet._2.isFieldIdentifier.l))
       .toList
   }
 
@@ -139,12 +151,16 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
   }
 
   def getCollectionsByMethods: List[CollectionModel] = {
-    val collectionMapByCollectionId = cpg.method
-      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
-      .l
+    val collectionMapByCollectionId = ExporterUtility
+      .filterNodeBasedOnRepoItemTagName(
+        cpg.method
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .l,
+        repoItemTagName
+      )
       .groupBy(collectionMethod => collectionMethod.tag.nameExact(Constants.id).value.head)
 
-    collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2)).toList
+    collectionMapByCollectionId.map(entrySet => processByCollectionId(entrySet._1, entrySet._2.isMethod.l)).toList
   }
 
   private def processByCollectionId(collectionId: String, collectionMethods: List[Method]) = {
@@ -301,7 +317,16 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache) {
       sourceId,
       fieldIdentiferOccurances
         .flatMap(fieldId => {
-          ExporterUtility.convertIndividualPathElement(fieldId) match {
+          val androidXmlFileName = cpg.androidXmlLayoutNode
+            .name(fieldId.canonicalName)
+            .file
+            .name
+            .headOption
+            .getOrElse("")
+            .stripPrefix(cpg.metaData.root.headOption.getOrElse("") + "/")
+
+          ExporterUtility
+            .convertIndividualPathElement(fieldId, messageInExcerpt = "Android Form: " + androidXmlFileName) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(
