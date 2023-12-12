@@ -25,7 +25,7 @@ package ai.privado.policyEngine
 import ai.privado.cache.{DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
-import ai.privado.threatEngine.ThreatUtility.{getSourceNode}
+import ai.privado.threatEngine.ThreatUtility.getSourceNode
 import ai.privado.model.exporter.{
   CollectionModel,
   CollectionOccurrenceDetailModel,
@@ -35,7 +35,7 @@ import ai.privado.model.exporter.{
   ViolationProcessingModel
 }
 import ai.privado.exporter.SourceExporter
-import ai.privado.model.{Constants, PolicyAction, PolicyOrThreat}
+import ai.privado.model.{Constants, DataFlowPathModel, PolicyAction, PolicyOrThreat}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
@@ -49,7 +49,7 @@ import scala.util.{Failure, Success, Try}
 
 class PolicyExecutor(
   cpg: Cpg,
-  dataFlowCache: DataFlowCache,
+  dataFlowModel: List[DataFlowPathModel],
   repoName: String,
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
@@ -226,11 +226,11 @@ class PolicyExecutor(
   }
 
   private def getDataflowBySourceIdMapping = {
-    dataFlowCache.getDataflow.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
+    dataFlowModel.groupBy(_.sourceId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getDataflowBySinkIdMapping = {
-    dataFlowCache.getDataflow.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
+    dataFlowModel.groupBy(_.sinkId).map(entrySet => (entrySet._1, entrySet._2.map(_.pathId)))
   }
 
   private def getSourcesMatchingRegex(policy: PolicyOrThreat): Set[String] = {

@@ -49,7 +49,7 @@ object PythonTestUtility {
         X2Cpg.applyDefaultOverlays(cpg)
         new ImportsPass(cpg).createAndApply()
         new PythonInheritanceNamePass(cpg).createAndApply()
-        new PythonTypeRecoveryPass(cpg).createAndApply()
+        new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
         new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
         new NaiveCallLinker(cpg).createAndApply()
         new AstLinkerPass(cpg).createAndApply()

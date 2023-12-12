@@ -25,14 +25,15 @@ package ai.privado.languageEngine.ruby.processor
 
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
+import ai.privado.exporter.monolith.MonolithExporter
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
-  PrivadoRubyTypeRecoveryPass,
+  PrivadoRubyTypeRecoveryPassGenerator,
   RubyExternalTypesPass,
   RubyImportResolverPass
 }
@@ -83,6 +84,7 @@ object RubyProcessor {
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache
@@ -120,7 +122,7 @@ object RubyProcessor {
           // We are clearing up the packageTableInfo as it is not needed afterwards
           RubySrc2Cpg.packageTableInfo.clear()
           println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
-          new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
+          new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate().foreach(_.createAndApply())
           println(
             s"${TimeMetric.getNewTime()} - Type recovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -184,6 +186,28 @@ object RubyProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           // Exporting
+          val monolithPrivadoJsonPaths: List[String] = if (privadoInput.isMonolith) {
+            // Export privado json for individual subProject/Repository Item
+            cpg.tag
+              .nameExact(Constants.monolithRepoItem)
+              .value
+              .dedup
+              .flatMap(repoItemName =>
+                MonolithExporter.fileExport(
+                  cpg,
+                  repoItemName,
+                  outputFileName,
+                  sourceRepoLocation,
+                  dataflowMap,
+                  ruleCache,
+                  taggerCache,
+                  dataFlowCache,
+                  privadoInput
+                )
+              )
+              .l
+          } else List()
+
           JSONExporter.fileExport(
             cpg,
             outputFileName,
@@ -191,8 +215,9 @@ object RubyProcessor {
             dataflowMap,
             ruleCache,
             taggerCache,
-            dataFlowCache,
-            ScanProcessor.config
+            dataFlowCache.getDataflowAfterDedup,
+            privadoInput,
+            monolithPrivadoJsonPaths = monolithPrivadoJsonPaths
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -313,6 +338,7 @@ object RubyProcessor {
     */
   def createRubyCpg(
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
@@ -355,7 +381,7 @@ object RubyProcessor {
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
+    processCPG(xtocpg, ruleCache, privadoInput, sourceRepoLocation, dataFlowCache, auditCache)
 
   }
 

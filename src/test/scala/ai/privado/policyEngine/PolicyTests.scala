@@ -651,12 +651,11 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
     val configAndRules =
       ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
-    ScanProcessor.config = privadoInput
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
     val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val auditCache    = new AuditCache
-    val dataFlowCache = new DataFlowCache(auditCache)
+    val dataFlowCache = new DataFlowCache(privadoInput, auditCache)
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -671,7 +670,14 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
     val collectionExporter = new CollectionExporter(cpg, ruleCache).getCollections
     val policyExecutor =
-      new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache, privadoInput, collectionExporter)
+      new PolicyExecutor(
+        cpg,
+        dataFlowCache.getDataflowAfterDedup,
+        config.inputPath,
+        ruleCache,
+        privadoInput,
+        collectionExporter
+      )
     policyExecutor
   }
 }

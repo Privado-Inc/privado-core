@@ -1,27 +1,29 @@
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.utility.Utilities.{getAllFilesRecursively, getAllFilesRecursivelyWithoutExtension, isPrivacySink}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import io.circe.parser.{parse, _}
-import io.circe._
+import io.circe.parser.{parse, *}
+import io.circe.*
 
-class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
+class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, repoItemTagName: Option[String] = None) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getProbableSinks: List[String] = {
 
-    val lang         = MetricHandler.metricsData("language")
+    val lang         = AppCache.repoLanguage
     val isPython     = lang.toString().contains(Languages.PYTHONSRC)
     val isJavascript = lang.toString().contains(Languages.JSSRC)
     val isRuby       = lang.toString().contains(Languages.RUBYSRC)
 
-    if (isJavascript) {
+    if (repoItemTagName.isDefined)
+      List() // If this is an export for Monolith repoItem, don't export Probable sink, otherwise this will make the Json very big and will need separate processing on backend
+    else if (isJavascript) {
       getProbableSinkForJavascript(repoPath)
     } else if (isRuby) {
       getProbableSinkForRuby(repoPath)
@@ -71,9 +73,8 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String) {
   def getProbableSinkBasedOnTaggedMethods(isPython: Boolean): List[String] = {
 
     /** Get all the Methods which are tagged as SINKs */
-    val taggedSinkMethods = cpg.tag
-      .where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-      .call
+    val taggedSinkMethods = cpg.call
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .l
       .map(i => {
         var res = i.methodFullName
