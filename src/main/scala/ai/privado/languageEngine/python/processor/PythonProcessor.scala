@@ -71,7 +71,7 @@ object PythonProcessor {
             .createAndApply()
 
           new DynamicTypeHintFullNamePass(cpg).createAndApply()
-          new PythonTypeRecoveryPass(cpg).createAndApply()
+          new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
           println(
             s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )

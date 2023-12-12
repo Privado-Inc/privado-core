@@ -33,7 +33,7 @@ import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
   MethodFullNamePassForRORBuiltIn,
-  PrivadoRubyTypeRecoveryPass,
+  PrivadoRubyTypeRecoveryPassGenerator,
   RubyExternalTypesPass,
   RubyImportResolverPass
 }
@@ -122,7 +122,7 @@ object RubyProcessor {
           // We are clearing up the packageTableInfo as it is not needed afterwards
           RubySrc2Cpg.packageTableInfo.clear()
           println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
-          new PrivadoRubyTypeRecoveryPass(cpg, globalSymbolTable).createAndApply()
+          new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate().foreach(_.createAndApply())
           println(
             s"${TimeMetric.getNewTime()} - Type recovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
