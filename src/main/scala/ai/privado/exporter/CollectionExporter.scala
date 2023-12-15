@@ -69,13 +69,16 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
           Constants.default,
           false,
           List(
-            CollectionOccurrenceModel(
+            CollectionOccurrenceDetailModel(
               Constants.default,
-              Constants.default,
-              Constants.defaultLineNumber,
-              Constants.defaultLineNumber,
-              fileName,
-              Constants.default
+              List(
+                Constants.default,
+                Constants.default,
+                Constants.defaultLineNumber,
+                Constants.defaultLineNumber,
+                fileName,
+                Constants.default
+              )
             )
           )
         )
