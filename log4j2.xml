@@ -1,16 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
     <Appenders>
+        <!-- File Appender for Console Logs -->
         <Console name="Console" target="SYSTEM_ERR">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %logger{36} %F:%L: %msg%n"/>
         </Console>
+        <!-- File Appender for Debug Logs -->
+        <File name="File" fileName="${sys:logFilePath:-logs/app.log}">
+            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %logger{36} %F:%L: %msg%n"/>
+        </File>
     </Appenders>
+
+    <Loggers>
+        <Root level="ERROR">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
+
     <Loggers>
         <logger name="com.networknt.schema" level="ERROR" />
         <logger name="io.shiftleft" level="WARN" />
         <logger name="io.joern" level="WARN" />
         <Root level="DEBUG">
-            <AppenderRef ref="Console" />
+            <AppenderRef ref="File"/>
         </Root>
     </Loggers>
+
 </Configuration>
