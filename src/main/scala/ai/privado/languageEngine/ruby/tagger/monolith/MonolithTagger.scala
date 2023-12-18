@@ -12,12 +12,16 @@ import io.shiftleft.semanticcpg.language.*
 import scala.util.Try
 class MonolithTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[File](cpg) {
   override def generateParts(): Array[File] = {
-    cpg.file.name(".*_controller.rb").filterNot(_.name.startsWith("/")).toArray
+    (cpg.file.name(".*_controller.rb") ++ cpg.file.name(".*/graphql/.*").where(_.name(".*/mutations/.*")))
+      .filterNot(_.name.startsWith("/"))
+      .dedup
+      .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, fileNode: File): Unit = {
 
-    val repoItemName = fileNode.name.replaceAll("/", "--").stripSuffix("_controller.rb")
+    val repoItemName =
+      fileNode.name.replaceAll("/", "--").stripSuffix(".rb").stripSuffix("_controller").stripSuffix("_mutation")
     storeForTag(builder, fileNode, ruleCache)(Constants.monolithRepoItem, repoItemName)
 
     // 0th level tagging

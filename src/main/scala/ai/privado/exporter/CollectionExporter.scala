@@ -50,10 +50,44 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
   /** Processes collection points and return final output
     */
   def getCollections: List[CollectionModel] = {
-    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds
+    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds ++ getDummyCollection
   }
 
-  def getCollectionsByTemplateDom: List[CollectionModel] = {
+  /** Get dummy collection in case of monolith subProject/repoItem for showing PA
+    * @return
+    */
+  private def getDummyCollection: List[CollectionModel] = {
+    if (repoItemTagName.isDefined) {
+      val fileName = cpg.file
+        .where(_.tag.nameExact(Constants.monolithRepoItem).valueExact(repoItemTagName.get))
+        .name
+        .headOption
+        .getOrElse(Constants.default)
+      List(
+        CollectionModel(
+          Constants.default,
+          Constants.default,
+          false,
+          List(
+            CollectionOccurrenceDetailModel(
+              Constants.default,
+              List(
+                CollectionOccurrenceModel(
+                  Constants.default,
+                  Constants.default,
+                  Constants.defaultLineNumber,
+                  Constants.defaultLineNumber,
+                  fileName,
+                  Constants.default
+                )
+              )
+            )
+          )
+        )
+      )
+    } else List()
+  }
+  private def getCollectionsByTemplateDom: List[CollectionModel] = {
     val collectionMapByCollectionId = ExporterUtility
       .filterNodeBasedOnRepoItemTagName(
         cpg.templateDom
@@ -68,7 +102,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       .toList
   }
 
-  def getCollectionsByAndroidXmlFieldIds: List[CollectionModel] = {
+  private def getCollectionsByAndroidXmlFieldIds: List[CollectionModel] = {
     val collectionMapByCollectionId = ExporterUtility
       .filterNodeBasedOnRepoItemTagName(
         cpg.fieldAccess.astChildren.isFieldIdentifier
@@ -150,7 +184,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     )
   }
 
-  def getCollectionsByMethods: List[CollectionModel] = {
+  private def getCollectionsByMethods: List[CollectionModel] = {
     val collectionMapByCollectionId = ExporterUtility
       .filterNodeBasedOnRepoItemTagName(
         cpg.method
@@ -245,7 +279,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     )
   }
 
-  def processByParameterId(
+  private def processByParameterId(
     parameterId: String,
     methodParameterOccurrences: List[MethodParameterIn]
   ): CollectionOccurrenceDetailModel = {
@@ -264,7 +298,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     )
   }
 
-  def getCollectionOccurrenceModel(
+  private def getCollectionOccurrenceModel(
     methodNode: Traversal[Method],
     pathElement: DataFlowSubCategoryPathExcerptModel
   ): Some[CollectionOccurrenceModel] = {
@@ -281,7 +315,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
 
   }
 
-  def processByTemplatedDomId(
+  private def processByTemplatedDomId(
     templatedDomId: String,
     methodLocalOccurrences: List[TemplateDom]
   ): CollectionOccurrenceDetailModel = {
