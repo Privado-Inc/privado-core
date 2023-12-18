@@ -6,7 +6,7 @@
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %logger{36} %F:%L: %msg%n"/>
         </Console>
         <!-- File Appender for Debug Logs -->
-        <File name="File" fileName="${sys:logFilePath:-logs/app.log}">
+        <File name="File" fileName="${sys:logFilePath:-.logs/app.log}">
             <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} %p %logger{36} %F:%L: %msg%n"/>
         </File>
     </Appenders>
