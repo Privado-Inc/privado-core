@@ -12,6 +12,7 @@ import ai.privado.model.exporter.{
   SourceProcessingModel
 }
 import io.circe.Json
+import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
@@ -54,6 +55,19 @@ object MonolithExporter {
         filterRepoItemDataflows(dataFlowCache, dataflows, repoItemTagName, privadoInput),
         privadoInput,
         repoItemTagName = Option(repoItemTagName)
+      )
+
+      output.addOne(
+        Constants.monolithRepoReachingFileList -> cpg.file
+          .where(_.tag.nameExact(Constants.monolithRepoItem).valueExact(repoItemTagName))
+          .tag
+          .nameExact(Constants.monolithRepoReachingFileList)
+          .value
+          .headOption
+          .getOrElse("")
+          .split(",")
+          .toList
+          .asJson
       )
 
       val jsonFile = ExporterUtility.writeJsonToFile(
