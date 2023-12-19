@@ -1,8 +1,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.utility.Utilities.{getAllFilesRecursively, getAllFilesRecursivelyWithoutExtension, isPrivacySink}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -17,9 +16,10 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
   def getProbableSinks: List[String] = {
 
     val lang         = AppCache.repoLanguage
-    val isPython     = lang.toString().contains(Languages.PYTHONSRC)
-    val isJavascript = lang.toString().contains(Languages.JSSRC)
-    val isRuby       = lang.toString().contains(Languages.RUBYSRC)
+    val isPython     = lang.toString().contains(Language.PYTHON.toString)
+    val isJavascript = lang.toString().contains(Language.JAVASCRIPT.toString)
+    val isRuby       = lang.toString().contains(Language.RUBY.toString)
+    val isGoLang     = lang.toString().contains(Language.GO.toString)
 
     if (repoItemTagName.isDefined)
       List() // If this is an export for Monolith repoItem, don't export Probable sink, otherwise this will make the Json very big and will need separate processing on backend
@@ -28,7 +28,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
     } else if (isRuby) {
       getProbableSinkForRuby(repoPath)
     } else {
-      getProbableSinkBasedOnTaggedMethods(isPython)
+      getProbableSinkBasedOnTaggedMethods(isPython, isGoLang)
     }
   }
 
@@ -70,7 +70,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
     }
   }
 
-  def getProbableSinkBasedOnTaggedMethods(isPython: Boolean): List[String] = {
+  def getProbableSinkBasedOnTaggedMethods(isPython: Boolean, isGoLang: Boolean): List[String] = {
 
     /** Get all the Methods which are tagged as SINKs */
     val taggedSinkMethods = cpg.call
@@ -79,6 +79,8 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       .map(i => {
         var res = i.methodFullName
         if (!isPython) {
+          res = res.split(":").headOption.getOrElse("")
+        } else if (isGoLang) {
           res = res.split(":").headOption.getOrElse("")
         }
         res
@@ -91,6 +93,8 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
     val dependenciesTPs = cpg.method.external.l.map(i => {
       var res = i.fullName
       if (!isPython) {
+        res = res.split(":").headOption.getOrElse("")
+      } else if (!isGoLang) {
         res = res.split(":").headOption.getOrElse("")
       }
       res
@@ -106,6 +110,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       .filter(str => !taggedSinkMethods.contains(str))
       .filter((str) => isPrivacySink(str, ruleCache))
       .filter((str) => !str.endsWith(".println"))
+      .filter((str) => !str.matches(".*<operator>.*"))
       .map((str) => {
         try {
           str.split("\\.").take(6).mkString(".").split(":").headOption.getOrElse("")
