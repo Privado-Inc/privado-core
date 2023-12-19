@@ -27,7 +27,7 @@ import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.model.{Constants, DatabaseDetails, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.addRuleTags
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -57,6 +57,24 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
             case node: Identifier =>
               cpg.assignment
                 .where(_.argument.code(node.code).argumentIndex(1))
+                .argument
+                .argumentIndex(2)
+                .code
+                .headOption
+                .getOrElse(node.code)
+            case node: Block =>
+              /*
+              Handles case
+              serverSetCookieWithMaxAge({ /* <=== @libs/common/utils/cookie */
+                    ctx: context,
+                    maxAge: ONE_YEAR_IN_SECONDS,
+                    name: CookieName.LANG_PREFERENCE,
+                    value: userPreferredLocale,
+                  });
+               */
+              node.astChildren.isCall
+                .name(Operators.assignment)
+                .where(_.argument.argumentIndex(1).ast.code("name"))
                 .argument
                 .argumentIndex(2)
                 .code
