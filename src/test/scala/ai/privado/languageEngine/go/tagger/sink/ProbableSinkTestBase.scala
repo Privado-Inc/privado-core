@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.go.tagger.sink
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
@@ -33,6 +33,7 @@ abstract class ProbableSinkTestBase extends AnyWordSpec with Matchers with Befor
     }
 
     cpg = xtocpg.get
+    AppCache.repoLanguage = Language.GO
 
     ruleCache.setRule(rule)
     super.beforeAll()

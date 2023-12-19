@@ -1,8 +1,8 @@
 package ai.privado.languageEngine.go.tagger.sink
 
-import io.shiftleft.semanticcpg.language.*
+import ai.privado.cache.AppCache
 import ai.privado.exporter.ProbableSinkExporter
-import ai.privado.languageEngine.go.GoTestBase
+import ai.privado.model.Language
 import ai.privado.tagger.sink.RegularSinkTagger
 
 import scala.collection.mutable
@@ -29,6 +29,7 @@ class ProbableSinkTest extends ProbableSinkTestBase {
         |)
         |
         |func main() {
+        |  firstName := "ankit"
         |  log.Fatal("This is the example fatal")
         |  log.Print("This is the example print")
         |}
@@ -40,10 +41,11 @@ class ProbableSinkTest extends ProbableSinkTestBase {
 
   "getProbableSinkForGolang" should {
     "return correct list of probable sinks for a valid repository path" in {
-      val sinks = new ProbableSinkExporter(cpg, ruleCache, inputDir.toString)
-      val paths = sinks.getProbableSinks
-      paths.size shouldBe 1
-      paths.head shouldBe "log.Print"
+      val sinks         = new ProbableSinkExporter(cpg, ruleCache, inputDir.toString)
+      val probableSinks = sinks.getProbableSinks
+      probableSinks should contain("log.Print")
+      probableSinks should not contain ("log.Fatal")
+      probableSinks should not contain ("<operator>.assignment")
     }
   }
 }

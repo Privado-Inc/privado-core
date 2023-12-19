@@ -1,8 +1,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
-import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.utility.Utilities.{getAllFilesRecursively, getAllFilesRecursivelyWithoutExtension, isPrivacySink}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -17,10 +16,10 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
   def getProbableSinks: List[String] = {
 
     val lang         = AppCache.repoLanguage
-    val isPython     = lang.toString().contains(Languages.PYTHONSRC)
-    val isJavascript = lang.toString().contains(Languages.JSSRC)
-    val isRuby       = lang.toString().contains(Languages.RUBYSRC)
-    val isGoLang     = lang.toString().contains(Languages.GOLANG)
+    val isPython     = lang.toString().contains(Language.PYTHON)
+    val isJavascript = lang.toString().contains(Language.JAVASCRIPT)
+    val isRuby       = lang.toString().contains(Language.RUBY)
+    val isGoLang     = lang.toString().contains(Language.GO)
 
     if (repoItemTagName.isDefined)
       List() // If this is an export for Monolith repoItem, don't export Probable sink, otherwise this will make the Json very big and will need separate processing on backend
@@ -111,6 +110,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       .filter(str => !taggedSinkMethods.contains(str))
       .filter((str) => isPrivacySink(str, ruleCache))
       .filter((str) => !str.endsWith(".println"))
+      .filter((str) => !str.matches(".*<operator>.*"))
       .map((str) => {
         try {
           str.split("\\.").take(6).mkString(".").split(":").headOption.getOrElse("")
