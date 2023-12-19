@@ -16,10 +16,10 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
   def getProbableSinks: List[String] = {
 
     val lang         = AppCache.repoLanguage
-    val isPython     = lang.toString().contains(Language.PYTHON)
-    val isJavascript = lang.toString().contains(Language.JAVASCRIPT)
-    val isRuby       = lang.toString().contains(Language.RUBY)
-    val isGoLang     = lang.toString().contains(Language.GO)
+    val isPython     = lang.toString().contains(Language.PYTHON.toString)
+    val isJavascript = lang.toString().contains(Language.JAVASCRIPT.toString)
+    val isRuby       = lang.toString().contains(Language.RUBY.toString)
+    val isGoLang     = lang.toString().contains(Language.GO.toString)
 
     if (repoItemTagName.isDefined)
       List() // If this is an export for Monolith repoItem, don't export Probable sink, otherwise this will make the Json very big and will need separate processing on backend
