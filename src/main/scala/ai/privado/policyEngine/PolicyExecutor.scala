@@ -264,9 +264,6 @@ class PolicyExecutor(
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
         namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
       }
-    println(matchingSourceIds)
-    println("Allowed Sources: ")
-    println(sourceFilters.allowedSourceFilters.sources)
     if (sourceFilters.allowedSourceFilters.sources.nonEmpty) {
       matchingSourceIds = matchingSourceIds.filter { sourceId =>
         sourceFilters.allowedSourceFilters.sources
@@ -277,7 +274,6 @@ class PolicyExecutor(
           .isEmpty
       }
     }
-    println(matchingSourceIds)
 
     matchingSourceIds
   }
@@ -326,7 +322,6 @@ class PolicyExecutor(
       }
     }
 
-    println(matchingSinkIds)
     if (sinkFilters.allowedSinkFilters.domains.nonEmpty) {
       matchingSinkIds = matchingSinkIds.filter { sinkId =>
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
@@ -349,9 +344,6 @@ class PolicyExecutor(
         }
       }
     }
-    println("Allowed Sinks: ")
-    println(sinkFilters.allowedSinkFilters.domains)
-    println(matchingSinkIds)
 
     if (sinkFilters.name.nonEmpty)
       val namePattern: Option[Regex] = Some(sinkFilters.name.r)
