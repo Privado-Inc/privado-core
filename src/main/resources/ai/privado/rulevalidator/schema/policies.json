@@ -115,6 +115,31 @@
                     "title": "isSensitive",
                     "type": "boolean",
                     "default": false
+                  },
+                  "allowedSourceFilters": {
+                    "$id": "#root/policies/items/dataFlow/sourceFilters/allowedSourceFilters",
+                    "title": "AllowedSourceFilters",
+                    "type": "object",
+                    "default": null,
+                    "properties": {
+                      "sources": {
+                        "$id": "#root/policies/items/dataFlow/sourceFilters/allowedSourceFilters/sources",
+                        "title": "Sources",
+                        "type": "array",
+                        "default": [],
+                        "items":{
+                          "$id": "#root/policies/items/dataFlow/sourceFilters/allowedSourceFilters/sources/items",
+                          "title": "Items",
+                          "type": "string",
+                          "format": "regex",
+                          "default": "",
+                          "examples": [
+                            "Data.Sensitive.ContactData.*"
+                          ],
+                          "pattern": "^.*$"
+                        }
+                      }
+                    }
                   }
                 }
               },
@@ -168,6 +193,31 @@
                         "slack.com"
                       ],
                       "pattern": "^.*$"
+                    }
+                  },
+                  "allowedSinkFilters": {
+                    "$id": "#root/policies/items/dataFlow/sinkFilters/allowedSinkFilters",
+                    "title": "AllowedSinkFilters",
+                    "type": "object",
+                    "default": null,
+                    "properties": {
+                      "domains": {
+                        "$id": "#root/policies/items/dataFlow/sinkFilters/allowedSinkFilters/domains",
+                        "title": "Domains",
+                        "type": "array",
+                        "default": [],
+                        "items":{
+                          "$id": "#root/policies/items/dataFlow/sinkFilters/allowedSinkFilters/domains/items",
+                          "title": "Items",
+                          "type": "string",
+                          "format": "regex",
+                          "default": "",
+                          "examples": [
+                            "slack.com"
+                          ],
+                          "pattern": "^.*$"
+                        }
+                      }
                     }
                   }
                 }

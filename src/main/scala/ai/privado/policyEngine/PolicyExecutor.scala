@@ -264,6 +264,20 @@ class PolicyExecutor(
         val ruleInfo = ruleCache.getRuleInfo(sinkId)
         namePattern.exists(pattern => ruleInfo.exists(info => pattern.findFirstIn(info.name).nonEmpty))
       }
+    println(matchingSourceIds)
+    println("Allowed Sources: ")
+    println(sourceFilters.allowedSourceFilters.sources)
+    if (sourceFilters.allowedSourceFilters.sources.nonEmpty) {
+      matchingSourceIds = matchingSourceIds.filter { sourceId =>
+        sourceFilters.allowedSourceFilters.sources
+          .filter(d => {
+            val sourcePattern: Regex = d.r
+            sourcePattern.findFirstIn(sourceId).nonEmpty
+          })
+          .isEmpty
+      }
+    }
+    println(matchingSourceIds)
 
     matchingSourceIds
   }
@@ -311,6 +325,33 @@ class PolicyExecutor(
         }
       }
     }
+
+    println(matchingSinkIds)
+    if (sinkFilters.allowedSinkFilters.domains.nonEmpty) {
+      matchingSinkIds = matchingSinkIds.filter { sinkId =>
+        val ruleInfo = ruleCache.getRuleInfo(sinkId)
+        // ----------------Covering Cases:
+        // Sinks.ThirdParties.API.mediaconvert.awsRegion.amazonaws.com
+        // Sinks.ThirdParties.API.axios.com
+        // ThirdParties.SDK.Sendgrid
+        // ----------------Not covered:
+        // Sinks.API.InternalAPI
+        // Sinks.ThirdParties.API
+        if (sinkId.contains(f"${Constants.thirdPartiesAPIRuleId}.")) {
+          sinkFilters.allowedSinkFilters.domains
+            .filter(d => {
+              val domainPattern: Regex = d.r
+              domainPattern.findFirstIn(sinkId).nonEmpty
+            })
+            .isEmpty
+        } else {
+          ruleInfo.exists(info => info.domains.intersect(sinkFilters.allowedSinkFilters.domains).isEmpty)
+        }
+      }
+    }
+    println("Allowed Sinks: ")
+    println(sinkFilters.allowedSinkFilters.domains)
+    println(matchingSinkIds)
 
     if (sinkFilters.name.nonEmpty)
       val namePattern: Option[Regex] = Some(sinkFilters.name.r)
