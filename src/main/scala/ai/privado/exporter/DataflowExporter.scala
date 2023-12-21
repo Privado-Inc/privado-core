@@ -34,12 +34,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class DataflowExporter(
-  cpg: Cpg,
-  dataflowsMap: Map[String, Path],
-  taggerCache: TaggerCache,
-  dataFlowCache: DataFlowCache
-) {
+class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache) {
 
   val falsePositiveSources: List[String] = List[String](
     "Data.Sensitive.OnlineIdentifiers.Cookies",
@@ -54,9 +49,9 @@ class DataflowExporter(
     sinkSubCategory: String,
     sinkNodeTypes: Set[String],
     ruleCache: RuleCache,
-    dataFlowCache: DataFlowCache
+    dataFlowModel: List[DataFlowPathModel]
   ): Set[DataFlowSubCategoryModel] = {
-    val dataflowModelFilteredByType = dataFlowCache.getDataflow.filter(dataflowModel =>
+    val dataflowModelFilteredByType = dataFlowModel.filter(dataflowModel =>
       dataflowModel.sinkSubCategory.equals(sinkSubCategory) && sinkNodeTypes.contains(dataflowModel.sinkNodeType)
     )
     val dataflowModelBySourceId = dataflowModelFilteredByType.groupBy(_.sourceId)

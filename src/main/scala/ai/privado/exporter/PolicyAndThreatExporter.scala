@@ -25,7 +25,8 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.exporter.{ViolationDataFlowModel, ViolationModel, ViolationProcessingModel, CollectionModel}
+import ai.privado.model.DataFlowPathModel
+import ai.privado.model.exporter.{CollectionModel, ViolationDataFlowModel, ViolationModel, ViolationProcessingModel}
 import ai.privado.policyEngine.PolicyExecutor
 import ai.privado.threatEngine.ThreatEngineExecutor
 import io.joern.dataflowengineoss.language.Path
@@ -38,9 +39,8 @@ import scala.collection.mutable
 class PolicyAndThreatExporter(
   cpg: Cpg,
   ruleCache: RuleCache,
-  dataflows: Map[String, Path],
   taggerCache: TaggerCache,
-  dataFlowCache: DataFlowCache,
+  dataFlowModel: List[DataFlowPathModel],
   privadoInput: PrivadoInput
 ) {
 
@@ -50,9 +50,9 @@ class PolicyAndThreatExporter(
     repoPath: String,
     collections: List[CollectionModel] = List[CollectionModel]()
   ): List[ViolationModel] = {
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowCache, AppCache.repoName, ruleCache, privadoInput, collections)
+    val policyExecutor = new PolicyExecutor(cpg, dataFlowModel, AppCache.repoName, ruleCache, privadoInput, collections)
     val threatExecutor =
-      new ThreatEngineExecutor(cpg, dataflows, repoPath, ruleCache, taggerCache, dataFlowCache, privadoInput)
+      new ThreatEngineExecutor(cpg, repoPath, ruleCache, taggerCache, dataFlowModel, privadoInput)
 
     try {
       threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations

@@ -6,7 +6,7 @@ import ai.privado.passes.FileExtensions
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.*
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
@@ -45,7 +45,17 @@ class AndroidCollectionTagger(cpg: Cpg, projectRoot: String, ruleCache: RuleCach
     val fieldIdentifiers = cpg.androidXmlLayoutNode
       .name(collectionRuleInfo.combinedRulePattern)
       .flatMap { elem =>
-        cpg.fieldAccess.astChildren.isFieldIdentifier.where(_.canonicalName(elem.name)).l
+        cpg.graph
+          .nodes(NodeTypes.FIELD_IDENTIFIER)
+          .map(_.asInstanceOf[FieldIdentifier])
+          .where(_.canonicalName(elem.name))
+          .where(_.astSiblings.code(".*(binding|R\\.id).*"))
+          .groupBy(_.file.name.l)
+          .flatMap(
+            _._2.l
+              .distinctBy(_.canonicalName) // for each file, we select unique field identifiers only
+          )
+          .toList
       }
       .toList
     if (fieldIdentifiers.nonEmpty) {

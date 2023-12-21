@@ -60,9 +60,16 @@ case class ConfigAndRules(
   auditConfig: List[RuleInfo]
 )
 
-case class SourceFilter(isSensitive: Option[Boolean], sensitivity: String, name: String)
+case class AllowedSourceFilters(sources: List[String])
+case class AllowedSinkFilters(domains: List[String])
+case class SourceFilter(
+  isSensitive: Option[Boolean],
+  sensitivity: String,
+  name: String,
+  allowedSourceFilters: AllowedSourceFilters
+)
 
-case class SinkFilter(domains: List[String], sinkType: String, name: String)
+case class SinkFilter(domains: List[String], sinkType: String, name: String, allowedSinkFilters: AllowedSinkFilters)
 
 case class CollectionFilter(collectionType: String, endPoint: String)
 
@@ -130,9 +137,9 @@ object CirceEnDe {
           dataFlow = dataFlow.getOrElse(
             DataFlow(
               List[String](),
-              SourceFilter(None, "", ""),
+              SourceFilter(None, "", "", AllowedSourceFilters(List[String]())),
               List[String](),
-              SinkFilter(List[String](), "", ""),
+              SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
               CollectionFilter("", "")
             )
           ),
@@ -146,15 +153,31 @@ object CirceEnDe {
     }
   }
 
+  implicit val decodeAllowedSourceFilter: Decoder[AllowedSourceFilters] = new Decoder[AllowedSourceFilters] {
+    override def apply(c: HCursor): Result[AllowedSourceFilters] = {
+      Right(AllowedSourceFilters(sources = c.downField(Constants.sources).as[List[String]].getOrElse(List[String]())))
+    }
+  }
+
   implicit val decodeSourceFilter: Decoder[SourceFilter] = new Decoder[SourceFilter] {
     override def apply(c: HCursor): Result[SourceFilter] = {
       Right(
         SourceFilter(
           isSensitive = c.downField(Constants.isSensitive).as[Option[Boolean]].getOrElse(None),
           sensitivity = c.downField(Constants.sensitivity).as[String].getOrElse(""),
-          name = c.downField(Constants.name).as[String].getOrElse("")
+          name = c.downField(Constants.name).as[String].getOrElse(""),
+          allowedSourceFilters = c
+            .downField(Constants.allowedSourceFilters)
+            .as[AllowedSourceFilters]
+            .getOrElse(AllowedSourceFilters(List[String]()))
         )
       )
+    }
+  }
+
+  implicit val decodeAllowedSinkFilter: Decoder[AllowedSinkFilters] = new Decoder[AllowedSinkFilters] {
+    override def apply(c: HCursor): Result[AllowedSinkFilters] = {
+      Right(AllowedSinkFilters(domains = c.downField(Constants.domains).as[List[String]].getOrElse(List[String]())))
     }
   }
 
@@ -164,7 +187,11 @@ object CirceEnDe {
         SinkFilter(
           domains = c.downField(Constants.domains).as[List[String]].getOrElse(List[String]()),
           sinkType = c.downField(Constants.sinkType).as[String].getOrElse(""),
-          name = c.downField(Constants.name).as[String].getOrElse("")
+          name = c.downField(Constants.name).as[String].getOrElse(""),
+          allowedSinkFilters = c
+            .downField(Constants.allowedSinkFilters)
+            .as[AllowedSinkFilters]
+            .getOrElse(AllowedSinkFilters(List[String]()))
         )
       )
     }
@@ -191,9 +218,9 @@ object CirceEnDe {
       Right(
         DataFlow(
           sources = sources.getOrElse(List[String]()),
-          sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "", "")),
+          sourceFilters = sourceFilter.getOrElse(SourceFilter(None, "", "", AllowedSourceFilters(List[String]()))),
           sinks = sinks.getOrElse(List[String]()),
-          sinkFilters = sinkFilter.getOrElse(SinkFilter(List[String](), "", "")),
+          sinkFilters = sinkFilter.getOrElse(SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]()))),
           collectionFilters = collectionFilter.getOrElse(CollectionFilter("", ""))
         )
       )

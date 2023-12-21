@@ -24,14 +24,14 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, MethodParameterIn}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, Method, MethodParameterIn}
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -79,17 +79,58 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
     }
 
     "connect property to annotated parameter" in {
-      val properties = cpg.property.usedAt.originalProperty.l
+      cpg.property.usedAt.originalProperty.l.length shouldBe 2
+      cpg.property.usedAt.originalProperty.name.l shouldBe List("internal.logger.api.base", "slack.base.url")
+      cpg.property.usedAt.originalProperty.value.l shouldBe List(
+        "https://logger.privado.ai/",
+        "https://hooks.slack.com/services/some/leaking/url"
+      )
+    }
+  }
+}
 
-      properties.length shouldBe 2
+/* Test for annotation of methods */
+class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
+  override val configFileContents: String =
+    """
+      |sample:
+      |  url: http://www.somedomain.com/
+      |""".stripMargin
 
-      properties.foreach(prop => {
-        prop.name match {
-          case "internal.logger.api.base" => prop.value shouldBe ("https://logger.privado.ai/")
-          case "slack.base.url"           => prop.value shouldBe ("https://hooks.slack.com/services/some/leaking/url")
-          case _                          => s"Unknown value ${prop.value}. Test failed"
+  override val propertyFileContents = ""
+  override val codeFileContents: String =
+    """
+      |
+      |import org.springframework.beans.factory.annotation.Value;
+      |
+      |class Foo {
+      |
+      |@Value("${sample.url}")
+      |public void setUrl( String sampleUrl )
+      |{
+      |    String url = sampleUrl;
+      |}
+      |}
+      |""".stripMargin
+
+  "ConfigFilePass" should {
+    "connect annotated method to property" in {
+      val anno: List[AstNode] = cpg.property.usedAt.l
+      anno.length shouldBe 1
+      anno.foreach(element => {
+        element.label match {
+          case "METHOD" =>
+            val List(methodNode: Method) = element.toList
+            methodNode.name shouldBe "setUrl"
         }
       })
+    }
+
+    "connect property to annotated method" in {
+      cpg.property.usedAt.originalProperty.l.size shouldBe 1
+      cpg.property.usedAt.originalProperty.name.l shouldBe List("sample.url")
+      cpg.property.usedAt.originalProperty.value.l shouldBe List("http://www.somedomain.com/")
+
     }
   }
 }

@@ -154,7 +154,7 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
             Utilities.getEngineContext(privadoInputConfig, 4)(JavaSemanticGenerator.getDefaultSemantics)
           )
           .l
-        if (ScanProcessor.config.disableDeDuplication)
+        if (privadoInputConfig.disableDeDuplication)
           flows
         else
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)

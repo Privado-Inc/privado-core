@@ -24,9 +24,9 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
-import ai.privado.model.exporter.DataFlowEncoderDecoder._
+import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.semantic.Language.*
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag, NodeType}
 import ai.privado.utility.Utilities
@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
+class SinkExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, repoItemTagName: Option[String] = None) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
   lazy val sinkTagList: List[List[Tag]] = sinkList.map(_.tag.l)
@@ -76,7 +76,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           entrySet._1,
           ExporterUtility
             .convertPathElements({
-              if (ScanProcessor.config.disableDeDuplication)
+              if (privadoInput.disableDeDuplication)
                 entrySet._2.toList
               else
                 entrySet._2.toList
@@ -119,7 +119,7 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache) {
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
           .where(filterSink)
           .l
-    sinks
+    ExporterUtility.filterNodeBasedOnRepoItemTagName(sinks, repoItemTagName)
   }
 
   private def convertSinkList(sinks: List[List[Tag]]) = {
