@@ -97,6 +97,8 @@ object Constants {
   val sources                      = "sources"
   val sourceFilters                = "sourceFilters"
   val sinkFilters                  = "sinkFilters"
+  val allowedSourceFilters         = "allowedSourceFilters"
+  val allowedSinkFilters           = "allowedSinkFilters"
   val sinkType                     = "sinkType"
   val collectionFilters            = "collectionFilters"
   val collectionType               = "collectionType"
