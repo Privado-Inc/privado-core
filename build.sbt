@@ -16,7 +16,7 @@ val upickle           = "3.1.2"
 val circeVersion    = "0.14.2"
 val jacksonVersion  = "2.15.2"
 val mockitoVersion  = "1.17.14"
-val goAstGenVersion = "0.11.0"
+val goAstGenVersion = "0.12.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses

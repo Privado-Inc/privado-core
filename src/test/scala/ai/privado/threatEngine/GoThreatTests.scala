@@ -22,9 +22,9 @@ class GoThreatTests extends GoTestBase {
       PolicyAction.DENY,
       DataFlow(
         List(),
-        SourceFilter(Option(true), "", ""),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]())),
         List[String](),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List("**"),
@@ -197,9 +197,9 @@ class GoThreatTests extends GoTestBase {
       PolicyAction.DENY,
       DataFlow(
         List(),
-        SourceFilter(Option(true), "", ""),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]())),
         List[String](),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List("**"),
@@ -372,9 +372,9 @@ class GoThreatTests extends GoTestBase {
       PolicyAction.DENY,
       DataFlow(
         List(),
-        SourceFilter(Option(true), "", ""),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]())),
         List[String](),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List("**"),
