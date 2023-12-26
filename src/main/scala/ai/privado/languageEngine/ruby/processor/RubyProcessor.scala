@@ -121,6 +121,7 @@ object RubyProcessor {
           new GlobalImportPass(cpg, globalSymbolTable).createAndApply()
           // We are clearing up the packageTableInfo as it is not needed afterwards
           RubySrc2Cpg.packageTableInfo.clear()
+          new IdentifierToCallPass(cpg).createAndApply()
           println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
           new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate().foreach(_.createAndApply())
           println(
