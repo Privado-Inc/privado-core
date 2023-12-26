@@ -365,19 +365,7 @@ object RubyProcessor {
     // .withUseDeprecatedFrontend(true)
 
     val global = new Global()
-    val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
-
-      new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigFileCreationPass(cpg).createAndApply()
-      // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-
-        val astCreationPass =
-          new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
-        astCreationPass.createAndApply()
-        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
-      }
-    }
+    val xtocpg = new RubySrc2Cpg().createCpg(cpgconfig)
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
