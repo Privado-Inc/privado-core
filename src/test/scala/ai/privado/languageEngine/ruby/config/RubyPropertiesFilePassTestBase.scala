@@ -31,7 +31,7 @@ abstract class RubyPropertiesFilePassTestBase(fileExtension: String)
     val config = Config()
       .withInputPath(inputDir.pathAsString)
       .withOutputPath(outputDir.pathAsString)
-      .withUseDeprecatedFrontend(true)
+      .withUseDeprecatedFrontend(false)
     val rubySrc = new RubySrc2Cpg()
     val xtocpg = rubySrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)

@@ -126,7 +126,7 @@ abstract class MonolithTestBase extends AnyWordSpec with Matchers with BeforeAnd
     output = File.newTemporaryDirectory()
 
     val config =
-      Config().withInputPath(inputDir.pathAsString).withOutputPath(output.pathAsString).withUseDeprecatedFrontend(true)
+      Config().withInputPath(inputDir.pathAsString).withOutputPath(output.pathAsString).withUseDeprecatedFrontend(false)
     val rubySrc = new RubySrc2Cpg()
     val xtocpg = rubySrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)

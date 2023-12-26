@@ -361,8 +361,8 @@ object RubyProcessor {
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
       .withSchemaValidation(ValidationMode.Enabled)
-      // TODO: Remove old ruby frontend this once we have the new frontend ready upstream
-      .withUseDeprecatedFrontend(true)
+    // TODO: Remove old ruby frontend this once we have the new frontend ready upstream
+    // .withUseDeprecatedFrontend(true)
 
     val global = new Global()
     val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
