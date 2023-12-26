@@ -111,17 +111,7 @@ private class RecoverForRubyFile(
       setCallMethodFullNameFromBase(c)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)
-    } else if (
-      c.argument.headOption
-        .exists(_.isCall) && c.argument.head
-        .asInstanceOf[Call]
-        .name
-        .equals("<operator>.scopeResolution") && c.argument.head
-        .asInstanceOf[Call]
-        .argument
-        .lastOption
-        .exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg))
-    ) {
+    } else if (isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(c)) {
       setCallMethodFullNameFromBaseScopeResolution(c)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)
@@ -130,6 +120,16 @@ private class RecoverForRubyFile(
       visitIdentifierAssignedToCallRetVal(i, c)
     }
   }
+
+  def isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(c: Call): Boolean = c.argument.headOption
+    .exists(_.isCall) && c.argument.head
+    .asInstanceOf[Call]
+    .name
+    .equals("<operator>.scopeResolution") && c.argument.head
+    .asInstanceOf[Call]
+    .argument
+    .lastOption
+    .exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg))
 
   protected def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
@@ -254,8 +254,14 @@ private class RecoverForRubyFile(
         .get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
         .union(globalSymbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess]))))
     case _ if symbolTable.contains(c)       => methodReturnValues(symbolTable.get(c).toSeq)
-    case _ if globalSymbolTable.contains(c) => globalSymbolTable.get(c)
-    case Operators.indexAccess              => getIndexAccessTypes(c)
+    case _ if globalSymbolTable.contains(c) => methodReturnValues(globalSymbolTable.get(c).toSeq)
+    case _ if c.argument.headOption.exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg)) =>
+      setCallMethodFullNameFromBase(c)
+      methodReturnValues(symbolTable.get(c).toSeq)
+    case _ if isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(c) =>
+      setCallMethodFullNameFromBaseScopeResolution(c)
+      methodReturnValues(symbolTable.get(c).toSeq)
+    case Operators.indexAccess => getIndexAccessTypes(c)
     case n =>
       logger.debug(s"Unknown RHS call type '$n' @ ${debugLocation(c)}")
       Set.empty[String]
