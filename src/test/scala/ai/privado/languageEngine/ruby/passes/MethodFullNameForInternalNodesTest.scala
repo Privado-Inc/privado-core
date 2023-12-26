@@ -55,11 +55,19 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
     "have a resolved type when LHS is a call node and called without scopeResolution" in {
       val paymentFromIdCall = cpg.call.name("from_id").lineNumber(5).l
       paymentFromIdCall.methodFullName.l shouldBe List("payment.rb::program.Pay.Payment.from_id")
+
+      val paymentNode = cpg.member.name("payment1").l
+      paymentNode.size shouldBe 1
+      paymentNode.typeFullName.l shouldBe List("payment.rb::program.Pay.Payment.from_id.<returnValue>")
     }
 
     "have a resolved type when LHS is a call node and called with scopeResolution" in {
       val paymentFromIdCall = cpg.call.name("from_id").lineNumber(6).l
       paymentFromIdCall.methodFullName.l shouldBe List("payment.rb::program.Pay.Payment.from_id")
+
+      val paymentNode = cpg.member.name("payment2").l
+      paymentNode.size shouldBe 1
+      paymentNode.typeFullName.l shouldBe List("payment.rb::program.Pay.Payment.from_id.<returnValue>")
     }
   }
 
