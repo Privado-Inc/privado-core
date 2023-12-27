@@ -158,7 +158,7 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
             case b: BlockNode =>
               b.forEach {
                 case c: CallNode if !List("index", "check_constraint").contains(c.getName.toString) =>
-                  getEntityNameForNode(c).foreach { column =>
+                  getEntityNameForNode(c, 1).foreach { column =>
                     columns.addOne(SQLColumn(column._1, column._2, Constants.defaultLineNumber))
                   }
                 case _ =>
@@ -178,12 +178,12 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
 
   }
 
-  private def getEntityNameForNode(c: IArgumentNode) = {
+  private def getEntityNameForNode(c: IArgumentNode, extraLineNumber: Int = 0) = {
     c.getArgsNode match {
       case argNode: ArrayNode if argNode.get(0).isInstanceOf[StrNode] =>
         val strNode    = argNode.get(0).asInstanceOf[StrNode]
         val entityName = strNode.getValue.toString
-        val lineNumber = strNode.getLine + 1
+        val lineNumber = strNode.getLine + extraLineNumber
         Some((entityName, lineNumber))
       case _ => None
     }
