@@ -19,10 +19,10 @@
 
     <Loggers>
         <logger name="com.networknt.schema" level="ERROR" />
-        <logger name="io.shiftleft" level="WARN" />
-        <logger name="io.joern" level="WARN" />
+        <logger name="io.shiftleft" level="DEBUG" />
+        <logger name="io.joern" level="DEBUG" />
         <Root level="DEBUG">
-            <AppenderRef ref="File"/>
+            <AppenderRef ref="Console"/>
         </Root>
     </Loggers>
 

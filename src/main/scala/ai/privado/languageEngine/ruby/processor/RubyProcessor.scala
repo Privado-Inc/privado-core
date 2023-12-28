@@ -32,17 +32,18 @@ import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
+  IdentifierToCallPassPrivado,
   MethodFullNamePassForRORBuiltIn,
   PrivadoRubyTypeRecoveryPassGenerator,
   RubyExternalTypesPass,
-  RubyImportResolverPass
+  RubyImportResolverPass,
+  SchemaParser
 }
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, SQLParser}
-import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
@@ -111,9 +112,21 @@ object RubyProcessor {
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
           new RubyPropertyLinkerPass(cpg).createAndApply()
 
+          println(s"${Calendar.getInstance().getTime} - Overlay started  ...")
+          val context = new LayerCreatorContext(cpg)
+          val options = new OssDataFlowOptions()
+          new OssDataFlow(options).run(context)
+          if (ScanProcessor.config.enableLambdaFlows)
+            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
           logger.info("Enhancing Ruby graph by post processing pass")
 
           new RubyExternalTypesPass(cpg, RubySrc2Cpg.packageTableInfo).createAndApply()
+
+          new IdentifierToCallPassPrivado(cpg).createAndApply()
 
           // Using our own pass by overriding languageEngine's pass
           // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
@@ -151,16 +164,6 @@ object RubyProcessor {
           // TODO remove below lines in GA release, need these for dubugging
           // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).map(cl => (cl.name, cl.file.name.headOption.getOrElse(""), cl.methodFullName, cl.dynamicTypeHintFullName.l)).foreach(println)
           // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).sortBy(_.name).map(cl => (cl.name, cl.methodFullName, cl.file.name.headOption.getOrElse(""), cl.lineNumber)).foreach(println)
-
-          println(s"${Calendar.getInstance().getTime} - Overlay started  ...")
-          val context = new LayerCreatorContext(cpg)
-          val options = new OssDataFlowOptions()
-          new OssDataFlow(options).run(context)
-          if (ScanProcessor.config.enableLambdaFlows)
-            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Overlay done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
 
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
