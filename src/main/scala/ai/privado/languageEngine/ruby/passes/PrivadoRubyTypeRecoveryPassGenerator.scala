@@ -7,13 +7,39 @@ import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.Defines.{ConstructorMethodName, DynamicCallUnknownFullName}
 import io.joern.x2cpg.Defines as XDefines
+import io.joern.x2cpg.passes.frontend.SBKey.getClass
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
 import scala.collection.{Seq, mutable}
+object SBKeyPrivado {
+  protected val logger: Logger = LoggerFactory.getLogger(getClass)
+  def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = {
+    Option(node match {
+      case n: Identifier => LocalVar(n.name)
+      case n: Local      => LocalVar(n.name)
+      case n: Call =>
+        CallAlias(
+          n.name,
+          n.argument.collectFirst {
+            case x: Identifier if x.argumentIndex == 0 => x.name
+            case c: Call if c.argumentIndex == 0 && c.name == "<operator>.scopeResolution" =>
+              c.code.stripPrefix("::").trim
+          }
+        )
+      case n: Method            => CallAlias(n.name, Option("this"))
+      case n: MethodRef         => CallAlias(n.code)
+      case n: FieldIdentifier   => LocalVar(n.canonicalName)
+      case n: MethodParameterIn => LocalVar(n.name)
+      case _ => logger.debug(s"Local node of type ${node.label} is not supported in the type recovery pass."); null
+    })
+  }
+
+}
 
 class PrivadoRubyTypeRecoveryPassGenerator(
   cpg: Cpg,
@@ -51,16 +77,18 @@ private class RecoverForRubyFile(
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
+  override protected val symbolTable = new SymbolTable[LocalKey](SBKeyPrivado.fromNodeToLocalKey)
+
   /** A heuristic method to determine if a call is a constructor or not.
     */
   override protected def isConstructor(c: Call): Boolean = {
-    isConstructor(c.name) && c.code.charAt(0).isUpper
+    isConstructor(c.name)
   }
 
   /** A heuristic method to determine if a call name is a constructor or not.
     */
   override protected def isConstructor(name: String): Boolean =
-    !name.isBlank && name.equals("new")
+    !name.isBlank && (name.equals("new") || name.equals("<init>"))
 
   override def visitImport(i: Import): Unit = for {
     resolvedImport <- i.call.tag
@@ -72,17 +100,6 @@ private class RecoverForRubyFile(
         symbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(alias)), fullName)
       case _ => super.visitImport(i)
     }
-  }
-  override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
-
-    def isMatching(cName: String, code: String) = {
-      val cNameList = cName.split(":program").last.split("\\.").filterNot(_.isEmpty)
-      val codeList  = code.split("\\(").head.split("[:.]").filterNot(_.isEmpty)
-      cNameList sameElements codeList
-    }
-
-    val constructorPaths = symbolTable.get(c).filter(isMatching(_, c.code)).map(_.stripSuffix(s"${pathSep}new"))
-    associateTypes(i, constructorPaths)
   }
 
   /*
@@ -103,16 +120,14 @@ private class RecoverForRubyFile(
   override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
     if (c.name.startsWith("<operator>")) {
       visitIdentifierAssignedToOperator(i, c, c.name)
-    } else if ((symbolTable.contains(c) || globalSymbolTable.contains(c)) && isConstructor(c)) {
-      visitIdentifierAssignedToConstructor(i, c)
     } else if (symbolTable.contains(c) || globalSymbolTable.contains(c)) {
       visitIdentifierAssignedToCallRetVal(i, c)
-    } else if (c.argument.headOption.exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg))) {
-      setCallMethodFullNameFromBase(c)
-      // Repeat this method now that the call has a type
-      visitIdentifierAssignedToCall(i, c)
     } else if (isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(c)) {
       setCallMethodFullNameFromBaseScopeResolution(c)
+      // Repeat this method now that the call has a type
+      visitIdentifierAssignedToCall(i, c)
+    } else if (c.argument.headOption.exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg))) {
+      setCallMethodFullNameFromBase(c)
       // Repeat this method now that the call has a type
       visitIdentifierAssignedToCall(i, c)
     } else {
@@ -121,6 +136,16 @@ private class RecoverForRubyFile(
     }
   }
 
+  def isCallParentScopeResolutionMatching(cName: String, code: String) = {
+    try {
+      val cNameList = cName.split(":program").last.split("\\.").filterNot(_.isEmpty)
+      val codeList  = code.split("\\(").head.split("[:.]").filterNot(_.isEmpty).dropRight(1).toList
+      cNameList sameElements codeList
+    } catch {
+      case e: Exception => false
+    }
+
+  }
   def isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(c: Call): Boolean = c.argument.headOption
     .exists(_.isCall) && c.argument.head
     .asInstanceOf[Call]
@@ -129,19 +154,23 @@ private class RecoverForRubyFile(
     .asInstanceOf[Call]
     .argument
     .lastOption
-    .exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg))
+    .exists(arg =>
+      symbolTable.get(arg).union(globalSymbolTable.get(arg)).exists(isCallParentScopeResolutionMatching(_, c.code))
+    )
 
   protected def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
       .map {
         case x: Call if x.name.equals("<operator>.scopeResolution") =>
           x.argument.lastOption
-            .map(i => symbolTable.get(i).union(globalSymbolTable.get(i)))
+            .map(i =>
+              symbolTable.get(i).union(globalSymbolTable.get(i)).filter(isCallParentScopeResolutionMatching(_, c.code))
+            )
             .getOrElse(Set.empty[String])
+            .map(_.concat(s"$pathSep${c.name}"))
       }
       .getOrElse(Set.empty[String])
-    val callTypes = recTypes.map(_.concat(s"$pathSep${c.name}"))
-    symbolTable.append(c, callTypes)
+    symbolTable.append(c, recTypes)
   }
 
   private def debugLocation(n: AstNode): String = {

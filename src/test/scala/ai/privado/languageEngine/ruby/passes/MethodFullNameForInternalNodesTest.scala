@@ -71,6 +71,83 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
     }
   }
 
+  "method fullname propagation due to object creation with `new`" should {
+
+    val cpg = code(
+      List(
+        SourceCodeModel(
+          """
+        |module MyModule
+        |    class Mapping
+        |        attr_reader :class_name, :method_name
+        |
+        |        def initialize(class_name:, method_name:)
+        |          @class_name = class_name
+        |          @method_name = method_name
+        |        end
+        |    end
+        |end
+        |""".stripMargin,
+          "mapping.rb"
+        ),
+        SourceCodeModel(
+          """
+          |class Demo
+          |     def foo
+          |         val myMapping = MyModule::Mapping.new("myClass", "methodName")
+          |         val notMyMapping = MyModule::NotMyMapping.new("somerandom")
+          |     end
+          |end
+          |""".stripMargin,
+          "demo.rb"
+        )
+      )
+    )
+
+    "have correct type for the new node" in {
+
+      val myMapping = cpg.identifier("myMapping").l
+      myMapping.typeFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping.<init>.<returnValue>")
+      cpg.call("<init>").lineNumber(4).methodFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping.<init>")
+
+      cpg.call("<init>").lineNumber(5).methodFullName.l shouldBe List("<unknownFullName>")
+
+    }
+  }
+
+  "types for nodes accessed via module" should {
+
+    val cpg = code(
+      List(
+        SourceCodeModel(
+          """
+        |module Pay
+        |    attr_reader :intent
+        |    def display
+        |      puts "debug"
+        |    end
+        |end
+        |""".stripMargin,
+          "myModule.rb"
+        ),
+        SourceCodeModel(
+          """
+        |class Demo
+        |   def foo
+        |      Pay.display
+        |   end
+        |end
+        |""".stripMargin,
+          "demo.rb"
+        )
+      )
+    )
+
+    "be generated" in {
+      cpg.call("display").lineNumber(4).methodFullName.l shouldBe List("myModule.rb::program.Pay.display")
+    }
+  }
+
 }
 
 def code(sourceCodes: List[SourceCodeModel]): Cpg = {
