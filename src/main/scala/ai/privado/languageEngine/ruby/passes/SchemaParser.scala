@@ -24,6 +24,8 @@
 package ai.privado.languageEngine.ruby.passes
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.ruby.passes.download.JRubyBasedParser
+import ai.privado.model.Constants
 import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLNodeBuilder
@@ -33,10 +35,12 @@ import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
+import org.jruby.ast.{ArrayNode, BlockNode, CallNode, FCallNode, IArgumentNode, IterNode, Node, StrNode}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
@@ -47,7 +51,10 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
 
   val logger = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[_ <: AnyRef] =
-    cpg.file(SCHEMA_FILE_PATTERN).name.l.toArray
+    SourceFiles
+      .determine(projectRoot, Set(".rb"), ignoredFilesRegex = Option(ruleCache.getExclusionRegex.r))
+      .filter(_.matches(SCHEMA_FILE_PATTERN))
+      .toArray
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
     val fileNode = addFileNode(file, builder)
@@ -55,6 +62,29 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
   }
 
   private def buildAndAddSqlQueryNodes(
+    cpg: Cpg,
+    schemaFileName: String,
+    builder: DiffGraphBuilder,
+    fileNode: NewFile
+  ): Unit = Try {
+
+    val rootNode = JRubyBasedParser.parseFile(schemaFileName)
+
+    var order: Int = 0
+    rootNode.childNodes.forEach {
+      case a: CallNode =>
+        val bodyNode = a.getIterNode.asInstanceOf[IterNode].getBodyNode
+        bodyNode match {
+          case _: BlockNode => bodyNode.childNodes.forEach(processBodyNode(_, builder, fileNode, order))
+          case _: FCallNode => processBodyNode(bodyNode, builder, fileNode, order)
+        }
+        order = order + 1
+      case _ => logger.debug(s"Nothing matched for schema.rb file : $schemaFileName")
+    }
+
+  }
+  @deprecated
+  private def buildAndAddSqlQueryNodesUsingDefaultParser(
     cpg: Cpg,
     schemaFileName: String,
     builder: DiffGraphBuilder,
@@ -115,6 +145,48 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
         }
       })
 
+  }
+
+  private def processBodyNode(b: Node, builder: DiffGraphBuilder, fileNode: NewFile, order: Int): Unit = b match {
+    case fCall: FCallNode if fCall.getName.toString == "create_table" =>
+      try {
+        getEntityNameForNode(fCall).foreach { table =>
+          val tableNode = SQLTable(table._1, table._2, Constants.defaultLineNumber)
+          val columns   = ListBuffer[SQLColumn]()
+
+          fCall.getIterNode.asInstanceOf[IterNode].getBodyNode match {
+            case b: BlockNode =>
+              b.forEach {
+                case c: CallNode if !List("index", "check_constraint").contains(c.getName.toString) =>
+                  getEntityNameForNode(c, 1).foreach { column =>
+                    columns.addOne(SQLColumn(column._1, column._2, Constants.defaultLineNumber))
+                  }
+                case _ =>
+              }
+            case _ =>
+          }
+
+          val sqlQuery = SQLQuery(SQLQueryType.CREATE, tableNode, columns.toList)
+          SQLNodeBuilder.buildAndReturnIndividualQueryNode(builder, fileNode, sqlQuery, "", tableNode.lineNumber, order)
+        }
+      } catch {
+        case ex: Exception =>
+          logger.debug(s"Error while building schema.rb, $ex")
+          println(s"Error while building schema.rb query at line ${fCall.getLine}")
+      }
+    case _ =>
+
+  }
+
+  private def getEntityNameForNode(c: IArgumentNode, extraLineNumber: Int = 0) = {
+    c.getArgsNode match {
+      case argNode: ArrayNode if argNode.get(0).isInstanceOf[StrNode] =>
+        val strNode    = argNode.get(0).asInstanceOf[StrNode]
+        val entityName = strNode.getValue.toString
+        val lineNumber = strNode.getLine + extraLineNumber
+        Some((entityName, lineNumber))
+      case _ => None
+    }
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
