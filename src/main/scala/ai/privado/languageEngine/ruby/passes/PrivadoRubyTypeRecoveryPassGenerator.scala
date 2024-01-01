@@ -136,16 +136,31 @@ private class RecoverForRubyFile(
     }
   }
 
-  def isCallParentScopeResolutionMatching(cName: String, code: String) = {
+  /** Return true if `methodFullName` after the `:program` part matches the callCode excluding arguments
+    * @param methodFullName
+    * @param callCode
+    * @return
+    */
+  def isCallParentScopeResolutionMatching(methodFullName: String, callCode: String) = {
     try {
-      val cNameList = cName.split(":program").last.split("\\.").filterNot(_.isEmpty)
-      val codeList  = code.split("\\(").head.split("[:.]").filterNot(_.isEmpty).dropRight(1).toList
+      val cNameList = methodFullName.split(":program").last.split("\\.").filterNot(_.isEmpty)
+      val codeList  = callCode.split("\\(").head.split("[:.]").filterNot(_.isEmpty).dropRight(1).toList
       cNameList sameElements codeList
     } catch {
       case e: Exception => false
     }
 
   }
+
+  /** Return true if the passed node is `foo` and it is called as `Pay::Braintree.Billable.foo()`,
+    *
+    * Here we check whether the head argument is `ScopeResolution` (which is true above) and is `Billable` present in
+    * symbol table which accessor as `Pay.Braintree`
+    *
+    * If the above conditions hold true, return true else false
+    * @param c
+    * @return
+    */
   def isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(c: Call): Boolean = c.argument.headOption
     .exists(_.isCall) && c.argument.head
     .asInstanceOf[Call]

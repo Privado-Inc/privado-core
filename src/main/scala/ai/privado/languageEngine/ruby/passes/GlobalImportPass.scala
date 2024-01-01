@@ -51,7 +51,6 @@ class GlobalImportPass(cpg: Cpg, globalSymbolTable: SymbolTable[LocalKey]) exten
       .flatMap(typeDecl => Seq(ResolvedTypeDecl(typeDecl.fullName)))
       .l
 
-    // (resolvedModulesExternal ++ resolvedTypeDeclExternal ++
     (resolvedTypeDeclInternal ++ resolvedModuleInternal).toSet
       .foreach { case ResolvedTypeDecl(fullName, _) =>
         globalSymbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(fullName)), fullName)
