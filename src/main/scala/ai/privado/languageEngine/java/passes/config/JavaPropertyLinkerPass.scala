@@ -75,6 +75,8 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     annotatedMethods()
       .filter { case (key, _) => propertyNode.name == Option(key.code.slice(3, key.code.length - 2)).getOrElse("") }
       .foreach { case (_, method) =>
+        // TODO: Add support for linking multiple fieldAccess in a single method
+        // This will work (as expected) only if a single fieldAccess is present in the method, when not the case it will connect the referenced member of the first fieldAccess to the property node
         val referencedMember = method.ast.fieldAccess.referencedMember.l.headOption.orNull
         if (referencedMember != null) {
           builder.addEdge(propertyNode, referencedMember, EdgeTypes.IS_USED_AT)

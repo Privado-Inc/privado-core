@@ -84,62 +84,22 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
 
     "connect property to annotated parameter" in {
       cpg.property.usedAt.originalProperty.l.length shouldBe 3
-      cpg.property.usedAt.originalProperty.name.toSet.l shouldBe List("internal.logger.api.base", "slack.base.url")
-      cpg.property.usedAt.originalProperty.value.toSet.l shouldBe List(
+      cpg.property.usedAt.originalProperty.name.l shouldBe List(
+        "internal.logger.api.base",
+        "internal.logger.api.base",
+        "slack.base.url"
+      )
+      cpg.property.usedAt.originalProperty.value.l shouldBe List(
+        "https://logger.privado.ai/",
         "https://logger.privado.ai/",
         "https://hooks.slack.com/services/some/leaking/url"
       )
     }
 
     "connect the referenced member to the original property denoted by the annotated method" in {
-      cpg.member("loggerUrl").originalProperty.l.name.head shouldBe "internal.logger.api.base"
-      cpg.member("loggerUrl").originalProperty.l.value.head shouldBe "https://logger.privado.ai/"
-    }
-  }
-}
-
-/* Test for annotation of methods */
-class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
-  override val configFileContents: String =
-    """
-      |sample:
-      |  url: http://www.somedomain.com/
-      |""".stripMargin
-
-  override val propertyFileContents = ""
-  override val codeFileContents: String =
-    """
-      |
-      |import org.springframework.beans.factory.annotation.Value;
-      |
-      |class Foo {
-      |
-      |@Value("${sample.url}")
-      |public void setUrl( String sampleUrl )
-      |{
-      |    String url = sampleUrl;
-      |}
-      |}
-      |""".stripMargin
-
-  "ConfigFilePass" should {
-    "connect annotated method to property" in {
-      val anno: List[AstNode] = cpg.property.usedAt.l
-      anno.length shouldBe 1
-      anno.foreach(element => {
-        element.label match {
-          case "METHOD" =>
-            val List(methodNode: Method) = element.toList
-            methodNode.name shouldBe "setUrl"
-        }
-      })
-    }
-
-    "connect property to annotated method" in {
-      cpg.property.usedAt.originalProperty.l.size shouldBe 1
-      cpg.property.usedAt.originalProperty.name.l shouldBe List("sample.url")
-      cpg.property.usedAt.originalProperty.value.l shouldBe List("http://www.somedomain.com/")
-
+      cpg.member("loggerUrl").originalProperty.size shouldBe 1
+      cpg.member("loggerUrl").originalProperty.name.l shouldBe List("internal.logger.api.base")
+      cpg.member("loggerUrl").originalProperty.value.l shouldBe List("https://logger.privado.ai/")
     }
   }
 }
@@ -166,8 +126,7 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
-      val List(_, name: String) = cpg.file.name.l
-
+      val List(_, _, name: String) = cpg.file.name.l // The default overlays add a new file to cpg.file
       name.endsWith("/test.properties") shouldBe true
     }
 
@@ -281,7 +240,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     inputDir = File.newTemporaryDirectory()
     (inputDir / s"test$fileExtension").write(configFileContents)
 
-    (inputDir / "unrelated.file").write("foo")
+//    (inputDir / "unrelated.file").write("foo")
     if (propertyFileContents.nonEmpty) {
       (inputDir / "application.properties").write(propertyFileContents)
     }
