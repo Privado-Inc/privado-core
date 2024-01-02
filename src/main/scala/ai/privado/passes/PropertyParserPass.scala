@@ -47,8 +47,8 @@ object FileExtensions {
 
 class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, language: Language.Value)
     extends PrivadoParallelCpgPass[String](cpg) {
-
-  val logger = LoggerFactory.getLogger(getClass)
+  val PLACEHOLDER_TOKEN_START_END = "@@"
+  val logger                      = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[String] = {
     language match {
@@ -181,7 +181,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
 
   private def loadAndConvertYMLtoProperties(file: String): List[(String, String, Int)] = {
     try {
-      val yamlContent = better.files.File(file).contentAsString // Read the YAML file content as a string
+      val yamlContent = better.files
+        .File(file)
+        .contentAsString
+        .replaceAll(PLACEHOLDER_TOKEN_START_END, "") // Read the YAML file content as a string
 
       val yaml                                = new Yaml(new SafeConstructor(LoaderOptions()))
       val rootNode                            = yaml.compose(new StringReader(yamlContent))
