@@ -504,10 +504,29 @@ private class RecoverForRubyFile(
           setTypeInformationForRecCall(x, Option(x), x.argument.l)
         case x: Call if x.argument.headOption.exists(globalSymbolTable.contains) =>
           setTypeInformationForRecCall(x, Option(x), x.argument.l)
+        case x: Call if isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(x) =>
+          setCallMethodFullNameFromBaseScopeResolution(x)
+          val typs =
+            if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
+            else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
+          storeCallTypeInfoPrivado(x, typs)
         case _ =>
       }
     // Set types in an atomic way
     newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfoPrivado(m, ts.toSeq) }
+  }
+
+  override protected def postSetTypeInformation(): Unit = {
+    super.postSetTypeInformation()
+    // method named `perform` can be called as `perform_async` to execute in parallel, below code links the call `perform_async` to `perform`
+    cu.ast.isCall
+      .nameExact("perform_async")
+      .foreach(c =>
+        storeCallTypeInfoPrivado(
+          c,
+          symbolTable.get(c).flatMap(fullName => List(fullName, fullName.stripSuffix("_async"))).toSeq
+        )
+      )
   }
 
   override def setTypeForDynamicDispatchCall(call: Call, i: Identifier): Unit = {
