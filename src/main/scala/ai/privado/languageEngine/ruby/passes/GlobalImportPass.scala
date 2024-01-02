@@ -28,7 +28,6 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.passes.frontend.{CallAlias, LocalKey, LocalVar, SymbolTable, XImportsPass}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.semanticcpg.language.importresolver.{ResolvedMethod, ResolvedTypeDecl}
@@ -37,77 +36,24 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.Seq
 
-class GlobalImportPass(cpg: Cpg, packageTable: PackageTable, globalSymbolTable: SymbolTable[LocalKey])
-    extends PrivadoSimpleCpgPass(cpg) {
-
-  /*
-  lazy val modules: Set[String] =
-    (packageTable.moduleMapping.keys.l ++ packageTable.typeDeclMapping.keys.l).toSet.filter(_.nonEmpty)
-  def generateParts(): Array[File] = {
-    cpg.file.name(".*[.]rb").toArray
-  }
-
-  def runOnPart(builder: DiffGraphBuilder, fileNode: File): Unit = {
-
-    modules.foreach { moduleKey =>
-      if (!fileNode.name.equals(moduleKey)) {
-        val callNode   = NewCall().name(moduleKey)
-        val importNode = createImportNodeAndLink(moduleKey, "", Some(callNode), builder)
-
-        builder.addEdge(fileNode, callNode, EdgeTypes.AST)
-        val callAst = Ast(callNode).withChild(Ast(importNode))
-        storeInDiffGraph(callAst, builder)
-      }
-    }
-  }
-   */
+class GlobalImportPass(cpg: Cpg, globalSymbolTable: SymbolTable[LocalKey]) extends PrivadoSimpleCpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit = {
 
-    /*
-    val resolvedModulesExternal = packageTable.moduleMapping.values.flatMap(moduleMappings =>
-      moduleMappings.map(module => ResolvedTypeDecl(module.fullName))
-    )
-
-    val resolvedTypeDeclExternal = packageTable.typeDeclMapping.values.flatMap(typeDeclMappings =>
-      typeDeclMappings.flatMap(typeDeclModel =>
-        Seq(
-          ResolvedMethod(s"${typeDeclModel.fullName}.new", "new"),
-          ResolvedMethod(s"${typeDeclModel.fullName}.${typeDeclModel.name}", typeDeclModel.name),
-          ResolvedTypeDecl(typeDeclModel.fullName)
-        )
-      )
-    )
-     */
-
     val resolvedTypeDeclInternal = cpg.typeDecl
-      .flatMap(typeDecl =>
-        Seq(
-          ResolvedTypeDecl(typeDecl.fullName),
-          ResolvedMethod(s"${typeDecl.fullName}.new", "new"),
-          ResolvedMethod(s"${typeDecl.fullName}.${typeDecl.name}", typeDecl.name)
-        )
-      )
+      .filterNot(_.astParent.isNamespaceBlock)
+      .flatMap(typeDecl => Seq(ResolvedTypeDecl(typeDecl.fullName)))
+      .l
 
-    val resolvedModuleInternal = cpg.namespaceBlock
-      .whereNot(_.nameExact("<global>"))
-      .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
+    val resolvedModuleInternal = cpg.typeDecl
+      .filter(_.astParent.isNamespaceBlock)
+      .filter(_.astChildren.size != 1)
+      .flatMap(typeDecl => Seq(ResolvedTypeDecl(typeDecl.fullName)))
+      .l
 
-    // Expose methods which are directly present in a file, without any module, TypeDecl
-    val resolvedMethodInternal = cpg.method
-      .where(_.nameExact(":program"))
-      .astChildren
-      .astChildren
-      .isMethod
-      .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
-
-    // (resolvedModulesExternal ++ resolvedTypeDeclExternal ++
-    (resolvedTypeDeclInternal ++ resolvedModuleInternal ++ resolvedMethodInternal).toSet
-      .foreach {
-        case ResolvedMethod(fullName, alias, receiver, _) =>
-          globalSymbolTable.append(CallAlias(alias, receiver), fullName)
-        case ResolvedTypeDecl(fullName, _) =>
-          globalSymbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(fullName)), fullName)
+    (resolvedTypeDeclInternal ++ resolvedModuleInternal).toSet
+      .foreach { case ResolvedTypeDecl(fullName, _) =>
+        globalSymbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(fullName)), fullName)
       }
   }
 }
