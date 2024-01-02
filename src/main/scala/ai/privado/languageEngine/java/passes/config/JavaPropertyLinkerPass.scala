@@ -25,9 +25,10 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 /** This pass creates a graph layer for Java `.properties` files.
@@ -35,6 +36,7 @@ import overflowdb.BatchedUpdate
 class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
   implicit val resolver: NoResolve.type = NoResolve
+  val logger                            = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[_ <: AnyRef] = {
     cpg.property.iterator.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
@@ -70,17 +72,20 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
     val annotatedMethodsList = annotatedMethods()
 
-    annotatedMethodsList
-      .filter { case (key, _) =>
-        propertyNode.name == Option(key.code.slice(3, key.code.length - 2)).getOrElse("")
-      }
-      .foreach { case (_, value) =>
-        builder.addEdge(propertyNode, value, EdgeTypes.IS_USED_AT)
-        builder.addEdge(value, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+    annotatedMethods()
+      .filter { case (key, _) => propertyNode.name == Option(key.code.slice(3, key.code.length - 2)).getOrElse("") }
+      .foreach { case (_, method) =>
+        val referencedMember = method.ast.fieldAccess.referencedMember.l.headOption.orNull
+        if (referencedMember != null) {
+          builder.addEdge(propertyNode, referencedMember, EdgeTypes.IS_USED_AT)
+          builder.addEdge(referencedMember, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
+        } else {
+          logger.debug(s"Could not find a referenced member for fieldAccess in the method ${method.name}")
+        }
       }
   }
 
-  /** List of all methods annotated with Spring's `Value` annotation
+  /** List of all methods annotated with Spring's `Value` annotation, along with the method node
     */
   private def annotatedMethods(): List[(AnnotationParameterAssign, Method)] = cpg.annotation
     .nameExact("Value")
