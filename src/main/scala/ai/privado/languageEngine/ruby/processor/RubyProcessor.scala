@@ -118,7 +118,7 @@ object RubyProcessor {
           // Using our own pass by overriding languageEngine's pass
           // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
           val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-          new GlobalImportPass(cpg, RubySrc2Cpg.packageTableInfo, globalSymbolTable).createAndApply()
+          new GlobalImportPass(cpg, globalSymbolTable).createAndApply()
           // We are clearing up the packageTableInfo as it is not needed afterwards
           RubySrc2Cpg.packageTableInfo.clear()
           println(s"${Calendar.getInstance().getTime} - Type recovery started  ...")
