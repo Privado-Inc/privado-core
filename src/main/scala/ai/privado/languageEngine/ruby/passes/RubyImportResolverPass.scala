@@ -76,11 +76,7 @@ class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends X
         val importNodesFromTypeDecl = packageTableInfo
           .getTypeDecl(expEntity)
           .flatMap { typeDeclModel =>
-            Seq(
-              ResolvedMethod(s"${typeDeclModel.fullName}.new", "new"),
-              ResolvedMethod(s"${typeDeclModel.fullName}.${typeDeclModel.name}", typeDeclModel.name),
-              ResolvedTypeDecl(typeDeclModel.fullName)
-            )
+            Seq(ResolvedTypeDecl(typeDeclModel.fullName))
           }
           .distinct
 
@@ -91,13 +87,7 @@ class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends X
       } else {
         val resolvedTypeDecls = cpg.typeDecl
           .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
-          .flatMap(typeDecl =>
-            Seq(
-              ResolvedTypeDecl(typeDecl.fullName),
-              ResolvedMethod(s"${typeDecl.fullName}.new", "new"),
-              ResolvedMethod(s"${typeDecl.fullName}.${typeDecl.name}", typeDecl.name)
-            )
-          )
+          .flatMap(typeDecl => Seq(ResolvedTypeDecl(typeDecl.fullName)))
           .toSet
 
         val resolvedModules = cpg.namespaceBlock
@@ -106,16 +96,7 @@ class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends X
           .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
           .toSet
 
-        // Expose methods which are directly present in a file, without any module, TypeDecl
-        val resolvedMethods = cpg.method
-          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
-          .where(_.nameExact(":program"))
-          .astChildren
-          .astChildren
-          .isMethod
-          .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
-          .toSet
-        resolvedTypeDecls ++ resolvedModules ++ resolvedMethods
+        resolvedTypeDecls ++ resolvedModules
       }
     }
 
