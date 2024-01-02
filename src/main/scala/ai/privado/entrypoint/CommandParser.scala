@@ -53,7 +53,8 @@ case class PrivadoInput(
   enableAuditSemanticsFilter: Boolean = false,
   limitNoSinksForDataflows: Int = -1,
   limitArgExpansionDataflows: Int = -1,
-  offlineMode: Boolean = false
+  offlineMode: Boolean = false,
+  isMonolith: Boolean = false
 )
 
 object CommandConstants {
@@ -103,6 +104,7 @@ object CommandConstants {
   val LIMIT_ARG_EXPANSION_FOR_DATAFLOWS_ABBR       = "laefd"
   val OFFLINE_MODE                                 = "offline-mode"
   val OFFLINE_MODE_ABBR                            = "om"
+  val IS_MONOLITH                                  = "monolith"
 }
 
 object CommandParser {
@@ -173,6 +175,10 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(offlineMode = true))
               .text("Offline mode"),
+            opt[Unit](CommandConstants.IS_MONOLITH)
+              .optional()
+              .action((_, c) => c.copy(isMonolith = true))
+              .text("Split repository as a monolith repo"),
             opt[Unit](CommandConstants.DISABLE_2ND_LEVEL_CLOSURE)
               .abbr(CommandConstants.DISABLE_2ND_LEVEL_CLOSURE_ABBR)
               .optional()

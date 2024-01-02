@@ -59,7 +59,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "",
       Array(),
       List("(?i).*(user[^\\s/(;)#|,=!>]{0,5}name)"),
-      false,
+      true,
       "",
       Map(),
       NodeType.REGULAR,
@@ -211,9 +211,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List("Data.Sensitive.ContactData.*"),
-        SourceFilter(Option(true), "", ""),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]())),
         List("Leakages.Log.*"),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List(".*"),
@@ -250,9 +250,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List("Data.Sensitive.ContactData.*"),
-        SourceFilter(Option(true), "", ""),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]())),
         List(".*"),
-        SinkFilter(List[String](), "ThirdParties.API", ""),
+        SinkFilter(List[String](), "ThirdParties.API", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List(".*"),
@@ -298,9 +298,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List(".*"),
-        SourceFilter(Option(true), "", "(?i).*email.*"),
+        SourceFilter(Option(true), "", "(?i).*email.*", AllowedSourceFilters(List[String]())),
         List(".*"),
-        SinkFilter(List[String]("drive.google.com"), "", ""),
+        SinkFilter(List[String]("drive.google.com"), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List(".*"),
@@ -336,6 +336,61 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
+  "Policy Executor: Applying the allowedSourceFilters & allowedSinkFilters" should {
+    val policySinkFilter = PolicyOrThreat(
+      "Policy.Deny.Sharing.ThirdParties.SDK.Google.Drive",
+      "Policy to restrict Contact Information being send to thirdparty sdk",
+      "Example: Don't send contact data to thirdparty sdk",
+      "Talk to the Data Protection team: dataprotection@org.com",
+      PolicyThreatType.COMPLIANCE,
+      PolicyAction.DENY,
+      DataFlow(
+        List(".*"),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]("Data.Sensitive.ContactData"))),
+        List(".*"),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]("drive.google.com"))),
+        CollectionFilter("", "")
+      ),
+      List(".*"),
+      Map[String, String](),
+      Map[String, String](),
+      "",
+      Array[String]()
+    )
+
+    val policyExecutor = code("""
+        |const google = require('googleapis');
+        |const axios = require('axios');
+        |
+        |const username =  "XWXX-2324-KJHH";
+        |
+        |const accountDetails = {
+        |    "ccN": emailAddress
+        |};
+        |
+        |const emailAddress = "jhgjbk@gfdghch";
+        |const apiUrl = `https://123.axios.com/todos/${username}`;
+        |
+        |// Make an API request using Fetch
+        |axios.get(apiUrl).then((response) => { return response.json(); })
+        |
+        |// Create a new instance of the Drive API
+        |export const driveObj = google.drive([accountDetails], {version: 'v3', auth });
+        |""".stripMargin)
+
+    val List(violationDataflowModel) = policyExecutor.getViolatingFlowsForPolicy(policySinkFilter).toList
+    "have a sourceId and sinkId" in {
+      violationDataflowModel.sourceId shouldBe "Data.Sensitive.AccountName"
+      violationDataflowModel.sinkId shouldBe "Sinks.ThirdParties.API.123.axios.com"
+    }
+    "have non-empty pathIds" in {
+      violationDataflowModel.pathIds.size shouldBe 1
+    }
+    "have only unique path ids" in {
+      violationDataflowModel.pathIds.size == violationDataflowModel.pathIds.toSet.size shouldBe true
+    }
+  }
+
   "Policy Executor: SinkFilters by domains with regex" should {
     val policySinkFilter = PolicyOrThreat(
       "Policy.Deny.Sharing.ThirdParties.SDK.Google.Drive",
@@ -346,9 +401,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List(".*"),
-        SourceFilter(Option(true), "", ""),
+        SourceFilter(Option(true), "", "", AllowedSourceFilters(List[String]())),
         List(".*"),
-        SinkFilter(List[String]("axios.com"), "", ""),
+        SinkFilter(List[String]("axios.com"), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List(".*"),
@@ -390,9 +445,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List(".*"),
-        SourceFilter(Option(false), "", ""),
+        SourceFilter(Option(false), "", "", AllowedSourceFilters(List[String]())),
         List(".*"),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("api", "/v1/auth0/user/reset-pass")
       ),
       List(".*"),
@@ -458,9 +513,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List("**"),
-        SourceFilter(Option(false), "", ""),
+        SourceFilter(Option(false), "", "", AllowedSourceFilters(List[String]())),
         List(),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("", "")
       ),
       List(".*"),
@@ -502,9 +557,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List("**"),
-        SourceFilter(Option(false), "", ""),
+        SourceFilter(Option(false), "", "", AllowedSourceFilters(List[String]())),
         List(".*"),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("form", "")
       ),
       List(".*"),
@@ -592,9 +647,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PolicyAction.DENY,
       DataFlow(
         List("Data.Sensitive.Password"),
-        SourceFilter(Option(false), "", ""),
+        SourceFilter(Option(false), "", "", AllowedSourceFilters(List[String]())),
         List(),
-        SinkFilter(List[String](), "", ""),
+        SinkFilter(List[String](), "", "", AllowedSinkFilters(List[String]())),
         CollectionFilter("api", "")
       ),
       List(".*"),
@@ -651,12 +706,11 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
     val configAndRules =
       ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
-    ScanProcessor.config = privadoInput
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
     val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val auditCache    = new AuditCache
-    val dataFlowCache = new DataFlowCache(auditCache)
+    val dataFlowCache = new DataFlowCache(privadoInput, auditCache)
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -671,7 +725,14 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
     val collectionExporter = new CollectionExporter(cpg, ruleCache).getCollections
     val policyExecutor =
-      new PolicyExecutor(cpg, dataFlowCache, config.inputPath, ruleCache, privadoInput, collectionExporter)
+      new PolicyExecutor(
+        cpg,
+        dataFlowCache.getDataflowAfterDedup,
+        config.inputPath,
+        ruleCache,
+        privadoInput,
+        collectionExporter
+      )
     policyExecutor
   }
 }

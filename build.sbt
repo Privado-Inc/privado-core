@@ -6,9 +6,9 @@ ThisBuild / scalaVersion := "3.3.0"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.4.32"
-val joernVersion      = "2.0.178"
-val overflowdbVersion = "1.181"
+val cpgVersion        = "1.4.33"
+val joernVersion      = "2.0.195"
+val overflowdbVersion = "1.182"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
@@ -16,7 +16,7 @@ val upickle           = "3.1.2"
 val circeVersion    = "0.14.2"
 val jacksonVersion  = "2.15.2"
 val mockitoVersion  = "1.17.14"
-val goAstGenVersion = "0.11.0"
+val goAstGenVersion = "0.12.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
@@ -32,8 +32,8 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "kotlin2cpg"   % Versions.joern,
-  "io.joern"             %% "gosrc2cpg"   % Versions.joern,
+  "io.joern"             %% "kotlin2cpg"    % Versions.joern,
+  "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
@@ -52,7 +52,7 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion exclude ("org.yaml", "snakeyaml"),
   "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
   "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
-  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0" % Runtime,
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0",
   "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"              % "4.6",
   "org.apache.maven"                 % "maven-model"             % "3.9.0",
@@ -124,7 +124,7 @@ goAstGenBinaryNames := { Seq(GoAstgenWin, GoAstgenLinux, GoAstgenLinuxArm, GoAst
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
 goAstGenDlTask := {
-  val goAstGenDir = baseDirectory.value / "bin" / "goastgen"
+  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
   goAstGenDir.mkdirs()
 
   goAstGenBinaryNames.value.foreach { fileName =>
@@ -136,7 +136,7 @@ goAstGenDlTask := {
     }
   }
 
-  val distDir = (Universal / stagingDirectory).value / "bin" / "goastgen"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(goAstGenDir, distDir)
 

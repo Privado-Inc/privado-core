@@ -37,17 +37,18 @@ import ai.privado.threatEngine.ThreatEngineExecutor
 import better.files.File
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll}
 
 import scala.collection.mutable
 
-abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfter {
+abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
@@ -272,7 +273,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
   val systemConfig = List(
     SystemConfig(
       "apiHttpLibraries",
-      "^(?i)(net/http|github.com/parnurzeal/gorequest|gopkg.in/resty|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
+      "^(?i)(net/http|github.com/parnurzeal/gorequest|(gopkg.in|github.com/go-resty)/resty|valyala/fasthttp|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
       Language.GO,
       "",
       Array()
@@ -306,10 +307,10 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     val ruleCache                    = new RuleCache()
     val dataFlows: Map[String, Path] = Map()
     val auditCache                   = new AuditCache
-    val dataFlowCache                = new DataFlowCache(auditCache)
+    val privadoInput                 = PrivadoInput()
+    val dataFlowCache                = new DataFlowCache(privadoInput, auditCache)
 
-    val privadoInput = PrivadoInput()
-    val inputDir     = File.newTemporaryDirectory()
+    val inputDir = File.newTemporaryDirectory()
     inputDirs.addOne(inputDir)
     (inputDir / s"generalFile${fileExtension}").write(code)
     val outputFile: File = File.newTemporaryFile()
@@ -319,7 +320,6 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       .withOutputPath(outputFile.pathAsString)
       .withFetchDependencies(downloadDependency)
 
-    ScanProcessor.config = privadoInput
     ruleCache.setRule(configAndRules)
     val cpg = new GoSrc2Cpg().createCpg(config).get
     AppCache.repoLanguage = Language.GO
@@ -337,7 +337,14 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
     cpgs.addOne(cpg)
     val threatEngine =
-      new ThreatEngineExecutor(cpg, dataFlows, config.inputPath, ruleCache, null, dataFlowCache, privadoInput)
+      new ThreatEngineExecutor(
+        cpg,
+        config.inputPath,
+        ruleCache,
+        null,
+        dataFlowCache.getDataflowAfterDedup,
+        privadoInput
+      )
     (cpg, threatEngine)
   }
 
