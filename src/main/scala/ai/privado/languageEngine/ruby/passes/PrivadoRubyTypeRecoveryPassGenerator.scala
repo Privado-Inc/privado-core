@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.ruby.passes
 
+import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.x2cpg.passes.frontend.*
@@ -15,7 +16,7 @@ import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
-import scala.collection.{mutable}
+import scala.collection.mutable
 import scala.util.Try
 object SBKeyPrivado {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -28,7 +29,7 @@ object SBKeyPrivado {
           n.name,
           n.argument.collectFirst {
             case x: Identifier if x.argumentIndex == 0 => x.name
-            case c: Call if c.argumentIndex == 0 && c.name == "<operator>.scopeResolution" =>
+            case c: Call if c.argumentIndex == 0 && c.name == Constants.scopeResolutionOperator =>
               c.code.stripPrefix("::").trim
           }
         )
@@ -173,7 +174,7 @@ private class RecoverForRubyFile(
     .exists(_.isCall) && c.argument.head
     .asInstanceOf[Call]
     .name
-    .equals("<operator>.scopeResolution") && c.argument.head
+    .equals(Constants.scopeResolutionOperator) && c.argument.head
     .asInstanceOf[Call]
     .argument
     .lastOption
@@ -184,7 +185,7 @@ private class RecoverForRubyFile(
   protected def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
       .map {
-        case x: Call if x.name.equals("<operator>.scopeResolution") =>
+        case x: Call if x.name.equals(Constants.scopeResolutionOperator) =>
           x.argument.lastOption
             .map(i =>
               symbolTable.get(i).union(globalSymbolTable.get(i)).filter(isCallParentScopeResolutionMatching(_, c.code))
@@ -515,10 +516,13 @@ private class RecoverForRubyFile(
             if (symbolTable
               .contains(CallAlias(x.name)) || globalSymbolTable.contains(CallAlias(x.name))) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
-        case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
+        case x: Call
+            if x.argument.headOption.exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg)) =>
           setTypeInformationForRecCall(x, Option(x), x.argument.l)
-        case x: Call if x.argument.headOption.exists(globalSymbolTable.contains) =>
-          setTypeInformationForRecCall(x, Option(x), x.argument.l)
+        case x: Call
+            if x.argument.headOption.exists(_.isCall) && !x.argument.isCall.head.name.startsWith("<operator>") =>
+          val typs = getTypesFromCall(x.argument.isCall.head).map(_.concat(s".${x.name}")).toSeq
+          storeCallTypeInfo(x, typs)
         case x: Call if isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(x) =>
           setCallMethodFullNameFromBaseScopeResolution(x)
           val typs =
@@ -611,7 +615,14 @@ private class RecoverForRubyFile(
     // Handle the node itself
     x match {
       case c: Call if c.name.startsWith("<operator") =>
-      case _                                         => persistType(x, symbolTable.get(x))
+      case c: Call if c.argument.headOption.exists(symbolTable.contains) =>
+        c.argument.headOption match {
+          case Some(callNode: Call) =>
+            val types = symbolTable.get(c.argument.head)
+            persistType(x, types.map(t => generateCallReturnFullName(t, c.name)))
+          case _ => persistType(x, symbolTable.get(x))
+        }
+      case _ => persistType(x, symbolTable.get(x))
     }
   }
 
@@ -641,4 +652,26 @@ private class RecoverForRubyFile(
       case None    =>
     }
   }
+  override def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
+    if (types.nonEmpty) super.storeCallTypeInfo(c, replaceConstructorType(types))
+
+  override def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
+    if (types.toSet != n.getKnownTypes) super.storeDefaultTypeInfo(n, replaceConstructorType(types))
+
+  /** For a given call fullname, append DummyReturnType and the call name, to form the call return value
+    * @param fullName
+    * @param callName
+    * @return
+    */
+  private def generateCallReturnFullName(fullName: String, callName: String) =
+    fullName.concat(s"$pathSep${XTypeRecovery.DummyReturnType}$pathSep$callName")
+
+  /** Replace new.<returnType> and <init>.<returnType> with "", as these denote return by constructor
+    * @param types
+    * @return
+    */
+  private def replaceConstructorType(types: Seq[String]) = types.map(
+    _.replaceAll(s".new.${XTypeRecovery.DummyReturnType}", "")
+      .replaceAll(s".<init>.${XTypeRecovery.DummyReturnType}", "")
+  )
 }

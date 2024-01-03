@@ -86,6 +86,10 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
         |          @class_name = class_name
         |          @method_name = method_name
         |        end
+        |
+        |        def foo(item:)
+        |           puts "does something"
+        |        end
         |    end
         |end
         |""".stripMargin,
@@ -97,6 +101,8 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
           |     def foo
           |         val myMapping = MyModule::Mapping.new("myClass", "methodName")
           |         val notMyMapping = MyModule::NotMyMapping.new("somerandom")
+          |         MyModule::Mapping.new("myClass", "methodName").foo("item")
+          |         MyModule::Mapping.new.foo("item")
           |     end
           |end
           |""".stripMargin,
@@ -109,12 +115,21 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
     "have correct type for the new node" in {
 
       val myMapping = cpg.identifier("myMapping").l
-      myMapping.typeFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping.<init>.<returnValue>")
+      myMapping.typeFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping")
       cpg.call("<init>").lineNumber(4).methodFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping.<init>")
 
       cpg.call("<init>").lineNumber(5).methodFullName.l shouldBe List("<unknownFullName>")
 
     }
+
+    "have correct type for chained call on new with parameter" in {
+      cpg.call("foo").lineNumber(6).methodFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping.foo")
+    }
+
+    "have correct type for chained call on new without parameter" in {
+      cpg.call("foo").lineNumber(7).methodFullName.l shouldBe List("mapping.rb::program.MyModule.Mapping.foo")
+    }
+
   }
 
   "types for nodes accessed via module" should {

@@ -182,4 +182,7 @@ object Constants {
   val defaultExpansionLimit = 100
 
   val defaultLineNumber = -1
+
+  // operator
+  val scopeResolutionOperator = "<operator>.scopeResolution"
 }
