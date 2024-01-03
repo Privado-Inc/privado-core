@@ -2,7 +2,7 @@ import sbt.Credentials
 
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
-ThisBuild / scalaVersion := "3.3.0"
+ThisBuild / scalaVersion := "3.3.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
