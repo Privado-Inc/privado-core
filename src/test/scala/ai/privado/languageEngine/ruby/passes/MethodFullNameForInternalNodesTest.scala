@@ -10,13 +10,13 @@ import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.passes.frontend.{LocalKey, SBKey, SymbolTable}
 import io.shiftleft.semanticcpg.language._
-
-case class SourceCodeModel(sourceCode: String, fileName: String)
+import ai.privado.utility.Utilities.resolver
+import ai.privado.languageEngine.ruby.RubyTestBase._
 
 class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "method full name for internal nodes belonging to the same module" should {
-    val cpg = code(
+    val (cpg, _) = code(
       List(
         SourceCodeModel(
           """
@@ -49,7 +49,8 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
         |""".stripMargin,
           "payment.rb"
         )
-      )
+      ),
+      applyPostProcessingPass = true
     )
 
     "have a resolved type when LHS is a call node and called without scopeResolution" in {
@@ -73,7 +74,7 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
 
   "method fullname propagation due to object creation with `new`" should {
 
-    val cpg = code(
+    val (cpg, _) = code(
       List(
         SourceCodeModel(
           """
@@ -101,7 +102,8 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
           |""".stripMargin,
           "demo.rb"
         )
-      )
+      ),
+      applyPostProcessingPass = true
     )
 
     "have correct type for the new node" in {
@@ -117,7 +119,7 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
 
   "types for nodes accessed via module" should {
 
-    val cpg = code(
+    val (cpg, _) = code(
       List(
         SourceCodeModel(
           """
@@ -140,7 +142,8 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
         |""".stripMargin,
           "demo.rb"
         )
-      )
+      ),
+      applyPostProcessingPass = true
     )
 
     "be generated" in {
@@ -148,29 +151,47 @@ class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with 
     }
   }
 
-}
+  "Call named `perform` and `perform_async`" should {
+    val (cpg, _) = code(
+      List(
+        SourceCodeModel(
+          """
+        |module MyModule
+        |  class Worker < ApplicationWorker
+        |    VALID_FORMATS = %w[json xml].freeze
+        |
+        |    def perform(company_id)
+        |      puts "do some operation"
+        |    end
+        |  end
+        |end
+        |""".stripMargin,
+          "worker.rb"
+        ),
+        SourceCodeModel(
+          """
+          |class Demo
+          |   def foo
+          |     MyModule::Worker.perform("id")
+          |     MyModule::Worker.perform_async("id")
+          |   end
+          |end
+          |""".stripMargin,
+          "demo.rb"
+        )
+      ),
+      applyPostProcessingPass = true
+    )
 
-def code(sourceCodes: List[SourceCodeModel]): Cpg = {
-  val inputDir = File.newTemporaryDirectory()
-  for (sourceCode <- sourceCodes) {
-    (inputDir / sourceCode.fileName).write(sourceCode.sourceCode)
+    "be resolved and linked to the same method `perform`" in {
+      cpg.call("perform").methodFullName.l shouldBe List("worker.rb::program.MyModule.Worker.perform")
+      cpg.call("perform_async").dynamicTypeHintFullName.l shouldBe List(
+        "worker.rb::program.MyModule.Worker.perform_async",
+        "worker.rb::program.MyModule.Worker.perform"
+      )
+      val performCall = cpg.method("perform").callIn.l
+      performCall.size shouldBe 2
+      performCall.name.l shouldBe List("perform", "perform_async")
+    }
   }
-  val outputFile = File.newTemporaryFile()
-  val config = Config()
-    .withInputPath(inputDir.pathAsString)
-    .withOutputPath(outputFile.pathAsString)
-    .withUseDeprecatedFrontend(true)
-  val rubySrc = new RubySrc2Cpg()
-  val xtocpg = rubySrc.createCpg(config).map { cpg =>
-    applyDefaultOverlays(cpg)
-    cpg
-  }
-  val cpg               = xtocpg.get
-  val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-  new GlobalImportPass(cpg, globalSymbolTable).createAndApply()
-
-  new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate().foreach(_.createAndApply())
-  new RubyTypeHintCallLinker(cpg).createAndApply()
-
-  cpg
 }
