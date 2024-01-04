@@ -46,6 +46,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"                     %% "upickle"                 % Versions.upickle,
   "com.lihaoyi"                     %% "requests"                % Versions.requests,
   "org.scala-lang.modules"          %% "scala-xml"               % "2.1.0",
+  "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "commons-io"                       % "commons-io"              % "2.11.0",
   "com.networknt"                    % "json-schema-validator"   % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"    % jacksonVersion,
