@@ -185,28 +185,17 @@ object RubyProcessor {
           )
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
-          // Exporting
-          val monolithPrivadoJsonPaths: List[String] = if (privadoInput.isMonolith) {
-            // Export privado json for individual subProject/Repository Item
-            cpg.tag
-              .nameExact(Constants.monolithRepoItem)
-              .value
-              .dedup
-              .flatMap(repoItemName =>
-                MonolithExporter.fileExport(
-                  cpg,
-                  repoItemName,
-                  outputFileName,
-                  sourceRepoLocation,
-                  dataflowMap,
-                  ruleCache,
-                  taggerCache,
-                  dataFlowCache,
-                  privadoInput
-                )
-              )
-              .l
-          } else List()
+          // Check if monolith flag is enabled, if yes export monolith results
+          val monolithPrivadoJsonPaths: List[String] = MonolithExporter.checkIfMonolithFlagEnabledAndExport(
+            cpg,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache,
+            privadoInput
+          )
 
           JSONExporter.fileExport(
             cpg,

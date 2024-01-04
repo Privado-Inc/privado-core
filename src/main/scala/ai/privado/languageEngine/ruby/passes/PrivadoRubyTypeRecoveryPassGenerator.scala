@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.ruby.passes
 
+import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.x2cpg.passes.frontend.*
@@ -15,7 +16,8 @@ import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.annotation.tailrec
-import scala.collection.{Seq, mutable}
+import scala.collection.mutable
+import scala.util.Try
 object SBKeyPrivado {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = {
@@ -27,7 +29,7 @@ object SBKeyPrivado {
           n.name,
           n.argument.collectFirst {
             case x: Identifier if x.argumentIndex == 0 => x.name
-            case c: Call if c.argumentIndex == 0 && c.name == "<operator>.scopeResolution" =>
+            case c: Call if c.argumentIndex == 0 && c.name == Constants.scopeResolutionOperator =>
               c.code.stripPrefix("::").trim
           }
         )
@@ -102,7 +104,6 @@ private class RecoverForRubyFile(
     }
   }
 
-  /*
   override def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     // Check if we have a corresponding member to resolve type
     val memberTypes = methodFullNames.flatMap { fullName =>
@@ -110,12 +111,20 @@ private class RecoverForRubyFile(
       if (memberName.isDefined) {
         val typeDeclFullName = fullName.stripSuffix(s".${memberName.get}")
         cpg.typeDecl.fullName(typeDeclFullName).member.nameExact(memberName.get).typeFullName.l
-      } else
-        List.empty
+      } else List.empty
     }.toSet
-    if (memberTypes.nonEmpty) memberTypes else super.methodReturnValues(methodFullNames)
+    if (memberTypes.nonEmpty) memberTypes
+    else {
+      val rs = cpg.method
+        .fullNameExact(methodFullNames.toList: _*)
+        .flatMap(m => Try(m.methodReturn).toOption)
+        .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
+        .filterNot(_.equals("ANY"))
+        .toSet
+      if (rs.isEmpty) methodFullNames.map(_.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")).toSet
+      else rs
+    }
   }
-   */
 
   override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
     if (c.name.startsWith("<operator>")) {
@@ -165,7 +174,7 @@ private class RecoverForRubyFile(
     .exists(_.isCall) && c.argument.head
     .asInstanceOf[Call]
     .name
-    .equals("<operator>.scopeResolution") && c.argument.head
+    .equals(Constants.scopeResolutionOperator) && c.argument.head
     .asInstanceOf[Call]
     .argument
     .lastOption
@@ -176,7 +185,7 @@ private class RecoverForRubyFile(
   protected def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
       .map {
-        case x: Call if x.name.equals("<operator>.scopeResolution") =>
+        case x: Call if x.name.equals(Constants.scopeResolutionOperator) =>
           x.argument.lastOption
             .map(i =>
               symbolTable.get(i).union(globalSymbolTable.get(i)).filter(isCallParentScopeResolutionMatching(_, c.code))
@@ -221,7 +230,12 @@ private class RecoverForRubyFile(
       .map {
         case x: Call if x.typeFullName != "ANY" => Set(x.typeFullName)
         case x: Call =>
-          cpg.method.fullNameExact(c.methodFullName).methodReturn.typeFullNameNot("ANY").typeFullName.toSet match {
+          cpg.method
+            .fullNameExact(c.methodFullName)
+            .flatMap(m => Try(m.methodReturn).toOption)
+            .typeFullNameNot("ANY")
+            .typeFullName
+            .toSet match {
             case xs if xs.nonEmpty => xs
             case _ =>
               symbolTable
@@ -421,8 +435,10 @@ private class RecoverForRubyFile(
   override def visitReturns(ret: Return): Unit = {
     val m = ret.method
     val existingTypes = mutable.HashSet.from(
-      (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
-        .filterNot(_ == "ANY")
+      Try(
+        (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
+          .filterNot(_ == "ANY")
+      ).toOption.getOrElse(List())
     )
 
     @tailrec
@@ -467,7 +483,7 @@ private class RecoverForRubyFile(
 
     val returnTypes = extractTypes(ret.argumentOut.l)
     existingTypes.addAll(returnTypes)
-    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
+    Try(builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes))
   }
 
   override def setTypeInformation(): Unit = {
@@ -490,24 +506,46 @@ private class RecoverForRubyFile(
           val typs =
             if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-          storeCallTypeInfoPrivado(x, typs)
+          storeCallTypeInfo(x, typs)
         case x: Call if globalSymbolTable.contains(x) =>
           val typs =
             if (state.config.enabledDummyTypes) globalSymbolTable.get(x).toSeq
             else globalSymbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
-          storeCallTypeInfoPrivado(x, typs)
+          storeCallTypeInfo(x, typs)
         case x: Identifier
             if (symbolTable
               .contains(CallAlias(x.name)) || globalSymbolTable.contains(CallAlias(x.name))) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
-        case x: Call if x.argument.headOption.exists(symbolTable.contains) =>
+        case x: Call
+            if x.argument.headOption.exists(arg => symbolTable.contains(arg) || globalSymbolTable.contains(arg)) =>
           setTypeInformationForRecCall(x, Option(x), x.argument.l)
-        case x: Call if x.argument.headOption.exists(globalSymbolTable.contains) =>
-          setTypeInformationForRecCall(x, Option(x), x.argument.l)
+        case x: Call
+            if x.argument.headOption.exists(_.isCall) && !x.argument.isCall.head.name.startsWith("<operator>") =>
+          val typs = getTypesFromCall(x.argument.isCall.head).map(_.concat(s".${x.name}")).toSeq
+          storeCallTypeInfo(x, typs)
+        case x: Call if isCallHeadArgumentAScopeResolutionAndIsLastArgumentInTable(x) =>
+          setCallMethodFullNameFromBaseScopeResolution(x)
+          val typs =
+            if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
+            else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
+          storeCallTypeInfo(x, typs)
         case _ =>
       }
     // Set types in an atomic way
-    newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfoPrivado(m, ts.toSeq) }
+    newTypesForMembers.foreach { case (m, ts) => storeDefaultTypeInfo(m, ts.toSeq) }
+  }
+
+  override protected def postSetTypeInformation(): Unit = {
+    super.postSetTypeInformation()
+    // method named `perform` can be called as `perform_async` to execute in parallel, below code links the call `perform_async` to `perform`
+    cu.ast.isCall
+      .nameExact("perform_async")
+      .foreach(c =>
+        storeCallTypeInfo(
+          c,
+          symbolTable.get(c).flatMap(fullName => List(fullName, fullName.stripSuffix("_async"))).toSeq
+        )
+      )
   }
 
   override def setTypeForDynamicDispatchCall(call: Call, i: Identifier): Unit = {
@@ -577,7 +615,14 @@ private class RecoverForRubyFile(
     // Handle the node itself
     x match {
       case c: Call if c.name.startsWith("<operator") =>
-      case _                                         => persistType(x, symbolTable.get(x))
+      case c: Call if c.argument.headOption.exists(symbolTable.contains) =>
+        c.argument.headOption match {
+          case Some(callNode: Call) =>
+            val types = symbolTable.get(c.argument.head)
+            persistType(x, types.map(t => generateCallReturnFullName(t, c.name)))
+          case _ => persistType(x, symbolTable.get(x))
+        }
+      case _ => persistType(x, symbolTable.get(x))
     }
   }
 
@@ -592,78 +637,41 @@ private class RecoverForRubyFile(
             case Some(ts) => Some(ts ++ types)
             case None     => Some(types.toSet)
           }
-        case i: Identifier                               => storeIdentifierTypeInfoPrivado(i, types)
-        case l: Local                                    => storeLocalTypeInfoPrivado(l, types)
-        case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfoPrivado(c, types)
+        case i: Identifier                               => storeIdentifierTypeInfo(i, types)
+        case l: Local                                    => storeLocalTypeInfo(l, types)
+        case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
         case _: Call                                     =>
-        case n                                           => setTypesPrivado(n, types)
+        case n                                           => setTypes(n, types)
       }
     }
   }
 
-  def storeIdentifierTypeInfoPrivado(i: Identifier, types: Seq[String]): Unit =
-    storeDefaultTypeInfoPrivado(i, types)
-
-  /** Allows one to modify the types assigned to nodes otherwise.
-    */
-  def storeDefaultTypeInfoPrivado(n: StoredNode, types: Seq[String]): Unit =
-    if (types.toSet != n.getKnownTypes) {
-      setTypesPrivado(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
-    }
-
-  def setTypesPrivado(n: StoredNode, types: Seq[String]): Unit =
-    if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
-
-  /** Allows one to modify the types assigned to locals.
-    */
-  def storeLocalTypeInfoPrivado(l: Local, types: Seq[String]): Unit = {
-    storeDefaultTypeInfoPrivado(
-      l,
-      if (state.config.enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType)
-    )
-  }
-
-  def storeCallTypeInfoPrivado(c: Call, types: Seq[String]): Unit =
-    if (types.nonEmpty) {
-      builder.setNodeProperty(
-        c,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        (c.dynamicTypeHintFullName ++ types).distinct
-      )
-    }
   private def persistMemberType(i: Identifier, types: Set[String]): Unit = {
     getLocalMember(i) match {
       case Some(m) => storeNodeTypeInfo(m, types.toSeq)
       case None    =>
     }
   }
+  override def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
+    if (types.nonEmpty) super.storeCallTypeInfo(c, replaceConstructorType(types))
 
-  private def integrateMethodRef(funcPtr: Expression, m: Method, mRef: NewMethodRef, inCall: AstNode) = {
-    builder.addNode(mRef)
-    builder.addEdge(mRef, m, EdgeTypes.REF)
-    builder.addEdge(inCall, mRef, EdgeTypes.AST)
-    builder.addEdge(funcPtr.method, mRef, EdgeTypes.CONTAINS)
-    inCall match {
-      case x: Call =>
-        builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
-        mRef.argumentIndex(x.argumentOut.size + 1)
-      case x =>
-        mRef.argumentIndex(x.astChildren.size + 1)
-    }
-    addedNodes.add(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${mRef.methodFullName}")
-  }
-  private def createMethodRef(
-    baseName: Option[String],
-    funcName: String,
-    methodFullName: String,
-    lineNo: Option[Integer],
-    columnNo: Option[Integer]
-  ): NewMethodRef =
-    NewMethodRef()
-      .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
-      .methodFullName(methodFullName)
-      .lineNumber(lineNo)
-      .columnNumber(columnNo)
+  override def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
+    if (types.toSet != n.getKnownTypes) super.storeDefaultTypeInfo(n, replaceConstructorType(types))
 
+  /** For a given call fullname, append DummyReturnType and the call name, to form the call return value
+    * @param fullName
+    * @param callName
+    * @return
+    */
+  private def generateCallReturnFullName(fullName: String, callName: String) =
+    fullName.concat(s"$pathSep${XTypeRecovery.DummyReturnType}$pathSep$callName")
+
+  /** Replace new.<returnType> and <init>.<returnType> with "", as these denote return by constructor
+    * @param types
+    * @return
+    */
+  private def replaceConstructorType(types: Seq[String]) = types.map(
+    _.replaceAll(s".new.${XTypeRecovery.DummyReturnType}", "")
+      .replaceAll(s".<init>.${XTypeRecovery.DummyReturnType}", "")
+  )
 }
