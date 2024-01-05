@@ -108,6 +108,12 @@ object RubyProcessor {
           }
           new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
 
+          println(s"${Calendar.getInstance().getTime} - Invoked IdentifierToCall pass ...")
+          new IdentifierToCallPass(cpg).createAndApply()
+          println(
+            s"${TimeMetric.getNewTime()} - IdentifierToCall pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
           new RubyPropertyLinkerPass(cpg).createAndApply()
 
