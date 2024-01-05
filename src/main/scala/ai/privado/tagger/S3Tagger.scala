@@ -84,6 +84,7 @@ class S3Tagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
             .where(_.astChildren.isIdentifier.name(arg.name))
             .argument
             .argumentIndex(2)
+            .isLiteral
             .code
             .l
         )
