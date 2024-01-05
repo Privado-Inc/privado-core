@@ -19,16 +19,64 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
+import scala.collection.parallel.CollectionConverters._
 
 object MonolithExporter {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  /** Check if monolith flag is enabled, if yes export monolith results
+    * @param cpg
+    * @param repoItemTagName
+    * @param outputFileName
+    * @param sourceRepoLocation
+    * @param dataflowMap
+    * @param ruleCache
+    * @param taggerCache
+    * @param dataFlowCache
+    * @param privadoInput
+    * @return
+    */
+  def checkIfMonolithFlagEnabledAndExport(
+    cpg: Cpg,
+    outputFileName: String,
+    sourceRepoLocation: String,
+    dataflowMap: Map[String, Path],
+    ruleCache: RuleCache,
+    taggerCache: TaggerCache = new TaggerCache(),
+    dataFlowCache: DataFlowCache,
+    privadoInput: PrivadoInput
+  ): List[String] = {
+    if (privadoInput.isMonolith) {
+      // Export privado json for individual subProject/Repository Item
+      cpg.tag
+        .nameExact(Constants.monolithRepoItem)
+        .value
+        .dedup
+        .l
+        .par
+        .flatMap(repoItemName =>
+          MonolithExporter.fileExport(
+            cpg,
+            repoItemName,
+            outputFileName,
+            sourceRepoLocation,
+            dataflowMap,
+            ruleCache,
+            taggerCache,
+            dataFlowCache,
+            privadoInput
+          )
+        )
+        .l
+    } else List()
+  }
+
   def fileExport(
     cpg: Cpg,
     repoItemTagName: String,
     outputFileName: String,
-    repoPath: String,
+    sourceRepoLocation: String,
     dataflows: Map[String, Path],
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
@@ -48,7 +96,7 @@ object MonolithExporter {
       ) = ExporterUtility.generateIndividualComponent(
         cpg,
         outputFileName,
-        repoPath,
+        sourceRepoLocation,
         dataflows,
         ruleCache,
         taggerCache,
@@ -73,7 +121,7 @@ object MonolithExporter {
       val jsonFile = ExporterUtility.writeJsonToFile(
         cpg,
         outputFileName,
-        repoPath,
+        sourceRepoLocation,
         ruleCache,
         output.toMap,
         intermediateFolderName = Option(repoItemTagName.replaceAll("/", "-"))
