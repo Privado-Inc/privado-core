@@ -11,14 +11,9 @@ import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{
-  DBTParserPass,
-  ExperimentalLambdaDataFlowSupportPass,
-  HTMLParserPass,
-  SQLParser,
-  SQLPropertyPass
-}
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, SQLParser, SQLPropertyPass}
 import ai.privado.semantic.Language.*
+import ai.privado.tagger.S3Tagger
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
@@ -87,6 +82,7 @@ object PythonProcessor {
           if (ScanProcessor.config.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
+          new S3Tagger(cpg).createAndApply()
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
