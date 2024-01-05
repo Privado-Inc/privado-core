@@ -82,7 +82,6 @@ object PythonProcessor {
           if (ScanProcessor.config.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
-          new S3Tagger(cpg).createAndApply()
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
@@ -103,6 +102,9 @@ object PythonProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
+
+          // we run S3 buckets detection after tagging
+          new S3Tagger(cpg).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
