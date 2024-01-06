@@ -94,7 +94,8 @@ class S3Tagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
 
       readWriteBucketNames ++= bucketNames
         .map(bucket => {
-          val bucketName = bucket.stripPrefix("\"").stripSuffix("\"").stripPrefix("\'").stripSuffix("\'")
+          val bucketName =
+            bucket.stripPrefix("\"").stripSuffix("\"").stripPrefix("\'").stripSuffix("\'").stripPrefix("s3a://")
           if bucketName.matches(bucketPattern) then bucketName
           else ""
         })
