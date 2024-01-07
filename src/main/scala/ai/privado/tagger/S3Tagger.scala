@@ -106,14 +106,14 @@ class S3Tagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     // remove existing DB details from rule and add READ DB DETAILS to separate S3 DB details
     DatabaseDetailsCache.removeDatabaseDetails(readRuleId)
     S3DatabaseDetailsCache.addS3DatabaseDetails(
-      readBucketNames.toList.map(bucketName => DatabaseDetails("S3 Bucket", "Amazon", bucketName, "Read", "")),
+      readBucketNames.toList.map(bucketName => DatabaseDetails(bucketName, "Amazon S3", "amazon.com", "Read", "")),
       readRuleId
     )
 
     // remove existing DB details from rule and add WRITE DETAILS to separate S3 DB details
     DatabaseDetailsCache.removeDatabaseDetails(writeRuleId)
     S3DatabaseDetailsCache.addS3DatabaseDetails(
-      writeBucketNames.toList.map(bucketName => DatabaseDetails("S3 Bucket", "Amazon", bucketName, "Write", "")),
+      writeBucketNames.toList.map(bucketName => DatabaseDetails(bucketName, "Amazon S3", "amazon.com", "Write", "")),
       writeRuleId
     )
 
@@ -121,7 +121,7 @@ class S3Tagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
     DatabaseDetailsCache.removeDatabaseDetails(readWriteRuleId)
     S3DatabaseDetailsCache.addS3DatabaseDetails(
       readWriteBucketNames.toList.map(bucketName =>
-        DatabaseDetails("S3 Bucket", "Amazon", bucketName, "Read/Write", "")
+        DatabaseDetails(bucketName, "Amazon S3", "amazon.com", "Read/Write", "")
       ),
       readWriteRuleId
     )
