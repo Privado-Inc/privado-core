@@ -21,7 +21,7 @@
  *
  */
 
-package ai.privado.languageEngine.ruby.tagger.source
+package ai.privado.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
