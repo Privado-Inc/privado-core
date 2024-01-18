@@ -101,8 +101,43 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     )
   )
 
+  private val sinkRule = List(
+    RuleInfo(
+      "Storages.AmazonS3.Read",
+      "Amazon S3",
+      "Storage",
+      Array(),
+      List(".*GetObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.AmazonS3.Write",
+      "Amazon S3",
+      "Storage",
+      Array(),
+      List(".*PutObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
+
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 }

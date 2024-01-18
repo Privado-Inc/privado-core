@@ -51,7 +51,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.mutable
 
-class S3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   private val cpgs         = mutable.ArrayBuffer.empty[Cpg]
   private val outPutFiles  = mutable.ArrayBuffer.empty[File]
   private val inputDirs    = mutable.ArrayBuffer.empty[File]
@@ -77,7 +77,7 @@ class S3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     )
   )
 
-  "Python code using boto client for S3 buckets" should {
+  "Python code using boto client for S3 buckets with simple assignment" should {
     val cpg = code("""
         |import boto3
         |
@@ -97,7 +97,32 @@ class S3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None)
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "mera-bucket"
     }
+  }
 
+  // TODO: Enable when we support deeper extraction of s3 literals from assignments
+  "Python code using boto client having complex bucket assignment" ignore {
+    val cpg = code("""
+        |import boto3
+        |from botocore.client import BaseClient
+        |
+        |Environment = namedtuple('Environment', ['bucket'])
+        |
+        |SOME_ENVIRONMENT = {
+        |    'prod': Environment('meri-prod-bucket'),
+        |}
+        |
+        |def upload_to_s3():
+        |	s3_client = BaseClient()
+        |	environment = 'prod'
+        |        s3_bucket = SOME_ENVIRONMENT[environment].bucket
+        |        s3_client.put_object(Body=content, Bucket=s3_bucket, Key=key,  None)
+        |
+        |""".stripMargin)
+
+    "have bucket name" in {
+      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None)
+      sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "meri-prod-bucket"
+    }
   }
 
   def code(code: String): Cpg = {
@@ -128,7 +153,7 @@ class S3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         new RegularSinkTagger(cpg, ruleCache).createAndApply()
         new PythonDBConfigTagger(cpg).createAndApply()
 
-        // Run S3 tagger. Needs sink tagging to be run before
+        // Run S3 tagger - needs sink tagging to be run before
         new PythonS3Tagger(cpg).createAndApply()
         cpgs.addOne(cpg)
         cpg
