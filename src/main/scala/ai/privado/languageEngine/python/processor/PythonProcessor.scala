@@ -8,6 +8,7 @@ import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
+import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
@@ -19,7 +20,6 @@ import ai.privado.passes.{
   SQLPropertyPass
 }
 import ai.privado.semantic.Language.*
-import ai.privado.tagger.S3Tagger
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
@@ -110,7 +110,7 @@ object PythonProcessor {
           )
 
           // we run S3 buckets detection after tagging
-          new S3Tagger(cpg).createAndApply()
+          new PythonS3Tagger(cpg).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)

@@ -38,7 +38,6 @@ import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.S3Tagger
 import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollectionTagger}
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
@@ -74,7 +73,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 
-    new S3Tagger(cpg).createAndApply()
+    new JavaS3Tagger(cpg).createAndApply()
 
     new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
     // Custom Rule tagging

@@ -28,8 +28,8 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
+import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.model.*
-import ai.privado.tagger.S3Tagger
 import ai.privado.tagger.sink.RegularSinkTagger
 import better.files.File
 import io.joern.pysrc2cpg.{
@@ -129,7 +129,7 @@ class S3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         new PythonDBConfigTagger(cpg).createAndApply()
 
         // Run S3 tagger. Needs sink tagging to be run before
-        new S3Tagger(cpg).createAndApply()
+        new PythonS3Tagger(cpg).createAndApply()
         cpgs.addOne(cpg)
         cpg
       }
