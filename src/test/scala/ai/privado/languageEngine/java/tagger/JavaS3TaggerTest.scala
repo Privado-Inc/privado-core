@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger
 
+import ai.privado.cache.S3DatabaseDetailsCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
@@ -36,7 +37,7 @@ class JavaS3TaggerTest extends JavaTaggingTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
-    new JavaS3Tagger(cpg).createAndApply()
+    new JavaS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
   }
 
   override val javaFileContents: String =
@@ -80,7 +81,7 @@ class JavaS3TaggerTest extends JavaTaggingTestBase {
 
   "Java code reading and writing from S3 bucket" should {
     "have bucket name" in {
-      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None)
+      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache)
       sinkExporter.getSinks.map(_.databaseDetails.dbName) shouldBe List("my-write-bucket", "my-read-bucket")
     }
   }

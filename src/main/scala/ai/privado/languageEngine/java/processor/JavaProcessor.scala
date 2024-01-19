@@ -73,8 +73,17 @@ class JavaProcessor(
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
-  auditCache: AuditCache
-) extends BaseProcessor(ruleCache, privadoInput, sourceRepoLocation, lang, dataFlowCache, auditCache) {
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+) extends BaseProcessor(
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      lang,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache
+    ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
   private var cpgconfig       = Config()
@@ -91,7 +100,7 @@ class JavaProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache)
 
   override def processCpg(): Either[String, Unit] = {
     val excludeFileRegex = ruleCache.getExclusionRegex

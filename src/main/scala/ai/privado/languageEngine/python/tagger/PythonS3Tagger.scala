@@ -12,7 +12,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import overflowdb.traversal.*
 import scala.collection.mutable.ListBuffer
 
-class PythonS3Tagger(cpg: Cpg) extends S3BaseTagger(cpg) {
+class PythonS3Tagger(cpg: Cpg, s3DatabaseDetailsCache: S3DatabaseDetailsCache)
+    extends S3BaseTagger(cpg, s3DatabaseDetailsCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -61,7 +62,7 @@ class PythonS3Tagger(cpg: Cpg) extends S3BaseTagger(cpg) {
       .l
 
     // add S3 details to DatabaseDetails
-    addReadWriteS3Details(readWriteBucketNames)
+    addReadWriteS3Details(readWriteBucketNames, s3DatabaseDetailsCache)
   }
 
 }

@@ -24,7 +24,7 @@
 package ai.privado.exporter
 
 import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
@@ -48,7 +48,6 @@ import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.script.ExternalScalaScriptRunner
 import better.files.File
-import privado_core.BuildInfo
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
@@ -79,7 +78,8 @@ object JSONExporter {
     taggerCache: TaggerCache = new TaggerCache(),
     dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
-    monolithPrivadoJsonPaths: List[String] = List()
+    monolithPrivadoJsonPaths: List[String] = List(),
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
 
     try {
@@ -99,7 +99,8 @@ object JSONExporter {
         ruleCache,
         taggerCache,
         dataFlowModel,
-        privadoInput
+        privadoInput,
+        s3DatabaseDetailsCache
       )
 
       // Add the privado json path of each monolith repository item

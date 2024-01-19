@@ -28,7 +28,7 @@ import scala.collection.mutable
 
 /** Cache to store Rules specific things
   */
-object S3DatabaseDetailsCache {
+class S3DatabaseDetailsCache {
 
   private val databaseDetailsMap = mutable.HashMap[String, List[DatabaseDetails]]()
 

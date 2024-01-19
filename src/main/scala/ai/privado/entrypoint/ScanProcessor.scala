@@ -22,7 +22,7 @@
 
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, Environment, RuleCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
@@ -316,7 +316,12 @@ object ScanProcessor extends CommandProcessor {
     new AuditCache()
   }
 
-  private val auditCache = new AuditCache
+  private def getS3DatabaseDetailsCache: S3DatabaseDetailsCache = {
+    new S3DatabaseDetailsCache()
+  }
+
+  private val auditCache             = new AuditCache
+  private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache
   private def getDataflowCache: DataFlowCache = {
     new DataFlowCache(config, auditCache)
   }
@@ -356,7 +361,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   Language.JAVA,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 ).processCpg()
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
@@ -365,7 +371,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 )
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
@@ -374,7 +381,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 )
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
@@ -384,7 +392,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 )
               case language if language == Languages.GOLANG =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Go'")
@@ -393,7 +402,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 )
               case language if language == Languages.KOTLIN =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
@@ -403,7 +413,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   Language.KOTLIN,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 ).processCpg()
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
@@ -418,7 +429,8 @@ object ScanProcessor extends CommandProcessor {
                     sourceRepoLocation,
                     Language.JAVA,
                     dataFlowCache = getDataflowCache,
-                    auditCache
+                    auditCache,
+                    s3DatabaseDetailsCache
                   ).processCpg()
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation)
@@ -442,7 +454,8 @@ object ScanProcessor extends CommandProcessor {
       getProcessedRule(Set(Language.UNKNOWN)),
       sourceRepoLocation,
       getDataflowCache,
-      getAuditCache
+      getAuditCache,
+      getS3DatabaseDetailsCache
     )
   }
 

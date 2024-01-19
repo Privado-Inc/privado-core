@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.python
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
@@ -52,11 +52,12 @@ import org.scalatest.wordspec.AnyWordSpec
 import scala.collection.mutable
 
 class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-  private val cpgs         = mutable.ArrayBuffer.empty[Cpg]
-  private val outPutFiles  = mutable.ArrayBuffer.empty[File]
-  private val inputDirs    = mutable.ArrayBuffer.empty[File]
-  private val ruleCache    = new RuleCache()
-  private val privadoInput = PrivadoInput()
+  private val cpgs                   = mutable.ArrayBuffer.empty[Cpg]
+  private val outPutFiles            = mutable.ArrayBuffer.empty[File]
+  private val inputDirs              = mutable.ArrayBuffer.empty[File]
+  private val ruleCache              = new RuleCache()
+  private val privadoInput           = PrivadoInput()
+  private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
 
   private val sinks = List(
     RuleInfo(
@@ -94,7 +95,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         |""".stripMargin)
 
     "have bucket name" in {
-      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None)
+      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache)
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "mera-bucket"
     }
   }
@@ -120,7 +121,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         |""".stripMargin)
 
     "have bucket name" in {
-      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None)
+      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache)
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "meri-prod-bucket"
     }
   }
@@ -154,7 +155,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         new PythonDBConfigTagger(cpg).createAndApply()
 
         // Run S3 tagger - needs sink tagging to be run before
-        new PythonS3Tagger(cpg).createAndApply()
+        new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
         cpgs.addOne(cpg)
         cpg
       }

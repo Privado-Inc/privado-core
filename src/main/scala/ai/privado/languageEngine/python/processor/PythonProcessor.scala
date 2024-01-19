@@ -48,7 +48,8 @@ object PythonProcessor {
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -110,7 +111,7 @@ object PythonProcessor {
           )
 
           // we run S3 buckets detection after tagging
-          new PythonS3Tagger(cpg).createAndApply()
+          new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
@@ -129,7 +130,9 @@ object PythonProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,
-            ScanProcessor.config
+            ScanProcessor.config,
+            List(),
+            s3DatabaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -225,7 +228,8 @@ object PythonProcessor {
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -250,7 +254,7 @@ object PythonProcessor {
       )
       cpg
     }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
   }
 
 }
