@@ -40,7 +40,8 @@ abstract class BaseProcessor(
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
-  auditCache: AuditCache
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -121,7 +122,7 @@ abstract class BaseProcessor(
         .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
     println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
 
-    applyFinalExport(cpg, taggerCache, dataflowMap)
+    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache)
 
     // Check if any of the export failed
     if (errorMsg.toList.isEmpty)
@@ -133,17 +134,27 @@ abstract class BaseProcessor(
 
   def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = ???
 
-  protected def applyFinalExport(cpg: Cpg, taggerCache: TaggerCache, dataflowMap: Map[String, Path]): Unit = {
+  protected def applyFinalExport(
+    cpg: Cpg,
+    taggerCache: TaggerCache,
+    dataflowMap: Map[String, Path],
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  ): Unit = {
 
     reportUnresolvedMethods(cpg, lang)
-    applyJsonExport(cpg, taggerCache, dataflowMap)
+    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache)
     auditReportExport(cpg, taggerCache)
     unresolvedReportExport(cpg)
     intermediateReportExport(cpg)
 
   }
 
-  protected def applyJsonExport(cpg: Cpg, taggerCache: TaggerCache, dataflowMap: Map[String, Path]): Unit = {
+  protected def applyJsonExport(
+    cpg: Cpg,
+    taggerCache: TaggerCache,
+    dataflowMap: Map[String, Path],
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  ): Unit = {
     println(s"${Calendar.getInstance().getTime} - Brewing result...")
     MetricHandler.setScanStatus(true)
     // Exporting Results
@@ -155,7 +166,9 @@ abstract class BaseProcessor(
       ruleCache,
       taggerCache,
       dataFlowCache.getDataflowAfterDedup,
-      privadoInput
+      privadoInput,
+      List(),
+      s3DatabaseDetailsCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)

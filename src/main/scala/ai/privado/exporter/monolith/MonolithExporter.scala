@@ -1,6 +1,6 @@
 package ai.privado.exporter.monolith
 
-import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.{Constants, DataFlowPathModel}
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
-import scala.collection.parallel.CollectionConverters._
+import scala.collection.parallel.CollectionConverters.*
 
 object MonolithExporter {
 
@@ -45,7 +45,8 @@ object MonolithExporter {
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
     dataFlowCache: DataFlowCache,
-    privadoInput: PrivadoInput
+    privadoInput: PrivadoInput,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): List[String] = {
     if (privadoInput.isMonolith) {
       // Export privado json for individual subProject/Repository Item
@@ -65,7 +66,8 @@ object MonolithExporter {
             ruleCache,
             taggerCache,
             dataFlowCache,
-            privadoInput
+            privadoInput,
+            s3DatabaseDetailsCache
           )
         )
         .l
@@ -81,7 +83,8 @@ object MonolithExporter {
     ruleCache: RuleCache,
     taggerCache: TaggerCache = new TaggerCache(),
     dataFlowCache: DataFlowCache,
-    privadoInput: PrivadoInput
+    privadoInput: PrivadoInput,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Option[String] = {
 
     try {
@@ -102,6 +105,7 @@ object MonolithExporter {
         taggerCache,
         filterRepoItemDataflows(dataFlowCache, dataflows, repoItemTagName, privadoInput),
         privadoInput,
+        s3DatabaseDetailsCache,
         repoItemTagName = Option(repoItemTagName)
       )
 

@@ -8,6 +8,7 @@ import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
+import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
@@ -47,7 +48,8 @@ object PythonProcessor {
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -108,6 +110,9 @@ object PythonProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
+          // we run S3 buckets detection after tagging
+          new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
@@ -125,7 +130,9 @@ object PythonProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,
-            ScanProcessor.config
+            ScanProcessor.config,
+            List(),
+            s3DatabaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -221,7 +228,8 @@ object PythonProcessor {
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -246,7 +254,7 @@ object PythonProcessor {
       )
       cpg
     }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
   }
 
 }

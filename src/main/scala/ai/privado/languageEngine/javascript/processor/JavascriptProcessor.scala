@@ -59,7 +59,8 @@ object JavascriptProcessor {
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -105,7 +106,9 @@ object JavascriptProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,
-            ScanProcessor.config
+            ScanProcessor.config,
+            List(),
+            s3DatabaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -207,7 +210,8 @@ object JavascriptProcessor {
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -226,7 +230,7 @@ object JavascriptProcessor {
         .withOutputPath(cpgOutputPath)
         .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache)
+    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
   }
 
 }
