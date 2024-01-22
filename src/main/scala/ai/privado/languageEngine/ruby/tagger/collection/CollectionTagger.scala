@@ -22,6 +22,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val ROUTES_FILE_PATTERN                 = ".*routes.rb"
   private val RESOURCES                           = "resources"
 
+  def getCollectionUrls(): List[String] =
+    methodUrlMap.values.l
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
 

@@ -20,6 +20,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val COLLECTION_FUNC_PATTERN = "(?i).*(Get|Post|Put|Patch|Delete).*"
   private val COLLECTION_REST_PATTERN = "(?i)(Get|Post|Put|Patch|Delete)"
 
+  def getCollectionUrls(): List[String] =
+    methodUrlMap.values.l
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.sources.toArray
 

@@ -39,6 +39,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import ai.privado.utility.Utilities.collectionUrls
 
 import java.util.Calendar
 
@@ -72,7 +73,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
-    new CollectionTagger(cpg, ruleCache).createAndApply()
+    val collectionTagger = new CollectionTagger(cpg, ruleCache)
+    collectionTagger.createAndApply()
+    collectionUrls = collectionTagger.getCollectionUrls()
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 

@@ -107,6 +107,8 @@ object Constants {
   val sinkProcessing               = "sinkProcessing"
   val probableSinks                = "probableSinks"
   val violations                   = "violations"
+  val collectionUrls               = "collectionUrls"
+  val propertyUrls                 = "propertyUrls"
   val outputFileName               = "privado.json"
   val outputDirectoryName          = ".privado"
   val outputIntermediateFileName   = "intermediate.json"

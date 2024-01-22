@@ -35,13 +35,16 @@ import scala.collection.mutable
 class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  val methodUrlMap = mutable.HashMap[Long, String]()
+
+  def getCollectionUrls(): List[String] =
+    methodUrlMap.values.l
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
-    val methodUrlMap = mutable.HashMap[Long, String]()
-    val classUrlMap  = mutable.HashMap[Long, String]()
+    val classUrlMap = mutable.HashMap[Long, String]()
 
     // A cached method so that we are not computing again
     val combinedRulePatterns = ruleInfo.combinedRulePattern
