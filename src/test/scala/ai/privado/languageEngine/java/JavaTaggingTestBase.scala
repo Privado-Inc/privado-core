@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -37,9 +37,10 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
 
   var cpg: Cpg = _
   val javaFileContents: String
-  var inputDir: File   = _
-  var outputFile: File = _
-  val ruleCache        = new RuleCache()
+  var inputDir: File         = _
+  var outputFile: File       = _
+  val ruleCache              = new RuleCache()
+  val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -101,8 +102,43 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     )
   )
 
+  private val sinkRule = List(
+    RuleInfo(
+      "Storages.AmazonS3.Read",
+      "Amazon S3",
+      "Storage",
+      Array(),
+      List(".*GetObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.AmazonS3.Write",
+      "Amazon S3",
+      "Storage",
+      Array(),
+      List(".*PutObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
+
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 }

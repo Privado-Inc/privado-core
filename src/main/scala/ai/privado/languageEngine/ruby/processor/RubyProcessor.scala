@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -87,7 +87,8 @@ object RubyProcessor {
     privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -200,7 +201,8 @@ object RubyProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache,
-            privadoInput
+            privadoInput,
+            s3DatabaseDetailsCache
           )
 
           JSONExporter.fileExport(
@@ -212,7 +214,8 @@ object RubyProcessor {
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,
             privadoInput,
-            monolithPrivadoJsonPaths = monolithPrivadoJsonPaths
+            monolithPrivadoJsonPaths = monolithPrivadoJsonPaths,
+            s3DatabaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -337,7 +340,8 @@ object RubyProcessor {
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -376,7 +380,7 @@ object RubyProcessor {
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
-    processCPG(xtocpg, ruleCache, privadoInput, sourceRepoLocation, dataFlowCache, auditCache)
+    processCPG(xtocpg, ruleCache, privadoInput, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
 
   }
 

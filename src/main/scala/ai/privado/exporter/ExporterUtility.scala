@@ -24,7 +24,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
@@ -60,7 +60,6 @@ import io.circe.Json
 import io.circe.syntax.EncoderOps
 import io.joern.dataflowengineoss.language.Path
 import org.slf4j.LoggerFactory
-import privado_core.BuildInfo
 
 import java.util.Calendar
 import scala.collection.mutable
@@ -69,6 +68,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
 import scala.util.Try
+import privado_core.BuildInfo
 
 object ExporterUtility {
 
@@ -314,6 +314,7 @@ object ExporterUtility {
     taggerCache: TaggerCache = new TaggerCache(),
     dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     repoItemTagName: Option[String] = None
   ): (
     mutable.LinkedHashMap[String, Json],
@@ -325,8 +326,9 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
-    val sourceExporter             = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
-    val sinkExporter               = new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
+    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
+    val sinkExporter =
+      new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, s3DatabaseDetailsCache)
     val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
     val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
