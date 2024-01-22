@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.monolith
 
 import ai.privado.RuleInfoTestData
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.monolith.MonolithExporter
@@ -99,7 +99,8 @@ class MonolithTest extends MonolithTestBase {
             ruleCache,
             new TaggerCache(),
             new DataFlowCache(privadoInput, AuditCache()),
-            privadoInput
+            privadoInput,
+            s3DatabaseDetailsCache
           )
         )
         .l
@@ -112,9 +113,10 @@ abstract class MonolithTestBase extends AnyWordSpec with Matchers with BeforeAnd
 
   var cpg: Cpg = _
   val rubyFileContentMap: Map[String, String]
-  var inputDir: File = _
-  var output: File   = _
-  val ruleCache      = new RuleCache()
+  var inputDir: File         = _
+  var output: File           = _
+  val ruleCache              = new RuleCache()
+  val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
 
   ruleCache.setRule(RuleInfoTestData.rule)
 

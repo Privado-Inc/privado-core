@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
@@ -56,7 +56,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -72,6 +73,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new JavaDBConfigTagger(cpg).createAndApply()
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
+
+    new JavaS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
 
     new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
     // Custom Rule tagging

@@ -29,6 +29,7 @@ import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, Method, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
@@ -51,6 +52,8 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       |
       |class Foo {
       |
+      |private static String loggerUrl;
+      |
       |@Value("${slack.base.url}")
       |private static final String slackWebHookURL;
       |
@@ -58,79 +61,45 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
       |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
       |   }
+      |
+      |@Value("${internal.logger.api.base}")
+      |public void setLoggerUrl( String pLoggerUrl )
+      |{
+      |        loggerUrl = pLoggerUrl;
+      |}
       |}
       |""".stripMargin
 
   "ConfigFilePass" should {
     "connect annotated parameter to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
-      anno.length shouldBe 2
+      anno.length shouldBe 3
 
-      anno.foreach(element => {
-        element.label match {
-          case "METHOD_PARAMETER_IN" =>
-            val List(param: MethodParameterIn) = element.toList
-            param.name shouldBe "loggerBaseURL"
-          case "MEMBER" =>
-            element.code shouldBe "java.lang.String slackWebHookURL"
-          case _ => s"Unknown label ${element.label}. Test failed"
-        }
-      })
+      anno.code.l shouldBe List(
+        "@Value(\"${internal.logger.api.base}\") String loggerBaseURL",
+        "java.lang.String loggerUrl",
+        "java.lang.String slackWebHookURL"
+      )
     }
 
     "connect property to annotated parameter" in {
-      cpg.property.usedAt.originalProperty.l.length shouldBe 2
-      cpg.property.usedAt.originalProperty.name.l shouldBe List("internal.logger.api.base", "slack.base.url")
+      cpg.property.usedAt.originalProperty.l.length shouldBe 3
+      cpg.property.usedAt.originalProperty.name.l shouldBe List(
+        "internal.logger.api.base",
+        "internal.logger.api.base",
+        "slack.base.url"
+      )
       cpg.property.usedAt.originalProperty.value.l shouldBe List(
+        "https://logger.privado.ai/",
         "https://logger.privado.ai/",
         "https://hooks.slack.com/services/some/leaking/url"
       )
     }
-  }
-}
 
-/* Test for annotation of methods */
-class AnnotationMethodTests extends PropertiesFilePassTestBase(".yml") {
-  override val configFileContents: String =
-    """
-      |sample:
-      |  url: http://www.somedomain.com/
-      |""".stripMargin
-
-  override val propertyFileContents = ""
-  override val codeFileContents: String =
-    """
-      |
-      |import org.springframework.beans.factory.annotation.Value;
-      |
-      |class Foo {
-      |
-      |@Value("${sample.url}")
-      |public void setUrl( String sampleUrl )
-      |{
-      |    String url = sampleUrl;
-      |}
-      |}
-      |""".stripMargin
-
-  "ConfigFilePass" should {
-    "connect annotated method to property" in {
-      val anno: List[AstNode] = cpg.property.usedAt.l
-      anno.length shouldBe 1
-      anno.foreach(element => {
-        element.label match {
-          case "METHOD" =>
-            val List(methodNode: Method) = element.toList
-            methodNode.name shouldBe "setUrl"
-        }
-      })
-    }
-
-    "connect property to annotated method" in {
-      cpg.property.usedAt.originalProperty.l.size shouldBe 1
-      cpg.property.usedAt.originalProperty.name.l shouldBe List("sample.url")
-      cpg.property.usedAt.originalProperty.value.l shouldBe List("http://www.somedomain.com/")
-
+    "connect the referenced member to the original property denoted by the annotated method" in {
+      cpg.member("loggerUrl").originalProperty.size shouldBe 1
+      cpg.member("loggerUrl").originalProperty.name.l shouldBe List("internal.logger.api.base")
+      cpg.member("loggerUrl").originalProperty.value.l shouldBe List("https://logger.privado.ai/")
     }
   }
 }
@@ -157,8 +126,7 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
-      val List(_, name: String) = cpg.file.name.l
-
+      val List(_, _, name: String) = cpg.file.name.l // The default overlays add a new file to cpg.file
       name.endsWith("/test.properties") shouldBe true
     }
 
@@ -272,7 +240,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     inputDir = File.newTemporaryDirectory()
     (inputDir / s"test$fileExtension").write(configFileContents)
 
-    (inputDir / "unrelated.file").write("foo")
+//    (inputDir / "unrelated.file").write("foo")
     if (propertyFileContents.nonEmpty) {
       (inputDir / "application.properties").write(propertyFileContents)
     }
@@ -281,7 +249,13 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     (inputDir / "GeneralConfig.java").write(codeFileContents)
     val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
 
-    cpg = new JavaSrc2Cpg().createCpg(config).get
+    cpg = new JavaSrc2Cpg()
+      .createCpg(config)
+      .map { cpg =>
+        applyDefaultOverlays(cpg)
+        cpg
+      }
+      .get
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
     new JavaPropertyLinkerPass(cpg).createAndApply()
 
