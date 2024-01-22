@@ -27,10 +27,15 @@ import ai.privado.entrypoint.TimeMetric
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 
+import scala.util.{Failure, Success, Try}
+
 abstract class PrivadoSimpleCpgPass(cpg: Cpg) extends CpgPass(cpg) {
   override def createAndApply() = {
     beforeExecution
-    super.createAndApply()
+    Try(super.createAndApply()) match
+      case Failure(exception) =>
+        logger.error(s"Exception when executing the pass : ${exception.getStackTrace.mkString("\n")}")
+      case Success(value) => logger.debug("Pass executed successfully")
     afterExecution
   }
 
