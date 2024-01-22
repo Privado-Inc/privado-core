@@ -26,10 +26,13 @@ package ai.privado.tagger
 import ai.privado.entrypoint.TimeMetric
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
+import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
 
 abstract class PrivadoSimpleCpgPass(cpg: Cpg) extends CpgPass(cpg) {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
   override def createAndApply() = {
     beforeExecution
     Try(super.createAndApply()) match
