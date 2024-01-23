@@ -192,12 +192,8 @@ object ExporterUtility {
       val file = File(fileName)
       if (file.exists)
         fileName
-      else {
-        if (AppCache.scanPath.endsWith("/"))
-          AppCache.scanPath + fileName
-        else
-          AppCache.scanPath + "/" + fileName
-      }
+      else
+        s"${AppCache.scanPath}/$fileName"
     }
 
     if (fileName.equals(Constants.EMPTY) || sample.equals(Constants.EMPTY)) None
