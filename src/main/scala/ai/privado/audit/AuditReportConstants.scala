@@ -10,6 +10,8 @@ object AuditReportConstants {
 
   val AUDIT_UNRESOLVED_SHEET_NAME = "Unresolved Flow"
 
+  val AUDIT_URL_SHEET_NAME = "URL Audit"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
@@ -73,7 +75,7 @@ object AuditReportConstants {
 
   val DEPENDENCY_ARTIFACT_NAME = "ArtifactID"
 
-  val DEPENDENCY_FILE_PATH_NAME = "File Path"
+  val FILE_PATH_NAME = "File Path"
 
   val DEPENDENCY_PROCESSED_NAME = "Being processed"
 
@@ -120,4 +122,10 @@ object AuditReportConstants {
 
   val JS_ELEMENTS_TO_BE_EXCLUDED =
     "^(?i)(modules?|loggers?|val|console|require|_|get|key|value|data|page|url|Set|filter|<init>|err|errors|axios|express|router|component|Instance|utils?|app|undefined|context|process|...props?|async|await|const|let|var|this)$"
+
+  val URLREGEX = ".*(://).*"
+
+  val URL_AUDIT_URL_NAME = "URL"
+
+  val URL_AUDIT_LINE_NO = "Line No."
 }
