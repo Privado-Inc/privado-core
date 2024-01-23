@@ -125,7 +125,8 @@ class JavaProcessor(
     if (hasLombokDependency) {
       val delombokPath = Delombok.run(AppCache.scanPath)
       AppCache.isLombokPresent = true
-
+      // Update the new ScanPath with delombok folder path
+      AppCache.scanPath = s"${AppCache.scanPath}/${Constants.delombok}"
       // Creating a new CpgConfig which uses the delombokPath
       cpgconfig = Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
         .withInputPath(delombokPath)
@@ -207,7 +208,7 @@ object Delombok {
   }
 
   def run(projectDir: String, analysisJavaHome: Option[String] = None): String = {
-    val dirName = projectDir + "/" + Constants.delombok
+    val dirName = s"$projectDir/${Constants.delombok}"
     Try(File(dirName).createDirectoryIfNotExists()) match {
       case Success(tempDir) =>
         ExternalCommand.run(delombokToTempDirCommand(tempDir, analysisJavaHome), cwd = projectDir) match {
