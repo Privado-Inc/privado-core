@@ -148,6 +148,7 @@ class JavaProcessor(
     val msg = tagAndExport(xtocpg)
 
     // Delete the delomboked directory after scanning is completed
+    /*
     if (AppCache.isLombokPresent) {
       val dirName = AppCache.scanPath + "/" + Constants.delombok
       Try(File(dirName).delete()) match {
@@ -155,6 +156,7 @@ class JavaProcessor(
         case Failure(exception) => logger.debug(s"Exception :", exception)
       }
     }
+     */
     msg
   }
 
