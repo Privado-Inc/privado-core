@@ -213,7 +213,7 @@ object ExporterUtility {
       // Get the actual filename
       val actualFileName = {
         if (AppCache.isLombokPresent)
-          fileName.replace("/" + Constants.delombok, "")
+          fileName.replace(s"${Constants.delombok}/", "")
         else
           fileName
       }
