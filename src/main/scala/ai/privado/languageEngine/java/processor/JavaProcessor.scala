@@ -200,7 +200,8 @@ object Delombok {
         )
         System.getProperty("java.class.path")
     }
-    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
+
+    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath} -f pretty"
   }
 
   def run(projectDir: String, analysisJavaHome: Option[String] = None): String = {
