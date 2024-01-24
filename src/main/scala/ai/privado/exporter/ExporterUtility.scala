@@ -352,36 +352,27 @@ object ExporterUtility {
 
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {
-      val _sources = Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
-      output.addOne(Constants.sources -> _sources.asJson)
-      _sources
+      Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
     }
     val processing = Future {
-      val _processing = Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
-      output.addOne(Constants.processing -> _processing.asJson)
-      _processing
+      Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
     }
     val sinks = Future {
-      val _sinks = Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
-      output.addOne(Constants.sinks -> _sinks.asJson)
-      _sinks
+      Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
     }
     val processingSinks = Future {
-      val _processingSinks = Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
-      output.addOne(Constants.sinkProcessing -> _processingSinks.asJson)
-      _processingSinks
+      Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
     }
     val collections = Future {
-      val _collections = Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
-      output.addOne(Constants.collections -> _collections.asJson)
-      _collections
+      Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
     }
 
     val finalCollections = Await.result(collections, Duration.Inf)
-
+    logger.debug("Done with exporting Collections")
     val violationResult =
       Try(policyAndThreatExporter.getViolations(repoPath, finalCollections)).getOrElse(List[ViolationModel]())
     output.addOne(Constants.violations -> violationResult.asJson)
+    logger.debug("Done with exporting Violations")
 
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
     ruleCache.getRule.sinks.foreach(sinkRule => {
@@ -400,17 +391,9 @@ object ExporterUtility {
     })
 
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
-    logger.info("Completed Sink Exporting")
-
-    logger.info("Completed Collections Exporting")
-
     val androidPermissions = Future {
-      val _permissions = Try(androidPermissionsExporter.getPermissions).getOrElse(List[AndroidPermissionModel]())
-      output.addOne(Constants.androidPermissions -> _permissions.asJson)
-      _permissions
+      Try(androidPermissionsExporter.getPermissions).getOrElse(List[AndroidPermissionModel]())
     }
-
-    logger.info("Completed Android Permissions Exporting")
 
     MetricHandler.metricsData("policyViolations") = violationResult.size.asJson
     violationResult.foreach(violation => {
@@ -425,18 +408,24 @@ object ExporterUtility {
       }
     )
 
-    // We need to wait till this get completed before moving ahead to export the result
-    Await.result(processingSinks, Duration.Inf)
+    val _sources = Await.result(sources, Duration.Inf)
+    logger.debug("Done with exporting Sources")
+    val _processing = Await.result(processing, Duration.Inf)
+    logger.debug("Done with exporting Processing sources")
+    val _sinks = Await.result(sinks, Duration.Inf)
+    logger.debug("Done with exporting Sinks")
+    val _processingSinks = Await.result(processingSinks, Duration.Inf)
+    logger.debug("Done with exporting Processing Sinks")
+    val _permissions = Await.result(androidPermissions, Duration.Inf)
+    logger.debug("Done with exporting android permissions")
 
-    (
-      output,
-      Await.result(sources, Duration.Inf),
-      Await.result(sinks, Duration.Inf),
-      Await.result(processing, Duration.Inf),
-      dataflowsOutput,
-      finalCollections,
-      complianceViolations.size
-    )
+    output.addOne(Constants.sources            -> _sources.asJson)
+    output.addOne(Constants.processing         -> _processing.asJson)
+    output.addOne(Constants.sinks              -> _sinks.asJson)
+    output.addOne(Constants.sinkProcessing     -> _processingSinks.asJson)
+    output.addOne(Constants.collections        -> finalCollections.asJson)
+    output.addOne(Constants.androidPermissions -> _permissions.asJson)
+    (output, _sources, _sinks, _processing, dataflowsOutput, finalCollections, complianceViolations.size)
   }
 
   def filterNodeBasedOnRepoItemTagName(nodes: List[AstNode], repoItemTagName: Option[String]): List[AstNode] = {
