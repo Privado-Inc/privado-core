@@ -112,7 +112,7 @@ object GoProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(auditCache),
+              AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg),
               sourceRepoLocation
             ) match {
               case Left(err) =>

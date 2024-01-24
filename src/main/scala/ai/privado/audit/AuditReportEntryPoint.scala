@@ -99,16 +99,21 @@ object AuditReportEntryPoint {
       UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
 
+    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
+
     workbook
   }
 
-  def getAuditWorkbookPy(auditCache: AuditCache): Workbook = {
+  def getAuditWorkbookPy(auditCache: AuditCache, xtocpg: Try[Cpg]): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
       DataFlowReport.processDataFlowAudit(auditCache)
     )
+
+    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
+
     workbook
   }
   // Audit report generation for Python and javaScript
@@ -137,6 +142,8 @@ object AuditReportEntryPoint {
       AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
       UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
+
+    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
 
     workbook
   }

@@ -35,7 +35,7 @@ object DependencyReport {
 
     List(
       List(
-        AuditReportConstants.DEPENDENCY_FILE_PATH_NAME,
+        AuditReportConstants.FILE_PATH_NAME,
         AuditReportConstants.DEPENDENCY_LIBRARY_NAME,
         AuditReportConstants.DEPENDENCY_ARTIFACT_NAME,
         AuditReportConstants.DEPENDENCY_PROCESSED_NAME,
