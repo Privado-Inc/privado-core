@@ -7,7 +7,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.4.33"
-val joernVersion      = "2.0.212"
+val joernVersion      = "2.0.234"
 val overflowdbVersion = "1.182"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -66,6 +66,7 @@ libraryDependencies ++= Seq(
   "org.zeromq"                       % "jeromq"                     % "0.5.4",
   "org.sangria-graphql"             %% "sangria"                    % "4.0.0",
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
+  "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests",
   scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
 )
 
