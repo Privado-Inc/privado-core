@@ -27,24 +27,26 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  val methodUrlMap = mutable.HashMap[Long, String]()
+  private val methodUrlMap = mutable.HashMap[Long, String]()
+  private val classUrlMap  = mutable.HashMap[Long, String]()
 
-  def getCollectionUrls(): List[String] =
-    methodUrlMap.values.l
+  def getCollectionUrls(): List[String] = {
+    CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
+  }
+
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-
-    val classUrlMap = mutable.HashMap[Long, String]()
 
     // A cached method so that we are not computing again
     val combinedRulePatterns = ruleInfo.combinedRulePattern

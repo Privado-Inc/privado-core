@@ -1,12 +1,13 @@
 package ai.privado.languageEngine.python.tagger.collection
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -18,7 +19,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val classUrlMap  = mutable.HashMap[Long, String]()
 
   def getCollectionUrls(): List[String] =
-    methodUrlMap.values.l
+    CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
 
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray

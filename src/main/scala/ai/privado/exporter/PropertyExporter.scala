@@ -28,23 +28,39 @@ import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.java.language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
-import ai.privado.model.NodeType
+import ai.privado.model.{Constants, NodeType}
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
 class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getPropertyUrls = {
-    var collectionUrls = List[String]()
+    var propertyUrls = List[String]()
     val apiRules = ruleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toList
 
     apiRules.foreach { ruleInfo =>
-      collectionUrls =
-        collectionUrls.concat(cpg.property.filter(p => p.value matches ruleInfo.combinedRulePattern).value.l)
+      propertyUrls = propertyUrls.concat(cpg.property.filter(p => p.value matches ruleInfo.combinedRulePattern).value.l)
     }
-    collectionUrls
+    for (ruleInfo <- ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray) {
+      // 1. Get all the files where FeignClient is used.
+      // 2. Get url from XXXMapping and add it to list (filter over #1)
+
+      val filesHavingFeignClient = cpg.annotation.name("FeignClient").file.name.l
+      val combinedRulePatterns   = ruleInfo.combinedRulePattern
+
+      cpg.annotation
+        .name(combinedRulePatterns)
+        .filter(x => filesHavingFeignClient.contains(x.file.name.head))
+        .map(matchedAnnotation => {
+          propertyUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+          matchedAnnotation
+        })
+
+    }
+    propertyUrls.dedup.l
   }
 }
