@@ -32,7 +32,7 @@ import ai.privado.model.{Constants, NodeType}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
-class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
+class EgressExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   private val logger               = LoggerFactory.getLogger(getClass)
   private val FEIGN_CLIENT         = "FeignClient"

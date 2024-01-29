@@ -25,7 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.S3DatabaseDetailsCache
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.exporter.PropertyExporter
+import ai.privado.exporter.EgressExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.tagger.sink.RegularSinkTagger
 
@@ -59,7 +59,7 @@ class FeignEgressExportTest extends JavaTaggingTestBase {
 
   "Java code for Feign Client" should {
     "collect egress url from feign client" in {
-      val propertyExporter = new PropertyExporter(cpg, ruleCache)
+      val propertyExporter = new EgressExporter(cpg, ruleCache)
       val egresses         = propertyExporter.getEgressUrls
       egresses.size shouldBe 1
       egresses.head shouldBe "/address/{id}"

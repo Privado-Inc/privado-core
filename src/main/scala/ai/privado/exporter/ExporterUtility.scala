@@ -328,7 +328,7 @@ object ExporterUtility {
       new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, s3DatabaseDetailsCache)
     val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
     val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val propertyExporter           = new PropertyExporter(cpg, ruleCache)
+    val egressExporter             = new EgressExporter(cpg, ruleCache)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
@@ -343,7 +343,7 @@ object ExporterUtility {
 
     if (privadoInput.enableIngressAndEgressUrls) {
       output.addOne(Constants.collectionUrls -> Utilities.collectionUrls.toArray.asJson)
-      output.addOne(Constants.egressUrls     -> propertyExporter.getEgressUrls.toArray.asJson)
+      output.addOne(Constants.egressUrls     -> egressExporter.getEgressUrls.toArray.asJson)
     }
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(
