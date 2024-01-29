@@ -345,7 +345,7 @@ object ExporterUtility {
 
     if (privadoInput.enableIngressAndEgressUrls) {
       output.addOne(Constants.collectionUrls -> Utilities.collectionUrls.toArray.asJson)
-      output.addOne(Constants.propertyUrls   -> propertyExporter.getPropertyUrls.toArray.asJson)
+      output.addOne(Constants.egressUrls     -> propertyExporter.getEgressUrls.toArray.asJson)
     }
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(

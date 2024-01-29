@@ -39,25 +39,25 @@ class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val SPRING_ANNOTATION_ID = "Collections.Annotation.Spring"
   private val REGEX_SLASH          = ".*/.*"
 
-  def getPropertyUrls = {
-    var propertyUrls = List[String]()
+  def getEgressUrls = {
+    var egressUrls = List[String]()
     val apiRules = ruleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
       .toList
 
     apiRules.foreach { ruleInfo =>
-      propertyUrls = propertyUrls.concat(
+      egressUrls = egressUrls.concat(
         cpg.property.filter(p => p.value matches ruleInfo.combinedRulePattern).value(REGEX_SLASH).value.l
       )
     }
 
-    propertyUrls.concat(addUrlFromFeignClient())
-    propertyUrls.dedup.l
+    egressUrls.concat(addUrlFromFeignClient())
+    egressUrls.dedup.l
   }
 
   private def addUrlFromFeignClient(): List[String] = {
 
-    var propertyUrls = List[String]()
+    var egressUrls = List[String]()
     try {
       val filesHavingFeignClient = cpg.annotation.name(FEIGN_CLIENT).file.name.l
 
@@ -71,13 +71,13 @@ class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
         cpg.annotation.name(combinedRulePatterns).filter(x => filesHavingFeignClient.contains(x.file.name.head)).l
 
       for (matchedAnnotation <- matchedAnnotations) {
-        propertyUrls = propertyUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        egressUrls = egressUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
       }
     } catch {
       case e: Exception => {
         logger.error("Error while adding URL from FeignClient annotation", e)
       }
     }
-    propertyUrls
+    egressUrls
   }
 }
