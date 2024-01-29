@@ -51,12 +51,13 @@ class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
       )
     }
 
-    addUrlFromFeignClient(propertyUrls)
+    propertyUrls.concat(addUrlFromFeignClient())
     propertyUrls.dedup.l
   }
 
-  private def addUrlFromFeignClient(propertyUrls: List[String]): Unit = {
+  private def addUrlFromFeignClient(): List[String] = {
 
+    var propertyUrls = List[String]()
     try {
       val filesHavingFeignClient = cpg.annotation.name(FEIGN_CLIENT).file.name.l
 
@@ -77,5 +78,6 @@ class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
         logger.error("Error while adding URL from FeignClient annotation", e)
       }
     }
+    propertyUrls
   }
 }
