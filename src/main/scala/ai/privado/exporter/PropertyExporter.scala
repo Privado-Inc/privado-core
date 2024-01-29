@@ -34,7 +34,10 @@ import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
 class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
 
-  private val logger = LoggerFactory.getLogger(getClass)
+  private val logger               = LoggerFactory.getLogger(getClass)
+  private val FEIGN_CLIENT         = "FeignClient"
+  private val SPRING_ANNOTATION_ID = "Collections.Annotation.Spring"
+  private val REGEX_SLASH          = ".*/.*"
 
   def getPropertyUrls = {
     var propertyUrls = List[String]()
@@ -43,24 +46,36 @@ class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
       .toList
 
     apiRules.foreach { ruleInfo =>
-      propertyUrls = propertyUrls.concat(cpg.property.filter(p => p.value matches ruleInfo.combinedRulePattern).value.l)
+      propertyUrls = propertyUrls.concat(
+        cpg.property.filter(p => p.value matches ruleInfo.combinedRulePattern).value(REGEX_SLASH).value.l
+      )
     }
-    for (ruleInfo <- ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray) {
-      // 1. Get all the files where FeignClient is used.
-      // 2. Get url from XXXMapping and add it to list (filter over #1)
 
-      val filesHavingFeignClient = cpg.annotation.name("FeignClient").file.name.l
-      val combinedRulePatterns   = ruleInfo.combinedRulePattern
-
-      cpg.annotation
-        .name(combinedRulePatterns)
-        .filter(x => filesHavingFeignClient.contains(x.file.name.head))
-        .map(matchedAnnotation => {
-          propertyUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
-          matchedAnnotation
-        })
-
-    }
+    addUrlFromFeignClient(propertyUrls)
     propertyUrls.dedup.l
+  }
+
+  private def addUrlFromFeignClient(propertyUrls: List[String]): Unit = {
+
+    try {
+      val filesHavingFeignClient = cpg.annotation.name(FEIGN_CLIENT).file.name.l
+
+      val ruleInfo = ruleCache.getRule.collections
+        .filter(_.catLevelTwo == Constants.annotations)
+        .filter(_.id == SPRING_ANNOTATION_ID)
+        .head
+
+      val combinedRulePatterns = ruleInfo.combinedRulePattern
+      val matchedAnnotations =
+        cpg.annotation.name(combinedRulePatterns).filter(x => filesHavingFeignClient.contains(x.file.name.head)).l
+
+      for (matchedAnnotation <- matchedAnnotations) {
+        propertyUrls = propertyUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+      }
+    } catch {
+      case e: Exception => {
+        logger.error("Error while adding URL from FeignClient annotation", e)
+      }
+    }
   }
 }
