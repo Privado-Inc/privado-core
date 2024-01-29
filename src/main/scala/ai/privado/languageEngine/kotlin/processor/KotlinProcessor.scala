@@ -32,6 +32,7 @@ import ai.privado.model.Language
 import ai.privado.model.Language.Language
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
+import ai.privado.cache.S3DatabaseDetailsCache
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.kotlin2cpg.Kotlin2Cpg
@@ -56,8 +57,17 @@ class KotlinProcessor(
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
-  auditCache: AuditCache
-) extends BaseProcessor(ruleCache, privadoInput, sourceRepoLocation, lang, dataFlowCache, auditCache) {
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+) extends BaseProcessor(
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      lang,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache
+    ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
 

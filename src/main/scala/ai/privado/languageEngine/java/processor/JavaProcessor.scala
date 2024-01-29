@@ -73,8 +73,17 @@ class JavaProcessor(
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
-  auditCache: AuditCache
-) extends BaseProcessor(ruleCache, privadoInput, sourceRepoLocation, lang, dataFlowCache, auditCache) {
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+) extends BaseProcessor(
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      lang,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache
+    ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
   private var cpgconfig       = Config()
@@ -91,7 +100,7 @@ class JavaProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache)
 
   override def processCpg(): Either[String, Unit] = {
     val excludeFileRegex = ruleCache.getExclusionRegex
@@ -116,7 +125,8 @@ class JavaProcessor(
     if (hasLombokDependency) {
       val delombokPath = Delombok.run(AppCache.scanPath)
       AppCache.isLombokPresent = true
-
+      // Update the new ScanPath with delombok folder path
+      AppCache.scanPath = s"${AppCache.scanPath}/${Constants.delombok}"
       // Creating a new CpgConfig which uses the delombokPath
       cpgconfig = Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
         .withInputPath(delombokPath)
@@ -139,6 +149,7 @@ class JavaProcessor(
     val msg = tagAndExport(xtocpg)
 
     // Delete the delomboked directory after scanning is completed
+    /*
     if (AppCache.isLombokPresent) {
       val dirName = AppCache.scanPath + "/" + Constants.delombok
       Try(File(dirName).delete()) match {
@@ -146,6 +157,7 @@ class JavaProcessor(
         case Failure(exception) => logger.debug(s"Exception :", exception)
       }
     }
+     */
     msg
   }
 
@@ -191,11 +203,12 @@ object Delombok {
         )
         System.getProperty("java.class.path")
     }
-    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath}"
+
+    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath} -f pretty"
   }
 
   def run(projectDir: String, analysisJavaHome: Option[String] = None): String = {
-    val dirName = projectDir + "/" + Constants.delombok
+    val dirName = s"$projectDir/${Constants.delombok}"
     Try(File(dirName).createDirectoryIfNotExists()) match {
       case Success(tempDir) =>
         ExternalCommand.run(delombokToTempDirCommand(tempDir, analysisJavaHome), cwd = projectDir) match {

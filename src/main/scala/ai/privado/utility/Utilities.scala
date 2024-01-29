@@ -168,7 +168,7 @@ object Utilities {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
       if (!filename.equals("<empty>")) {
-        val lines = IOUtils.readLinesInFile(Paths.get(filename))
+        val lines = File(filename).lines.toList
         val startLine: Integer = {
           if (lineToHighlight.isDefined)
             Math.max(1, lineToHighlight.get + excerptStartLine)

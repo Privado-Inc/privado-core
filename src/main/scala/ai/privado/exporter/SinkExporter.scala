@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
@@ -38,7 +38,13 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class SinkExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, repoItemTagName: Option[String] = None) {
+class SinkExporter(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  repoItemTagName: Option[String] = None,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
   lazy val sinkTagList: List[List[Tag]] = sinkList.map(_.tag.l)
@@ -151,18 +157,34 @@ class SinkExporter(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, r
               if (apiUrls.nonEmpty) apiUrls else callUrls
             } else Array[String]()
           }
-          val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
-          Some(
-            SinkModel(
-              rule.catLevelOne.label,
-              rule.catLevelTwo,
-              ruleInfoExporterModel.id,
-              ruleInfoExporterModel.name,
-              ruleInfoExporterModel.domains,
-              apiUrl,
-              databaseDetails.getOrElse(DatabaseDetails("", "", "", "", ""))
+          // special case for S3 database details populated via S3Tagger
+          if (rule.id.contains("AmazonS3")) {
+            val s3DbDetails = s3DatabaseDetailsCache.getS3DatabaseDetails(rule.id).getOrElse(List())
+            s3DbDetails.map(s3 => {
+              SinkModel(
+                rule.catLevelOne.label,
+                rule.catLevelTwo,
+                ruleInfoExporterModel.id,
+                ruleInfoExporterModel.name,
+                ruleInfoExporterModel.domains,
+                apiUrl,
+                s3
+              )
+            })
+          } else {
+            val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
+            Some(
+              SinkModel(
+                rule.catLevelOne.label,
+                rule.catLevelTwo,
+                ruleInfoExporterModel.id,
+                ruleInfoExporterModel.name,
+                ruleInfoExporterModel.domains,
+                apiUrl,
+                databaseDetails.getOrElse(DatabaseDetails("", "", "", "", ""))
+              )
             )
-          )
+          }
         case None => // not found anything, probably derived source
           None
       }
