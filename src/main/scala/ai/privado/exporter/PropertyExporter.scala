@@ -51,7 +51,7 @@ class PropertyExporter(cpg: Cpg, ruleCache: RuleCache) {
       )
     }
 
-    egressUrls.concat(addUrlFromFeignClient())
+    egressUrls = egressUrls.concat(addUrlFromFeignClient())
     egressUrls.dedup.l
   }
 
