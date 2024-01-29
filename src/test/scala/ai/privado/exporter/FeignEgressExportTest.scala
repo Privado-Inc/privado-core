@@ -60,7 +60,7 @@ class FeignEgressExportTest extends JavaTaggingTestBase {
   "Java code for Feign Client" should {
     "collect egress url from feign client" in {
       val propertyExporter = new PropertyExporter(cpg, ruleCache)
-      val egresses = propertyExporter.getEgressUrls
+      val egresses         = propertyExporter.getEgressUrls
       egresses.size shouldBe 1
       egresses.head shouldBe "/address/{id}"
     }
