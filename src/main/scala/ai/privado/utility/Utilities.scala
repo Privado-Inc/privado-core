@@ -69,7 +69,7 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  var collectionUrls = List[String]()
+  var ingressUrls = List[String]()
 
   def getEngineContext(config: PrivadoInput, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()

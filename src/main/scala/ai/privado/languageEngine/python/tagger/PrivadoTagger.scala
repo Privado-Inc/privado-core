@@ -17,7 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.utility.Utilities.collectionUrls
+import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -53,7 +53,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    collectionUrls = collectionTagger.getCollectionUrls()
+    ingressUrls = collectionTagger.getCollectionUrls()
 
     new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig).createAndApply()
 

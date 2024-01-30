@@ -40,7 +40,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.util.Calendar
-import ai.privado.utility.Utilities.collectionUrls
+import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -61,7 +61,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    collectionUrls = collectionTagger.getCollectionUrls()
+    ingressUrls = collectionTagger.getCollectionUrls()
 
     new RubyDBConfigTagger(cpg).createAndApply()
     if (!privadoInputConfig.ignoreInternalRules) {

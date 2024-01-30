@@ -342,8 +342,8 @@ object ExporterUtility {
     output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
 
     if (privadoInput.enableIngressAndEgressUrls) {
-      output.addOne(Constants.collectionUrls -> Utilities.collectionUrls.toArray.asJson)
-      output.addOne(Constants.egressUrls     -> egressExporter.getEgressUrls.toArray.asJson)
+      output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
+      output.addOne(Constants.egressUrls  -> egressExporter.getEgressUrls.toArray.asJson)
     }
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(
