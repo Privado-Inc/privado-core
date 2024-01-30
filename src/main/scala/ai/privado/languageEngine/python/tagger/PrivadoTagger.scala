@@ -53,7 +53,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls = collectionTagger.getCollectionUrls()
+    ingressUrls = collectionTagger.getIngressUrls()
 
     new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig).createAndApply()
 

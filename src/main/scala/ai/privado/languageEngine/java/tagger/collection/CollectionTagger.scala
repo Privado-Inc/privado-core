@@ -39,7 +39,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val methodUrlMap = mutable.HashMap[Long, String]()
   private val classUrlMap  = mutable.HashMap[Long, String]()
 
-  def getCollectionUrls(): List[String] = {
+  def getIngressUrls(): List[String] = {
     CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
   }
 

@@ -75,7 +75,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls = collectionTagger.getCollectionUrls()
+    ingressUrls = collectionTagger.getIngressUrls()
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
