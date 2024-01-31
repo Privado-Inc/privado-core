@@ -191,7 +191,8 @@ abstract class BaseProcessor(
       new DependenciesCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
       ExcelExporter.auditExport(
         outputAuditFileName,
-        AuditReportEntryPoint.getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache),
+        AuditReportEntryPoint
+          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache),
         sourceRepoLocation
       ) match {
         case Left(err) =>
