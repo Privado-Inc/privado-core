@@ -25,6 +25,8 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import io.shiftleft.semanticcpg.language._
+import ai.privado.utility.Utilities.ingressUrls
+import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 
 class CollectionUtilityTest extends JavaTaggingTestBase {
 
@@ -52,6 +54,10 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
       |	public UserProfileD sample3(@RequestBody String firstName) {
       | }
       |
+      | @GetMapping(value = "/login")
+      |	public Token login(@RequestBody String somestring) {
+      | }
+      |
       |}
       |
       |
@@ -72,6 +78,17 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
   "Get Url for annotation" should {
     "give url for sample3" in {
       CollectionUtility.getUrlFromAnnotation(cpg.method("sample3").annotation.head) shouldBe "sample3"
+    }
+  }
+
+  "Get Url for annotation without having PII" should {
+    "check ingress url" in {
+      val collectionTagger = new CollectionTagger(cpg, ruleCache)
+      collectionTagger.createAndApply()
+      ingressUrls = collectionTagger.getIngressUrls()
+      ingressUrls.size shouldBe 4
+      println(ingressUrls)
+      true shouldBe ingressUrls.contains("/api/public/user/login")
     }
   }
 }
