@@ -48,6 +48,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.nio.file.Paths
+import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -91,7 +92,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new DatabaseRepositoryReadPass(cpg, taggerCache, dataFlowCache).createAndApply()
 
-    new CollectionTagger(cpg, ruleCache).createAndApply()
+    val collectionTagger = new CollectionTagger(cpg, ruleCache)
+    collectionTagger.createAndApply()
+    ingressUrls = collectionTagger.getIngressUrls()
 
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 

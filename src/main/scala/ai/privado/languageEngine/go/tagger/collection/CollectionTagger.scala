@@ -2,6 +2,7 @@ package ai.privado.languageEngine.go.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.go.feeder.CollectionTaggerRule
+import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -20,6 +21,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val COLLECTION_FUNC_PATTERN = "(?i).*(Get|Post|Put|Patch|Delete).*"
   private val COLLECTION_REST_PATTERN = "(?i)(Get|Post|Put|Patch|Delete)"
 
+  def getIngressUrls(): List[String] =
+    CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.sources.toArray
 

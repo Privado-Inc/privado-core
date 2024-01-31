@@ -55,6 +55,7 @@ import ai.privado.utility.Utilities.dump
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.languageEngine.java.language.*
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -327,6 +328,7 @@ object ExporterUtility {
       new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, s3DatabaseDetailsCache)
     val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
     val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val egressExporter             = new EgressExporter(cpg, ruleCache)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
@@ -339,6 +341,10 @@ object ExporterUtility {
     output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
     output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
 
+    if (privadoInput.enableIngressAndEgressUrls) {
+      output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
+      output.addOne(Constants.egressUrls  -> egressExporter.getEgressUrls.toArray.asJson)
+    }
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(
       Constants.repoName -> (if (repoItemTagName.isDefined)
