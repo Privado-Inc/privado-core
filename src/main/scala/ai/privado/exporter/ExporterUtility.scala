@@ -397,6 +397,23 @@ object ExporterUtility {
     })
 
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
+
+    if (privadoInput.assetDiscovery) {
+      val propertyNodesData = cpg.property.map(p => (p.name, p.value, p.file.name.head)).dedup.l
+      output.addOne("propertyNodesData" -> propertyNodesData.asJson)
+
+      val probablePropertyNodes = propertyNodesData
+        .or(
+          _.filter(_._1.matches("(?i).*(url|host|database|api|location|uri|mongo|sql|s3|db|oracle).*")),
+          _.filter(_._2.matches("(?i).*(//|:|http|[.]com|[.]ai|[.]org|[.]in|mongo|sql|s3|db|oracle).*"))
+        )
+        .filterNot(_._2.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
+        .filterNot(_._2.matches("^(true|false)$"))
+        .l
+
+      output.addOne("probableAssets" -> probablePropertyNodes.asJson)
+    }
+
     val androidPermissions = Future {
       Try(androidPermissionsExporter.getPermissions).getOrElse(List[AndroidPermissionModel]())
     }
