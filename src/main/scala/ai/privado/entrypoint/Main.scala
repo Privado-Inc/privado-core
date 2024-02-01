@@ -26,6 +26,8 @@ import ai.privado.auth.AuthenticationHandler
 import ai.privado.metric.MetricHandler
 import org.slf4j.LoggerFactory
 
+import scala.sys.exit
+
 /** Privado Core main entry point
   */
 object Main {
@@ -46,21 +48,24 @@ object Main {
                     AuthenticationHandler.authenticate(sourceRepoLocation)
                 case _ => ()
               }
-
+              MetricHandler.compileAndSend()
             // raise error in case of failure, and collect
             // all handled & unhandled exceptions in catch
             case Left(err) =>
               MetricHandler.scanProcessErrors.addOne(err)
               throw new Exception(err)
           }
+
         } catch {
           case e: Exception =>
             // any user-facing non-debug logging to be done internally
             logger.debug("Failure from scan process:", e)
             logger.debug("Skipping auth flow due to scan failure")
             logger.error("Error in scanning, skipping auth flow : " + e.getMessage)
-        } finally {
-          MetricHandler.compileAndSend()
+            MetricHandler.compileAndSend()
+            // NOTE: Removed the finally as it will not be invoked after exit(1) is called in exeption.
+            // exit(1) is important to indicate scan failure to outer process.
+            exit(1)
         }
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse

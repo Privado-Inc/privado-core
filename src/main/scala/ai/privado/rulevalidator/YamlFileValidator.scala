@@ -66,7 +66,7 @@ object YamlFileValidator {
     */
   def validateDirectory(dir: File): Iterator[ValidationFailure] = {
 
-    logger.debug(s"Validating directory : ${dir.pathAsString}")
+    logger.trace(s"Validating directory : ${dir.pathAsString}")
     val validationErrors: Iterator[ValidationFailure] = dir.listRecursively
       .filter(subDir =>
         subDir
@@ -170,7 +170,7 @@ object YamlFileValidator {
 
     val catLevelOneKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
-    logger.debug(s"Found CatLevelOne key '$catLevelOneKey' in file : ${ruleFile.pathAsString}")
+    logger.trace(s"Found CatLevelOne key '$catLevelOneKey' in file : ${ruleFile.pathAsString}")
     CatLevelOne
       .withNameWithDefault(catLevelOneKey) match {
       case CatLevelOne.SOURCES     => Right(CatLevelOne.SOURCES.name, SOURCES)
