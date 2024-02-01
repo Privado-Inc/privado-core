@@ -400,7 +400,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     }
 
     SourceFiles
-      .determine(Set(projectRoot), extensions)(VisitOptions.default)
+      .determine(Set(projectRoot), extensions, ignoredFilesRegex = Some(".*[.]privado.*"))(VisitOptions.default)
       .concat(
         getListOfFiles(projectRoot)
           .map(f => {
