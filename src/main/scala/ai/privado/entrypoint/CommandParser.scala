@@ -55,7 +55,8 @@ case class PrivadoInput(
   limitArgExpansionDataflows: Int = -1,
   offlineMode: Boolean = false,
   isMonolith: Boolean = false,
-  enableIngressAndEgressUrls: Boolean = false
+  enableIngressAndEgressUrls: Boolean = false,
+  assetDiscovery: Boolean = false
 )
 
 object CommandConstants {
@@ -107,6 +108,7 @@ object CommandConstants {
   val OFFLINE_MODE_ABBR                            = "om"
   val IS_MONOLITH                                  = "monolith"
   val ENABLE_INGRESS_AND_EGRESS_URLS               = "enableIngressAndEgressUrls"
+  val ASSEST_DISCOVERY                             = "asset-discovery"
 }
 
 object CommandParser {
@@ -185,6 +187,10 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableIngressAndEgressUrls = true))
               .text("Add ingress and egress url in result json"),
+            opt[Unit](CommandConstants.ASSEST_DISCOVERY)
+              .optional()
+              .action((_, c) => c.copy(assetDiscovery = true))
+              .text("Add asset discovery details in result json"),
             opt[Unit](CommandConstants.DISABLE_2ND_LEVEL_CLOSURE)
               .abbr(CommandConstants.DISABLE_2ND_LEVEL_CLOSURE_ABBR)
               .optional()
