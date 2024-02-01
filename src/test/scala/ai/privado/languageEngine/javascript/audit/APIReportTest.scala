@@ -24,7 +24,6 @@ class APIReportTest extends APIReportTestBase {
       "main.js",
       """
         |import axios from 'axios';
-        |import http from 'http';
         |
         |async function main() {
         |    const randomVar = "ooo";
