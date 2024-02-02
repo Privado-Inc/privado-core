@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.ruby.tagger.collection
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.*
@@ -8,8 +9,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import java.io.File
 
+import java.io.File
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -22,6 +23,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val ROUTES_FILE_PATTERN                 = ".*routes.rb"
   private val RESOURCES                           = "resources"
 
+  def getIngressUrls(): List[String] =
+    CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.default).toArray
 

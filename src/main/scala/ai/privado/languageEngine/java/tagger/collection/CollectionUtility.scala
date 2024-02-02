@@ -115,6 +115,25 @@ object CollectionUtility {
     cpg.identifier.where(_.tag.name(objectName)).typeFullName.dedup.l
   }
 
+  def getCollectionUrls(
+    cpg: Cpg,
+    methodUrlMap: mutable.HashMap[Long, String],
+    classUrlMap: mutable.HashMap[Long, String]
+  ): List[String] = {
+    var combinedMethodUrls = List[String]()
+    for (methodId <- methodUrlMap.keys.l) {
+
+      val methodUrl = methodUrlMap.get(methodId).get
+      // If collection method is defined under a class then append classUrl before methodUrl
+      val completeUrl = Try(classUrlMap.getOrElse(cpg.method.id(methodId).head.typeDecl.head.id(), "")) match {
+        case Success(classUrl) => classUrl + methodUrl
+        case Failure(e)        => methodUrl
+      }
+      combinedMethodUrls = combinedMethodUrls :+ completeUrl
+    }
+    combinedMethodUrls
+  }
+
   private def getFinalEndPoint(
     collectionPoint: Method,
     returnByName: Boolean,

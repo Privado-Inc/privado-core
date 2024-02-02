@@ -55,6 +55,7 @@ import ai.privado.utility.Utilities.dump
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.languageEngine.java.language.*
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -327,6 +328,7 @@ object ExporterUtility {
       new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, s3DatabaseDetailsCache)
     val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
     val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val egressExporter             = new EgressExporter(cpg, ruleCache)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
@@ -339,6 +341,10 @@ object ExporterUtility {
     output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
     output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
 
+    if (privadoInput.enableIngressAndEgressUrls) {
+      output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
+      output.addOne(Constants.egressUrls  -> egressExporter.getEgressUrls.toArray.asJson)
+    }
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(
       Constants.repoName -> (if (repoItemTagName.isDefined)
@@ -391,6 +397,23 @@ object ExporterUtility {
     })
 
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
+
+    if (privadoInput.assetDiscovery) {
+      val propertyNodesData = cpg.property.map(p => (p.name, p.value, p.file.name.head)).dedup.l
+      output.addOne("propertyNodesData" -> propertyNodesData.asJson)
+
+      val probablePropertyNodes = propertyNodesData
+        .or(
+          _.filter(_._1.matches("(?i).*(url|host|database|api|location|uri|mongo|sql|s3|db|oracle).*")),
+          _.filter(_._2.matches("(?i).*(//|:|http|[.]com|[.]ai|[.]org|[.]in|mongo|sql|s3|db|oracle).*"))
+        )
+        .filterNot(_._2.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
+        .filterNot(_._2.matches("^(true|false)$"))
+        .l
+
+      output.addOne("probableAssets" -> probablePropertyNodes.asJson)
+    }
+
     val androidPermissions = Future {
       Try(androidPermissionsExporter.getPermissions).getOrElse(List[AndroidPermissionModel]())
     }

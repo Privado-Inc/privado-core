@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java
 
 import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -96,7 +96,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
       NodeType.REGULAR,
       "",
       CatLevelOne.COLLECTIONS,
-      "",
+      Constants.annotations,
       Language.JAVA,
       Array()
     )

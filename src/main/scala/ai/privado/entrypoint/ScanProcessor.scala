@@ -192,12 +192,12 @@ object ScanProcessor extends CommandProcessor {
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
-                    logger.error("ERROR : " + error)
+                    logger.error("ERROR : ", error)
                     getEmptyConfigAndRule
                 }
               case Left(error) =>
                 logger.error("Error while parsing this file -> '" + fullPath)
-                logger.error("ERROR : " + error)
+                logger.error("ERROR : ", error)
                 getEmptyConfigAndRule
             }
           })
@@ -235,9 +235,6 @@ object ScanProcessor extends CommandProcessor {
   def processRules(lang: Set[Language], ruleCache: RuleCache): ConfigAndRules = {
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
-      internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
-      ruleCache.setInternalRules(internalConfigAndRules)
-
       try {
         AppCache.privadoVersionMain = File((s"${config.internalConfigPath.head}/version.txt")).contentAsString
       } catch {
@@ -245,6 +242,8 @@ object ScanProcessor extends CommandProcessor {
           AppCache.privadoVersionMain = Constants.notDetected
       }
       println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
+      internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
+      ruleCache.setInternalRules(internalConfigAndRules)
     }
     var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
