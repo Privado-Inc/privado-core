@@ -9,8 +9,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTag
 
 class AssetTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
 
-  val sourceRegex = "(?i).*(mongo|sql|s3|oracle|dynamo|maria|hive|redis|dbName|database|sqs|queue|engine).*"
-  val valueRegex  = "(?i).*(mongo|sql|s3|oracle|dynamo|maria|hive|redis|sqs|queue).*"
+  val sourceRegex =
+    "(?i).*(mongo|sql|s3|aws(_)?bucket|oracle|dynamo|maria|hive|redis|dbName|database|sqs|queue|engine).*"
+  val valueRegex = "(?i).*(mongo|sql|s3|oracle|dynamo|maria|hive|redis|sqs|queue).*"
   override def run(builder: DiffGraphBuilder): Unit = {
     cpg.literal
       .code(valueRegex)
