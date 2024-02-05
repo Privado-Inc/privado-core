@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.kotlin.feeder
 
-import ai.privado.model.{CatLevelOne, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
 
 import scala.collection.immutable.HashMap
 
@@ -11,6 +11,7 @@ object StorageAnnotationRule {
       "Sinks.Database.Persistence.Room.Read",
       "Android Persistence Room(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("android.com"),
       List[String]("Dao", "(?i)(find|get|select|search|all|load).*"),
       false,
@@ -27,6 +28,7 @@ object StorageAnnotationRule {
       "Sinks.Database.Persistence.Room.Write",
       "Android Persistence Room(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("android.com"),
       List[String]("Dao", "(?i)(save|delete|insert|update).*"),
       false,

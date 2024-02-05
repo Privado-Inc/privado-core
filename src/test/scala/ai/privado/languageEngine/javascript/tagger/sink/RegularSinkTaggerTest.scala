@@ -44,6 +44,7 @@ val sinkRule = List(
     Constants.cookieWriteRuleId,
     "Web Storage Cookie(Write)",
     "",
+    FilterProperty.METHOD_FULL_NAME,
     Array(),
     List("(?i)(.*setcookie.*)"),
     false,
