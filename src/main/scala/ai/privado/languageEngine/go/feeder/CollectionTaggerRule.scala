@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.go.feeder
 
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 
 import scala.collection.immutable.HashMap
 
@@ -11,6 +11,7 @@ object CollectionTaggerRule {
       "",
       "",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array.empty,
       List.empty,
       false,

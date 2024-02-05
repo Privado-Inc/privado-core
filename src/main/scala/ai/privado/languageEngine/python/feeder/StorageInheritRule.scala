@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.python.feeder
 
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 
 import scala.collection.immutable.HashMap
 
@@ -34,6 +34,7 @@ object StorageInheritRule {
       "Storages.Framework.Tortoise.Read",
       "Tortoise(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("tortoise.github.io"),
       List[String]("(?i)tortoise/models.py:<module>.Model", "(filter|all|first)"),
       false,
@@ -50,6 +51,7 @@ object StorageInheritRule {
       "Storages.Framework.Tortoise.Write",
       "Tortoise(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("tortoise.github.io"),
       List[String]("(?i)tortoise/models.py:<module>.Model", "(create|get_or_create)"),
       false,
@@ -66,6 +68,7 @@ object StorageInheritRule {
       "Storages.Framework.DjangoDB.Write",
       "DjangoDB(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("djangoproject.com"),
       List[String]("(?i)django/db/models.py:<module>.Model", "(save|create)"),
       false,
@@ -82,6 +85,7 @@ object StorageInheritRule {
       "Storages.Framework.DjangoDB.Read",
       "DjangoDB(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("djangoproject.com"),
       List[String]("(?i)django/db/models.py:<module>.Model", "(filter|get)"),
       false,
@@ -98,6 +102,7 @@ object StorageInheritRule {
       "Storages.Framework.SQLAlchemy.Read",
       "SQLAlchemy(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("sqlalchemy.org"),
       List[String](
         "sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>",
@@ -117,6 +122,7 @@ object StorageInheritRule {
       "Storages.Framework.SQLAlchemy.Write",
       "SQLAlchemy(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("sqlalchemy.org"),
       List[String](
         "sqlalchemy/.*/declarative.py:<module>.declarative_base.<returnValue>",

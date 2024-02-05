@@ -160,6 +160,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       ruleId,
       f"${dbName}",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](ruleHost),
       List[String](),
       false,

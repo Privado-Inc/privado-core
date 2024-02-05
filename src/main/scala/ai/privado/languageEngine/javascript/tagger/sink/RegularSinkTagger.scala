@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
-import ai.privado.model.{Constants, DatabaseDetails, NodeType, RuleInfo}
+import ai.privado.model.{Constants, DatabaseDetails, FilterProperty, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.addRuleTags
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
@@ -46,7 +46,12 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val sinks = cacheCall.methodFullName("(pkg.){0,1}(" + ruleInfo.combinedRulePattern + ").*").l
+    val sinks = ruleInfo.filterProperty match
+      case FilterProperty.CODE => {
+        cacheCall.code(s"${ruleInfo.combinedRulePattern}").l
+      }
+      // Default is METHOD_FULL_NAME
+      case _ => cacheCall.methodFullName(s"(pkg.){0,1}(${ruleInfo.combinedRulePattern}).*").l
 
     if (ruleInfo.id.equals(Constants.cookieWriteRuleId)) {
       sinks.foreach(sink => {

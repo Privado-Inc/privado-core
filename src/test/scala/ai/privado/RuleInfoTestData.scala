@@ -1,6 +1,6 @@
 package ai.privado
 
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
 
 object RuleInfoTestData {
 
@@ -9,6 +9,7 @@ object RuleInfoTestData {
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,
@@ -25,6 +26,7 @@ object RuleInfoTestData {
       "Data.Sensitive.AccountData.AccountPassword",
       "AccountPassword",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*password.*"),
       false,

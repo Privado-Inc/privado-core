@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -50,6 +50,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,
@@ -69,6 +70,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
       "Collections.Annotation.Spring",
       "Spring Web Interface Annotation",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
       false,
