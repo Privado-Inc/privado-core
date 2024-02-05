@@ -14,6 +14,23 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class RegularSinkTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
+  "Sink tagging with cpg.code" should {
+    "tag the call node as sink by matching rule with cpg.code" in {
+      val cpg = code("""
+           |import ecomCart from '@ecomplus/shopping-cart'
+           |
+           |export default ttq => {
+           |  const item = { email : "someemail@email.com"}
+           |  ecomCart.on('addItem', ({ item }) => {
+           |    ttq.track('AddToCart', item)
+           |  })
+           |}
+           |""".stripMargin)
+      cpg.tag.nameExact(Constants.id).value.headOption shouldBe Some("ThirdParties.SDK.Tiktok")
+    }
+
+  }
+
   "Cookie name" should {
     "be tag properly for block node argument" in {
       val cpg = code("""
@@ -54,6 +71,23 @@ val sinkRule = List(
     "",
     CatLevelOne.SINKS,
     catLevelTwo = Constants.storages,
+    Language.JAVASCRIPT,
+    Array()
+  ),
+  RuleInfo(
+    "ThirdParties.SDK.Tiktok",
+    "Tiktok pixel tracker",
+    "",
+    FilterProperty.CODE,
+    Array(),
+    List("ttq.track.*"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.third_parties,
     Language.JAVASCRIPT,
     Array()
   )
