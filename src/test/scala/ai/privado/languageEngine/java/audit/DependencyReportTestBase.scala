@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -54,6 +54,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,
@@ -73,6 +74,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       "Collections.Annotation.Spring",
       "Spring Web Interface Annotation",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
       false,
@@ -92,6 +94,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       "AuditCollection.SpringWebMVC",
       "Spring Web MVC",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("^org\\.elasticsearch\\.client:rest$"),
       false,
@@ -108,6 +111,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       "AuditWebClient.http4k",
       "Http client",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("^org\\.http4k:http4k-connect-core$"),
       false,
@@ -124,6 +128,7 @@ abstract class DependencyReportTestBase extends AnyWordSpec with Matchers with B
       "AuditUtility.Github",
       "Github Utility",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("^com\\.github\\.scala-incubator\\.io:scala-io-file_2.11$"),
       false,

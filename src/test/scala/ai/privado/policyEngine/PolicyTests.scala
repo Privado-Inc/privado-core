@@ -25,6 +25,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Data.Sensitive.ContactData.EmailAddress",
       "EmailAddress",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*email.*"),
       true,
@@ -41,6 +42,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Data.Sensitive.Password",
       "Password",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*password.*"),
       false,
@@ -57,6 +59,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Data.Sensitive.AccountName",
       "Account Name",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*(user[^\\s/(;)#|,=!>]{0,5}name)"),
       true,
@@ -76,6 +79,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Leakages.Log.Error",
       "Log Error",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*(error).*"),
       true,
@@ -92,6 +96,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "ThirdParties.SDK.Google.Drive",
       "Google Drive",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array("drive.google.com"),
       List(
         "(?i)(googleapis|node-google-drive-new|ts-google-drive|selfish-google-drive|google-drive-wrapper|google-drive-connect).*"
@@ -110,6 +115,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       Constants.thirdPartiesAPIRuleId,
       "Third Party API",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(
         "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
@@ -131,6 +137,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Collections.Express",
       "Express framework restendpoint",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("post|get|all|delete|put|patch|head|subscribe|unsubscribe"),
       false,
@@ -147,6 +154,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Collections.Webforms",
       "Webform data collection",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(
         "^<(?i)(?:\\w{0,}(input|upload)\\w{0,}|\\w{0,}(textarea|Text|TextBox|Select|Field|Autocomplete|Checkbox))[^>]*.*"

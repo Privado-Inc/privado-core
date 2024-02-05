@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java
 
 import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -69,6 +69,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,
@@ -88,6 +89,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
       "Collections.Annotation.Spring",
       "Spring Web Interface Annotation",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
       false,
@@ -107,6 +109,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
       "Storages.AmazonS3.Read",
       "Amazon S3",
       "Storage",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(".*GetObjectRequest.*"),
       false,
@@ -123,6 +126,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
       "Storages.AmazonS3.Write",
       "Amazon S3",
       "Storage",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(".*PutObjectRequest.*"),
       false,

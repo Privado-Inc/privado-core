@@ -25,12 +25,12 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.Utility.SOAPTaggerUtility
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.immutable.HashMap
 import scala.collection.mutable
@@ -48,6 +48,7 @@ class SOAPCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimple
       "Collections.Annotation.SOAP",
       "SOAP Annotation",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String]("WebService"),
       false,

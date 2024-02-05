@@ -31,6 +31,7 @@ case class RuleInfo(
   id: String,
   name: String,
   category: String,
+  filterProperty: FilterProperty.FilterProperty,
   domains: Array[String],
   patterns: List[String],
   isSensitive: Boolean,
@@ -289,19 +290,21 @@ object CirceEnDe {
   }
   implicit val decodeRuleInfo: Decoder[RuleInfo] = new Decoder[RuleInfo] {
     override def apply(c: HCursor): Result[RuleInfo] = {
-      val id          = c.downField(Constants.id).as[String]
-      val name        = c.downField(Constants.name).as[String]
-      val category    = c.downField(Constants.category).as[String]
-      val domains     = c.downField(Constants.domains).as[Array[String]]
-      val patterns    = c.downField(Constants.patterns).as[List[String]]
-      val isSensitive = c.downField(Constants.isSensitive).as[Boolean]
-      val sensitivity = c.downField(Constants.sensitivity).as[String]
-      val tags        = c.downField(Constants.tags).as[Map[String, String]]
+      val id             = c.downField(Constants.id).as[String]
+      val name           = c.downField(Constants.name).as[String]
+      val category       = c.downField(Constants.category).as[String]
+      val filterProperty = c.downField(Constants.filterProperty).as[String]
+      val domains        = c.downField(Constants.domains).as[Array[String]]
+      val patterns       = c.downField(Constants.patterns).as[List[String]]
+      val isSensitive    = c.downField(Constants.isSensitive).as[Boolean]
+      val sensitivity    = c.downField(Constants.sensitivity).as[String]
+      val tags           = c.downField(Constants.tags).as[Map[String, String]]
       Right(
         RuleInfo(
           id = id.getOrElse(""),
           name = name.getOrElse(""),
           category = category.getOrElse(""),
+          filterProperty = FilterProperty.withNameWithDefault(filterProperty.getOrElse("")),
           domains = domains.getOrElse(Array[String]()),
           patterns = patterns.getOrElse(List[String]()),
           sensitivity = sensitivity.getOrElse(""),

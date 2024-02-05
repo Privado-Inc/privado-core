@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.ruby.feeder
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
+
 import scala.collection.immutable.HashMap
 
 object LeakageRule {
@@ -8,6 +9,7 @@ object LeakageRule {
       "Sink.Leakages.Log.Info",
       "Log Info",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String]("log.*", "info"),
       false,
@@ -24,6 +26,7 @@ object LeakageRule {
       "Sink.Leakages.Log.Error",
       "Log Error",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String]("log.*", "error"),
       false,
@@ -40,6 +43,7 @@ object LeakageRule {
       "Sink.Leakages.Log.Debug",
       "Log Debug",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String]("log.*", "debug"),
       false,

@@ -25,7 +25,7 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.feeder.PermissionSourceRule
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.kotlin2cpg.Config
 import io.joern.kotlin2cpg.Kotlin2Cpg
@@ -53,6 +53,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       "Data.Sensitive.UserContentData.EmailsorTextMessages",
       "Emails or Text Messages",
       "User Content",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(""),
       false,
@@ -72,6 +73,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       "Collections.Android.Form.Email",
       "Android app email input",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*email.*"),
       false,
