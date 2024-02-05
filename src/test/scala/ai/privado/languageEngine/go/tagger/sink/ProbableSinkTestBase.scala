@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.go.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -51,6 +51,7 @@ abstract class ProbableSinkTestBase extends AnyWordSpec with Matchers with Befor
       "Leakages.Log.Fatal",
       "Log Error",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*(fatal).*"),
       true,

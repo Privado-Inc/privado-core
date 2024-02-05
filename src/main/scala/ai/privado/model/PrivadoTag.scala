@@ -162,3 +162,17 @@ object ConfigRuleType extends Enumeration {
       null
   }
 }
+
+object FilterProperty extends Enumeration {
+  type FilterProperty = Value
+  val METHOD_FULL_NAME = Value("method_full_name")
+  val CODE             = Value("code")
+
+  def withNameWithDefault(name: String): Value = {
+    try {
+      withName(name)
+    } catch {
+      case _: Throwable => this.METHOD_FULL_NAME
+    }
+  }
+}

@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.feeder
 
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 
 import scala.collection.immutable.HashMap
 
@@ -34,6 +34,7 @@ object StorageInheritRule {
       "Sinks.Database.JPA.Read",
       "JPA Repository(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("springframework.org"),
       List[String](
         "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
@@ -53,6 +54,7 @@ object StorageInheritRule {
       "Sinks.Database.JPA.Write",
       "JPA Repository(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("springframework.org"),
       List[String](
         "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
@@ -72,6 +74,7 @@ object StorageInheritRule {
       "Storages.MongoDB.SpringFramework.Read",
       "MongoDB(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("mongodb.com"),
       List[String](
         "(?i)(org[.]springframework[.]data[.]mongodb[.]repository[.](MongoRepository|support[.]SimpleMongoRepository))",
@@ -91,6 +94,7 @@ object StorageInheritRule {
       "Storages.MongoDB.SpringFramework.Write",
       "MongoDB(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("mongodb.com"),
       List[String](
         "(?i)(org[.]springframework[.]data[.]mongodb[.]repository[.](MongoRepository|support[.]SimpleMongoRepository))",
@@ -110,6 +114,7 @@ object StorageInheritRule {
       "Storages.MongoDB.Morphia.BasicDao.Read",
       "MongoDB(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("mongodb.com"),
       List[String]("(?i)(.*[.]morphia[.]dao[.]BasicDAO.*)", "(?i)(count|createQuery|exists|find|get).*"),
       false,
@@ -126,6 +131,7 @@ object StorageInheritRule {
       "Storages.MongoDB.Morphia.BasicDao.Write",
       "MongoDB(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("mongodb.com"),
       List[String]("(?i)(.*[.]morphia[.]dao[.]BasicDAO.*)", "(?i)(delete|save|update).*"),
       false,
@@ -142,6 +148,7 @@ object StorageInheritRule {
       "Storages.Android.SQLite.SQLiteOpenHelper.Read",
       "SQLite(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("android.com"),
       List[String]("(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper)", "(query|rawQuery).*"),
       false,
@@ -158,6 +165,7 @@ object StorageInheritRule {
       "Storages.Android.SQLite.SQLiteOpenHelper.Write",
       "SQLite(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("android.com"),
       List[String](
         "(?i)(android[.]database[.]sqlite[.]SQLiteOpenHelper)",

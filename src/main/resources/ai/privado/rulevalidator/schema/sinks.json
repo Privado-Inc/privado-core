@@ -45,6 +45,17 @@
             ],
             "pattern": "^.*$"
           },
+          "filterProperty": {
+            "$id": "#root/sinks/items/filterProperty",
+            "title": "FilterProperty",
+            "type": "string",
+            "default": "method_full_name",
+            "examples": [
+              "code",
+              "method_full_name"
+            ],
+            "pattern": "^(code|method_full_name)$"
+          },
           "domains": {
             "$id": "#root/sinks/items/domains",
             "title": "Domains",

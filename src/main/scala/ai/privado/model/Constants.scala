@@ -27,6 +27,7 @@ object Constants {
   val id                           = "id"
   val name                         = "name"
   val category                     = "category"
+  val filterProperty               = "filterProperty"
   val domains                      = "domains"
   val nodeType                     = "nodeType"
   val catLevelOne                  = "catLevelOne"

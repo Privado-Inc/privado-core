@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.java.tagger.Utility.GRPCTaggerUtility
@@ -60,6 +60,7 @@ class GrpcCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimple
       "Collections.RPC.gRPC.Handler",
       "gRPC Handler",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String]("grpc.io"),
       List[String](methodFullNamesCombined),
       false,

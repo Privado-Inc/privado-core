@@ -28,6 +28,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,
@@ -47,6 +48,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       Constants.thirdPartiesAPIRuleId,
       "Third Party API",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(
         "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"

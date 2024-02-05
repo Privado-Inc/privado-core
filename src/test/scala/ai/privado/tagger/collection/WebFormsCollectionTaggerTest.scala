@@ -49,6 +49,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       sourceId,
       "Email",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*email.*"),
       false,
@@ -65,6 +66,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       lastNameSrcRuleId,
       "Last Name",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*((?:last|sur(?!geon))[^\\s/(;)#|,=!>]{0,5}name)"),
       false,
@@ -84,6 +86,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
       "Collections.Webforms",
       "Webform data collection",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(
         "^<(?i)(?:\\w{0,}(input|upload)\\w{0,}|\\w{0,}(textarea|Text|TextBox|Select|Field|Autocomplete|Checkbox))[^>]*.*"

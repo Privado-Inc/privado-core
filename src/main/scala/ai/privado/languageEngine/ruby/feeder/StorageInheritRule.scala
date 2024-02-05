@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.ruby.feeder
 
-import ai.privado.model.{CatLevelOne, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 
 import scala.collection.immutable.HashMap
 
@@ -11,6 +11,7 @@ object StorageInheritRule {
       "Sink.DataBase.ROR.Read",
       "Ruby on Rails Repository(Read)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String](".*/models/.*", "(find.*|where|select)"),
       false,
@@ -27,6 +28,7 @@ object StorageInheritRule {
       "Sink.DataBase.ROR.Write",
       "Ruby on Rails Repository(Write)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String](".*/models/.*", "save|update.*"),
       false,
@@ -43,6 +45,7 @@ object StorageInheritRule {
       "Sink.DataBase.ROR.ReadAndWrite",
       "Ruby on Rails Repository(ReadAndWrite)",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array[String](),
       List[String](".*/models/.*", ""),
       false,

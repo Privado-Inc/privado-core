@@ -64,6 +64,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       "Storages.AmazonS3.ReadAndWrite",
       "Amazon S3",
       "Storage",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(".*Bucket.*"),
       false,
