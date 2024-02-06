@@ -1,11 +1,12 @@
 package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty}
 import org.slf4j.LoggerFactory
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
@@ -16,7 +17,11 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
   val apiConnectionRegex = ".*/(api|external)?(_|\\.)?(url|base(_|\\.)?path)/i"
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
+    // TODO Filter out property nodes not created from config files, remove in future
+    cpg.property.l
+      .filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
+      .whereNot(_.tag.name(InternalTag.SOURCE_PROPERTY.toString))
+      .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {

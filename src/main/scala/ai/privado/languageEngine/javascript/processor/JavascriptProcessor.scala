@@ -28,7 +28,7 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.javascript.passes.config.JSPropertyLinkerPass
+import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
@@ -73,6 +73,7 @@ object JavascriptProcessor {
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
             .createAndApply()
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
+          new JsConfigPropertyPass(cpg).createAndApply()
           new JSPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()

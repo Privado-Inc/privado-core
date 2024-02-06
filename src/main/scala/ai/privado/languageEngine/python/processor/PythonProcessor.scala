@@ -5,6 +5,7 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
@@ -90,6 +91,7 @@ object PythonProcessor {
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+          new PythonConfigPropertyPass(cpg).createAndApply()
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
