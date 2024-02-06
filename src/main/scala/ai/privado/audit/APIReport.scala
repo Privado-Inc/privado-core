@@ -22,7 +22,7 @@ object APIReport {
     val workFlowResult = new ListBuffer[List[String]]
     xtocpg match {
       case Success(cpg) => {
-        val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
+        val cacheCall = cpg.call.l
         val apis = cacheCall
           .name(APISINKS_REGEX)
           .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
