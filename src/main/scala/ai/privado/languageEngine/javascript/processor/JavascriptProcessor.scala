@@ -25,8 +25,7 @@ package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
@@ -56,6 +55,7 @@ object JavascriptProcessor {
 
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
+    privadoInput: PrivadoInput,
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
@@ -67,21 +67,22 @@ object JavascriptProcessor {
         // Apply default overlays
         try {
           new NaiveCallLinker(cpg).createAndApply()
-          if (ScanProcessor.config.enableLambdaFlows)
+          if (privadoInput.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
-          new JsConfigPropertyPass(cpg).createAndApply()
+          if (privadoInput.assetDiscovery)
+            new JsConfigPropertyPass(cpg).createAndApply()
           new JSPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
-          if (config.showUnresolvedFunctionsReport) {
-            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+          if (privadoInput.showUnresolvedFunctionsReport) {
+            val path = s"${privadoInput.sourceLocation.head}/${Constants.outputDirectoryName}"
             UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.JAVASCRIPT)
           }
           logger.info("=====================")
@@ -89,9 +90,9 @@ object JavascriptProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache)
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
+          val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
@@ -107,7 +108,7 @@ object JavascriptProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,
-            ScanProcessor.config,
+            privadoInput,
             List(),
             s3DatabaseDetailsCache
           ) match {
@@ -132,7 +133,7 @@ object JavascriptProcessor {
           }
 
           // Exporting the Audit report
-          if (ScanProcessor.config.generateAuditReport) {
+          if (privadoInput.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint.getAuditWorkbookJS(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
@@ -149,7 +150,7 @@ object JavascriptProcessor {
           }
 
           // Exporting the Intermediate report
-          if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
+          if (privadoInput.testOutput || privadoInput.generateAuditReport) {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
@@ -208,6 +209,7 @@ object JavascriptProcessor {
     */
   def createJavaScriptCpg(
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
@@ -231,7 +233,7 @@ object JavascriptProcessor {
         .withOutputPath(cpgOutputPath)
         .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
+    processCPG(xtocpg, privadoInput, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
   }
 
 }

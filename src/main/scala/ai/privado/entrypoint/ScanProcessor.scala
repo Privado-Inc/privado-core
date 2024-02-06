@@ -367,6 +367,7 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(
                   getProcessedRule(Set(Language.JAVASCRIPT)),
+                  this.config,
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,
@@ -377,6 +378,7 @@ object ScanProcessor extends CommandProcessor {
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
                 PythonProcessor.createPythonCpg(
                   getProcessedRule(Set(Language.PYTHON)),
+                  this.config,
                   sourceRepoLocation,
                   lang,
                   dataFlowCache = getDataflowCache,
