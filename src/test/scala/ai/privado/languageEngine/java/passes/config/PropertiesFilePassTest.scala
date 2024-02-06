@@ -172,6 +172,9 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
                                       |      - ftp:
                                       |          path: student/{id}
                                       |          method: PUT
+                                      |      - ssm:
+                                      |          path: /
+                                      |          method: PUT
                                       |""".stripMargin
   override val codeFileContents =
     """
