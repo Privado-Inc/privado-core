@@ -28,7 +28,7 @@ import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, S3Data
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, Language, PolicyThreatType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, PolicyThreatType}
 import ai.privado.model.exporter.{
   AndroidPermissionModel,
   CollectionModel,
@@ -56,6 +56,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
+import ai.privado.tagger.AssetTagger
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -412,6 +413,38 @@ object ExporterUtility {
         .l
 
       output.addOne("probableAssets" -> probablePropertyNodes.asJson)
+
+      // Run AssetTagger
+      new AssetTagger(cpg).createAndApply()
+
+      val probableSourceFromCode = cpg.identifier.where(_.tag.nameExact(InternalTag.PROBABLE_ASSET.toString)).l ++
+        cpg.literal.where(_.tag.nameExact(InternalTag.PROBABLE_ASSET.toString)).l ++
+        cpg.fieldAccess.fieldIdentifier.where(_.tag.nameExact(InternalTag.PROBABLE_ASSET.toString)).l ++
+        cpg.member.where(_.tag.nameExact(InternalTag.PROBABLE_ASSET.toString)).l
+
+      import ai.privado.model.exporter.DataFlowEncoderDecoder._
+      output.addOne(
+        "probableAssetsFromCode" -> probableSourceFromCode
+          .map(node => {
+            val fileName = Utilities.getFileNameForNode(node)
+            val absoluteFileName = {
+              val file = File(fileName)
+              if (file.exists)
+                fileName
+              else
+                s"${AppCache.scanPath}/$fileName"
+            }
+
+            DataFlowSubCategoryPathExcerptModel(
+              node.code,
+              node.lineNumber.get,
+              node.columnNumber.get,
+              fileName,
+              Utilities.dump(absoluteFileName, node.lineNumber, excerptStartLine = -1, excerptEndLine = 1)
+            )
+          })
+          .asJson
+      )
     }
 
     val androidPermissions = Future {

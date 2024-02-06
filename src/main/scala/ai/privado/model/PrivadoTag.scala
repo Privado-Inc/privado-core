@@ -40,6 +40,7 @@ object InternalTag extends Enumeration {
   val INSENSITIVE_FIELD_ACCESS                 = Value("INSENSITIVE_FIELD_ACCESS")
   val INSENSITIVE_SETTER                       = Value("INSENSITIVE_SETTER")
   val SENSITIVE_SETTER                         = Value("SENSITIVE_SETTER")
+  val PROBABLE_ASSET                           = Value("PROBABLE_ASSET")
 
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
