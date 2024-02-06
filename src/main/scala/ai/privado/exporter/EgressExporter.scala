@@ -37,7 +37,7 @@ class EgressExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val logger                    = LoggerFactory.getLogger(getClass)
   private val FEIGN_CLIENT              = "FeignClient"
   private val SPRING_ANNOTATION_ID      = "Collections.Annotation.Spring"
-  private val STRING_START_WITH_SLASH   = "/.*"
+  private val STRING_START_WITH_SLASH   = "/.{2,}"
   private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
 
   def getEgressUrls = {
