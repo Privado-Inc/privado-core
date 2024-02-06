@@ -190,6 +190,12 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
     }
+
+    "Check egress urls with single char" in {
+      val egressExporter       = EgressExporter(cpg, new RuleCache)
+      val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
+      egressWithSingleChar.size shouldBe 0
+    }
   }
 }
 
