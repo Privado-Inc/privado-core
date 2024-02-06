@@ -23,11 +23,9 @@ class APIReportTest extends APIReportTestBase {
     testJavaScriptFileMap.put(
       "main.js",
       """
-        |import axios from 'axios';
-        |
         |async function main() {
         |    const randomVar = "ooo";
-        |    const response = await axios.post("http://www.example.com", randomVar);
+        |    const response = await client.post("http://www.example.com", randomVar);
         |}
         |""".stripMargin
     )
@@ -50,9 +48,9 @@ class APIReportTest extends APIReportTestBase {
       })
 
       workflowResult.size shouldBe 2
-      codeSet should contain("axios.post(\"http://www.example.com\", randomVar)")
+      codeSet should contain("client.post(\"http://www.example.com\", randomVar)")
       fileSet should contain("main.js")
-      lineSet should contain("6")
+      lineSet should contain("4")
     }
   }
 

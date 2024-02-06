@@ -15,18 +15,20 @@ object APIReport {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def processAPIAudit(xtocpg: Try[Cpg], ruleCache: RuleCache): List[List[String]] = {
-    val COMMON_IGNORED_SINKS_REGEX        = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
-    val APISINKS_REGEX                    = ruleCache.getSystemConfigByKey(Constants.apiSinks)
-    val COMMON_HTTP_PACKAGE_REGEX: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
+    val COMMON_IGNORED_SINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.ignoredSinks)
+    val APISINKS_REGEX             = ruleCache.getSystemConfigByKey(Constants.apiSinks)
+    val COMMON_HTTP_PACKAGE_REGEX: String =
+      ".*(?i)(client|http|api|instance|fetch|request|requests|service|rest|network|connector|communicator|adaptor|controller|handler|web|remote|caller|connection).*"
 
     val workFlowResult = new ListBuffer[List[String]]
     xtocpg match {
       case Success(cpg) => {
-        val cacheCall = cpg.call.l
+        val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
         val apis = cacheCall
           .name(APISINKS_REGEX)
           .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
-          .methodFullName(COMMON_HTTP_PACKAGE_REGEX)
+          .code(COMMON_HTTP_PACKAGE_REGEX)
+          .whereNot(_.tag.where(_.nameExact(Constants.catLevelTwo).value(Constants.API)))
           .l
 
         apis.foreach(call => {
