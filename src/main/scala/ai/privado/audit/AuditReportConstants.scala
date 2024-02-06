@@ -12,6 +12,8 @@ object AuditReportConstants {
 
   val AUDIT_URL_SHEET_NAME = "URL Audit"
 
+  val AUDIT_API_SHEET_NAME = "API Audit"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
@@ -127,5 +129,7 @@ object AuditReportConstants {
 
   val URL_AUDIT_URL_NAME = "URL"
 
-  val URL_AUDIT_LINE_NO = "Line No."
+  val AUDIT_LINE_NO = "Line No."
+
+  val API_AUDIT_API_NAME = "API Call"
 }
