@@ -36,6 +36,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import ai.privado.exporter.EgressExporter
 
 class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
@@ -154,6 +155,37 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
       val List(lit: Literal) = cpg.property.usedAt.l
       lit.originalProperty.head.value shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
       lit.originalPropertyValue.head shouldBe "jdbc:mariadb://localhost:3306/accounts?useSSL=false"
+    }
+  }
+}
+
+class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
+  override val configFileContents = """
+                                      |mx-record-delete:
+                                      |    events:
+                                      |      - http:
+                                      |          path: /v1/student/{id}
+                                      |          method: DELETE
+                                      |      - https:
+                                      |          path: v1/student/{id}
+                                      |          method: GET
+                                      |      - ftp:
+                                      |          path: student/{id}
+                                      |          method: PUT
+                                      |""".stripMargin
+  override val codeFileContents =
+    """
+      | import org.springframework.core.env.Environment;
+      |""".stripMargin
+
+  override val propertyFileContents = ""
+
+  "Fetch egress urls from property files" should {
+    "Check egress urls" in {
+      val egressExporter   = EgressExporter(cpg, new RuleCache)
+      val List(url1, url2) = egressExporter.getEgressUrls
+      url1 shouldBe "/v1/student/{id}"
+      url2 shouldBe "v1/student/{id}"
     }
   }
 }
