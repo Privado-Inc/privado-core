@@ -172,6 +172,9 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
                                       |      - ftp:
                                       |          path: student/{id}
                                       |          method: PUT
+                                      |      - ssm:
+                                      |          path: /
+                                      |          method: PUT
                                       |""".stripMargin
   override val codeFileContents =
     """
@@ -186,6 +189,12 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
       val List(url1, url2) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
+    }
+
+    "Check egress urls with single char" in {
+      val egressExporter       = EgressExporter(cpg, new RuleCache)
+      val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
+      egressWithSingleChar.size shouldBe 0
     }
   }
 }
