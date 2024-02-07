@@ -76,6 +76,10 @@ import scopt.Validation
 import java.util.Calendar
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try, Using}
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.ProgramContext
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 
 object RubyProcessor {
 
@@ -354,6 +358,7 @@ object RubyProcessor {
     // Need to convert path to absolute path as ruby cpg needs abolute path of repo
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
     val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
+    val RubySourceFileExtensions: Set[String] = Set(".rb")
 
     cpgconfig = Config()
       .withInputPath(absoluteSourceLocation)
@@ -363,25 +368,40 @@ object RubyProcessor {
       // TODO: Remove old ruby frontend this once we have the new frontend ready upstream
       .withUseDeprecatedFrontend(true)
 
-    val global = new Global()
     val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
-
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
 
+        val parsedFiles: List[(String, ProgramContext)] = {
+          val tasks = SourceFiles
+            .determine(
+              config.inputPath,
+              RubySourceFileExtensions,
+              ignoredFilesRegex = Option(config.ignoredFilesRegex),
+              ignoredFilesPath = Option(config.ignoredFiles)
+            )
+            .map(x =>
+              () =>
+                parser.parse(x) match
+                  case Failure(exception) =>
+                    logger.warn(s"Could not parse file: $x, skipping", exception); throw exception
+                  case Success(ast) => x -> ast
+            )
+            .iterator
+          ConcurrentTaskUtil.runUsingThreadPool(tasks).flatMap(_.toOption)
+        }
+
         val astCreationPass =
-          new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+          new AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
         astCreationPass.createAndApply()
-        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
       }
     }
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
     processCPG(xtocpg, ruleCache, privadoInput, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
-
   }
 
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
