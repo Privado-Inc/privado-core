@@ -393,11 +393,14 @@ object RubyProcessor {
           ConcurrentTaskUtil.runUsingThreadPool(tasks).flatMap(_.toOption)
         }
 
+        new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
+          .populatePackageTable()
         val astCreationPass =
           new AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
         astCreationPass.createAndApply()
       }
     }
+    RubySrc2Cpg.packageTableInfo.clear()
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
