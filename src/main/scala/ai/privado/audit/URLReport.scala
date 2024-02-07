@@ -30,7 +30,7 @@ object URLReport {
           List(
             AuditReportConstants.URL_AUDIT_URL_NAME,
             AuditReportConstants.FILE_PATH_NAME,
-            AuditReportConstants.URL_AUDIT_LINE_NO
+            AuditReportConstants.AUDIT_LINE_NO
           )
         ) ++ workFlowResult.toList
       }

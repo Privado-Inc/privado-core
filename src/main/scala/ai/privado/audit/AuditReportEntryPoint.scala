@@ -1,6 +1,6 @@
 package ai.privado.audit
 
-import ai.privado.cache.{AuditCache, TaggerCache}
+import ai.privado.cache.{AuditCache, RuleCache, TaggerCache}
 import ai.privado.exporter.JSONExporter
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
@@ -68,7 +68,8 @@ object AuditReportEntryPoint {
     taggerCache: TaggerCache,
     dependencies: Set[ModuleDependency],
     repoPath: String,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    ruleCache: RuleCache
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
@@ -101,10 +102,12 @@ object AuditReportEntryPoint {
 
     createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
 
+    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
+
     workbook
   }
 
-  def getAuditWorkbookPy(auditCache: AuditCache, xtocpg: Try[Cpg]): Workbook = {
+  def getAuditWorkbookPy(auditCache: AuditCache, xtocpg: Try[Cpg], ruleCache: RuleCache): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     createSheet(
       workbook,
@@ -114,6 +117,8 @@ object AuditReportEntryPoint {
 
     createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
 
+    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
+
     workbook
   }
   // Audit report generation for Python and javaScript
@@ -121,7 +126,8 @@ object AuditReportEntryPoint {
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
     repoPath: String,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    ruleCache: RuleCache
   ): Workbook = {
     val workbook: Workbook       = new XSSFWorkbook()
     val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
@@ -144,6 +150,8 @@ object AuditReportEntryPoint {
     )
 
     createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
+
+    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
 
     workbook
   }

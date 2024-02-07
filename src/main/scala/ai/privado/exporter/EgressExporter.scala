@@ -34,22 +34,18 @@ import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
 class EgressExporter(cpg: Cpg, ruleCache: RuleCache) {
 
-  private val logger               = LoggerFactory.getLogger(getClass)
-  private val FEIGN_CLIENT         = "FeignClient"
-  private val SPRING_ANNOTATION_ID = "Collections.Annotation.Spring"
-  private val REGEX_SLASH          = ".*/.*"
+  private val logger                    = LoggerFactory.getLogger(getClass)
+  private val FEIGN_CLIENT              = "FeignClient"
+  private val SPRING_ANNOTATION_ID      = "Collections.Annotation.Spring"
+  private val STRING_START_WITH_SLASH   = "/.{2,}"
+  private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
 
   def getEgressUrls = {
     var egressUrls = List[String]()
-    val apiRules = ruleCache.getAllRuleInfo
-      .filter(rule => rule.nodeType.equals(NodeType.API))
-      .toList
 
-    apiRules.foreach { ruleInfo =>
-      egressUrls = egressUrls.concat(
-        cpg.property.filter(p => p.value matches ruleInfo.combinedRulePattern).value(REGEX_SLASH).value.l
-      )
-    }
+    egressUrls = egressUrls.concat(
+      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
+    )
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
     egressUrls.dedup.l
