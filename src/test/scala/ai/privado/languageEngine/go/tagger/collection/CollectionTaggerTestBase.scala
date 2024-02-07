@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.go.tagger.collection
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -50,6 +50,7 @@ abstract class CollectionTaggerTestBase extends AnyWordSpec with Matchers with B
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,

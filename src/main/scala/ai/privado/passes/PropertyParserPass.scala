@@ -65,7 +65,10 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
         ).toArray
       }
       case Language.JAVASCRIPT =>
-        configFiles(projectRoot, Set(FileExtensions.JSON, FileExtensions.ENV)).toArray
+        configFiles(
+          projectRoot,
+          Set(FileExtensions.JSON, FileExtensions.ENV, FileExtensions.YML, FileExtensions.YAML)
+        ).toArray
       case Language.PYTHON =>
         configFiles(
           projectRoot,
@@ -400,7 +403,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     }
 
     SourceFiles
-      .determine(Set(projectRoot), extensions)(VisitOptions.default)
+      .determine(projectRoot, extensions, ignoredFilesRegex = Some(".*[.]privado.*".r))(VisitOptions.default)
       .concat(
         getListOfFiles(projectRoot)
           .map(f => {

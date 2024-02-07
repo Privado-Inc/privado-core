@@ -134,7 +134,7 @@ object JavascriptProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookJS(xtocpg, taggerCache, sourceRepoLocation, auditCache),
+              AuditReportEntryPoint.getAuditWorkbookJS(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>

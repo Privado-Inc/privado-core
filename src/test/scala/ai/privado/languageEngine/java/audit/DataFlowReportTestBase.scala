@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.audit
 
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -54,6 +54,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
       "Data.Sensitive.FirstName",
       "FirstName",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*firstName.*"),
       false,
@@ -70,6 +71,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
       "Data.Sensitive.AccountData.AccountPassword",
       "AccountPassword",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*password.*"),
       false,
@@ -89,6 +91,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
       "Collections.Annotation.Spring",
       "Spring Web Interface Annotation",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
       false,
@@ -108,6 +111,7 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
       "Leakages.Log.Info",
       "Log Info",
       "",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(
         "(?i)(?:org.slf4j.Logger|org.apache.logging.log4j|org.tinylog.Logger|java.util.logging|ch.qos.logback|timber.log.Timber|android.util.Log).*(info|[.]i[:]).*"

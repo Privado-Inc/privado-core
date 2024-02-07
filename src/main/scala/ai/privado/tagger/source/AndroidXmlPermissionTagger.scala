@@ -2,7 +2,7 @@ package ai.privado.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.feeder.MiniatureRuleModel
-import ai.privado.model.{CatLevelOne, InternalTag, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, FilterProperty, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
@@ -37,6 +37,7 @@ class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules
       "Data.Sensitive.LocationData.ApproximateLocation",
       "Approximate Location",
       "Location Data",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(""),
       false,
@@ -53,6 +54,7 @@ class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules
       "Data.Sensitive.UserContentData.Calendar",
       "Calendar",
       "User Content Data",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(""),
       false,
@@ -69,6 +71,7 @@ class AndroidXmlPermissionTagger(cpg: Cpg, ruleCache: RuleCache, permissionRules
       "Data.Sensitive.UserContentData.DeviceStorage",
       "Device Storage",
       "User Content Data",
+      FilterProperty.METHOD_FULL_NAME,
       Array(),
       List(""),
       false,

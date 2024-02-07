@@ -24,12 +24,12 @@
 package ai.privado.tagger.sink
 
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
-import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.model.{FilterProperty, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -43,10 +43,17 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
   }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
 
-    val combinedRegex = ruleInfo.combinedRulePattern
-    val sinks = cacheCall
-      .or(_.methodFullName(combinedRegex), _.filter(_.dynamicTypeHintFullName.exists(_.matches(combinedRegex))))
-      .l
+    val sinks = ruleInfo.filterProperty match
+      case FilterProperty.CODE => cacheCall.code(s"${ruleInfo.combinedRulePattern}").l
+      // Default is METHOD_FULL_NAME
+      case _ =>
+        cacheCall
+          .or(
+            _.methodFullName(ruleInfo.combinedRulePattern),
+            _.filter(_.dynamicTypeHintFullName.exists(_.matches(ruleInfo.combinedRulePattern)))
+          )
+          .l
+
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
       if (databaseDetails.isDefined) {
