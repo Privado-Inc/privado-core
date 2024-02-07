@@ -5,12 +5,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal, Me
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import overflowdb.BatchedUpdate
 import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg.property.l.filter(pair => pair.name.nonEmpty && pair.value.nonEmpty).toArray
+    // TODO Filter out property nodes not created from config files, Remove in future
+    cpg.property.l
+      .filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
+      .whereNot(_.tag.name(InternalTag.SOURCE_PROPERTY.toString))
+      .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {

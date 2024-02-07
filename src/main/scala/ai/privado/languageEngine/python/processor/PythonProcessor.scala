@@ -2,9 +2,9 @@ package ai.privado.languageEngine.python.processor
 
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
@@ -45,6 +45,7 @@ object PythonProcessor {
 
   private def processCPG(
     xtocpg: Try[codepropertygraph.Cpg],
+    privadoInput: PrivadoInput,
     ruleCache: RuleCache,
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
@@ -69,7 +70,7 @@ object PythonProcessor {
             s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
 
           new DynamicTypeHintFullNamePass(cpg).createAndApply()
@@ -86,10 +87,12 @@ object PythonProcessor {
 
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-          if (ScanProcessor.config.enableLambdaFlows)
+          if (privadoInput.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+          if (privadoInput.assetDiscovery)
+            new PythonConfigPropertyPass(cpg).createAndApply()
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -97,15 +100,15 @@ object PythonProcessor {
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
-          if (config.showUnresolvedFunctionsReport) {
-            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
+          if (privadoInput.showUnresolvedFunctionsReport) {
+            val path = s"${privadoInput.sourceLocation.head}/${Constants.outputDirectoryName}"
             UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
           }
 
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache)
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
@@ -114,7 +117,7 @@ object PythonProcessor {
           new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
+          val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
@@ -130,7 +133,7 @@ object PythonProcessor {
             ruleCache,
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,
-            ScanProcessor.config,
+            privadoInput,
             List(),
             s3DatabaseDetailsCache
           ) match {
@@ -146,7 +149,7 @@ object PythonProcessor {
           }
 
           // Exporting the Audit report
-          if (ScanProcessor.config.generateAuditReport) {
+          if (privadoInput.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg, ruleCache),
@@ -178,7 +181,7 @@ object PythonProcessor {
           }
 
           // Exporting the Intermediate report
-          if (ScanProcessor.config.testOutput || ScanProcessor.config.generateAuditReport) {
+          if (privadoInput.testOutput || privadoInput.generateAuditReport) {
             JSONExporter.IntermediateFileExport(
               outputIntermediateFileName,
               sourceRepoLocation,
@@ -225,6 +228,7 @@ object PythonProcessor {
     */
   def createPythonCpg(
     ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
     sourceRepoLocation: String,
     lang: String,
     dataFlowCache: DataFlowCache,
@@ -254,7 +258,7 @@ object PythonProcessor {
       )
       cpg
     }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
+    processCPG(xtocpg, privadoInput, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
   }
 
 }
