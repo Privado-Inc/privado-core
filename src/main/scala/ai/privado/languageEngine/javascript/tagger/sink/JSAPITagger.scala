@@ -55,11 +55,7 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
   override val apis = cacheCall
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
-    .code(commonHttpPackages)
-    .l ++ cacheCall
-    .name(APISINKS_REGEX)
-    .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
-    .methodFullName(commonHttpPackages)
+    .where(_.or(_.code(commonHttpPackages), _.methodFullName(commonHttpPackages)))
     .l
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
