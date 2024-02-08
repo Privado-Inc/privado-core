@@ -56,6 +56,10 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .code(commonHttpPackages)
+    .l ++ cacheCall
+    .name(APISINKS_REGEX)
+    .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
+    .methodFullName(commonHttpPackages)
     .l
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
