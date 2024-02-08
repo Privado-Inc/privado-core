@@ -81,6 +81,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   property.addOutEdge(edge = sourceFile, inNode = file)
   property.addOutEdge(edge = isUsedAt, inNode = astNode)
+  property.addOutEdge(edge = taggedBy, inNode = tag)
 
   astNode.addOutEdge(edge = originalProperty, inNode = property)
 
