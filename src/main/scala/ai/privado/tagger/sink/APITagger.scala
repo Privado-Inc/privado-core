@@ -45,6 +45,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
   lazy val APISINKS_REGEX        = ruleCache.getSystemConfigByKey(Constants.apiSinks)
   val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
+  // NOTE : JSAPITagger is overriding it to run the query on cpg.code instead of methodFullName
   val apis = cacheCall
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)

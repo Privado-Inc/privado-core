@@ -52,6 +52,12 @@ import overflowdb.BatchedUpdate
 class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     extends APITagger(cpg, ruleCache, privadoInput) {
 
+  override val apis = cacheCall
+    .name(APISINKS_REGEX)
+    .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
+    .where(_.or(_.code(commonHttpPackages), _.methodFullName(commonHttpPackages)))
+    .l
+
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     super.runOnPart(builder, ruleInfo)
 
