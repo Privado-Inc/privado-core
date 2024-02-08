@@ -112,6 +112,7 @@ object Constants {
   val egressUrls                   = "egressUrls"
   val outputFileName               = "privado.json"
   val outputDirectoryName          = ".privado"
+  val generatedConfigFolderName    = ".privado/config"
   val outputIntermediateFileName   = "intermediate.json"
   val privadoLanguageEngineVersion = "privadoLanguageEngineVersion"
   val cpgOutputFileName            = "cpg.bin"
