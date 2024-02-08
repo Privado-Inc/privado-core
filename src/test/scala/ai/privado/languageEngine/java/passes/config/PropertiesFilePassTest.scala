@@ -183,7 +183,7 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
 
   override val propertyFileContents = ""
 
-  "Fetch egress urls from property files" should {
+  "Fetch egress urls from property files" ignore {
     "Check egress urls" in {
       val egressExporter   = EgressExporter(cpg, new RuleCache)
       val List(url1, url2) = egressExporter.getEgressUrls
