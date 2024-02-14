@@ -72,9 +72,11 @@ object JavascriptProcessor {
 
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
-          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
-          if (privadoInput.assetDiscovery)
+          if (privadoInput.assetDiscovery) {
+            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+              .createAndApply()
             new JsConfigPropertyPass(cpg).createAndApply()
+          } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
           new JSPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
