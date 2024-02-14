@@ -42,6 +42,7 @@ import ai.privado.passes.{
   DBTParserPass,
   ExperimentalLambdaDataFlowSupportPass,
   HTMLParserPass,
+  JsonPropertyParserPass,
   SQLParser
 }
 import ai.privado.semantic.Language.*
@@ -89,14 +90,19 @@ class JavaProcessor(
   private var cpgconfig       = Config()
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    List(
-      new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA),
-      new JavaPropertyLinkerPass(cpg),
-      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
-      new SQLParser(cpg, sourceRepoLocation, ruleCache),
-      new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
-      new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
-    )
+    List({
+      if (privadoInput.assetDiscovery)
+        new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+      else
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA)
+    }) ++
+      List(
+        new JavaPropertyLinkerPass(cpg),
+        new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
+        new SQLParser(cpg, sourceRepoLocation, ruleCache),
+        new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
+      )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =

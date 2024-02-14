@@ -405,17 +405,25 @@ object ExporterUtility {
 
       val probablePropertyNodes = propertyNodesData
         .or(
-          _.filter(_._1.matches("(?i).*(url|host|database|api|location|uri|mongo|sql|s3|db|oracle).*")),
-          _.filter(_._2.matches("(?i).*(//|:|http|[.]com|[.]ai|[.]org|[.]in|mongo|sql|s3|db|oracle).*"))
+          _.filter(
+            _._1.matches(
+              "(?i).*(connection|host|database|location|uri|mongo|sql|postgres|s3|oracle|redis|bucket|dynamo|maria|db(_)?name).*"
+            )
+          ),
+          _.filter(_._2.matches("(?i).*(mongo|sql|postgres|aws|oracle|redis|dynamo|maria).*"))
         )
         .filterNot(_._2.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
         .filterNot(_._2.matches("^(true|false)$"))
         .l
 
+      println("Printing probable assets")
+      probablePropertyNodes.foreach(item => println(s"${item._1}, ${item._2}"))
+
       output.addOne("probableAssets" -> probablePropertyNodes.asJson)
 
       // Run AssetTagger
-      new AssetTagger(cpg).createAndApply()
+      // Turn off the AssetTagger on source code for now
+      // new AssetTagger(cpg).createAndApply()
 
       val probableSourceFromCode = cpg.identifier.where(_.tag.nameExact(InternalTag.PROBABLE_ASSET.toString)).l ++
         cpg.literal.where(_.tag.nameExact(InternalTag.PROBABLE_ASSET.toString)).l ++

@@ -4,6 +4,7 @@ import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.javascript.passes.config.JsConfigPropertyPass
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
@@ -16,6 +17,7 @@ import ai.privado.passes.{
   DBTParserPass,
   ExperimentalLambdaDataFlowSupportPass,
   HTMLParserPass,
+  JsonPropertyParserPass,
   SQLParser,
   SQLPropertyPass
 }
@@ -90,9 +92,12 @@ object PythonProcessor {
           if (privadoInput.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
 
-          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
-          if (privadoInput.assetDiscovery)
+          if (privadoInput.assetDiscovery) {
+            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+              .createAndApply()
             new PythonConfigPropertyPass(cpg).createAndApply()
+          } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()

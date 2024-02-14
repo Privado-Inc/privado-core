@@ -41,7 +41,7 @@ import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, SQLParser}
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, JsonPropertyParserPass, SQLParser}
 import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -119,7 +119,11 @@ object RubyProcessor {
             s"${TimeMetric.getNewTime()} - IdentifierToCall pass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
            */
-          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
+          if (privadoInput.assetDiscovery)
+            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+              .createAndApply()
+          else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
           new RubyPropertyLinkerPass(cpg).createAndApply()
 
           logger.info("Enhancing Ruby graph by post processing pass")
