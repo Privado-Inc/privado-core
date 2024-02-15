@@ -105,6 +105,36 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   }
 }
 
+class JsonPropertyTests extends PropertiesFilePassTestBase(".json") {
+  override val configFileContents = """
+      |{
+      |    "databases": [
+      |      {
+      |        "name": "MySQL Database",
+      |        "uri": "mysql://username:password@hostname:port/database_name"
+      |      }
+      |     ],
+      |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
+      |}
+      |""".stripMargin
+
+  override val codeFileContents = ""
+
+  override val propertyFileContents = ""
+
+  "json file having array nodes" should {
+    "get parsed and property nodes should be generated" in {
+
+      new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVASCRIPT).createAndApply()
+      cpg.property.map(p => (p.name, p.value)).l shouldBe List(
+        ("databases[0].name", "MySQL Database"),
+        ("databases[0].uri", "mysql://username:password@hostname:port/database_name"),
+        ("mongoUri", "mongodb://username:password@hostname:port/database_name")
+      )
+
+    }
+  }
+}
 class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents = """
       |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false

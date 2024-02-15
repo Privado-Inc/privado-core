@@ -124,37 +124,35 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     *   a list of key-value pairs where the keys match either the database connection or API endpoint naming conventions
     */
   private def getJSONKeyValuePairs(file: String): List[(String, String)] = {
-    val json          = parse(Source.fromFile(file).mkString)
-    val keyValuePairs = mutable.Map[String, Json]()
+    import better.files.File
+    val json = parse(File(file).contentAsString)
 
     // Recursively scan through the JSON to extract out all keys
-    def traverseJSON(json: JsonObject, keyValues: mutable.Map[String, Json]): Unit = {
-      json.toList.foreach { case (key, value) =>
-        value.asObject match {
-          case Some(jsonObj) =>
-            // Nested object
-            traverseJSON(jsonObj, keyValues)
-          case None =>
-            // Not nested, add to key-value map
-            if (key.matches(dbConnectionRegex) || key.matches(apiConnectionRegex))
-              keyValues += (key -> value)
-        }
+    def extractKeyValuePairs(json: Json, prefix: String = ""): List[(String, String)] = {
+      json match {
+        case obj if obj.isObject =>
+          obj.asObject.get.toMap.toList.flatMap { case (key, value) =>
+            val newPrefix = if (prefix.isEmpty) key else s"$prefix.$key"
+            extractKeyValuePairs(value, newPrefix)
+          }
+        case arr if arr.isArray =>
+          arr.asArray.get.toList.zipWithIndex.flatMap { case (value, index) =>
+            val newPrefix = s"$prefix[$index]"
+            extractKeyValuePairs(value, newPrefix)
+          }
+        case other =>
+          List((prefix, other.asString.getOrElse(other.toString)))
       }
     }
 
-    json match {
-      case Right(jsonObject) => {
-        jsonObject.asObject match {
-          case Some(value) => traverseJSON(value, keyValuePairs)
-          case None        => logger.debug("")
-        }
-      }
-      case Left(parsingError) => logger.debug(parsingError.toString)
+    val keyValuePairs = json match {
+      case Right(jsonObject) => extractKeyValuePairs(jsonObject)
+      case Left(parsingError) =>
+        logger.debug(parsingError.toString)
+        List.empty
     }
 
-    keyValuePairs.map { case (key: String, value: Json) =>
-      (key, value.toString)
-    }.toList
+    keyValuePairs
   }
 
   private def getDotenvKeyValuePairs(file: String): List[(String, String)] = {
