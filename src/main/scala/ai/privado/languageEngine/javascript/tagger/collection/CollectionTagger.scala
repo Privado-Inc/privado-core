@@ -18,6 +18,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   private val logger       = LoggerFactory.getLogger(this.getClass)
   private val methodUrlMap = mutable.HashMap[Long, String]()
   private val classUrlMap  = mutable.HashMap[Long, String]()
+  private val callMap      = mutable.HashMap[Long, Call]()
 
   def getIngressUrls(): List[String] =
     CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
@@ -63,17 +64,19 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
             );
          */
 
+        val fileRegex = "(?i).*(controller|route|helper|handler|manager|view).*"
+
         call.argument.lastOption match {
           case Some(argNode) if argNode.isCall =>
             argNode.asInstanceOf[Call].ast.foreach {
-              case c: Call if c.callee.file.nameNot("(?i).*util.*").name("(?i).*controller.*").nonEmpty =>
+              case c: Call if c.callee.file.nameNot("(?i).*util.*").name(fileRegex).nonEmpty =>
                 c.callee.foreach(met => {
                   getCollectionMethodsCache(call, met.id())
                   collectionMethodsCache.addOne(met)
                 })
               case i: Identifier =>
                 cpg.method
-                  .where(_.file.nameNot("(?i).*util.*").name("(?i).*controller.*"))
+                  .where(_.file.nameNot("(?i).*util.*").name(fileRegex))
                   .nameExact(i.name)
                   .foreach(met => {
                     getCollectionMethodsCache(call, met.id())
@@ -83,6 +86,10 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
             }
           case _ =>
         }
+
+        // Adding this to add all identified CP to the methodUrlMap
+        getCollectionMethodsCache(call, call.id())
+        callMap.addOne(call.id(), call)
       }
     }
 
@@ -136,6 +143,41 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
     tagDirectSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
     tagDerivedSources(cpg, builder, collectionMethodsCache.l, collectionRuleInfo)
+
+    /*
+    Handle the case of DataElement present in url
+    app.get(
+      "/api/v1/messages/:fiscalcode/:id/:senderEmail?", /* <===  */
+      GetMessage(
+        config,
+        serviceModel,
+        messageModel,
+        messageStatusModel));
+
+     */
+
+    callMap.foreach(callEntry => {
+
+      methodUrlMap.get(callEntry._1) match
+        case Some(endPoint) =>
+          val params = endPoint
+            .split("/")
+            .filter(_.startsWith(":"))
+            .map(_.replaceAll("[^a-zA-Z0-9_-]", ""))
+          ruleCache.getRule.sources.foreach(sourceRule => {
+            params.foreach(param => {
+              if (param.matches(sourceRule.combinedRulePattern)) {
+                Try(callEntry._2.argument(1)) match
+                  case Success(arg) if arg.isInstanceOf[AstNode] =>
+                    storeForTag(builder, arg.asInstanceOf[AstNode], ruleCache)(Constants.id, sourceRule.id)
+                  case _ =>
+              }
+            })
+          })
+          tagMethodEndpoints(builder, List(callEntry._2), collectionRuleInfo)
+        case None =>
+
+    })
   }
 
   def getRouteAndHandlerFromBlock(block: Block, pathField: String, handlerField: String): (String, MethodRef) = {
