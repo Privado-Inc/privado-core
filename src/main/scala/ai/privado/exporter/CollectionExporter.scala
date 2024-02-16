@@ -267,6 +267,11 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
             astNode
               .filterNot(_.isParameter)
               .filterNot(_.isLocal)
+              .filter(node =>
+                node.tag
+                  .valueExact(CatLevelOne.SOURCES.name)
+                  .nonEmpty || node.tag.valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
+              )
               .tag
               .nameExact(Constants.id)
               .value
@@ -290,7 +295,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       collectionId,
       ruleInfo.name,
       ruleInfo.isSensitive,
-      collectionParameterMapById
+      (collectionParameterMapById
         .map(entrySet => processByParameterId(entrySet._1, entrySet._2.toSet.toList))
         .toList ::: collectionLocalMapById
         .map(entrySet => processByLocalVariableId(entrySet._1, entrySet._2.toSet.toList))
@@ -298,7 +303,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
         .map(entrySet => processByLiteralId(entrySet._1, entrySet._2.toSet.toList))
         .toList ::: collectionAstMapById
         .map(entrySet => processNode(entrySet._1, entrySet._2.toSet.toList))
-        .toList
+        .toList).dedupBy(_.sourceId).l
     )
   }
 
