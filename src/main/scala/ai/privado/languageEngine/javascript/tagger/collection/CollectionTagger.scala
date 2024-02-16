@@ -6,7 +6,7 @@ import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Method, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
@@ -34,18 +34,54 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     // Supported Framework: Express, Fastify, Featherjs, AdonisJS, Loopback, Restify, Connect
     // TODO: Based on below frameworks improve the logic
     // TODO: Need to support more frameworks Koa, Sails
-    val EXPRESS_CLIENT_PATTERN = collectionRuleInfo.patterns.headOption.getOrElse("")
-    if (EXPRESS_CLIENT_PATTERN.nonEmpty) {
-      val expressCollectionCalls =
-        cpg.call.methodFullName(EXPRESS_CLIENT_PATTERN).l
-      for (call <- expressCollectionCalls) {
-        if (call.argument.nonEmpty) {
-          if (call.argument.isMethodRef.nonEmpty) {
-            val isValid = getCollectionMethodsCache(call, call.argument.isMethodRef.head.referencedMethod.id())
-            if (isValid) {
-              collectionMethodsCache += call.argument.isMethodRef.head.referencedMethod
-            }
+    val EXPRESS_CLIENT_PATTERN = collectionRuleInfo.combinedRulePattern
+    val expressCollectionCalls = cpg.call
+      .or(
+        _.methodFullName(EXPRESS_CLIENT_PATTERN),
+        _.filter(_.dynamicTypeHintFullName.exists(_.matches(EXPRESS_CLIENT_PATTERN)))
+      )
+      .l
+    for (call <- expressCollectionCalls) {
+      if (call.argument.nonEmpty) {
+        if (call.argument.isMethodRef.nonEmpty) {
+          val isValid = getCollectionMethodsCache(call, call.argument.isMethodRef.head.referencedMethod.id())
+          if (isValid) {
+            collectionMethodsCache += call.argument.isMethodRef.head.referencedMethod
           }
+        }
+
+        /*
+          To handle case where the handler is passed to the function and not defined as a lambda
+
+          app.post(
+              `${basePath}/email-validation-process`,
+              bearerSessionTokenAuth,
+              toExpressHandler(
+                profileController.startEmailValidationProcess,
+                profileController
+              )
+            );
+         */
+
+        call.argument.lastOption match {
+          case Some(argNode) if argNode.isCall =>
+            argNode.asInstanceOf[Call].ast.foreach {
+              case c: Call if c.callee.file.nameNot("(?i).*util.*").name("(?i).*controller.*").nonEmpty =>
+                c.callee.foreach(met => {
+                  getCollectionMethodsCache(call, met.id())
+                  collectionMethodsCache.addOne(met)
+                })
+              case i: Identifier =>
+                cpg.method
+                  .where(_.file.nameNot("(?i).*util.*").name("(?i).*controller.*"))
+                  .nameExact(i.name)
+                  .foreach(met => {
+                    getCollectionMethodsCache(call, met.id())
+                    collectionMethodsCache.addOne(met)
+                  })
+              case _ =>
+            }
+          case _ =>
         }
       }
     }
@@ -187,9 +223,19 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         } else {
           None
         }
-
       })
     })
+
+    collectionMethods.foreach(met =>
+      met.ast
+        .where(_.tag.nameExact(Constants.id))
+        .foreach(node =>
+          storeForTag(builder, node, ruleCache)(
+            InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
+            getFinalEndPoint(met, false)
+          )
+        )
+    )
 
     tagMethodEndpoints(builder, collectionPoints.l, collectionRuleInfo)
   }
@@ -233,7 +279,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
   private def tagMethodEndpoints(
     builder: DiffGraphBuilder,
-    collectionPoints: List[Method],
+    collectionPoints: List[AstNode],
     collectionRuleInfo: RuleInfo,
     returnByName: Boolean = false
   ) = {
@@ -250,12 +296,12 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     cpg.identifier.where(_.tag.name(objectName)).typeFullName.dedup.l
   }
 
-  private def getFinalEndPoint(collectionPoint: Method, returnByName: Boolean): String = {
-    if (returnByName) {
-      collectionPoint.name
+  private def getFinalEndPoint(collectionPoint: AstNode, returnByName: Boolean): String = {
+    if (returnByName && collectionPoint.isMethod) {
+      collectionPoint.asInstanceOf[Method].name
     } else {
       val methodUrl = methodUrlMap.getOrElse(collectionPoint.id(), "")
-      Try(classUrlMap.getOrElse(collectionPoint.typeDecl.head.id(), "")) match {
+      Try(classUrlMap.getOrElse(collectionPoint.asInstanceOf[Method].typeDecl.head.id(), "")) match {
         case Success(classUrl) => classUrl + methodUrl
         case Failure(e) =>
           methodUrl
