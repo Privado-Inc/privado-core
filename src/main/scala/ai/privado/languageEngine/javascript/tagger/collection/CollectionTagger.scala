@@ -161,13 +161,9 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       methodUrlMap.get(callEntry._1) match
         case Some(endPoint) =>
           val params = endPoint
-            .stripPrefix("\"")
-            .stripPrefix("'")
-            .stripSuffix("'")
-            .stripSuffix("\"")
             .split("/")
             .filter(_.startsWith(":"))
-            .map(_.stripPrefix(":").stripSuffix("?"))
+            .map(_.replaceAll("[^a-zA-Z0-9_-]", ""))
           ruleCache.getRule.sources.foreach(sourceRule => {
             params.foreach(param => {
               if (param.matches(sourceRule.combinedRulePattern)) {
