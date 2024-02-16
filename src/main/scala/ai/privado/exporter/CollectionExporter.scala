@@ -50,7 +50,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
   /** Processes collection points and return final output
     */
   def getCollections: List[CollectionModel] = {
-    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds ++ getDummyCollection
+    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds ++ getCollectionsByCalls ++ getDummyCollection
   }
 
   /** Get dummy collection in case of monolith subProject/repoItem for showing PA
@@ -184,6 +184,57 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     )
   }
 
+  private def getCollectionsByCalls: List[CollectionModel] = {
+    val collectionMapByCollectionId = ExporterUtility
+      .filterNodeBasedOnRepoItemTagName(
+        cpg.call
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .l,
+        repoItemTagName
+      )
+      .groupBy(collectionCall => collectionCall.tag.nameExact(Constants.id).value.head)
+
+    collectionMapByCollectionId.map(entrySet => processCallByCollectionId(entrySet._1, entrySet._2.isCall.l)).toList
+
+  }
+
+  private def processCallByCollectionId(collectionId: String, collectionCalls: List[Call]) = {
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
+
+    val collectionDetailsModel = collectionCalls
+      .flatMap(callNode => {
+        Try(callNode.argument(1)) match
+          case Success(arg) if arg.isInstanceOf[AstNode] =>
+            val argNode = arg.asInstanceOf[AstNode]
+            argNode.tag
+              .nameExact(Constants.id)
+              .value
+              .flatMap(sourceId => {
+                Some(
+                  CollectionOccurrenceDetailModel(
+                    sourceId,
+                    ExporterUtility.convertIndividualPathElement(argNode) match
+                      case Some(pathElement) =>
+                        List(
+                          CollectionOccurrenceModel(
+                            getCollectionUrl(callNode),
+                            pathElement.sample,
+                            pathElement.lineNumber,
+                            pathElement.columnNumber,
+                            pathElement.fileName,
+                            pathElement.excerpt
+                          )
+                        )
+                      case None => List()
+                  )
+                )
+              })
+          case _ => None
+      })
+
+    val groupedModel = collectionDetailsModel.groupBy(_.sourceId)
+    CollectionModel(collectionId, ruleInfo.name, ruleInfo.isSensitive, groupedModel.values.flatten.toList)
+  }
   private def getCollectionsByMethods: List[CollectionModel] = {
     val collectionMapByCollectionId = ExporterUtility
       .filterNodeBasedOnRepoItemTagName(
