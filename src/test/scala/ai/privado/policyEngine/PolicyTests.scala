@@ -139,7 +139,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       "",
       FilterProperty.METHOD_FULL_NAME,
       Array(),
-      List("post|get|all|delete|put|patch|head|subscribe|unsubscribe"),
+      List(".*(express).*(post|get|all|delete|put|patch|head|subscribe|unsubscribe)"),
       false,
       "",
       Map(),

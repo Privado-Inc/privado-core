@@ -50,7 +50,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
   /** Processes collection points and return final output
     */
   def getCollections: List[CollectionModel] = {
-    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds ++ getDummyCollection
+    getCollectionsByMethods ++ getCollectionsByTemplateDom ++ getCollectionsByAndroidXmlFieldIds ++ getCollectionsByCalls ++ getDummyCollection
   }
 
   /** Get dummy collection in case of monolith subProject/repoItem for showing PA
@@ -184,6 +184,57 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     )
   }
 
+  private def getCollectionsByCalls: List[CollectionModel] = {
+    val collectionMapByCollectionId = ExporterUtility
+      .filterNodeBasedOnRepoItemTagName(
+        cpg.call
+          .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.COLLECTIONS.name))
+          .l,
+        repoItemTagName
+      )
+      .groupBy(collectionCall => collectionCall.tag.nameExact(Constants.id).value.head)
+
+    collectionMapByCollectionId.map(entrySet => processCallByCollectionId(entrySet._1, entrySet._2.isCall.l)).toList
+
+  }
+
+  private def processCallByCollectionId(collectionId: String, collectionCalls: List[Call]) = {
+    val ruleInfo = ExporterUtility.getRuleInfoForExporting(ruleCache, collectionId)
+
+    val collectionDetailsModel = collectionCalls
+      .flatMap(callNode => {
+        Try(callNode.argument(1)) match
+          case Success(arg) if arg.isInstanceOf[AstNode] =>
+            val argNode = arg.asInstanceOf[AstNode]
+            argNode.tag
+              .nameExact(Constants.id)
+              .value
+              .flatMap(sourceId => {
+                Some(
+                  CollectionOccurrenceDetailModel(
+                    sourceId,
+                    ExporterUtility.convertIndividualPathElement(argNode) match
+                      case Some(pathElement) =>
+                        List(
+                          CollectionOccurrenceModel(
+                            getCollectionUrl(callNode),
+                            pathElement.sample,
+                            pathElement.lineNumber,
+                            pathElement.columnNumber,
+                            pathElement.fileName,
+                            pathElement.excerpt
+                          )
+                        )
+                      case None => List()
+                  )
+                )
+              })
+          case _ => None
+      })
+
+    val groupedModel = collectionDetailsModel.groupBy(_.sourceId)
+    CollectionModel(collectionId, ruleInfo.name, ruleInfo.isSensitive, groupedModel.values.flatten.toList)
+  }
   private def getCollectionsByMethods: List[CollectionModel] = {
     val collectionMapByCollectionId = ExporterUtility
       .filterNodeBasedOnRepoItemTagName(
@@ -202,6 +253,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     val collectionParameterMapById = mutable.HashMap[String, ListBuffer[MethodParameterIn]]()
     val collectionLocalMapById     = mutable.HashMap[String, ListBuffer[Local]]()
     val collectionLiteralMapById   = mutable.HashMap[String, ListBuffer[Literal]]()
+    val collectionAstMapById       = mutable.HashMap[String, ListBuffer[AstNode]]()
 
     collectionMethods.foreach(collectionMethod => {
       collectionMethod.parameter
@@ -258,6 +310,31 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
         })
     })
 
+    collectionMethods.foreach(collectionMethod => {
+      collectionMethod.ast
+        .and(_.tag.nameExact(Constants.id))
+        .foreach(astNode => {
+          try {
+            astNode
+              .filterNot(_.isParameter)
+              .filterNot(_.isLocal)
+              .filter(node =>
+                node.tag
+                  .valueExact(CatLevelOne.SOURCES.name)
+                  .nonEmpty || node.tag.valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
+              )
+              .tag
+              .nameExact(Constants.id)
+              .value
+              .filter(!_.startsWith(Constants.privadoDerived))
+              .foreach(x => addToMap(x, collectionAstMapById, astNode))
+
+          } catch {
+            case e: Exception => logger.debug("Exception : ", e)
+          }
+        })
+    })
+
     def addToMap[T](literalId: String, mapper: mutable.HashMap[String, ListBuffer[T]], node: T): Unit = {
       if (!mapper.contains(literalId))
         mapper(literalId) = ListBuffer()
@@ -269,13 +346,15 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       collectionId,
       ruleInfo.name,
       ruleInfo.isSensitive,
-      collectionParameterMapById
-        .map(entrySet => processByParameterId(entrySet._1, entrySet._2.toList))
+      (collectionParameterMapById
+        .map(entrySet => processByParameterId(entrySet._1, entrySet._2.toSet.toList))
         .toList ::: collectionLocalMapById
-        .map(entrySet => processByLocalVariableId(entrySet._1, entrySet._2.toList))
+        .map(entrySet => processByLocalVariableId(entrySet._1, entrySet._2.toSet.toList))
         .toList ::: collectionLiteralMapById
-        .map(entrySet => processByLiteralId(entrySet._1, entrySet._2.toList))
-        .toList
+        .map(entrySet => processByLiteralId(entrySet._1, entrySet._2.toSet.toList))
+        .toList ::: collectionAstMapById
+        .map(entrySet => processNode(entrySet._1, entrySet._2.toSet.toList))
+        .toList).dedupBy(_.sourceId).l
     )
   }
 
@@ -290,7 +369,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
         .flatMap(methodParameter => {
           ExporterUtility.convertIndividualPathElement(methodParameter) match {
             case Some(pathElement) =>
-              getCollectionOccurrenceModel(Iterator(methodParameter).method, pathElement)
+              getCollectionOccurrenceModel(Iterator(methodParameter).method.head, pathElement)
 
             case None => None
           }
@@ -299,7 +378,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
   }
 
   private def getCollectionOccurrenceModel(
-    methodNode: Traversal[Method],
+    methodNode: AstNode,
     pathElement: DataFlowSubCategoryPathExcerptModel
   ): Some[CollectionOccurrenceModel] = {
     Some(
@@ -388,7 +467,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       methodLocalOccurrences
         .flatMap(localVar => {
           ExporterUtility.convertIndividualPathElement(localVar) match {
-            case Some(pathElement) => getCollectionOccurrenceModel(Iterator(localVar).method, pathElement)
+            case Some(pathElement) => getCollectionOccurrenceModel(Iterator(localVar).method.head, pathElement)
             case None              => None
           }
         })
@@ -405,8 +484,32 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       methodLiteralOccurrences
         .flatMap(literal => {
           ExporterUtility.convertIndividualPathElement(literal) match {
-            case Some(pathElement) => getCollectionOccurrenceModel(Iterator(literal).method, pathElement)
+            case Some(pathElement) => getCollectionOccurrenceModel(Iterator(literal).method.head, pathElement)
             case None              => None
+          }
+        })
+    )
+  }
+
+  def processNode(variableId: String, nodeOccurrences: List[AstNode]): CollectionOccurrenceDetailModel = {
+
+    CollectionOccurrenceDetailModel(
+      variableId,
+      nodeOccurrences
+        .flatMap(node => {
+          ExporterUtility.convertIndividualPathElement(node) match {
+            case Some(pathElement) =>
+              Some(
+                CollectionOccurrenceModel(
+                  getCollectionUrl(node),
+                  pathElement.sample,
+                  pathElement.lineNumber,
+                  pathElement.columnNumber,
+                  pathElement.fileName,
+                  pathElement.excerpt
+                )
+              )
+            case None => None
           }
         })
     )
@@ -418,8 +521,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
     * @return
     *   String
     */
-  private def getCollectionUrl(methodNode: Traversal[Method]) = {
-    Try(methodNode.tag.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).value.head) match {
+  private def getCollectionUrl(node: AstNode) = {
+    Try(node.tag.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).value.head) match {
       case Success(url) => url
       case Failure(e) =>
         logger.debug("Exception : ", e)
