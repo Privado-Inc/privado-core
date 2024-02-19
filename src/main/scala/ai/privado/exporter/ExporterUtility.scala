@@ -415,7 +415,7 @@ object ExporterUtility {
         )
         .filterNot(_._2.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
         .filterNot(_._2.matches("^(true|false)$"))
-        .filterNot(_._2.matches("regex[(]"))
+        .filterNot(_._2.matches("require[(]"))
         .l
 
       println("Printing probable assets")
