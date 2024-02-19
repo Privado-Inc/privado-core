@@ -4,6 +4,7 @@ import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
+import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
@@ -13,6 +14,7 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -62,6 +64,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       Paths.get(privadoInputConfig.sourceLocation.head).toAbsolutePath.toString,
       ruleCache
     ).createAndApply()
+
+    // Collections tagging
+    val collectionTagger = new CollectionTagger(cpg, ruleCache)
+    collectionTagger.createAndApply()
+    ingressUrls = collectionTagger.getIngressUrls()
 
     logger.info("Done with tagging")
     cpg.tag
