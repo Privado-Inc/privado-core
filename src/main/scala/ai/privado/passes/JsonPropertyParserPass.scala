@@ -10,18 +10,19 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
+import better.files.File
 
 import scala.collection.mutable
 import scala.io.Source
-import scala.util.Using
+import scala.util.{Try, Using}
 class JsonPropertyParserPass(cpg: Cpg, projectRoot: String) extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger = LoggerFactory.getLogger(getClass)
   override def generateParts(): Array[String] = {
 
-    val files = SourceFiles
-      .determine(projectRoot, Set(".properties", ".yaml", ".yml", ".xml", ".json", ".ini", ".env", ".conf"))
-    files.toArray
+    val files = Try(File(projectRoot).listRecursively.filter(_.isRegularFile).map(_.path.toString).toArray).toOption
+      .getOrElse(Array[String]())
+    files
   }
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
