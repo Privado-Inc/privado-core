@@ -404,7 +404,7 @@ object ExporterUtility {
       output.addOne("propertyNodesData" -> propertyNodesData.asJson)
 
       val probablePropertyNodes = propertyNodesData
-        .filterNot(_._3.matches(".*package.json"))
+        .filterNot(_._3.matches(".*package(-lock)?.json"))
         .or(
           _.filter(
             _._1.matches(
