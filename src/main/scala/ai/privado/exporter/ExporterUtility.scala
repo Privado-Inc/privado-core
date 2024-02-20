@@ -34,6 +34,7 @@ import ai.privado.model.exporter.{
   CollectionModel,
   DataFlowSubCategoryModel,
   DataFlowSubCategoryPathExcerptModel,
+  PropertyNodesModel,
   RuleInfo,
   SinkModel,
   SinkProcessingModel,
@@ -48,6 +49,7 @@ import ai.privado.model.exporter.ViolationEncoderDecoder.*
 import ai.privado.model.exporter.CollectionEncoderDecoder.*
 import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
+import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
@@ -400,30 +402,31 @@ object ExporterUtility {
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
 
     if (privadoInput.assetDiscovery) {
-      val propertyNodesData = cpg.property.map(p => (p.name, p.value, p.file.name.head)).dedup.l
+      val propertyNodesData =
+        cpg.property.map(p => PropertyNodesModel(p.name, p.value, p.file.name.headOption.getOrElse(""))).dedup.l
       output.addOne("propertyNodesData" -> propertyNodesData.asJson)
 
       val probablePropertyNodes = propertyNodesData
-        .filterNot(_._3.matches(".*package(-lock)?.json"))
+        .filterNot(_.fileName.matches(".*package(-lock)?.json"))
         .or(
           _.filter(
-            _._1.matches(
+            _.key.matches(
               "(?i).*(connection|host|database|uri$|mongo|sql|postgres|pgsql|s3|oracle|redis|bucket|dynamo|hbase|neo4j|cassandra|couchbase|memcached|couchdb|litedb|LiteDatabase|tinydb|maria|db(_)?name).*"
             )
           ),
           _.filter(
-            _._2.matches(
+            _.value.matches(
               "(?i).*(mongo|sql|postgres|pgsql|aws|oracle|redis|dynamo|hbase|neo4j|cassandra|couchbase|memcached|couchdb|litedb|LiteDatabase|tinydb|maria).*"
             )
           )
         )
-        .filterNot(_._2.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
-        .filterNot(_._2.matches("^(true|false)$"))
-        .filterNot(_._2.matches("require[(]"))
+        .filterNot(_.value.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
+        .filterNot(_.value.matches("^(true|false)$"))
+        .filterNot(_.value.matches("require[(]"))
         .l
 
       println("Printing probable assets")
-      probablePropertyNodes.foreach(item => println(s"${item._1}, ${item._2}"))
+      probablePropertyNodes.foreach(item => println(s"${item.key}, ${item.value}"))
 
       output.addOne("probableAssets" -> probablePropertyNodes.asJson)
 
