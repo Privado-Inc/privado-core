@@ -37,7 +37,7 @@ object StorageInheritRule {
       FilterProperty.METHOD_FULL_NAME,
       Array[String]("springframework.org"),
       List[String](
-        "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
+        "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository|.*ReactiveCrudRepository.*",
         "(find|get).*"
       ),
       false,
@@ -57,7 +57,7 @@ object StorageInheritRule {
       FilterProperty.METHOD_FULL_NAME,
       Array[String]("springframework.org"),
       List[String](
-        "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository",
+        "org[.]springframework[.]data[.]repository[.]PagingAndSortingRepository|org[.]springframework[.]data[.]repository[.]CrudRepository|org[.]springframework[.]data[.]jpa[.]repository[.]support[.]SimpleJpaRepository|org[.]springframework[.]data[.]jpa[.]repository[.]JpaRepository|.*ReactiveCrudRepository.*",
         "(save|delete).*"
       ),
       false,
