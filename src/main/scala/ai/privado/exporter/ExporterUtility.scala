@@ -408,10 +408,14 @@ object ExporterUtility {
         .or(
           _.filter(
             _._1.matches(
-              "(?i).*(connection|host|database|location|uri$|mongo|sql|postgres|s3|oracle|redis|bucket|dynamo|maria|db(_)?name).*"
+              "(?i).*(connection|host|database|uri$|mongo|sql|postgres|pgsql|s3|oracle|redis|bucket|dynamo|hbase|neo4j|cassandra|couchbase|memcached|couchdb|litedb|LiteDatabase|tinydb|maria|db(_)?name).*"
             )
           ),
-          _.filter(_._2.matches("(?i).*(mongo|sql|postgres|aws|oracle|redis|dynamo|maria).*"))
+          _.filter(
+            _._2.matches(
+              "(?i).*(mongo|sql|postgres|pgsql|aws|oracle|redis|dynamo|hbase|neo4j|cassandra|couchbase|memcached|couchdb|litedb|LiteDatabase|tinydb|maria).*"
+            )
+          )
         )
         .filterNot(_._2.matches(".*[.](png|jpg|jpeg|jar|zip|xml|json|yml)$"))
         .filterNot(_._2.matches("^(true|false)$"))
