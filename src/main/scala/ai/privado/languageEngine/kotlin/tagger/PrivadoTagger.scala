@@ -4,12 +4,11 @@ import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
-import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, MethodFullNameCollectionTagger}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
-import ai.privado.languageEngine.kotlin.tagger.collection.KotlinCollectionTagger
 import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.AndroidCollectionTagger
@@ -66,10 +65,13 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       ruleCache
     ).createAndApply()
 
-    // Collections tagging
-    val collectionTagger = new KotlinCollectionTagger(cpg, ruleCache)
+    val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
     ingressUrls = collectionTagger.getIngressUrls()
+
+    val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
+    methodFullNameTagger.createAndApply()
+    ingressUrls.appendedAll(methodFullNameTagger.getIngressUrls())
 
     logger.info("Done with tagging")
     cpg.tag

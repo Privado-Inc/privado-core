@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.kotlin.tagger.collection
 
 import ai.privado.cache.RuleCache
+import ai.privado.languageEngine.java.tagger.collection.MethodFullNameCollectionTagger
 import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -30,19 +31,29 @@ class KotlinCollectionTaggerTest extends KotlinTaggingTestBase {
     val fileContents = """
         |import spark.*;
         |
-        |fun main(args: Array<String>) {
+        |fun defineMappings() {
         |    Spark.get("/hello") { req, res ->
         |        "Hello Spark Kotlin!"
         |    }
+        |}
+        |
+        |fun main(args: Array<String>) {
+        |    defineMappings()
         |}
         |""".stripMargin
     initCpg(fileContents)
     "should tag get collection endpoint" in {
       cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
-      cpg.call.head.code.contains("Spark") shouldBe true
+      cpg.call.head.code.contains("Spark.get") shouldBe true
 
-      val collectionTagger = new KotlinCollectionTagger(cpg, ruleCache)
+      val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
       collectionTagger.createAndApply()
+
+      val callNode = cpg.call.methodFullName(".*.get.*").head
+      callNode.name shouldBe "get"
+      callNode.tag.size shouldBe 2
+//      callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
+//      callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
 
       val ingressRules = collectionTagger.getIngressUrls()
       ingressRules should contain("\"/hello\"")

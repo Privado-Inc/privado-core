@@ -101,6 +101,23 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
       Constants.annotations,
       Language.JAVA,
       Array()
+    ),
+    RuleInfo(
+      "Collections.Spark.HttpFramework",
+      "Spark Java Http Framework Endpoints",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*\\b(get|post|put)\\b.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.default,
+      Language.JAVA,
+      Array()
     )
   )
 
