@@ -46,8 +46,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     logger.info("Beginning tagging")
 
     new LiteralTagger(cpg, rules).createAndApply()
-    new RegularSinkTagger(cpg, rules).createAndApply()
     new IdentifierTagger(cpg, rules).createAndApply()
+    new RegularSinkTagger(cpg, rules).createAndApply()
 
     logger.info("Finished tagging")
     cpg.tag

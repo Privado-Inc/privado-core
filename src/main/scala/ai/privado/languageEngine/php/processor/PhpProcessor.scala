@@ -23,7 +23,8 @@
 
 package ai.privado.languageEngine.php.processor
 
-import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache}
+import ai.privado.languageEngine.php.semantic.Language.tagger
+import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.model.Language.Language
@@ -50,6 +51,9 @@ class PhpProcessor(
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List[CpgPassBase]()
+
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
 
   override def processCpg(): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
