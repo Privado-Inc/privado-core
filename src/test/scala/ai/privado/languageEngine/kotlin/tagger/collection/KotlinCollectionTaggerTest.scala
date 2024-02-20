@@ -1,11 +1,10 @@
 package ai.privado.languageEngine.kotlin.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.model.*
 import io.shiftleft.semanticcpg.language.*
 
-class CollectionTaggerTest extends KotlinTaggingTestBase {
+class KotlinCollectionTaggerTest extends KotlinTaggingTestBase {
   private val collectionRule = List(
     RuleInfo(
       "Collections.Spark.HttpFramework",
@@ -13,7 +12,7 @@ class CollectionTaggerTest extends KotlinTaggingTestBase {
       "",
       FilterProperty.METHOD_FULL_NAME,
       Array(),
-      List(".*(.get).*"),
+      List(".*.get.*"),
       false,
       "",
       Map(),
@@ -38,15 +37,15 @@ class CollectionTaggerTest extends KotlinTaggingTestBase {
         |}
         |""".stripMargin
     initCpg(fileContents)
-    "should tag get endpoint" in {
-      cpg.call.methodFullName(".*get.*").l.size shouldBe 1
+    "should tag get collection endpoint" in {
+      cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
       cpg.call.head.code.contains("Spark") shouldBe true
 
       val collectionTagger = new KotlinCollectionTagger(cpg, ruleCache)
       collectionTagger.createAndApply()
 
       val ingressRules = collectionTagger.getIngressUrls()
-      ingressRules contains "/hello1"
+      ingressRules should contain("\"/hello\"")
     }
   }
 

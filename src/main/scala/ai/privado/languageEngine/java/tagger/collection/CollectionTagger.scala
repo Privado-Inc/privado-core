@@ -82,6 +82,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       cpg.annotation
         .name(combinedRulePatterns)
         .filter(_.method.nonEmpty)
+        .l
     (
       methodAnnotations.map(ma => ma.method.head.id() -> CollectionUtility.getUrlFromAnnotation(ma)).toMap,
       methodAnnotations.method.l
