@@ -13,7 +13,7 @@ class CollectionTaggerTest extends KotlinTaggingTestBase {
       "",
       FilterProperty.METHOD_FULL_NAME,
       Array(),
-      List("(?i)Spark.*(post|get|delete|put|options|halt).*"),
+      List(".*(.get).*"),
       false,
       "",
       Map(),
@@ -42,9 +42,9 @@ class CollectionTaggerTest extends KotlinTaggingTestBase {
       cpg.call.methodFullName(".*get.*").l.size shouldBe 1
       cpg.call.head.code.contains("Spark") shouldBe true
 
-      val collectionTagger = new CollectionTagger(cpg, ruleCache)
+      val collectionTagger = new KotlinCollectionTagger(cpg, ruleCache)
+      collectionTagger.createAndApply()
 
-      val call         = cpg.call.methodFullName(".*get.*").head
       val ingressRules = collectionTagger.getIngressUrls()
       ingressRules contains "/hello1"
     }
