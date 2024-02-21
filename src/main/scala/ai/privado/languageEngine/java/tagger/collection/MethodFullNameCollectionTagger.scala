@@ -18,17 +18,23 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val methodsCache = scala.collection.mutable.HashMap.empty[Long, Method]
-    methodsCache.addAll(collectUrlsFromMethodCalls(ruleInfo.combinedRulePattern))
     methodsCache.addAll(collectUrlsFromHandlerEndpoints(ruleInfo.combinedRulePattern))
-    methodsCache.values.toList.foreach(met =>
-      met.ast
-        .foreach(node =>
-          storeForTag(builder, node, ruleCache)(
-            InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
-            getFinalEndPoint(met, false)
-          )
-        )
-    )
+    tagMethodEndpoints(builder, methodsCache.values.toList, ruleInfo)
+  }
+
+  private def tagMethodEndpoints(
+    builder: DiffGraphBuilder,
+    collectionPoints: List[AstNode],
+    collectionRuleInfo: RuleInfo,
+    returnByName: Boolean = false
+  ): Unit = {
+    collectionPoints.foreach(collectionPoint => {
+      addRuleTags(builder, collectionPoint, collectionRuleInfo, ruleCache)
+      storeForTag(builder, collectionPoint, ruleCache)(
+        InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
+        getFinalEndPoint(collectionPoint, returnByName)
+      )
+    })
   }
 
   private def getFinalEndPoint(collectionPoint: AstNode, returnByName: Boolean): String = {
@@ -94,14 +100,6 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
     }
     methodUrlMap.addAll(localMethodUrlMap)
     methods.toMap
-  }
-
-  private def collectUrlsFromMethodCalls(combinedRulePatterns: String): Map[Long, Method] = {
-    val methodEndpoints = cpg.call.methodFullName(combinedRulePatterns).l
-    val methodList      = methodEndpoints.callee.map(m => m.id -> m).toMap
-    val literalMap = methodEndpoints.map(ma => ma.id() -> ma.argument.isLiteral.code.headOption.getOrElse("")).toMap
-    methodUrlMap.addAll(literalMap)
-    methodList
   }
 
 }

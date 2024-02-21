@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.languageEngine.java.JavaTaggingTestBase
+import ai.privado.model.Constants
 import io.shiftleft.semanticcpg.language.*
 
 class MethodFullNameCollectionTaggerTest extends JavaTaggingTestBase {
@@ -27,7 +28,13 @@ class MethodFullNameCollectionTaggerTest extends JavaTaggingTestBase {
 
       val callNode = cpg.call.methodFullName(".*get.*").head
       callNode.name shouldBe "get"
-      callNode.ast.head.tag.size shouldBe 2
+      val tags = callNode.argument.isMethodRef.head.referencedMethod.tag.l
+      tags.size shouldBe 6
+      tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
+      tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
+      tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
+      tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
+      tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
     }
   }
 }
