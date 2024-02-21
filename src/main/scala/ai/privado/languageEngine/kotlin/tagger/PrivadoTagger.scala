@@ -65,10 +65,12 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       ruleCache
     ).createAndApply()
 
+    // Tag by finding annotations that declare endpoints
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
     ingressUrls = collectionTagger.getIngressUrls()
 
+    // Tag by finding methods that are declaring endpoints
     val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
     methodFullNameTagger.createAndApply()
     ingressUrls.appendedAll(methodFullNameTagger.getIngressUrls())

@@ -61,7 +61,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
       // match on second argument, that's the handler
       methodCall.argument(2) match {
         case c: Call => // E.g. AnotherHandlerClass.someHandler - calling a 'val declaration' of a handler
-          handlerMethod = Some(c.method)
+          handlerMethod = c.callee.headOption
         case m: MethodRef => // E.g. a code block like { req, res -> ... }
           handlerMethod = Some(methodCall.argument.isMethodRef.head.referencedMethod)
           localMethodUrlMap += (handlerMethod.get.id() -> url)
