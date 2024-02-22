@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.java.tagger.collection
 
-import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.AbstractTaggingSpec
 import ai.privado.model.*
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -27,7 +26,7 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
 
   "Spark Http Framework" should {
     "tag collection endpoint when handler is a method" in {
-      var cpg: Option[Cpg] = Option.empty[Cpg]
+      var cpg: Cpg = null
       try {
         val javaFileContents: String =
           """
@@ -38,17 +37,17 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
             |        Spark.get("/hello", (req, res) -> "Hello World");
             |    }
             |}""".stripMargin
-        cpg = Some(buildCpg(javaFileContents))
-        cpg.get.call.methodFullName(".*get.*").l.size shouldBe 1
-        cpg.get.call.head.code.contains("get") shouldBe true
+        cpg = buildCpg(javaFileContents)
+        cpg.call.methodFullName(".*get.*").l.size shouldBe 1
+        cpg.call.head.code.contains("get") shouldBe true
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg.get, ruleCacheWithCollectionRule(collectionRule))
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
         ingressRules should contain("\"/hello\"")
 
-        val callNode = cpg.get.call.methodFullName(".*get.*").head
+        val callNode = cpg.call.methodFullName(".*get.*").head
         callNode.name shouldBe "get"
         val tags = callNode.argument.isMethodRef.head.referencedMethod.tag.l
         tags.size shouldBe 6
@@ -58,13 +57,13 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
         tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
       } finally {
-        if (cpg.isDefined) {
-          cpg.get.close()
+        if (cpg != null) {
+          cpg.close()
         }
       }
     }
     "tag collection endpoint when handler is a method reference to a static method in same class" in {
-      var cpg: Option[Cpg] = Option.empty[Cpg]
+      var cpg: Cpg = null
       try {
         val javaFileContents: String =
           """
@@ -81,19 +80,19 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
             |        put("/another", this::anotherHandler);
             |    }
             |}""".stripMargin
-        cpg = Some(buildCpg(javaFileContents))
-        cpg.get.call.methodFullName(".*put.*").l.size shouldBe 1
-        cpg.get.call.head.code.contains("put") shouldBe true
+        cpg = buildCpg(javaFileContents)
+        cpg.call.methodFullName(".*put.*").l.size shouldBe 1
+        cpg.call.head.code.contains("put") shouldBe true
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg.get, ruleCacheWithCollectionRule(collectionRule))
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
         ingressRules should contain("\"/another\"")
 
-        val callNode = cpg.get.call.methodFullName(".*put.*").head
+        val callNode = cpg.call.methodFullName(".*put.*").head
         callNode.name shouldBe "put"
-        val tags = cpg.get.method.fullName(".*anotherHandler.*").head.tag.l
+        val tags = cpg.method.fullName(".*anotherHandler.*").head.tag.l
         tags.size shouldBe 6
         tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
@@ -101,8 +100,8 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
         tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/another\""
       } finally {
-        if (cpg.isDefined) {
-          cpg.get.close()
+        if (cpg != null) {
+          cpg.close()
         }
       }
     }

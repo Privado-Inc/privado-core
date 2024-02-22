@@ -63,8 +63,10 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
         case c: Call => // E.g. AnotherHandlerClass.someHandler - calling a 'val declaration' of a handler
           handlerMethod = c.callee.headOption
         case m: MethodRef => // E.g. a code block like { req, res -> ... }
-          handlerMethod = Some(methodCall.argument.isMethodRef.head.referencedMethod)
-          localMethodUrlMap += (handlerMethod.get.id() -> url)
+          val methodRef = methodCall.argument.isMethodRef.headOption
+          if (methodRef.isDefined) {
+            handlerMethod = Some(methodRef.get.referencedMethod)
+          }
         case u: Unknown => // E.g. this::someHandler or SomeHandlerClass::someOtherHandler
           // For kotlin or java - different parser type names
           val isKotlinMethodHandler = u.parserTypeName == "KtCallableReferenceExpression" // Kotlin
@@ -79,14 +81,13 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
                 handlerName.substring(handlerName.indexOf(classAccessor) + classAccessor.length, handlerName.length)
               if (handlerName.startsWith(thisPrefix)) { // this::someHandler - in the same class
                 // Look in the same file
-                handlerMethod = Some(u.file.method.nameExact(methodName).dedup.head)
+                handlerMethod = u.file.method.nameExact(methodName).dedup.headOption
               } else { // SomeClass::someMethod style handler - companion or static method
                 // class name is before the "::" part
                 val className = handlerName.substring(0, handlerName.indexOf(classAccessor))
-                if (isKotlinMethodHandler) {
-                  handlerMethod = Some(cpg.method.fullName(s".*$className\\$$Companion\\.$methodName.*").head)
-                } else { // Java case
-                  handlerMethod = Some(cpg.method.fullName(s".*$className\\.$methodName.*").head)
+                handlerMethod = cpg.method.fullName(s".*$className\\.$methodName.*").headOption
+                if (isKotlinMethodHandler && handlerMethod.isEmpty) {
+                  handlerMethod = cpg.method.fullName(s".*$className\\$$Companion\\.$methodName.*").headOption
                 }
               }
             }
