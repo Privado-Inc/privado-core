@@ -25,8 +25,8 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
     Array()
   )
 
-  "Simple Spark Http sample" should {
-    "should tag get collection endpoint" in {
+  "Spark Http Framework" should {
+    "tag collection endpoint when handler is a method" in {
       var cpg: Option[Cpg] = Option.empty[Cpg]
       try {
         val javaFileContents: String =
@@ -57,6 +57,49 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
         tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
+      } finally {
+        if (cpg.isDefined) {
+          cpg.get.close()
+        }
+      }
+    }
+    "tag collection endpoint when handler is a method reference to a static method in same class" in {
+      var cpg: Option[Cpg] = Option.empty[Cpg]
+      try {
+        val javaFileContents: String =
+          """
+            |import static spark.Spark.*;
+            |import spark.Request;
+            |import spark.Response;
+            |
+            |public class HelloWorld {
+            |    public static String anotherHandler(Request req, Response res) {
+            |        return "something";
+            |    }
+            |
+            |    public static void main(String[] args) {
+            |        put("/another", this::anotherHandler);
+            |    }
+            |}""".stripMargin
+        cpg = Some(buildCpg(javaFileContents))
+        cpg.get.call.methodFullName(".*put.*").l.size shouldBe 1
+        cpg.get.call.head.code.contains("put") shouldBe true
+
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg.get, ruleCacheWithCollectionRule(collectionRule))
+        collectionTagger.createAndApply()
+
+        val ingressRules = collectionTagger.getIngressUrls()
+        ingressRules should contain("\"/another\"")
+
+        val callNode = cpg.get.call.methodFullName(".*put.*").head
+        callNode.name shouldBe "put"
+        val tags = cpg.get.method.fullName(".*anotherHandler.*").head.tag.l
+        tags.size shouldBe 6
+        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
+        tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
+        tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
+        tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
+        tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/another\""
       } finally {
         if (cpg.isDefined) {
           cpg.get.close()

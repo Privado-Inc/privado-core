@@ -44,10 +44,9 @@ abstract class AbstractTaggingSpec(val language: Language)
   var inputDir: File = _
 
   override def beforeAll(): Unit = {
-    super.beforeAll()
     inputDir = File.newTemporaryDirectory()
-    (inputDir / "unrelated.file").write("foo")
     AppCache.repoLanguage = this.language
+    super.beforeAll()
   }
 
   override def afterAll(): Unit = {
@@ -55,9 +54,16 @@ abstract class AbstractTaggingSpec(val language: Language)
     inputDir.delete()
   }
 
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+  }
+
   def buildCpg(sourceSnippet: String): Cpg = {
+    val testId = java.util.UUID.randomUUID.toString
+    // create test directory
+    val testDir = File.newTemporaryDirectory(testId, Some(inputDir))
     File
-      .newTemporaryFile("sourceFile", LanguageFileExt.withLanguage(this.language), Some(inputDir))
+      .newTemporaryFile("sourceFile", LanguageFileExt.withLanguage(this.language), Some(testDir))
       .writeText(sourceSnippet)
     val outputFile = File.newTemporaryFile()
     var cpg: Cpg   = null

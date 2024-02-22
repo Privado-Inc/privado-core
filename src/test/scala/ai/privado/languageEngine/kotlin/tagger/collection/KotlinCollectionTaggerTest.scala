@@ -26,7 +26,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
   )
 
   "Spark Http Collection Endpoints" should {
-    "should tag get collection endpoint with method handler as parameter" in {
+    "tag get collection endpoint with method handler as parameter" in {
       var cpg: Option[Cpg] = Option.empty[Cpg]
       try {
         val fileContents =
