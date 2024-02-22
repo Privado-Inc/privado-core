@@ -41,17 +41,13 @@ abstract class AbstractTaggingSpec(val language: Language)
     with BeforeAndAfterAll
     with BeforeAndAfterEach {
 
-  var inputDir: File = _
-
   override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
     AppCache.repoLanguage = this.language
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
-    inputDir.delete()
   }
 
   override def beforeEach(): Unit = {
@@ -59,6 +55,8 @@ abstract class AbstractTaggingSpec(val language: Language)
   }
 
   def buildCpg(sourceSnippet: String): Cpg = {
+    val inputDir = File.newTemporaryDirectory()
+    inputDir.deleteOnExit()
     val testId = java.util.UUID.randomUUID.toString
     // create test directory
     val testDir = File.newTemporaryDirectory(testId, Some(inputDir))
@@ -67,11 +65,11 @@ abstract class AbstractTaggingSpec(val language: Language)
       .writeText(sourceSnippet)
     val outputFile = File.newTemporaryFile()
     var cpg: Cpg   = null
-    if (language == JAVA) {
+    if (this.language == JAVA) {
       val config =
         io.joern.javasrc2cpg.Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
       cpg = new JavaSrc2Cpg().createCpg(config).get
-    } else if (language == KOTLIN) {
+    } else if (this.language == KOTLIN) {
       val config =
         io.joern.kotlin2cpg.Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
       cpg = new Kotlin2Cpg().createCpg(config).get
