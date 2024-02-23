@@ -81,10 +81,6 @@ object CSharpProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
-          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache)
-          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
