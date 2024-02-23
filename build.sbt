@@ -6,17 +6,18 @@ ThisBuild / scalaVersion := "3.3.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.6.5"
-val joernVersion      = "2.0.266"
+val cpgVersion        = "1.6.6"
+val joernVersion      = "2.0.269"
 val overflowdbVersion = "1.187"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
-val circeVersion    = "0.14.2"
-val jacksonVersion  = "2.15.2"
-val mockitoVersion  = "1.17.14"
-val goAstGenVersion = "0.12.0"
+val circeVersion        = "0.14.2"
+val jacksonVersion      = "2.15.2"
+val mockitoVersion      = "1.17.14"
+val goAstGenVersion     = "0.12.0"
+val dotnetAstGenVersion = "0.18.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
@@ -34,6 +35,7 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
   "io.joern"             %% "kotlin2cpg"    % Versions.joern,
   "io.joern"             %% "gosrc2cpg"     % Versions.joern,
+  "io.joern"             %% "csharpsrc2cpg" % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
@@ -158,6 +160,56 @@ stage := Def
   .value
 
 // download goastgen: end
+
+// download dotnetastgen: start
+lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
+lazy val DotNetAstgenWinArm   = "dotnetastgen-win-arm.exe"
+lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val DotNetAstgenMac      = "dotnetastgen-macos"
+
+lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
+dotnetAstGenDownloadUrl := s"https://github.com/joernio/DotNetAstGen/releases/download/v${dotnetAstGenVersion}/"
+
+lazy val dotnetAstGenBinaryNames = taskKey[Seq[String]]("dotnetastgen binary names")
+dotnetAstGenBinaryNames := {
+  Seq(DotNetAstgenWin, DotNetAstgenWinArm, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
+}
+
+lazy val dotnetAstGenDlTask = taskKey[Unit](s"Download dotnetastgen binaries")
+dotnetAstGenDlTask := {
+  val dotnetAstGenDir = baseDirectory.value / "bin" / "astgen"
+  dotnetAstGenDir.mkdirs()
+
+  dotnetAstGenBinaryNames.value.foreach { fileName =>
+    val dest = dotnetAstGenDir / fileName
+    if (!dest.exists) {
+      val url            = s"${dotnetAstGenDownloadUrl.value}$fileName"
+      val downloadedFile = SimpleCache.downloadMaybe(url)
+      IO.copyFile(downloadedFile, dest)
+    }
+  }
+
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
+  distDir.mkdirs()
+  IO.copyDirectory(dotnetAstGenDir, distDir)
+
+  // permissions are lost during the download; need to set them manually
+  dotnetAstGenDir.listFiles().foreach(_.setExecutable(true, false))
+  distDir.listFiles().foreach(_.setExecutable(true, false))
+}
+
+Compile / compile := ((Compile / compile) dependsOn dotnetAstGenDlTask).value
+
+lazy val dotnetAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
+goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
+
+stage := Def
+  .sequential(goAstGenSetAllPlatforms, Universal / stage)
+  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
+  .value
+
+// download dotnetastgen: end
 
 // Also remove astgen binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,

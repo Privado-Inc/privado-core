@@ -23,6 +23,7 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
@@ -41,6 +42,7 @@ import io.circe.yaml.parser
 import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 
 import java.util.Calendar
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -417,6 +419,16 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache
                 ).processCpg()
+              case language if language == Languages.CSHARPSRC =>
+                println(s"${Calendar.getInstance().getTime} - Detected language 'C#'")
+                CSharpProcessor.createCSharpCpg(
+                  getProcessedRule(Set(Language.CSHARP)),
+                  sourceRepoLocation,
+                  lang,
+                  dataFlowCache = getDataflowCache,
+                  auditCache,
+                  s3DatabaseDetailsCache
+                )
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
