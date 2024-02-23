@@ -202,10 +202,10 @@ dotnetAstGenDlTask := {
 Compile / compile := ((Compile / compile) dependsOn dotnetAstGenDlTask).value
 
 lazy val dotnetAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
-goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
+dotnetAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
 stage := Def
-  .sequential(goAstGenSetAllPlatforms, Universal / stage)
+  .sequential(dotnetAstGenSetAllPlatforms, Universal / stage)
   .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
   .value
 
