@@ -58,8 +58,6 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(memberNameRegex).l))
       .l
 
-    println("typeDeclWithMemberNameHavingMemberName")
-    println(typeDeclWithMemberNameHavingMemberName)
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
@@ -122,8 +120,6 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     val typeDeclHavingMemberTypeTuple =
       cpg.typeDecl.member.typeFullName(memberType).map(member => (member, member.typeDecl.fullName)).dedup.l
 
-    println("typeDeclHavingMemberTypeTuple")
-    println(typeDeclHavingMemberTypeTuple)
     typeDeclHavingMemberTypeTuple.foreach(typeDeclTuple => {
       val typeDeclVal    = typeDeclTuple._2
       val typeDeclMember = typeDeclTuple._1
@@ -169,9 +165,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     val impactedGetters = getFieldAccessCallsMatchingRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
       .filterNot(item => item.code.equals(item.code.toUpperCase))
 
-    println("getters")
-    println(impactedGetters)
-
+    println(typeDeclMemberName)
     impactedGetters.foreach(impactedGetter => {
       storeForTag(builder, impactedGetter, ruleCache)(InternalTag.SENSITIVE_FIELD_ACCESS.toString)
       addRuleTags(builder, impactedGetter, ruleInfo, ruleCache)
@@ -180,9 +174,6 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     val impactedReturnMethods = getCallsMatchingReturnRegex(cpg, typeDeclVal, s"($typeDeclMemberName)")
     impactedReturnMethods
       .foreach(storeForTag(builder, _, ruleCache)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id))
-
-    println("getters")
-    println(impactedReturnMethods)
 
   }
 }
