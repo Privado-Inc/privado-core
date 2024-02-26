@@ -8,8 +8,8 @@ import io.shiftleft.semanticcpg.language.*
 
 class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language.KOTLIN) {
   val collectionRule: RuleInfo = RuleInfo(
-    "Collections.Spark.HttpFramework",
-    "Spark Java Http Framework Endpoints",
+    "Collections.Kotlin.HttpFramework",
+    "Java Http Framework Endpoints",
     "",
     FilterProperty.METHOD_FULL_NAME,
     Array(),
@@ -25,8 +25,53 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
     Array()
   )
 
-  "Spark Http Collection Endpoints" should {
-    "tag get collection endpoint with method handler as parameter" in {
+  "Http Collection Endpoints" should {
+    "tag get Ktor collection endpoint with method handler as parameter" in {
+      var cpg: Cpg = null
+      try {
+        val fileContents =
+          """
+          |import io.ktor.application.call
+          |import io.ktor.response.respondText
+          |import io.ktor.routing.get
+          |import io.ktor.routing.routing
+          |
+          |fun main() {
+          |    embeddedServer(Netty, 8080) {
+          |        routing {
+          |            get("/hello") {
+          |                call.respondText("Hello, World!")
+          |            }
+          |        }
+          |    }.start(wait = true)
+          |}
+          |""".stripMargin
+        cpg = buildCpg(fileContents)
+        cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
+        cpg.call.head.code.contains("get") shouldBe true
+
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        collectionTagger.createAndApply()
+
+        val ingressRules = collectionTagger.getIngressUrls()
+        ingressRules should contain("\"/hello\"")
+
+        val callNode = cpg.call.methodFullName(".*.get.*").head
+        callNode.name shouldBe "get"
+        val tags = callNode.argument.isMethodRef.head.referencedMethod.tag.l
+        tags.size shouldBe 6
+        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Kotlin.HttpFramework")
+        tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
+        tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
+        tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
+        tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
+      } finally {
+        if (cpg != null) {
+          cpg.close()
+        }
+      }
+    }
+    "tag get Spark Java collection endpoint with method handler as parameter" in {
       var cpg: Cpg = null
       try {
         val fileContents =
@@ -53,7 +98,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
         callNode.name shouldBe "get"
         val tags = callNode.argument.isMethodRef.head.referencedMethod.tag.l
         tags.size shouldBe 6
-        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
+        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Kotlin.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
@@ -64,7 +109,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
         }
       }
     }
-    "tag get collection endpoint with companion method from another class as handler" in {
+    "tag get Spark Java collection endpoint with companion method from another class as handler" in {
       var cpg: Cpg = null
       try {
         val fileContents =
@@ -99,7 +144,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
         callNode.name shouldBe "get"
         val tags = cpg.method.fullName("<operator>.fieldAccess").head.tag.l
         tags.size shouldBe 6
-        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
+        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Kotlin.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
@@ -110,7 +155,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
         }
       }
     }
-    "tag get collection endpoint with method from an object class as handler" in {
+    "tag get Spark Java collection endpoint with method from an object class as handler" in {
       var cpg: Cpg = null
       try {
         val fileContents =
@@ -143,7 +188,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec(language = Language
         callNode.name shouldBe "get"
         val tags = cpg.method.fullName(".*endpointHandler.*").head.tag.l
         tags.size shouldBe 6
-        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
+        tags.nameExact(Constants.id).head.value shouldBe ("Collections.Kotlin.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
