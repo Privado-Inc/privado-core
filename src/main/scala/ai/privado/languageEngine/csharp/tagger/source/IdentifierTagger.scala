@@ -42,6 +42,8 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
       addRuleTags(builder, member, ruleInfo, ruleCache)
     })
+
+    tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
   }
 
   /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
