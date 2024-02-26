@@ -42,6 +42,8 @@ import better.files.File
 import io.joern.csharpsrc2cpg.*
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.csharp.semantic.Language.tagger
+import ai.privado.dataflow.Dataflow
+import ai.privado.semantic.Language.*
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -81,6 +83,11 @@ object CSharpProcessor {
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
+          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
+          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
+              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
+
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
@@ -89,7 +96,7 @@ object CSharpProcessor {
             cpg,
             outputFileName,
             sourceRepoLocation,
-            Map.empty[String, Path],
+            dataflowMap,
             ruleCache,
             taggerCache,
             dataFlowCache.getDataflowAfterDedup,

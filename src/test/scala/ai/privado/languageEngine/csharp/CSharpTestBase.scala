@@ -24,7 +24,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
   private val inputDirs   = mutable.ArrayBuffer.empty[File]
 
-  val sourceRule = List(
+  val sourceRule: List[RuleInfo] = List(
     RuleInfo(
       "Data.Sensitive.PersonalIdentification.FirstName",
       "FirstName",
@@ -129,8 +129,28 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     )
   )
 
+  val sinkRules: List[RuleInfo] = List(
+    RuleInfo(
+      "Loggers.Console",
+      "WriteLine",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*WriteLine.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.CSHARP,
+      Array()
+    )
+  )
+
   val configAndRules: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List(), List())
+    ConfigAndRules(sourceRule, sinkRules, List(), List(), List(), List(), List(), List(), List(), List())
 
   val taggerCache = new TaggerCache()
 
