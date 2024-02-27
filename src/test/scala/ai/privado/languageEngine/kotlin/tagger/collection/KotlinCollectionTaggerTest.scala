@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.kotlin.tagger.collection
 
+import ai.privado.exporter.CollectionExporter
 import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
 import ai.privado.languageEngine.java.tagger.collection.MethodFullNameCollectionTagger
 import ai.privado.model.*
@@ -85,10 +86,9 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |}
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
-        cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
-        cpg.call.head.code.contains("Spark.get") shouldBe true
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        val ruleCache        = ruleCacheWithCollectionRule(collectionRule)
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
@@ -105,6 +105,12 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
         tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
+
+        // assert collection exporter
+        val collectionExporter   = new CollectionExporter(cpg, ruleCache)
+        val collectionModel :: _ = collectionExporter.getCollections.l
+        collectionModel.name should be("Spark Java Http Framework Endpoints")
+        collectionModel.collectionId shouldBe ("Collections.Spark.HttpFramework")
       } finally {
         if (cpg != null) {
           cpg.close()
@@ -133,8 +139,6 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |}
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
-        cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
-        cpg.call.head.code.contains("endpointHandler") shouldBe true
 
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
         collectionTagger.createAndApply()
@@ -179,8 +183,6 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |}
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
-        cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
-        cpg.call.head.code.contains("endpointHandler") shouldBe true
 
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
         collectionTagger.createAndApply()

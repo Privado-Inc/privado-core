@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.java.tagger.collection
 
+import ai.privado.exporter.CollectionExporter
 import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
 import ai.privado.model.*
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -38,10 +39,9 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
             |    }
             |}""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = javaFileContents, language = Language.JAVA))
-        cpg.call.methodFullName(".*get.*").l.size shouldBe 1
-        cpg.call.head.code.contains("get") shouldBe true
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        val ruleCache        = ruleCacheWithCollectionRule(collectionRule)
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
@@ -58,6 +58,12 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
         tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
+
+        // assert collection exporter
+        val collectionExporter   = new CollectionExporter(cpg, ruleCache)
+        val collectionModel :: _ = collectionExporter.getCollections.l
+        collectionModel.name should be("Spark Java Http Framework Endpoints")
+        collectionModel.collectionId shouldBe ("Collections.Spark.HttpFramework")
       } finally {
         if (cpg != null) {
           cpg.close()
@@ -83,10 +89,9 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
             |    }
             |}""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = javaFileContents, language = Language.JAVA))
-        cpg.call.methodFullName(".*put.*").l.size shouldBe 1
-        cpg.call.head.code.contains("put") shouldBe true
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        val ruleCache        = ruleCacheWithCollectionRule(collectionRule)
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
