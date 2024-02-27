@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.*
 class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
   val collectionRule: RuleInfo = RuleInfo(
     "Collections.Kotlin.HttpFramework",
-    "Java Http Framework Endpoints",
+    "Spark Java Http Framework Endpoints",
     "",
     FilterProperty.METHOD_FULL_NAME,
     Array(),
@@ -47,7 +47,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |    }.start(wait = true)
           |}
           |""".stripMargin
-        cpg = buildCpg(fileContents)
+        cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
         cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
         cpg.call.head.code.contains("get") shouldBe true
 
@@ -110,7 +110,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
         val collectionExporter   = new CollectionExporter(cpg, ruleCache)
         val collectionModel :: _ = collectionExporter.getCollections.l
         collectionModel.name should be("Spark Java Http Framework Endpoints")
-        collectionModel.collectionId shouldBe ("Collections.Spark.HttpFramework")
+        collectionModel.collectionId shouldBe ("Collections.Kotlin.HttpFramework")
       } finally {
         if (cpg != null) {
           cpg.close()
