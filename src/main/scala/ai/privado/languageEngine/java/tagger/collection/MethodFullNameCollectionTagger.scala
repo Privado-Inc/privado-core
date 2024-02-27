@@ -55,10 +55,10 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
     val methodCalls       = cpg.call.methodFullName(combinedRulePatterns).l
     val methods           = scala.collection.mutable.HashMap.empty[Long, Method]
     val localMethodUrlMap = scala.collection.mutable.HashMap.empty[Long, String]
-    val classAccessor     = "::"
     for (methodCall <- methodCalls) {
       val url                           = methodCall.argument.isLiteral.code.head
       var handlerMethod: Option[Method] = Option.empty[Method]
+
       breakable {
         if (methodCall.argument.length < 2) { // we do not have enough arguments to get the handler method
           break                               // empty handler, continue loop
@@ -68,45 +68,50 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
           case c: Call => // E.g. AnotherHandlerClass.someHandler - calling a 'val declaration' of a handler
             handlerMethod = c.callee.headOption
           case m: MethodRef => // E.g. a code block like { req, res -> ... }
-            val methodRef = methodCall.argument.isMethodRef.headOption
-            if (methodRef.isDefined) {
-              handlerMethod = Some(methodRef.get.referencedMethod)
-            }
+            handlerMethod = Some(m.referencedMethod)
           case u: Unknown => // E.g. this::someHandler or SomeHandlerClass::someOtherHandler
-            // For kotlin or java - different parser type names
-            val isKotlinMethodHandler = u.parserTypeName == "KtCallableReferenceExpression" // Kotlin
-            val isJavaMethodHandler   = u.parserTypeName == "MethodReferenceExpr"           // Java
-            if (isKotlinMethodHandler || isJavaMethodHandler) {
-              // get the code part - full handler name
-              val handlerName = u.code
-              val thisPrefix  = "this" + classAccessor
-              if (handlerName.contains(classAccessor)) {
-                // method name is after the "::" part
-                val methodName =
-                  handlerName.substring(handlerName.indexOf(classAccessor) + classAccessor.length, handlerName.length)
-                if (handlerName.startsWith(thisPrefix)) { // this::someHandler - in the same class
-                  // Look in the same file
-                  handlerMethod = u.file.method.nameExact(methodName).dedup.headOption
-                } else { // SomeClass::someMethod style handler - companion or static method
-                  // class name is before the "::" part
-                  val className = handlerName.substring(0, handlerName.indexOf(classAccessor))
-                  handlerMethod = cpg.method.fullName(s".*$className\\.$methodName.*").headOption
-                  if (isKotlinMethodHandler && handlerMethod.isEmpty) {
-                    handlerMethod = cpg.method.fullName(s".*$className\\$$Companion\\.$methodName.*").headOption
-                  }
-                }
-              }
-            }
-          case _ =>
+            handlerMethod = handleUnknownArgType(u)
+          case err =>
+            logger.error(s"Unexpected 2nd argument type while tagging collection: ${err.code}")
         }
       }
       if (handlerMethod.isDefined) {
         localMethodUrlMap += (handlerMethod.get.id() -> url)
         methods += (handlerMethod.get.id()           -> handlerMethod.get)
       }
+
     }
     methodUrlMap.addAll(localMethodUrlMap)
     methods.toMap
   }
 
+  private def handleUnknownArgType(u: Unknown): Option[Method] = {
+    var handlerMethod: Option[Method] = Option.empty[Method]
+    val classAccessor                 = "::"
+    // For kotlin or java - different parser type names
+    val isKotlinMethodHandler = u.parserTypeName == "KtCallableReferenceExpression" // Kotlin
+    val isJavaMethodHandler   = u.parserTypeName == "MethodReferenceExpr"           // Java
+    if (isKotlinMethodHandler || isJavaMethodHandler) {
+      // get the code part - full handler name
+      val handlerName = u.code
+      val thisPrefix  = "this" + classAccessor
+      if (handlerName.contains(classAccessor)) {
+        // method name is after the "::" part
+        val methodName =
+          handlerName.substring(handlerName.indexOf(classAccessor) + classAccessor.length, handlerName.length)
+        if (handlerName.startsWith(thisPrefix)) { // this::someHandler - in the same class
+          // Look in the same file
+          handlerMethod = u.file.method.nameExact(methodName).dedup.headOption
+        } else { // SomeClass::someMethod style handler - companion or static method
+          // class name is before the "::" part
+          val className = handlerName.substring(0, handlerName.indexOf(classAccessor))
+          handlerMethod = cpg.method.fullName(s".*$className\\.$methodName.*").headOption
+          if (isKotlinMethodHandler && handlerMethod.isEmpty) {
+            handlerMethod = cpg.method.fullName(s".*$className\\$$Companion\\.$methodName.*").headOption
+          }
+        }
+      }
+    }
+    handlerMethod
+  }
 }
