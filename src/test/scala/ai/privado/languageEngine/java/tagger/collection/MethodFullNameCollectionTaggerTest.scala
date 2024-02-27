@@ -1,11 +1,11 @@
 package ai.privado.languageEngine.java.tagger.collection
 
-import ai.privado.languageEngine.java.AbstractTaggingSpec
+import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
 import ai.privado.model.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = Language.JAVA) {
+class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
   val collectionRule: RuleInfo = RuleInfo(
     "Collections.Spark.HttpFramework",
     "Spark Java Http Framework Endpoints",
@@ -37,7 +37,7 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
             |        Spark.get("/hello", (req, res) -> "Hello World");
             |    }
             |}""".stripMargin
-        cpg = buildCpg(javaFileContents)
+        cpg = buildCpg(TestCodeSnippet(sourceCode = javaFileContents, language = Language.JAVA))
         cpg.call.methodFullName(".*get.*").l.size shouldBe 1
         cpg.call.head.code.contains("get") shouldBe true
 
@@ -47,10 +47,12 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
         val ingressRules = collectionTagger.getIngressUrls()
         ingressRules should contain("\"/hello\"")
 
-        val callNode = cpg.call.methodFullName(".*get.*").head
-        callNode.name shouldBe "get"
-        val tags = callNode.argument.isMethodRef.head.referencedMethod.tag.l
-        tags.size shouldBe 6
+        val getCalls = cpg.call.methodFullName(".*get.*").l
+        getCalls should have size 1
+        getCalls.name.toSeq should contain theSameElementsAs List("get")
+
+        val tags = getCalls.head.argument.isMethodRef.head.referencedMethod.tag.l
+        tags should have size 6
         tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
@@ -80,7 +82,7 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
             |        put("/another", this::anotherHandler);
             |    }
             |}""".stripMargin
-        cpg = buildCpg(javaFileContents)
+        cpg = buildCpg(TestCodeSnippet(sourceCode = javaFileContents, language = Language.JAVA))
         cpg.call.methodFullName(".*put.*").l.size shouldBe 1
         cpg.call.head.code.contains("put") shouldBe true
 
@@ -90,10 +92,12 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec(language = 
         val ingressRules = collectionTagger.getIngressUrls()
         ingressRules should contain("\"/another\"")
 
-        val callNode = cpg.call.methodFullName(".*put.*").head
-        callNode.name shouldBe "put"
+        val getCalls = cpg.call.methodFullName(".*put.*").l
+        getCalls should have size 1
+        getCalls.name.toSeq should contain theSameElementsAs List("put")
+
         val tags = cpg.method.fullName(".*anotherHandler.*").head.tag.l
-        tags.size shouldBe 6
+        tags should have size 6
         tags.nameExact(Constants.id).head.value shouldBe ("Collections.Spark.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default

@@ -35,41 +35,30 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
-abstract class AbstractTaggingSpec(val language: Language)
-    extends AnyWordSpec
-    with Matchers
-    with BeforeAndAfterAll
-    with BeforeAndAfterEach {
+case class TestCodeSnippet(sourceCode: String, language: Language)
 
-  override def beforeAll(): Unit = {
-    AppCache.repoLanguage = this.language
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    super.afterAll()
-  }
+abstract class AbstractTaggingSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   override def beforeEach(): Unit = {
     super.beforeEach()
   }
 
-  def buildCpg(sourceSnippet: String): Cpg = {
+  def buildCpg(codeSnippet: TestCodeSnippet): Cpg = {
     val inputDir = File.newTemporaryDirectory()
     inputDir.deleteOnExit()
     val testId = java.util.UUID.randomUUID.toString
     // create test directory
     val testDir = File.newTemporaryDirectory(testId, Some(inputDir))
     File
-      .newTemporaryFile("sourceFile", LanguageFileExt.withLanguage(this.language), Some(testDir))
-      .writeText(sourceSnippet)
+      .newTemporaryFile("sourceFile", LanguageFileExt.withLanguage(codeSnippet.language), Some(testDir))
+      .writeText(codeSnippet.sourceCode)
     val outputFile = File.newTemporaryFile()
     var cpg: Cpg   = null
-    if (this.language == JAVA) {
+    if (codeSnippet.language == JAVA) {
       val config =
         io.joern.javasrc2cpg.Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
       cpg = new JavaSrc2Cpg().createCpg(config).get
-    } else if (this.language == KOTLIN) {
+    } else if (codeSnippet.language == KOTLIN) {
       val config =
         io.joern.kotlin2cpg.Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
       cpg = new Kotlin2Cpg().createCpg(config).get
