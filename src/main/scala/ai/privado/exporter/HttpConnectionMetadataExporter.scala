@@ -23,22 +23,24 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.java.language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
-import ai.privado.model.{Constants, NodeType}
+import ai.privado.model.{Constants, Language, NodeType}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
-class EgressExporter(cpg: Cpg, ruleCache: RuleCache) {
+class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   private val logger                    = LoggerFactory.getLogger(getClass)
   private val FEIGN_CLIENT              = "FeignClient"
   private val SPRING_ANNOTATION_ID      = "Collections.Annotation.Spring"
   private val STRING_START_WITH_SLASH   = "/.{2,}"
   private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
+  private val SPRING_APPLICATION_BASE_PATH =
+    "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
 
   def getEgressUrls = {
     var egressUrls = List[String]()
@@ -49,6 +51,14 @@ class EgressExporter(cpg: Cpg, ruleCache: RuleCache) {
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
     egressUrls.dedup.l
+  }
+
+  def getEndPointBasePath = {
+    var basePaths = List[String]()
+    if (AppCache.repoLanguage.id == Language.JAVA.id) {
+      basePaths = basePaths.concat(cpg.property.name(SPRING_APPLICATION_BASE_PATH).value.dedup.l)
+    }
+    basePaths.dedup.l
   }
 
   private def addUrlFromFeignClient(): List[String] = {
