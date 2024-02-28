@@ -8,22 +8,24 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
 class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
-  val collectionRule: RuleInfo = RuleInfo(
-    "Collections.Kotlin.HttpFramework",
-    "Spark Java Http Framework Endpoints",
-    "",
-    FilterProperty.METHOD_FULL_NAME,
-    Array(),
-    List(".*.get.*"),
-    false,
-    "",
-    Map(),
-    NodeType.REGULAR,
-    "",
-    CatLevelOne.COLLECTIONS,
-    catLevelTwo = Constants.default,
-    Language.KOTLIN,
-    Array()
+  val collectionRule = List(
+    RuleInfo(
+      "Collections.Kotlin.HttpFramework",
+      "Spark Java Http Framework Endpoints",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*.get.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.default,
+      Language.KOTLIN,
+      Array()
+    )
   )
 
   "Http Collection Endpoints" should {
@@ -48,19 +50,20 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |}
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
-        cpg.call.methodFullName(".*.get.*").l.size shouldBe 1
-        cpg.call.head.code.contains("get") shouldBe true
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        val ruleCache        = ruleCacheWithSourceAndCollectionRules(List[RuleInfo](), collectionRule)
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
         ingressRules should contain("\"/hello\"")
 
-        val callNode = cpg.call.methodFullName(".*.get.*").head
-        callNode.name shouldBe "get"
-        val tags = callNode.argument.isMethodRef.head.referencedMethod.tag.l
-        tags.size shouldBe 6
+        val getCalls = cpg.call.methodFullName(".*get.*").l
+        getCalls should have size 1
+        getCalls.name.toSeq should contain theSameElementsAs List("get")
+
+        val tags = getCalls.head.argument.isMethodRef.head.referencedMethod.tag.l
+        tags should have size 6
         tags.nameExact(Constants.id).head.value shouldBe ("Collections.Kotlin.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
@@ -87,7 +90,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
 
-        val ruleCache        = ruleCacheWithCollectionRule(collectionRule)
+        val ruleCache        = ruleCacheWithSourceAndCollectionRules(List[RuleInfo](), collectionRule)
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
@@ -140,7 +143,8 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        val ruleCache        = ruleCacheWithSourceAndCollectionRules(List[RuleInfo](), collectionRule)
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()
@@ -150,7 +154,15 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
         getCalls should have size 1
         getCalls.name.toSeq should contain theSameElementsAs List("get")
 
-        val tags = cpg.method.fullName("<operator>.fieldAccess").head.tag.l
+        // find the handler, which is an assignment
+        val referencedMethod = cpg.call
+          .name("<operator>.assignment")
+          .where(_.argument(1).code(".*endpointHandler.*"))
+          .argument(2)
+          .isMethodRef
+          .referencedMethod
+          .head
+        val tags = referencedMethod.tag.l
         tags should have size 6
         tags.nameExact(Constants.id).head.value shouldBe ("Collections.Kotlin.HttpFramework")
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
@@ -184,7 +196,8 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
           |""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = fileContents, language = Language.KOTLIN))
 
-        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCacheWithCollectionRule(collectionRule))
+        val ruleCache        = ruleCacheWithSourceAndCollectionRules(List[RuleInfo](), collectionRule)
+        val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
         val ingressRules = collectionTagger.getIngressUrls()

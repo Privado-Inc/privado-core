@@ -1,28 +1,52 @@
 package ai.privado.languageEngine.java.tagger.collection
 
+import ai.privado.cache.TaggerCache
 import ai.privado.exporter.CollectionExporter
 import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
+import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
 class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
-  val collectionRule: RuleInfo = RuleInfo(
-    "Collections.Spark.HttpFramework",
-    "Spark Java Http Framework Endpoints",
-    "",
-    FilterProperty.METHOD_FULL_NAME,
-    Array(),
-    List(".*\\b(get|post|put)\\b.*"),
-    false,
-    "",
-    Map(),
-    NodeType.REGULAR,
-    "",
-    CatLevelOne.COLLECTIONS,
-    catLevelTwo = Constants.default,
-    Language.JAVA,
-    Array()
+  val collectionRule = List(
+    RuleInfo(
+      "Collections.Spark.HttpFramework",
+      "Spark Java Http Framework Endpoints",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*\\b(get|post|put)\\b.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.default,
+      Language.JAVA,
+      Array()
+    )
+  )
+
+  val sourceRule = List(
+    RuleInfo(
+      "Data.Sensitive.FirstName",
+      "FirstName",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVA,
+      Array()
+    )
   )
 
   "Spark Http Framework" should {
@@ -35,12 +59,16 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
             |
             |public class HelloWorld {
             |    public static void main(String[] args) {
-            |        Spark.get("/hello", (req, res) -> "Hello World");
+            |        String firstName = "test";
+            |        Spark.get("/hello", (req, res) -> firstName);
             |    }
             |}""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = javaFileContents, language = Language.JAVA))
 
-        val ruleCache        = ruleCacheWithCollectionRule(collectionRule)
+        val ruleCache   = ruleCacheWithSourceAndCollectionRules(sourceRule, collectionRule)
+        val taggerCache = new TaggerCache()
+        new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
@@ -64,6 +92,11 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
         val collectionModel :: _ = collectionExporter.getCollections.l
         collectionModel.name should be("Spark Java Http Framework Endpoints")
         collectionModel.collectionId shouldBe ("Collections.Spark.HttpFramework")
+        val collectionOcc :: _ = collectionModel.collections.l
+        collectionOcc.sourceId shouldBe ("Data.Sensitive.FirstName")
+        // TODO: This endpoint tracking is not working at the moment
+//        val collectionOccModel :: _ = collectionOcc.occurrences.l
+//        collectionOccModel.endPoint shouldBe ("")
       } finally {
         if (cpg != null) {
           cpg.close()
@@ -90,7 +123,7 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
             |}""".stripMargin
         cpg = buildCpg(TestCodeSnippet(sourceCode = javaFileContents, language = Language.JAVA))
 
-        val ruleCache        = ruleCacheWithCollectionRule(collectionRule)
+        val ruleCache        = ruleCacheWithSourceAndCollectionRules(sourceRule, collectionRule)
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 

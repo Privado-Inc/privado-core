@@ -65,8 +65,39 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
         }
         // match on second argument, that's the handler
         methodCall.argument(2) match {
-          case c: Call => // E.g. AnotherHandlerClass.someHandler - calling a 'val declaration' of a handler
-            handlerMethod = c.callee.headOption
+          case c: Call =>
+            if (c.methodFullName == "<operator>.fieldAccess") { // E.g. AnotherHandlerClass.someHandler
+              val children = c.astChildren.l
+              // Anything but a field identifier is the method for us, Call, TypeRef, TypeDecl.
+              val fieldMap = children.filter(!_.isFieldIdentifier).head.toMap
+              if (fieldMap.isEmpty) {
+                break
+              }
+              val classNameOption: Option[Any] = fieldMap.get("TYPE_FULL_NAME")
+              if (classNameOption.isEmpty) {
+                break
+              }
+              // Kotlin has a '$' in this typename, so getting everything before that
+              val className  = classNameOption.get.toString.split('$')(0)
+              val methodName = children.isFieldIdentifier.canonicalName.headOption
+              if (className != "" && methodName.isDefined) {
+                // get the assignment and the handler from there
+                /** this.endpointHandler = { req: Request, res: Response -> "hello from handler" }
+                  */
+                handlerMethod = cpg.file
+                  .where(_.typeDecl.fullName(s".*${className}.*"))
+                  .ast
+                  .isCall
+                  .name("<operator>.assignment")
+                  .where(_.argument(1).code(s".*${methodName.get}.*"))
+                  .argument(2)
+                  .isMethodRef
+                  .referencedMethod
+                  .headOption
+              }
+            } else { // E.g. AnotherHandlerClass.anotherHandler()
+              handlerMethod = c.callee.headOption
+            }
           case m: MethodRef => // E.g. a code block like { req, res -> ... }
             handlerMethod = Some(m.referencedMethod)
           case u: Unknown => // E.g. this::someHandler or SomeHandlerClass::someOtherHandler
