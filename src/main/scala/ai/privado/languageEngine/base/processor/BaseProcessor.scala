@@ -4,28 +4,18 @@ import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.cache.ModuleCache
+import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  outputUnresolvedFilename
-}
+import ai.privado.model.Constants.*
 import ai.privado.model.Language
 import ai.privado.model.Language.Language
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
 import ai.privado.semantic.Language.*
-import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import ai.privado.utility.UnresolvedReportUtility
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.Config
-import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -60,12 +50,16 @@ abstract class BaseProcessor(
     xtocpg match {
       case Success(cpg) =>
         try {
+          io.shiftleft.utils.TimeMetric.initiateNewStage("Privado Passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
-
+          io.shiftleft.utils.TimeMetric.endLastStage()
+          io.shiftleft.utils.TimeMetric.initiateNewStage("Data flow")
           applyDataflowAndPostProcessingPasses(cpg)
-
-          applyTaggingAndExport(cpg)
-
+          io.shiftleft.utils.TimeMetric.endLastStage()
+          io.shiftleft.utils.TimeMetric.initiateNewStage("Tagging and Export")
+          val newcpg = applyTaggingAndExport(cpg)
+          io.shiftleft.utils.TimeMetric.endLastStage()
+          newcpg
         } finally {
           cpg.close()
           import java.io.File

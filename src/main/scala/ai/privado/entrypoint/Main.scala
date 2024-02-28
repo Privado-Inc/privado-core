@@ -24,6 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
 import ai.privado.metric.MetricHandler
+import io.shiftleft.utils.{TimeMetric, TimeMetricRecordConfig}
 import org.slf4j.LoggerFactory
 
 import scala.sys.exit
@@ -38,6 +39,18 @@ object Main {
     CommandParser.parse(args) match {
       case Some(processor) =>
         try {
+          processor match {
+            case ScanProcessor =>
+              TimeMetric.initialize(timeMetricRecordConfig =
+                Some(
+                  TimeMetricRecordConfig(
+                    resultFile = s"${ScanProcessor.config.sourceLocation.head}/.privado/performancematrix.csv",
+                    recordFreq = 1000
+                  )
+                )
+              )
+            case _ =>
+          }
           MetricHandler.timeMetric(processor.process(), "Complete") match {
             case Right(_) =>
               processor match {
@@ -70,6 +83,6 @@ object Main {
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }
-
+    TimeMetric.endTheTotalProcessing("All processing done")
   }
 }

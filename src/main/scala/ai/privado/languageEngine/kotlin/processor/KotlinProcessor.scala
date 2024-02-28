@@ -111,13 +111,16 @@ class KotlinProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
-
+    io.shiftleft.utils.TimeMetric.initiateNewStage("AST Creation")
     val xtocpg = new Kotlin2Cpg().createCpg(cpgconfig).map { cpg =>
+      io.shiftleft.utils.TimeMetric.endLastStage()
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
+      io.shiftleft.utils.TimeMetric.initiateNewStage("Default Overlays")
       // Apply default overlays
       X2Cpg.applyDefaultOverlays(cpg)
+      io.shiftleft.utils.TimeMetric.endLastStage()
       cpg
     }
     tagAndExport(xtocpg)
