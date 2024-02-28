@@ -23,18 +23,18 @@
 
 package ai.privado.languageEngine.php.processor
 
-import ai.privado.languageEngine.php.semantic.Language.tagger
-import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.base.processor.BaseProcessor
+import ai.privado.languageEngine.php.semantic.Language.tagger
+import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.model.Constants.*
 import io.joern.php2cpg.{Config, Php2Cpg}
-import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
-import org.slf4j.{Logger, LoggerFactory}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import io.shiftleft.passes.CpgPassBase
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
 import java.util.Calendar
@@ -45,8 +45,17 @@ class PhpProcessor(
   sourceRepoLocation: String,
   lang: Language,
   dataFlowCache: DataFlowCache,
-  auditCache: AuditCache
-) extends BaseProcessor(ruleCache, privadoInput, sourceRepoLocation, lang, dataFlowCache, auditCache) {
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+) extends BaseProcessor(
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      lang,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache
+    ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
 

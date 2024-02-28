@@ -426,7 +426,8 @@ object ScanProcessor extends CommandProcessor {
                   sourceRepoLocation,
                   Language.PHP,
                   dataFlowCache = getDataflowCache,
-                  auditCache
+                  auditCache,
+                  s3DatabaseDetailsCache
                 )
                   .processCpg()
               case _ =>
