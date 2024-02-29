@@ -20,21 +20,31 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val methodsCache = scala.collection.mutable.HashMap.empty[Long, Method]
     methodsCache.addAll(collectUrlsFromHandlerEndpoints(ruleInfo.combinedRulePattern))
-    tagMethodEndpoints(builder, methodsCache.values.toList, ruleInfo)
+    tagCollectionEndpoints(builder, methodsCache.values.toList, ruleInfo)
   }
 
-  private def tagMethodEndpoints(
+  private def tagCollectionEndpoints(
     builder: DiffGraphBuilder,
     collectionPoints: List[AstNode],
     collectionRuleInfo: RuleInfo,
     returnByName: Boolean = false
   ): Unit = {
     collectionPoints.foreach(collectionPoint => {
+      // tag method
       addRuleTags(builder, collectionPoint, collectionRuleInfo, ruleCache)
       storeForTag(builder, collectionPoint, ruleCache)(
         InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
         getFinalEndPoint(collectionPoint, returnByName)
       )
+      // tag method's ast nodes
+      collectionPoint.ast
+        .where(_.tag.nameExact(Constants.id))
+        .foreach(node =>
+          storeForTag(builder, node, ruleCache)(
+            InternalTag.COLLECTION_METHOD_ENDPOINT.toString,
+            getFinalEndPoint(collectionPoint, false)
+          )
+        )
     })
   }
 

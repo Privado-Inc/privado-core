@@ -2,8 +2,8 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.TaggerCache
 import ai.privado.exporter.CollectionExporter
+import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
-import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
@@ -36,14 +36,14 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
       "",
       FilterProperty.METHOD_FULL_NAME,
       Array(),
-      List("(?i).*firstName.*"),
+      List("(?i)(.*firstName.*)"),
       false,
       "",
       Map(),
       NodeType.REGULAR,
       "",
       CatLevelOne.SOURCES,
-      "",
+      catLevelTwo = Constants.default,
       Language.JAVA,
       Array()
     )
@@ -85,18 +85,17 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
-        tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/hello\""
+        tags.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).head.value shouldBe "\"/hello\""
 
         // assert collection exporter
         val collectionExporter   = new CollectionExporter(cpg, ruleCache)
         val collectionModel :: _ = collectionExporter.getCollections.l
         collectionModel.name should be("Spark Java Http Framework Endpoints")
-        collectionModel.collectionId shouldBe ("Collections.Spark.HttpFramework")
+        collectionModel.collectionId should be("Collections.Spark.HttpFramework")
         val collectionOcc :: _ = collectionModel.collections.l
-        collectionOcc.sourceId shouldBe ("Data.Sensitive.FirstName")
-        // TODO: This endpoint tracking is not working at the moment
-//        val collectionOccModel :: _ = collectionOcc.occurrences.l
-//        collectionOccModel.endPoint shouldBe ("")
+        collectionOcc.sourceId should be("Data.Sensitive.FirstName")
+        val collectionOccModel :: _ = collectionOcc.occurrences.l
+        collectionOccModel.endPoint shouldBe ("\"/hello\"")
       } finally {
         if (cpg != null) {
           cpg.close()
