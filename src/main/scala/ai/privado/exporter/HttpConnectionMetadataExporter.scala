@@ -42,6 +42,9 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
 
+  private val LAMBDA_SERVERLESS_BASE_PATH = "service"
+  private val LAMBDA_SERVERLESS_FILE_NAME = ".*serverless.yml"
+
   def getEgressUrls = {
     var egressUrls = List[String]()
 
@@ -58,6 +61,9 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     if (AppCache.repoLanguage.id == Language.JAVA.id) {
       basePaths = basePaths.concat(cpg.property.name(SPRING_APPLICATION_BASE_PATH).value.dedup.l)
     }
+    basePaths = basePaths.concat(
+      cpg.property.where(_.file.name(LAMBDA_SERVERLESS_FILE_NAME)).name(LAMBDA_SERVERLESS_BASE_PATH).value.dedup.l
+    )
     basePaths.dedup.l
   }
 
