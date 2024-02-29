@@ -1,4 +1,5 @@
 import sbt.Credentials
+import better.files.File
 
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
@@ -149,6 +150,8 @@ goAstGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
+Compile / compile := (Compile / compile).dependsOn(goAstGenDlTask, phpParseDlTask).value
+
 lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
@@ -206,12 +209,40 @@ stage := Def
 
 Compile / compile := ((Compile / compile) dependsOn dotnetAstGenDlTask).value
 
-// Also remove astgen binaries with clean, e.g., to allow for updating them.
+// Download php-parser: start
+// This is based on how php2cpg vendors the php-parser in Joern
+val phpParserVersion       = "4.15.7"
+val upstreamParserBinName  = "php-parser.phar"
+val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
+val phpParserDlUrl =
+  s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
+
+lazy val phpParseDlTask = taskKey[Unit]("Download php-parser binaries")
+phpParseDlTask := {
+  val phpBinDir = baseDirectory.value / "bin" / "php-parser"
+  phpBinDir.mkdirs()
+
+  val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
+  IO.copyFile(downloadedFile, phpBinDir / upstreamParserBinName)
+
+  File((phpBinDir / "php-parser.php").getPath)
+    .createFileIfNotExists()
+    .overwrite(s"<?php\nrequire('$versionedParserBinName');?>")
+
+  val distDir = (Universal / stagingDirectory).value / "bin" / "php-parser"
+  distDir.mkdirs()
+  IO.copyDirectory(phpBinDir, distDir)
+}
+// Download php-parser: end
+
+// Also remove astgen and php-parser binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,
 // as .value can only be used within a task or setting macro
 cleanFiles ++= Seq(
   baseDirectory.value / "bin" / "astgen",
-  (Universal / stagingDirectory).value / "bin" / "astgen"
+  (Universal / stagingDirectory).value / "bin" / "astgen",
+  baseDirectory.value / "bin" / "php-parser",
+  (Universal / stagingDirectory).value / "bin" / "php-parser"
 ) ++ astGenBinaryNames.map(fileName => SimpleCache.encodeFile(s"$astGenDlUrl$fileName"))
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false
