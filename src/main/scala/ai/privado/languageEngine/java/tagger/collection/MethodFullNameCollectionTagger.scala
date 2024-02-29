@@ -62,9 +62,12 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
   }
 
   private def collectUrlsFromHandlerEndpoints(combinedRulePatterns: String): Map[Long, Method] = {
-    val methodCalls       = cpg.call.methodFullName(combinedRulePatterns).l
-    val methods           = scala.collection.mutable.HashMap.empty[Long, Method]
-    val localMethodUrlMap = scala.collection.mutable.HashMap.empty[Long, String]
+    val ASSIGNMENT_OPERATOR   = "<operator>.assignment"
+    val FIELD_ACCESS_OPERATOR = "<operator>.fieldAccess"
+    val TYPE_FULL_NAME_CONST  = "TYPE_FULL_NAME"
+    val methodCalls           = cpg.call.methodFullName(combinedRulePatterns).l
+    val methods               = scala.collection.mutable.HashMap.empty[Long, Method]
+    val localMethodUrlMap     = scala.collection.mutable.HashMap.empty[Long, String]
     for (methodCall <- methodCalls) {
       val url                           = methodCall.argument.isLiteral.code.head
       var handlerMethod: Option[Method] = Option.empty[Method]
@@ -76,16 +79,17 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
         // match on second argument, that's the handler
         methodCall.argument(2) match {
           case c: Call =>
-            if (c.methodFullName == "<operator>.fieldAccess") { // E.g. AnotherHandlerClass.someHandler
+            if (c.methodFullName == FIELD_ACCESS_OPERATOR) { // E.g. AnotherHandlerClass.someHandler
               val children = c.astChildren.l
               // Anything but a field identifier is the method for us, Call, TypeRef, TypeDecl.
               val fieldMap = children.filter(!_.isFieldIdentifier).head.toMap
               if (fieldMap.isEmpty) {
-                break
+                break // continue loop
               }
-              val classNameOption: Option[Any] = fieldMap.get("TYPE_FULL_NAME")
+
+              val classNameOption: Option[Any] = fieldMap.get(TYPE_FULL_NAME_CONST)
               if (classNameOption.isEmpty) {
-                break
+                break // continue loop
               }
               // Kotlin has a '$' in this typename, so getting everything before that
               val className  = classNameOption.get.toString.split('$')(0)
@@ -98,7 +102,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
                   .where(_.typeDecl.fullName(s".*${className}.*"))
                   .ast
                   .isCall
-                  .name("<operator>.assignment")
+                  .name(ASSIGNMENT_OPERATOR)
                   .where(_.argument(1).code(s".*${methodName.get}.*"))
                   .argument(2)
                   .isMethodRef
