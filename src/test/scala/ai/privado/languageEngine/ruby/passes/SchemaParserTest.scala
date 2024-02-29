@@ -65,8 +65,16 @@ class SchemaParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll 
             |    field :myMapping, Types::Mapping, null: true
             |    field :myMappings, Types::Mapping, null: true
             |
-            |    def resolve(my_mappings:)
+            |    def resolve1(my_mappings:)
             |      perform(my_mappings)
+            |    end
+            |
+            |    def resolve2(myMapping:)
+            |      perform(myMapping)
+            |    end
+            |
+            |    def resolve3(myMappings:)
+            |      perform(myMappings)
             |    end
             |  end
             |end
@@ -94,19 +102,19 @@ class SchemaParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll 
     "be able to tag derived sources" in {
       new IdentifierDerivedTagger(cpg, ruleCache).createAndApply()
       cpg
-        .identifier("my_mappings")
-        .lineNumber(13)
+        .identifier("(my_mappings|myMapping|myMappings)")
+        .or(_.lineNumber(13), _.lineNumber(17), _.lineNumber(21))
         .tag
         .nameExact(Constants.catLevelOne)
         .valueExact(CatLevelOne.DERIVED_SOURCES.name)
-        .size shouldBe 1
+        .size shouldBe 3
       cpg.literal
-        .code(":my_mappings")
-        .lineNumber(8)
+        .code(":(my_mappings|myMapping|myMappings)")
+        .or(_.lineNumber(8), _.lineNumber(9), _.lineNumber(10))
         .tag
         .nameExact(Constants.catLevelOne)
         .valueExact(CatLevelOne.DERIVED_SOURCES.name)
-        .size shouldBe 1
+        .size shouldBe 3
     }
 
     "be able to tag original sources" in {
