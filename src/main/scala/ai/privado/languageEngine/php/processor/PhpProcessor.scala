@@ -38,6 +38,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
 import java.util.Calendar
+import java.io.File
 
 class PhpProcessor(
   ruleCache: RuleCache,
@@ -68,11 +69,30 @@ class PhpProcessor(
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
 
     createCpgFolder(sourceRepoLocation)
+
+    // get vendored php parser path
+    val parserBinPath: String = {
+      val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
+      val indexOfLib = dir.lastIndexOf("lib")
+      val fixedDir = if (indexOfLib != -1) {
+        new File(dir.substring("file:".length, indexOfLib)).toString
+      } else {
+        val indexOfTarget = dir.lastIndexOf("target")
+        if (indexOfTarget != -1) {
+          new File(dir.substring("file:".length, indexOfTarget)).toString
+        } else {
+          "."
+        }
+      }
+      Paths.get(fixedDir, "/bin/php-parser/php-parser.php").toAbsolutePath.toString
+    }
+
     val cpgOutput = Paths.get(sourceRepoLocation, outputDirectoryName, cpgOutputFileName)
     val cpgConfig = Config()
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutput.toString)
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
+      .withPhpParserBin(parserBinPath)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
       println(

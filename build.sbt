@@ -223,7 +223,7 @@ phpParseDlTask := {
   phpBinDir.mkdirs()
 
   val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
-  IO.copyFile(downloadedFile, phpBinDir / upstreamParserBinName)
+  IO.copyFile(downloadedFile, phpBinDir / versionedParserBinName)
 
   File((phpBinDir / "php-parser.php").getPath)
     .createFileIfNotExists()
