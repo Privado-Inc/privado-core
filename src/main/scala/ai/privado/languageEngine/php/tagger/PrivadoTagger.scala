@@ -25,9 +25,10 @@ package ai.privado.languageEngine.php.tagger
 
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.php.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.{IdentifierTagger, LiteralTagger}
+import ai.privado.tagger.source.LiteralTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
