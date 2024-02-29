@@ -36,7 +36,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.exporter.EgressExporter
+import ai.privado.exporter.HttpConnectionMetadataExporter
 
 class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents: String =
@@ -191,6 +191,9 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
 
 class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
   override val configFileContents = """
+                                      |spring:
+                                      |   application:
+                                      |       name: basepath
                                       |mx-record-delete:
                                       |    events:
                                       |      - http:
@@ -215,16 +218,21 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
 
   "Fetch egress urls from property files" ignore {
     "Check egress urls" in {
-      val egressExporter   = EgressExporter(cpg, new RuleCache)
+      val egressExporter   = HttpConnectionMetadataExporter(cpg, new RuleCache)
       val List(url1, url2) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
     }
 
     "Check egress urls with single char" in {
-      val egressExporter       = EgressExporter(cpg, new RuleCache)
+      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache)
       val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
       egressWithSingleChar.size shouldBe 0
+    }
+    "Check application base path" in {
+      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val List(basePath)                 = httpConnectionMetadataExporter.getEndPointBasePath
+      basePath shouldBe "basepath"
     }
   }
 }
