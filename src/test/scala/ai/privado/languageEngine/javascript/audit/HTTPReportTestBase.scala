@@ -1,38 +1,32 @@
-package ai.privado.languageEngine.java.audit
+package ai.privado.languageEngine.javascript.audit
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, Language, SystemConfig}
 import better.files.File
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-abstract class URLReportTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+abstract class HTTPReportTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg: Cpg = _
-  val javaFileContentMap: Map[String, String]
+  val javascriptFileContentMap: Map[String, String]
   var inputDir: File  = _
   var outputDir: File = _
   val ruleCache       = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
-    for ((key, content) <- javaFileContentMap) {
+    for ((key, content) <- javascriptFileContentMap) {
       (inputDir / key).write(content)
     }
 
     outputDir = File.newTemporaryDirectory()
 
-    val config  = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
-    val javaSrc = new JavaSrc2Cpg()
-    val xtocpg = javaSrc.createCpg(config).map { cpg =>
-      applyDefaultOverlays(cpg)
-      cpg
-    }
-
+    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
+    val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(config)
     cpg = xtocpg.get
 
     ruleCache.setRule(rule)
