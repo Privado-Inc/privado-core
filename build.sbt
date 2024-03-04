@@ -7,7 +7,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.6.6"
-val joernVersion      = "2.0.277"
+val joernVersion      = "2.0.283"
 val overflowdbVersion = "1.187"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -73,9 +73,7 @@ libraryDependencies ++= Seq(
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
 
 enablePlugins(JavaAppPackaging)
-
-ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-
+ThisBuild / licenses          := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / resolvers ++= Seq(
