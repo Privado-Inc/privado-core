@@ -7,7 +7,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.6.6"
-val joernVersion      = "2.0.279"
+val joernVersion      = "2.0.283"
 val overflowdbVersion = "1.187"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -149,8 +149,6 @@ goAstGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
-Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
-
 lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
@@ -199,7 +197,7 @@ dotnetAstGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
-Compile / compile := ((Compile / compile) dependsOn dotnetAstGenDlTask).value
+Compile / compile := ((Compile / compile).dependsOn(goAstGenDlTask, dotnetAstGenDlTask)).value
 
 lazy val dotnetAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 dotnetAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }

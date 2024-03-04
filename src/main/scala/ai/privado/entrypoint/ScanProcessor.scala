@@ -421,14 +421,15 @@ object ScanProcessor extends CommandProcessor {
                 ).processCpg()
               case language if language == Languages.CSHARPSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'C#'")
-                CSharpProcessor.createCSharpCpg(
-                  getProcessedRule(Set(Language.CSHARP)),
+                new CSharpProcessor(
+                  getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
+                  this.config,
                   sourceRepoLocation,
-                  lang,
+                  Language.KOTLIN,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
-                )
+                ).processCpg()
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(

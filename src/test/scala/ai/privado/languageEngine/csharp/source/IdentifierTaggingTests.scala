@@ -8,7 +8,10 @@ class IdentifierTaggingTests extends CSharpTestBase {
 
   "Basic assignment nodes" should {
     "be tagged as part of identifier tagger" in {
-      val (cpg, _) = code("""
+      val (cpg, _) = code(
+        List(
+          SourceCodeModel(
+            """
           |namespace Foo {
           | public class Bar {
           |   public static void Main(string[] args) {
@@ -16,15 +19,22 @@ class IdentifierTaggingTests extends CSharpTestBase {
           |   }
           | }
           |}
-          |""".stripMargin)
+          |""".stripMargin,
+            "Test.cs"
+          )
+        )
+      )
 
       val List(phoneNumber) = cpg.identifier.nameExact("phoneNumber").l
-      phoneNumber.tag.nameExact(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString).size shouldBe 1
+      phoneNumber.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
     }
   }
 
   "Derived sources" should {
-    val (cpg, _) = code("""
+    val (cpg, _) = code(
+      List(
+        SourceCodeModel(
+          """
         |namespace Foo {
         | public class Bar {
         |   public int PhoneNumber {get; set;}
@@ -35,7 +45,11 @@ class IdentifierTaggingTests extends CSharpTestBase {
         |   }
         | }
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+          "Test.cs"
+        )
+      )
+    )
 
     "tag the member inside a class" in {
       cpg.member("PhoneNumber").tag.nameExact(Constants.id).value.l shouldBe List(
@@ -50,7 +64,7 @@ class IdentifierTaggingTests extends CSharpTestBase {
         .value
         .head shouldBe "Data.Sensitive.ContactData.PhoneNumber"
       barId.tag.where(_.nameExact(Constants.id)).size shouldBe 1
-      barId.tag.where(_.nameExact(Constants.catLevelOne)).value.head shouldBe "DerivedSources"
+      barId.tag.where(_.nameExact(Constants.catLevelOne)).value.l shouldBe List(CatLevelOne.DERIVED_SOURCES.name)
     }
   }
 

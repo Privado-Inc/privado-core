@@ -43,6 +43,14 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       addRuleTags(builder, member, ruleInfo, ruleCache)
     })
 
+    val regexMatchingFieldIdentifiersIdentifiers =
+      cpg.fieldAccess.where(_.fieldIdentifier.canonicalName(rulePattern)).isCall.l
+
+    regexMatchingFieldIdentifiersIdentifiers.foreach(identifier => {
+      storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+      addRuleTags(builder, identifier, ruleInfo, ruleCache)
+    })
+
     tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
   }
 
