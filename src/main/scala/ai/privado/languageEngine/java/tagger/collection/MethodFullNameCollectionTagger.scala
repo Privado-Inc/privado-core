@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method, Me
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import ai.privado.utility.Utilities.*
+import io.shiftleft.codepropertygraph.generated.PropertyNames.TYPE_FULL_NAME
 
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
@@ -62,10 +63,9 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
   }
 
   private def collectUrlsFromHandlerEndpoints(combinedRulePatterns: String): Map[Long, Method] = {
-    val TYPE_FULL_NAME_CONST = "TYPE_FULL_NAME"
-    val methodCalls          = cpg.call.methodFullName(combinedRulePatterns).l
-    val methods              = scala.collection.mutable.HashMap.empty[Long, Method]
-    val localMethodUrlMap    = scala.collection.mutable.HashMap.empty[Long, String]
+    val methodCalls       = cpg.call.methodFullName(combinedRulePatterns).l
+    val methods           = scala.collection.mutable.HashMap.empty[Long, Method]
+    val localMethodUrlMap = scala.collection.mutable.HashMap.empty[Long, String]
     for (methodCall <- methodCalls) {
       val url                           = methodCall.argument.isLiteral.code.head
       var handlerMethod: Option[Method] = Option.empty[Method]
@@ -85,7 +85,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
                 break // continue loop
               }
 
-              val classNameOption: Option[Any] = fieldMap.get(TYPE_FULL_NAME_CONST)
+              val classNameOption: Option[Any] = fieldMap.get(TYPE_FULL_NAME)
               if (classNameOption.isEmpty) {
                 break // continue loop
               }
