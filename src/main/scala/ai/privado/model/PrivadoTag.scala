@@ -99,6 +99,7 @@ object Language extends Enumeration {
   val RUBY       = Value("ruby")
   val KOTLIN     = Value("kotlin")
   val GO         = Value("go")
+  val CSHARP     = Value("csharp")
   val DEFAULT    = Value("default")
   val UNKNOWN    = Value("unknown")
   def withNameWithDefault(name: String): Value = {

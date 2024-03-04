@@ -12,6 +12,7 @@ import io.joern.x2cpg.passes.frontend.{LocalKey, SBKey, SymbolTable}
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities.resolver
 import ai.privado.languageEngine.ruby.RubyTestBase._
+import ai.privado.model.SourceCodeModel
 
 class MethodFullNameForInternalNodesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
