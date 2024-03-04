@@ -11,7 +11,7 @@ object RuleInfoTestData {
       "",
       FilterProperty.METHOD_FULL_NAME,
       Array(),
-      List("(?i).*firstName.*"),
+      List("(?i).*firstName|first_name.*"),
       false,
       "",
       Map(),

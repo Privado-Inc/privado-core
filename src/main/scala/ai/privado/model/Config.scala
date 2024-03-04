@@ -49,16 +49,16 @@ case class RuleInfo(
   }
 }
 case class ConfigAndRules(
-  sources: List[RuleInfo],
-  sinks: List[RuleInfo],
-  collections: List[RuleInfo],
-  policies: List[PolicyOrThreat],
-  threats: List[PolicyOrThreat],
-  exclusions: List[RuleInfo],
-  semantics: List[Semantic],
-  sinkSkipList: List[RuleInfo],
-  systemConfig: List[SystemConfig],
-  auditConfig: List[RuleInfo]
+  sources: List[RuleInfo] = List(),
+  sinks: List[RuleInfo] = List(),
+  collections: List[RuleInfo] = List(),
+  policies: List[PolicyOrThreat] = List(),
+  threats: List[PolicyOrThreat] = List(),
+  exclusions: List[RuleInfo] = List(),
+  semantics: List[Semantic] = List(),
+  sinkSkipList: List[RuleInfo] = List(),
+  systemConfig: List[SystemConfig] = List(),
+  auditConfig: List[RuleInfo] = List()
 )
 
 case class AllowedSourceFilters(sources: List[String])

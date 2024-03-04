@@ -22,6 +22,8 @@
 
 package ai.privado.model
 
+import ai.privado.model.Language.{JAVA, Language}
+
 object InternalTag extends Enumeration {
 
   type InternalTag = Value
@@ -105,6 +107,40 @@ object Language extends Enumeration {
       withName(name)
     } catch {
       case _: Throwable => this.UNKNOWN
+    }
+  }
+}
+
+object LanguageFileExt extends Enumeration {
+  type LanguageFileExt = Value
+
+  private val JAVA_EXT       = Value(".java")
+  private val JAVASCRIPT_EXT = Value(".js")
+  private val PYTHON_EXT     = Value(".py")
+  private val RUBY_EXT       = Value(".rb")
+  private val KOTLIN_EXT     = Value(".kt")
+  private val GO_EXT         = Value(".go")
+  private val DEFAULT_EXT    = Value(".default")
+  private val UNKNOWN_EXT    = Value(".unknown")
+
+  def withLanguage(language: Language): String = {
+    language match {
+      case Language.JAVA       => JAVA_EXT.toString
+      case Language.JAVASCRIPT => JAVASCRIPT_EXT.toString
+      case Language.PYTHON     => PYTHON_EXT.toString
+      case Language.RUBY       => RUBY_EXT.toString
+      case Language.KOTLIN     => KOTLIN_EXT.toString
+      case Language.GO         => GO_EXT.toString
+      case Language.DEFAULT    => DEFAULT_EXT.toString
+      case Language.UNKNOWN    => UNKNOWN_EXT.toString
+    }
+  }
+
+  def withNameWithDefault(name: String): Value = {
+    try {
+      withName(name)
+    } catch {
+      case _: Throwable => this.UNKNOWN_EXT
     }
   }
 }
