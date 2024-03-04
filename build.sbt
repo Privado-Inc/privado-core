@@ -73,9 +73,7 @@ libraryDependencies ++= Seq(
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
 
 enablePlugins(JavaAppPackaging)
-
-ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
-
+ThisBuild / licenses          := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / resolvers ++= Seq(
