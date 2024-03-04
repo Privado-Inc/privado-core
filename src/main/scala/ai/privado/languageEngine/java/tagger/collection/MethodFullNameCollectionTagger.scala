@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method, MethodRef, Unknown}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
@@ -62,12 +62,10 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
   }
 
   private def collectUrlsFromHandlerEndpoints(combinedRulePatterns: String): Map[Long, Method] = {
-    val ASSIGNMENT_OPERATOR   = "<operator>.assignment"
-    val FIELD_ACCESS_OPERATOR = "<operator>.fieldAccess"
-    val TYPE_FULL_NAME_CONST  = "TYPE_FULL_NAME"
-    val methodCalls           = cpg.call.methodFullName(combinedRulePatterns).l
-    val methods               = scala.collection.mutable.HashMap.empty[Long, Method]
-    val localMethodUrlMap     = scala.collection.mutable.HashMap.empty[Long, String]
+    val TYPE_FULL_NAME_CONST = "TYPE_FULL_NAME"
+    val methodCalls          = cpg.call.methodFullName(combinedRulePatterns).l
+    val methods              = scala.collection.mutable.HashMap.empty[Long, Method]
+    val localMethodUrlMap    = scala.collection.mutable.HashMap.empty[Long, String]
     for (methodCall <- methodCalls) {
       val url                           = methodCall.argument.isLiteral.code.head
       var handlerMethod: Option[Method] = Option.empty[Method]
@@ -79,7 +77,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
         // match on second argument, that's the handler
         methodCall.argument(2) match {
           case c: Call =>
-            if (c.methodFullName == FIELD_ACCESS_OPERATOR) { // E.g. AnotherHandlerClass.someHandler
+            if (c.methodFullName == Operators.fieldAccess) { // E.g. AnotherHandlerClass.someHandler
               val children = c.astChildren.l
               // Anything but a field identifier is the method for us, Call, TypeRef, TypeDecl.
               val fieldMap = children.filter(!_.isFieldIdentifier).head.toMap
@@ -92,7 +90,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
                 break // continue loop
               }
               // Kotlin has a '$' in this typename, so getting everything before that
-              val className  = classNameOption.get.toString.split('$')(0)
+              val className  = classNameOption.get.toString.split('$').headOption.getOrElse("")
               val methodName = children.isFieldIdentifier.canonicalName.headOption
               if (className != "" && methodName.isDefined) {
                 // get the assignment and the handler from there
@@ -102,7 +100,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
                   .where(_.typeDecl.fullName(s".*${className}.*"))
                   .ast
                   .isCall
-                  .name(ASSIGNMENT_OPERATOR)
+                  .name(Operators.assignment)
                   .where(_.argument(1).code(s".*${methodName.get}.*"))
                   .argument(2)
                   .isMethodRef

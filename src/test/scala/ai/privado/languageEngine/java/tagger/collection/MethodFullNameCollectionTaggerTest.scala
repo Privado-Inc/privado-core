@@ -139,7 +139,7 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
         tags.nameExact(Constants.catLevelOne).head.value shouldBe Constants.collections
         tags.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.default
         tags.nameExact(Constants.nodeType).head.value shouldBe "REGULAR"
-        tags.nameExact("COLLECTION_METHOD_ENDPOINT").head.value shouldBe "\"/another\""
+        tags.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).head.value shouldBe "\"/another\""
       } finally {
         if (cpg != null) {
           cpg.close()
