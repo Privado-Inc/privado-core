@@ -18,6 +18,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import ai.privado.model.SourceCodeModel
 
 class SchemaParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 

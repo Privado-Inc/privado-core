@@ -10,6 +10,8 @@ import ai.privado.languageEngine.ruby.RubyTestBase.*
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
+import ai.privado.model.SourceCodeModel
+
 class MethodFullNameForExternalNodesTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "method fullname for external nodes accessed via scopeResolution" should {
