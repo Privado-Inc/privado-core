@@ -64,7 +64,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
 
   val taggerCache = new TaggerCache()
 
-  def code(sourceCodes: List[SourceCodeModel], fileExtension: String = ".cs"): (Cpg, ThreatEngineExecutor) = {
+  def code(sourceCodes: List[SourceCodeModel]): (Cpg, ThreatEngineExecutor) = {
     val ruleCache                    = new RuleCache()
     val dataFlows: Map[String, Path] = Map()
     val auditCache                   = new AuditCache
