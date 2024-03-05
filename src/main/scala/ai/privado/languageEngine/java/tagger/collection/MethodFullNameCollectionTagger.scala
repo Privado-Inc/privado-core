@@ -2,12 +2,12 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method, MethodRef, Unknown}
-import io.shiftleft.semanticcpg.language.*
-import org.slf4j.LoggerFactory
 import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.PropertyNames.TYPE_FULL_NAME
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
@@ -67,7 +67,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
     val methods           = scala.collection.mutable.HashMap.empty[Long, Method]
     val localMethodUrlMap = scala.collection.mutable.HashMap.empty[Long, String]
     for (methodCall <- methodCalls) {
-      val url                           = methodCall.argument.isLiteral.code.head
+      val url                           = methodCall.argument.isLiteral.code.headOption.getOrElse("")
       var handlerMethod: Option[Method] = Option.empty[Method]
 
       breakable {
