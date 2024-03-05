@@ -152,11 +152,6 @@ goAstGenDlTask := {
 lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
-stage := Def
-  .sequential(goAstGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
-
 // download goastgen: end
 
 // download dotnetastgen: start
@@ -201,7 +196,7 @@ lazy val dotnetAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 dotnetAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
 stage := Def
-  .sequential(dotnetAstGenSetAllPlatforms, Universal / stage)
+  .sequential(goAstGenSetAllPlatforms, dotnetAstGenSetAllPlatforms, Universal / stage)
   .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
   .value
 
