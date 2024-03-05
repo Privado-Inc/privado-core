@@ -197,8 +197,6 @@ dotnetAstGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
-Compile / compile := ((Compile / compile).dependsOn(goAstGenDlTask, dotnetAstGenDlTask)).value
-
 lazy val dotnetAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 dotnetAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
@@ -208,6 +206,8 @@ stage := Def
   .value
 
 // download dotnetastgen: end
+
+Compile / compile := ((Compile / compile).dependsOn(goAstGenDlTask, dotnetAstGenDlTask)).value
 
 // Also remove astgen binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,
