@@ -56,5 +56,11 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
+
+    val regexMatchingMembers = cpg.member.name(rulePattern).l
+    regexMatchingMembers.foreach(member => {
+      storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
+      addRuleTags(builder, member, ruleInfo, ruleCache)
+    })
   }
 }
