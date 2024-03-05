@@ -75,7 +75,9 @@ libraryDependencies ++= Seq(
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
 
 enablePlugins(JavaAppPackaging)
-ThisBuild / licenses          := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
+ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses/LICENSE-2.0"))
+
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / resolvers ++= Seq(
@@ -150,10 +152,7 @@ goAstGenDlTask := {
 lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
-stage := Def
-  .sequential(goAstGenSetAllPlatforms, Universal / stage)
-  .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
-  .value
+Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 
 // download goastgen: end
 
@@ -195,17 +194,17 @@ dotnetAstGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
-Compile / compile := ((Compile / compile).dependsOn(goAstGenDlTask, dotnetAstGenDlTask)).value
-
 lazy val dotnetAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 dotnetAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
 stage := Def
-  .sequential(dotnetAstGenSetAllPlatforms, Universal / stage)
+  .sequential(goAstGenSetAllPlatforms, dotnetAstGenSetAllPlatforms, Universal / stage)
   .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
   .value
 
 // download dotnetastgen: end
+
+Compile / compile := ((Compile / compile) dependsOn dotnetAstGenDlTask).value
 
 // Also remove astgen binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,
