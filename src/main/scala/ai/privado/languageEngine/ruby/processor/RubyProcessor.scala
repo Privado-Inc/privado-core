@@ -163,10 +163,6 @@ object RubyProcessor {
           // Not using languageEngine's passes
           // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
 
-          // TODO remove below lines in GA release, need these for dubugging
-          // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).map(cl => (cl.name, cl.file.name.headOption.getOrElse(""), cl.methodFullName, cl.dynamicTypeHintFullName.l)).foreach(println)
-          // cpg.call.whereNot(_.name("(?i)(.*operator.*|require.*)")).whereNot(_.code("<empty>")).sortBy(_.name).map(cl => (cl.name, cl.methodFullName, cl.file.name.headOption.getOrElse(""), cl.lineNumber)).foreach(println)
-
           println(s"${Calendar.getInstance().getTime} - Overlay started  ...")
           val context = new LayerCreatorContext(cpg)
           val options = new OssDataFlowOptions()

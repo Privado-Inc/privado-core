@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.ruby.tagger.sink
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{NodeType, RuleInfo}
+import ai.privado.model.{FilterProperty, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.addRuleTags
 import io.shiftleft.codepropertygraph.generated.nodes.Call
@@ -47,9 +47,13 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val combinedRegex = ruleInfo.combinedRulePattern
-    val sinks = cacheCall
-      .or(_.methodFullName(combinedRegex), _.filter(_.dynamicTypeHintFullName.exists(_.matches(combinedRegex))))
-      .l
+
+    val sinks = ruleInfo.filterProperty match
+      case FilterProperty.CODE => cacheCall.code(s"${ruleInfo.combinedRulePattern}").l
+      case _ =>
+        cacheCall
+          .or(_.methodFullName(combinedRegex), _.filter(_.dynamicTypeHintFullName.exists(_.matches(combinedRegex))))
+          .l
 
     sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
   }

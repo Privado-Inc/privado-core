@@ -14,6 +14,8 @@ object AuditReportConstants {
 
   val AUDIT_API_SHEET_NAME = "API Audit"
 
+  val AUDIT_HTTP_SHEET_NAME = "Http Audit"
+
   val AUDIT_EMPTY_CELL_VALUE = "--"
 
   val AUDIT_CHECKED_VALUE = "YES"
@@ -125,11 +127,15 @@ object AuditReportConstants {
   val JS_ELEMENTS_TO_BE_EXCLUDED =
     "^(?i)(modules?|loggers?|val|console|require|_|get|key|value|data|page|url|Set|filter|<init>|err|errors|axios|express|router|component|Instance|utils?|app|undefined|context|process|...props?|async|await|const|let|var|this)$"
 
-  val URLREGEX = ".*(/).*"
+  val URL_REGEX = ".*(/).*"
 
   val URL_AUDIT_URL_NAME = "URL"
+
+  val HTTP_AUDIT_HTTP_NAME = "http"
 
   val AUDIT_LINE_NO = "Line No."
 
   val API_AUDIT_API_NAME = "API Call"
+
+  val HTTP_REGEX = ".*http.*"
 }

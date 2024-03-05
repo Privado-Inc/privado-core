@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.ruby
 
 import ai.privado.languageEngine.ruby.passes.{GlobalImportPass, PrivadoRubyTypeRecoveryPassGenerator}
+import ai.privado.model.SourceCodeModel
 import io.shiftleft.codepropertygraph.generated.Cpg
 import better.files.File
 import io.joern.rubysrc2cpg.deprecated.passes.RubyTypeHintCallLinker
@@ -9,7 +10,6 @@ import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.passes.frontend.{LocalKey, SBKey, SymbolTable}
 import io.shiftleft.semanticcpg.language.*
 object RubyTestBase {
-  case class SourceCodeModel(sourceCode: String, fileName: String)
 
   def code(sourceCodes: List[SourceCodeModel], applyPostProcessingPass: Boolean = false): (Cpg, Config) = {
 

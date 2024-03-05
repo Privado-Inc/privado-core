@@ -129,15 +129,18 @@ class JavaProcessor(
     val dependencies        = getDependencyList(cpgconfig)
     val hasLombokDependency = dependencies.exists(_.contains("lombok"))
     if (hasLombokDependency) {
-      val delombokPath = Delombok.run(AppCache.scanPath)
-      AppCache.isLombokPresent = true
-      // Update the new ScanPath with delombok folder path
-      AppCache.scanPath = s"${AppCache.scanPath}/${Constants.delombok}"
-      // Creating a new CpgConfig which uses the delombokPath
-      cpgconfig = Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
-        .withInputPath(delombokPath)
-        .withOutputPath(cpgOutputPath)
-        .withIgnoredFilesRegex(excludeFileRegex)
+      Delombok.run(AppCache.scanPath) match
+        case Left(_) =>
+        case Right(delombokPath) =>
+          AppCache.isLombokPresent = true
+          // Update the new ScanPath with delombok folder path
+          AppCache.scanPath = delombokPath
+          // Creating a new CpgConfig which uses the delombokPath
+          cpgconfig =
+            Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
+              .withInputPath(delombokPath)
+              .withOutputPath(cpgOutputPath)
+              .withIgnoredFilesRegex(excludeFileRegex)
     }
 
     val javasrc = JavaSrc2Cpg()
@@ -155,15 +158,13 @@ class JavaProcessor(
     val msg = tagAndExport(xtocpg)
 
     // Delete the delomboked directory after scanning is completed
-    /*
     if (AppCache.isLombokPresent) {
-      val dirName = AppCache.scanPath + "/" + Constants.delombok
+      val dirName = AppCache.scanPath // scanPath is  already set to delombok path
       Try(File(dirName).delete()) match {
         case Success(_)         => logger.debug("Succesfully deleted delomboked code")
         case Failure(exception) => logger.debug(s"Exception :", exception)
       }
     }
-     */
     msg
   }
 
@@ -194,7 +195,7 @@ object Delombok {
       .getOrElse("java")
   }
 
-  private def delombokToTempDirCommand(tempDir: File, analysisJavaHome: Option[String]) = {
+  private def delombokToTempDirCommand(tempDirPath: String, analysisJavaHome: Option[String]) = {
     val javaPath = analysisJavaHome.getOrElse(systemJavaPath)
     val classPathArg = Try(File.newTemporaryFile("classpath").deleteOnExit()) match {
       case Success(file) =>
@@ -210,26 +211,19 @@ object Delombok {
         System.getProperty("java.class.path")
     }
 
-    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d ${tempDir.canonicalPath} -f pretty"
+    s"$javaPath -cp $classPathArg lombok.launch.Main delombok . -d $tempDirPath -f pretty"
   }
 
-  def run(projectDir: String, analysisJavaHome: Option[String] = None): String = {
+  def run(projectDir: String, analysisJavaHome: Option[String] = None): Either[String, String] = {
     val dirName = s"$projectDir/${Constants.delombok}"
-    Try(File(dirName).createDirectoryIfNotExists()) match {
-      case Success(tempDir) =>
-        ExternalCommand.run(delombokToTempDirCommand(tempDir, analysisJavaHome), cwd = projectDir) match {
-          case Success(_) =>
-            tempDir.path.toAbsolutePath.toString
+    ExternalCommand.run(delombokToTempDirCommand(dirName, analysisJavaHome), cwd = projectDir) match {
+      case Success(_) =>
+        Right(dirName)
 
-          case Failure(t) =>
-            logger.warn(s"Executing delombok failed", t)
-            logger.warn("Creating AST with original source instead. Some methods and type information will be missing.")
-            projectDir
-        }
-
-      case Failure(e) =>
-        logger.warn(s"Failed to create temporary directory for delomboked source. Methods and types may be missing", e)
-        projectDir
+      case Failure(t) =>
+        logger.warn(s"Executing delombok failed", t)
+        logger.warn("Creating AST with original source instead. Some methods and type information will be missing.")
+        Left(projectDir)
     }
   }
 }

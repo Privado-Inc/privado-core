@@ -100,7 +100,9 @@ object AuditReportEntryPoint {
       UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
 
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
+    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
+
+    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
 
     createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
 
@@ -115,7 +117,9 @@ object AuditReportEntryPoint {
       DataFlowReport.processDataFlowAudit(auditCache)
     )
 
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
+    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
+
+    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
 
     createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
 
@@ -149,7 +153,9 @@ object AuditReportEntryPoint {
       UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
 
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, URLReport.processURLAudit(xtocpg))
+    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
+
+    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
 
     createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
 

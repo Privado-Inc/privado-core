@@ -141,8 +141,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     )
   )
 
-  val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), List(), List())
+  val rule: ConfigAndRules = ConfigAndRules(sources = sourceRule, sinks = sinkRule, collections = collectionRule)
 
   val taggerCache = new TaggerCache()
 }

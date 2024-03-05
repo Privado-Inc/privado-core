@@ -27,7 +27,12 @@ import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
-import ai.privado.languageEngine.ruby.tagger.source.{IdentifierDerivedTagger, IdentifierTagger}
+import ai.privado.languageEngine.ruby.tagger.source.{
+  IdentifierDerivedTagger,
+  IdentifierTagger,
+  RubyLiteralDerivedTagger,
+  RubyLiteralTagger
+}
 import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
@@ -53,6 +58,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
     logger.info("Starting tagging")
     new LiteralTagger(cpg, ruleCache).createAndApply()
+    new RubyLiteralTagger(cpg, ruleCache).createAndApply()
+    new RubyLiteralDerivedTagger(cpg, ruleCache).createAndApply()
     new IdentifierTagger(cpg, ruleCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new IdentifierDerivedTagger(cpg, ruleCache).createAndApply()

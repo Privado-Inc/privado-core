@@ -27,17 +27,16 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.util.{Failure, Success, Try}
 
 class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
-  private val methodUrlMap = mutable.HashMap[Long, String]()
-  private val classUrlMap  = mutable.HashMap[Long, String]()
+  protected val methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
+  protected val classUrlMap: mutable.HashMap[Long, String]  = mutable.HashMap[Long, String]()
+  private val logger                                        = LoggerFactory.getLogger(this.getClass)
 
   def getIngressUrls(): List[String] = {
     CollectionUtility.getCollectionUrls(cpg, methodUrlMap, classUrlMap)
@@ -47,28 +46,17 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
+    classUrlMap.addAll(collectAnnotatedUrlsFromClasses(ruleInfo.combinedRulePattern))
+    val (methodUrls, collectionMethodsCache) = collectAnnotatedUrlsFromMethods(ruleInfo.combinedRulePattern)
+    methodUrlMap.addAll(methodUrls)
+    tagSources(builder, ruleInfo, collectionMethodsCache)
+  }
 
-    // A cached method so that we are not computing again
-    val combinedRulePatterns = ruleInfo.combinedRulePattern
-    cpg.annotation
-      .name(combinedRulePatterns)
-      .filter(_.typeDecl.nonEmpty)
-      .foreach(classAnnotation => {
-        classUrlMap
-          .addOne(classAnnotation.typeDecl.head.id() -> CollectionUtility.getUrlFromAnnotation(classAnnotation))
-      })
-    val collectionMethodsCache = cpg.annotation
-      .name(combinedRulePatterns)
-      .filter(_.method.nonEmpty)
-      .map(matchedAnnotation => {
-        methodUrlMap.addOne(
-          matchedAnnotation.method.head.id() -> CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
-        )
-        matchedAnnotation
-      })
-      .method
-      .l
-
+  protected def tagSources(
+    builder: DiffGraphBuilder,
+    ruleInfo: RuleInfo,
+    collectionMethodsCache: List[Method]
+  ): Unit = {
     CollectionUtility.tagDirectSources(
       builder,
       collectionMethodsCache,
@@ -89,4 +77,25 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     )
   }
 
+  private def collectAnnotatedUrlsFromMethods(combinedRulePatterns: String): (Map[Long, String], List[Method]) = {
+    val methodAnnotations =
+      cpg.annotation
+        .name(combinedRulePatterns)
+        .filter(_.method.nonEmpty)
+        .l
+    (
+      methodAnnotations.map(ma => ma.method.head.id() -> CollectionUtility.getUrlFromAnnotation(ma)).toMap,
+      methodAnnotations.method.l
+    )
+  }
+
+  private def collectAnnotatedUrlsFromClasses(combinedRulePatterns: String): Map[Long, String] = {
+    cpg.annotation
+      .name(combinedRulePatterns)
+      .filter(_.typeDecl.nonEmpty)
+      .map(classAnnotation => {
+        classAnnotation.typeDecl.head.id() -> CollectionUtility.getUrlFromAnnotation(classAnnotation)
+      })
+      .toMap
+  }
 }

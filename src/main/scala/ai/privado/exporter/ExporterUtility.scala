@@ -329,9 +329,9 @@ object ExporterUtility {
     val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
     val sinkExporter =
       new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, s3DatabaseDetailsCache)
-    val dataflowExporter           = new DataflowExporter(dataflows, taggerCache)
-    val collectionExporter         = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val egressExporter             = new EgressExporter(cpg, ruleCache)
+    val dataflowExporter               = new DataflowExporter(dataflows, taggerCache)
+    val collectionExporter             = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
+    val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache)
     val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
     val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
     val policyAndThreatExporter =
@@ -346,7 +346,10 @@ object ExporterUtility {
 
     if (privadoInput.enableIngressAndEgressUrls) {
       output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
-      output.addOne(Constants.egressUrls  -> egressExporter.getEgressUrls.toArray.asJson)
+      output.addOne(Constants.egressUrls  -> httpConnectionMetadataExporter.getEgressUrls.toArray.asJson)
+      output.addOne(
+        Constants.httpEndPointBasePaths -> httpConnectionMetadataExporter.getEndPointBasePath.toArray.asJson
+      )
     }
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(

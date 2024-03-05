@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.{DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.passes.read.{
@@ -33,7 +33,12 @@ import ai.privado.languageEngine.java.passes.read.{
   EntityMapper,
   MessagingConsumerReadPass
 }
-import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, GrpcCollectionTagger, SOAPCollectionTagger}
+import ai.privado.languageEngine.java.tagger.collection.{
+  CollectionTagger,
+  GrpcCollectionTagger,
+  MethodFullNameCollectionTagger,
+  SOAPCollectionTagger
+}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
@@ -41,6 +46,7 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollectionTagger}
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -48,7 +54,6 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.nio.file.Paths
-import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -95,6 +100,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
     ingressUrls = collectionTagger.getIngressUrls()
+
+    val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
+    methodFullNameTagger.createAndApply()
+    ingressUrls.appendedAll(methodFullNameTagger.getIngressUrls())
 
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 

@@ -1,13 +1,13 @@
 package ai.privado.languageEngine.java.audit
 
 import scala.collection.mutable
-import ai.privado.audit.URLReport
+import ai.privado.audit.LiteralReport
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
 
-class URLReportTest extends URLReportTestBase {
+class LiteralReportTest extends LiteralReportTestBase {
   override val javaFileContentMap: Map[String, String] = getContent()
 
   override def beforeAll(): Unit = {
@@ -34,7 +34,7 @@ class URLReportTest extends URLReportTestBase {
 
   "Test URL sheet" should {
     "should return correct urls" in {
-      val workflowResult = URLReport.processURLAudit(Try(cpg))
+      val workflowResult = LiteralReport.processURLAudit(Try(cpg))
 
       val urlSet  = mutable.HashSet[String]()
       val lineSet = mutable.HashSet[String]()
