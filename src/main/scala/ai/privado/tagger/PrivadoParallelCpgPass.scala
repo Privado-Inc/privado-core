@@ -25,12 +25,12 @@ package ai.privado.tagger
 
 import ai.privado.entrypoint.TimeMetric
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, ForkJoinParallelCpgPass}
 import org.slf4j.LoggerFactory
 
 import scala.util.{Failure, Success, Try}
 
-abstract class PrivadoParallelCpgPass[T <: AnyRef](cpg: Cpg) extends ForkJoinParallelCpgPass[T](cpg) {
+abstract class PrivadoParallelCpgPass[T <: AnyRef](cpg: Cpg) extends ConcurrentWriterCpgPass[T](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   override def createAndApply() = {
