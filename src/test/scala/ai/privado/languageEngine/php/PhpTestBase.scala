@@ -25,13 +25,13 @@ package ai.privado.languageEngine.php
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.languageEngine.php.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.LiteralTagger
 import ai.privado.threatEngine.ThreatEngineExecutor
 import better.files.File
-import io.joern.dataflowengineoss.language.Path
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -156,6 +156,7 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
     val config = Config()
       .withInputPath(inputDir.pathAsString)
       .withOutputPath(outputFile.pathAsString)
+      .withPhpParserBin(PhpProcessor.parserBinPath)
 
     ruleCache.setRule(configAndRules)
     val cpg = new Php2Cpg().createCpg(config).get
