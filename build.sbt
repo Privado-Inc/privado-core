@@ -150,8 +150,6 @@ goAstGenDlTask := {
   distDir.listFiles().foreach(_.setExecutable(true, false))
 }
 
-Compile / compile := (Compile / compile).dependsOn(goAstGenDlTask, phpParseDlTask).value
-
 lazy val goAstGenSetAllPlatforms = taskKey[Unit](s"Set ALL_PLATFORMS")
 goAstGenSetAllPlatforms := { System.setProperty("ALL_PLATFORMS", "TRUE") }
 
@@ -216,6 +214,8 @@ val upstreamParserBinName  = "php-parser.phar"
 val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
 val phpParserDlUrl =
   s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
+
+Compile / compile := ((Compile / compile) dependsOn phpParseDlTask).value
 
 lazy val phpParseDlTask = taskKey[Unit]("Download php-parser binaries")
 phpParseDlTask := {
