@@ -54,6 +54,15 @@ If facing issues related to imports not working try
 - File -> invalidate caches - Invalidate and restart
 ```
 
+```
+Run test cases
+- sbt test
+```
+```
+Format the code
+- sbt scalafmt Test/scalafmt
+```
+
 ### IntelliJ IDEA Caveats
 In some cases IntelliJ IDEA may import some libraries that the project does not use. Keeping this library may cause exceptions at runtime. One of these libraries is `javaparser-core-3.2.5`. Find it in **External Libraries** folder in your project. Right click on it to open it in library settings:
 

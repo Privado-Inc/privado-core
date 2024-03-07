@@ -160,21 +160,9 @@ object CollectionUtility {
     * @return
     */
   def getUrlFromAnnotation(annotation: Annotation): String = {
-    annotation.parameterAssign.order(1).astChildren.order(2).l.headOption match {
+    annotation.parameterAssign.where(_.parameter.code("value")).value.l.headOption match {
       case Some(url) => url.code
-      case None =>
-        annotation.parameterAssign.order(1).headOption match {
-          case Some(url) => url.code
-          case None =>
-            annotation.typeDecl.headOption match {
-              case Some(typeDeclNode) => typeDeclNode.name
-              case None =>
-                annotation.method.headOption match {
-                  case Some(methodNode) => methodNode.name
-                  case None             => ""
-                }
-            }
-        }
+      case None      => ""
     }
   }
 }
