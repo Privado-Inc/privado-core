@@ -35,14 +35,15 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Block, Literal, Call, Identifier, FieldIdentifier}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 
-import java.io.PrintWriter
+import scala.collection.mutable.ListBuffer
+import java.io.{PrintWriter, ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.math.BigInteger
 import java.net.URL
 import java.nio.file.Paths
@@ -122,6 +123,85 @@ object Utilities {
     storeForTagHelper(Constants.dbOperation, databaseDetails.dbOperation)
   }
 
+  def addArgumentsForGAPixelNode(node: Call): List[(String, String)] = {
+    var keyValueStructures = ListBuffer.empty[(String, String)]
+    val assignmentNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
+    val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
+    for (keyVal <- assignmentNodes) {
+      val objKeyVal = keyVal.astChildren.l
+      val (leftChild, rightChild) = objKeyVal match {
+        case leftKey :: rightVal :: _ =>
+          (
+            Some(leftKey).collect {
+              case c: Call    => c.astChildren.isFieldIdentifier.head
+              case l: Literal => l
+
+            },
+            Some(rightVal).collect {
+              case l: Literal => l
+              case l: Identifier => l
+              case l: FieldIdentifier => l
+              case l: Call => {
+                // TODO:
+                println(l.code)
+                l
+              }
+              case l: Block => {
+                // TODO:
+                println(l.code)
+                l
+              }
+            }
+          )
+        case spreadOperator :: _ =>
+          (
+            Some(spreadOperator).collect {
+              case c: Call => {
+                print("Spread Operator")
+                print(c.code)
+                c
+              }
+            },
+            None
+          )
+        case _ =>
+          (None, None)
+      }
+
+      for {
+        left <- leftChild
+        right <- rightChild
+      } {
+        keyValueStructures += ((left.code, right.code))
+      }
+
+      // Additional processing within the loop if needed
+    }
+
+
+    for (keyVal <- spreadOperatorNodes) {
+      val objKeyVal = keyVal.astChildren.isCall.head.astChildren.l
+      for (n <- objKeyVal) {
+        println(n.code)
+        if (n.isInstanceOf[Identifier]) {
+          keyValueStructures += ((n.code, n.asInstanceOf[Identifier].typeFullName))
+        }
+      }
+    }
+
+    // TODO: 1. Nested Block nodes
+    // TODO: 2. Check for different kind of Call Nodes to cover.
+    // TODO: 3. Add PII check for the key/val & add its result with that key
+
+    // Access keyValueStructures after the loop
+    keyValueStructures.foreach { case (leftCode, rightCode) =>
+     println(s"Left Child Code: $leftCode")
+     println(s"Right Child Code: $rightCode")
+    }
+
+    keyValueStructures.toList
+  }
+
   /** Utility to add Tag based on a rule Object
     */
   def addRuleTags(
@@ -138,6 +218,16 @@ object Utilities {
       storeForTagHelper(Constants.nodeType, ruleInfo.nodeType.toString)
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
+
+      // TODO: Generate Arguments for the Google Tag Manager Pixel
+      if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
+        if (node.isInstanceOf[Call]) {
+          val callNode = node.asInstanceOf[Call]
+          val argumentList: List[(String, String)] = addArgumentsForGAPixelNode(callNode)
+          storeForTagHelper(Constants.arguments, serializedArgumentString(argumentList))
+        }
+      }
+
 
       MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
       ruleCache.internalRules.get(ruleInfo.id) match {
@@ -527,5 +617,21 @@ object Utilities {
         )
       }
     })
+  }
+
+  def serializedArgumentString(originalList: List[(String, String)]): String = {
+    val byteArrayOutputStream = new ByteArrayOutputStream()
+    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
+    objectOutputStream.writeObject(originalList)
+    objectOutputStream.close()
+    byteArrayOutputStream.toString("ISO-8859-1")
+  }
+
+  def deserializedArgumentString(serializedString: String): List[(String, String)] = {
+    val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
+    val objectInputStream = new ObjectInputStream(byteArrayInputStream)
+    val result = objectInputStream.readObject().asInstanceOf[List[(String, String)]]
+    objectInputStream.close()
+    result
   }
 }

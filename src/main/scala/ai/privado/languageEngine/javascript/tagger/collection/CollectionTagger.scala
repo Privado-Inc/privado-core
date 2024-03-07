@@ -187,7 +187,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     val pathRegex: Regex         = pathField.r
 
     for (keyVal <- objectKeyValuePairs) {
-      if (keyVal.astChildren.nonEmpty) {
+      if (keyVal.astChildren.nonEmpty)  {
         val objKeyVal = keyVal.astChildren
         val key       = objKeyVal.isCall.head
 
