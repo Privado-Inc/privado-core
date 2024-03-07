@@ -26,6 +26,7 @@ package ai.privado.languageEngine.javascript.tagger
 import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.feeder.PermissionSourceRule
+import ai.privado.languageEngine.java.tagger.collection.MethodFullNameCollectionTagger
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
@@ -76,6 +77,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
     ingressUrls = collectionTagger.getIngressUrls()
+
+    val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
+    methodFullNameTagger.createAndApply()
+    ingressUrls.appendedAll(methodFullNameTagger.getIngressUrls())
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
