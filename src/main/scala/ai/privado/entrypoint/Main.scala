@@ -24,6 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
 import ai.privado.metric.MetricHandler
+import io.shiftleft.utils.TimeMetric.baseLogger
 import io.shiftleft.utils.{TimeMetric, TimeMetricRecordConfig}
 import org.slf4j.LoggerFactory
 
@@ -41,13 +42,16 @@ object Main {
         try {
           processor match {
             case ScanProcessor =>
-              TimeMetric.initialize(timeMetricRecordConfig =
-                Some(
+              TimeMetric.initialize(
+                useFullName = true,
+                consoleLog = true,
+                timeMetricRecordConfig = Some(
                   TimeMetricRecordConfig(
                     resultFile = s"${ScanProcessor.config.sourceLocation.head}/.privado/performancematrix.csv",
                     recordFreq = 1000
                   )
-                )
+                ),
+                supressSubStagesConsoleLog = true
               )
             case _ =>
           }

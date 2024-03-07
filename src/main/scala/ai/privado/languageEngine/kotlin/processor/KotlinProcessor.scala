@@ -121,6 +121,7 @@ class KotlinProcessor(
       // Apply default overlays
       X2Cpg.applyDefaultOverlays(cpg)
       io.shiftleft.utils.TimeMetric.endLastStage()
+      io.shiftleft.utils.TimeMetric.setSupressSubstagesFlag(false)
       cpg
     }
     tagAndExport(xtocpg)
