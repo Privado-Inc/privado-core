@@ -47,6 +47,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val ESCAPE_STRING_SLASHES                                = "(\\\")"
   private val IMPORT_REGEX_WITH_SLASHES                            = "(?s)^(?=.*/)(?!.*/$).*"
 
+  private val SLASH_SYMBOL = "/"
+
   private val LAMBDA_SERVERLESS_BASE_PATH = "service"
   private val LAMBDA_SERVERLESS_FILE_NAME = ".*serverless.yml"
 
@@ -120,11 +122,28 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         .head
 
       val combinedRulePatterns = ruleInfo.combinedRulePattern
-      val matchedAnnotations =
-        cpg.annotation.name(combinedRulePatterns).filter(x => filesHavingFeignClient.contains(x.file.name.head)).l
+
+//       filters these annotation to include only those found in files that contain a FeignClient,
+//       producing a list of matched annotations
+      val matchedAnnotations = cpg.method.annotation
+        .name(combinedRulePatterns)
+        .filter(x => filesHavingFeignClient.contains(x.file.name.head))
+        .l
 
       for (matchedAnnotation <- matchedAnnotations) {
-        egressUrls = egressUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        val classLevelAnnotation = matchedAnnotation.method.typeDecl.annotation.name(FEIGN_CLIENT).headOption
+        if (classLevelAnnotation.isDefined) {
+          egressUrls = egressUrls :+ CollectionUtility
+//            In case Feign client name of service is denoted by parameter "name"
+            .getUrlFromAnnotation(classLevelAnnotation.get, "name")
+            .stripSuffix("/") + SLASH_SYMBOL + CollectionUtility
+            .getUrlFromAnnotation(matchedAnnotation)
+            .strip()
+            .stripPrefix("/")
+            .stripSuffix("/")
+        } else {
+          egressUrls = egressUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        }
       }
     } catch {
       case e: Exception =>
