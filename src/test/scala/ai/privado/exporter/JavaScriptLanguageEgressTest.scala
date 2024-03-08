@@ -47,6 +47,8 @@ class JavaScriptLanguageEgressTest extends JavascriptTaggingTestBase {
       | import { requests } from "service/settings"
       | const endpoint = { getUserDetails: (id) => `v1/api/user${id}`, getLogin: "v1/api/login" }
       | const signup = "v1/api" + "/signup"
+      | const tag = "<div>something else <h1>heelo</h1></div>"
+      | const newEndpoint = "api/v1/" + "user/meta" + "/profile"
       | const signup = requests("v1/api/users/meta")
       |""".stripMargin
 
@@ -54,9 +56,15 @@ class JavaScriptLanguageEgressTest extends JavascriptTaggingTestBase {
     "collect egress url for javascript code" in {
       val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
       val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
-      print(egressesFromLanguageFiles)
-      egressesFromLanguageFiles.size shouldBe 4
-      egressesFromLanguageFiles shouldBe List("v1/api/userid", "v1/api/login", "v1/api/signup", "v1/api/users/meta")
+      egressesFromLanguageFiles.size shouldBe 6
+      egressesFromLanguageFiles shouldBe List(
+        "v1/api/userid",
+        "v1/api/login",
+        "v1/api/signup",
+        "api/v1/user/meta",
+        "api/v1/ + user/meta/profile",
+        "v1/api/users/meta"
+      )
     }
   }
 

@@ -42,7 +42,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
   private val URL_PATH_WITH_VARIABLE_SYMBOLS                       = "^(?=.*/)(?!.*/$)[${}/\"'a-zA-Z0-9:.,%?_=]+"
-  private val NON_ALPHANUMERIC                                     = "[^a-zA-Z0-9]"
+  private val ALPHABET                                             = "[a-zA-Z]"
   private val STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE = "(?s).*(\\.\\.|\\./|\n).*"
   private val ESCAPE_STRING_SLASHES                                = "(\\\")"
   private val IMPORT_REGEX_WITH_SLASHES                            = "(?s)^(?=.*/)(?!.*/$).*"
@@ -53,19 +53,19 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   def getLiteralsFromLanguageFiles: List[String] = {
     val egressLiterals = cpg
       .literal(URL_PATH_WITH_VARIABLE_SYMBOLS)
-      .filter(node => node.code.replaceAll(NON_ALPHANUMERIC, "") != "")
+      .filter(node => ALPHABET.r.findFirstIn(node.code).isDefined)
       .filter(!_.code.matches(STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE))
       .inCall
+      .where(_.and(_.nameNot("require"), _.nameNot("import")))
       .map(node =>
         node.argument
           .map(arg => {
-            if node.name == "require" then ""   // skip import statement
-            else if arg.isLiteral then arg.code // collect literal
+            if arg.isLiteral then arg.code // collect literal
             // const loginPath = "api/v1" + "/login" --- Addition Case(javascript, python, java)
             // const signupPath = `api/v1/${signup}` --- Format String Case for javascript(similar applicable for python, java)
-            else if node.name.indexOf("addition") > -1 || node.name.indexOf("formatString") > -1 then arg.code
+            else if node.name.equals("<operator>.addition") || node.name.equals("<operator>.formatString") then arg.code
             // const loginPath = "api/v1/login" --- Assignment Case(similar applicable for python, java)
-            else if node.name.indexOf("assignment") > -1 && arg.isLiteral then arg.code
+            else if node.name.equals("<operator>.assignment") && arg.isLiteral then arg.code
             else ""
           })
           .mkString("")
@@ -88,7 +88,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
        It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
        Therefore, we might need to do a few things specific to each language. */
     if (
-      AppCache.repoLanguage.id == Language.JAVA.id || AppCache.repoLanguage.id == Language.PYTHON.id || AppCache.repoLanguage.id == Language.JAVASCRIPT.id
+      AppCache.repoLanguage == Language.JAVA || AppCache.repoLanguage == Language.PYTHON || AppCache.repoLanguage == Language.JAVASCRIPT
     ) {
       egressUrls = egressUrls.concat(getLiteralsFromLanguageFiles)
     }

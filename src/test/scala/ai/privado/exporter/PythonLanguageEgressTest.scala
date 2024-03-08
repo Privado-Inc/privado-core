@@ -63,12 +63,14 @@ class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
       |        },
       |    }
       | }
+      | customerId = "234324-32rr23-42424-32"
+      | repoId = "234324-32rr23-42424-32"
       | API_HOST = ""
-      | API_1 =  API_HOST + "/ce/something/customers/{customerId}/init"
-      | API_2 =  API_HOST + "/ce/customers/{customerId}/repo/{repoId}/file"
-      | API_3 =      API_HOST + "/ce/customers/{customerId}/scan/{repoId}"
+      | API_1 =  API_HOST + f"/ce/something/customers/{customerId}/init"
+      | API_2 =  API_HOST + f"/ce/customers/{customerId}/repo/{repoId}/file"
+      | API_3 =      API_HOST + f"/ce/customers/{customerId}/scan/{repoId}/data"
       | BASE_HOST = "api/v1"
-      | API_4 =      BASE_HOST + "/ce/customers/{customerId}/scan/{repoId}"
+      | API_4 =      BASE_HOST + f"/ce/customers/{customerId}/scan/{repoId}/data"
       | API_5 =      "api/v2" + "/ce/customers"
       |""".stripMargin)
 
@@ -76,14 +78,12 @@ class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
     "collect egress url for python code" in {
       val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
       val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
-      print(egressesFromLanguageFiles)
-      egressesFromLanguageFiles.size shouldBe 6
+      egressesFromLanguageFiles.size shouldBe 5
       egressesFromLanguageFiles shouldBe List(
-        "API_HOST/ce/something/customers/{customerId}/init",
-        "API_HOST/ce/customers/{customerId}/repo/{repoId}/file",
-        "API_HOST/ce/customers/{customerId}/scan/{repoId}",
+        "/ce/something/customers/{customerId}/init",
+        "/ce/customers/{customerId}/repo/{repoId}/file",
+        "/ce/customers/{customerId}/scan/{repoId}/data",
         "api/v1",
-        "BASE_HOST/ce/customers/{customerId}/scan/{repoId}",
         "api/v2/ce/customers"
       )
 
