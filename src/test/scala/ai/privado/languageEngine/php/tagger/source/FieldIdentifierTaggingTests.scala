@@ -35,6 +35,7 @@ class FieldIdentifierTaggingTests extends PhpTestBase {
           |  public $firstName;
           |
           |  function initialize() {
+          |    $this->firstName = "John";
           |    add_phone("phone");
           |  }
           |
@@ -45,8 +46,8 @@ class FieldIdentifierTaggingTests extends PhpTestBase {
           |?>
           |""".stripMargin)
 
-      val List(firstName) = cpg.member.l
-      firstName.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
+      val List(firstNameField) = cpg.fieldAccess.l
+      firstNameField.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
     }
   }
 }
