@@ -1,0 +1,63 @@
+/*
+ * This file is part of Privado OSS.
+ *
+ * Privado is an open source static code analysis tool to discover data flows in the code.
+ * Copyright (C) 2022 Privado, Inc.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * For more information, contact support@privado.ai
+ *
+ */
+
+package ai.privado.exporter
+
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.exporter.HttpConnectionMetadataExporter
+import ai.privado.languageEngine.javascript.JavascriptTaggingTestBase
+import ai.privado.model.ConfigAndRules
+import ai.privado.tagger.sink.RegularSinkTagger
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import scala.collection.mutable
+
+class JavaScriptLanguageEgressTest extends JavascriptTaggingTestBase {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+  }
+  override val rule: ConfigAndRules            = ConfigAndRules()
+  override val packageJsonFileContents: String = ""
+
+  override val javascriptFileContents: String =
+    """
+      | import { requests } from "service/settings"
+      | const endpoint = { getUserDetails: (id) => `v1/api/user${id}`, getLogin: "v1/api/login" }
+      | const signup = "v1/api" + "/signup"
+      | const signup = requests("v1/api/users/meta")
+      |""".stripMargin
+
+  "Javascript code egresses" should {
+    "collect egress url for javascript code" in {
+      val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
+      val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
+      print(egressesFromLanguageFiles)
+      egressesFromLanguageFiles.size shouldBe 4
+      egressesFromLanguageFiles shouldBe List("v1/api/userid", "v1/api/login", "v1/api/signup", "v1/api/users/meta")
+    }
+  }
+
+}

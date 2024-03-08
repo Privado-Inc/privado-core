@@ -28,7 +28,7 @@ import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.java.language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
-import ai.privado.model.{Constants, Language, NodeType}
+import ai.privado.model.{Constants, Language}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
@@ -41,22 +41,63 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
+  private val URL_PATH_WITH_VARIABLE_SYMBOLS                       = "^(?=.*/)(?!.*/$)[${}/\"'a-zA-Z0-9:.,%?_=]+"
+  private val NON_ALPHANUMERIC                                     = "[^a-zA-Z0-9]"
+  private val STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE = "(?s).*(\\.\\.|\\./|\n).*"
+  private val ESCAPE_STRING_SLASHES                                = "(\\\")"
+  private val IMPORT_REGEX_WITH_SLASHES                            = "(?s)^(?=.*/)(?!.*/$).*"
 
   private val LAMBDA_SERVERLESS_BASE_PATH = "service"
   private val LAMBDA_SERVERLESS_FILE_NAME = ".*serverless.yml"
 
-  def getEgressUrls = {
+  def getLiteralsFromLanguageFiles: List[String] = {
+    val egressLiterals = cpg
+      .literal(URL_PATH_WITH_VARIABLE_SYMBOLS)
+      .filter(node => node.code.replaceAll(NON_ALPHANUMERIC, "") != "")
+      .filter(!_.code.matches(STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE))
+      .inCall
+      .map(node =>
+        node.argument
+          .map(arg => {
+            if node.name == "require" then ""   // skip import statement
+            else if arg.isLiteral then arg.code // collect literal
+            // const loginPath = "api/v1" + "/login" --- Addition Case(javascript, python, java)
+            // const signupPath = `api/v1/${signup}` --- Format String Case for javascript(similar applicable for python, java)
+            else if node.name.indexOf("addition") > -1 || node.name.indexOf("formatString") > -1 then arg.code
+            // const loginPath = "api/v1/login" --- Assignment Case(similar applicable for python, java)
+            else if node.name.indexOf("assignment") > -1 && arg.isLiteral then arg.code
+            else ""
+          })
+          .mkString("")
+      )
+      .filter(_.nonEmpty)
+      .map(value => value.replaceAll(ESCAPE_STRING_SLASHES, ""))
+      .dedup
+      .l
+
+    egressLiterals
+  }
+
+  def getEgressUrls: List[String] = {
     var egressUrls = List[String]()
 
     egressUrls = egressUrls.concat(
       cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
     )
+    /* We have verified literals for these languages, so we need to analyze other languages before broadening the rule.
+       It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
+       Therefore, we might need to do a few things specific to each language. */
+    if (
+      AppCache.repoLanguage.id == Language.JAVA.id || AppCache.repoLanguage.id == Language.PYTHON.id || AppCache.repoLanguage.id == Language.JAVASCRIPT.id
+    ) {
+      egressUrls = egressUrls.concat(getLiteralsFromLanguageFiles)
+    }
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
     egressUrls.dedup.l
   }
 
-  def getEndPointBasePath = {
+  def getEndPointBasePath: List[String] = {
     var basePaths = List[String]()
     if (AppCache.repoLanguage.id == Language.JAVA.id) {
       basePaths = basePaths.concat(cpg.property.name(SPRING_APPLICATION_BASE_PATH).value.dedup.l)
@@ -86,9 +127,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         egressUrls = egressUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
       }
     } catch {
-      case e: Exception => {
+      case e: Exception =>
         logger.error("Error while adding URL from FeignClient annotation", e)
-      }
     }
     egressUrls
   }
