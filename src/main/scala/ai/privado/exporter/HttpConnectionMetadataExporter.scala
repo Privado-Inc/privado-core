@@ -42,6 +42,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
 
+  private val SLASH_SYMBOL = "/"
+
   private val LAMBDA_SERVERLESS_BASE_PATH = "service"
   private val LAMBDA_SERVERLESS_FILE_NAME = ".*serverless.yml"
 
@@ -79,11 +81,27 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         .head
 
       val combinedRulePatterns = ruleInfo.combinedRulePattern
-      val matchedAnnotations =
-        cpg.annotation.name(combinedRulePatterns).filter(x => filesHavingFeignClient.contains(x.file.name.head)).l
+
+//       filters these annotation to include only those found in files that contain a FeignClient,
+//       producing a list of matched annotations
+      val matchedAnnotations = cpg.method.annotation
+        .name(combinedRulePatterns)
+        .filter(x => filesHavingFeignClient.contains(x.file.name.head))
+        .l
 
       for (matchedAnnotation <- matchedAnnotations) {
-        egressUrls = egressUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        val classLevelAnnotation = matchedAnnotation.method.typeDecl.annotation.name(FEIGN_CLIENT).headOption
+        if (classLevelAnnotation.isDefined) {
+          egressUrls = egressUrls :+ CollectionUtility
+            .getUrlFromAnnotation(classLevelAnnotation.get)
+            .stripSuffix("/") + SLASH_SYMBOL + CollectionUtility
+            .getUrlFromAnnotation(matchedAnnotation)
+            .strip()
+            .stripPrefix("/")
+            .stripSuffix("/")
+        } else {
+          egressUrls = egressUrls :+ CollectionUtility.getUrlFromAnnotation(matchedAnnotation)
+        }
       }
     } catch {
       case e: Exception => {
