@@ -93,7 +93,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         val classLevelAnnotation = matchedAnnotation.method.typeDecl.annotation.name(FEIGN_CLIENT).headOption
         if (classLevelAnnotation.isDefined) {
           egressUrls = egressUrls :+ CollectionUtility
-            .getUrlFromAnnotation(classLevelAnnotation.get)
+//            In case Feign client name of service is denoted by parameter "name"
+            .getUrlFromAnnotation(classLevelAnnotation.get, "name")
             .stripSuffix("/") + SLASH_SYMBOL + CollectionUtility
             .getUrlFromAnnotation(matchedAnnotation)
             .strip()
