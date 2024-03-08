@@ -104,7 +104,7 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
     "check ingress url" in {
       val collectionTagger = new CollectionTagger(cpg, ruleCache)
       collectionTagger.createAndApply()
-      ingressUrls = collectionTagger.getIngressUrls()
+      ingressUrls.addAll(collectionTagger.getIngressUrls())
 
       ingressUrls.size shouldBe 6
       true shouldBe ingressUrls.contains("/api/public/user/login")
