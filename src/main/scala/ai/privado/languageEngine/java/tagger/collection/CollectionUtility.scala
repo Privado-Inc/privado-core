@@ -159,8 +159,8 @@ object CollectionUtility {
     * @param parameterIn
     * @return
     */
-  def getUrlFromAnnotation(annotation: Annotation): String = {
-    annotation.parameterAssign.where(_.parameter.code("value")).value.l.headOption match {
+  def getUrlFromAnnotation(annotation: Annotation, parameterProperty: String = "value"): String = {
+    annotation.parameterAssign.where(_.parameter.code(parameterProperty)).value.l.headOption match {
       case Some(url) => url.code
       case None      => ""
     }
