@@ -68,7 +68,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls = collectionTagger.getIngressUrls()
+    ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     new RubyDBConfigTagger(cpg).createAndApply()
     if (!privadoInputConfig.ignoreInternalRules) {
