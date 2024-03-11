@@ -62,7 +62,7 @@ class FeignEgressExportTest extends JavaTaggingTestBase {
       val propertyExporter = new HttpConnectionMetadataExporter(cpg, ruleCache)
       val egresses         = propertyExporter.getEgressUrls
       egresses.size shouldBe 1
-      egresses.head shouldBe "/address/{id}"
+      egresses.head shouldBe "address-service/address/{id}"
     }
   }
 

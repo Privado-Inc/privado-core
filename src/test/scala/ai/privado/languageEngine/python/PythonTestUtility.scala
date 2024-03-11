@@ -40,7 +40,7 @@ object PythonTestUtility {
     (inputDir / "sample.py").write(code)
     val outputFile = File.newTemporaryFile()
 
-    val cpgconfig = Py2CpgOnFileSystemConfig(File(".venv").path, true)
+    val cpgconfig = Py2CpgOnFileSystemConfig(Option(File(".venv").path), ignoreVenvDir = true)
       .withInputPath(inputDir.pathAsString)
       .withOutputPath(outputFile.pathAsString)
     new Py2CpgOnFileSystem()
