@@ -139,7 +139,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     val taggerCache = new TaggerCache
 
     // Generate CPG and run overlays for S3 tagger prep
-    val cpgconfig = Py2CpgOnFileSystemConfig(File(".venv").path, true)
+    val cpgconfig = Py2CpgOnFileSystemConfig(Option(File(".venv").path), ignoreVenvDir = true)
       .withInputPath(inputDir.pathAsString)
       .withOutputPath(outputFile.pathAsString)
     new Py2CpgOnFileSystem()
