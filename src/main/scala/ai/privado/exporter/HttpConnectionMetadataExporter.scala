@@ -45,7 +45,11 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val ALPHABET                                             = "[a-zA-Z]"
   private val STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE = "(?s).*(\\.\\.|\\./|\n).*"
   private val ESCAPE_STRING_SLASHES                                = "(\\\")"
-  private val IMPORT_REGEX_WITH_SLASHES                            = "(?s)^(?=.*/)(?!.*/$).*"
+  //  Regex to eliminate pattern ending with file suffix
+  //  Demo: https://regex101.com/r/ojV93D/1
+  private val FILE_SUFFIX_REGEX_PATTERN = ".*[.][a-z]{2,5}(\\\")?$"
+  private val COMMON_FALSE_POSITIVE_EGRESS_PATTERN =
+    ".*(BEGIN PRIVATE KEY|sha512|googleapis|sha1|amazonaws|</div>|</p>|<img|<class|require\\().*"
 
   private val SLASH_SYMBOL = "/"
 
@@ -84,7 +88,13 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     var egressUrls = List[String]()
 
     egressUrls = egressUrls.concat(
-      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
+      cpg.property
+        .filterNot(_.value.matches(FILE_SUFFIX_REGEX_PATTERN))
+        .filterNot(_.value.matches(COMMON_FALSE_POSITIVE_EGRESS_PATTERN))
+        .or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH))
+        .value
+        .dedup
+        .l
     )
     /* We have verified literals for these languages, so we need to analyze other languages before broadening the rule.
        It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
@@ -119,9 +129,11 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
       val ruleInfo = ruleCache.getRule.collections
         .filter(_.catLevelTwo == Constants.annotations)
         .filter(_.id == SPRING_ANNOTATION_ID)
-        .head
+        .headOption
 
-      val combinedRulePatterns = ruleInfo.combinedRulePattern
+      if (ruleInfo.isEmpty) return egressUrls
+
+      val combinedRulePatterns = ruleInfo.get.combinedRulePattern
 
 //       filters these annotation to include only those found in files that contain a FeignClient,
 //       producing a list of matched annotations
