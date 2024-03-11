@@ -61,6 +61,7 @@ abstract class BaseProcessor(
           io.shiftleft.utils.TimeMetric.endLastStage()
           newcpg
         } finally {
+          println(s"\n\n\n Total number of CPG Nodes -> ${cpg.graph.nodeCount()}")
           cpg.close()
           import java.io.File
           val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
