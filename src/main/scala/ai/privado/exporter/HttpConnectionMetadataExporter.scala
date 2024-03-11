@@ -41,7 +41,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
-  private val URL_PATH_WITH_VARIABLE_SYMBOLS                       = "^(?=.*/)(?!.*/$)[${}/\"'a-zA-Z0-9:.,%?_=]+"
+  private val URL_PATH_WITH_VARIABLE_SYMBOLS                       = "^(?=.*/)[${}/\"'a-zA-Z0-9:.,%?_=]+"
   private val ALPHABET                                             = "[a-zA-Z]"
   private val STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE = "(?s).*(\\.\\.|\\./|\n).*"
   private val ESCAPE_STRING_SLASHES                                = "(\\\")"
