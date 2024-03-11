@@ -70,6 +70,7 @@ In some cases IntelliJ IDEA may import some libraries that the project does not 
 
 When this library is opened in settings, right click on it again, click on the delete button. Then apply the changes and continue with your work.
 
+
 ![image](./screenshots/java_lib_rm2.png)
 
 ## License
