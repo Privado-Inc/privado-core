@@ -68,11 +68,6 @@ object GoProcessor {
             new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO).createAndApply()
 
           new GoYamlLinkerPass(cpg).createAndApply()
-
-          cpg.property.foreach(pro => {
-            System.out.println(pro.name + " ---- " + pro.value)
-          })
-
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLQueryParser(cpg).createAndApply()
           // Unresolved function report

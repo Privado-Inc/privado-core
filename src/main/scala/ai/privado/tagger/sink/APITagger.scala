@@ -65,9 +65,6 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     val identifierRegex    = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
     val serviceSource      = cpg.property.filter(p => p.value matches SERVICE_URL_REGEX_PATTERN).usedAt.l
-    cpg.property.foreach(pro => {
-      System.out.println(pro.name + " --- " + pro.value)
-    })
     val identifierSource = {
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
         cpg.identifier(identifierRegex).l ++ cpg.member
