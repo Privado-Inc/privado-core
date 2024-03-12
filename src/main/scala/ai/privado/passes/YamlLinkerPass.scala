@@ -24,11 +24,11 @@ abstract class YamlLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaPrope
   }
 
   private def connectProperty(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    matchingLiteralsInGetEnvCalls(propertyNode.name).foreach(lit => {
+    matchingLiteralsToPropertyNode(propertyNode.name).foreach(lit => {
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
     })
   }
 
-  def matchingLiteralsInGetEnvCalls(propertyName: String): List[Literal]
+  def matchingLiteralsToPropertyNode(propertyName: String): List[Literal]
 }

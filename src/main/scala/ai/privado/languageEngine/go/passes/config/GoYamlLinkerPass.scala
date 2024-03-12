@@ -1,15 +1,11 @@
-package ai.privado.languageEngine.java.passes.config
+package ai.privado.languageEngine.go.passes.config
 
-import io.shiftleft.codepropertygraph.generated.nodes.*
 import ai.privado.passes.YamlLinkerPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
-import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 
-class JavaYamlLinkerPass(cpg: Cpg) extends YamlLinkerPass(cpg) {
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
+class GoYamlLinkerPass(cpg: Cpg) extends YamlLinkerPass(cpg) {
   override def matchingLiteralsToPropertyNode(propertyName: String): List[Literal] = {
     val propertyKey = propertyName.split("\\.").last
     cpg.literal

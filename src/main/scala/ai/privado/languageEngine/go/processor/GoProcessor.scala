@@ -6,6 +6,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.go.passes.SQLQueryParser
+import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.metric.MetricHandler
@@ -13,7 +14,7 @@ import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -23,6 +24,7 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.java.language.*
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -58,6 +60,18 @@ object GoProcessor {
           println(
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
+
+          if (config.assetDiscovery)
+            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+              .createAndApply()
+          else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO).createAndApply()
+
+          new GoYamlLinkerPass(cpg).createAndApply()
+
+          cpg.property.foreach(pro => {
+            System.out.println(pro.name + " ---- " + pro.value)
+          })
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLQueryParser(cpg).createAndApply()
