@@ -32,12 +32,13 @@ import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 
 import scala.collection.mutable
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Block, Literal, Call, Identifier, FieldIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Block, Literal, Call, Identifier, FieldIdentifier, Local}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
@@ -125,74 +126,187 @@ object Utilities {
     storeForTagHelper(Constants.dbOperation, databaseDetails.dbOperation)
   }
 
-  def addArgumentsForGAPixelNode(node: Call): List[(String, String)] = {
+  def addArgumentsForGAPixelNode(node: Call, cpg: Cpg): List[(String, String)] = {
     var keyValueStructures = ListBuffer.empty[(String, String)]
-    val assignmentNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
-    val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
-    for (keyVal <- assignmentNodes) {
-      val objKeyVal = keyVal.astChildren.l
-      val (leftChild, rightChild) = objKeyVal match {
+    val eventMap = ListBuffer.empty[(String, AstNode)]
+
+    def processIdentifierNode(n: Identifier, topLeftKey: String): Unit = {
+      def updateLeftKey(code: String): String = {
+        if (topLeftKey.nonEmpty)
+          topLeftKey + "." + code
+        else
+          code
+      }
+
+      val identifierTypeFullName = n.typeFullName
+      // Try to parse the structure identifier whose typeFullName { p1: __ecma.String; p2: __ecma.String; }
+      // Define a regular expression to match keys
+      val pattern = """\b([a-zA-Z_]\w*):""".r
+
+      // Find all matches in the input string
+      val matches = pattern.findAllMatchIn(identifierTypeFullName)
+      if (matches.nonEmpty && !n.name.matches("_tmp_.*")) {
+        println("---------IDENTIFIER WITH DYNAMIC STRUCTURE--------------")
+        println(n.code)
+        println(n.typeFullName)
+        // Extract keys from matches
+        val keys = matches.map(_.group(1)).toList
+        // Print the result
+        keys.foreach((key) => {
+          println(key)
+          keyValueStructures += ((updateLeftKey(n.code + "." + key), key))
+        })
+      } else {
+        keyValueStructures += ((updateLeftKey(n.code), identifierTypeFullName))
+      }
+    }
+
+    def processAssignmentNodes(assignmentNodes: List[Call], topLeftKey: String): Unit = {
+      assignmentNodes.foreach { keyVal =>
+        val (leftChild, rightChild) = extractKeyValPair(keyVal.astChildren.l, Some(topLeftKey))
+        for {
+          left <- leftChild
+          right <- rightChild
+        } {
+          if (right.nonEmpty) {
+            keyValueStructures += ((left, right))
+          }
+        }
+
+        // Additional processing within the loop if needed
+      }
+    }
+
+    def processSpreadOperatorNodes(spreadOperatorNodes: List[Call], topLeftKey: String): Unit = {
+      spreadOperatorNodes.foreach { keyVal =>
+        val callNodes = keyVal.astChildren.isCall.l
+        val childCallNodes = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
+        val identifierNodes = keyVal.astChildren.isIdentifier.lastOption.l
+        // TODO: Handle callNodes
+        println("---------SPREAD CALL NODES------------")
+        callNodes.isCall.foreach { callN =>
+          handlePayloadCallNode(callN, topLeftKey)
+          println(callN.name)
+        }
+        println("END:---------SPREAD CALL NODES------------")
+        (childCallNodes.collect { case n: Identifier => n } ++ identifierNodes.collect { case n: Identifier => n })
+          .foreach(processIdentifierNode(_, topLeftKey))
+      }
+    }
+
+    def getLeftKey(leftKey: AstNode, topLeftKey: Option[String]): Option[String] = {
+      val res = Some(leftKey).collect {
+        case c: Call => handleCallNode(c, topLeftKey).astChildren.isFieldIdentifier.head
+        case l: Literal => l
+      }.map(_.code)
+      if (topLeftKey.getOrElse("").nonEmpty)
+        Some(topLeftKey.getOrElse("") + "." + res.getOrElse(""))
+      else
+        res
+    }
+
+    def extractKeyValPair(objKeyVal: List[AstNode], topLeftKey: Option[String]): (Option[String], Option[String]) = {
+      objKeyVal match {
         case leftKey :: rightVal :: _ =>
           (
-            Some(leftKey).collect {
-              case c: Call    => c.astChildren.isFieldIdentifier.head
-              case l: Literal => l
-
-            },
+            getLeftKey(leftKey, topLeftKey),
             Some(rightVal).collect {
-              case l: Literal => l
-              case l: Identifier => l
-              case l: FieldIdentifier => l
-              case l: Call => {
-                // TODO:
-                println(l.code)
-                l
-              }
-              case l: Block => {
-                // TODO:
-                println(l.code)
-                l
-              }
+              case l: Literal => l.code
+              case l: Identifier => l.code
+              case l: FieldIdentifier => l.code
+              case l: Local => l.code
+              case l: Call => handleCallNode(l, topLeftKey).code
+              case l: Block => handleBlockNode(l, getLeftKey(leftKey, topLeftKey))
             }
-          )
-        case spreadOperator :: _ =>
-          (
-            Some(spreadOperator).collect {
-              case c: Call => {
-                print("Spread Operator")
-                print(c.code)
-                c
-              }
-            },
-            None
           )
         case _ =>
           (None, None)
       }
-
-      for {
-        left <- leftChild
-        right <- rightChild
-      } {
-        keyValueStructures += ((left.code, right.code))
-      }
-
-      // Additional processing within the loop if needed
     }
 
+    def handlePayloadCallNode(callNode: Call, topLeftKey: String): Unit = {
+      if (callNode.name.equals("payload")) {
+        println(callNode.code)
+        val gpEventKey = callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption.getOrElse("")
+        println(gpEventKey)
+        val blockNode = cpg.call.code(".*tmp.*" + gpEventKey + " =.*").astChildren.isBlock.l
 
-    for (keyVal <- spreadOperatorNodes) {
-      val objKeyVal = keyVal.astChildren.isCall.head.astChildren.l
-      for (n <- objKeyVal) {
-        println(n.code)
-        if (n.isInstanceOf[Identifier]) {
-          keyValueStructures += ((n.code, n.asInstanceOf[Identifier].typeFullName))
+        if (blockNode.nonEmpty) {
+          println(blockNode.code.l)
+          val internalBlockNode = blockNode.head.astChildren.isCall.code(".*payload.*").astChildren.isMethodRef.referencedMethod.astChildren.isBlock.l
+          val returnBlockNode = internalBlockNode.astChildren.isReturn.astChildren.isBlock.l
+          println(returnBlockNode.code.l)
+          handleBlockNode(blockNode.head, Some(topLeftKey))
+          handleBlockNode(returnBlockNode.head, Some(topLeftKey))
         }
       }
     }
 
-    // TODO: 1. Nested Block nodes
-    // TODO: 2. Check for different kind of Call Nodes to cover.
+    def handleCallNode(callNode: Call, topLeftKey: Option[String]): AstNode = {
+      // TODO: Handle Call node
+      println("CALL NODE: ")
+      println(callNode.name)
+      println(callNode.methodFullName)
+      println(callNode.code)
+
+      // Handling `payload` method for GTM differently
+      handlePayloadCallNode(callNode, topLeftKey.getOrElse("") + ".payload")
+
+      if (callNode.methodFullName.equals("__ecma.Array:")) {
+        val blockNodes =  callNode.astChildren.isBlock.l
+        blockNodes.foreach { bNode =>
+          println(bNode.code)
+          handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
+        }
+      }
+
+      callNode
+    }
+
+    def handleBlockNode(blockNode: Block, topLeftKey: Option[String]): String = {
+      // TODO: Handle Block node
+      println("BLOCK NODE: ")
+      println(blockNode.code)
+      println("topLeftKey: ")
+      println(topLeftKey)
+      val assignmentNodes = blockNode.astChildren.isCall.name("<operator>.assignment").l
+      val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
+      val childBlockNodes = blockNode.astChildren.isBlock.l
+      val arrayCallNodes = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
+
+      processAssignmentNodes(assignmentNodes, topLeftKey.getOrElse(""))
+      processSpreadOperatorNodes(spreadOperatorNodes, topLeftKey.getOrElse(""))
+      childBlockNodes.foreach { bNode =>
+        println(bNode.code)
+        handleBlockNode(bNode, topLeftKey)
+      }
+
+      arrayCallNodes.foreach { bNode =>
+        println(bNode.code)
+        handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
+      }
+
+      ""
+    }
+
+    val assignmentNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
+    val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
+    val identifierNodes = node.argument.isIdentifier.l
+    val literalNodes = node.argument.isLiteral.l
+
+    literalNodes.foreach { l =>
+      keyValueStructures += ((l.code, l.code))
+    }
+    identifierNodes.foreach { i =>
+      processIdentifierNode(i, "")
+      keyValueStructures += ((i.name, i.typeFullName))
+    }
+
+    processAssignmentNodes(assignmentNodes, "")
+    processSpreadOperatorNodes(spreadOperatorNodes, "")
+
+    // DONE: 1. Nested Block nodes
+    // TODO: 2. Check for different kinds of Call Nodes to cover.
     // TODO: 3. Add PII check for the key/val & add its result with that key
 
     // Access keyValueStructures after the loop
@@ -221,16 +335,6 @@ object Utilities {
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
-      // TODO: Generate Arguments for the Google Tag Manager Pixel
-      if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
-        if (node.isInstanceOf[Call]) {
-          val callNode = node.asInstanceOf[Call]
-          val argumentList: List[(String, String)] = addArgumentsForGAPixelNode(callNode)
-          storeForTagHelper(Constants.arguments, serializedArgumentString(argumentList))
-        }
-      }
-
-
       MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
       ruleCache.internalRules.get(ruleInfo.id) match {
         case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
@@ -239,6 +343,27 @@ object Utilities {
       // storing by catLevelTwo and nodeType to get id
       storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
+  }
+
+  def addRuleTagsForGA(
+                   builder: BatchedUpdate.DiffGraphBuilder,
+                   node: AstNode,
+                   ruleInfo: RuleInfo,
+                   ruleCache: RuleCache,
+                   cpg: Cpg,
+                   ruleId: Option[String] = None
+                 ): Unit = {
+      // TODO: Generate Arguments for the Google Tag Manager Pixel
+      if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
+        if (node.isInstanceOf[Call]) {
+          val storeForTagHelper = storeForTag(builder, node, ruleCache) _
+          val callNode = node.asInstanceOf[Call]
+          val argumentList: List[(String, String)] = addArgumentsForGAPixelNode(callNode, cpg)
+          storeForTagHelper(Constants.arguments, serializedArgumentString(argumentList))
+        }
+      }
+      addRuleTags(builder, node, ruleInfo, ruleCache, ruleId)
+
   }
 
   /** Utility to filter rules by catLevelOne
