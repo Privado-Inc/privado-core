@@ -33,6 +33,8 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
+
+import scala.collection.mutable
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Block, Literal, Call, Identifier, FieldIdentifier}
@@ -70,7 +72,7 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  var ingressUrls = List[String]()
+  var ingressUrls = mutable.ListBuffer.empty[String]
 
   def getEngineContext(config: PrivadoInput, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()
