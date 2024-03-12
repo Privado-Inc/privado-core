@@ -23,18 +23,14 @@
 
 package ai.privado.languageEngine.ruby.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
-import ai.privado.languageEngine.ruby.tagger.source.{
-  IdentifierDerivedTagger,
-  IdentifierTagger,
-  RubyLiteralDerivedTagger,
-  RubyLiteralTagger
-}
+import ai.privado.languageEngine.ruby.tagger.source.{IdentifierDerivedTagger, IdentifierTagger, RubyLiteralDerivedTagger, RubyLiteralTagger}
 import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
+import ai.privado.languageEngine.ruby.tagger.schema.{RubyMongoSchemaMapper, RubyMongoSchemaTagger}
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
@@ -78,6 +74,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       LeakageRule.rules.foreach(ruleCache.setRuleInfo)
       new LeakageTagger(cpg, ruleCache).createAndApply()
     }
+
+    new RubyMongoSchemaTagger(cpg, ruleCache).createAndApply()
+    new RubyMongoSchemaMapper(cpg, ruleCache).createAndApply()
 
     // Run monolith tagger at the end
     new MonolithTagger(cpg, ruleCache).createAndApply()

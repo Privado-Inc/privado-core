@@ -99,7 +99,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     // Function return (key, value, lineNumber), for most parser we have not got the linenumber so returning -1 as default
     if (file.matches(""".*\.(?:yml|yaml)""")) {
       // the Yaml parser returns a line number
-      loadAndConvertYMLtoProperties(file)
+      ConfigParserUtility.parseYaml(file)
     } else if (file.endsWith(".xml")) {
       loadAndConvertXMLtoProperties(file, builder).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".ini")) {
@@ -178,50 +178,6 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     envProps.asScala
       .map(prop => (prop._1, prop._2))
       .toList
-  }
-
-  private def loadAndConvertYMLtoProperties(file: String): List[(String, String, Int)] = {
-    try {
-      val yamlContent = better.files
-        .File(file)
-        .contentAsString
-        .replaceAll(PLACEHOLDER_TOKEN_START_END, "") // Read the YAML file content as a string
-
-      val yaml                                = new Yaml(new SafeConstructor(LoaderOptions()))
-      val rootNode                            = yaml.compose(new StringReader(yamlContent))
-      var result: List[(String, String, Int)] = List[(String, String, Int)]()
-      processNode(rootNode, "")
-
-      def processNode(node: Node, path: String): Unit = {
-        node match {
-          case mappingNode: MappingNode =>
-            mappingNode.getValue.asScala.foreach { (nodeTuple: NodeTuple) =>
-              val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
-              val valueNode = nodeTuple.getValueNode
-              val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
-              processNode(valueNode, fullPath)
-            }
-          case sequenceNode: SequenceNode =>
-            sequenceNode.getValue.asScala.zipWithIndex.foreach { case (valueNode, index) =>
-              val fullPath = s"$path[$index]"
-              processNode(valueNode, fullPath)
-            }
-          case scalarNode: ScalarNode =>
-            val line   = scalarNode.getStartMark.getLine + 1
-            val column = scalarNode.getStartMark.getColumn + 1
-            val value  = scalarNode.getValue
-            result = result.appended((path, value, line))
-        }
-      }
-
-      result
-    } catch {
-      case e: Throwable => {
-        logger.debug(s"Could not parse YAML file. Please double check the syntax. ${e.getMessage}")
-        List[(String, String, Int)]()
-      }
-    }
-
   }
 
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
