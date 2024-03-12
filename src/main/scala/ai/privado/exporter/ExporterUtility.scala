@@ -348,6 +348,9 @@ object ExporterUtility {
       output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
       output.addOne(Constants.egressUrls  -> httpConnectionMetadataExporter.getEgressUrls.toArray.asJson)
       output.addOne(
+        Constants.egressUrlsFromCode -> httpConnectionMetadataExporter.getEgressUrlsFromCodeFiles.toArray.asJson
+      )
+      output.addOne(
         Constants.httpEndPointBasePaths -> httpConnectionMetadataExporter.getEndPointBasePath.toArray.asJson
       )
     }

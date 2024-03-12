@@ -75,8 +75,8 @@ class JavaLanguageEgressTest extends JavaTaggingTestBase {
 
   "Java code egresses" should {
     "collect egress url for java code" in {
-      val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
-      val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache)
+      val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 5
       egressesFromLanguageFiles shouldBe List(
         "api/v1/login",
