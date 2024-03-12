@@ -27,7 +27,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
 
-class GoYamlLinkerPassTest extends GoYamlFilePassTestBase {
+abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
   override val yamlFileContents: String = """
       |config:
       |  default:
@@ -82,7 +82,7 @@ class GoYamlLinkerPassTest extends GoYamlFilePassTestBase {
   }
 }
 
-abstract class GoYamlFilePassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg: Cpg = _
   val yamlFileContents: String
@@ -117,6 +117,13 @@ abstract class GoYamlFilePassTestBase extends AnyWordSpec with Matchers with Bef
     new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
     new GoAPITagger(cpg, ruleCache, new PrivadoInput).createAndApply()
     super.beforeAll()
+  }
+
+  override def afterAll(): Unit = {
+    inputDir.delete()
+    cpg.close()
+    outputFile.delete()
+    super.afterAll()
   }
 
   val systemConfig = List(
