@@ -107,16 +107,16 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
 
 class JsonPropertyTests extends PropertiesFilePassTestBase(".json") {
   override val configFileContents = """
-                                      |{
-                                      |    "databases": [
-                                      |      {
-                                      |        "name": "MySQL Database",
-                                      |        "uri": "mysql://username:password@hostname:port/database_name"
-                                      |      }
-                                      |     ],
-                                      |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
-                                      |}
-                                      |""".stripMargin
+      |{
+      |    "databases": [
+      |      {
+      |        "name": "MySQL Database",
+      |        "uri": "mysql://username:password@hostname:port/database_name"
+      |      }
+      |     ],
+      |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
+      |}
+      |""".stripMargin
 
   override val codeFileContents = ""
 
@@ -137,9 +137,9 @@ class JsonPropertyTests extends PropertiesFilePassTestBase(".json") {
 }
 class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   override val configFileContents = """
-                                      |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
-                                      |internal.logger.api.base=https://logger.privado.ai/
-                                      |""".stripMargin
+      |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
+      |internal.logger.api.base=https://logger.privado.ai/
+      |""".stripMargin
   override val codeFileContents =
     """
       | import org.springframework.core.env.Environment;
@@ -319,7 +319,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
     inputDir = File.newTemporaryDirectory()
     (inputDir / s"test$fileExtension").write(configFileContents)
 
-    //    (inputDir / "unrelated.file").write("foo")
+//    (inputDir / "unrelated.file").write("foo")
     if (propertyFileContents.nonEmpty) {
       (inputDir / "application.properties").write(propertyFileContents)
     }
