@@ -42,6 +42,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member}
 import overflowdb.BatchedUpdate
 
 object APITaggerUtility {
+
+  // for cases where services defined as https://exampleService
+  val SERVICE_URL_REGEX_PATTERN = ".*(http|https):\\/\\/[a-zA-Z0-9_-]+$"
+
   def getLiteralCode(element: AstNode): String = {
     val literalCode = element match {
       case member: Member => member.name
@@ -77,14 +81,7 @@ object APITaggerUtility {
         var newRuleIdToUse = ruleInfo.id
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, apiNode, ruleInfo, ruleCache)
         else {
-          val domain = {
-            if (sourceNode.originalPropertyValue.nonEmpty) {
-              resolvePropertyDomain(sourceNode.originalPropertyValue.get, ruleInfo)
-            } else {
-              getDomainFromString(getLiteralCode(sourceNode))
-            }
-          }
-          // val domain = getDomainFromString(flow.elements.head.originalPropertyValue.getOrElse(literalCode))
+          val domain = resolveDomainFromSource(sourceNode)
           newRuleIdToUse = ruleInfo.id + "." + domain
           ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
@@ -113,11 +110,12 @@ object APITaggerUtility {
     urlValue.stripPrefix("\"").stripSuffix("\"")
   }
 
-  def resolvePropertyDomain(sourceCode: String, ruleInfo: RuleInfo): String = {
-    if (ruleInfo.combinedRulePattern.matches(sourceCode)) {
-      getDomainFromString(sourceCode)
+  private def resolveDomainFromSource(sourceNode: AstNode): String = {
+    val sourceDomain = sourceNode.originalPropertyValue.getOrElse(getLiteralCode(sourceNode))
+    if (sourceDomain.matches(SERVICE_URL_REGEX_PATTERN)) {
+      sourceDomain.split("//").last
     } else {
-      sourceCode.split("//").last
+      getDomainFromString(sourceDomain)
     }
   }
 }

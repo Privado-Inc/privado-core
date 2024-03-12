@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import io.shiftleft.semanticcpg.language.*
 
-class YamlLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
+abstract class YamlLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
 
   private val YAML_FILE_REGEX: String = ".*(.yaml)"
 
@@ -30,11 +30,5 @@ class YamlLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg)
     })
   }
 
-  private def matchingLiteralsInGetEnvCalls(propertyName: String): List[Literal] = {
-    val propertyKey = propertyName.split("\\.").last
-    cpg.literal
-      .codeExact("\"" + propertyKey + "\"")
-      .filter(_.inCall.name("(?i).*getenv").nonEmpty)
-      .toList
-  }
+  def matchingLiteralsInGetEnvCalls(propertyName: String): List[Literal]
 }

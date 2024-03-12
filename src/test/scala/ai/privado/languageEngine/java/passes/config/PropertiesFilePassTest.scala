@@ -341,8 +341,8 @@ class YamlPropertyTests2 extends PropertiesFilePassTestBase(".yaml") {
         |""".stripMargin
 
   override val propertyFileContents: String = ""
-  "fetch api" should {
-    "ooo" in {
+  "Http client execute API Sample" should {
+    "Http Client execute should be tagged" in {
       val callNode = cpg.call.name("execute").head
       callNode.tag.size shouldBe 6
       callNode.tag
