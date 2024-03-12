@@ -109,6 +109,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    val serviceSource      = cpg.property.filter(p => p.value matches ".*(http|https):\\/\\/.*").usedAt.l
 
     // Support to use `identifier` in API's
     val identifierRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
@@ -159,7 +160,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
-          apiInternalSources ++ propertySources ++ identifierSource,
+          apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
           apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks,
           builder,
           ruleInfo,

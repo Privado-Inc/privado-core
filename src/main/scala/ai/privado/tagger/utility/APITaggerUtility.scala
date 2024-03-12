@@ -71,18 +71,25 @@ object APITaggerUtility {
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
       }
       apiFlows.foreach(flow => {
-        val literalCode = getLiteralCode(flow.elements.head)
-        val apiNode     = flow.elements.last
+        val sourceNode = flow.elements.head
+        val apiNode    = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, apiNode, ruleInfo, ruleCache)
         else {
-          val domain = getDomainFromString(literalCode)
+          val domain = {
+            if (sourceNode.originalPropertyValue.nonEmpty) {
+              resolvePropertyDomain(sourceNode.originalPropertyValue.get, ruleInfo)
+            } else {
+              getDomainFromString(getLiteralCode(sourceNode))
+            }
+          }
+          // val domain = getDomainFromString(flow.elements.head.originalPropertyValue.getOrElse(literalCode))
           newRuleIdToUse = ruleInfo.id + "." + domain
           ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
-        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, literalCode)
+        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(sourceNode))
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
       if (showAPI && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
@@ -106,4 +113,11 @@ object APITaggerUtility {
     urlValue.stripPrefix("\"").stripSuffix("\"")
   }
 
+  def resolvePropertyDomain(sourceCode: String, ruleInfo: RuleInfo): String = {
+    if (ruleInfo.combinedRulePattern.matches(sourceCode)) {
+      getDomainFromString(sourceCode)
+    } else {
+      sourceCode.split("//").last
+    }
+  }
 }
