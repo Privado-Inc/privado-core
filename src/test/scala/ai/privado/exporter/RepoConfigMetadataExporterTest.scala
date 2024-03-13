@@ -72,13 +72,7 @@ abstract class RepoConfigMetadataExporterBase
   }
 
   val systemConfig = List(
-    SystemConfig(
-      "RepoPropertyConfig",
-      "name|config.prod.DB_HOST_NAME",
-      Language.JAVA,
-      "",
-      Array()
-    )
+    SystemConfig("RepoPropertyConfig", "name|config.prod.DB_HOST_NAME", Language.JAVA, "", Array())
   )
 
   val rule: ConfigAndRules =
