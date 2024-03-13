@@ -87,5 +87,5 @@ abstract class RepoConfigMetadataExporterBase
   )
 
   val rule: ConfigAndRules =
-    ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), systemConfig, List())
+    ConfigAndRules(systemConfig = systemConfig)
 }
