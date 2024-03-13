@@ -128,7 +128,6 @@ object Utilities {
 
   def addArgumentsForGAPixelNode(node: Call, cpg: Cpg): List[(String, String)] = {
     var keyValueStructures = ListBuffer.empty[(String, String)]
-    val eventMap = ListBuffer.empty[(String, AstNode)]
 
     def processIdentifierNode(n: Identifier, topLeftKey: String): Unit = {
       def updateLeftKey(code: String): String = {
@@ -145,19 +144,17 @@ object Utilities {
 
       // Find all matches in the input string
       val matches = pattern.findAllMatchIn(identifierTypeFullName)
-      if (matches.nonEmpty && !n.name.matches("_tmp_.*")) {
-        println("---------IDENTIFIER WITH DYNAMIC STRUCTURE--------------")
-        println(n.code)
-        println(n.typeFullName)
-        // Extract keys from matches
-        val keys = matches.map(_.group(1)).toList
-        // Print the result
-        keys.foreach((key) => {
-          println(key)
-          keyValueStructures += ((updateLeftKey(n.code + "." + key), key))
-        })
-      } else {
-        keyValueStructures += ((updateLeftKey(n.code), identifierTypeFullName))
+      if (!n.name.matches("(_tmp_|this|globalThis).*")) {
+        if (matches.nonEmpty) {
+          // Extract keys from matches
+          val keys = matches.map(_.group(1)).toList
+          // Print the result
+          keys.foreach((key) => {
+            keyValueStructures += ((updateLeftKey(n.code + "." + key), key))
+          })
+        } else {
+          keyValueStructures += ((updateLeftKey(n.code), identifierTypeFullName))
+        }
       }
     }
 
@@ -172,8 +169,6 @@ object Utilities {
             keyValueStructures += ((left, right))
           }
         }
-
-        // Additional processing within the loop if needed
       }
     }
 
@@ -182,13 +177,10 @@ object Utilities {
         val callNodes = keyVal.astChildren.isCall.l
         val childCallNodes = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
         val identifierNodes = keyVal.astChildren.isIdentifier.lastOption.l
-        // TODO: Handle callNodes
-        println("---------SPREAD CALL NODES------------")
         callNodes.isCall.foreach { callN =>
           handlePayloadCallNode(callN, topLeftKey)
-          println(callN.name)
+          handlePICKMethodCallNode(callN, topLeftKey)
         }
-        println("END:---------SPREAD CALL NODES------------")
         (childCallNodes.collect { case n: Identifier => n } ++ identifierNodes.collect { case n: Identifier => n })
           .foreach(processIdentifierNode(_, topLeftKey))
       }
@@ -226,36 +218,42 @@ object Utilities {
 
     def handlePayloadCallNode(callNode: Call, topLeftKey: String): Unit = {
       if (callNode.name.equals("payload")) {
-        println(callNode.code)
         val gpEventKey = callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption.getOrElse("")
-        println(gpEventKey)
         val blockNode = cpg.call.code(".*tmp.*" + gpEventKey + " =.*").astChildren.isBlock.l
 
         if (blockNode.nonEmpty) {
-          println(blockNode.code.l)
           val internalBlockNode = blockNode.head.astChildren.isCall.code(".*payload.*").astChildren.isMethodRef.referencedMethod.astChildren.isBlock.l
           val returnBlockNode = internalBlockNode.astChildren.isReturn.astChildren.isBlock.l
-          println(returnBlockNode.code.l)
           handleBlockNode(blockNode.head, Some(topLeftKey))
           handleBlockNode(returnBlockNode.head, Some(topLeftKey))
         }
       }
     }
 
-    def handleCallNode(callNode: Call, topLeftKey: Option[String]): AstNode = {
-      // TODO: Handle Call node
-      println("CALL NODE: ")
-      println(callNode.name)
-      println(callNode.methodFullName)
-      println(callNode.code)
+    def handlePICKMethodCallNode(callNode: Call, topLeftKey: String): Unit = {
+      if (callNode.name.equals("pick")) {
+        var concatKey = ""
+        val keys = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
+        val objName = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
 
+        if (objName.nonEmpty) {
+          concatKey = objName.head
+        }
+
+        keys.foreach { key =>
+          keyValueStructures += ((topLeftKey + "." + key, concatKey + "." + key))
+        }
+      }
+    }
+
+    def handleCallNode(callNode: Call, topLeftKey: Option[String]): AstNode = {
       // Handling `payload` method for GTM differently
       handlePayloadCallNode(callNode, topLeftKey.getOrElse("") + ".payload")
+      handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""))
 
       if (callNode.methodFullName.equals("__ecma.Array:")) {
         val blockNodes =  callNode.astChildren.isBlock.l
         blockNodes.foreach { bNode =>
-          println(bNode.code)
           handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
         }
       }
@@ -264,11 +262,6 @@ object Utilities {
     }
 
     def handleBlockNode(blockNode: Block, topLeftKey: Option[String]): String = {
-      // TODO: Handle Block node
-      println("BLOCK NODE: ")
-      println(blockNode.code)
-      println("topLeftKey: ")
-      println(topLeftKey)
       val assignmentNodes = blockNode.astChildren.isCall.name("<operator>.assignment").l
       val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
       val childBlockNodes = blockNode.astChildren.isBlock.l
@@ -277,12 +270,10 @@ object Utilities {
       processAssignmentNodes(assignmentNodes, topLeftKey.getOrElse(""))
       processSpreadOperatorNodes(spreadOperatorNodes, topLeftKey.getOrElse(""))
       childBlockNodes.foreach { bNode =>
-        println(bNode.code)
         handleBlockNode(bNode, topLeftKey)
       }
 
       arrayCallNodes.foreach { bNode =>
-        println(bNode.code)
         handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
       }
 
@@ -299,22 +290,12 @@ object Utilities {
     }
     identifierNodes.foreach { i =>
       processIdentifierNode(i, "")
-      keyValueStructures += ((i.name, i.typeFullName))
     }
 
     processAssignmentNodes(assignmentNodes, "")
     processSpreadOperatorNodes(spreadOperatorNodes, "")
 
-    // DONE: 1. Nested Block nodes
-    // TODO: 2. Check for different kinds of Call Nodes to cover.
-    // TODO: 3. Add PII check for the key/val & add its result with that key
-
-    // Access keyValueStructures after the loop
-    keyValueStructures.foreach { case (leftCode, rightCode) =>
-     println(s"Left Child Code: $leftCode")
-     println(s"Right Child Code: $rightCode")
-    }
-
+    // TODO: Add PII check for the key/val & add its result with that key
     keyValueStructures.toList
   }
 
