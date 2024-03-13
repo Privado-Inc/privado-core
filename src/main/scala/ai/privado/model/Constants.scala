@@ -110,6 +110,7 @@ object Constants {
   val violations                   = "violations"
   val ingressUrls                  = "ingressUrls"
   val egressUrls                   = "egressUrls"
+  val egressUrlsFromCode           = "egressUrlsFromCode"
   val httpEndPointBasePaths        = "httpEndPointBasePaths"
   val outputFileName               = "privado.json"
   val outputDirectoryName          = ".privado"

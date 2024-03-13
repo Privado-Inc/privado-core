@@ -47,7 +47,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val ESCAPE_STRING_SLASHES                                = "(\\\")"
   private val IMPORT_REGEX_WITH_SLASHES                            = "(?s)^(?=.*/)(?!.*/$).*"
 
-  private val SLASH_SYMBOL = "/"
+  private val SLASH_SYMBOL          = "/"
+  private val FORMAT_STRING_SYMBOLS = "[{}]"
 
   private val LAMBDA_SERVERLESS_BASE_PATH = "service"
   private val LAMBDA_SERVERLESS_FILE_NAME = ".*serverless.yml"
@@ -65,7 +66,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
             if arg.isLiteral then arg.code // collect literal
             // const loginPath = "api/v1" + "/login" --- Addition Case(javascript, python, java)
             // const signupPath = `api/v1/${signup}` --- Format String Case for javascript(similar applicable for python, java)
-            else if node.name.equals("<operator>.addition") || node.name.equals("<operator>.formatString") then arg.code
+            else if node.name.equals("<operator>.addition") || node.name.equals("<operator>.formatString") then
+              arg.code.replaceAll(FORMAT_STRING_SYMBOLS, "")
             // const loginPath = "api/v1/login" --- Assignment Case(similar applicable for python, java)
             else if node.name.equals("<operator>.assignment") && arg.isLiteral then arg.code
             else ""
@@ -80,12 +82,9 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     egressLiterals
   }
 
-  def getEgressUrls: List[String] = {
+  def getEgressUrlsFromCodeFiles: List[String] = {
     var egressUrls = List[String]()
 
-    egressUrls = egressUrls.concat(
-      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
-    )
     /* We have verified literals for these languages, so we need to analyze other languages before broadening the rule.
        It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
        Therefore, we might need to do a few things specific to each language. */
@@ -94,6 +93,16 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     ) {
       egressUrls = egressUrls.concat(getLiteralsFromLanguageFiles)
     }
+
+    egressUrls.dedup.l
+  }
+
+  def getEgressUrls: List[String] = {
+    var egressUrls = List[String]()
+
+    egressUrls = egressUrls.concat(
+      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
+    )
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
     egressUrls.dedup.l
@@ -135,7 +144,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         if (classLevelAnnotation.isDefined) {
           egressUrls = egressUrls :+ CollectionUtility
 //            In case Feign client name of service is denoted by parameter "name"
-            .getUrlFromAnnotation(classLevelAnnotation.get, "name")
+            .getUrlFromAnnotation(classLevelAnnotation.get, List("name"))
             .stripSuffix("/") + SLASH_SYMBOL + CollectionUtility
             .getUrlFromAnnotation(matchedAnnotation)
             .strip()

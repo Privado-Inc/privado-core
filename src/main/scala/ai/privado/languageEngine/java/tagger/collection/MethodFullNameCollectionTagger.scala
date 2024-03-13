@@ -67,10 +67,14 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
     val methods           = scala.collection.mutable.HashMap.empty[Long, Method]
     val localMethodUrlMap = scala.collection.mutable.HashMap.empty[Long, String]
     for (methodCall <- methodCalls) {
-      val url                           = methodCall.argument.isLiteral.code.head
       var handlerMethod: Option[Method] = Option.empty[Method]
 
       breakable {
+        val url = methodCall.argument.isLiteral.code.headOption
+        if (url.isEmpty) {
+          break // continue loop, no URL is found as the first argument
+        }
+
         if (methodCall.argument.length < 2) { // we do not have enough arguments to get the handler method
           break                               // empty handler, continue loop
         }
@@ -117,12 +121,11 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Col
           case err =>
             logger.error(s"Unexpected 2nd argument type while tagging collection: ${err.code}")
         }
+        if (handlerMethod.isDefined) {
+          localMethodUrlMap += (handlerMethod.get.id() -> url.get)
+          methods += (handlerMethod.get.id()           -> handlerMethod.get)
+        }
       }
-      if (handlerMethod.isDefined) {
-        localMethodUrlMap += (handlerMethod.get.id() -> url)
-        methods += (handlerMethod.get.id()           -> handlerMethod.get)
-      }
-
     }
     methodUrlMap.addAll(localMethodUrlMap)
     methods.toMap
