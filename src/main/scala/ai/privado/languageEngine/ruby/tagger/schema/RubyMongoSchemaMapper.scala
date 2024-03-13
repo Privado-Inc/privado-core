@@ -1,7 +1,18 @@
 package ai.privado.languageEngine.ruby.tagger.schema
 
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
-import ai.privado.model.{CatLevelOne, Constants, DatabaseColumn, DatabaseDetails, DatabaseSchema, DatabaseTable, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.model.{
+  CatLevelOne,
+  Constants,
+  DatabaseColumn,
+  DatabaseDetails,
+  DatabaseSchema,
+  DatabaseTable,
+  FilterProperty,
+  Language,
+  NodeType,
+  RuleInfo
+}
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import ai.privado.utility.ConfigParserUtility
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
@@ -12,62 +23,83 @@ import ai.privado.languageEngine.java.language.*
 import scala.collection.immutable.{HashMap, HashSet}
 import scala.collection.mutable
 
-class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg){
+class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit = {
     addToDatabaseCache(builder)
   }
   def addToDatabaseCache(builder: DiffGraphBuilder): Unit = {
-    val clientNodes = cpg.property.where(_.file.name(".*config/mongoid[.](yml|yaml)")).where(_.name(".*clients.*database")).l
+    val clientNodes =
+      cpg.property.where(_.file.name(".*config/mongoid[.](yml|yaml)")).where(_.name(".*clients.*database")).l
 
     val deploymentTypeSet = mutable.HashSet[String]()
-    val clientsSet = mutable.HashSet[String]()
+    val clientsSet        = mutable.HashSet[String]()
 
     clientNodes.foreach(client => {
-      val clientSplit = client.name.replace("clients.", "").replace(".database", "").split("[.]").toList
+      val clientSplit    = client.name.replace("clients.", "").replace(".database", "").split("[.]").toList
       val deploymentType = clientSplit.headOption.getOrElse("")
       deploymentTypeSet.add(deploymentType)
       val clientName = clientSplit.lastOption.getOrElse("")
       clientsSet.add(clientName)
     })
 
+    val clientTableMap = clientsSet
+      .map(clientName => {
+        val tables = cpg.typeDecl
+          .where(_.tag.nameExact("RUBY_MONGO_CLASS_CLIENT").valueExact(clientName))
+          .map(typeDecl => {
+            val columns = typeDecl.ast.isLiteral
+              .where(_.tag.nameExact("RUBY_MONGO_COLUMN"))
+              .map(lit => {
+                val columnName = lit.code.stripPrefix(":")
+                val dataType   = lit.tag.nameExact("RUBY_MONGO_COLUMN_DATATYPE").value.headOption.getOrElse("")
+                val sourceId   = lit.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+                DatabaseColumn(columnName, "", dataType, sourceId)
+              })
+              .l
 
-    val clientTableMap = clientsSet.map(clientName => {
-      val tables = cpg.typeDecl.where(_.tag.nameExact("RUBY_MONGO_CLASS_CLIENT").valueExact(clientName)).map(typeDecl => {
-        val columns = typeDecl.ast.isLiteral.where(_.tag.nameExact("RUBY_MONGO_COLUMN")).map(lit => {
-          val columnName = lit.code.stripPrefix(":")
-          val dataType = lit.tag.nameExact("RUBY_MONGO_COLUMN_DATATYPE").value.headOption.getOrElse("")
-          val sourceId = lit.tag.nameExact(Constants.id).value.headOption.getOrElse("")
-          DatabaseColumn(columnName, "", dataType, sourceId)
-        }).l
+            DatabaseTable(convertClassNameToTableName(typeDecl.name), "", columns)
+          })
+          .l
 
-        DatabaseTable(convertClassNameToTableName(typeDecl.name), "", columns)
-      }).l
-
-      (clientName, tables)
-    }).toMap
+        (clientName, tables)
+      })
+      .toMap
 
     // Currently we just want to output production schema
-    deploymentTypeSet.filter(_.equals("production")).foreach(deploymentType => {
+    deploymentTypeSet
+      .filter(_.equals("production"))
+      .foreach(deploymentType => {
 
-      clientsSet.foreach(client => {
+        clientsSet.foreach(client => {
 
-        val dbName = clientNodes.where(c => c.nameExact(s"$deploymentType.clients.$client.database")).value.headOption.getOrElse("")
-        if (dbName.nonEmpty) {
-          createDatabaseSinkRule(builder, deploymentType, dbName, "", "", DatabaseSchema("", deploymentType, "", clientTableMap(client)), ruleCache, clientNodes.file.head)
-        }
+          val dbName = clientNodes
+            .where(c => c.nameExact(s"$deploymentType.clients.$client.database"))
+            .value
+            .headOption
+            .getOrElse("")
+          if (dbName.nonEmpty) {
+            createDatabaseSinkRule(
+              builder,
+              deploymentType,
+              dbName,
+              "",
+              "",
+              DatabaseSchema("", deploymentType, "", clientTableMap(client)),
+              ruleCache,
+              clientNodes.file.head
+            )
+          }
+        })
       })
-    })
 
   }
 
-  /**
-   * For a given class name function converts it into a table name as per Active Record or mongo's naming convention
-   * Ex - User -> users
-   * UserAction -> user_actions
-   * @param className
-   * @return
-   */
+  /** For a given class name function converts it into a table name as per Active Record or mongo's naming convention Ex
+    * \- User -> users UserAction -> user_actions
+    * @param className
+    * @return
+    */
   private def convertClassNameToTableName(className: String): String = {
     // Convert the class name to underscored lowercase
     val underscored = className.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase()
@@ -78,18 +110,17 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
     pluralized
   }
 
-
   private def createDatabaseSinkRule(
-                                      builder: DiffGraphBuilder,
-                                      projectName: String,
-                                      dbName: String,
-                                      dbPlatform: String,
-                                      dbHost: String,
-                                      schema: DatabaseSchema,
-                                      ruleCache: RuleCache,
-                                      fileNode: File
-                                    ) = {
-    val ruleId = f"Storages.Ruby.ReadAndWrite.${projectName}.${dbName}"
+    builder: DiffGraphBuilder,
+    projectName: String,
+    dbName: String,
+    dbPlatform: String,
+    dbHost: String,
+    schema: DatabaseSchema,
+    ruleCache: RuleCache,
+    fileNode: File
+  ) = {
+    val ruleId   = f"Storages.Ruby.ReadAndWrite.${projectName}.${dbName}"
     val ruleHost = dbHost
 
     val customDatabaseSinkRule = RuleInfo(

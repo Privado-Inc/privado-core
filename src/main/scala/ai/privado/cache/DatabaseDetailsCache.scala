@@ -34,17 +34,19 @@ object DatabaseDetailsCache {
 
   def addDatabaseDetails(databaseDetails: DatabaseDetails, ruleId: String): Unit = {
 
-    if(databaseDetailsMap.contains(ruleId) && databaseDetailsMap(ruleId).schema.isDefined){
+    if (databaseDetailsMap.contains(ruleId) && databaseDetailsMap(ruleId).schema.isDefined) {
       // rule already exists and schema is also present, and new updation request also have schema append the tables
 
       val oldSchema = databaseDetailsMap(ruleId).schema.get
       val newSchema = databaseDetails.schema
       if (newSchema.isDefined)
-        databaseDetailsMap.addOne(ruleId -> databaseDetails.copy(schema = Option(newSchema.get.copy(tables = oldSchema.tables ++ newSchema.get.tables))))
+        databaseDetailsMap.addOne(
+          ruleId -> databaseDetails
+            .copy(schema = Option(newSchema.get.copy(tables = oldSchema.tables ++ newSchema.get.tables)))
+        )
       else
         databaseDetailsMap.addOne(ruleId -> databaseDetails.copy(schema = Option(oldSchema)))
-    }else
-      databaseDetailsMap.addOne(ruleId -> databaseDetails)
+    } else databaseDetailsMap.addOne(ruleId -> databaseDetails)
   }
 
   def getDatabaseDetails(ruleId: String): Option[DatabaseDetails] = databaseDetailsMap.get(ruleId)

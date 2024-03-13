@@ -27,7 +27,12 @@ import ai.privado.cache.{DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerC
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
-import ai.privado.languageEngine.ruby.tagger.source.{IdentifierDerivedTagger, IdentifierTagger, RubyLiteralDerivedTagger, RubyLiteralTagger}
+import ai.privado.languageEngine.ruby.tagger.source.{
+  IdentifierDerivedTagger,
+  IdentifierTagger,
+  RubyLiteralDerivedTagger,
+  RubyLiteralTagger
+}
 import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.languageEngine.ruby.tagger.schema.{RubyMongoSchemaMapper, RubyMongoSchemaTagger}

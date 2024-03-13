@@ -15,7 +15,7 @@ import scala.jdk.CollectionConverters.*
 object ConfigParserUtility {
 
   val PLACEHOLDER_TOKEN_START_END = "@@"
-  val logger = LoggerFactory.getLogger(getClass)
+  val logger                      = LoggerFactory.getLogger(getClass)
 
   def parseYaml(file: String): List[(String, String, Int)] = {
     try {
@@ -28,8 +28,9 @@ object ConfigParserUtility {
       val loaderOptions = new LoaderOptions()
       loaderOptions.setMaxAliasesForCollections(100) // default is 50 causing parsing failure
       val dumperOptions = new DumperOptions
-      val yaml = new Yaml(new SafeConstructor(loaderOptions), new Representer(dumperOptions), dumperOptions, loaderOptions)
-      val rootNode = yaml.compose(new StringReader(yamlContent))
+      val yaml =
+        new Yaml(new SafeConstructor(loaderOptions), new Representer(dumperOptions), dumperOptions, loaderOptions)
+      val rootNode                            = yaml.compose(new StringReader(yamlContent))
       var result: List[(String, String, Int)] = List[(String, String, Int)]()
       processNode(rootNode, "")
 
@@ -37,9 +38,9 @@ object ConfigParserUtility {
         node match {
           case mappingNode: MappingNode =>
             mappingNode.getValue.asScala.foreach { (nodeTuple: NodeTuple) =>
-              val keyNode = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
+              val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
               val valueNode = nodeTuple.getValueNode
-              val fullPath = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
+              val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
               processNode(valueNode, fullPath)
             }
           case sequenceNode: SequenceNode =>
@@ -48,9 +49,9 @@ object ConfigParserUtility {
               processNode(valueNode, fullPath)
             }
           case scalarNode: ScalarNode =>
-            val line = scalarNode.getStartMark.getLine + 1
+            val line   = scalarNode.getStartMark.getLine + 1
             val column = scalarNode.getStartMark.getColumn + 1
-            val value = scalarNode.getValue
+            val value  = scalarNode.getValue
             result = result.appended((path, value, line))
           case _ =>
         }
