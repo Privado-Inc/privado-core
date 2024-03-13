@@ -360,10 +360,11 @@ object ExporterUtility {
                                s"${AppCache.repoName}/${repoItemTagName.get.replaceAll("--", "/")}"
                              else AppCache.repoName).asJson
     )
-    output.addOne(Constants.language      -> AppCache.repoLanguage.toString.asJson)
-    output.addOne(Constants.gitMetadata   -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-    output.addOne(Constants.localScanPath -> AppCache.localScanPath.asJson)
-    output.addOne(Constants.probableSinks -> probableSinkExporter.getProbableSinks.asJson)
+    output.addOne(Constants.language           -> AppCache.repoLanguage.toString.asJson)
+    output.addOne(Constants.gitMetadata        -> GitMetaDataExporter.getMetaData(repoPath).asJson)
+    output.addOne(Constants.localScanPath      -> AppCache.localScanPath.asJson)
+    output.addOne(Constants.probableSinks      -> probableSinkExporter.getProbableSinks.asJson)
+    output.addOne(Constants.repoConfigMetaData -> RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).asJson)
 
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {
