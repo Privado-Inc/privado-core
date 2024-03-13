@@ -35,7 +35,7 @@ object DatabaseDetailsCache {
   def addDatabaseDetails(databaseDetails: DatabaseDetails, ruleId: String): Unit = {
 
     if (databaseDetailsMap.contains(ruleId) && databaseDetailsMap(ruleId).schema.isDefined) {
-      // rule already exists and schema is also present, and new updation request also have schema append the tables
+      // rule already exists and schema is also present, append new schema tables
 
       val oldSchema = databaseDetailsMap(ruleId).schema.get
       val newSchema = databaseDetails.schema
