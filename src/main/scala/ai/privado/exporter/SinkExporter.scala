@@ -88,7 +88,7 @@ class SinkExporter(
                 entrySet._2.toList
                   .distinctBy(_.code)
                   .distinctBy(_.lineNumber)
-//                  .distinctBy(Utilities.getFileNameForNode)
+                  .distinctBy(Utilities.getFileNameForNode)
             })
         )
       )

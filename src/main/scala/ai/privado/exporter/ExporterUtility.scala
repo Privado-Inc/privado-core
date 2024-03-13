@@ -76,10 +76,6 @@ object ExporterUtility {
 
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
-//      if (node.tag.nameExact("arguments").nonEmpty) {
-//        println("ARGUMENTS FOR SINK NODE: ")
-//        println(node.tag.nameExact("arguments").value.head)
-//      }
       val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList)
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
