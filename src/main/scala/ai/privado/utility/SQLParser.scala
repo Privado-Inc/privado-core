@@ -116,7 +116,7 @@ object SQLParser {
           val sqlTable = createSQLTableItem(createStmt.getTable)
           val columnList = columns.map(columnName => {
             val lineColumn = getLineAndColumnNumber(sqlQuery, columnName)
-            SQLColumn(columnName, lineColumn._1 + sqlTable.lineNumber, lineColumn._2)
+            SQLColumn(columnName, lineColumn._1, lineColumn._2)
           })
           Some(List(SQLQuery(SQLQueryType.CREATE, sqlTable, columnList)))
         case _ =>
@@ -186,7 +186,8 @@ object SQLNodeBuilder {
     queryModel: SQLQuery,
     query: String,
     queryLineNumber: Int,
-    queryOrder: Int
+    queryOrder: Int,
+    fileName: Option[String] = None
   ): Unit = {
     // Have added tableName in name key
     // Have added columns in value key
@@ -205,10 +206,14 @@ object SQLNodeBuilder {
     builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
 
     queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
+      val lineNumber = fileName match
+        case Some(f) if f.endsWith(".sql") => queryColumn.lineNumber + tableNode.lineNumber.get - 1
+        case _                             => queryColumn.lineNumber
+
       val columnNode = NewSqlColumnNode()
         .name(queryColumn.name)
         .code(queryColumn.name)
-        .lineNumber(queryColumn.lineNumber)
+        .lineNumber(lineNumber)
         .columnNumber(queryColumn.columnNumber)
         .order(columnIndex)
       builder.addEdge(tableNode, columnNode, EdgeTypes.AST)

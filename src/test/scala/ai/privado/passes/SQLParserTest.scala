@@ -108,6 +108,13 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       id1.name shouldBe "id"
       candidate1.name shouldBe "candidate"
     }
+
+    "have correct attributes for members" in {
+      val List(id, created_at, candidate) = cpg.sqlQuery.sqlTable.lineNumber(2).sqlColumn.l
+      id.lineNumber shouldBe Some(3)
+      created_at.lineNumber shouldBe Some(4)
+      candidate.lineNumber shouldBe Some(5)
+    }
   }
 
   def code(code: String): Cpg = {
