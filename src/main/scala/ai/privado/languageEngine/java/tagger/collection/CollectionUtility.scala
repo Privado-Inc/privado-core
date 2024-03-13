@@ -170,6 +170,7 @@ object CollectionUtility {
           case Some(url) => url.code
           case None      => ""
         }
+      case _ => ""
     }
     result.getOrElse("")
   }
