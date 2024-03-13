@@ -16,16 +16,11 @@ object RepoConfigMetaDataExporter {
     try {
       val propertySources = cpg.property.filter(p => p.name matches configRule).l
       propertySources.foreach(p => {
-        metaData.put(resolveNestedKey(p.name), p.value)
+        metaData.put(p.name, p.value)
       })
     } catch {
       case ex: Exception => println("Error while fetching repo config metadata")
     }
     metaData
-  }
-
-  // property having key as config.prod.DB_URL, we must output key as "DB_URL"
-  private def resolveNestedKey(key: String): String = {
-    key.split("\\.").last
   }
 }
