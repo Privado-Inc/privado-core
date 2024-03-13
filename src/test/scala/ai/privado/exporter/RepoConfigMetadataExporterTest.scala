@@ -18,8 +18,6 @@ class RepoConfigMetadataExporterTest extends RepoConfigMetadataExporterBase {
       |config:
       |  prod:
       |    DB_HOST_NAME: example.com
-      |
-      |squad: Tech
       |""".stripMargin
 
   "Test Repo config Metadata sample" should {
@@ -28,11 +26,8 @@ class RepoConfigMetadataExporterTest extends RepoConfigMetadataExporterBase {
       resultMap.keys.toList should contain("name")
       resultMap("name") should equal("exampleService")
 
-      resultMap.keys.toList should contain("DB_HOST_NAME")
-      resultMap("DB_HOST_NAME") should equal("example.com")
-
-      resultMap.keys.toList should contain("squad")
-      resultMap("squad") should equal("Tech")
+      resultMap.keys.toList should contain("config.prod.DB_HOST_NAME")
+      resultMap("config.prod.DB_HOST_NAME") should equal("example.com")
     }
   }
 }
@@ -79,7 +74,7 @@ abstract class RepoConfigMetadataExporterBase
   val systemConfig = List(
     SystemConfig(
       "RepoPropertyConfig",
-      "name|config.prod.DB_HOST_NAME|config.prod.DB_LOG_NAME|dataClassification|serviceTier|isPciInScope|isSoxInScope|squad",
+      "name|config.prod.DB_HOST_NAME",
       Language.JAVA,
       "",
       Array()
