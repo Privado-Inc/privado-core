@@ -38,7 +38,18 @@ import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import scala.collection.mutable
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Block, Literal, Call, Identifier, FieldIdentifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
+  CfgNode,
+  NewFile,
+  NewTag,
+  Block,
+  Literal,
+  Call,
+  Identifier,
+  FieldIdentifier,
+  Local
+}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
@@ -162,7 +173,7 @@ object Utilities {
       assignmentNodes.foreach { keyVal =>
         val (leftChild, rightChild) = extractKeyValPair(keyVal.astChildren.l, Some(topLeftKey))
         for {
-          left <- leftChild
+          left  <- leftChild
           right <- rightChild
         } {
           if (right.nonEmpty) {
@@ -174,8 +185,8 @@ object Utilities {
 
     def processSpreadOperatorNodes(spreadOperatorNodes: List[Call], topLeftKey: String): Unit = {
       spreadOperatorNodes.foreach { keyVal =>
-        val callNodes = keyVal.astChildren.isCall.l
-        val childCallNodes = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
+        val callNodes       = keyVal.astChildren.isCall.l
+        val childCallNodes  = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
         val identifierNodes = keyVal.astChildren.isIdentifier.lastOption.l
         callNodes.isCall.foreach { callN =>
           handlePayloadCallNode(callN, topLeftKey)
@@ -187,10 +198,12 @@ object Utilities {
     }
 
     def getLeftKey(leftKey: AstNode, topLeftKey: Option[String]): Option[String] = {
-      val res = Some(leftKey).collect {
-        case c: Call => handleCallNode(c, topLeftKey).astChildren.isFieldIdentifier.head
-        case l: Literal => l
-      }.map(_.code)
+      val res = Some(leftKey)
+        .collect {
+          case c: Call    => handleCallNode(c, topLeftKey).astChildren.isFieldIdentifier.head
+          case l: Literal => l
+        }
+        .map(_.code)
       if (topLeftKey.getOrElse("").nonEmpty)
         Some(topLeftKey.getOrElse("") + "." + res.getOrElse(""))
       else
@@ -203,12 +216,12 @@ object Utilities {
           (
             getLeftKey(leftKey, topLeftKey),
             Some(rightVal).collect {
-              case l: Literal => l.code
-              case l: Identifier => l.code
+              case l: Literal         => l.code
+              case l: Identifier      => l.code
               case l: FieldIdentifier => l.code
-              case l: Local => l.code
-              case l: Call => handleCallNode(l, topLeftKey).code
-              case l: Block => handleBlockNode(l, getLeftKey(leftKey, topLeftKey))
+              case l: Local           => l.code
+              case l: Call            => handleCallNode(l, topLeftKey).code
+              case l: Block           => handleBlockNode(l, getLeftKey(leftKey, topLeftKey))
             }
           )
         case _ =>
@@ -218,11 +231,20 @@ object Utilities {
 
     def handlePayloadCallNode(callNode: Call, topLeftKey: String): Unit = {
       if (callNode.name.equals("payload")) {
-        val gpEventKey = callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption.getOrElse("")
+        val gpEventKey =
+          callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption
+            .getOrElse("")
         val blockNode = cpg.call.code(".*tmp.*" + gpEventKey + " =.*").astChildren.isBlock.l
 
         if (blockNode.nonEmpty) {
-          val internalBlockNode = blockNode.head.astChildren.isCall.code(".*payload.*").astChildren.isMethodRef.referencedMethod.astChildren.isBlock.l
+          val internalBlockNode = blockNode.head.astChildren.isCall
+            .code(".*payload.*")
+            .astChildren
+            .isMethodRef
+            .referencedMethod
+            .astChildren
+            .isBlock
+            .l
           val returnBlockNode = internalBlockNode.astChildren.isReturn.astChildren.isBlock.l
           handleBlockNode(blockNode.head, Some(topLeftKey))
           handleBlockNode(returnBlockNode.head, Some(topLeftKey))
@@ -233,8 +255,8 @@ object Utilities {
     def handlePICKMethodCallNode(callNode: Call, topLeftKey: String): Unit = {
       if (callNode.name.equals("pick")) {
         var concatKey = ""
-        val keys = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
-        val objName = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
+        val keys      = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
+        val objName   = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
 
         if (objName.nonEmpty) {
           concatKey = objName.head
@@ -252,7 +274,7 @@ object Utilities {
       handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""))
 
       if (callNode.methodFullName.equals("__ecma.Array:")) {
-        val blockNodes =  callNode.astChildren.isBlock.l
+        val blockNodes = callNode.astChildren.isBlock.l
         blockNodes.foreach { bNode =>
           handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
         }
@@ -262,10 +284,10 @@ object Utilities {
     }
 
     def handleBlockNode(blockNode: Block, topLeftKey: Option[String]): String = {
-      val assignmentNodes = blockNode.astChildren.isCall.name("<operator>.assignment").l
+      val assignmentNodes     = blockNode.astChildren.isCall.name("<operator>.assignment").l
       val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
-      val childBlockNodes = blockNode.astChildren.isBlock.l
-      val arrayCallNodes = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
+      val childBlockNodes     = blockNode.astChildren.isBlock.l
+      val arrayCallNodes      = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
 
       processAssignmentNodes(assignmentNodes, topLeftKey.getOrElse(""))
       processSpreadOperatorNodes(spreadOperatorNodes, topLeftKey.getOrElse(""))
@@ -280,10 +302,10 @@ object Utilities {
       ""
     }
 
-    val assignmentNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
+    val assignmentNodes     = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
     val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
-    val identifierNodes = node.argument.isIdentifier.l
-    val literalNodes = node.argument.isLiteral.l
+    val identifierNodes     = node.argument.isIdentifier.l
+    val literalNodes        = node.argument.isLiteral.l
 
     literalNodes.foreach { l =>
       keyValueStructures += ((l.code, l.code))
@@ -327,23 +349,23 @@ object Utilities {
   }
 
   def addRuleTagsForGA(
-                   builder: BatchedUpdate.DiffGraphBuilder,
-                   node: AstNode,
-                   ruleInfo: RuleInfo,
-                   ruleCache: RuleCache,
-                   cpg: Cpg,
-                   ruleId: Option[String] = None
-                 ): Unit = {
-      // TODO: Generate Arguments for the Google Tag Manager Pixel
-      if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
-        if (node.isInstanceOf[Call]) {
-          val storeForTagHelper = storeForTag(builder, node, ruleCache) _
-          val callNode = node.asInstanceOf[Call]
-          val argumentList: List[(String, String)] = addArgumentsForGAPixelNode(callNode, cpg)
-          storeForTagHelper(Constants.arguments, serializedArgumentString(argumentList))
-        }
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNode,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    cpg: Cpg,
+    ruleId: Option[String] = None
+  ): Unit = {
+    // TODO: Generate Arguments for the Google Tag Manager Pixel
+    if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
+      if (node.isInstanceOf[Call]) {
+        val storeForTagHelper                    = storeForTag(builder, node, ruleCache) _
+        val callNode                             = node.asInstanceOf[Call]
+        val argumentList: List[(String, String)] = addArgumentsForGAPixelNode(callNode, cpg)
+        storeForTagHelper(Constants.arguments, serializedArgumentString(argumentList))
       }
-      addRuleTags(builder, node, ruleInfo, ruleCache, ruleId)
+    }
+    addRuleTags(builder, node, ruleInfo, ruleCache, ruleId)
 
   }
 
@@ -729,7 +751,7 @@ object Utilities {
 
   def serializedArgumentString(originalList: List[(String, String)]): String = {
     val byteArrayOutputStream = new ByteArrayOutputStream()
-    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
+    val objectOutputStream    = new ObjectOutputStream(byteArrayOutputStream)
     objectOutputStream.writeObject(originalList)
     objectOutputStream.close()
     byteArrayOutputStream.toString("ISO-8859-1")
@@ -737,8 +759,8 @@ object Utilities {
 
   def deserializedArgumentString(serializedString: String): List[(String, String)] = {
     val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
-    val objectInputStream = new ObjectInputStream(byteArrayInputStream)
-    val result = objectInputStream.readObject().asInstanceOf[List[(String, String)]]
+    val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
+    val result               = objectInputStream.readObject().asInstanceOf[List[(String, String)]]
     objectInputStream.close()
     result
   }

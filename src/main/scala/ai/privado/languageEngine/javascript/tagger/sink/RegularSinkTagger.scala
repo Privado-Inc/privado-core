@@ -107,7 +107,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
     } else
       sinks.foreach(sink => {
         if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
-          addRuleTagsForGA(builder, sink, ruleInfo, ruleCache, cpg=cpg)
+          addRuleTagsForGA(builder, sink, ruleInfo, ruleCache, cpg = cpg)
         } else {
           addRuleTags(builder, sink, ruleInfo, ruleCache)
         }

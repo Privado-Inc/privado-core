@@ -29,7 +29,20 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, PolicyThreatType}
-import ai.privado.model.exporter.{AndroidPermissionModel, CollectionModel, DataFlowSubCategoryModel, DataFlowSubCategoryPathExcerptModel, PropertyNodesModel, RuleInfo, SinkModel, SinkProcessingModel, SourceModel, SourceProcessingModel, ViolationModel, ViolationPolicyDetailsModel}
+import ai.privado.model.exporter.{
+  AndroidPermissionModel,
+  CollectionModel,
+  DataFlowSubCategoryModel,
+  DataFlowSubCategoryPathExcerptModel,
+  PropertyNodesModel,
+  RuleInfo,
+  SinkModel,
+  SinkProcessingModel,
+  SourceModel,
+  SourceProcessingModel,
+  ViolationModel,
+  ViolationPolicyDetailsModel
+}
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
@@ -210,11 +223,19 @@ object ExporterUtility {
       }
 
       if (node.tag.nameExact(Constants.arguments).nonEmpty) {
-        val arguments = node.tag.nameExact(Constants.arguments).value.head
+        val arguments    = node.tag.nameExact(Constants.arguments).value.head
         val argumentList = deserializedArgumentString(arguments)
-        Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt, Some(argumentList)))
-      } else
-        Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+        Some(
+          DataFlowSubCategoryPathExcerptModel(
+            sample,
+            lineNumber,
+            columnNumber,
+            actualFileName,
+            excerpt,
+            Some(argumentList)
+          )
+        )
+      } else Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
     }
   }
 
@@ -335,7 +356,7 @@ object ExporterUtility {
     output.addOne(Constants.cliVersion  -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
     output.addOne(Constants.mainVersion -> AppCache.privadoVersionMain.asJson)
 //    output.addOne(Constants.privadoLanguageEngineVersion -> "BuildInfo.joernVersion.asJson")
-    output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
+    output.addOne(Constants.createdAt -> Calendar.getInstance().getTimeInMillis.asJson)
 
     if (privadoInput.enableIngressAndEgressUrls) {
       output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
