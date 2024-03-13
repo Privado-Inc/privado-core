@@ -43,11 +43,13 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "SQL parser" should {
     val cpg = code("""
-        |select firstName, lastName from customer;
+        |select firstName,
+        |lastName from customer;
         |""".stripMargin)
     "create sqlColumn node" in {
       cpg.sqlColumn.size shouldBe 2
       cpg.sqlColumn.name.l shouldBe List("firstName", "lastName")
+      cpg.sqlColumn.lineNumber.l shouldBe List(2, 3)
     }
 
     "create sqlTable node" in {
@@ -58,7 +60,9 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     "create sqlQuery node" in {
       cpg.sqlQuery.size shouldBe 1
       cpg.sqlQuery.name.l shouldBe List(SQLQueryType.SELECT)
-      cpg.sqlQuery.code.head shouldBe "select firstName, lastName from customer;"
+      cpg.sqlQuery.code.head shouldBe
+        """select firstName,
+          |lastName from customer;""".stripMargin
     }
   }
 
@@ -107,6 +111,9 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       val List(id1, candidate1) = cpg.sqlQuery.sqlTable.lineNumber(9).sqlColumn.l
       id1.name shouldBe "id"
       candidate1.name shouldBe "candidate"
+
+      id1.lineNumber shouldBe Some(9)
+      candidate1.lineNumber shouldBe Some(9)
     }
 
     "have correct attributes for members" in {
@@ -114,6 +121,47 @@ class SQLParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       id.lineNumber shouldBe Some(3)
       created_at.lineNumber shouldBe Some(4)
       candidate.lineNumber shouldBe Some(5)
+    }
+  }
+
+  "CREATE query with columns starting on same line as table definition" should {
+    val cpg = code("""
+      |CREATE TABLE IF NOT EXISTS votes(  id SERIAL NOT NULL,
+      | created_at datetime NOT NULL,
+      | candidate VARCHAR(6) NOT NULL,
+      | PRIMARY KEY(id)
+      |);""".stripMargin)
+
+    "Query node check" in {
+      cpg.sqlQuery.size shouldBe 1
+      val List(a) = cpg.sqlQuery.l
+      a.name shouldBe SQLQueryType.CREATE
+    }
+
+    "SqlTable node check" in {
+      val List(x) = cpg.sqlTable.l
+      x.name shouldBe "votes"
+      x.lineNumber shouldBe Some(2)
+    }
+
+    "Traversal from query to table" in {
+      val List(x) = cpg.sqlQuery.sqlTable.l
+      x.name shouldBe "votes"
+      x.lineNumber shouldBe Some(2)
+    }
+
+    "Traversal from table to column" in {
+      val List(id, created_at, candidate) = cpg.sqlQuery.sqlTable.lineNumber(2).sqlColumn.l
+      id.name shouldBe "id"
+      created_at.name shouldBe "created_at"
+      candidate.name shouldBe "candidate"
+    }
+
+    "have correct attributes for members" in {
+      val List(id, created_at, candidate) = cpg.sqlQuery.sqlTable.lineNumber(2).sqlColumn.l
+      id.lineNumber shouldBe Some(2)
+      created_at.lineNumber shouldBe Some(3)
+      candidate.lineNumber shouldBe Some(4)
     }
   }
 

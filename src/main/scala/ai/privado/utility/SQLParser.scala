@@ -155,7 +155,7 @@ object SQLParser {
   private def createSQLColumnItem(column: ASTNodeAccess, sqlTable: SQLTable) = {
     SQLColumn(
       column.toString,
-      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE) + sqlTable.lineNumber - 1,
+      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE),
       Try(column.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     )
   }
@@ -206,8 +206,10 @@ object SQLNodeBuilder {
     builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
 
     queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
+      /* As queries from .sql files are processed individually,
+        an offset equal to the lineNumber of the query in the original file - 1 is added to the isolated column lineNumber */
       val lineNumber = fileName match
-        case Some(f) if f.endsWith(".sql") => queryColumn.lineNumber + tableNode.lineNumber.get - 1
+        case Some(f) if f.endsWith(".sql") => queryColumn.lineNumber + queryLineNumber - 1
         case _                             => queryColumn.lineNumber
 
       val columnNode = NewSqlColumnNode()
