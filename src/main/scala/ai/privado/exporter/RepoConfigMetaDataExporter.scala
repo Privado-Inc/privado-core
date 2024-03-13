@@ -24,7 +24,7 @@ object RepoConfigMetaDataExporter {
     metaData
   }
 
-  // key having value as config.prod.DB_URL, we must output key as "DB_URL"
+  // property having key as config.prod.DB_URL, we must output key as "DB_URL"
   private def resolveNestedKey(key: String): String = {
     key.split("\\.").last
   }
