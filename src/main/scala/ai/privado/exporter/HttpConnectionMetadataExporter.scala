@@ -144,7 +144,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         if (classLevelAnnotation.isDefined) {
           egressUrls = egressUrls :+ CollectionUtility
 //            In case Feign client name of service is denoted by parameter "name"
-            .getUrlFromAnnotation(classLevelAnnotation.get, "name")
+            .getUrlFromAnnotation(classLevelAnnotation.get, List("name"))
             .stripSuffix("/") + SLASH_SYMBOL + CollectionUtility
             .getUrlFromAnnotation(matchedAnnotation)
             .strip()
