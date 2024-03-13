@@ -53,7 +53,7 @@ import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.dump
+import ai.privado.utility.Utilities.{deserializedArgumentString, dump}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -72,7 +72,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
 import scala.util.Try
-import privado_core.BuildInfo
 
 object ExporterUtility {
 
@@ -176,7 +175,8 @@ object ExporterUtility {
     node: AstNode,
     index: Int = -1,
     sizeOfList: Int = -1,
-    messageInExcerpt: String = ""
+    messageInExcerpt: String = "",
+    arguments: String = ""
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
     val sample = node.code
     val lineNumber: Int = {
@@ -221,7 +221,21 @@ object ExporterUtility {
         else
           fileName
       }
-      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+
+      if (node.tag.nameExact(Constants.arguments).nonEmpty) {
+        val arguments    = node.tag.nameExact(Constants.arguments).value.head
+        val argumentList = deserializedArgumentString(arguments)
+        Some(
+          DataFlowSubCategoryPathExcerptModel(
+            sample,
+            lineNumber,
+            columnNumber,
+            actualFileName,
+            excerpt,
+            Some(argumentList)
+          )
+        )
+      } else Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
     }
   }
 
@@ -341,8 +355,8 @@ object ExporterUtility {
     output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
     output.addOne(Constants.cliVersion  -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
     output.addOne(Constants.mainVersion -> AppCache.privadoVersionMain.asJson)
-    output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
-    output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
+//    output.addOne(Constants.privadoLanguageEngineVersion -> "BuildInfo.joernVersion.asJson")
+    output.addOne(Constants.createdAt -> Calendar.getInstance().getTimeInMillis.asJson)
 
     if (privadoInput.enableIngressAndEgressUrls) {
       output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)

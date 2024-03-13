@@ -32,19 +32,32 @@ import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 
 import scala.collection.mutable
 //import java.io.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
+  CfgNode,
+  NewFile,
+  NewTag,
+  Block,
+  Literal,
+  Call,
+  Identifier,
+  FieldIdentifier,
+  Local
+}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 
-import java.io.PrintWriter
+import scala.collection.mutable.ListBuffer
+import java.io.{PrintWriter, ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import java.math.BigInteger
 import java.net.URL
 import java.nio.file.Paths
@@ -124,6 +137,190 @@ object Utilities {
     storeForTagHelper(Constants.dbOperation, databaseDetails.dbOperation)
   }
 
+  def addArgumentsForGAPixelNode(node: Call, cpg: Cpg): List[(String, String)] = {
+    var keyValueStructures = ListBuffer.empty[(String, String)]
+
+    def processIdentifierNode(n: Identifier, topLeftKey: String): Unit = {
+      def updateLeftKey(code: String): String = {
+        if (topLeftKey.nonEmpty)
+          topLeftKey + "." + code
+        else
+          code
+      }
+
+      val identifierTypeFullName = n.typeFullName
+      // Try to parse the structure identifier whose typeFullName { p1: __ecma.String; p2: __ecma.String; }
+      // Define a regular expression to match keys
+      val pattern = """\b([a-zA-Z_]\w*):""".r
+
+      // Find all matches in the input string
+      val matches = pattern.findAllMatchIn(identifierTypeFullName)
+      if (!n.name.matches("(_tmp_|this|globalThis).*")) {
+        if (matches.nonEmpty) {
+          // Extract keys from matches
+          val keys = matches.map(_.group(1)).toList
+          // Print the result
+          keys.foreach((key) => {
+            keyValueStructures += ((updateLeftKey(n.code + "." + key), key))
+          })
+        } else {
+          keyValueStructures += ((updateLeftKey(n.code), identifierTypeFullName))
+        }
+      }
+    }
+
+    def processAssignmentNodes(assignmentNodes: List[Call], topLeftKey: String): Unit = {
+      assignmentNodes.foreach { keyVal =>
+        val (leftChild, rightChild) = extractKeyValPair(keyVal.astChildren.l, Some(topLeftKey))
+        for {
+          left  <- leftChild
+          right <- rightChild
+        } {
+          if (right.nonEmpty) {
+            keyValueStructures += ((left, right))
+          }
+        }
+      }
+    }
+
+    def processSpreadOperatorNodes(spreadOperatorNodes: List[Call], topLeftKey: String): Unit = {
+      spreadOperatorNodes.foreach { keyVal =>
+        val callNodes       = keyVal.astChildren.isCall.l
+        val childCallNodes  = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
+        val identifierNodes = keyVal.astChildren.isIdentifier.lastOption.l
+        callNodes.isCall.foreach { callN =>
+          handlePayloadCallNode(callN, topLeftKey)
+          handlePICKMethodCallNode(callN, topLeftKey)
+        }
+        (childCallNodes.collect { case n: Identifier => n } ++ identifierNodes.collect { case n: Identifier => n })
+          .foreach(processIdentifierNode(_, topLeftKey))
+      }
+    }
+
+    def getLeftKey(leftKey: AstNode, topLeftKey: Option[String]): Option[String] = {
+      val res = Some(leftKey)
+        .collect {
+          case c: Call    => handleCallNode(c, topLeftKey).astChildren.isFieldIdentifier.head
+          case l: Literal => l
+        }
+        .map(_.code)
+      if (topLeftKey.getOrElse("").nonEmpty)
+        Some(topLeftKey.getOrElse("") + "." + res.getOrElse(""))
+      else
+        res
+    }
+
+    def extractKeyValPair(objKeyVal: List[AstNode], topLeftKey: Option[String]): (Option[String], Option[String]) = {
+      objKeyVal match {
+        case leftKey :: rightVal :: _ =>
+          (
+            getLeftKey(leftKey, topLeftKey),
+            Some(rightVal).collect {
+              case l: Literal         => l.code
+              case l: Identifier      => l.code
+              case l: FieldIdentifier => l.code
+              case l: Local           => l.code
+              case l: Call            => handleCallNode(l, topLeftKey).code
+              case l: Block           => handleBlockNode(l, getLeftKey(leftKey, topLeftKey))
+            }
+          )
+        case _ =>
+          (None, None)
+      }
+    }
+
+    def handlePayloadCallNode(callNode: Call, topLeftKey: String): Unit = {
+      if (callNode.name.equals("payload")) {
+        val gpEventKey =
+          callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption
+            .getOrElse("")
+        val blockNode = cpg.call.code(".*tmp.*" + gpEventKey + " =.*").astChildren.isBlock.l
+
+        if (blockNode.nonEmpty) {
+          val internalBlockNode = blockNode.head.astChildren.isCall
+            .code(".*payload.*")
+            .astChildren
+            .isMethodRef
+            .referencedMethod
+            .astChildren
+            .isBlock
+            .l
+          val returnBlockNode = internalBlockNode.astChildren.isReturn.astChildren.isBlock.l
+          handleBlockNode(blockNode.head, Some(topLeftKey))
+          handleBlockNode(returnBlockNode.head, Some(topLeftKey))
+        }
+      }
+    }
+
+    def handlePICKMethodCallNode(callNode: Call, topLeftKey: String): Unit = {
+      if (callNode.name.equals("pick")) {
+        var concatKey = ""
+        val keys      = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
+        val objName   = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
+
+        if (objName.nonEmpty) {
+          concatKey = objName.head
+        }
+
+        keys.foreach { key =>
+          keyValueStructures += ((topLeftKey + "." + key, concatKey + "." + key))
+        }
+      }
+    }
+
+    def handleCallNode(callNode: Call, topLeftKey: Option[String]): AstNode = {
+      // Handling `payload` method for GTM differently
+      handlePayloadCallNode(callNode, topLeftKey.getOrElse("") + ".payload")
+      handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""))
+
+      if (callNode.methodFullName.equals("__ecma.Array:")) {
+        val blockNodes = callNode.astChildren.isBlock.l
+        blockNodes.foreach { bNode =>
+          handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
+        }
+      }
+
+      callNode
+    }
+
+    def handleBlockNode(blockNode: Block, topLeftKey: Option[String]): String = {
+      val assignmentNodes     = blockNode.astChildren.isCall.name("<operator>.assignment").l
+      val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
+      val childBlockNodes     = blockNode.astChildren.isBlock.l
+      val arrayCallNodes      = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
+
+      processAssignmentNodes(assignmentNodes, topLeftKey.getOrElse(""))
+      processSpreadOperatorNodes(spreadOperatorNodes, topLeftKey.getOrElse(""))
+      childBlockNodes.foreach { bNode =>
+        handleBlockNode(bNode, topLeftKey)
+      }
+
+      arrayCallNodes.foreach { bNode =>
+        handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"))
+      }
+
+      ""
+    }
+
+    val assignmentNodes     = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
+    val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
+    val identifierNodes     = node.argument.isIdentifier.l
+    val literalNodes        = node.argument.isLiteral.l
+
+    literalNodes.foreach { l =>
+      keyValueStructures += ((l.code, l.code))
+    }
+    identifierNodes.foreach { i =>
+      processIdentifierNode(i, "")
+    }
+
+    processAssignmentNodes(assignmentNodes, "")
+    processSpreadOperatorNodes(spreadOperatorNodes, "")
+
+    // TODO: Add PII check for the key/val & add its result with that key
+    keyValueStructures.toList
+  }
+
   /** Utility to add Tag based on a rule Object
     */
   def addRuleTags(
@@ -149,6 +346,27 @@ object Utilities {
       // storing by catLevelTwo and nodeType to get id
       storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
+  }
+
+  def addRuleTagsForGA(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNode,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    cpg: Cpg,
+    ruleId: Option[String] = None
+  ): Unit = {
+    // TODO: Generate Arguments for the Google Tag Manager Pixel
+    if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
+      if (node.isInstanceOf[Call]) {
+        val storeForTagHelper                    = storeForTag(builder, node, ruleCache) _
+        val callNode                             = node.asInstanceOf[Call]
+        val argumentList: List[(String, String)] = addArgumentsForGAPixelNode(callNode, cpg)
+        storeForTagHelper(Constants.arguments, serializedArgumentString(argumentList))
+      }
+    }
+    addRuleTags(builder, node, ruleInfo, ruleCache, ruleId)
+
   }
 
   /** Utility to filter rules by catLevelOne
@@ -529,5 +747,21 @@ object Utilities {
         )
       }
     })
+  }
+
+  def serializedArgumentString(originalList: List[(String, String)]): String = {
+    val byteArrayOutputStream = new ByteArrayOutputStream()
+    val objectOutputStream    = new ObjectOutputStream(byteArrayOutputStream)
+    objectOutputStream.writeObject(originalList)
+    objectOutputStream.close()
+    byteArrayOutputStream.toString("ISO-8859-1")
+  }
+
+  def deserializedArgumentString(serializedString: String): List[(String, String)] = {
+    val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
+    val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
+    val result               = objectInputStream.readObject().asInstanceOf[List[(String, String)]]
+    objectInputStream.close()
+    result
   }
 }
