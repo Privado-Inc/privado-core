@@ -155,11 +155,10 @@ object Utilities {
       }
 
       val identifierTypeFullName = n.typeFullName
+      val quotedTypeFullNameStr = Regex.quote(identifierTypeFullName)
 
       // Check if typeDecl present, if yes get members
-      val memberList =  cpg.typeDecl(identifierTypeFullName).member.name.l
-      // println(n.typeFullName)
-      // println(memberList)
+      val memberList =  cpg.typeDecl(quotedTypeFullNameStr).member.name.l
 
       // Try to parse the structure identifier whose typeFullName { p1: __ecma.String; p2: __ecma.String; }
       // Define a regular expression to match keys
