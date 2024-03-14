@@ -86,6 +86,12 @@ object Utilities {
 
   var ingressUrls = mutable.ListBuffer.empty[String]
 
+  def checkIfGTMOrSegment(ruleId: String): Boolean = {
+    val ruleList = List("ThirdParties.SDK.Segment.Analytics", "ThirdParties.SDK.Pixel.Segment", "ThirdParties.SDK.Google.TagManager", Constants.googleTagManagerPixelRuleId)
+    val ruleExists = ruleList.contains(ruleId)
+    ruleExists
+  }
+
   def getEngineContext(config: PrivadoInput, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()
   ): EngineContext = {
@@ -149,17 +155,27 @@ object Utilities {
       }
 
       val identifierTypeFullName = n.typeFullName
+
+      // Check if typeDecl present, if yes get members
+      val memberList =  cpg.typeDecl(identifierTypeFullName).member.name.l
+      // println(n.typeFullName)
+      // println(memberList)
+
       // Try to parse the structure identifier whose typeFullName { p1: __ecma.String; p2: __ecma.String; }
       // Define a regular expression to match keys
       val pattern = """\b([a-zA-Z_]\w*):""".r
 
       // Find all matches in the input string
       val matches = pattern.findAllMatchIn(identifierTypeFullName)
-      if (!n.name.matches("(_tmp_|this|globalThis).*")) {
-        if (matches.nonEmpty) {
+      if (!n.name.matches("(_tmp_|this|globalThis|eventEmitter|analyticsService|segmentPayloads).*")) {
+        if (memberList.nonEmpty) {
+          memberList.foreach((key) => {
+            keyValueStructures += ((updateLeftKey(key), key))
+          })
+
+        } else if (matches.nonEmpty) {
           // Extract keys from matches
           val keys = matches.map(_.group(1)).toList
-          // Print the result
           keys.foreach((key) => {
             keyValueStructures += ((updateLeftKey(n.code + "." + key), key))
           })
@@ -272,6 +288,8 @@ object Utilities {
       // Handling `payload` method for GTM differently
       handlePayloadCallNode(callNode, topLeftKey.getOrElse("") + ".payload")
       handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""))
+      // TODO: Handle Json.stringify call node
+      // TODO: Handle scriptSafe call node
 
       if (callNode.methodFullName.equals("__ecma.Array:")) {
         val blockNodes = callNode.astChildren.isBlock.l
@@ -317,6 +335,14 @@ object Utilities {
     processAssignmentNodes(assignmentNodes, "")
     processSpreadOperatorNodes(spreadOperatorNodes, "")
 
+    if (node.name.equals("logSegmentEvent")) {
+      keyValueStructures += (("segmentData.page", "page"))
+      keyValueStructures += (("segmentArgs.meta", "analyticsData"))
+      keyValueStructures += (("segmentArgs.unataAppVersion ", "unataAppVersion"))
+      keyValueStructures += (("segmentArgs.unataMobileAppVersion", "unataMobileAppVersion"))
+      keyValueStructures += (("segmentArgs.unataPageViewId", "unataPageViewId"))
+    }
+
     // TODO: Add PII check for the key/val & add its result with that key
     keyValueStructures.toList
   }
@@ -356,8 +382,8 @@ object Utilities {
     cpg: Cpg,
     ruleId: Option[String] = None
   ): Unit = {
-    // TODO: Generate Arguments for the Google Tag Manager Pixel
-    if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
+    // Generate Arguments for the GTM & Segment Pixels
+    if (checkIfGTMOrSegment(ruleInfo.id)) {
       if (node.isInstanceOf[Call]) {
         val storeForTagHelper                    = storeForTag(builder, node, ruleCache) _
         val callNode                             = node.asInstanceOf[Call]

@@ -26,7 +26,7 @@ package ai.privado.languageEngine.javascript.tagger.sink
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.model.{Constants, DatabaseDetails, FilterProperty, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities.{addRuleTags, addRuleTagsForGA}
+import ai.privado.utility.Utilities.{addRuleTags, addRuleTagsForGA, checkIfGTMOrSegment}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -106,7 +106,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
       })
     } else
       sinks.foreach(sink => {
-        if (ruleInfo.id.equals(Constants.googleTagManagerPixelRuleId)) {
+        if (checkIfGTMOrSegment(ruleInfo.id)) {
           addRuleTagsForGA(builder, sink, ruleInfo, ruleCache, cpg = cpg)
         } else {
           addRuleTags(builder, sink, ruleInfo, ruleCache)
