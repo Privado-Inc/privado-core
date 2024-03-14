@@ -11,12 +11,16 @@ import ai.privado.model.Constants
 object RepoConfigMetaDataExporter {
 
   def getMetaData(cpg: Cpg, ruleCache: RuleCache) = {
-    val metaData   = mutable.LinkedHashMap[String, String]()
+    val metaData   = mutable.LinkedHashSet[mutable.HashMap[String, String]]()
     val configRule = ruleCache.getSystemConfigByKey(Constants.RepoPropertyConfig)
     try {
       val propertySources = cpg.property.filter(p => p.name matches configRule).l
       propertySources.foreach(p => {
-        metaData.put(p.name, p.value)
+        val configMap = mutable.HashMap[String, String]()
+        configMap.put(Constants.name, p.name)
+        configMap.put(Constants.value, p.value)
+        configMap.put(Constants.filePath, p.file.head.name)
+        metaData.addOne(configMap)
       })
     } catch {
       case ex: Exception => println("Error while fetching repo config metadata")
