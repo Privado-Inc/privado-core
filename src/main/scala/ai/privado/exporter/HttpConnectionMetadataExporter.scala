@@ -89,15 +89,6 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   def getEgressUrlsFromCodeFiles: List[String] = {
     var egressUrls = List[String]()
 
-    egressUrls = egressUrls.concat(
-      cpg.property
-        .filterNot(_.value.matches(FILE_SUFFIX_REGEX_PATTERN))
-        .filterNot(_.value.matches(COMMON_FALSE_POSITIVE_EGRESS_PATTERN))
-        .or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH))
-        .value
-        .dedup
-        .l
-    )
     /* We have verified literals for these languages, so we need to analyze other languages before broadening the rule.
        It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
        Therefore, we might need to do a few things specific to each language. */
@@ -114,7 +105,13 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     var egressUrls = List[String]()
 
     egressUrls = egressUrls.concat(
-      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
+      cpg.property
+        .filterNot(_.value.matches(FILE_SUFFIX_REGEX_PATTERN))
+        .filterNot(_.value.matches(COMMON_FALSE_POSITIVE_EGRESS_PATTERN))
+        .or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH))
+        .value
+        .dedup
+        .l
     )
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
