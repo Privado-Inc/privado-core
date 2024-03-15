@@ -99,11 +99,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls = collectionTagger.getIngressUrls()
+    ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
     methodFullNameTagger.createAndApply()
-    ingressUrls.appendedAll(methodFullNameTagger.getIngressUrls())
+    ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
 
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 

@@ -29,7 +29,7 @@ import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
+import ai.privado.tagger.utility.APITaggerUtility.{SERVICE_URL_REGEX_PATTERN, sinkTagger}
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -64,6 +64,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     val apiInternalSources = cpg.literal.code("(?:\"|'|`)(" + ruleInfo.combinedRulePattern + ")(?:\"|'|`)").l
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
     val identifierRegex    = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
+    val serviceSource      = cpg.property.filter(p => p.value matches SERVICE_URL_REGEX_PATTERN).usedAt.l
     val identifierSource = {
       if (!ruleInfo.id.equals(Constants.internalAPIRuleId))
         cpg.identifier(identifierRegex).l ++ cpg.member
@@ -73,7 +74,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
         List()
     }
     sinkTagger(
-      apiInternalSources ++ propertySources ++ identifierSource,
+      apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
       apis,
       builder,
       ruleInfo,

@@ -51,7 +51,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val COMMON_FALSE_POSITIVE_EGRESS_PATTERN =
     ".*(BEGIN PRIVATE KEY|sha512|googleapis|sha1|amazonaws|</div>|</p>|<img|<class|require\\().*"
 
-  private val SLASH_SYMBOL = "/"
+  private val SLASH_SYMBOL          = "/"
+  private val FORMAT_STRING_SYMBOLS = "[{}]"
 
   private val LAMBDA_SERVERLESS_BASE_PATH = "service"
   private val LAMBDA_SERVERLESS_FILE_NAME = ".*serverless.yml"
@@ -69,7 +70,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
             if arg.isLiteral then arg.code // collect literal
             // const loginPath = "api/v1" + "/login" --- Addition Case(javascript, python, java)
             // const signupPath = `api/v1/${signup}` --- Format String Case for javascript(similar applicable for python, java)
-            else if node.name.equals("<operator>.addition") || node.name.equals("<operator>.formatString") then arg.code
+            else if node.name.equals("<operator>.addition") || node.name.equals("<operator>.formatString") then
+              arg.code.replaceAll(FORMAT_STRING_SYMBOLS, "")
             // const loginPath = "api/v1/login" --- Assignment Case(similar applicable for python, java)
             else if node.name.equals("<operator>.assignment") && arg.isLiteral then arg.code
             else ""
@@ -84,7 +86,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     egressLiterals
   }
 
-  def getEgressUrls: List[String] = {
+  def getEgressUrlsFromCodeFiles: List[String] = {
     var egressUrls = List[String]()
 
     egressUrls = egressUrls.concat(
@@ -104,6 +106,16 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     ) {
       egressUrls = egressUrls.concat(getLiteralsFromLanguageFiles)
     }
+
+    egressUrls.dedup.l
+  }
+
+  def getEgressUrls: List[String] = {
+    var egressUrls = List[String]()
+
+    egressUrls = egressUrls.concat(
+      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
+    )
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
     egressUrls.dedup.l
@@ -147,7 +159,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
         if (classLevelAnnotation.isDefined) {
           egressUrls = egressUrls :+ CollectionUtility
 //            In case Feign client name of service is denoted by parameter "name"
-            .getUrlFromAnnotation(classLevelAnnotation.get, "name")
+            .getUrlFromAnnotation(classLevelAnnotation.get, List("name"))
             .stripSuffix("/") + SLASH_SYMBOL + CollectionUtility
             .getUrlFromAnnotation(matchedAnnotation)
             .strip()

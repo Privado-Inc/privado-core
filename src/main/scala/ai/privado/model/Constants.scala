@@ -50,9 +50,10 @@ object Constants {
   val flow      = "flow"
 
   // systemConfig
-  val key              = "key"
-  val value            = "value"
-  val MAX_SOCKET_COUNT = "maxSocketCount"
+  val key                = "key"
+  val value              = "value"
+  val MAX_SOCKET_COUNT   = "maxSocketCount"
+  val RepoPropertyConfig = "RepoPropertyConfig"
 
   val third_parties      = "third_parties"
   val internal_apis      = "internal_apis"
@@ -110,6 +111,7 @@ object Constants {
   val violations                   = "violations"
   val ingressUrls                  = "ingressUrls"
   val egressUrls                   = "egressUrls"
+  val egressUrlsFromCode           = "egressUrlsFromCode"
   val httpEndPointBasePaths        = "httpEndPointBasePaths"
   val outputFileName               = "privado.json"
   val outputDirectoryName          = ".privado"
@@ -120,6 +122,7 @@ object Constants {
   val outputAuditFileName          = "audit-report.xlsx"
   val outputSemanticFileName       = "semantic.txt"
   val outputUnresolvedFilename     = "unresolved-flow.json"
+  val repoConfigMetaData           = "RepoConfigMetaData"
 
   // database details
   val dbName      = "dbName"

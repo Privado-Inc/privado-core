@@ -42,6 +42,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member}
 import overflowdb.BatchedUpdate
 
 object APITaggerUtility {
+
+  // for cases where services defined as https://exampleService
+  val SERVICE_URL_REGEX_PATTERN = ".*(http|https):\\/\\/[a-zA-Z0-9_-]+$"
+
   def getLiteralCode(element: AstNode): String = {
     val literalCode = element match {
       case member: Member => member.name
@@ -71,18 +75,18 @@ object APITaggerUtility {
           DuplicateFlowProcessor.getUniquePathsAfterDedup(flows)
       }
       apiFlows.foreach(flow => {
-        val literalCode = getLiteralCode(flow.elements.head)
-        val apiNode     = flow.elements.last
+        val sourceNode = flow.elements.head
+        val apiNode    = flow.elements.last
         // Tag API's when we find a dataflow to them
         var newRuleIdToUse = ruleInfo.id
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, apiNode, ruleInfo, ruleCache)
         else {
-          val domain = getDomainFromString(literalCode)
+          val domain = resolveDomainFromSource(sourceNode)
           newRuleIdToUse = ruleInfo.id + "." + domain
           ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
-        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, literalCode)
+        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(sourceNode))
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
       if (showAPI && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
@@ -106,4 +110,12 @@ object APITaggerUtility {
     urlValue.stripPrefix("\"").stripSuffix("\"")
   }
 
+  private def resolveDomainFromSource(sourceNode: AstNode): String = {
+    val sourceDomain = sourceNode.originalPropertyValue.getOrElse(getLiteralCode(sourceNode))
+    if (sourceDomain.matches(SERVICE_URL_REGEX_PATTERN)) {
+      sourceDomain.split("//").last
+    } else {
+      getDomainFromString(sourceDomain)
+    }
+  }
 }

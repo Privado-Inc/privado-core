@@ -66,7 +66,12 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
       | public List<Product> createProducts() {
       |    }
       |
+      | @PutMapping(path = "/account/{uuid}")
+      |	public Token updateAccount(@RequestBody String uuid) {
+      | }
+      |
       |}
+      |
       |
       |""".stripMargin
 
@@ -100,13 +105,19 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
     }
   }
 
+  "Get Url for annotation" should {
+    "give url for updateAccount using path variable name" in {
+      CollectionUtility.getUrlFromAnnotation(cpg.method("updateAccount").annotation.head) shouldBe "/account/{uuid}"
+    }
+  }
+
   "Get Url for annotation without having PII" should {
     "check ingress url" in {
       val collectionTagger = new CollectionTagger(cpg, ruleCache)
       collectionTagger.createAndApply()
-      ingressUrls = collectionTagger.getIngressUrls()
+      ingressUrls.addAll(collectionTagger.getIngressUrls())
 
-      ingressUrls.size shouldBe 6
+      ingressUrls.size shouldBe 7
       true shouldBe ingressUrls.contains("/api/public/user/login")
     }
   }
