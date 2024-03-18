@@ -15,6 +15,8 @@ object JavaAPISinkTagger extends APISinkTagger {
 
     if (privadoInput.enableAPIByParameter)
       new JavaAPISinkByParameterTagger(cpg, ruleCache).createAndApply()
+
+    new JavaAPISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
   }
 
 }

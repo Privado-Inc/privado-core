@@ -78,7 +78,7 @@ class JavaAPISinkByParameterTaggerTest extends AnyWordSpec with Matchers with Be
       val privadoInput = PrivadoInput(enableAPIByParameter = true)
       val ruleCache    = RuleCache()
       ruleCache.setRule(RuleInfoTestData.rule.copy())
-      JavaAPISinkTagger.applyTagger(cpg, ruleCache = RuleCache(), privadoInput = privadoInput)
+      JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = privadoInput)
 
       new JavaAPITagger(cpg, ruleCache, privadoInputConfig = privadoInput).createAndApply()
 
