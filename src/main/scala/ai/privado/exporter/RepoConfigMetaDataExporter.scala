@@ -8,25 +8,28 @@ import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.Constants
 
+import scala.collection.immutable.HashMap
+
 object RepoConfigMetaDataExporter {
 
   def getMetaData(cpg: Cpg, ruleCache: RuleCache) = {
-    val metaData   = mutable.LinkedHashSet[mutable.HashMap[String, String]]()
     val configRule = ruleCache.getSystemConfigByKey(Constants.RepoPropertyConfig)
     try {
-      val propertySources = cpg.property
+      cpg.property
         .filter(p => p.name matches configRule)
         .l
         .map(p => {
-          val configMap = mutable.HashMap[String, String]()
-          configMap.put(Constants.name, p.name)
-          configMap.put(Constants.value, p.value)
-          configMap.put(Constants.filePath, p.file.head.name)
-          metaData.addOne(configMap)
+          HashMap(
+            Constants.name     -> p.name,
+            Constants.value    -> p.value,
+            Constants.filePath -> p.file.name.headOption.getOrElse("")
+          )
         })
     } catch {
-      case ex: Exception => println("Error while fetching repo config metadata")
+      case ex: Exception => {
+        println("Error while fetching repo config metadata")
+        List()
+      }
     }
-    metaData
   }
 }
