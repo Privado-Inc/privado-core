@@ -15,6 +15,9 @@ class RubyMongoSchemaTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
   val sourceRules: List[RuleInfo] = ruleCache.getAllRuleInfo.filter(_.catLevelOne == CatLevelOne.SOURCES).l
   override def generateParts(): Array[TypeDecl] = {
     cpg.typeDecl
+      .filter(
+        _.code.startsWith("class")
+      ) // It has been observed the code has `class User` kind of text, this is to exclude namespace and modules
       .where(
         _.ast.isCall
           .nameExact("<operator>.scopeResolution")
