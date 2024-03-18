@@ -54,6 +54,7 @@ object Constants {
   val value              = "value"
   val MAX_SOCKET_COUNT   = "maxSocketCount"
   val RepoPropertyConfig = "RepoPropertyConfig"
+  val filePath           = "filePath"
 
   val third_parties      = "third_parties"
   val internal_apis      = "internal_apis"
