@@ -29,7 +29,7 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, JavaYamlLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.languageEngine.java.semantic.Language.*
