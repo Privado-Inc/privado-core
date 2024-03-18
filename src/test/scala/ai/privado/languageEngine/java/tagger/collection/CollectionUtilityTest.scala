@@ -58,6 +58,18 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
       |	public Token login(@RequestBody String somestring) {
       | }
       |
+      | @RequestMapping(method = RequestMethod.GET, value = "/products", produces = "application/json")
+      | public List<Product> getProducts() {
+      |    }
+      |
+      | @PostMapping(produces = "application/json")
+      | public List<Product> createProducts() {
+      |    }
+      |
+      | @PutMapping(path = "/account/{uuid}")
+      |	public Token updateAccount(@RequestBody String uuid) {
+      | }
+      |
       |}
       |
       |
@@ -75,9 +87,27 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
     }
   }
 
+  "Get Url for annotation where first parameter is other than 'value'" should {
+    "give url for getProducts" in {
+      CollectionUtility.getUrlFromAnnotation(cpg.method("getProducts").annotation.head) shouldBe "/products"
+    }
+  }
+
+  "Get Url for annotation where value parameter or direct url is not defined" should {
+    "give url for createProducts" in {
+      CollectionUtility.getUrlFromAnnotation(cpg.method("createProducts").annotation.head) shouldBe ""
+    }
+  }
+
   "Get Url for annotation" should {
     "give url for sample3" in {
-      CollectionUtility.getUrlFromAnnotation(cpg.method("sample3").annotation.head) shouldBe "sample3"
+      CollectionUtility.getUrlFromAnnotation(cpg.method("sample3").annotation.head) shouldBe ""
+    }
+  }
+
+  "Get Url for annotation" should {
+    "give url for updateAccount using path variable name" in {
+      CollectionUtility.getUrlFromAnnotation(cpg.method("updateAccount").annotation.head) shouldBe "/account/{uuid}"
     }
   }
 
@@ -85,9 +115,9 @@ class CollectionUtilityTest extends JavaTaggingTestBase {
     "check ingress url" in {
       val collectionTagger = new CollectionTagger(cpg, ruleCache)
       collectionTagger.createAndApply()
-      ingressUrls = collectionTagger.getIngressUrls()
+      ingressUrls.addAll(collectionTagger.getIngressUrls())
 
-      ingressUrls.size shouldBe 4
+      ingressUrls.size shouldBe 7
       true shouldBe ingressUrls.contains("/api/public/user/login")
     }
   }

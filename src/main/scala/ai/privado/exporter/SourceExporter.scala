@@ -89,12 +89,22 @@ class SourceExporter(
     */
   private def getSourcesList: List[AstNode] = {
     def filterSource(traversal: Traversal[AstNode]) = {
-      traversal
-        .where(
-          _.tag
-            .nameExact(Constants.catLevelOne)
-            .valueExact(CatLevelOne.SOURCES.name)
-        )
+
+      if (privadoInput.isMonolith) {
+        traversal
+          .where(
+            _.tag
+              .nameExact(Constants.catLevelOne)
+              .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
+          )
+      } else {
+        traversal
+          .where(
+            _.tag
+              .nameExact(Constants.catLevelOne)
+              .valueExact(CatLevelOne.SOURCES.name)
+          )
+      }
     }
     val sources: List[AstNode] =
       cpg.identifier

@@ -253,7 +253,7 @@ object PythonProcessor {
 
     val excludeFileRegex = ruleCache.getExclusionRegex
     // TODO Discover ignoreVenvDir and set ignore true or flase based on user input
-    val cpgconfig = Py2CpgOnFileSystemConfig(File(".venv").path, true)
+    val cpgconfig = Py2CpgOnFileSystemConfig(Option(File(".venv").path), ignoreVenvDir = true)
       .withInputPath(absoluteSourceLocation.toString)
       .withOutputPath(Paths.get(cpgOutputPath).toString)
       .withIgnoredFilesRegex(excludeFileRegex)
