@@ -91,7 +91,8 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
                   parsedQueryItem,
                   query,
                   queryLineNumber,
-                  queryOrder
+                  queryOrder,
+                  fileName = Option(sqlFileName)
                 )
               }
             case None =>
