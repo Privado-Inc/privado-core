@@ -21,13 +21,13 @@ import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
 
-abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
+class GoPropertyEnvLinkerPassTest extends GoPropertyEnvLinkerPassTestBase {
   override val yamlFileContents: String = """
       |config:
       |  default:
@@ -82,7 +82,11 @@ abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
   }
 }
 
-abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+abstract class GoPropertyEnvLinkerPassTestBase
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach {
 
   var cpg: Cpg = _
   val yamlFileContents: String
@@ -113,7 +117,7 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.GO).createAndApply()
-    new GoYamlLinkerPass(cpg).createAndApply()
+    new GoEnvPropertyLinkerPass(cpg).createAndApply()
     new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
     new GoAPITagger(cpg, ruleCache, new PrivadoInput).createAndApply()
     super.beforeAll()

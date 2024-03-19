@@ -336,7 +336,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
       }
       .get
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
-    new JavaPropertyLinkerPass(cpg).createAndApply()
+    new JavaEnvPropertyLinkerPass(cpg).createAndApply()
 
     super.beforeAll()
   }

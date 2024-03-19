@@ -323,7 +323,7 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
     new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.PYTHON).createAndApply()
-    new PythonPropertyLinkerPass(cpg).createAndApply()
+    new PythonEnvPropertyLinkerPass(cpg).createAndApply()
     super.beforeAll()
   }
 

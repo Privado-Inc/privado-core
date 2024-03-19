@@ -6,7 +6,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.go.passes.SQLQueryParser
-import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
+import ai.privado.languageEngine.go.passes.config.GoEnvPropertyLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.metric.MetricHandler
@@ -67,7 +67,7 @@ object GoProcessor {
           else
             new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO).createAndApply()
 
-          new GoYamlLinkerPass(cpg).createAndApply()
+          new GoEnvPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLQueryParser(cpg).createAndApply()
           // Unresolved function report

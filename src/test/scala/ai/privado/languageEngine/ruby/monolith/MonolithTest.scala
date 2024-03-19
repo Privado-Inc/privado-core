@@ -7,7 +7,6 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.monolith.MonolithExporter
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.model.{Constants, Language}
 import ai.privado.utility.PropertyParserPass

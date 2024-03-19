@@ -98,7 +98,7 @@ abstract class JSPropertiesFilePassTestBase(fileExtension: String)
     new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
 
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVASCRIPT).createAndApply()
-    new JSPropertyLinkerPass(cpg).createAndApply()
+    new JSEnvPropertyLinkerPass(cpg).createAndApply()
 
   }
 

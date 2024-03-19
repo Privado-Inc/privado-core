@@ -28,7 +28,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.monolith.MonolithExporter
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
+import ai.privado.languageEngine.ruby.passes.config.RubyEnvPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.{
   GlobalImportPass,
@@ -124,7 +124,7 @@ object RubyProcessor {
               .createAndApply()
           else
             new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
-          new RubyPropertyLinkerPass(cpg).createAndApply()
+          new RubyEnvPropertyLinkerPass(cpg).createAndApply()
 
           logger.info("Enhancing Ruby graph by post processing pass")
 

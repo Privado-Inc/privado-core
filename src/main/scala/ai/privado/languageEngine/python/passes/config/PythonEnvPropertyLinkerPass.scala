@@ -6,10 +6,11 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import overflowdb.BatchedUpdate
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.InternalTag
+import ai.privado.passes.PropertyEnvLinkerPassBase
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
-class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
+class PythonEnvPropertyLinkerPass(cpg: Cpg) extends PropertyEnvLinkerPassBase(cpg) {
   override def generateParts(): Array[_ <: AnyRef] = {
     // TODO Filter out property nodes not created from config files, Remove in future
     cpg.property.l
@@ -18,13 +19,15 @@ class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProp
       .toArray
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
-    connectProperties(property, builder)
-  }
-
-  private def connectProperties(property: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    connectGetEnvironLiterals(property, builder)
-    connectDBConfigMembers(property, builder)
+  override def connectProperties(property: JavaProperty, builder: DiffGraphBuilder): Unit = {
+    matchEnvironGetCalls(property.name.strip()).foreach(lit => {
+      // Create an edge between the literals in the environ.get calls and the property nodes.
+      connectEnvProperty(lit, property, builder)
+    })
+    matchDBConfigCalls(property.name.strip()).foreach(lit => {
+      // Create an edge between the literals in the db config members and the property nodes.
+      connectEnvProperty(lit, property, builder)
+    })
   }
 
   /** Matches the exact key of the propertyNode to its corresponding os.environ.get() calls.
@@ -58,23 +61,4 @@ class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProp
       List[Member]()
     }
   }
-
-  /** Create an edge between the literals in the environ.get calls and the property nodes.
-    */
-  private def connectGetEnvironLiterals(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    matchEnvironGetCalls(propertyNode.name.strip()).foreach(lit => {
-      builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
-      builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-    })
-  }
-
-  /** Create an edge between the literals in the db config members and the property nodes.
-    */
-  private def connectDBConfigMembers(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    matchDBConfigCalls(propertyNode.name.strip()).foreach(member => {
-      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
-      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-    })
-  }
-
 }

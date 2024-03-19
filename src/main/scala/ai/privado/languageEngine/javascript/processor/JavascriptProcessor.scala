@@ -27,7 +27,7 @@ import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
+import ai.privado.languageEngine.javascript.passes.config.{JSEnvPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
@@ -77,7 +77,7 @@ object JavascriptProcessor {
               .createAndApply()
             new JsConfigPropertyPass(cpg).createAndApply()
           } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
-          new JSPropertyLinkerPass(cpg).createAndApply()
+          new JSEnvPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()

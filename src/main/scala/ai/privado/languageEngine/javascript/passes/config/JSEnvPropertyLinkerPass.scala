@@ -2,19 +2,14 @@ package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.InternalTag
+import ai.privado.passes.PropertyEnvLinkerPassBase
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty}
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 
-class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
-
-  private val logger = LoggerFactory.getLogger(getClass)
-  // TODO: Modify the regex to make it more comprehensive
-  val dbConnectionRegex =
-    "^(db|database|jdbc|mysql|postgres|oracle|sqlserver)_(connection_)?(host|port|name|user|password|uri|driver|ssl|pool_size|timeout|connection_string)$"
-  val apiConnectionRegex = ".*/(api|external)?(_|\\.)?(url|base(_|\\.)?path)/i"
+class JSEnvPropertyLinkerPass(cpg: Cpg) extends PropertyEnvLinkerPassBase(cpg) {
 
   override def generateParts(): Array[_ <: AnyRef] = {
     // TODO Filter out property nodes not created from config files, remove in future
@@ -24,12 +19,10 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
       .toArray
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
-    connectProperties(property, builder)
-  }
-
-  private def connectProperties(property: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    connectEnvCallsToProperties(property, builder)
+  override def connectProperties(property: JavaProperty, builder: DiffGraphBuilder): Unit = {
+    matchProcessEnvAssignmentCalls(property.name.strip()).foreach(lit => {
+      connectEnvProperty(lit, property, builder)
+    })
   }
 
   /** Finds all assignment calls that assign a value to a property of the `process.env` object with the given
@@ -52,12 +45,4 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
       cpg.call("<operator>.(assignment|fieldAccess)").astChildren.code(pattern).l
     }
   }
-
-  private def connectEnvCallsToProperties(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    matchProcessEnvAssignmentCalls(propertyNode.name.strip()).foreach(member => {
-      builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)
-      builder.addEdge(member, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-    })
-  }
-
 }

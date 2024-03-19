@@ -29,7 +29,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
 
-class JavaYamlLinkerPassTest extends JavaYamlLinkerPassTestBase {
+class JavaPropertyEnvLinkerPassTest extends JavaEnvPropertyLinkerPassTestBase {
   override val yamlFileContents =
     """
       |config:
@@ -91,7 +91,7 @@ class JavaYamlLinkerPassTest extends JavaYamlLinkerPassTestBase {
   }
 }
 
-abstract class JavaYamlLinkerPassTestBase
+abstract class JavaEnvPropertyLinkerPassTestBase
     extends AnyWordSpec
     with Matchers
     with BeforeAndAfterAll
@@ -125,8 +125,7 @@ abstract class JavaYamlLinkerPassTestBase
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
-    new JavaPropertyLinkerPass(cpg).createAndApply()
-    new JavaYamlLinkerPass(cpg).createAndApply()
+    new JavaEnvPropertyLinkerPass(cpg).createAndApply()
     new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
     new JavaAPITagger(cpg, ruleCache, PrivadoInput()).createAndApply()
 

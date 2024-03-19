@@ -7,7 +7,7 @@ import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JsConfigPropertyPass
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
-import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
+import ai.privado.languageEngine.python.passes.config.PythonEnvPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
@@ -98,7 +98,7 @@ object PythonProcessor {
             new PythonConfigPropertyPass(cpg).createAndApply()
           } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
 
-          new PythonPropertyLinkerPass(cpg).createAndApply()
+          new PythonEnvPropertyLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()

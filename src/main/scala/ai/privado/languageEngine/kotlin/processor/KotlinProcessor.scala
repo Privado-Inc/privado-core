@@ -6,7 +6,7 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.ModuleFilePass
+import ai.privado.languageEngine.java.passes.config.{JavaEnvPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{
@@ -80,7 +80,7 @@ class KotlinProcessor(
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA)
     }) ++
       List(
-        new JavaPropertyLinkerPass(cpg),
+        new JavaEnvPropertyLinkerPass(cpg),
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
         new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache),
