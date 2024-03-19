@@ -54,6 +54,7 @@ object Constants {
   val value              = "value"
   val MAX_SOCKET_COUNT   = "maxSocketCount"
   val RepoPropertyConfig = "RepoPropertyConfig"
+  val filePath           = "filePath"
 
   val third_parties      = "third_parties"
   val internal_apis      = "internal_apis"
@@ -157,6 +158,7 @@ object Constants {
   val cookieSourceRuleId           = "Data.Sensitive.OnlineIdentifiers.Cookies"
   val ignoredSinks                 = "ignoredSinks"
   val apiSinks                     = "apiSinks"
+  val apiMethodFullNames           = "apiMethodFullNames"
   val apiHttpLibraries             = "apiHttpLibraries"
   val apiIdentifier                = "apiIdentifier"
   val apiGraphqlLibraries          = "apiGraphqlLibraries"

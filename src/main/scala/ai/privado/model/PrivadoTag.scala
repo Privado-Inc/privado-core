@@ -45,6 +45,9 @@ object InternalTag extends Enumeration {
   val PROBABLE_ASSET                           = Value("PROBABLE_ASSET")
   val SOURCE_PROPERTY                          = Value("SOURCE_PROPERTY")
 
+  // API Tags
+  val API_SINK_MARKED = Value("API_SINK_MARKED")
+
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
 }

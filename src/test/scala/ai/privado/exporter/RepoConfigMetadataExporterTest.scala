@@ -22,12 +22,15 @@ class RepoConfigMetadataExporterTest extends RepoConfigMetadataExporterBase {
 
   "Test Repo config Metadata sample" should {
     "should return correct metadata" in {
-      val resultMap = RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).toMap
-      resultMap.keys.toList should contain("name")
-      resultMap("name") should equal("exampleService")
+      val resultSet = RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).toArray
+      resultSet.length shouldBe 2
+      resultSet(0)("name") should equal("name")
+      resultSet(0)("value") should equal("exampleService")
+      resultSet(0)("filePath").contains("test.yaml") shouldBe true
 
-      resultMap.keys.toList should contain("config.prod.DB_HOST_NAME")
-      resultMap("config.prod.DB_HOST_NAME") should equal("example.com")
+      resultSet(1)("name") should equal("config.prod.DB_HOST_NAME")
+      resultSet(1)("value") should equal("example.com")
+      resultSet(1)("filePath").contains("test.yaml") shouldBe true
     }
   }
 }
