@@ -30,21 +30,25 @@ class IdentifierTaggingTest extends PhpTestBase {
   "Tagging derived sources" should {
     val (cpg, _) = code("""
         |<?php
-        |class Person {
-        |  public $firstName;
-        |  public $lastName;
-        |  public $dob;
-        |  public $emailId;
-        |  public $phoneNumber;
         |
-        |  function set_fname($firstName) {
-        |    $this->firstName = $firstName;
+        |  class User {
+        |    public $firstName;
+        |    public $lastName;
+        |    public $age;
+        |    public $email;
+        |    public $dob;
+        |
+        |    function __construct($fname, $lname, $userAge, $userEmail, $userDob) {
+        |      $this->firstName = $fname;
+        |      $this->lastName = $lname;
+        |      $this->age = $userAge;
+        |      $this->email = $userEmail;
+        |      $this->dob = $userDob;
+        |    }
         |  }
         |
-        |  function get_email() {
-        |    return $emailId;
-        |  }
-        |}
+        |  $user = new User("a", "b", 1, "c@d.com", "01-01-90");
+        |  echo $user->firstName;
         |?>
         |
         |""".stripMargin)
@@ -57,6 +61,16 @@ class IdentifierTaggingTest extends PhpTestBase {
       cpg.member("dob").tag.nameExact(Constants.id).value.l shouldBe List(
         "Data.Sensitive.PersonalIdentification.DateofBirth"
       )
+    }
+
+    "be tagged as part of identifier tagger" in {
+      val userObj = cpg.identifier("user").lineNumber(20).l
+      userObj.tag
+        .where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
+        .value
+        .head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+      userObj.tag.where(_.nameExact(Constants.id)).size shouldBe 1
+      userObj.tag.where(_.nameExact(Constants.catLevelOne)).value.l shouldBe List(CatLevelOne.DERIVED_SOURCES.name)
     }
   }
 }

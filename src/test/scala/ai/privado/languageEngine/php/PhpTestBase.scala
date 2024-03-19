@@ -28,7 +28,6 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.languageEngine.php.tagger.source.IdentifierTagger
 import ai.privado.model.*
-import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.LiteralTagger
 import ai.privado.threatEngine.ThreatEngineExecutor
 import better.files.File
@@ -162,11 +161,11 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
     val cpg = new Php2Cpg().createCpg(config).get
     AppCache.repoLanguage = Language.PHP
 
-    new LiteralTagger(cpg, ruleCache).createAndApply()
-    new IdentifierTagger(cpg, ruleCache).createAndApply()
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
-
     X2Cpg.applyDefaultOverlays(cpg)
+    Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new LiteralTagger(cpg, ruleCache).createAndApply()
+
     cpgs.addOne(cpg)
     val threatEngine =
       new ThreatEngineExecutor(

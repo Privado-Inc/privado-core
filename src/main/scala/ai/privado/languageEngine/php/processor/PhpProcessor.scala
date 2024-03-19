@@ -65,6 +65,11 @@ class PhpProcessor(
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
     cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
 
+  override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
+    super.applyDataflowAndPostProcessingPasses(cpg)
+    Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+  }
+
   override def processCpg(): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
 
@@ -81,6 +86,7 @@ class PhpProcessor(
       println(
         s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
       )
+
       applyDefaultOverlays(cpg)
       cpg
     }
