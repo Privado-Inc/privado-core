@@ -158,6 +158,7 @@ object Constants {
   val cookieSourceRuleId           = "Data.Sensitive.OnlineIdentifiers.Cookies"
   val ignoredSinks                 = "ignoredSinks"
   val apiSinks                     = "apiSinks"
+  val apiMethodFullNames           = "apiMethodFullNames"
   val apiHttpLibraries             = "apiHttpLibraries"
   val apiIdentifier                = "apiIdentifier"
   val apiGraphqlLibraries          = "apiGraphqlLibraries"
