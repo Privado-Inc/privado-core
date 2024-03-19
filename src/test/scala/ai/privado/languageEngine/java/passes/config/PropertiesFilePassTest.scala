@@ -205,6 +205,13 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
                                       |          path6: somename.png
                                       |          path7: somename.gif
                                       |          path8: string having html tags <p>hello</p> and <b>world</b>
+                                      |          path9: /a/b/c containing spaces
+                                      |          path10: github.com/a/b/c
+                                      |          pathe11: ../some/file/path
+                                      |          path12: #somecomment
+                                      |          path13: ///a/b/c
+                                      |          path14: ./some/file/path
+                                      |
                                       |
                                       |mx-record-delete:
                                       |    events:
@@ -220,6 +227,12 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
                                       |      - ssm:
                                       |          path: /
                                       |          method: PUT
+                                      |      - privado:
+                                      |          path: https://code.privado.ai/repositories
+                                      |          method: PUT
+                                      |      - privado-without-http:
+                                      |          path: code.privado.ai/repositories
+                                      |          method: PUT
                                       |""".stripMargin
   override val codeFileContents =
     """
@@ -230,10 +243,12 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
 
   "Fetch egress urls from property files" should {
     "Check egress urls" in {
-      val egressExporter   = HttpConnectionMetadataExporter(cpg, new RuleCache)
-      val List(url1, url2) = egressExporter.getEgressUrls
+      val egressExporter               = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val List(url1, url2, url3, url4) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
+      url3 shouldBe "https://code.privado.ai/repositories"
+      url4 shouldBe "code.privado.ai/repositories"
     }
 
     "Check egress urls with single char" in {

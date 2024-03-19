@@ -38,6 +38,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val FEIGN_CLIENT              = "FeignClient"
   private val SPRING_ANNOTATION_ID      = "Collections.Annotation.Spring"
   private val STRING_START_WITH_SLASH   = "/.{2,}"
+  private val STRING_CONTAINS_URL       = ".*\\.[a-z]{2,5}/[a-z]{2,}.*"
   private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
@@ -48,8 +49,9 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   //  Regex to eliminate pattern ending with file suffix
   //  Demo: https://regex101.com/r/ojV93D/1
   private val FILE_SUFFIX_REGEX_PATTERN = ".*[.][a-z]{2,5}(\\\")?$"
+  private val SUFFIX_PATTERN            = "^(\\.\\/|\\.\\.|\\/\\/).*"
   private val COMMON_FALSE_POSITIVE_EGRESS_PATTERN =
-    ".*(BEGIN PRIVATE KEY|sha512|googleapis|sha1|amazonaws|</div>|</p>|<img|<class|require\\().*"
+    ".*(BEGIN PRIVATE KEY|sha512|googleapis|sha1|amazonaws|github|</div>|</p>|<img|<class|require\\(|\\s).*"
 
   private val SLASH_SYMBOL          = "/"
   private val FORMAT_STRING_SYMBOLS = "[{}]"
@@ -108,7 +110,8 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
       cpg.property
         .filterNot(_.value.matches(FILE_SUFFIX_REGEX_PATTERN))
         .filterNot(_.value.matches(COMMON_FALSE_POSITIVE_EGRESS_PATTERN))
-        .or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH))
+        .filterNot(_.value.matches(SUFFIX_PATTERN))
+        .or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH), _.value(STRING_CONTAINS_URL))
         .value
         .dedup
         .l
