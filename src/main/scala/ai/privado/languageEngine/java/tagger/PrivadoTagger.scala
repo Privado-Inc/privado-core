@@ -84,9 +84,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new JavaS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
 
-    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig)
 
-    new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, privadoInputConfig, appCache).createAndApply()
     // Custom Rule tagging
     if (!privadoInputConfig.ignoreInternalRules) {
       // Adding custom rule to cache
