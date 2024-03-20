@@ -54,9 +54,7 @@ class IdentifierTaggingTest extends PhpTestBase {
         |""".stripMargin)
 
     "tag member in a structure" in {
-      cpg.member("firstName").tag.nameExact(Constants.id).value.l shouldBe List(
-        "Data.Sensitive.PersonalIdentification.FirstName"
-      )
+      cpg.member("firstName").tag.nameExact(Constants.id).value.l shouldBe List("Data.Sensitive.FirstName")
 
       cpg.member("dob").tag.nameExact(Constants.id).value.l shouldBe List(
         "Data.Sensitive.PersonalIdentification.DateofBirth"
@@ -68,7 +66,7 @@ class IdentifierTaggingTest extends PhpTestBase {
       userObj.tag
         .where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
         .value
-        .head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+        .head shouldBe "Data.Sensitive.FirstName"
       userObj.tag.where(_.nameExact(Constants.id)).size shouldBe 1
       userObj.tag.where(_.nameExact(Constants.catLevelOne)).value.l shouldBe List(CatLevelOne.DERIVED_SOURCES.name)
     }

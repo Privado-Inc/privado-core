@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.php
 
+import ai.privado.RuleInfoTestData
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.php.processor.PhpProcessor
@@ -45,100 +46,10 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
   private val inputDirs   = mutable.ArrayBuffer.empty[File]
 
-  private val sourceRules = List(
-    RuleInfo(
-      "Data.Sensitive.PersonalIdentification.FirstName",
-      "FirstName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*firstName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.PHP,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.PersonalIdentification.LastName",
-      "LastName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*lastName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.PHP,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.PersonalIdentification.DateofBirth",
-      "Date of Birth",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*dob.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.PHP,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.ContactData.EmailAddress",
-      "EmailAddress",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*email.*"),
-      true,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.PHP,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.ContactData.PhoneNumber",
-      "Phone",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*phone.*"),
-      true,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.PHP,
-      Array()
-    )
-  )
-
-  val sinkRules: List[RuleInfo] = List()
-
   val taggerCache = new TaggerCache()
 
   val configAndRules: ConfigAndRules =
-    ConfigAndRules(sourceRules, sinkRules, List(), List(), List(), List(), List(), List(), List(), List())
+    ConfigAndRules(RuleInfoTestData.sourceRule, List(), List(), List(), List(), List(), List(), List(), List(), List())
 
   def code(code: String): (Cpg, ThreatEngineExecutor) = {
     val ruleCache     = new RuleCache()

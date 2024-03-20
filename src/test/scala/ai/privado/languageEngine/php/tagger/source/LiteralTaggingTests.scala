@@ -43,6 +43,7 @@ class LiteralTaggingTests extends PhpTestBase {
           |""".stripMargin)
 
       val literals = cpg.literal.l
+      literals.last.code shouldBe "\"phone\""
       literals.last.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
     }
   }

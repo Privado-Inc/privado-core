@@ -47,6 +47,7 @@ class FieldIdentifierTaggingTests extends PhpTestBase {
           |""".stripMargin)
 
       val List(firstNameField) = cpg.fieldAccess.l
+      firstNameField.code shouldBe "$this->firstName"
       firstNameField.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
     }
   }
