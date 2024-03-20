@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
@@ -39,9 +39,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.joern.dataflowengineoss.DefaultSemantics
 import ai.privado.utility.Utilities.{
   addRuleTags,
+  getAPIIdentifierFromCode,
   getDomainFromString,
   getDomainFromTemplates,
-  getAPIIdentifierFromCode,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
@@ -49,8 +49,8 @@ import ai.privado.utility.Utilities.{
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
-class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
-    extends APITagger(cpg, ruleCache, privadoInput) {
+class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
+    extends APITagger(cpg, ruleCache, privadoInput, appCache) {
 
   override val apis = cacheCall
     .name(APISINKS_REGEX)

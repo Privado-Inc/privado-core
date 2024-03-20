@@ -1,6 +1,6 @@
 package ai.privado.policyEngine
 
-import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.CollectionExporter
@@ -719,19 +719,20 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val auditCache    = new AuditCache
     val dataFlowCache = new DataFlowCache(privadoInput, auditCache)
+    val appCache      = new AppCache()
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new IdentifierTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
-    new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
-    val collectionExporter = new CollectionExporter(cpg, ruleCache).getCollections
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
+    val collectionExporter = new CollectionExporter(cpg, ruleCache, appCache = appCache).getCollections
     val policyExecutor =
       new PolicyExecutor(
         cpg,
@@ -739,7 +740,8 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         config.inputPath,
         ruleCache,
         privadoInput,
-        collectionExporter
+        collectionExporter,
+        appCache = appCache
       )
     policyExecutor
   }

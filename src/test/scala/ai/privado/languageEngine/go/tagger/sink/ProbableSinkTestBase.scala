@@ -33,7 +33,6 @@ abstract class ProbableSinkTestBase extends AnyWordSpec with Matchers with Befor
     }
 
     cpg = xtocpg.get
-    AppCache.repoLanguage = Language.GO
 
     ruleCache.setRule(rule)
     super.beforeAll()

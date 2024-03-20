@@ -38,7 +38,6 @@ abstract class DataFlowReportTestBase extends AnyWordSpec with Matchers with Bef
     cpg = xtocpg.get
 
     ruleCache.setRule(rule)
-    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 

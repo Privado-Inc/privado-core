@@ -32,7 +32,7 @@ import ai.privado.model.{Constants, Language}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
-class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
+class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache, appCache: AppCache) {
 
   private val logger                    = LoggerFactory.getLogger(getClass)
   private val FEIGN_CLIENT              = "FeignClient"
@@ -89,7 +89,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
        It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
        Therefore, we might need to do a few things specific to each language. */
     if (
-      AppCache.repoLanguage == Language.JAVA || AppCache.repoLanguage == Language.PYTHON || AppCache.repoLanguage == Language.JAVASCRIPT
+      appCache.repoLanguage == Language.JAVA || appCache.repoLanguage == Language.PYTHON || appCache.repoLanguage == Language.JAVASCRIPT
     ) {
       egressUrls = egressUrls.concat(getLiteralsFromLanguageFiles)
     }
@@ -110,7 +110,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   def getEndPointBasePath: List[String] = {
     var basePaths = List[String]()
-    if (AppCache.repoLanguage.id == Language.JAVA.id) {
+    if (appCache.repoLanguage.id == Language.JAVA.id) {
       basePaths = basePaths.concat(cpg.property.name(SPRING_APPLICATION_BASE_PATH).value.dedup.l)
     }
     basePaths = basePaths.concat(

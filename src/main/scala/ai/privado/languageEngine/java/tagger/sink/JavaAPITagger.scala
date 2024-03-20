@@ -55,11 +55,11 @@ object APITaggerVersionJava extends Enumeration {
   val SkipTagger, V1Tagger, V2Tagger = Value
 }
 
-class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput)
+class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   implicit val engineContext: EngineContext =
-    Utilities.getEngineContext(privadoInputConfig, 4)(JavaSemanticGenerator.getDefaultSemantics)
+    Utilities.getEngineContext(privadoInputConfig, appCache, 4)(JavaSemanticGenerator.getDefaultSemantics)
   val cacheCall: List[Call]                      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
   val internalMethodCall: List[String]           = cpg.method.dedup.isExternal(false).fullName.take(30).l
   val topMatch: mutable.HashMap[String, Integer] = mutable.HashMap[String, Integer]()
@@ -129,7 +129,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           builder,
           ruleInfo,
           apiInternalSources ++ propertySources ++ identifierSource,
-          privadoInputConfig
+          privadoInputConfig,
+          appCache
         )
       else
         List()
@@ -187,7 +188,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
     */
   private def isPackageInImport(packageRegex: Regex): Boolean =
     ImportUtility
-      .getAllImportsFromProject(AppCache.scanPath, Language.JAVA, ruleCache)
+      .getAllImportsFromProject(appCache.scanPath, Language.JAVA, ruleCache)
       .par
       .map(packageRegex.findFirstIn)
       .nonEmpty

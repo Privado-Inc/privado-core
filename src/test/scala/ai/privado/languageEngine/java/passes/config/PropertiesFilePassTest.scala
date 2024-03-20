@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
@@ -218,19 +218,19 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
 
   "Fetch egress urls from property files" ignore {
     "Check egress urls" in {
-      val egressExporter   = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val egressExporter   = HttpConnectionMetadataExporter(cpg, new RuleCache, new AppCache())
       val List(url1, url2) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
     }
 
     "Check egress urls with single char" in {
-      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache, new AppCache())
       val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
       egressWithSingleChar.size shouldBe 0
     }
     "Check application base path" in {
-      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, new AppCache())
       val List(basePath)                 = httpConnectionMetadataExporter.getEndPointBasePath
       basePath shouldBe "basepath"
     }

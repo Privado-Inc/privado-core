@@ -10,12 +10,18 @@ import org.slf4j.LoggerFactory
 import io.circe.parser.{parse, *}
 import io.circe.*
 
-class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, repoItemTagName: Option[String] = None) {
+class ProbableSinkExporter(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  repoPath: String,
+  repoItemTagName: Option[String] = None,
+  appCache: AppCache
+) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getProbableSinks: List[String] = {
 
-    val lang         = AppCache.repoLanguage
+    val lang         = appCache.repoLanguage
     val isPython     = lang.toString().contains(Language.PYTHON.toString)
     val isJavascript = lang.toString().contains(Language.JAVASCRIPT.toString)
     val isRuby       = lang.toString().contains(Language.RUBY.toString)

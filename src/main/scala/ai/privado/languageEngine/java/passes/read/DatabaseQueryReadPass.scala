@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.passes.read
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.passes.read.DatabaseReadUtility.{fromRegexPattern, selectRegexPattern}
 import ai.privado.tagger.PrivadoParallelCpgPass
@@ -14,7 +14,8 @@ class DatabaseQueryReadPass(
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
   privadoInputConfig: PrivadoInput,
-  classTableMapping: Map[String, TypeDecl]
+  classTableMapping: Map[String, TypeDecl],
+  appCache: AppCache
 ) extends PrivadoParallelCpgPass[Expression](cpg) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -42,7 +43,8 @@ class DatabaseQueryReadPass(
       classTableMapping,
       cpg,
       node,
-      privadoInputConfig
+      privadoInputConfig,
+      appCache
     )
   }
 }
