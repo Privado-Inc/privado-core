@@ -28,7 +28,7 @@ import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.{SERVICE_URL_REGEX_PATTERN, sinkTagger}
 import ai.privado.utility.{ImportUtility, Utilities}
@@ -136,6 +136,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         List()
     }
 
+    val markedAPISinks = cpg.call.where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString)).l
+
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
@@ -151,7 +153,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
-          feignAPISinks ++ grpcSinks ++ soapSinks,
+          feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
           ruleInfo,
           ruleCache,
@@ -162,7 +164,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
-          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks,
+          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
           ruleInfo,
           ruleCache,
@@ -173,7 +175,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
-          feignAPISinks ++ grpcSinks ++ soapSinks,
+          feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
           ruleInfo,
           ruleCache,

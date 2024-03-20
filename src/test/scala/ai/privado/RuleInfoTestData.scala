@@ -1,6 +1,6 @@
 package ai.privado
 
-import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 
 object RuleInfoTestData {
 
@@ -126,6 +126,39 @@ object RuleInfoTestData {
     )
   )
 
+  val apiLiteralRule = List(
+    RuleInfo(
+      Constants.thirdPartiesAPIRuleId,
+      "Third Party API",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(
+        "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
+      ),
+      false,
+      "",
+      Map(),
+      NodeType.API,
+      "",
+      CatLevelOne.SINKS,
+      catLevelTwo = Constants.third_parties,
+      Language.UNKNOWN,
+      Array()
+    )
+  )
+
   val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List(), List())
+    ConfigAndRules(
+      sources = sourceRule,
+      sinks = apiLiteralRule,
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      List()
+    )
 }
