@@ -135,7 +135,10 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         List()
     }
 
-    val markedAPISinks = cpg.call.where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString)).l
+    val markedAPISinks = cpg.call
+      .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
+      .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+      .l
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
