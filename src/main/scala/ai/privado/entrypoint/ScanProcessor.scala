@@ -344,7 +344,7 @@ object ScanProcessor extends CommandProcessor {
   private def processCpg(appCache: AppCache) = {
     val sourceRepoLocation = File(config.sourceLocation.head).path.toAbsolutePath.toString.stripSuffix("/")
     // Setting up the application cache
-    // val appCache = new AppCache(sourceRepoLocation)
+    appCache.init(sourceRepoLocation)
     Try(guessLanguage(sourceRepoLocation)) match {
       case Success(languageDetected) => {
         println(
