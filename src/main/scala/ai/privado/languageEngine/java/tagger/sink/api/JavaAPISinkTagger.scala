@@ -17,6 +17,9 @@ object JavaAPISinkTagger extends APISinkTagger {
       new JavaAPISinkByParameterTagger(cpg, ruleCache).createAndApply()
 
     new JavaAPISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
+
+    // Invoke API Endpoint mappers
+    new JavaAPISinkEndpointMapperByNonInitMethod(cpg, ruleCache).createAndApply()
   }
 
 }
