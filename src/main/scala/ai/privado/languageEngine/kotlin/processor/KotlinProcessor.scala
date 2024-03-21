@@ -35,6 +35,7 @@ import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.cache.S3DatabaseDetailsCache
 import better.files.File
+import io.circe.Json
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.joern.kotlin2cpg.Config
@@ -56,7 +57,6 @@ class KotlinProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache
@@ -64,7 +64,7 @@ class KotlinProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.KOTLIN,
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache
@@ -96,9 +96,9 @@ class KotlinProcessor(
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
     cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache)
 
-  override def processCpg(): Either[String, Unit] = {
+  override def processCpg(): Either[String, (Cpg, Map[String, Json])] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Kotlin engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
@@ -120,7 +120,10 @@ class KotlinProcessor(
       X2Cpg.applyDefaultOverlays(cpg)
       cpg
     }
-    tagAndExport(xtocpg)
+    tagAndExport(xtocpg) match {
+      case Left(msg)               => Left(msg)
+      case Right(cpgWithOutputMap) => Right(cpgWithOutputMap)
+    }
   }
 
 }

@@ -341,7 +341,7 @@ object ScanProcessor extends CommandProcessor {
     ruleCache
   }
 
-  private def processCpg() = {
+  private def processCpg(): Either[String, Unit] = {
     val sourceRepoLocation = File(config.sourceLocation.head).path.toAbsolutePath.toString.stripSuffix("/")
     // Setting up the application cache
     AppCache.init(sourceRepoLocation)
@@ -360,7 +360,6 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Set(Language.JAVA)),
                   this.config,
                   sourceRepoLocation,
-                  Language.JAVA,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -371,7 +370,6 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Set(Language.JAVASCRIPT)),
                   this.config,
                   sourceRepoLocation,
-                  lang,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -382,7 +380,6 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Set(Language.PYTHON)),
                   this.config,
                   sourceRepoLocation,
-                  lang,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -393,7 +390,6 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Set(Language.RUBY)),
                   this.config,
                   sourceRepoLocation,
-                  lang,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -403,7 +399,6 @@ object ScanProcessor extends CommandProcessor {
                 GoProcessor.createGoCpg(
                   getProcessedRule(Set(Language.GO)),
                   sourceRepoLocation,
-                  lang,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -414,7 +409,6 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
                   this.config,
                   sourceRepoLocation,
-                  Language.KOTLIN,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -425,7 +419,6 @@ object ScanProcessor extends CommandProcessor {
                   getProcessedRule(Set(Language.CSHARP)),
                   this.config,
                   sourceRepoLocation,
-                  Language.CSHARP,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
@@ -441,7 +434,6 @@ object ScanProcessor extends CommandProcessor {
                     getProcessedRule(Set(Language.JAVA)),
                     this.config,
                     sourceRepoLocation,
-                    Language.JAVA,
                     dataFlowCache = getDataflowCache,
                     auditCache,
                     s3DatabaseDetailsCache
@@ -452,6 +444,12 @@ object ScanProcessor extends CommandProcessor {
             }
           case _ =>
             processCpgWithDefaultProcessor(sourceRepoLocation)
+        } match {
+          case Left(err: String) => Left(err)
+          case _ =>
+            Right(
+              ()
+            ) // Ignore the result as not needed for further step, and due to discrepency in output for New and old frontends
         }
       }
       case Failure(exc) =>

@@ -50,9 +50,9 @@ import ai.privado.semantic.Language.*
 import ai.privado.utility.PropertyParserPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-
 import ai.privado.entrypoint.*
 import ai.privado.model.Language.Language
+import io.circe.Json
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -62,7 +62,6 @@ class CSharpProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache
@@ -70,7 +69,7 @@ class CSharpProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.CSHARP,
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache
@@ -89,8 +88,8 @@ class CSharpProcessor(
     super.applyDataflowAndPostProcessingPasses(cpg)
   }
 
-  override def processCpg(): Either[String, Unit] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+  override def processCpg(): Either[String, (Cpg, Map[String, Json])] = {
+    println(s"${Calendar.getInstance().getTime} - Processing source code using CSharp engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
