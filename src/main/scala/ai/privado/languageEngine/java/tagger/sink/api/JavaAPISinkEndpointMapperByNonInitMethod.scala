@@ -25,6 +25,12 @@ class JavaAPISinkEndpointMapperByNonInitMethod(cpg: Cpg, ruleCache: RuleCache)
   private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
   override def generateParts(): Array[String] = {
 
+    /* General assumption - there is a function which creates a client, and the usage of the client and binding
+     happens via dependency injection which can very according to the framework used.
+     If we identify such a function and can point to the usage of a particular endpoint in it,
+     we can say the client uses the following endpoint
+     */
+
     if (thirdPartyRuleInfo.isDefined) {
       cpg.call
         .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
