@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
-import ai.privado.RuleInfoTestData
 import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.PrivadoInput
 import org.scalatest.BeforeAndAfterAll
@@ -8,6 +7,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.languageEngine.java.JavaTestBase.*
 import ai.privado.model.{ConfigAndRules, Constants, InternalTag, Language, SourceCodeModel, SystemConfig}
+import ai.privado.rule.RuleInfoTestData
 import io.shiftleft.semanticcpg.language.*
 
 class JavaAPISinkByMethodFullNameTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {

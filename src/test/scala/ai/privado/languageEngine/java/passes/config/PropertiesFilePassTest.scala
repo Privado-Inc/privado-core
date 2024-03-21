@@ -43,6 +43,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
     """
       |internal.logger.api.base=https://logger.privado.ai/
       |slack.base.url=https://hooks.slack.com/services/some/leaking/url
+      |MY_ENDPOINT=http://myservice.com/user
       |""".stripMargin
 
   override val propertyFileContents = ""
@@ -60,7 +61,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
       |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
-      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
+      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL, @Named(Constants.MY_ENDPOINT) String endpoint) {
       |   }
       |
       |@Value("${internal.logger.api.base}")
@@ -74,25 +75,28 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   "ConfigFilePass" should {
     "connect annotated parameter to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
-      anno.length shouldBe 3
+      anno.length shouldBe 4
 
       anno.code.l shouldBe List(
         "@Value(\"${internal.logger.api.base}\") String loggerBaseURL",
         "java.lang.String loggerUrl",
+        "@Named(Constants.MY_ENDPOINT) String endpoint",
         "java.lang.String slackWebHookURL"
       )
     }
 
     "connect property to annotated parameter" in {
-      cpg.property.usedAt.originalProperty.l.length shouldBe 3
+      cpg.property.usedAt.originalProperty.l.length shouldBe 4
       cpg.property.usedAt.originalProperty.name.l shouldBe List(
         "internal.logger.api.base",
         "internal.logger.api.base",
+        "MY_ENDPOINT",
         "slack.base.url"
       )
       cpg.property.usedAt.originalProperty.value.l shouldBe List(
         "https://logger.privado.ai/",
         "https://logger.privado.ai/",
+        "http://myservice.com/user",
         "https://hooks.slack.com/services/some/leaking/url"
       )
     }
