@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.php
 
-import ai.privado.RuleInfoTestData
+import ai.privado.rule.RuleInfoTestData
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.php.processor.PhpProcessor
