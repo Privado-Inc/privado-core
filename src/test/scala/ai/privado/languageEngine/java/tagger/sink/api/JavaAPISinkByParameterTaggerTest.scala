@@ -78,8 +78,15 @@ class JavaAPISinkByParameterTaggerTest extends AnyWordSpec with Matchers with Be
 
       val privadoInput = PrivadoInput(enableAPIByParameter = true)
       val ruleCache    = RuleCache()
-      val systemConfig =
-        List(SystemConfig(Constants.apiIdentifier, "(?i).*endpoint.*", Language.UNKNOWN, "", Array[String]()))
+      val systemConfig = List(
+        SystemConfig(
+          Constants.apiIdentifier,
+          "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
+          Language.UNKNOWN,
+          "",
+          Array[String]()
+        )
+      )
       ruleCache.setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
       JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = privadoInput)
 

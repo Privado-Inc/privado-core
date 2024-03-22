@@ -201,7 +201,9 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
           apiCalls.foreach(apiNode => {
             val domain         = getDomainFromString(apiLiteral)
             val newRuleIdToUse = ruleInfo.id + "." + domain
-            ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+            ruleCache.setRuleInfo(
+              ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true)
+            )
             addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
             storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
           })
