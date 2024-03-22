@@ -61,7 +61,9 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
         if (isReadAPI) {
           val newRuleIdToUse = ruleInfo.id + Constants.READ_WITH_BRACKETS
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + Constants.READ_WITH_BRACKETS))
+          ruleCache.setRuleInfo(
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + Constants.READ_WITH_BRACKETS, isGenerated = true)
+          )
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
           storeForTag(builder, apiNode, ruleCache)(
             Constants.apiUrl + newRuleIdToUse,
@@ -70,7 +72,7 @@ class GraphqlAPITagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         } else if (isWriteAPI) {
           val newRuleIdToUse = ruleInfo.id + Constants.WRITE_WITH_BRACKETS
           ruleCache.setRuleInfo(
-            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + Constants.WRITE_WITH_BRACKETS)
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + Constants.WRITE_WITH_BRACKETS, isGenerated = true)
           )
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
           storeForTag(builder, apiNode, ruleCache)(
