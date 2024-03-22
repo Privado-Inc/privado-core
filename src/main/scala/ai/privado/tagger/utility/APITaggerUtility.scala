@@ -85,7 +85,9 @@ object APITaggerUtility {
         else {
           val domain = resolveDomainFromSource(sourceNode)
           newRuleIdToUse = ruleInfo.id + "." + domain
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+          ruleCache.setRuleInfo(
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true)
+          )
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
         storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(sourceNode))
@@ -130,7 +132,7 @@ object APITaggerUtility {
     apiUrlNode: AstNode
   ) = {
     val newRuleIdToUse = ruleInfo.id + "." + domain
-    ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+    ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true))
     addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
     storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(apiUrlNode))
 
