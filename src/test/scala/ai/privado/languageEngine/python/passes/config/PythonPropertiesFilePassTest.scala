@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.python.passes.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
@@ -16,7 +16,7 @@ import io.joern.pysrc2cpg.{
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -324,6 +324,7 @@ abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
 
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.PYTHON).createAndApply()
     new PythonEnvPropertyLinkerPass(cpg).createAndApply()
+    new PythonDBConfigLinkerPass(cpg).createAndApply()
     super.beforeAll()
   }
 

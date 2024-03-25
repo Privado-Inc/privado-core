@@ -48,7 +48,7 @@ class JavaPropertyEnvLinkerPassTest extends JavaEnvPropertyLinkerPassTestBase {
       |  private String apiUrl;
       |
       |  public makeCall() {
-      |    apiUrl = System.getenv("API_URL");
+      |    apiUrl = System.getenv("config.default.API_URL");
       |
       |    HttpClient httpClient = HttpClients.createDefault();
       |    HttpGet getRequest = new HttpGet(apiUrl);

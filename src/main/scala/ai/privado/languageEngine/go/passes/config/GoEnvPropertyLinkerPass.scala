@@ -1,29 +1,26 @@
 package ai.privado.languageEngine.go.passes.config
 
+import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.passes.PropertyEnvLinkerPassBase
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal}
-import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal}
 
 class GoEnvPropertyLinkerPass(cpg: Cpg) extends PropertyEnvLinkerPassBase(cpg) {
 
-  override def connectProperties(property: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    matchingLiteralsToPropertyNode(property.name).foreach(lit => {
-      connectEnvProperty(lit, property, builder)
-    })
+  // List all literal fetching property value
+  // ex: os.getenv("KEY")
+  override def getMatchingLiteral: String = {
+    "(?i).*getenv"
   }
 
-  // List all literal fetching property value
-  // ex: os.get("KEY")
-  def matchingLiteralsToPropertyNode(propertyName: String): List[Literal] = {
-    // To get every dot seperated part of the env key where each element is progressively longer,
-    // containing one more dot-separated value
-    // example for config.prod.API_URL => get ["API_URL", "prod.API_URL", "config.prod.API_URL"]
-    val parts       = propertyName.split("\\.")
-    val propertyKey = parts.reverse.indices.map(i => parts.takeRight(i + 1).mkString(".")).mkString("|")
-    cpg.literal
-      .code(s"\"($propertyKey)\"")
-      .filter(_.inCall.name("(?i).*getenv").nonEmpty)
-      .toList
+  override def connectProperties(node: AstNode, builder: DiffGraphBuilder): Unit = {
+    if (node.isInstanceOf[Literal]) {
+      val propertyValue = getPropertyKeyFromEnvCall(node)
+      cpg.property
+        .filter(p => p.name.nonEmpty && p.value.nonEmpty && propertyValue.matches(p.name))
+        .foreach(p => {
+          connectEnvProperty(node, p, builder)
+        })
+    }
   }
 }

@@ -43,7 +43,7 @@ class GoPropertyEnvLinkerPassTest extends GoPropertyEnvLinkerPassTestBase {
       |)
       |
       |func main() {
-      | api_url := os.getEnv("API_URL")
+      | api_url := os.getEnv("config.default.API_URL")
       | resp, err := http.Post(api_url)
       |}
       |""".stripMargin
