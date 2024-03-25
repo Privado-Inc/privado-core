@@ -6,12 +6,31 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaAnnotationPropertyLinkerPass, JavaEnvPropertyLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.{
+  JavaAnnotationPropertyLinkerPass,
+  JavaEnvPropertyLinkerPass,
+  ModuleFilePass
+}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName, outputIntermediateFileName, outputUnresolvedFilename}
+import ai.privado.model.Constants.{
+  cpgOutputFileName,
+  outputAuditFileName,
+  outputDirectoryName,
+  outputFileName,
+  outputIntermediateFileName,
+  outputUnresolvedFilename
+}
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{AndroidXmlParserPass, DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, JsonPropertyParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.{
+  AndroidXmlParserPass,
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  JsonPropertyParserPass,
+  SQLParser,
+  SQLPropertyPass
+}
 import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.kotlin.semantic.Language.*
 import ai.privado.model.Language

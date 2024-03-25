@@ -13,7 +13,14 @@ import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, JsonPropertyParserPass, SQLParser, SQLPropertyPass}
+import ai.privado.passes.{
+  DBTParserPass,
+  ExperimentalLambdaDataFlowSupportPass,
+  HTMLParserPass,
+  JsonPropertyParserPass,
+  SQLParser,
+  SQLPropertyPass
+}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
