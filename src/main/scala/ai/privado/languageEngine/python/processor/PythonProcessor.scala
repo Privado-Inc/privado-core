@@ -7,20 +7,13 @@ import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.JsConfigPropertyPass
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
-import ai.privado.languageEngine.python.passes.config.PythonEnvPropertyLinkerPass
+import ai.privado.languageEngine.python.passes.config.{PythonDBConfigLinkerPass, PythonEnvPropertyLinkerPass}
 import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{
-  DBTParserPass,
-  ExperimentalLambdaDataFlowSupportPass,
-  HTMLParserPass,
-  JsonPropertyParserPass,
-  SQLParser,
-  SQLPropertyPass
-}
+import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, HTMLParserPass, JsonPropertyParserPass, SQLParser, SQLPropertyPass}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
@@ -99,6 +92,7 @@ object PythonProcessor {
           } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
 
           new PythonEnvPropertyLinkerPass(cpg).createAndApply()
+          new PythonDBConfigLinkerPass(cpg).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
