@@ -103,6 +103,7 @@ class CSharpProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withDownloadDependencies(true)
 
     val xtocpg = new CSharpSrc2Cpg().createCpg(cpgconfig).map { cpg =>
       println(
