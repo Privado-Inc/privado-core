@@ -423,21 +423,20 @@ class PropertyParserPass(
       )
       .filter(file => !file.contains("delombok"))
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
+      .filter(file => filterUsingFileSize(file, ruleCache))
       .distinct
 
-    filterFilesWithDir(filterUsingFileSize(propertyFiles, ruleCache), ruleCache)
+    filterFilesWithDir(propertyFiles, ruleCache)
   }
 
-  private def filterUsingFileSize(filePaths: List[String], ruleCache: RuleCache): List[String] = {
+  private def filterUsingFileSize(filePath: String, ruleCache: RuleCache): Boolean = {
     val fileLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileSizeLimit, true)
     if (fileLimit.nonEmpty) {
-      filePaths.filter(filePath => {
-        val file               = new File(filePath)
-        val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
-        fileSizeInKiloByte <= fileLimit.toInt
-      })
+      val file               = new File(filePath)
+      val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
+      fileSizeInKiloByte <= fileLimit.toInt
     } else {
-      filePaths
+      true
     }
   }
 
