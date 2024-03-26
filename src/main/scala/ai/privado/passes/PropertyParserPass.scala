@@ -422,7 +422,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
     val fileLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileSizeLimit, true)
     if (fileLimit.nonEmpty) {
       filePaths.filter(filePath => {
-        val file = new File(filePath)
+        val file               = new File(filePath)
         val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
         fileSizeInKiloByte <= fileLimit.toInt
       })
