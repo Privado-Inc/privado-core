@@ -43,6 +43,7 @@ case class PrivadoInput(
   disableReadDataflow: Boolean = false,
   enableAPIDisplay: Boolean = false,
   enableLambdaFlows: Boolean = false,
+  enableAPIByParameter: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
   skipUpload: Boolean = false,
@@ -85,6 +86,8 @@ object CommandConstants {
   val ENABLE_API_DISPLAY_ABBR                      = "ead"
   val ENABLE_LAMBDA_FLOWS                          = "enable-lambda-flows"
   val ENABLE_LAMBDA_FLOWS_ABBR                     = "elf"
+  val ENABLE_API_BY_PARAMETER                      = "enable-api-by-parameter"
+  val ENABLE_API_BY_PARAMETER_ABBR                 = "eabyp"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
   val UPLOAD                                       = "upload"
@@ -211,6 +214,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(enableLambdaFlows = true))
               .text("Enable lambda flows"),
+            opt[Unit](CommandConstants.ENABLE_API_BY_PARAMETER)
+              .abbr(CommandConstants.ENABLE_API_BY_PARAMETER_ABBR)
+              .optional()
+              .action((_, c) => c.copy(enableAPIByParameter = true))
+              .text("Enable API tagging by parameter name match"),
             opt[Unit](CommandConstants.IGNORE_EXCLUDE_RULES)
               .abbr(CommandConstants.IGNORE_EXCLUDE_RULES_ABBR)
               .optional()
