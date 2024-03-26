@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import overflowdb.BatchedUpdate
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.PrivadoInput
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
@@ -45,8 +46,13 @@ object FileExtensions {
   val CONF       = ".conf"
 }
 
-class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, language: Language.Value)
-    extends PrivadoParallelCpgPass[String](cpg) {
+class PropertyParserPass(
+  cpg: Cpg,
+  projectRoot: String,
+  ruleCache: RuleCache,
+  language: Language.Value,
+  privadoInput: PrivadoInput = PrivadoInput()
+) extends PrivadoParallelCpgPass[String](cpg) {
   val PLACEHOLDER_TOKEN_START_END = "@@"
   val logger                      = LoggerFactory.getLogger(getClass)
 
@@ -65,10 +71,14 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
         ).toArray
       }
       case Language.JAVASCRIPT =>
-        configFiles(
-          projectRoot,
-          Set(FileExtensions.JSON, FileExtensions.ENV, FileExtensions.YML, FileExtensions.YAML)
-        ).toArray
+        if (privadoInput.enableIngressAndEgressUrls) {
+          configFiles(
+            projectRoot,
+            Set(FileExtensions.JSON, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+          ).toArray
+        } else {
+          configFiles(projectRoot, Set(FileExtensions.JSON, FileExtensions.ENV)).toArray
+        }
       case Language.PYTHON =>
         configFiles(
           projectRoot,

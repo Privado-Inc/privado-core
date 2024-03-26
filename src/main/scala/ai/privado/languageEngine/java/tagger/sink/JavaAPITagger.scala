@@ -96,13 +96,17 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
       APITaggerVersionJava.V2Tagger
   }
 
+  apis = apis.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
+
   val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
-  val grpcSinks                  = GRPCTaggerUtility.getGrpcSinks(cpg)
-  val soapSinks                  = SOAPTaggerUtility.getAPICallNodes(cpg)
+  val grpcSinks = GRPCTaggerUtility.getGrpcSinks(cpg).whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
+  val soapSinks =
+    SOAPTaggerUtility.getAPICallNodes(cpg).whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
+      .filterNot(_.isGenerated) // Filter out generated rules, we only need to use the passed rules
       .toArray
   }
 
@@ -133,9 +137,12 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
       else
         List()
-    }
+    }.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
 
-    val markedAPISinks = cpg.call.where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString)).l
+    val markedAPISinks = cpg.call
+      .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
+      .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+      .l
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>

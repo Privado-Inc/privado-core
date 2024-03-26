@@ -76,7 +76,9 @@ object JavascriptProcessor {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
             new JsConfigPropertyPass(cpg).createAndApply()
-          } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
+          } else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT, privadoInput)
+              .createAndApply()
           new JSPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
