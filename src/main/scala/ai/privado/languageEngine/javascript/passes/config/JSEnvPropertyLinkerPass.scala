@@ -14,7 +14,7 @@ class JSEnvPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](
     // val g = config.DB_NAME
     // val g = process.env["DB_NAME"]
     // val g = process.env.DB_NAME
-    s".*process\\.env(\\.|\\[('|`|\").*('|`|\")]).*|.*((config|Conf)\\.).*"
+    s".*process\\.env(\\.|\\[('|`|\").*('|`|\")]).*|.*((conf|Conf)\\.).*"
   }
 
   override def generateParts(): Array[_ <: AnyRef] = {
