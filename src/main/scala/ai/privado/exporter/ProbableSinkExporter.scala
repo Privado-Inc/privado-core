@@ -20,6 +20,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
     val isJavascript = lang.toString().contains(Language.JAVASCRIPT.toString)
     val isRuby       = lang.toString().contains(Language.RUBY.toString)
     val isGoLang     = lang.toString().contains(Language.GO.toString)
+    val isPHP        = lang.toString().contains(Language.PHP.toString)
 
     if (repoItemTagName.isDefined)
       List() // If this is an export for Monolith repoItem, don't export Probable sink, otherwise this will make the Json very big and will need separate processing on backend
@@ -27,6 +28,9 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       getProbableSinkForJavascript(repoPath)
     } else if (isRuby) {
       getProbableSinkForRuby(repoPath)
+    } else if (isPHP){
+      val composerDep = getProbableSinkForPHP(repoPath)
+      composerDep ++ getProbableSinkBasedOnTaggedMethods(isPython, isGoLang)
     } else {
       getProbableSinkBasedOnTaggedMethods(isPython, isGoLang)
     }
@@ -44,6 +48,24 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       val packageJsonStr = scala.io.Source.fromFile(path).mkString
       val json           = parse(packageJsonStr).getOrElse(Json.Null)
       val dependencies   = json.hcursor.downField("dependencies").as[Map[String, String]].getOrElse(Map.empty)
+      uniqueDeps ++= dependencies.keySet
+    }
+    uniqueDeps.toList
+      .filter((str) => isPrivacySink(str, ruleCache))
+  }
+
+  def getProbableSinkForPHP(repoPath: String): List[String] = {
+    // Set up a set to hold the unique dependencies
+    var uniqueDeps = Set.empty[String]
+    val packageJsonFilePaths =
+      getAllFilesRecursively(repoPath, Set(".json"), ruleCache)
+        .getOrElse(List.empty)
+        .filter(_.endsWith("composer.json"))
+
+    for (path <- packageJsonFilePaths) {
+      val packageJsonStr = scala.io.Source.fromFile(path).mkString
+      val json = parse(packageJsonStr).getOrElse(Json.Null)
+      val dependencies = json.hcursor.downField("require").as[Map[String, String]].getOrElse(Map.empty)
       uniqueDeps ++= dependencies.keySet
     }
     uniqueDeps.toList
