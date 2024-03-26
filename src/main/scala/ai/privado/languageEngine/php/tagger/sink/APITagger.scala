@@ -20,15 +20,16 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import java.util.Calendar
 
 class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
-  extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger        = LoggerFactory.getLogger(this.getClass)
-  val cacheCall: List[Call] = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+  private val logger                = LoggerFactory.getLogger(this.getClass)
+  val cacheCall: List[Call]         = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
   val constructNameCall: List[Call] = cacheCall.where(_.name("__construct")).l
 
   val APISINKS_REGEX: String = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
   val apis: List[Call] = cacheCall.name("(?i)" + APISINKS_REGEX).l
-  val constructApis: List[Call] = constructNameCall.where(_.methodFullName("(?i).*" + APISINKS_REGEX + "(->)__construct")).l
+  val constructApis: List[Call] =
+    constructNameCall.where(_.methodFullName("(?i).*" + APISINKS_REGEX + "(->)__construct")).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
   implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)

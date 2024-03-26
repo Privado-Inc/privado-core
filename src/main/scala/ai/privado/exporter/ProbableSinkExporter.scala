@@ -28,7 +28,7 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       getProbableSinkForJavascript(repoPath)
     } else if (isRuby) {
       getProbableSinkForRuby(repoPath)
-    } else if (isPHP){
+    } else if (isPHP) {
       val composerDep = getProbableSinkForPHP(repoPath)
       composerDep ++ getProbableSinkBasedOnTaggedMethods(isPython, isGoLang)
     } else {
@@ -64,8 +64,8 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
 
     for (path <- packageJsonFilePaths) {
       val packageJsonStr = scala.io.Source.fromFile(path).mkString
-      val json = parse(packageJsonStr).getOrElse(Json.Null)
-      val dependencies = json.hcursor.downField("require").as[Map[String, String]].getOrElse(Map.empty)
+      val json           = parse(packageJsonStr).getOrElse(Json.Null)
+      val dependencies   = json.hcursor.downField("require").as[Map[String, String]].getOrElse(Map.empty)
       uniqueDeps ++= dependencies.keySet
     }
     uniqueDeps.toList
