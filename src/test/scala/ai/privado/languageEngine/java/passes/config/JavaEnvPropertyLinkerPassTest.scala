@@ -1,9 +1,9 @@
-package ai.privado.languageEngine.go.passes.config
+package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
-import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
+import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
 import ai.privado.model.{
   CatLevelOne,
   ConfigAndRules,
@@ -17,40 +17,49 @@ import ai.privado.model.{
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
+import io.joern.javasrc2cpg.Config
+import io.joern.javasrc2cpg.JavaSrc2Cpg
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.matchers.should.Matchers.should
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
 
-abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
-  override val yamlFileContents: String = """
+class JavaPropertyEnvLinkerPassTest extends JavaEnvPropertyLinkerPassTestBase {
+  override val yamlFileContents =
+    """
       |config:
       |  default:
       |    API_URL: http://exampleKubernetesService
       |""".stripMargin
 
-  override val codeFileContents: String = """
-      |package main
+  override val codeFileContents =
+    """
+      |import org.apache.http.HttpResponse;
+      |import org.apache.http.client.HttpClient;
+      |import org.apache.http.client.methods.HttpGet;
+      |import org.apache.http.impl.client.HttpClients;
       |
-      |import (
-      | "os"
-      | "net/http"
-      |)
+      |public class APICaller {
+      |  private String apiUrl;
       |
-      |func main() {
-      | api_url := os.getEnv("API_URL")
-      | resp, err := http.Post(api_url)
+      |  public makeCall() {
+      |    apiUrl = System.getenv("config.default.API_URL");
+      |
+      |    HttpClient httpClient = HttpClients.createDefault();
+      |    HttpGet getRequest = new HttpGet(apiUrl);
+      |    HttpResponse response = httpClient.execute(getRequest);
+      |  }
       |}
       |""".stripMargin
 
-  "Http client get API Sample" should {
-    "Http client should be tagged" in {
-      val callNode = cpg.call.name("Post").head
+  "Http client execute API Sample" should {
+    "Http Client execute should be tagged" in {
+      val callNode = cpg.call.name("execute").head
       callNode.tag.size shouldBe 6
       callNode.tag
         .nameExact(Constants.id)
@@ -82,8 +91,11 @@ abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
   }
 }
 
-abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-
+abstract class JavaEnvPropertyLinkerPassTestBase
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with BeforeAndAfterEach {
   var cpg: Cpg = _
   val yamlFileContents: String
   val codeFileContents: String
@@ -94,28 +106,29 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     (inputDir / "test.yaml").write(yamlFileContents)
-    (inputDir / "GeneralConfig.go").write(codeFileContents)
+    (inputDir / "GeneralConfig.java").write(codeFileContents)
 
     outputFile = File.newTemporaryFile()
     val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
 
-    val goSrc = new GoSrc2Cpg()
-    val xtocpg = goSrc.createCpg(config).map { cpg =>
-      applyDefaultOverlays(cpg)
-      cpg
-    }
-
-    cpg = xtocpg.get
+    cpg = new JavaSrc2Cpg()
+      .createCpg(config)
+      .map { cpg =>
+        applyDefaultOverlays(cpg)
+        cpg
+      }
+      .get
 
     ruleCache.setRule(rule)
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.GO).createAndApply()
-    new GoYamlLinkerPass(cpg).createAndApply()
+    new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
+    new JavaEnvPropertyLinkerPass(cpg).createAndApply()
     new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
-    new GoAPITagger(cpg, ruleCache, new PrivadoInput).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, PrivadoInput()).createAndApply()
+
     super.beforeAll()
   }
 
@@ -129,22 +142,29 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
   val systemConfig = List(
     SystemConfig(
       "apiHttpLibraries",
-      "^(?i)(net/http|github.com/parnurzeal/gorequest|(gopkg.in|github.com/go-resty)/resty|valyala/fasthttp|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
-      Language.GO,
+      "(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl|javax.xml.soap|org.apache.axis2|com.sun.xml.messaging.saaj|org.springframework.ws.client|com.eviware.soapui|org.apache.cxf|org.jboss.ws|com.ibm.websphere.sca.extensions.soap|com.sun.xml.ws|org.apache.camel.component.cxf|org.codehaus.xfire|org.apache.synapse|org.apache.wink.client|com.oracle.webservices.internal.api.databinding.Databinding|com.sap.engine.interfaces.webservices.runtime.client).*",
+      Language.JAVA,
       "",
       Array()
     ),
     SystemConfig(
       "apiSinks",
-      "(?i)(?:url|client|open|request|execute|newCall|load|host|access|list|set|put|post|proceed|trace|patch|Path|send|remove|delete|write|read|postForEntity|call|createCall|createEndpoint|dispatch|invoke|getInput|getOutput|getResponse|do)",
-      Language.GO,
+      "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject|call|createCall|createEndpoint|dispatch|invoke|newMessage|getInput|getOutput|getResponse|marshall|unmarshall|send|asyncSend)",
+      Language.JAVA,
       "",
       Array()
     ),
     SystemConfig(
       "apiIdentifier",
       "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
-      Language.GO,
+      Language.JAVA,
+      "",
+      Array()
+    ),
+    SystemConfig(
+      "ignoredSinks",
+      "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*",
+      Language.JAVA,
       "",
       Array()
     )
@@ -168,12 +188,11 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
       "",
       CatLevelOne.SINKS,
       catLevelTwo = Constants.third_parties,
-      Language.GO,
+      Language.JAVA,
       Array()
     )
   )
 
   val rule: ConfigAndRules =
     ConfigAndRules(List(), sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
-
 }

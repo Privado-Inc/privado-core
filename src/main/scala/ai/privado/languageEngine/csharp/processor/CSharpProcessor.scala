@@ -44,7 +44,6 @@ import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.csharp.semantic.Language.tagger
 import ai.privado.dataflow.Dataflow
 import ai.privado.languageEngine.base.processor.BaseProcessor
-import ai.privado.languageEngine.java.passes.config.JavaPropertyLinkerPass
 import ai.privado.passes.{AndroidXmlParserPass, HTMLParserPass, JsonPropertyParserPass, SQLParser, SQLPropertyPass}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.PropertyParserPass
