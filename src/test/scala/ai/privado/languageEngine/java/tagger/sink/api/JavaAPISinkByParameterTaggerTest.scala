@@ -14,7 +14,8 @@ import io.shiftleft.semanticcpg.language.*
 class JavaAPISinkByParameterTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "Api by matching a variable like parameter" should {
-    "be tagged as a API sink" in {
+    // Ignoring this, as we have deprecated Parameter Tagger Test
+    "be tagged as a API sink" ignore {
 
       val (cpg, config) = code(
         List(
