@@ -54,8 +54,10 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
           )
           .l
 
-    println(sinks.methodFullName.l)
-    println(sinks.name.l)
+    if (sinks.nonEmpty) {
+      println(sinks.methodFullName.l)
+      println(sinks.name.l)
+    }
 
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
