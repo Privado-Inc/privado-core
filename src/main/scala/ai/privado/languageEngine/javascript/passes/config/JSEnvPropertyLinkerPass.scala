@@ -11,19 +11,22 @@ class JSEnvPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](
   // Finds all assignment calls that assign a value to a property of the `process.env` object with the given
   // `propertyNode`
   def getMatchingLiteral: String = {
-    // val g = config.DB_NAME
+    // val g = `${config.DB_NAME}/post`
     // val g = process.env["DB_NAME"]
     // val g = process.env.DB_NAME
-    s".*process\\.env(\\.|\\[('|`|\").*('|`|\")]).*|.*((conf|Conf)\\.).*"
+    s".*process\\.env(\\.|\\[('|`|\").*('|`|\")]).*|.*((config|Config)\\.).*"
   }
 
   override def generateParts(): Array[_ <: AnyRef] = {
-    cpg
+    val g = "`anything${config.BASE_URL}/post`"
+    println(g.matches(getMatchingLiteral))
+    val v = cpg
       .call("<operator>.(assignment|fieldAccess)")
       .astChildren
       .code(getMatchingLiteral)
       .filter(_.isCall)
       .toArray
+    v
   }
 
   override def runOnPart(builder: DiffGraphBuilder, node: AstNode): Unit = {
@@ -32,6 +35,11 @@ class JSEnvPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](
       matchAndConnectPropertyNode(propertyKey, node, builder)
     } else if (node.asInstanceOf[Call].methodFullName == Operators.indexAccess) {
       val propertyKey = node.astChildren.isLiteral.head.code.replace("\"", "")
+      matchAndConnectPropertyNode(propertyKey, node, builder)
+    } else if (
+      node.astChildren.isCall.nonEmpty && node.astChildren.isCall.l.methodFullName(Operators.fieldAccess).nonEmpty
+    ) {
+      val propertyKey = node.astChildren.isCall.head.code.split("\\.").last
       matchAndConnectPropertyNode(propertyKey, node, builder)
     }
   }

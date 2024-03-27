@@ -16,7 +16,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class GetEnvironmentTest extends JSPropertiesFilePassTestBase(".env") {
+class GetEnvironmentTest1 extends JSPropertiesFilePassTestBase(".env") {
 
   val db_url = "https://mydb.dbname.in/secret"
 
@@ -67,7 +67,55 @@ class GetEnvironmentTest extends JSPropertiesFilePassTestBase(".env") {
       lit.originalPropertyValue.head shouldBe db_url
     }
   }
+}
 
+class GetEnvironmentTest2 extends JSPropertiesFilePassTestBase(".env") {
+
+  override val configFileContents: String =
+    s"""
+       |BASE_URL=http://www.example.com
+    """.stripMargin
+  override val codeFileContents: String =
+    """
+      |const dbUrlString = `${config.BASE_URL}/post`
+      |""".stripMargin
+
+  "JS Config File pass should" should {
+    "create a file node for the property file" in {
+      val files = cpg.file.name.l
+      files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
+    }
+
+    "create a `property` node for each property" in {
+      val properties = cpg.property.map(x => (x.name, x.value)).toMap
+      properties
+        .get("BASE_URL")
+        .contains("http://www.example.com") shouldBe true
+    }
+
+    "connect property nodes to file" in {
+      val List(filename: String) = cpg.property.file.name.dedup.l
+      filename.endsWith("/test.env") shouldBe true
+    }
+
+    "process another way to connect literals" in {
+      val lit = cpg.property.usedAt.l
+      lit.exists(node => node.code.matches(".*BASE_URL.*")) shouldBe true
+    }
+
+    "connect property node to literal via `IS_USED_AT` edge" in {
+      val lit = cpg.property.usedAt.l
+      lit.exists(node => node.code.matches(".*BASE_URL.*")) shouldBe true
+    }
+    "connect literal node to property via `ORIGINAL_PROPERTY` edge" in {
+      val javaP = cpg.property.usedAt.originalProperty.l.head
+      javaP.value shouldBe "http://www.example.com"
+
+      val lit = cpg.property.usedAt.l.head
+      lit.originalProperty.head.value shouldBe "http://www.example.com"
+      lit.originalPropertyValue.head shouldBe "http://www.example.com"
+    }
+  }
 }
 
 abstract class JSPropertiesFilePassTestBase(fileExtension: String)
