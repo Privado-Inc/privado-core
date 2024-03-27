@@ -28,14 +28,14 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
   val APISINKS_REGEX: String = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
   val apis: List[Call] = cacheCall.name("(?i)" + APISINKS_REGEX).l
-  val constructApis: List[Call] =
+  val constructors: List[Call] =
     constructNameCall.where(_.methodFullName("(?i).*" + APISINKS_REGEX + "(->)__construct")).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
   implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)
   val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
-  val httpApis: List[Call] = (apis ++ constructApis)
+  val httpApis: List[Call] = (apis ++ constructors)
     .or(_.methodFullName(commonHttpPackages), _.filter(_.dynamicTypeHintFullName.exists(_.matches(commonHttpPackages))))
     .l
 
@@ -62,7 +62,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     logger.debug("Using Enhanced API tagger to find API sinks")
     sinkTagger(
       apiInternalSources ++ propertySources ++ identifierSource,
-      (httpApis).distinct,
+      httpApis.distinct,
       builder,
       ruleInfo,
       ruleCache,
