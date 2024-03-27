@@ -1,43 +1,82 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{InternalTag, RuleInfo}
+import ai.privado.languageEngine.java.tagger.sink.api.Utility.tagAPICallByItsUrlMethod
+import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import ai.privado.utility.Utilities.storeForTag
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 
-class JavaAPISinkByParameterTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
-  override def generateParts(): Array[String] = {
+import scala.collection.mutable
+
+class JavaAPISinkByParameterTagger(cpg: Cpg, ruleCache: RuleCache)
+    extends PrivadoParallelCpgPass[(Method, String)](cpg) {
+
+  private val apiMatchingRegex =
+    ruleCache.getAllRuleInfo.filter(_.nodeType == NodeType.API).map(_.combinedRulePattern).mkString("(", "|", ")")
+
+  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
+  override def generateParts(): Array[(Method, String)] = {
 
     /* Below query looks for methods whose parameter names ends with `url|endpoint`,
     for such method, get the typeFullName of the returned object by this method
      */
 
-    val typeFullNameByUrlLikeMatch = cpg.method
-      .where(_.parameter.filter(_.index != 0).name("(?i).*(url|endpoint)"))
-      .signature
-      .map(_.split("\\(").headOption.getOrElse(""))
-      .filter(_.nonEmpty)
+    val typeFullNameByUrlLikeMatch = mutable.ListBuffer[(Method, String)]()
+    val (initMethods, nonInitMethods) = cpg.method
+      .where(_.parameter.filter(_.index != 0).annotation.parameterAssign.code("(?i).*(url|endpoint)"))
       .l
+      .partition(_.name.equals("<init>"))
 
-    /* Below query looks for methods whose parameter names ends with `config`, and is part of a constructor
-        for such method, get the typeFullName of the object for which this constructor is added
-     */
-    val typeFullNameByConfigLikeMatch = cpg.method
-      .where(_.parameter.filter(_.index != 0).name("(?i).*(config)"))
-      .where(_.name("<init>"))
-      .fullName
-      .map(_.split("[.]<init").headOption.getOrElse(""))
-      .filter(_.nonEmpty)
-      .l
+    val initMethodFullNames = initMethods.map { m => (m, m.fullName.split("[.]<init").headOption.getOrElse("")) }.l
 
-    (typeFullNameByUrlLikeMatch ++ typeFullNameByConfigLikeMatch).dedup.toArray
+    initMethodFullNames.foreach { entrySet1 =>
+      val m        = entrySet1._1
+      val fullName = entrySet1._2
+
+      val (firstLevelConfig, firstLevelNonConfig) = cpg.parameter
+        .filter(_.index != 0)
+        .typeFullName(fullName)
+        .method
+        .name("<init>")
+        .fullName
+        .map(_.split("[.]<init").headOption.getOrElse(""))
+        .filter(_.nonEmpty)
+        .l
+        .partition(cpg.member.typeFullName(_).nonEmpty)
+
+      firstLevelConfig.foreach(typeFullNameByUrlLikeMatch.addOne(m, _))
+
+      val (secondLevelConfig, secondLevelNonConfig) = cpg.parameter
+        .filter(_.index != 0)
+        .typeFullName(firstLevelNonConfig: _*)
+        .method
+        .name("<init>")
+        .fullName
+        .map(_.split("[.]<init").headOption.getOrElse(""))
+        .filter(_.nonEmpty)
+        .l
+        .partition(cpg.member.typeFullName(_).nonEmpty)
+
+      secondLevelConfig.foreach(typeFullNameByUrlLikeMatch.addOne(m, _))
+
+    }
+
+    typeFullNameByUrlLikeMatch.appendAll(
+      nonInitMethods.map(m => (m, m.signature.split("\\(").headOption.getOrElse(""))).filter(_._2.nonEmpty).l
+    )
+
+    typeFullNameByUrlLikeMatch.dedup.toArray
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, typeFullName: String): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, methodWithTypeFullName: (Method, String)): Unit = {
+
+    val methodNode   = methodWithTypeFullName._1
+    val typeFullName = methodWithTypeFullName._2
 
     cpg.member.typeFullName(typeFullName).foreach { m =>
       val memberName = m.name
@@ -57,7 +96,7 @@ class JavaAPISinkByParameterTagger(cpg: Cpg, ruleCache: RuleCache) extends Priva
         .l
 
       // Mark the nodes as API sink
-      sinkCalls.foreach(storeForTag(builder, _, ruleCache)(InternalTag.API_SINK_MARKED.toString))
+      tagAPICallByItsUrlMethod(cpg, builder, methodNode, sinkCalls, apiMatchingRegex, thirdPartyRuleInfo, ruleCache)
 
     }
   }
