@@ -110,6 +110,13 @@ object PhpProcessor {
       }
     }
 
-    Paths.get(fixedDir, "/bin/php-parser/php-parser.php").toAbsolutePath.toString
+    val parserPath = Environment.isProduction match {
+      case Some(_) => Paths.get("/home", "privado-core-build", "php-parser", "php-parser.php")
+      case None    => Paths.get(fixedDir, "bin", "php-parser", "php-parser.php")
+    }
+
+    println(s"${TimeMetric.getNewTime()} - Using PHP logger from $parserPath")
+    parserPath.toAbsolutePath.toString
+
   }
 }
