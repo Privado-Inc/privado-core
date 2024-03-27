@@ -13,13 +13,15 @@ object JavaAPISinkTagger extends APISinkTagger {
     */
   override def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput): Unit = {
 
-    if (privadoInput.enableAPIByParameter)
+    if (privadoInput.enableAPIByParameter) {
+      new JavaAPISinkByParameterMarkByAnnotationTagger(cpg, ruleCache).createAndApply()
       new JavaAPISinkByParameterTagger(cpg, ruleCache).createAndApply()
+    }
 
     new JavaAPISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
 
     // Invoke API Endpoint mappers
-    new JavaAPISinkEndpointMapperByNonInitMethod(cpg, ruleCache).createAndApply()
+    // new JavaAPISinkEndpointMapperByNonInitMethod(cpg, ruleCache).createAndApply()
   }
 
 }

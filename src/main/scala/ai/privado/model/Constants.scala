@@ -50,11 +50,13 @@ object Constants {
   val flow      = "flow"
 
   // systemConfig
-  val key                = "key"
-  val value              = "value"
-  val MAX_SOCKET_COUNT   = "maxSocketCount"
-  val RepoPropertyConfig = "RepoPropertyConfig"
-  val filePath           = "filePath"
+  val key                       = "key"
+  val value                     = "value"
+  val MAX_SOCKET_COUNT          = "maxSocketCount"
+  val RepoPropertyConfig        = "RepoPropertyConfig"
+  val filePath                  = "filePath"
+  val PropertyFileSizeLimit     = "propertyFileSizeLimit"
+  val PropertyFileDirCountLimit = "propertyFileDirCountLimit"
 
   val third_parties      = "third_parties"
   val internal_apis      = "internal_apis"
