@@ -28,7 +28,7 @@ import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
 
 import scala.jdk.CollectionConverters.*
-import ai.privado.model.Language
+import ai.privado.model.{Constants, Language}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import better.files.File.VisitOptions
@@ -412,7 +412,7 @@ class PropertyParserPass(
       }
     }
 
-    SourceFiles
+    val propertyFiles = SourceFiles
       .determine(projectRoot, extensions, ignoredFilesRegex = Some(".*[.]privado.*".r))(VisitOptions.default)
       .concat(
         getListOfFiles(projectRoot)
@@ -423,7 +423,33 @@ class PropertyParserPass(
       )
       .filter(file => !file.contains("delombok"))
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
+      .filter(file => filterUsingFileSize(file, ruleCache))
       .distinct
+
+    filterFilesWithDir(propertyFiles, ruleCache)
   }
 
+  private def filterUsingFileSize(filePath: String, ruleCache: RuleCache): Boolean = {
+    val fileLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileSizeLimit, true)
+    if (fileLimit.nonEmpty) {
+      val file               = new File(filePath)
+      val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
+      fileSizeInKiloByte <= fileLimit.toInt
+    } else {
+      true
+    }
+  }
+
+  private def filterFilesWithDir(filePaths: List[String], ruleCache: RuleCache): List[String] = {
+    val countLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileDirCountLimit, true)
+    if (countLimit.nonEmpty) {
+      val groupedByDirectory = filePaths.groupBy(filePath => new File(filePath).getParent)
+      val filteredDirectories = groupedByDirectory.filter { case (_, filesInDirectory) =>
+        filesInDirectory.length <= countLimit.toInt
+      }
+      filteredDirectories.values.flatten.toList
+    } else {
+      filePaths
+    }
+  }
 }
