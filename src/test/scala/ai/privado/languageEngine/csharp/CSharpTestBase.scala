@@ -14,6 +14,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.collection.mutable
 import ai.privado.cache.*
+import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.semanticcpg.layers.*
 import io.joern.dataflowengineoss.layers.dataflows.*
@@ -48,11 +49,31 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     )
   )
 
+  val collectionRules = List(
+    RuleInfo(
+      "Collections.Mvc",
+      "ASPNet MVC Endpoints",
+      "",
+      FilterProperty.CODE,
+      Array(),
+      List("(?i).*(Route|HttpGet|HttpPost|HttpPut).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.annotations,
+      Language.CSHARP,
+      Array()
+    )
+  )
+
   val configAndRules: ConfigAndRules =
     ConfigAndRules(
       RuleInfoTestData.sourceRule,
       sinkRules,
-      List(),
+      collectionRules,
       List(),
       List(),
       List(),
@@ -93,6 +114,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     new OssDataFlow(options).run(context)
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new LiteralTagger(cpg, ruleCache).createAndApply()
+    new CollectionTagger(cpg, ruleCache).createAndApply()
 
     cpgs.addOne(cpg)
     val threatEngine =
