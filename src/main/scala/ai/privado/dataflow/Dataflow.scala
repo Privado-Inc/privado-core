@@ -72,11 +72,10 @@ class Dataflow(cpg: Cpg) {
       Utilities.getEngineContext(privadoScanConfig, 4)(semanticsP = getSemantics(cpg, privadoScanConfig, ruleCache))
 
     val sources = Dataflow.getSources(cpg)
-    println(sources.map(_.code))
-    println(sources.map(_.file.name.l))
+
+    println(sources.map(s => (s.code, s.file.name.l.head)))
     var sinks = Dataflow.getSinks(cpg)
-    println(sinks.map(_.code))
-    println(sinks.map(_.file.name.l))
+    println(sinks.map(s => (s.code, s.file.name.l.head)))
 
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
     println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
