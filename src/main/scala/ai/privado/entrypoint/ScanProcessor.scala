@@ -44,6 +44,7 @@ import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
+import io.joern.x2cpg.SourceFiles
 
 import java.util.Calendar
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -357,26 +358,32 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                /*
-                new JavaProcessor(
-                  getProcessedRule(Set(Language.JAVA)),
-                  this.config,
+                val kotlinPlusJavaRules = getProcessedRule(Set(Language.KOTLIN, Language.JAVA))
+                val filesWithKtExtension = SourceFiles.determine(
                   sourceRepoLocation,
-                  Language.JAVA,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache
-                ).processCpg()
-                 */
-                new KotlinProcessor(
-                  getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
-                  this.config,
-                  sourceRepoLocation,
-                  Language.KOTLIN,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache
-                ).processCpg()
+                  Set(".kt"),
+                  ignoredFilesRegex = Option(kotlinPlusJavaRules.getExclusionRegex.r)
+                )
+                if (filesWithKtExtension.isEmpty)
+                  new JavaProcessor(
+                    getProcessedRule(Set(Language.JAVA)),
+                    this.config,
+                    sourceRepoLocation,
+                    Language.JAVA,
+                    dataFlowCache = getDataflowCache,
+                    auditCache,
+                    s3DatabaseDetailsCache
+                  ).processCpg()
+                else
+                  new KotlinProcessor(
+                    kotlinPlusJavaRules,
+                    this.config,
+                    sourceRepoLocation,
+                    Language.KOTLIN,
+                    dataFlowCache = getDataflowCache,
+                    auditCache,
+                    s3DatabaseDetailsCache
+                  ).processCpg()
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
                 JavascriptProcessor.createJavaScriptCpg(
