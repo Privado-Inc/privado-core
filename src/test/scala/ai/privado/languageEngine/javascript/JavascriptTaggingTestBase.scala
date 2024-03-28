@@ -23,8 +23,8 @@
 
 package ai.privado.languageEngine.javascript
 
-import ai.privado.cache.RuleCache
-import ai.privado.model.ConfigAndRules
+import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.model.{ConfigAndRules, Language}
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -52,6 +52,7 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
     cpg = new JsSrc2Cpg().createCpg(config).get
 
     // Caching Rule
+    AppCache.repoLanguage = Language.JAVASCRIPT
     ruleCache.setRule(rule)
     super.beforeAll()
   }

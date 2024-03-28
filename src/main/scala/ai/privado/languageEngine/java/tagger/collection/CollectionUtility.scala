@@ -156,13 +156,21 @@ object CollectionUtility {
     * order 1, then if that fails it will look for the URL in the parameterAssign node order 2, then if that fails it
     * will look for the URL in the typeDecl node, and finally if that fails it will look for the URL in the method node.
     * If none of these succeed, it will return an empty string.
-    * @param parameterIn
+    * @param annotation
+    *   \- The annotation for which url needs to be fetched
+    * @param parameterProperty
+    *   \- List[String] - Traverse this list in the order of items and return url against which we first get a result
     * @return
     */
-  def getUrlFromAnnotation(annotation: Annotation, parameterProperty: String = "value"): String = {
-    annotation.parameterAssign.where(_.parameter.code(parameterProperty)).value.l.headOption match {
-      case Some(url) => url.code
-      case None      => ""
+  def getUrlFromAnnotation(annotation: Annotation, parameterProperty: List[String] = List("value", "path")): String = {
+
+    val result = parameterProperty.collectFirst {
+      case pp if annotation.parameterAssign.exists(_.parameter.code(pp).nonEmpty) =>
+        annotation.parameterAssign.where(_.parameter.code(pp)).value.l.headOption match {
+          case Some(url) => url.code
+          case None      => ""
+        }
     }
+    result.getOrElse("")
   }
 }

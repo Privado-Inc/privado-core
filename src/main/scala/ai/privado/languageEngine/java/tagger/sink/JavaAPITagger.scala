@@ -28,9 +28,9 @@ import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
+import ai.privado.tagger.utility.APITaggerUtility.{SERVICE_URL_REGEX_PATTERN, sinkTagger}
 import ai.privado.utility.{ImportUtility, Utilities}
 import io.circe.Json
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
@@ -96,19 +96,24 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
       APITaggerVersionJava.V2Tagger
   }
 
+  apis = apis.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
+
   val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
-  val grpcSinks                  = GRPCTaggerUtility.getGrpcSinks(cpg)
-  val soapSinks                  = SOAPTaggerUtility.getAPICallNodes(cpg)
+  val grpcSinks = GRPCTaggerUtility.getGrpcSinks(cpg).whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
+  val soapSinks =
+    SOAPTaggerUtility.getAPICallNodes(cpg).whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getAllRuleInfo
       .filter(rule => rule.nodeType.equals(NodeType.API))
+      .filterNot(_.isGenerated) // Filter out generated rules, we only need to use the passed rules
       .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val apiInternalSources = cpg.literal.code("(?:\"|')(" + ruleInfo.combinedRulePattern + ")(?:\"|')").l
     val propertySources    = cpg.property.filter(p => p.value matches (ruleInfo.combinedRulePattern)).usedAt.l
+    val serviceSource      = cpg.property.filter(p => p.value matches SERVICE_URL_REGEX_PATTERN).usedAt.l
 
     // Support to use `identifier` in API's
     val identifierRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
@@ -132,14 +137,19 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
       else
         List()
-    }
+    }.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
+
+    val markedAPISinks = cpg.call
+      .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
+      .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+      .l
 
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(
-          apiInternalSources ++ propertySources ++ identifierSource,
+          apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
           apis,
           builder,
           ruleInfo,
@@ -148,8 +158,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
-          apiInternalSources ++ propertySources ++ identifierSource,
-          feignAPISinks ++ grpcSinks ++ soapSinks,
+          apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
+          feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
           ruleInfo,
           ruleCache,
@@ -159,8 +169,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
-          apiInternalSources ++ propertySources ++ identifierSource,
-          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks,
+          apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
+          apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
           ruleInfo,
           ruleCache,
@@ -170,8 +180,8 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(
-          apiInternalSources ++ propertySources ++ identifierSource,
-          feignAPISinks ++ grpcSinks ++ soapSinks,
+          apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
+          feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
           ruleInfo,
           ruleCache,

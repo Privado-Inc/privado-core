@@ -35,6 +35,6 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
       - name: Run unit test
-        run: sbt test test:test
+        run: sbt -J-Xmx4G test test:test
       - run: echo "Previous step failed because unit test failed."
         if: ${{ failure() }}

@@ -23,12 +23,12 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.javascript.JavascriptTaggingTestBase
 import ai.privado.languageEngine.python.{PrivadoPySrc2CpgFixture, PrivadoPySrcTestCpg}
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, Language}
 import ai.privado.tagger.sink.RegularSinkTagger
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -74,17 +74,22 @@ class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
       | API_5 =      "api/v2" + "/ce/customers"
       |""".stripMargin)
 
+  override def beforeAll(): Unit = {
+    AppCache.repoLanguage = Language.PYTHON
+    super.beforeAll()
+  }
+
   "Python code egresses" should {
     "collect egress url for python code" in {
-      val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
-      val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache)
+      val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 6
       egressesFromLanguageFiles shouldBe List(
-        "/ce/something/customers/{customerId}/init",
-        "/ce/customers/{customerId}/repo/{repoId}/file",
-        "/ce/customers/{customerId}/scan/{repoId}",
+        "/ce/something/customers/customerId/init",
+        "/ce/customers/customerId/repo/repoId/file",
+        "/ce/customers/customerId/scan/repoId",
         "api/v1",
-        "/ce/customers/{customerId}/scan/{repoId}/data",
+        "/ce/customers/customerId/scan/repoId/data",
         "api/v2/ce/customers"
       )
 

@@ -29,7 +29,7 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, JavaYamlLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.languageEngine.java.semantic.Language.*
@@ -101,7 +101,8 @@ class JavaProcessor(
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
         new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
-        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
+        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache),
+        new JavaYamlLinkerPass(cpg)
       )
   }
 

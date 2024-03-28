@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.ruby.monolith
 
-import ai.privado.RuleInfoTestData
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
@@ -10,6 +9,7 @@ import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.model.{Constants, Language}
+import ai.privado.rule.RuleInfoTestData
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.language.Path

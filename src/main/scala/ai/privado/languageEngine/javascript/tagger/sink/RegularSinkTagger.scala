@@ -88,7 +88,9 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
             case node => node.code
           }).stripPrefix("\"").stripSuffix("\"")
           val newRuleIdToUse = ruleInfo.id + "." + cookieName
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + cookieName))
+          ruleCache.setRuleInfo(
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + cookieName, isGenerated = true)
+          )
           addRuleTags(builder, sink, ruleInfo, ruleCache, Some(newRuleIdToUse))
           DatabaseDetailsCache.addDatabaseDetails(
             DatabaseDetails(

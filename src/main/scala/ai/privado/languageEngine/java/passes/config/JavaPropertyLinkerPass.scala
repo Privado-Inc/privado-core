@@ -52,10 +52,10 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
   }
 
   private def connectAnnotatedParameters(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val paramsAndValues = annotatedParameters()
+    val paramsAndValues = annotatedParameters() ++ namedAnnotatedParameters()
 
     paramsAndValues.iterator
-      .filter { case (_, value) => propertyNode.name == value }
+      .filter { case (_, value) => propertyNode.name == value || propertyNode.name.endsWith(s".$value") }
       .foreach { case (param, _) =>
         builder.addEdge(propertyNode, param, EdgeTypes.IS_USED_AT)
         builder.addEdge(param, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
@@ -94,6 +94,18 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     .filter(_.method.nonEmpty)
     .filter(_.parameterAssign.nonEmpty)
     .map { x => (x.parameterAssign.next(), x.method.next()) }
+    .toList
+
+  private def namedAnnotatedParameters(): List[(MethodParameterIn, String)] = cpg.annotation
+    .nameExact("Named")
+    .filter(_.parameter.nonEmpty)
+    .map { x =>
+      val value = x.parameterAssign.code.next().split("[.]").lastOption.getOrElse("")
+      (x.parameter.next(), value)
+    }
+    .filter { (_, value) =>
+      value.nonEmpty
+    }
     .toList
 
   /** List of all parameters annotated with Spring's `Value` annotation, along with the property name.

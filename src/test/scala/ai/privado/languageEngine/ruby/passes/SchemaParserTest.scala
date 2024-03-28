@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.ruby.passes
 
-import ai.privado.RuleInfoTestData
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.ruby.RubyTestBase.*
 import ai.privado.languageEngine.ruby.passes.SchemaParser
@@ -19,6 +18,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.model.SourceCodeModel
+import ai.privado.rule.RuleInfoTestData
 
 class SchemaParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 

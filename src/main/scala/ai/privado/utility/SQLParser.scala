@@ -116,7 +116,7 @@ object SQLParser {
           val sqlTable = createSQLTableItem(createStmt.getTable)
           val columnList = columns.map(columnName => {
             val lineColumn = getLineAndColumnNumber(sqlQuery, columnName)
-            SQLColumn(columnName, lineColumn._1 + sqlTable.lineNumber, lineColumn._2)
+            SQLColumn(columnName, lineColumn._1, lineColumn._2)
           })
           Some(List(SQLQuery(SQLQueryType.CREATE, sqlTable, columnList)))
         case _ =>
@@ -155,7 +155,7 @@ object SQLParser {
   private def createSQLColumnItem(column: ASTNodeAccess, sqlTable: SQLTable) = {
     SQLColumn(
       column.toString,
-      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE) + sqlTable.lineNumber - 1,
+      Try(column.getASTNode.jjtGetFirstToken().beginLine).getOrElse(NUMBER_ONE),
       Try(column.getASTNode.jjtGetFirstToken().beginColumn).getOrElse(NUMBER_MINUSONE)
     )
   }
@@ -186,7 +186,8 @@ object SQLNodeBuilder {
     queryModel: SQLQuery,
     query: String,
     queryLineNumber: Int,
-    queryOrder: Int
+    queryOrder: Int,
+    fileName: Option[String] = None
   ): Unit = {
     // Have added tableName in name key
     // Have added columns in value key
@@ -205,10 +206,16 @@ object SQLNodeBuilder {
     builder.addEdge(tableNode, fileNode, EdgeTypes.SOURCE_FILE)
 
     queryModel.column.zipWithIndex.foreach { case (queryColumn: SQLColumn, columnIndex) =>
+      /* As queries from .sql files are processed individually,
+        an offset equal to the lineNumber of the query in the original file - 1 is added to the isolated column lineNumber */
+      val lineNumber = fileName match
+        case Some(f) if f.endsWith(".sql") => queryColumn.lineNumber + queryLineNumber - 1
+        case _                             => queryColumn.lineNumber
+
       val columnNode = NewSqlColumnNode()
         .name(queryColumn.name)
         .code(queryColumn.name)
-        .lineNumber(queryColumn.lineNumber)
+        .lineNumber(lineNumber)
         .columnNumber(queryColumn.columnNumber)
         .order(columnIndex)
       builder.addEdge(tableNode, columnNode, EdgeTypes.AST)
