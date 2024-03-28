@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.python
 
-import ai.privado.cache.{RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
@@ -58,6 +58,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
   private val ruleCache              = new RuleCache()
   private val privadoInput           = PrivadoInput()
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
+  val appCache                       = new AppCache()
 
   private val sinks = List(
     RuleInfo(
@@ -96,7 +97,8 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         |""".stripMargin)
 
     "have bucket name" in {
-      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache)
+      val sinkExporter =
+        new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache, appCache = appCache)
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "mera-bucket"
     }
   }
@@ -122,7 +124,8 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         |""".stripMargin)
 
     "have bucket name" in {
-      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache)
+      val sinkExporter =
+        new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache, appCache = appCache)
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "meri-prod-bucket"
     }
   }
@@ -137,6 +140,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       ConfigAndRules(List(), sinks, List(), List(), List(), List(), List(), List(), List(), List())
     ruleCache.setRule(rule)
     val taggerCache = new TaggerCache
+    appCache.repoLanguage = Language.PYTHON
 
     // Generate CPG and run overlays for S3 tagger prep
     val cpgconfig = Py2CpgOnFileSystemConfig(Option(File(".venv").path), ignoreVenvDir = true)

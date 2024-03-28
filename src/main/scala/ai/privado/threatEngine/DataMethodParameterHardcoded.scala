@@ -1,10 +1,11 @@
 package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
-import ThreatUtility.{hasDataElements}
+import ThreatUtility.hasDataElements
+import ai.privado.cache.AppCache
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
@@ -20,7 +21,7 @@ object DataMethodParameterHardcoded {
     *   cpg
     * @return
     */
-  def getViolations(cpg: Cpg): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(cpg: Cpg, appCache: AppCache): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows      = ListBuffer[ViolationProcessingModel]()
       val hardCodedParameters = cpg.parameter.code(".*=.*").filter(parameter => parameter.code != parameter.name).l
@@ -29,7 +30,11 @@ object DataMethodParameterHardcoded {
         val relatedMethod = parameter.method
         if (relatedMethod.nonEmpty) {
           violatingFlows.append(
-            ViolationProcessingModel(parameter.name, ExporterUtility.convertIndividualPathElement(relatedMethod), None)
+            ViolationProcessingModel(
+              parameter.name,
+              ExporterUtility.convertIndividualPathElement(relatedMethod, appCache = appCache),
+              None
+            )
           )
         }
       })

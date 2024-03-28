@@ -1,11 +1,12 @@
 package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
-import ThreatUtility.{hasDataElements}
+import ThreatUtility.hasDataElements
+import ai.privado.cache.AppCache
 import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
@@ -22,7 +23,11 @@ object CustomPrivacyLoggerMustbeUsed {
     *   cpg
     * @return
     */
-  def getViolations(threat: PolicyOrThreat, cpg: Cpg): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(
+    threat: PolicyOrThreat,
+    cpg: Cpg,
+    appCache: AppCache
+  ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val higherOrderLeakgeSinkId = "Leakages.Log.*"
       val violatingFlows          = ListBuffer[ViolationProcessingModel]()
@@ -38,7 +43,7 @@ object CustomPrivacyLoggerMustbeUsed {
                 .append(
                   ViolationProcessingModel(
                     s"${leakage.methodFullName}::${leakage.file.name.headOption.getOrElse(Constants.Unknown)}",
-                    ExporterUtility.convertIndividualPathElement(leakage),
+                    ExporterUtility.convertIndividualPathElement(leakage, appCache = appCache),
                     None
                   )
                 )

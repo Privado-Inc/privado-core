@@ -59,7 +59,8 @@ class KotlinProcessor(
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -67,7 +68,8 @@ class KotlinProcessor(
       lang,
       dataFlowCache,
       auditCache,
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
@@ -94,7 +96,7 @@ class KotlinProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
 
   override def processCpg(): Either[String, Unit] = {
 

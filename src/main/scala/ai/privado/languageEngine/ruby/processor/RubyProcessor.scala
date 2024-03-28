@@ -92,7 +92,8 @@ object RubyProcessor {
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -187,9 +188,15 @@ object RubyProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
+          cpg.runTagger(
+            ruleCache,
+            taggerCache,
+            privadoInputConfig = ScanProcessor.config.copy(),
+            dataFlowCache,
+            appCache
+          )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
           println(s"${Calendar.getInstance().getTime} - No of flows found -> ${dataflowMap.size}")
           println(
             s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
@@ -206,7 +213,8 @@ object RubyProcessor {
             taggerCache,
             dataFlowCache,
             privadoInput,
-            s3DatabaseDetailsCache
+            s3DatabaseDetailsCache,
+            appCache
           )
 
           JSONExporter.fileExport(
@@ -219,13 +227,14 @@ object RubyProcessor {
             dataFlowCache.getDataflowAfterDedup,
             privadoInput,
             monolithPrivadoJsonPaths = monolithPrivadoJsonPaths,
-            s3DatabaseDetailsCache
+            s3DatabaseDetailsCache,
+            appCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               Left(err)
             case Right(_) =>
-              println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
+              println(s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder")
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
@@ -345,7 +354,8 @@ object RubyProcessor {
     lang: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -404,7 +414,16 @@ object RubyProcessor {
     println(
       s"${TimeMetric.getNewTime()} - Parsing source code done in \t\t\t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
     )
-    processCPG(xtocpg, ruleCache, privadoInput, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
+    processCPG(
+      xtocpg,
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache
+    )
   }
 
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {

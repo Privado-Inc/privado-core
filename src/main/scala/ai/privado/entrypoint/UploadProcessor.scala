@@ -23,7 +23,7 @@
 package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
-import ai.privado.cache.Environment
+import ai.privado.cache.{AppCache, Environment}
 import ai.privado.model.Constants
 import ai.privado.model.Constants.{outputDirectoryName, outputFileName}
 import better.files.File
@@ -37,7 +37,7 @@ object UploadProcessor extends CommandProcessor {
     File(s"$repoPath/$outputDirectoryName/$outputFileName").exists
   }
 
-  override def process(): Either[String, Unit] = {
+  override def process(appCache: AppCache): Either[String, Unit] = {
     println(s"Privado CLI Version: ${Environment.privadoVersionCli.getOrElse(Constants.notDetected)}")
     println(s"Privado Core Version: ${Environment.privadoVersionCore}")
     println(s"Synchronizing results with Privado Cloud...")
