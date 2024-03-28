@@ -441,13 +441,14 @@ object ScanProcessor extends CommandProcessor {
               case language if language == Languages.PHP =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'PHP'")
                 new PhpProcessor(
-                  getProcessedRule(Set(Language.PHP)),
+                  getProcessedRule(Set(Language.PHP), appCache),
                   this.config,
                   sourceRepoLocation,
                   Language.PHP,
                   dataFlowCache = getDataflowCache,
                   auditCache,
-                  s3DatabaseDetailsCache
+                  s3DatabaseDetailsCache,
+                  appCache
                 )
                   .processCpg()
               case _ =>
