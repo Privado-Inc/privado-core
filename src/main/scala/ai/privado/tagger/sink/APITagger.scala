@@ -60,6 +60,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
       .filter(rule => rule.nodeType.equals(NodeType.API))
+      .filterNot(_.isGenerated) // Filter out generated rules, we only need to use the passed rules
       .toArray
   }
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {

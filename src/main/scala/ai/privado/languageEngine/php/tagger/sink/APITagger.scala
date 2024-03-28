@@ -1,6 +1,6 @@
-package ai.privado.languageEngine.ruby.tagger.sink
+package ai.privado.languageEngine.php.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -19,26 +19,24 @@ import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import java.util.Calendar
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
+class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
-  private val logger        = LoggerFactory.getLogger(this.getClass)
-  val cacheCall: List[Call] = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+  private val logger                = LoggerFactory.getLogger(this.getClass)
+  val cacheCall: List[Call]         = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
+  val constructNameCall: List[Call] = cacheCall.where(_.name("__construct")).l
 
   val APISINKS_REGEX: String = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
-  val apis: List[Call] = cacheCall.name(APISINKS_REGEX).l
+  val apis: List[Call] = cacheCall.name("(?i)" + APISINKS_REGEX).l
+  val constructors: List[Call] =
+    constructNameCall.where(_.methodFullName("(?i).*" + APISINKS_REGEX + "(->)__construct")).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
-  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, appCache, 4)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)
   val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
-  val httpApis: List[Call] = apis
+  val httpApis: List[Call] = (apis ++ constructors)
     .or(_.methodFullName(commonHttpPackages), _.filter(_.dynamicTypeHintFullName.exists(_.matches(commonHttpPackages))))
-    .l
-
-  val clientLikeApis: List[Call] = cacheCall
-    .code("(?i).*(client|connection).*[.](get|post|delete|put|patch).*")
-    .name("get|post|post_json|delete|put|patch")
     .l
 
   // Support to use `identifier` in API's
@@ -47,7 +45,6 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
       .filter(rule => rule.nodeType.equals(NodeType.API))
-      .filterNot(_.isGenerated) // Filter out generated rules, we only need to use the passed rules
       .toArray
   }
 
@@ -63,10 +60,9 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
     }
 
     logger.debug("Using Enhanced API tagger to find API sinks")
-    println(s"${Calendar.getInstance().getTime} - --API TAGGER Common HTTP Libraries Used...")
     sinkTagger(
       apiInternalSources ++ propertySources ++ identifierSource,
-      (httpApis ++ clientLikeApis).distinct,
+      httpApis.distinct,
       builder,
       ruleInfo,
       ruleCache,

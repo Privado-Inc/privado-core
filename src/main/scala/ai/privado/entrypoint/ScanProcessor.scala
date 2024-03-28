@@ -31,6 +31,7 @@ import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
 import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
 import ai.privado.languageEngine.go.processor.GoProcessor
+import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language.Language
 import ai.privado.model.*
@@ -437,6 +438,18 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache
                 ).processCpg()
+              case language if language == Languages.PHP =>
+                println(s"${Calendar.getInstance().getTime} - Detected language 'PHP'")
+                new PhpProcessor(
+                  getProcessedRule(Set(Language.PHP)),
+                  this.config,
+                  sourceRepoLocation,
+                  Language.PHP,
+                  dataFlowCache = getDataflowCache,
+                  auditCache,
+                  s3DatabaseDetailsCache
+                )
+                  .processCpg()
               case _ =>
                 if (checkJavaSourceCodePresent(sourceRepoLocation)) {
                   println(
