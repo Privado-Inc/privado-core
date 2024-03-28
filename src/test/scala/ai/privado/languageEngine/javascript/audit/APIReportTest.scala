@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.javascript.audit
 
 import ai.privado.audit.APIReport
+import ai.privado.cache.AppCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.javascript.audit.APIReportTestBase
 import ai.privado.languageEngine.javascript.tagger.sink.{JSAPITagger, RegularSinkTagger}
@@ -15,7 +16,7 @@ class APIReportTest extends APIReportTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache, PrivadoInput())
+    new JSAPITagger(cpg, ruleCache, PrivadoInput(), new AppCache())
   }
 
   def getContent(): Map[String, String] = {

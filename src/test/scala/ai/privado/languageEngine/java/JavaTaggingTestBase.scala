@@ -53,7 +53,6 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
 
     // Caching Rule
     ruleCache.setRule(rule)
-    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 

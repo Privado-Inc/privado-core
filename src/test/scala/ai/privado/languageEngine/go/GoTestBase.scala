@@ -334,8 +334,9 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       .withFetchDependencies(downloadDependency)
 
     ruleCache.setRule(configAndRules)
-    val cpg = new GoSrc2Cpg().createCpg(config).get
-    AppCache.repoLanguage = Language.GO
+    val cpg      = new GoSrc2Cpg().createCpg(config).get
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.GO
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -346,8 +347,8 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     new SQLParser(cpg, inputDir.pathAsString, ruleCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new GoAPITagger(cpg, ruleCache, privadoInput).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+    new GoAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
+    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache = appCache)
     cpgs.addOne(cpg)
     val threatEngine =
       new ThreatEngineExecutor(
@@ -356,7 +357,8 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
         ruleCache,
         null,
         dataFlowCache.getDataflowAfterDedup,
-        privadoInput
+        privadoInput,
+        appCache = appCache
       )
     (cpg, threatEngine)
   }

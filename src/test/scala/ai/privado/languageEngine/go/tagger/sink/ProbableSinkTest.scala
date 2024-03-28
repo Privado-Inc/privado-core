@@ -41,7 +41,7 @@ class ProbableSinkTest extends ProbableSinkTestBase {
 
   "getProbableSinkForGolang" should {
     "return correct list of probable sinks for a valid repository path" in {
-      val sinks         = new ProbableSinkExporter(cpg, ruleCache, inputDir.toString)
+      val sinks         = new ProbableSinkExporter(cpg, ruleCache, inputDir.toString, appCache = new AppCache())
       val probableSinks = sinks.getProbableSinks
       probableSinks should contain("log.Print")
       probableSinks should not contain ("log.Fatal")

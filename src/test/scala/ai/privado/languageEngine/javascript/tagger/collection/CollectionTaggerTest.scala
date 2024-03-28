@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.javascript.tagger.collection
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.exporter.CollectionExporter
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
@@ -19,6 +19,7 @@ class CollectionTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfter
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
   private val outPutFiles = mutable.ArrayBuffer.empty[File]
   private val inputDirs   = mutable.ArrayBuffer.empty[File]
+  private val appCache    = new AppCache()
 
   val sourceRule = List(
     RuleInfo(
@@ -239,7 +240,7 @@ class CollectionTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfter
     )
 
     new CollectionTagger(cpg, ruleCache).createAndApply()
-    val collectionExporter = new CollectionExporter(cpg, ruleCache)
+    val collectionExporter = new CollectionExporter(cpg, ruleCache, appCache = appCache)
 
     "have collection exported" in {
       val collectionModel :: _ = collectionExporter.getCollections.l
@@ -367,6 +368,7 @@ class CollectionTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfter
     val config      = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()
+    appCache.repoLanguage = Language.JAVASCRIPT
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     cpgs.addOne(cpg)
     (cpg, ruleCache)

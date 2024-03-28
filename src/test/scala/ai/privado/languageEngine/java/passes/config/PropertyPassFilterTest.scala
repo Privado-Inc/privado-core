@@ -125,7 +125,6 @@ abstract class PropertiesFilePassFilterTestBase extends AnyWordSpec with Matcher
     ruleCache.setRule(rule)
 
     new PropertyParserPass(cpg, inputDir.toString(), ruleCache, Language.JAVA).createAndApply()
-    AppCache.repoLanguage = Language.JAVA
 
     super.beforeAll()
   }

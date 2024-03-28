@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.kotlin.tagger.collection
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{AppCache, TaggerCache}
 import ai.privado.exporter.CollectionExporter
 import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
 import ai.privado.languageEngine.java.tagger.collection.MethodFullNameCollectionTagger
@@ -96,7 +96,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
         tags.nameExact(InternalTag.COLLECTION_METHOD_ENDPOINT.toString).head.value shouldBe "\"/hello\""
 
         // assert collection exporter
-        val collectionExporter   = new CollectionExporter(cpg, ruleCache)
+        val collectionExporter   = new CollectionExporter(cpg, ruleCache, appCache = new AppCache())
         val collectionModel :: _ = collectionExporter.getCollections.l
         collectionModel.name should be("Spark Java Http Framework Endpoints")
         collectionModel.collectionId should be("Collections.Kotlin.HttpFramework")

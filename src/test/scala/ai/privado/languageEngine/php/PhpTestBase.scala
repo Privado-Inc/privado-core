@@ -55,6 +55,7 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
     val ruleCache     = new RuleCache()
     val auditCache    = new AuditCache()
     val privadoInput  = PrivadoInput()
+    val appCache      = new AppCache()
     val dataFlowCache = new DataFlowCache(privadoInput, auditCache)
 
     val inputDir = File.newTemporaryDirectory()
@@ -70,12 +71,12 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
 
     ruleCache.setRule(configAndRules)
     val cpg = new Php2Cpg().createCpg(config).get
-    AppCache.repoLanguage = Language.PHP
 
     X2Cpg.applyDefaultOverlays(cpg)
     Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new LiteralTagger(cpg, ruleCache).createAndApply()
+    appCache.repoLanguage = Language.PHP
 
     cpgs.addOne(cpg)
     val threatEngine =
@@ -85,7 +86,8 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
         ruleCache,
         null,
         dataFlowCache.getDataflowAfterDedup,
-        privadoInput
+        privadoInput,
+        appCache
       )
     (cpg, threatEngine)
   }

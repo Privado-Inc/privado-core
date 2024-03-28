@@ -23,7 +23,7 @@
 
 package ai.privado.threatEngine
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.ViolationModel
@@ -41,7 +41,8 @@ class ThreatEngineExecutor(
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
   dataFlowModel: List[DataFlowPathModel],
-  privadoInput: PrivadoInput
+  privadoInput: PrivadoInput,
+  appCache: AppCache
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -120,7 +121,7 @@ class ThreatEngineExecutor(
         }
 
       case "Threats.Storage.isDataStoredOnExternalStorage" if isAndroidRepo =>
-        DataOnExternalStorage.getViolations(cpg, manifestFile) match {
+        DataOnExternalStorage.getViolations(cpg, manifestFile, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -129,7 +130,7 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.CookieConsent.IsCookieConsentMgmtModuleImplemented" =>
-        CookieConsentMgmtModule.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput) match {
+        CookieConsentMgmtModule.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -138,7 +139,7 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.Sharing.IsParameterHardcoded" =>
-        DataMethodParameterHardcoded.getViolations(cpg) match {
+        DataMethodParameterHardcoded.getViolations(cpg, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -147,7 +148,7 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.Sharing.IsObjectsWithPIIsPassedAsParameter" =>
-        ObjectsWithPIIsPassedAsParameter.getViolations(cpg) match {
+        ObjectsWithPIIsPassedAsParameter.getViolations(cpg, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -156,14 +157,15 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.Storage.IsSamePIIShouldNotBePresentInMultipleTables" =>
-        val result1 = PIIShouldNotBePresentInMultipleTablesWithSQL.getViolations(threat, cpg, taggerCache) match {
-          case Success(res) => Some(res)
-          case Failure(e) =>
-            logger.debug(s"Error for ${threatId}: ${e}")
-            None
+        val result1 =
+          PIIShouldNotBePresentInMultipleTablesWithSQL.getViolations(threat, cpg, taggerCache, appCache) match {
+            case Success(res) => Some(res)
+            case Failure(e) =>
+              logger.debug(s"Error for ${threatId}: ${e}")
+              None
 
-        }
-        val result2 = PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache) match {
+          }
+        val result2 = PIIShouldNotBePresentInMultipleTables.getViolations(threat, cpg, taggerCache, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) =>
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -176,13 +178,13 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.Storage.IsPIIHavingDifferentRetentionPeriod" =>
-        val result1 = PIIHavingDifferentRetentionPeriod.getViolations(threat, cpg, taggerCache) match {
+        val result1 = PIIHavingDifferentRetentionPeriod.getViolations(threat, cpg, taggerCache, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) =>
             logger.debug(s"Error for ${threatId}: ${e}")
             None
         }
-        val result2 = PIIHavingDifferentRetentionPeriodWithSQL.getViolations(threat, cpg, taggerCache) match {
+        val result2 = PIIHavingDifferentRetentionPeriodWithSQL.getViolations(threat, cpg, taggerCache, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) =>
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -194,24 +196,26 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.Storage.IsDifferentKindOfPIIStoredInDifferentTables" =>
-        val result1 = DifferentKindOfPIIStoredInDifferentTables.getViolations(threat, cpg, taggerCache) match {
-          case Success(res) => Some(res)
-          case Failure(e) =>
-            logger.debug(s"Error for ${threatId}: ${e}")
-            None
-        }
-        val result2 = DifferentKindOfPIIStoredInDifferentTablesWithSQL.getViolations(threat, cpg, taggerCache) match {
-          case Success(res) => Some(res)
-          case Failure(e) =>
-            logger.debug(s"Error for ${threatId}: ${e}")
-            None
-        }
+        val result1 =
+          DifferentKindOfPIIStoredInDifferentTables.getViolations(threat, cpg, taggerCache, appCache) match {
+            case Success(res) => Some(res)
+            case Failure(e) =>
+              logger.debug(s"Error for ${threatId}: ${e}")
+              None
+          }
+        val result2 =
+          DifferentKindOfPIIStoredInDifferentTablesWithSQL.getViolations(threat, cpg, taggerCache, appCache) match {
+            case Success(res) => Some(res)
+            case Failure(e) =>
+              logger.debug(s"Error for ${threatId}: ${e}")
+              None
+          }
         (result1, result2) match {
           case (Some((b1, list1)), Some((b2, list2))) => Some((b1 || b2, list1 ++ list2))
           case _                                      => None
         }
       case "PrivadoPolicy.Leakage.CentralisedPrivacyLoggerMustbeUsed" =>
-        CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg) match {
+        CustomPrivacyLoggerMustbeUsed.getViolations(threat, cpg, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -250,7 +254,7 @@ class ThreatEngineExecutor(
 
     val violationResponse = threatId match {
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
-        DataLeakageToNotifications.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput) match {
+        DataLeakageToNotifications.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -258,7 +262,7 @@ class ThreatEngineExecutor(
           }
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
-        DataLeakageToLogs.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput) match {
+        DataLeakageToLogs.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput, appCache) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")

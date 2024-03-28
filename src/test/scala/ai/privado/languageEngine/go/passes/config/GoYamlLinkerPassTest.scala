@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.go.passes.config
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
@@ -90,6 +90,7 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
   var inputDir: File   = _
   var outputFile: File = _
   val ruleCache        = new RuleCache()
+  val appCache         = new AppCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -108,6 +109,7 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
     cpg = xtocpg.get
 
     ruleCache.setRule(rule)
+    appCache.repoLanguage = Language.GO
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
@@ -115,7 +117,7 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.GO).createAndApply()
     new GoYamlLinkerPass(cpg).createAndApply()
     new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
-    new GoAPITagger(cpg, ruleCache, new PrivadoInput).createAndApply()
+    new GoAPITagger(cpg, ruleCache, new PrivadoInput, appCache = appCache).createAndApply()
     super.beforeAll()
   }
 
