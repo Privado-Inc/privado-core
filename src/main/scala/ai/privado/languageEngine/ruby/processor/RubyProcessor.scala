@@ -342,13 +342,12 @@ object RubyProcessor {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     sourceRepoLocation: String,
-    lang: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using ruby engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
