@@ -27,6 +27,9 @@ object Utility {
     val impactedApiCalls = apiCalls.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
 
     if (impactedApiCalls.nonEmpty) {
+      /*
+      Try if we can get to a node in the methodNode which points to a property node, and matches the api regex on the properties value
+       */
       val matchingProperties = methodNode.ast.originalProperty.value(apiMatchingRegex).dedup.l
       if (matchingProperties.nonEmpty) {
         matchingProperties.foreach { propertyNode =>
@@ -45,13 +48,17 @@ object Utility {
           }
         }
       } else {
-        // Try fetching the url from the injection happening via Named annotation
+        /* Try fetching the url from the injection happening via Named annotation
+          Looks for parameters marked with @Named annotation, try getting to the binding and resolve the api url,
+        If we are able to resolve the api url use that or else, return the matching parameterAssign node's code
+         */
+        val apiVariableRegex = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
         val endpointNode = Try {
-          val namedCode = methodNode.parameter.annotation.name("Named").parameterAssign.code.headOption.getOrElse("")
+          val namedUrlNode = methodNode.parameter.annotation.name("Named").parameterAssign.code(apiVariableRegex).head
           val fieldAccessNode = cpg
             .call("named")
             .whereNot(_.file.name(".*Mock.*"))
-            .where(_.argument.code(namedCode))
+            .where(_.argument.code(namedUrlNode.code))
             .inCall
             .inCall
             .argument
@@ -69,16 +76,16 @@ object Utility {
               .name(Operators.assignment)
               .or(
                 _.filter(_.argument.order(1).code(s".*$endpointMemberCode").nonEmpty),
-                _.filter(_.argument.order(1).code.filter(endpointMemberCode.endsWith).nonEmpty)
+                _.filter(_.argument.order(1).code.exists(endpointMemberCode.endsWith))
               )
               .argument
               .last
-            if (lastArg.originalProperty.isDefined)
+            if (lastArg.originalProperty.isDefined) // Return the property node
               lastArg.originalProperty.head
-            else if (lastArg.isLiteral)
+            else if (lastArg.isLiteral) // Being literal point to a url
               lastArg
-            else
-              throw new UnsupportedOperationException
+            else // Return the parameterAssign node, which is the value inside the @Named annotation, Ex- @Name(ConfigKeys.MY_SERVICE_ENDPOINT), returns ConfigKeys.MY_SERVICE_ENDPOINT
+              namedUrlNode
           }
           endpointNode
         }.toOption
@@ -97,13 +104,26 @@ object Utility {
             storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
           }
 
-        } else { // There is no property node available to be used, try with parameter
+        } else { // There is no property node available to be used, try matching against the parameter name
           val variableRegex      = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
           val matchingParameters = methodNode.parameter.name(variableRegex).l
 
           if (matchingParameters.nonEmpty) {
-            matchingParameters.foreach { parameter =>
-              val domain = resolveDomainFromSource(parameter)
+            val parameter =
+              matchingParameters.head // Pick only the first parameter as we don't want to tag same sink with multiple API's
+            val domain = resolveDomainFromSource(parameter)
+            impactedApiCalls.foreach { apiCall =>
+              tagAPIWithDomainAndUpdateRuleCache(builder, thirdPartyRuleInfo.get, ruleCache, domain, apiCall, parameter)
+              storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
+              storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
+            }
+
+          } else { // There is no matching parameter to be used,  try matching against the identifier name
+            val matchingIdentifiers = methodNode.ast.isIdentifier.name(variableRegex).l
+            if (matchingIdentifiers.nonEmpty) {
+              val identifier =
+                matchingIdentifiers.head // Pick only the first identifier as we don't want to tag same sink with multiple API's
+              val domain = resolveDomainFromSource(identifier)
               impactedApiCalls.foreach { apiCall =>
                 tagAPIWithDomainAndUpdateRuleCache(
                   builder,
@@ -111,29 +131,10 @@ object Utility {
                   ruleCache,
                   domain,
                   apiCall,
-                  parameter
+                  identifier
                 )
                 storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
                 storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
-              }
-            }
-          } else { // There is no matching parameter to be used, try with identifier
-            val matchingIdentifiers = methodNode.ast.isIdentifier.name(variableRegex).l
-            if (matchingIdentifiers.nonEmpty) {
-              matchingIdentifiers.foreach { identifier =>
-                val domain = resolveDomainFromSource(identifier)
-                impactedApiCalls.foreach { apiCall =>
-                  tagAPIWithDomainAndUpdateRuleCache(
-                    builder,
-                    thirdPartyRuleInfo.get,
-                    ruleCache,
-                    domain,
-                    apiCall,
-                    identifier
-                  )
-                  storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
-                  storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
-                }
               }
             }
           }
