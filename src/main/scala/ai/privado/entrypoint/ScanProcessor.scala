@@ -357,11 +357,22 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
+                /*
                 new JavaProcessor(
                   getProcessedRule(Set(Language.JAVA)),
                   this.config,
                   sourceRepoLocation,
                   Language.JAVA,
+                  dataFlowCache = getDataflowCache,
+                  auditCache,
+                  s3DatabaseDetailsCache
+                ).processCpg()
+                 */
+                new KotlinProcessor(
+                  getProcessedRule(Set(Language.KOTLIN, Language.JAVA)),
+                  this.config,
+                  sourceRepoLocation,
+                  Language.KOTLIN,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache
