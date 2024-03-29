@@ -38,6 +38,8 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
   protected val methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
   protected val classUrlMap: mutable.HashMap[Long, String]  = mutable.HashMap[Long, String]()
   private val logger                                        = LoggerFactory.getLogger(this.getClass)
+  enum NodeType:
+    case Method, Class
 
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.collections.filter(_.catLevelTwo == Constants.annotations).toArray
@@ -75,12 +77,12 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     )
   }
 
-  private def getUrlFromAnnotationsCode(annotation: Annotation): String = {
+  private def getUrlFromAnnotationsCode(annotation: Annotation, nodeType: NodeType): String = {
     // If we have [controller] in annotation code, then replace with the class name of controller
     //
-    //    [Route("api/some/[controller]")]                      <-- /api/some/email
+    //    [Route("api/some/[controller]")]                      <-- /api/some/email            [CASE A]
     //    class EmailController {
-    //      [HttpGet("[controller]/[action]/{id}")]             <-- /api/some/email/edit/{id}
+    //      [HttpGet("[controller]/[action]/{id}")]             <-- /api/some/email/edit/{id}  [CASE B]
     //      public IActionResult Edit(int id)
     //      {
     //        return ControllerContext.MyDisplayRouteInfo(id);
@@ -88,31 +90,75 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     //    }
     //
     val controllerName = if annotation.code.contains("[controller]") then {
-      cpg.typeDecl
-        .where(_.annotation.codeExact(annotation.code))
-        .where(_.name(".*Controller"))
-        .name
-        .headOption
-        .getOrElse("")
-        .split("Controller")
-        .headOption
-        .getOrElse("")
-        .toLowerCase
+      nodeType match
+        case NodeType.Class =>
+          annotation.start.typeDecl
+            .where(_.name(".*Controller"))
+            .name
+            .headOption
+            .getOrElse("")
+            .stripSuffix("Controller")
+            .toLowerCase
+
+        case NodeType.Method =>
+          annotation.start.method.typeDecl
+            .where(_.name(".*Controller"))
+            .name
+            .headOption
+            .getOrElse("")
+            .stripSuffix("Controller")
+            .toLowerCase
     } else {
       ""
     }
 
-    // Now we extract [action] seen in snippet above. Only method support for now since we encounter them most here
-    // TODO: Support [action] replacement for classes as well eg Route("[controller]/[action]")
-    val actionName = if annotation.code.contains("[action]") then {
-      cpg.method.where(_.annotation.codeExact(annotation.code)).name.headOption.getOrElse("").toLowerCase
-    } else {
-      ""
-    }
-    annotation.code
-      .replaceAll(".*\"(.*?)\".*", "/$1")
-      .replace("[controller]", controllerName)
-      .replace("[action]", actionName)
+    // we get the action name. This can only be the method
+    val actionName = annotation.start.method.name.headOption.getOrElse("").toLowerCase
+
+    // Sometimes, we will get something like the following:
+    //
+    //    [Route("api/[controller]/[action]")]
+    //    public class SomeController : Controller {
+    //      [HttpGet]                                        <-- /api/some/copy           [CASE C]
+    //      public IActionResult Copy(){...}
+    //
+    //      [HttpGet("{id}")]                                <-- /api/some/paste/{id}     [CASE D]
+    //      public IActionResult Paste(int id){...}
+    //    }
+
+    // We now try to build a URL under various combinations of annotations for Methods and Classes by doing token replacement. We try to cover most cases in the following guideline:
+    // https://learn.microsoft.com/en-us/aspnet/core/mvc/controllers/routing?view=aspnetcore-8.0#token-replacement-in-route-templates-controller-action-area
+    val url = nodeType match
+
+      case NodeType.Class =>
+        annotation.code
+          .replaceAll(".*\"(.*?)\".*", "/$1")
+          .replace("[controller]", controllerName)
+          .replace("[action]", actionName)
+
+      case NodeType.Method =>
+        // we are interested in cases where the method doesn't have action defined, but its containing type has
+        if annotation.start.method.typeDecl.annotation.code.headOption
+            .getOrElse("")
+            .matches(".*\\[action\\].*") && !annotation.code.matches(".*\\[action\\].*")
+        then {
+          if annotation.code.matches(".*\"(.*?)\".*") then {
+            s"$actionName" + annotation.code.replaceAll(
+              ".*\"(.*?)\".*",
+              "/$1"
+            ) // CASE D: we append action name for case like [HttpGet] where there is no argument
+          } else if !annotation.code.matches(".*\"(.*?)\".*") then {
+            s"$actionName" // CASE C: No brackets in annotation, means we don't need to append
+          } else {
+            "" // we should not be here
+          }
+        } else {
+          annotation.code // for all other cases (eg. CASE B)
+            .replaceAll(".*\"(.*?)\".*", "/$1")
+            .replace("[controller]", controllerName)
+            .replace("[action]", actionName)
+        }
+    url
   }
 
   private def collectAnnotatedUrlsFromMethods(combinedRulePatterns: String): (Map[Long, String], List[Method]) = {
@@ -122,7 +168,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         .filter(_.method.nonEmpty)
         .l
     (
-      methodAnnotations.map(ma => ma.method.head.id() -> getUrlFromAnnotationsCode(ma)).toMap,
+      methodAnnotations.map(ma => ma.method.head.id() -> getUrlFromAnnotationsCode(ma, NodeType.Method)).toMap,
       methodAnnotations.method.l
     )
   }
@@ -132,7 +178,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
       .map(classAnnotation => {
-        classAnnotation.typeDecl.head.id() -> getUrlFromAnnotationsCode(classAnnotation)
+        classAnnotation.typeDecl.head.id() -> getUrlFromAnnotationsCode(classAnnotation, NodeType.Class)
       })
       .toMap
   }
