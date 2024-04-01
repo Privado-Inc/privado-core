@@ -119,11 +119,17 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     //
     //    [Route("api/[controller]/[action]")]
     //    public class SomeController : Controller {
-    //      [HttpGet]                                        <-- /api/some/copy           [CASE C]
+    //      [HttpGet]                                        <-- /api/some/copy           [CASE Ca]
     //      public IActionResult Copy(){...}
     //
     //      [HttpGet("{id}")]                                <-- /api/some/paste/{id}     [CASE D]
     //      public IActionResult Paste(int id){...}
+    //    }
+    //
+    //    [Route("api/[controller]")]
+    //    public class OtherController : Controller {
+    //      [HttpPost]                                        <-- /api/other/cut           [CASE Cb]
+    //      public IActionResult Cut(){...}
     //    }
 
     // We now try to build a URL under various combinations of annotations for Methods and Classes by doing token replacement. We try to cover most cases in the following guideline:
@@ -148,10 +154,16 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
               "/$1"
             ) // CASE D: we append action name for case like [HttpGet] where there is no argument
           } else if !annotation.code.matches(".*\"(.*?)\".*") then {
-            s"$actionName" // CASE C: No brackets in annotation, means we don't need to append
+            s"$actionName" // CASE Ca: No brackets in annotation, means we don't need to append
           } else {
             "" // we should not be here
           }
+        } else if annotation.start.method.typeDecl.annotation.code.headOption
+            .getOrElse("")
+            .matches(".*\\[controller\\].*") && !annotation.code.matches(".*\\[action\\].*") && !annotation.code
+            .matches(".*\"(.*?)\".*")
+        then {
+          s"/$actionName" // Case Cb: No brackets in annotation, class has [controller], means we don't need to append
         } else {
           annotation.code // for all other cases (eg. CASE B)
             .replaceAll(".*\"(.*?)\".*", "/$1")

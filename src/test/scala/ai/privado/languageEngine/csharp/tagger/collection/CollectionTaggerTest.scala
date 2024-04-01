@@ -107,6 +107,17 @@ class CollectionTaggerTest extends CSharpTestBase {
               |    }
               |
               |  }
+              |
+              |  [Route("api/[controller]")]
+              |  public class OtherController : ControllerBase
+              |  {
+              |    [HttpPost]
+              |    public IActionResult Cut(string email)
+              |    {
+              |       return ControllerContext.MyDisplayRouteInfo(email);
+              |    }
+              |  }
+              |
               |}
               |""".stripMargin,
             "Test.cs"
@@ -121,6 +132,10 @@ class CollectionTaggerTest extends CSharpTestBase {
       val List(pasteMethod) = cpg.method.nameExact("Paste").l
       pasteMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
       pasteMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/api/some/paste/{id}")
+
+      val List(cutMethod) = cpg.method.nameExact("Cut").l
+      cutMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
+      cutMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/api/other/cut")
     }
   }
 
