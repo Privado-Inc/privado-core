@@ -194,6 +194,7 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
 }
 
 class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
+
   override val configFileContents = """
                                       |spring:
                                       |   application:
@@ -247,7 +248,7 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
 
   "Fetch egress urls from property files" should {
     "Check egress urls" in {
-      val egressExporter               = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val egressExporter               = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
       val List(url1, url2, url3, url4) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
@@ -256,12 +257,12 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
     }
 
     "Check egress urls with single char" in {
-      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
       val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
       egressWithSingleChar.size shouldBe 0
     }
     "Check application base path" in {
-      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
       val List(basePath)                 = httpConnectionMetadataExporter.getEndPointBasePath
       basePath shouldBe "basepath"
     }
@@ -345,6 +346,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
   var inputDir: File   = _
   var outputFile: File = _
   val propertyFileContents: String
+  val appCache = new AppCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -358,6 +360,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
 
     (inputDir / "GeneralConfig.java").write(codeFileContents)
     val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+    appCache.repoLanguage = Language.JAVA
 
     cpg = new JavaSrc2Cpg()
       .createCpg(config)
@@ -368,7 +371,6 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
       .get
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
     new JavaPropertyLinkerPass(cpg).createAndApply()
-    AppCache.repoLanguage = Language.JAVA
 
     super.beforeAll()
   }

@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.python
 
+import ai.privado.cache.AppCache
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}

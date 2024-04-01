@@ -79,7 +79,8 @@ object JSONExporter {
     dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
     monolithPrivadoJsonPaths: List[String] = List(),
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Unit] = {
 
     try {
@@ -100,7 +101,8 @@ object JSONExporter {
         taggerCache,
         dataFlowModel,
         privadoInput,
-        s3DatabaseDetailsCache
+        s3DatabaseDetailsCache,
+        appCache = appCache
       )
 
       // Add the privado json path of each monolith repository item
@@ -117,13 +119,13 @@ object JSONExporter {
 
       logger.debug(
         s"Total False positive flows removed : \n" +
-          s"Total flows before FP: ${AppCache.totalFlowFromReachableBy}\n" +
-          s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
-          s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
+          s"Total flows before FP: ${appCache.totalFlowFromReachableBy}\n" +
+          s"Total flows after this filtering: ${appCache.totalFlowAfterThisFiltering}\n" +
+          s"FP by overlapping Data element : ${appCache.fpByOverlappingDE}\n" +
           s"Total flows after complete computation : ${dataFlowModel.size}"
       )
 
-      logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")
+      logger.debug(s"Final statistics for FP : ${appCache.fpMap}, for total ${appCache.totalMap}")
 
       // Post export Trigger
       ExternalScalaScriptRunner

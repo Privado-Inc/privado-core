@@ -29,23 +29,23 @@ import scala.collection.mutable
 
 /** Cache Used to store Application/Scan specific information
   */
-object AppCache {
+class AppCache(
+  var localScanPath: String = "",
+  var scanPath: String = "",
+  var repoName: String = "",
+  var repoLanguage: Language = Language.UNKNOWN,
+  var isLombokPresent: Boolean = false,
+  var privadoVersionMain: String = "",
+  var fpByOverlappingDE: Int = 0,
+  var totalFlowFromReachableBy: Int = 0,
+  var totalFlowAfterThisFiltering: Int = 0,
+  var fpMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int](),
+  var totalMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int]()
+) {
 
-  var localScanPath: String       = ""
-  var scanPath: String            = ""
-  var repoName: String            = ""
-  var repoLanguage: Language      = Language.UNKNOWN
-  var isLombokPresent             = false
-  var privadoVersionMain: String  = ""
-  var fpByOverlappingDE           = 0
-  var totalFlowFromReachableBy    = 0
-  var totalFlowAfterThisFiltering = 0
-  val fpMap                       = mutable.HashMap[String, Int]()
-  val totalMap                    = mutable.HashMap[String, Int]()
-
-  def init(scanPath: String) = {
-    this.scanPath = scanPath.stripSuffix("/")      // Scan Path of the repo on the host machine
-    this.localScanPath = getRepoScanPath(scanPath) // scan path perceived by the binary (can be different inside docker)
-    this.repoName = this.localScanPath.split("[/\\\\]").last
+  def init(path: String): Unit = {
+    this.scanPath = path.stripSuffix("/")      // Scan Path of the repo on the host machine
+    this.localScanPath = getRepoScanPath(path) // scan path perceived by the binary (can be different inside docker)
+    this.repoName = this.localScanPath.split("[/\\\\]").lastOption.getOrElse("")
   }
 }

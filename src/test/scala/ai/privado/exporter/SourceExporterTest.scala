@@ -1,5 +1,6 @@
 package ai.privado.exporter
 
+import ai.privado.cache.AppCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
@@ -39,7 +40,8 @@ class SourceExporterTest extends JavaTaggingTestBase {
 
   "Source exporter" should {
     "not export derived source under processing" in {
-      val sourceExporter = SourceExporter(cpg, ruleCache, PrivadoInput(disableDeDuplication = true))
+      val sourceExporter =
+        SourceExporter(cpg, ruleCache, PrivadoInput(disableDeDuplication = true), appCache = new AppCache())
       !sourceExporter.getProcessing.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
     }
   }

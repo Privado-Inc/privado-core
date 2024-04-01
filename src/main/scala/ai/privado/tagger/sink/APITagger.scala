@@ -36,7 +36,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.DefaultSemantics
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
@@ -53,7 +53,9 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     .l
 
   implicit val engineContext: EngineContext =
-    Utilities.getEngineContext(PrivadoInput(disableDeDuplication = true), 4)(JavaSemanticGenerator.getDefaultSemantics)
+    Utilities.getEngineContext(PrivadoInput(disableDeDuplication = true), appCache = appCache, 4)(
+      JavaSemanticGenerator.getDefaultSemantics
+    )
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks

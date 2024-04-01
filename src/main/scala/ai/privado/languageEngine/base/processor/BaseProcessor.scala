@@ -41,7 +41,8 @@ abstract class BaseProcessor(
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -117,12 +118,12 @@ abstract class BaseProcessor(
     )
 
     println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
     println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
         .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
     println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
 
-    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache)
+    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache)
 
     // Check if any of the export failed
     if (errorMsg.toList.isEmpty)
@@ -138,11 +139,12 @@ abstract class BaseProcessor(
     cpg: Cpg,
     taggerCache: TaggerCache,
     dataflowMap: Map[String, Path],
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Unit = {
 
     reportUnresolvedMethods(cpg, lang)
-    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache)
+    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache)
     auditReportExport(cpg, taggerCache)
     unresolvedReportExport(cpg)
     intermediateReportExport(cpg)
@@ -153,7 +155,8 @@ abstract class BaseProcessor(
     cpg: Cpg,
     taggerCache: TaggerCache,
     dataflowMap: Map[String, Path],
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Unit = {
     println(s"${Calendar.getInstance().getTime} - Brewing result...")
     MetricHandler.setScanStatus(true)
@@ -168,14 +171,15 @@ abstract class BaseProcessor(
       dataFlowCache.getDataflowAfterDedup,
       privadoInput,
       List(),
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)
         errorMsg += err
       case Right(_) =>
         println(
-          s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+          s"${Calendar.getInstance().getTime} - Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
     }
   }
@@ -200,7 +204,7 @@ abstract class BaseProcessor(
           errorMsg += err
         case Right(_) =>
           println(
-            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
       }
     }
@@ -220,7 +224,7 @@ abstract class BaseProcessor(
         errorMsg += err
       case Right(_) =>
         println(
-          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
     }
   }
@@ -238,7 +242,7 @@ abstract class BaseProcessor(
           errorMsg += err
         case Right(_) =>
           println(
-            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
       }
     }

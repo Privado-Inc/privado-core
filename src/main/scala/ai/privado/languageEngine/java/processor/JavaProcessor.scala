@@ -75,7 +75,8 @@ class JavaProcessor(
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -83,7 +84,8 @@ class JavaProcessor(
       lang,
       dataFlowCache,
       auditCache,
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -107,7 +109,7 @@ class JavaProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache, appCache)
 
   override def processCpg(): Either[String, Unit] = {
     val excludeFileRegex = ruleCache.getExclusionRegex
@@ -130,12 +132,12 @@ class JavaProcessor(
     val dependencies        = getDependencyList(cpgconfig)
     val hasLombokDependency = dependencies.exists(_.contains("lombok"))
     if (hasLombokDependency) {
-      Delombok.run(AppCache.scanPath) match
+      Delombok.run(appCache.scanPath) match
         case Left(_) =>
         case Right(delombokPath) =>
-          AppCache.isLombokPresent = true
+          appCache.isLombokPresent = true
           // Update the new ScanPath with delombok folder path
-          AppCache.scanPath = delombokPath
+          appCache.scanPath = delombokPath
           // Creating a new CpgConfig which uses the delombokPath
           cpgconfig =
             Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
@@ -159,8 +161,8 @@ class JavaProcessor(
     val msg = tagAndExport(xtocpg)
 
     // Delete the delomboked directory after scanning is completed
-    if (AppCache.isLombokPresent) {
-      val dirName = AppCache.scanPath // scanPath is  already set to delombok path
+    if (appCache.isLombokPresent) {
+      val dirName = appCache.scanPath // scanPath is  already set to delombok path
       Try(File(dirName).delete()) match {
         case Success(_)         => logger.debug("Succesfully deleted delomboked code")
         case Failure(exception) => logger.debug(s"Exception :", exception)

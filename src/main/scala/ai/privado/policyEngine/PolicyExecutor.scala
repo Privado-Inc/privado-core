@@ -22,7 +22,7 @@
 
 package ai.privado.policyEngine
 
-import ai.privado.cache.{DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.threatEngine.ThreatUtility.getSourceNode
@@ -53,7 +53,8 @@ class PolicyExecutor(
   repoName: String,
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
-  collections: List[CollectionModel] = List[CollectionModel]()
+  collections: List[CollectionModel] = List[CollectionModel](),
+  appCache: AppCache
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -68,7 +69,7 @@ class PolicyExecutor(
   // Map to contain sinkId -> List(pathIds)
   lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
-  val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput)
+  val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, appCache = appCache)
 
   lazy val sourceExporterModel = sourceExporter.getSources
 
@@ -198,14 +199,21 @@ class PolicyExecutor(
     violatingFlowList
   }
 
-  def getViolatingOccurrencesForPolicy(policy: PolicyOrThreat): mutable.HashSet[ViolationProcessingModel] = {
+  def getViolatingOccurrencesForPolicy(
+    policy: PolicyOrThreat,
+    appCache: AppCache
+  ): mutable.HashSet[ViolationProcessingModel] = {
     val violatingFlowList = mutable.HashSet[ViolationProcessingModel]()
     getSourcesMatchingRegex(policy).foreach(sourceId => {
       val sourceNode = getSourceNode(this.cpg, sourceId)
       if (!sourceNode.isEmpty) {
         sourceNode.foreach((sourceNode) => {
           violatingFlowList.add(
-            ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2), None)
+            ViolationProcessingModel(
+              sourceNode._1,
+              ExporterUtility.convertIndividualPathElement(sourceNode._2, appCache = appCache),
+              None
+            )
           )
         })
       }
