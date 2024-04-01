@@ -26,7 +26,7 @@ package ai.privado.languageEngine.csharp.tagger
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
-import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.LiteralTagger
