@@ -46,6 +46,6 @@ class AppCache(
   def init(path: String): Unit = {
     this.scanPath = path.stripSuffix("/")      // Scan Path of the repo on the host machine
     this.localScanPath = getRepoScanPath(path) // scan path perceived by the binary (can be different inside docker)
-    this.repoName = this.localScanPath.split("[/\\\\]").last
+    this.repoName = this.localScanPath.split("[/\\\\]").lastOption.getOrElse("")
   }
 }
