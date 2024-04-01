@@ -139,4 +139,37 @@ class CollectionTaggerTest extends CSharpTestBase {
     }
   }
 
+  "Different order of annotations and/or extra annotations" should {
+    "have only relevant annotations tagged as collections" in {
+      val (cpg, _) = code(
+        List(
+          SourceCodeModel(
+            """
+              |namespace Foo.Bar;
+              |
+              |[ApiController]
+              |[ApiVersion("1")]
+              |[Route("api/v{version:apiVersion}/[controller]")]
+              |public class MyController : ControllerBase
+              |{
+              |
+              |    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MyResponse))]
+              |    [HttpPost]
+              |    public async Task<IActionResult> Job(MyRequest email)
+              |    {
+              |        return Ok(response);
+              |    }
+              |}
+              |""".stripMargin,
+            "Test.cs"
+          )
+        )
+      )
+
+      val List(createMethod) = cpg.method.nameExact("Job").l
+      createMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
+      createMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/api/v{version:apiVersion}/my/job")
+    }
+  }
+
 }

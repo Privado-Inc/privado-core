@@ -77,7 +77,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     )
   }
 
-  private def getUrlFromAnnotationsCode(annotation: Annotation, nodeType: NodeType): String = {
+  private def getUrlFromAnnotationsCode(annotation: Annotation, nodeType: NodeType, combinedRulePatterns: String): String = {
     // If we have [controller] in annotation code, then replace with the class name of controller
     //
     //    [Route("api/some/[controller]")]                      <-- /api/some/email            [CASE A]
@@ -144,7 +144,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
 
       case NodeType.Method =>
         // we are interested in cases where the method doesn't have action defined, but its containing type has
-        if annotation.start.method.typeDecl.annotation.code.headOption
+        if annotation.start.method.typeDecl.annotation.name(combinedRulePatterns).code.headOption
             .getOrElse("")
             .matches(".*\\[action\\].*") && !annotation.code.matches(".*\\[action\\].*")
         then {
@@ -158,7 +158,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
           } else {
             "" // we should not be here
           }
-        } else if annotation.start.method.typeDecl.annotation.code.headOption
+        } else if annotation.start.method.typeDecl.annotation.name(combinedRulePatterns).code.headOption
             .getOrElse("")
             .matches(".*\\[controller\\].*") && !annotation.code.matches(".*\\[action\\].*") && !annotation.code
             .matches(".*\"(.*?)\".*")
@@ -180,7 +180,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
         .filter(_.method.nonEmpty)
         .l
     (
-      methodAnnotations.map(ma => ma.method.head.id() -> getUrlFromAnnotationsCode(ma, NodeType.Method)).toMap,
+      methodAnnotations.map(ma => ma.method.head.id() -> getUrlFromAnnotationsCode(ma, NodeType.Method, combinedRulePatterns)).toMap,
       methodAnnotations.method.l
     )
   }
@@ -190,7 +190,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
       .map(classAnnotation => {
-        classAnnotation.typeDecl.head.id() -> getUrlFromAnnotationsCode(classAnnotation, NodeType.Class)
+        classAnnotation.typeDecl.head.id() -> getUrlFromAnnotationsCode(classAnnotation, NodeType.Class, combinedRulePatterns)
       })
       .toMap
   }
