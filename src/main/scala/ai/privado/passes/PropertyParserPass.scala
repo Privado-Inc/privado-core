@@ -3,7 +3,7 @@ package ai.privado.utility
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import overflowdb.BatchedUpdate
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{PropertyFilterCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -51,7 +51,8 @@ class PropertyParserPass(
   projectRoot: String,
   ruleCache: RuleCache,
   language: Language.Value,
-  privadoInput: PrivadoInput = PrivadoInput()
+  privadoInput: PrivadoInput = PrivadoInput(),
+  propertyFilterCache: PropertyFilterCache
 ) extends PrivadoParallelCpgPass[String](cpg) {
   val PLACEHOLDER_TOKEN_START_END = "@@"
   val logger                      = LoggerFactory.getLogger(getClass)
@@ -434,7 +435,13 @@ class PropertyParserPass(
     if (fileLimit.nonEmpty) {
       val file               = new File(filePath)
       val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
-      fileSizeInKiloByte <= fileLimit.toInt
+      if (fileSizeInKiloByte <= fileLimit.toInt) {
+        // Adding the filtered file into the property cache
+        propertyFilterCache.addIntoFileSkippedBySize(file.getAbsolutePath, fileSizeInKiloByte.toInt)
+        true
+      } else {
+        false
+      }
     } else {
       true
     }
@@ -444,8 +451,14 @@ class PropertyParserPass(
     val countLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileDirCountLimit, true)
     if (countLimit.nonEmpty) {
       val groupedByDirectory = filePaths.groupBy(filePath => new File(filePath).getParent)
-      val filteredDirectories = groupedByDirectory.filter { case (_, filesInDirectory) =>
-        filesInDirectory.length <= countLimit.toInt
+      val filteredDirectories = groupedByDirectory.filter { case (path, filesInDirectory) =>
+        if (filesInDirectory.length <= countLimit.toInt) {
+          // Adding the filtered files into the property cache
+          propertyFilterCache.addIntoFileSkippedByDirCount(path, filesInDirectory)
+          true
+        } else {
+          false
+        }
       }
       filteredDirectories.values.flatten.toList
     } else {
