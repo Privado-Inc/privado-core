@@ -23,7 +23,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE: String = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE: String     = UUID.randomUUID.toString
   override def generateParts(): Array[RuleInfo] = {
-    println(ruleCache.getRule.sources.toArray)
+    println(ruleCache.getRule.sources.toArray.length)
     ruleCache.getRule.sources.toArray
   }
 
