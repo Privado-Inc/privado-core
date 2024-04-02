@@ -80,6 +80,12 @@ object YamlFileValidator {
           .contains(".yml")
       )
       .flatMap(ruleFile => {
+        println("Validation")
+        println(validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {
+          case Right(()) => None
+          case Left(validationMessages: mutable.Set[String]) =>
+            Some(ValidationFailure(validationMessages, ruleFile))
+        })
         validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {
           case Right(()) => None
           case Left(validationMessages: mutable.Set[String]) =>
@@ -132,6 +138,7 @@ object YamlFileValidator {
     *   scala mutable Set of ValidationMessage in case of validation errors, None if no errors are found
     */
   def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[mutable.Set[String], Unit] = {
+    println("validate")
     try {
       val yamlAsJson = mapper.readTree(ruleFile.contentAsString())
       matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
