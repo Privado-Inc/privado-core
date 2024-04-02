@@ -99,6 +99,8 @@ object ScanProcessor extends CommandProcessor {
         println(ir.listRecursively.toList)
         ir.listRecursively.toList.par
           .filter(f =>
+            println("Extension check")
+            println(f.extension)
             println(
               ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
                 f.extension(toLowerCase = true).toString.contains(".yml")) &&
@@ -109,6 +111,7 @@ object ScanProcessor extends CommandProcessor {
             YamlFileValidator.isValidRuleFile(f, ir))
           )
           .map(file => {
+            println("Rule file")
             println(file.pathAsString)
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
             val fullPath = file.pathAsString
