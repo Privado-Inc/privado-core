@@ -40,10 +40,7 @@ class RuleCache {
 
   def setRule(rule: ConfigAndRules): Unit = {
     this.rule = rule
-    rule.sources.foreach(r => {
-      println(r.id)
-      ruleInfoMap.addOne(r.id -> r)
-    })
+    rule.sources.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.sinks.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.collections.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.policies.foreach(r => policyOrThreatMap.addOne(r.id -> r))

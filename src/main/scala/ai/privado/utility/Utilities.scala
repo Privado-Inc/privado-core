@@ -210,9 +210,6 @@ object Utilities {
       true
     } catch {
       case patternSyntaxException: PatternSyntaxException =>
-        println(
-          s"Error parsing rule, ruleId : $ruleId, fileName : $fileName, stringPattern : $stringPattern, error : ${patternSyntaxException.toString}"
-        )
         logger.error(
           s"Error parsing rule, ruleId : $ruleId, fileName : $fileName, stringPattern : $stringPattern, error : ${patternSyntaxException.toString}"
         )

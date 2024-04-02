@@ -70,7 +70,6 @@ object ScanProcessor extends CommandProcessor {
 
   def parseRules(rulesPath: String, lang: Set[Language]): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
-    println(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try {
@@ -78,15 +77,11 @@ object ScanProcessor extends CommandProcessor {
         File(rulesPath)
       } catch {
         case ex: Throwable =>
-          println(ex)
           logger.debug("File error: ", ex)
           logger.error(s"Exception while processing rules on path $rulesPath")
           exit(1)
       }
     }
-
-    println("IR")
-    println(ir.pathAsString)
 
     def filterByLang(rule: RuleInfo): Boolean =
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
@@ -96,22 +91,16 @@ object ScanProcessor extends CommandProcessor {
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
-        println(ir.listRecursively.toList)
         ir.listRecursively.toList.par
           .filter(f =>
-            println("Extension check")
-            println(f.extension)
             ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
               f.extension(toLowerCase = true).toString.contains(".yml")) &&
-            YamlFileValidator.isValidRuleFile(f, ir))
+              YamlFileValidator.isValidRuleFile(f, ir))
           )
           .map(file => {
-            println("Rule file")
-            println(file.pathAsString)
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
             val fullPath = file.pathAsString
             logger.trace(s"parsing -> '$fullPath'")
-            println(s"parsing -> '$fullPath'")
             // e.g. relPath = rules/sources/accounts
             val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
             val pathTree = relPath.split("/")
@@ -131,11 +120,7 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       sources = configAndRules.sources
-                        .filter(rule => {
-                          println(isValidRule(rule.combinedRulePattern, rule.id, fullPath))
-                          println(rule.id)
-                          isValidRule(rule.combinedRulePattern, rule.id, fullPath)
-                        })
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
                         .map(x =>
                           x.copy(
                             file = fullPath,
@@ -263,7 +248,6 @@ object ScanProcessor extends CommandProcessor {
       }
       println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
       internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
-      println(internalConfigAndRules)
       ruleCache.setInternalRules(internalConfigAndRules)
     }
     var externalConfigAndRules = getEmptyConfigAndRule

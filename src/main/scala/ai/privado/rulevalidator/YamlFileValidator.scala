@@ -80,12 +80,6 @@ object YamlFileValidator {
           .contains(".yml")
       )
       .flatMap(ruleFile => {
-        println("Validation")
-        println(validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {
-          case Right(()) => None
-          case Left(validationMessages: mutable.Set[String]) =>
-            Some(ValidationFailure(validationMessages, ruleFile))
-        })
         validateRuleFile(ruleFile, CommandConstants.VALIDATE) match {
           case Right(()) => None
           case Left(validationMessages: mutable.Set[String]) =>
@@ -105,12 +99,6 @@ object YamlFileValidator {
     *   Boolean stating whether the rule file is valid
     */
   def isValidRuleFile(ruleFile: File, configDirectory: File): Boolean = {
-    println(ruleFile.pathAsString)
-    println(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG")
-    println(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG")
-    println(s"Some check which might be passing: ${!(ruleFile.pathAsString
-        .contains(s"${configDirectory.pathAsString} / $RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
-        .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))}")
     if (
       !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
         .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))
@@ -122,7 +110,6 @@ object YamlFileValidator {
       case Left(validationMessages) =>
         if (validationMessages.nonEmpty) {
           validationMessages.foreach(vm => {
-            println(vm)
             println(s"File ${ruleFile.pathAsString} has following problems, ignoring file ...")
             println(s"${vm}")
           })
@@ -140,7 +127,6 @@ object YamlFileValidator {
     *   scala mutable Set of ValidationMessage in case of validation errors, None if no errors are found
     */
   def validateRuleFile(ruleFile: File, callerCommand: String = ""): Either[mutable.Set[String], Unit] = {
-    println("validate")
     try {
       val yamlAsJson = mapper.readTree(ruleFile.contentAsString())
       matchSchemaFile(ruleFile, yamlAsJson, callerCommand) match {
@@ -182,7 +168,6 @@ object YamlFileValidator {
     callerCommand: String = ""
   ): Either[Unit, (String, String)] = {
 
-    println(ruleFile)
     val catLevelOneKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
     logger.trace(s"Found CatLevelOne key '$catLevelOneKey' in file : ${ruleFile.pathAsString}")
