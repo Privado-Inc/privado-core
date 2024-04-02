@@ -60,7 +60,8 @@ class KotlinProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -69,7 +70,8 @@ class KotlinProcessor(
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      returnClosedCpg
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()

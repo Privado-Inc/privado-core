@@ -43,7 +43,8 @@ abstract class BaseProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  returnClosedCpg: Boolean
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -72,7 +73,7 @@ abstract class BaseProcessor(
               Left(err)
             case Right(cpgWithOutputMap) => Right(cpgWithOutputMap)
         } finally {
-          cpg.close()
+          if returnClosedCpg then cpg.close() // To not close cpg, and use it further, pass the returnClosedCpg as false
           import java.io.File
           val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
           val cpgFile       = new File(cpgOutputPath)

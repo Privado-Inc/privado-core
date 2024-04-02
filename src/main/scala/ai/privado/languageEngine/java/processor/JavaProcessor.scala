@@ -76,7 +76,8 @@ class JavaProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -85,7 +86,8 @@ class JavaProcessor(
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      returnClosedCpg
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)

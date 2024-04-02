@@ -65,7 +65,8 @@ class CSharpProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -74,7 +75,8 @@ class CSharpProcessor(
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      returnClosedCpg
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
