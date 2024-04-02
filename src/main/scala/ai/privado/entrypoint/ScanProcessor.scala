@@ -101,11 +101,6 @@ object ScanProcessor extends CommandProcessor {
           .filter(f =>
             println("Extension check")
             println(f.extension)
-            println(
-              ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
-                f.extension(toLowerCase = true).toString.contains(".yml")) &&
-                YamlFileValidator.isValidRuleFile(f, ir))
-            )
             ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
               f.extension(toLowerCase = true).toString.contains(".yml")) &&
             YamlFileValidator.isValidRuleFile(f, ir))

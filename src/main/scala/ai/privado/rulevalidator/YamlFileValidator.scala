@@ -105,10 +105,9 @@ object YamlFileValidator {
     *   Boolean stating whether the rule file is valid
     */
   def isValidRuleFile(ruleFile: File, configDirectory: File): Boolean = {
-    println(
-      !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
-        .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))
-    )
+    println(s"Some check which might be passing: ${!(ruleFile.pathAsString
+        .contains(s"${configDirectory.pathAsString} / $RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
+        .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))}")
     if (
       !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
         .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))
