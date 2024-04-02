@@ -132,7 +132,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     //
     //    [Route("api/[controller]")]
     //    public class OtherController : Controller {
-    //      [HttpPost]                                        <-- /api/other/cut           [CASE Cb]
+    //      [HttpPost]                                        <-- /api/other/cut          [CASE Cb]
     //      public IActionResult Cut(){...}
     //    }
 
