@@ -247,6 +247,7 @@ object ScanProcessor extends CommandProcessor {
       }
       println(s"Privado Main Version: ${AppCache.privadoVersionMain}")
       internalConfigAndRules = parseRules(config.internalConfigPath.head, lang)
+      println(internalConfigAndRules)
       ruleCache.setInternalRules(internalConfigAndRules)
     }
     var externalConfigAndRules = getEmptyConfigAndRule
