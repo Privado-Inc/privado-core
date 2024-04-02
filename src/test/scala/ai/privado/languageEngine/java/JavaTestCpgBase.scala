@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.java
 
+import ai.privado.TestCpgBase
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
@@ -30,35 +31,6 @@ abstract class JavaTestCpgBase(
       appCache,
       returnClosedCpg = false
     )
-  }
-
-}
-abstract class TestCpgBase(privadoInput: PrivadoInput) extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-
-  val auditCache: AuditCache = new AuditCache()
-
-  val dataFlowCache: DataFlowCache = new DataFlowCache(privadoInput, auditCache)
-
-  val s3DatabaseDetailsCache: S3DatabaseDetailsCache = new S3DatabaseDetailsCache
-
-  val appCache: AppCache = new AppCache()
-
-  def getProcessor(sourceCodeLocation: String): BaseProcessor = ???
-
-  def withCpg(sourceCodeLocation: String): Cpg = withCpgAndJson(sourceCodeLocation)._1
-
-  def withJson(sourceCodeLocation: String): Map[String, Json] = withCpgAndJson(sourceCodeLocation)._2
-
-  def withCpgAndJson(sourceCodeLocation: String): (Cpg, Map[String, Json]) = {
-    val processor: BaseProcessor       = getProcessor(sourceCodeLocation)
-    var cpg: Cpg                       = Cpg.empty
-    var privadoJson: Map[String, Json] = Map()
-    processor.processCpg() match
-      case Left(error) => println(s"Error while creating cpg : $error")
-      case Right(outputCpgWithJsonMap) =>
-        cpg = outputCpgWithJsonMap._1
-        privadoJson = outputCpgWithJsonMap._2
-    (cpg, privadoJson)
   }
 
 }
