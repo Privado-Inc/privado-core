@@ -110,6 +110,7 @@ object YamlFileValidator {
       case Left(validationMessages) =>
         if (validationMessages.nonEmpty) {
           validationMessages.foreach(vm => {
+            println(vm)
             println(s"File ${ruleFile.pathAsString} has following problems, ignoring file ...")
             println(s"${vm}")
           })
