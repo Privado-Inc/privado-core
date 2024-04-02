@@ -73,8 +73,9 @@ object ScanProcessor extends CommandProcessor {
     println(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
-      try File(rulesPath)
-      catch {
+      try {
+        File(rulesPath)
+      } catch {
         case ex: Throwable =>
           println(ex)
           logger.debug("File error: ", ex)
@@ -91,13 +92,20 @@ object ScanProcessor extends CommandProcessor {
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     val parsedRules =
       try
+        println(ir.listRecursively.toList)
         ir.listRecursively.toList.par
           .filter(f =>
+            println(
+              ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
+                f.extension(toLowerCase = true).toString.contains(".yml")) &&
+                YamlFileValidator.isValidRuleFile(f, ir))
+            )
             ((f.extension(toLowerCase = true).toString.contains(".yaml") ||
               f.extension(toLowerCase = true).toString.contains(".yml")) &&
-              YamlFileValidator.isValidRuleFile(f, ir))
+            YamlFileValidator.isValidRuleFile(f, ir))
           )
           .map(file => {
+            println(file.pathAsString)
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
             val fullPath = file.pathAsString
             logger.trace(s"parsing -> '$fullPath'")
