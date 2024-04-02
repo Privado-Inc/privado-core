@@ -326,10 +326,6 @@ object ScanProcessor extends CommandProcessor {
     new AuditCache()
   }
 
-  private def getPropertyFilterCache: PropertyFilterCache = {
-    new PropertyFilterCache()
-  }
-
   private def getS3DatabaseDetailsCache: S3DatabaseDetailsCache = {
     new S3DatabaseDetailsCache()
   }
@@ -515,7 +511,7 @@ object ScanProcessor extends CommandProcessor {
       getAuditCache,
       getS3DatabaseDetailsCache,
       appCache,
-      getPropertyFilterCache
+      propertyFilterCache
     )
   }
 

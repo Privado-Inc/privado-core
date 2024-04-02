@@ -101,13 +101,13 @@ class PropertyFilterExportByDirCountTest extends PropertyFilterExportTestBase {
       val propertyNodes = cpg.property.l
       propertyNodes.size shouldBe 1
       propertyNodes.head.name should equal("dev.key4")
-      propertyNodes.head.file.head.name.contains("pro4.yaml") shouldBe true
+      propertyNodes.file.name.head.contains("pro4.yaml") shouldBe true
     }
 
     "Test dir count filtering export data" in {
       val filteredData = propertyFilterCache.getFileSkippedDirCountData(ruleCache)
       filteredData.skipList.size shouldBe 1
-      filteredData.skipList.headOption.get.files.size shouldBe 3
+      filteredData.skipList.head.files.size shouldBe 3
     }
   }
 }
