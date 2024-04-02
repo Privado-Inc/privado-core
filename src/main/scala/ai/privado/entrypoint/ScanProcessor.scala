@@ -366,7 +366,7 @@ object ScanProcessor extends CommandProcessor {
                 )
                 if (filesWithKtExtension.isEmpty)
                   new JavaProcessor(
-                    getProcessedRule(Set(Language.JAVA)),
+                    getProcessedRule(Set(Language.JAVA), appCache),
                     this.config,
                     sourceRepoLocation,
                     Language.JAVA,

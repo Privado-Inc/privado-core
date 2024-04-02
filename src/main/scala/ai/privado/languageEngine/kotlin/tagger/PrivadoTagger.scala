@@ -6,6 +6,7 @@ import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, MethodFullNameCollectionTagger}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
+import ai.privado.languageEngine.java.tagger.sink.api.JavaAPISinkTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
 import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
 import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
@@ -57,6 +58,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       StorageAnnotationRule.rules.foreach(ruleCache.setRuleInfo)
       new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
     }
+
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig)
 
     new APITagger(cpg, ruleCache, privadoInputConfig, appCache = appCache).createAndApply()
 
