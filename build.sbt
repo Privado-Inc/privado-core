@@ -8,7 +8,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.6.10"
-val joernVersion      = "2.0.311"
+val joernVersion      = "2.0.312"
 val overflowdbVersion = "1.190"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -159,9 +159,8 @@ Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 
 // download dotnetastgen: start
 lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
-lazy val DotNetAstgenWinArm   = "dotnetastgen-win-arm.exe"
 lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
-lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val DotNetAstgenMac      = "dotnetastgen-macos"
 
 lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
@@ -169,7 +168,7 @@ dotnetAstGenDownloadUrl := s"https://github.com/joernio/DotNetAstGen/releases/do
 
 lazy val dotnetAstGenBinaryNames = taskKey[Seq[String]]("dotnetastgen binary names")
 dotnetAstGenBinaryNames := {
-  Seq(DotNetAstgenWin, DotNetAstgenWinArm, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
+  Seq(DotNetAstgenWin, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
 }
 
 lazy val dotnetAstGenDlTask = taskKey[Unit](s"Download dotnetastgen binaries")

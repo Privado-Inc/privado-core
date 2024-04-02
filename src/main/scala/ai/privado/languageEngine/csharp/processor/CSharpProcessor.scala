@@ -50,6 +50,7 @@ import ai.privado.semantic.Language.*
 import ai.privado.utility.PropertyParserPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
+import ai.privado.entrypoint.ScanProcessor.config
 
 import ai.privado.entrypoint.*
 import ai.privado.model.Language.Language
@@ -86,6 +87,7 @@ class CSharpProcessor(
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
+    CSharpSrc2Cpg.postProcessingPasses(cpg, Config()).foreach(_.createAndApply())
     super.applyDataflowAndPostProcessingPasses(cpg)
   }
 
@@ -103,7 +105,7 @@ class CSharpProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
-      .withDownloadDependencies(true)
+      .withDownloadDependencies(!config.skipDownloadDependencies)
 
     val xtocpg = new CSharpSrc2Cpg().createCpg(cpgconfig).map { cpg =>
       println(
