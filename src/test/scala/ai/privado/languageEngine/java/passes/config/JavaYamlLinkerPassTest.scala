@@ -2,32 +2,22 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
-import ai.privado.model.{
-  CatLevelOne,
-  ConfigAndRules,
-  Constants,
-  FilterProperty,
-  Language,
-  NodeType,
-  RuleInfo,
-  SystemConfig
-}
+import ai.privado.languageEngine.java.tagger.source.*
+import ai.privado.model.*
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.Config
-import io.joern.javasrc2cpg.JavaSrc2Cpg
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.should.Matchers.should
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.*
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 class JavaYamlLinkerPassTest extends JavaYamlLinkerPassTestBase {
   override val yamlFileContents =
@@ -129,7 +119,12 @@ abstract class JavaYamlLinkerPassTestBase
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
     new JavaPropertyLinkerPass(cpg).createAndApply()
     new JavaYamlLinkerPass(cpg).createAndApply()
-    new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
+    val nodeCache   = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    val taggerCache = TaggerCache()
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache).createAndApply()
 
     super.beforeAll()

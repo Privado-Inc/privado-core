@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.audit
 import ai.privado.audit.DataElementDiscovery
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 import scala.collection.mutable
@@ -12,7 +12,11 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
   }
 

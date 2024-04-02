@@ -26,12 +26,17 @@ package ai.privado.languageEngine.java.tagger.source
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.model._
 import io.shiftleft.semanticcpg.language._
+import ai.privado.languageEngine.java.tagger.source.*
 
 class JavaIdentifierTaggingTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
   }
 
   override val javaFileContents =

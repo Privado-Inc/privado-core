@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
@@ -42,7 +42,7 @@ import ai.privado.languageEngine.java.tagger.collection.{
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.api.JavaAPISinkTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
-import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollectionTagger}
 import ai.privado.tagger.sink.RegularSinkTagger
@@ -74,8 +74,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-
+    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 
     new JavaDBConfigTagger(cpg).createAndApply()

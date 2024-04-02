@@ -1,17 +1,15 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.UnresolvedFlowReport
-import ai.privado.cache.{AppCache, AuditCache}
+import ai.privado.cache.AppCache
 import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator.getSemantics
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.Language
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -28,7 +26,11 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     val sources         = Dataflow.getSources(cpg)
     val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
     val unresolvedFlows = unfilteredSinks

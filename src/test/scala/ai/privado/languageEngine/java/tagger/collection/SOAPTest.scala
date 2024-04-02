@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.Constants
 import io.shiftleft.semanticcpg.language._
 
@@ -32,7 +32,11 @@ class SOAPTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 
   }
