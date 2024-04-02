@@ -75,6 +75,7 @@ object ScanProcessor extends CommandProcessor {
       try File(rulesPath)
       catch {
         case ex: Throwable =>
+          println(ex)
           logger.debug("File error: ", ex)
           logger.error(s"Exception while processing rules on path $rulesPath")
           exit(1)
@@ -338,6 +339,7 @@ object ScanProcessor extends CommandProcessor {
       lang.head // we are caching the repo language here, and we will use this to get the repo's lang
     val ruleCache      = new RuleCache()
     val processedRules = processRules(lang, ruleCache)
+    println(processedRules)
     ruleCache.setRule(processedRules)
     ruleCache
   }
