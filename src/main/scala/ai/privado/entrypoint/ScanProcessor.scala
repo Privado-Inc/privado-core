@@ -70,6 +70,7 @@ object ScanProcessor extends CommandProcessor {
 
   def parseRules(rulesPath: String, lang: Set[Language]): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
+    println(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try File(rulesPath)
@@ -100,6 +101,7 @@ object ScanProcessor extends CommandProcessor {
             // e.g. fullPath = /home/pandurang/projects/rules-home/rules/sources/accounts.yaml
             val fullPath = file.pathAsString
             logger.trace(s"parsing -> '$fullPath'")
+            println(s"parsing -> '$fullPath'")
             // e.g. relPath = rules/sources/accounts
             val relPath  = fullPath.substring(ir.pathAsString.length + 1).split("\\.").head
             val pathTree = relPath.split("/")
@@ -119,7 +121,11 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       sources = configAndRules.sources
-                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
+                        .filter(rule => {
+                          println(isValidRule(rule.combinedRulePattern, rule.id, fullPath))
+                          println(rule.id)
+                          isValidRule(rule.combinedRulePattern, rule.id, fullPath)
+                        })
                         .map(x =>
                           x.copy(
                             file = fullPath,
