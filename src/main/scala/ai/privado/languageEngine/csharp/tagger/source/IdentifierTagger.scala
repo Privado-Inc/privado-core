@@ -37,6 +37,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     })
 
     val regexMatchingMembers = cpg.member.name(rulePattern).l
+    println(rulePattern)
     println(regexMatchingMembers)
 
     regexMatchingMembers.foreach(member => {
