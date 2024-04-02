@@ -18,7 +18,10 @@ object RuleValidator extends CommandProcessor {
           case Some(value) => Right(println(value))
           case _           => Left("Error in parsing Config rules")
         }
-      case _ => Left("Error in parsing Rules")
+      case _ => {
+        println("error in parsing rules")
+        Left("Error in parsing Rules")
+      }
     }
   }
 
@@ -46,7 +49,11 @@ object RuleValidator extends CommandProcessor {
 
   def validateConfig(): Option[String] = {
     getConfigPathFromConfig match {
-      case Some(yamlDirectory) => Some(validateDirectory(yamlDirectory))
+      case Some(yamlDirectory) => {
+        println("Some")
+        println(yamlDirectory)
+        Some(validateDirectory(yamlDirectory))
+      }
       case _ =>
         logger.error("Failed to validate rules directory")
         None

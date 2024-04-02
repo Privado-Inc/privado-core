@@ -74,6 +74,7 @@ object ScanProcessor extends CommandProcessor {
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
       try {
+        println(rulesPath)
         File(rulesPath)
       } catch {
         case ex: Throwable =>
@@ -83,6 +84,9 @@ object ScanProcessor extends CommandProcessor {
           exit(1)
       }
     }
+
+    println("IR")
+    println(ir.pathAsString)
 
     def filterByLang(rule: RuleInfo): Boolean =
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
