@@ -33,7 +33,11 @@ object RuleValidator extends CommandProcessor {
 
   def validateRules(): Option[String] = {
     getRulesPathFromConfig match {
-      case Some(yamlDirectory) => Some(validateDirectory(yamlDirectory))
+      case Some(yamlDirectory) => {
+        println("Dir")
+        println(yamlDirectory)
+        Some(validateDirectory(yamlDirectory))
+      }
       case _ =>
         logger.error("Failed to validate rules directory")
         None
