@@ -73,7 +73,7 @@ object Utilities {
 
   var ingressUrls = mutable.ListBuffer.empty[String]
 
-  def getEngineContext(config: PrivadoInput, maxCallDepthP: Int = 4)(implicit
+  def getEngineContext(config: PrivadoInput, appCache: AppCache, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()
   ): EngineContext = {
     val expanLimit =
@@ -83,7 +83,7 @@ object Utilities {
     EngineContext(
       semantics = semanticsP,
       config =
-        if (AppCache.repoLanguage == Language.RUBY || config.limitArgExpansionDataflows > -1) then
+        if (appCache.repoLanguage == Language.RUBY || config.limitArgExpansionDataflows > -1) then
           EngineConfig(maxCallDepth = maxCallDepthP, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
         else EngineConfig(maxCallDepth = maxCallDepthP)
     )

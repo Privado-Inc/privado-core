@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
@@ -40,7 +40,8 @@ class SourceExporter(
   cpg: Cpg,
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
-  repoItemTagName: Option[String] = None
+  repoItemTagName: Option[String] = None,
+  appCache: AppCache
 ) {
 
   lazy val sourcesList: List[AstNode]      = getSourcesList
@@ -71,15 +72,18 @@ class SourceExporter(
         SourceProcessingModel(
           entrySet._1,
           ExporterUtility
-            .convertPathElements({
-              if (privadoInput.disableDeDuplication)
-                entrySet._2.toList
-              else
-                entrySet._2.toList
-                  .distinctBy(_.code)
-                  .distinctBy(_.lineNumber)
-                  .distinctBy(Utilities.getFileNameForNode)
-            })
+            .convertPathElements(
+              {
+                if (privadoInput.disableDeDuplication)
+                  entrySet._2.toList
+                else
+                  entrySet._2.toList
+                    .distinctBy(_.code)
+                    .distinctBy(_.lineNumber)
+                    .distinctBy(Utilities.getFileNameForNode)
+              },
+              appCache = appCache
+            )
         )
       )
       .toList

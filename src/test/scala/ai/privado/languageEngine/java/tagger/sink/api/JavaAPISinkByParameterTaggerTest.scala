@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -14,7 +14,8 @@ import io.shiftleft.semanticcpg.language.*
 class JavaAPISinkByParameterTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   "Api by matching a variable like parameter" should {
-    "be tagged as a API sink" in {
+    // Ignoring this, as we have deprecated Parameter Tagger Test
+    "be tagged as a API sink" ignore {
 
       val (cpg, config) = code(
         List(
@@ -83,7 +84,7 @@ class JavaAPISinkByParameterTaggerTest extends AnyWordSpec with Matchers with Be
       ruleCache.setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
       JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = privadoInput)
 
-      new JavaAPITagger(cpg, ruleCache, privadoInputConfig = privadoInput).createAndApply()
+      new JavaAPITagger(cpg, ruleCache, privadoInputConfig = privadoInput, appCache = new AppCache()).createAndApply()
 
       val apiSink = cpg.call("getAllDetails").l
       apiSink.tag.nameExact(InternalTag.API_SINK_MARKED.toString).size shouldBe 1

@@ -1,6 +1,6 @@
 package ai.privado.threatEngine
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{AppCache, TaggerCache}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
 import ai.privado.model.PolicyOrThreat
@@ -21,7 +21,8 @@ object DifferentKindOfPIIStoredInDifferentTablesWithSQL {
   def getViolations(
     threat: PolicyOrThreat,
     cpg: Cpg,
-    taggerCache: TaggerCache
+    taggerCache: TaggerCache,
+    appCache: AppCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows                           = ListBuffer[ViolationProcessingModel]()
@@ -69,7 +70,8 @@ object DifferentKindOfPIIStoredInDifferentTablesWithSQL {
             table,
             violatingFlows,
             tableName,
-            Some(additionalDetail)
+            Some(additionalDetail),
+            appCache = appCache
           )
         }
       })

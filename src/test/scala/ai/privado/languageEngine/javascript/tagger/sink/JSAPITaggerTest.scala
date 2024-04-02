@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
@@ -266,11 +266,14 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(rule)
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.JAVASCRIPT
+
     val config      = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
     cpgs.addOne(cpg)
     cpg
   }
@@ -289,12 +292,14 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val config      = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()
+    val appCache    = new AppCache()
+    appCache.repoLanguage = Language.JAVASCRIPT
 
     println(s"${Calendar.getInstance().getTime} - HTML parser pass")
     new HTMLParserPass(cpg, projectRoot = inputDir.toString(), ruleCache, privadoInputConfig = privadoInput.copy())
       .createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache, privadoInput).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
     cpgs.addOne(cpg)
     cpg
   }

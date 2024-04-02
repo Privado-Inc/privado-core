@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import overflowdb.BatchedUpdate
 import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.PrivadoInput
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
@@ -27,7 +28,7 @@ import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
 
 import scala.jdk.CollectionConverters.*
-import ai.privado.model.Language
+import ai.privado.model.{Constants, Language}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import better.files.File.VisitOptions
@@ -45,8 +46,13 @@ object FileExtensions {
   val CONF       = ".conf"
 }
 
-class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, language: Language.Value)
-    extends PrivadoParallelCpgPass[String](cpg) {
+class PropertyParserPass(
+  cpg: Cpg,
+  projectRoot: String,
+  ruleCache: RuleCache,
+  language: Language.Value,
+  privadoInput: PrivadoInput = PrivadoInput()
+) extends PrivadoParallelCpgPass[String](cpg) {
   val PLACEHOLDER_TOKEN_START_END = "@@"
   val logger                      = LoggerFactory.getLogger(getClass)
 
@@ -65,10 +71,14 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
         ).toArray
       }
       case Language.JAVASCRIPT =>
-        configFiles(
-          projectRoot,
-          Set(FileExtensions.JSON, FileExtensions.ENV, FileExtensions.YML, FileExtensions.YAML)
-        ).toArray
+        if (privadoInput.enableIngressAndEgressUrls) {
+          configFiles(
+            projectRoot,
+            Set(FileExtensions.JSON, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+          ).toArray
+        } else {
+          configFiles(projectRoot, Set(FileExtensions.JSON, FileExtensions.ENV)).toArray
+        }
       case Language.PYTHON =>
         configFiles(
           projectRoot,
@@ -402,7 +412,7 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       }
     }
 
-    SourceFiles
+    val propertyFiles = SourceFiles
       .determine(projectRoot, extensions, ignoredFilesRegex = Some(".*[.]privado.*".r))(VisitOptions.default)
       .concat(
         getListOfFiles(projectRoot)
@@ -413,7 +423,33 @@ class PropertyParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, la
       )
       .filter(file => !file.contains("delombok"))
       .filter(file => Utilities.isFileProcessable(file, ruleCache) && (!file.matches(".*node_modules.*")))
+      .filter(file => filterUsingFileSize(file, ruleCache))
       .distinct
+
+    filterFilesWithDir(propertyFiles, ruleCache)
   }
 
+  private def filterUsingFileSize(filePath: String, ruleCache: RuleCache): Boolean = {
+    val fileLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileSizeLimit, true)
+    if (fileLimit.nonEmpty) {
+      val file               = new File(filePath)
+      val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
+      fileSizeInKiloByte <= fileLimit.toInt
+    } else {
+      true
+    }
+  }
+
+  private def filterFilesWithDir(filePaths: List[String], ruleCache: RuleCache): List[String] = {
+    val countLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileDirCountLimit, true)
+    if (countLimit.nonEmpty) {
+      val groupedByDirectory = filePaths.groupBy(filePath => new File(filePath).getParent)
+      val filteredDirectories = groupedByDirectory.filter { case (_, filesInDirectory) =>
+        filesInDirectory.length <= countLimit.toInt
+      }
+      filteredDirectories.values.flatten.toList
+    } else {
+      filePaths
+    }
+  }
 }

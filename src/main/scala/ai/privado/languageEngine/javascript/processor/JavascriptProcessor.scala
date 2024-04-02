@@ -60,7 +60,8 @@ object JavascriptProcessor {
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -76,7 +77,9 @@ object JavascriptProcessor {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
             new JsConfigPropertyPass(cpg).createAndApply()
-          } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT).createAndApply()
+          } else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT, privadoInput)
+              .createAndApply()
           new JSPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -92,9 +95,9 @@ object JavascriptProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache)
+          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+          val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
@@ -112,13 +115,14 @@ object JavascriptProcessor {
             dataFlowCache.getDataflowAfterDedup,
             privadoInput,
             List(),
-            s3DatabaseDetailsCache
+            s3DatabaseDetailsCache,
+            appCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
             case Right(_) =>
-              println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
+              println(s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder")
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
@@ -146,7 +150,7 @@ object JavascriptProcessor {
                 errorMsg += err
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
           }
@@ -163,7 +167,7 @@ object JavascriptProcessor {
                 errorMsg += err
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
 
@@ -178,7 +182,7 @@ object JavascriptProcessor {
                 errorMsg += err
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }
@@ -215,7 +219,8 @@ object JavascriptProcessor {
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using Javascript engine")
@@ -234,7 +239,16 @@ object JavascriptProcessor {
         .withOutputPath(cpgOutputPath)
         .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
-    processCPG(xtocpg, privadoInput, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
+    processCPG(
+      xtocpg,
+      privadoInput,
+      ruleCache,
+      sourceRepoLocation,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache
+    )
   }
 
 }

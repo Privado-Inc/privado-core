@@ -42,10 +42,12 @@ abstract class BaseProcessor(
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
+  val errorMsg       = new ListBuffer[String]()
 
   /** Entry method to read files and generate output
     * @return
@@ -120,12 +122,12 @@ abstract class BaseProcessor(
     )
 
     println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
     println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
         .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
     println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
 
-    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache) match
+    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match
       case Left(err)        => Left(err)
       case Right(outputMap) => Right((cpg, outputMap))
   }
@@ -136,7 +138,8 @@ abstract class BaseProcessor(
     cpg: Cpg,
     taggerCache: TaggerCache,
     dataflowMap: Map[String, Path],
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Map[String, Json]] = {
 
     val errorMsgs = ListBuffer[String]()
@@ -153,7 +156,7 @@ abstract class BaseProcessor(
       case Left(err) => errorMsgs.addOne(err)
       case Right(_)  =>
 
-    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache) match
+    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match
       case Left(err) =>
         errorMsgs.addOne(err)
         Left(errorMsgs.mkString("\n"))
@@ -164,7 +167,8 @@ abstract class BaseProcessor(
     cpg: Cpg,
     taggerCache: TaggerCache,
     dataflowMap: Map[String, Path],
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
   ): Either[String, Map[String, Json]] = {
     println(s"${Calendar.getInstance().getTime} - Brewing result...")
     MetricHandler.setScanStatus(true)
@@ -179,14 +183,15 @@ abstract class BaseProcessor(
       dataFlowCache.getDataflowAfterDedup,
       privadoInput,
       List(),
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)
         Left(err)
       case Right(outputJson) =>
         println(
-          s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+          s"${Calendar.getInstance().getTime} - Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
         Right(outputJson)
     }
@@ -212,7 +217,7 @@ abstract class BaseProcessor(
           Left(err)
         case Right(_) =>
           println(
-            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
           Right(())
       }
@@ -233,7 +238,7 @@ abstract class BaseProcessor(
         Left(err)
       case Right(_) =>
         println(
-          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
         Right(())
     }
@@ -252,7 +257,7 @@ abstract class BaseProcessor(
           Left(err)
         case Right(_) =>
           println(
-            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
           Right(())
       }

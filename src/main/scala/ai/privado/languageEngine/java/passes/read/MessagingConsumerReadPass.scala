@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.passes.read
 
-import ai.privado.cache.{DataFlowCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, TaggerCache}
 import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, NodeType}
@@ -37,7 +37,8 @@ class MessagingConsumerReadPass(
   cpg: Cpg,
   taggerCache: TaggerCache,
   dataFlowCache: DataFlowCache,
-  privadoInputConfig: PrivadoInput
+  privadoInputConfig: PrivadoInput,
+  appCache: AppCache
 ) extends PrivadoParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
@@ -89,7 +90,7 @@ class MessagingConsumerReadPass(
 
     val dataflowSink =
       cpg.call.methodFullName("(?i)(.*ObjectMapper[.](readValue|convertValue):.*)|(.*gson[.](fromJson[\\w]*):.*)").l
-    val readFlow    = Dataflow.dataflowForSourceSinkPair(dataflowSource, dataflowSink, privadoInputConfig)
+    val readFlow    = Dataflow.dataflowForSourceSinkPair(dataflowSource, dataflowSink, privadoInputConfig, appCache)
     val uniqueFlows = DuplicateFlowProcessor.getUniquePathsAfterDedup(readFlow)
     uniqueFlows.foreach { flow =>
       val readNode = flow.elements.last.asInstanceOf[Call]
@@ -128,7 +129,8 @@ class MessagingConsumerReadPass(
       .map(_.asInstanceOf[CfgNode])
       .l
 
-    val dataflowReadFlows = Dataflow.dataflowForSourceSinkPair(dataflowReadSource, dataflowReadSink, privadoInputConfig)
+    val dataflowReadFlows =
+      Dataflow.dataflowForSourceSinkPair(dataflowReadSource, dataflowReadSink, privadoInputConfig, appCache)
     val dataflowUniqueFlows = DuplicateFlowProcessor.getUniquePathsAfterDedup(dataflowReadFlows)
     dataflowUniqueFlows
       .foreach { flow =>

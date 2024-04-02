@@ -64,7 +64,8 @@ class CSharpProcessor(
   sourceRepoLocation: String,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -72,7 +73,8 @@ class CSharpProcessor(
       Language.CSHARP,
       dataFlowCache,
       auditCache,
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -81,7 +83,7 @@ class CSharpProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {

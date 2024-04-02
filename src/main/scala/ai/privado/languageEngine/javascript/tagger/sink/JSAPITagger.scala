@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
@@ -39,9 +39,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import io.joern.dataflowengineoss.DefaultSemantics
 import ai.privado.utility.Utilities.{
   addRuleTags,
+  getAPIIdentifierFromCode,
   getDomainFromString,
   getDomainFromTemplates,
-  getAPIIdentifierFromCode,
   getFileNameForNode,
   isFileProcessable,
   storeForTag
@@ -49,8 +49,8 @@ import ai.privado.utility.Utilities.{
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
-class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
-    extends APITagger(cpg, ruleCache, privadoInput) {
+class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
+    extends APITagger(cpg, ruleCache, privadoInput, appCache) {
 
   override val apis = cacheCall
     .name(APISINKS_REGEX)
@@ -103,7 +103,9 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
         if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, scriptTag, ruleInfo, ruleCache)
         else {
           newRuleIdToUse = ruleInfo.id + "." + domain._2
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+          ruleCache.setRuleInfo(
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2, isGenerated = true)
+          )
           addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
         storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
@@ -113,7 +115,9 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
         if (!identifierDomain.equals(Constants.UnknownDomain)) {
           if (!ruleInfo.id.equals(Constants.internalAPIRuleId)) {
             newRuleIdToUse = ruleInfo.id + "." + identifierDomain
-            ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + identifierDomain))
+            ruleCache.setRuleInfo(
+              ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + identifierDomain, isGenerated = true)
+            )
             addRuleTags(builder, scriptTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
             storeForTag(builder, scriptTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, identifierDomain)
           }
@@ -131,7 +135,9 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
       if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, externalScriptCall, ruleInfo, ruleCache)
       else {
         newRuleIdToUse = ruleInfo.id + "." + domain._2
-        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+        ruleCache.setRuleInfo(
+          ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2, isGenerated = true)
+        )
         addRuleTags(builder, externalScriptCall, ruleInfo, ruleCache, Some(newRuleIdToUse))
       }
       storeForTag(builder, externalScriptCall, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
@@ -166,7 +172,9 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
       if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, callTag, ruleInfo, ruleCache)
       else {
         newRuleIdToUse = ruleInfo.id + "." + domain._2
-        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2))
+        ruleCache.setRuleInfo(
+          ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain._2, isGenerated = true)
+        )
         addRuleTags(builder, callTag, ruleInfo, ruleCache, Some(newRuleIdToUse))
       }
       storeForTag(builder, callTag, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain._1)
@@ -190,7 +198,9 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
 
         // Tagging the node with respective domain
         val newRuleIdToUse = ruleInfo.id + "." + domain
-        ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+        ruleCache.setRuleInfo(
+          ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true)
+        )
         addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
         storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, domain)
 

@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.passes.read
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.InternalTag
@@ -47,7 +47,8 @@ object DatabaseReadUtility {
     classTableMapping: Map[String, TypeDecl],
     cpg: Cpg,
     node: AstNode,
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    appCache: AppCache
   ) = {
 
     val queryCode = node.code
@@ -131,7 +132,12 @@ object DatabaseReadUtility {
                     .l
 
                 val readFlow =
-                  Dataflow.dataflowForSourceSinkPair(referencingQueryNodes, dataElementSinks, privadoInputConfig)
+                  Dataflow.dataflowForSourceSinkPair(
+                    referencingQueryNodes,
+                    dataElementSinks,
+                    privadoInputConfig,
+                    appCache
+                  )
                 if (readFlow.nonEmpty) {
                   // As a flow is present from Select query to a Data element we can say, the data element is read from the query
                   readFlow
