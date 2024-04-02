@@ -67,7 +67,8 @@ object GoProcessor {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
           else
-            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO).createAndApply()
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO, propertyFilterCache)
+              .createAndApply()
 
           new GoYamlLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -113,7 +114,8 @@ object GoProcessor {
             ScanProcessor.config,
             List(),
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -241,7 +243,16 @@ object GoProcessor {
         )
         cpg
       }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache, appCache, propertyFilterCache)
+    processCPG(
+      xtocpg,
+      ruleCache,
+      sourceRepoLocation,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      propertyFilterCache
+    )
   }
 
 }

@@ -61,7 +61,8 @@ object JavascriptProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -78,7 +79,14 @@ object JavascriptProcessor {
               .createAndApply()
             new JsConfigPropertyPass(cpg).createAndApply()
           } else
-            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVASCRIPT, privadoInput)
+            new PropertyParserPass(
+              cpg,
+              sourceRepoLocation,
+              ruleCache,
+              Language.JAVASCRIPT,
+              propertyFilterCache,
+              privadoInput
+            )
               .createAndApply()
           new JSPropertyLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -116,7 +124,8 @@ object JavascriptProcessor {
             privadoInput,
             List(),
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -221,7 +230,8 @@ object JavascriptProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -248,7 +258,8 @@ object JavascriptProcessor {
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     )
   }
 

@@ -51,8 +51,8 @@ class PropertyParserPass(
   projectRoot: String,
   ruleCache: RuleCache,
   language: Language.Value,
-  privadoInput: PrivadoInput = PrivadoInput(),
-  propertyFilterCache: PropertyFilterCache
+  propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
+  privadoInput: PrivadoInput = PrivadoInput()
 ) extends PrivadoParallelCpgPass[String](cpg) {
   val PLACEHOLDER_TOKEN_START_END = "@@"
   val logger                      = LoggerFactory.getLogger(getClass)
@@ -435,12 +435,12 @@ class PropertyParserPass(
     if (fileLimit.nonEmpty) {
       val file               = new File(filePath)
       val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
-      if (fileSizeInKiloByte <= fileLimit.toInt) {
+      if (fileSizeInKiloByte > fileLimit.toInt) {
         // Adding the filtered file into the property cache
         propertyFilterCache.addIntoFileSkippedBySize(file.getAbsolutePath, fileSizeInKiloByte.toInt)
-        true
-      } else {
         false
+      } else {
+        true
       }
     } else {
       true
@@ -452,12 +452,12 @@ class PropertyParserPass(
     if (countLimit.nonEmpty) {
       val groupedByDirectory = filePaths.groupBy(filePath => new File(filePath).getParent)
       val filteredDirectories = groupedByDirectory.filter { case (path, filesInDirectory) =>
-        if (filesInDirectory.length <= countLimit.toInt) {
+        if (filesInDirectory.length > countLimit.toInt) {
           // Adding the filtered files into the property cache
           propertyFilterCache.addIntoFileSkippedByDirCount(path, filesInDirectory)
-          true
-        } else {
           false
+        } else {
+          true
         }
       }
       filteredDirectories.values.flatten.toList

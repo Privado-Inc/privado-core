@@ -1,6 +1,8 @@
 package ai.privado.cache
 
 import ai.privado.model.Constants
+import io.circe.{Decoder, Encoder}
+import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 
 import scala.collection.mutable
 
@@ -19,7 +21,7 @@ class PropertyFilterCache {
   }
 
   def getFileSkippedBySizeData(ruleCache: RuleCache): FileSkippedBySizeModel = {
-    val skippedSizeLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileSizeLimit).toString
+    val skippedSizeLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileSizeLimit, true).toString
     val skippedFileList = fileSkippedBySizeMap.map((path, size) => {
       FileSkippedBySizeListModel(path, s"$size KB")
     })
@@ -27,10 +29,10 @@ class PropertyFilterCache {
   }
 
   def getFileSkippedDirCountData(ruleCache: RuleCache): FileSkippedByDirCountModel = {
-    val dirCountLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileDirCountLimit)
-    val skippedFirFileList = fileSkippedByDirCountMap.map((dirPath: String, fileList: List[String]) => {
+    val dirCountLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileDirCountLimit, true)
+    val skippedFirFileList = fileSkippedByDirCountMap.map { case (dirPath: String, fileList: List[String]) =>
       FileSkippedByDirCountListModel(dirPath, fileList.size.toString, fileList)
-    })
+    }.toList
     FileSkippedByDirCountModel(dirCountLimit, skippedFirFileList)
   }
 }
@@ -39,6 +41,32 @@ case class FileSkippedBySizeModel(currentFileSizeLimit: String, skipLists: List[
 
 case class FileSkippedBySizeListModel(file: String, size: String)
 
-case class FileSkippedByDirCountModel(currentFilesInDirLimit: String, skipList: List[FileSkippedByDirCountModel])
+case class FileSkippedByDirCountModel(currentFilesInDirLimit: String, skipList: List[FileSkippedByDirCountListModel])
 
 case class FileSkippedByDirCountListModel(dir: String, countOfPropertyFiles: String, files: List[String])
+
+object PropertyFilterCacheEncoderDecoder {
+  implicit val FileSkippedBySizeModelDecoder: Decoder[FileSkippedBySizeModel] =
+    deriveDecoder[FileSkippedBySizeModel]
+
+  implicit val fileSkippedBySizeModelEncoder: Encoder[FileSkippedBySizeModel] =
+    deriveEncoder[FileSkippedBySizeModel]
+
+  implicit val fileSkippedBySizeListModelDecoder: Decoder[FileSkippedBySizeListModel] =
+    deriveDecoder[FileSkippedBySizeListModel]
+
+  implicit val fileSkippedBySizeListModelEncoder: Encoder[FileSkippedBySizeListModel] =
+    deriveEncoder[FileSkippedBySizeListModel]
+
+  implicit val fileSkippedByDirCountModelDecoder: Decoder[FileSkippedByDirCountModel] =
+    deriveDecoder[FileSkippedByDirCountModel]
+
+  implicit val fileSkippedByDirCountModelEncoder: Encoder[FileSkippedByDirCountModel] =
+    deriveEncoder[FileSkippedByDirCountModel]
+
+  implicit val fileSkippedByDirCountListModelDecoder: Decoder[FileSkippedByDirCountListModel] =
+    deriveDecoder[FileSkippedByDirCountListModel]
+
+  implicit val fileSkippedByDirCountListModelEncoder: Encoder[FileSkippedByDirCountListModel] =
+    deriveEncoder[FileSkippedByDirCountListModel]
+}
