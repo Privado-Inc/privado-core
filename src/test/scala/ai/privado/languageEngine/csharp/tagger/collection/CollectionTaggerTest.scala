@@ -172,4 +172,47 @@ class CollectionTaggerTest extends CSharpTestBase {
     }
   }
 
+  "Route annotations with more than one arguments" should {
+    "be tagged as collections correctly" in {
+      val (cpg, _) = code(
+        List(
+          SourceCodeModel(
+            """
+              |namespace Foo.Bar;
+              |[Route("api/v{version:apiVersion}/[controller]")]
+              |[ApiVersion("1.0")]
+              |[ApiController]
+              |public class MyController : ControllerBase
+              |{
+              |    [HttpGet("{id}", Name = nameof(MyStuff))]
+              |    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(MyResponse))]
+              |    public async Task<IActionResult> Fetch(Email email)
+              |    {
+              |        return Ok(response);
+              |    }
+              |
+              |    [HttpPost(Name = nameof(MyStuff))]
+              |    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(MyResponse))]
+              |    [ProducesResponseType(typeof(MyResponse), 400)]
+              |    public async Task<IActionResult> Create(MyRequest email)
+              |    {
+              |        return Ok(response);
+              |    }
+              |}
+              |""".stripMargin,
+            "Test.cs"
+          )
+        )
+      )
+
+      val List(fetchMethod) = cpg.method.nameExact("Fetch").l
+      fetchMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
+      fetchMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/api/v{version:apiVersion}/my/{id}")
+
+      val List(createMethod) = cpg.method.nameExact("Create").l
+      createMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
+      createMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/api/v{version:apiVersion}/my/create")
+    }
+  }
+
 }
