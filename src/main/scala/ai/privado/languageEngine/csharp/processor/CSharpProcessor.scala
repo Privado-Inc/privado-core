@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.csharp.processor
 
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
@@ -105,6 +106,7 @@ class CSharpProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withDownloadDependencies(!config.skipDownloadDependencies)
 
     val xtocpg = new CSharpSrc2Cpg().createCpg(cpgconfig).map { cpg =>
       println(
