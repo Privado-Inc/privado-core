@@ -89,6 +89,7 @@ class CSharpProcessor(
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
+    CSharpSrc2Cpg.postProcessingPasses(cpg, Config()).foreach(_.createAndApply())
     super.applyDataflowAndPostProcessingPasses(cpg)
   }
 
