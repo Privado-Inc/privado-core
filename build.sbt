@@ -8,17 +8,17 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.6.10"
-val joernVersion      = "2.0.311"
+val joernVersion      = "2.0.317"
 val overflowdbVersion = "1.190"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
 val circeVersion        = "0.14.2"
-val jacksonVersion      = "2.15.2"
+val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
 val goAstGenVersion     = "0.12.0"
-val dotnetAstGenVersion = "0.18.0"
+val dotnetAstGenVersion = "0.34.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
