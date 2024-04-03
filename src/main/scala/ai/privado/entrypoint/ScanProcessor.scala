@@ -72,10 +72,8 @@ object ScanProcessor extends CommandProcessor {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
-      try {
-        println(rulesPath)
-        File(rulesPath)
-      } catch {
+      try File(rulesPath)
+      catch {
         case ex: Throwable =>
           logger.debug("File error: ", ex)
           logger.error(s"Exception while processing rules on path $rulesPath")
