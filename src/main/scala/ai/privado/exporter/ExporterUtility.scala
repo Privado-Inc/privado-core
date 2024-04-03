@@ -82,6 +82,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
 import scala.util.Try
+import privado_core.BuildInfo
 
 object ExporterUtility {
 

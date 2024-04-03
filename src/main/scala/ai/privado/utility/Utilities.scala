@@ -50,7 +50,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   FieldIdentifier,
   Local
 }
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
@@ -88,9 +88,9 @@ object Utilities {
 
   def checkIfGTMOrSegment(ruleId: String): Boolean = {
     val ruleList = List(
-      "ThirdParties.SDK.Segment.Analytics",
-      "ThirdParties.SDK.Pixel.Segment",
-      "ThirdParties.SDK.Google.TagManager",
+      Constants.segmentPixelRuleId,
+      Constants.segmentAnalyticsRuleId,
+      Constants.googleTagManagerRuleId,
       Constants.googleTagManagerPixelRuleId
     )
     val ruleExists = ruleList.contains(ruleId)
@@ -306,7 +306,7 @@ object Utilities {
     }
 
     def handleBlockNode(blockNode: Block, topLeftKey: Option[String]): String = {
-      val assignmentNodes     = blockNode.astChildren.isCall.name("<operator>.assignment").l
+      val assignmentNodes     = blockNode.astChildren.isCall.name(Operators.assignment).l
       val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
       val childBlockNodes     = blockNode.astChildren.isBlock.l
       val arrayCallNodes      = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
@@ -324,7 +324,7 @@ object Utilities {
       ""
     }
 
-    val assignmentNodes     = node.argument.isBlock.astChildren.isCall.name("<operator>.assignment").l
+    val assignmentNodes     = node.argument.isBlock.astChildren.isCall.name(Operators.assignment).l
     val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
     val identifierNodes     = node.argument.isIdentifier.l
     val literalNodes        = node.argument.isLiteral.l
