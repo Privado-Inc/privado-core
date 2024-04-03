@@ -159,9 +159,8 @@ Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 
 // download dotnetastgen: start
 lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
-lazy val DotNetAstgenWinArm   = "dotnetastgen-win-arm.exe"
 lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
-lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val DotNetAstgenMac      = "dotnetastgen-macos"
 
 lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
@@ -169,7 +168,7 @@ dotnetAstGenDownloadUrl := s"https://github.com/joernio/DotNetAstGen/releases/do
 
 lazy val dotnetAstGenBinaryNames = taskKey[Seq[String]]("dotnetastgen binary names")
 dotnetAstGenBinaryNames := {
-  Seq(DotNetAstgenWin, DotNetAstgenWinArm, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
+  Seq(DotNetAstgenWin, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
 }
 
 lazy val dotnetAstGenDlTask = taskKey[Unit](s"Download dotnetastgen binaries")
