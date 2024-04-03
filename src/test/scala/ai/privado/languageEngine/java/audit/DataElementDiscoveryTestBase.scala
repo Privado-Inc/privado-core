@@ -25,7 +25,9 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
     outputDir = File.newTemporaryDirectory()
 
     val config =
-      Config(fetchDependencies = true).withInputPath(inputDir.pathAsString).withOutputPath(outputDir.pathAsString)
+      Config(fetchDependencies = true, delombokMode = Some("no-delombok"))
+        .withInputPath(inputDir.pathAsString)
+        .withOutputPath(outputDir.pathAsString)
     val javaSrc = new JavaSrc2Cpg()
     val xtocpg = javaSrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)
