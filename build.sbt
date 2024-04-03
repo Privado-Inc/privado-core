@@ -160,7 +160,7 @@ Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 // download dotnetastgen: start
 lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
 lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
-lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm64"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
 lazy val DotNetAstgenMac      = "dotnetastgen-macos"
 
 lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
