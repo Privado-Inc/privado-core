@@ -16,7 +16,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   outputUnresolvedFilename
 }
-import ai.privado.model.Language
+import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
 import ai.privado.semantic.Language.*
@@ -53,13 +53,13 @@ abstract class BaseProcessor(
   /** Entry method to read files and generate output
     * @return
     */
-  def processCpg(): Either[String, (Cpg, Map[String, Json])] = ???
+  def processCpg(): Either[String, CpgWithOutputMap] = ???
 
   /** Takes care of consuming the Try[Cpg] and applying privado specific taggers and export json result
     * @param xtocpg
     * @return
     */
-  def tagAndExport(xtocpg: Try[Cpg]): Either[String, (Cpg, Map[String, Json])] = {
+  def tagAndExport(xtocpg: Try[Cpg]): Either[String, CpgWithOutputMap] = {
     xtocpg match {
       case Success(cpg) =>
         try {
@@ -113,7 +113,7 @@ abstract class BaseProcessor(
     * @param cpg
     * @return
     */
-  def applyTaggingAndExport(cpg: Cpg): Either[String, (Cpg, Map[String, Json])] = {
+  def applyTaggingAndExport(cpg: Cpg): Either[String, CpgWithOutputMap] = {
 
     println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
     val taggerCache = new TaggerCache()
@@ -130,7 +130,7 @@ abstract class BaseProcessor(
 
     applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match
       case Left(err)        => Left(err)
-      case Right(outputMap) => Right((cpg, outputMap))
+      case Right(outputMap) => Right(CpgWithOutputMap(cpg, outputMap))
   }
 
   def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = ???

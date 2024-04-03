@@ -36,7 +36,7 @@ import ai.privado.languageEngine.java.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{value, *}
 import ai.privado.model.Language.Language
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.{
   AndroidXmlParserPass,
   DBTParserPass,
@@ -113,7 +113,7 @@ class JavaProcessor(
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
     cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache, appCache)
 
-  override def processCpg(): Either[String, (Cpg, Map[String, Json])] = {
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
     val excludeFileRegex = ruleCache.getExclusionRegex
     println(s"${Calendar.getInstance().getTime} - Processing source code using Java engine")
     if (!privadoInput.skipDownloadDependencies)

@@ -28,7 +28,7 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3Datab
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.model.Constants.outputFileName
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -92,7 +92,7 @@ class CSharpProcessor(
     super.applyDataflowAndPostProcessingPasses(cpg)
   }
 
-  override def processCpg(): Either[String, (Cpg, Map[String, Json])] = {
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using CSharp engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 

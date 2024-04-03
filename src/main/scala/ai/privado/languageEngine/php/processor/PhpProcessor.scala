@@ -28,7 +28,7 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
 import ai.privado.model.Constants.*
-import ai.privado.model.Language
+import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
 import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
@@ -75,7 +75,7 @@ class PhpProcessor(
     Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
   }
 
-  override def processCpg(): Either[String, (Cpg, Map[String, Json])] = {
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using Php engine")
 
     createCpgFolder(sourceRepoLocation)

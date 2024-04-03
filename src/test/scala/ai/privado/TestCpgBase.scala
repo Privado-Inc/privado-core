@@ -32,8 +32,8 @@ abstract class TestCpgBase(privadoInput: PrivadoInput) extends AnyWordSpec with 
     processor.processCpg() match
       case Left(error) => println(s"Error while creating cpg : $error")
       case Right(outputCpgWithJsonMap) =>
-        cpg = outputCpgWithJsonMap._1
-        privadoJson = outputCpgWithJsonMap._2
+        cpg = outputCpgWithJsonMap.cpg
+        privadoJson = outputCpgWithJsonMap.outputMap
     (cpg, privadoJson)
   }
 
