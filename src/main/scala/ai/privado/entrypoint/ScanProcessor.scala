@@ -22,7 +22,15 @@
 
 package ai.privado.entrypoint
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  Environment,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache
+}
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
@@ -324,6 +332,7 @@ object ScanProcessor extends CommandProcessor {
 
   private val auditCache             = new AuditCache
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache
+  private val propertyFilterCache    = new PropertyFilterCache()
   private def getDataflowCache: DataFlowCache = {
     new DataFlowCache(config, auditCache)
   }
@@ -364,7 +373,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 ).processCpg()
               case language if language == Languages.JSSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
@@ -375,7 +385,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 )
               case language if language == Languages.PYTHONSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
@@ -386,7 +397,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 )
               case language if language == Languages.RUBYSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
@@ -397,7 +409,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 )
               case language if language == Languages.GOLANG =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Go'")
@@ -407,7 +420,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 )
               case language if language == Languages.KOTLIN =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
@@ -418,7 +432,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 ).processCpg()
               case language if language == Languages.CSHARPSRC =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'C#'")
@@ -429,7 +444,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 ).processCpg()
               case language if language == Languages.PHP =>
                 println(s"${Calendar.getInstance().getTime} - Detected language 'PHP'")
@@ -440,7 +456,8 @@ object ScanProcessor extends CommandProcessor {
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
-                  appCache
+                  appCache,
+                  propertyFilterCache = propertyFilterCache
                 )
                   .processCpg()
               case _ =>
@@ -457,7 +474,8 @@ object ScanProcessor extends CommandProcessor {
                     dataFlowCache = getDataflowCache,
                     auditCache,
                     s3DatabaseDetailsCache,
-                    appCache
+                    appCache,
+                    propertyFilterCache = propertyFilterCache
                   ).processCpg()
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
@@ -489,7 +507,8 @@ object ScanProcessor extends CommandProcessor {
       getDataflowCache,
       getAuditCache,
       getS3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     )
   }
 

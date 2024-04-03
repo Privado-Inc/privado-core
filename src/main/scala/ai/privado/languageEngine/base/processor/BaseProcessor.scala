@@ -44,7 +44,8 @@ abstract class BaseProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  returnClosedCpg: Boolean
+  returnClosedCpg: Boolean,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -162,6 +163,7 @@ abstract class BaseProcessor(
         errorMsgs.addOne(err)
         Left(errorMsgs.mkString("\n"))
       case Right(outputMap) => Right(outputMap)
+
   }
 
   protected def applyJsonExport(
@@ -185,7 +187,8 @@ abstract class BaseProcessor(
       privadoInput,
       List(),
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)

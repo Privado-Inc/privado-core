@@ -65,7 +65,8 @@ object DefaultProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -106,7 +107,8 @@ object DefaultProcessor {
             ScanProcessor.config,
             List(),
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -154,7 +156,8 @@ object DefaultProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     println(s"${Calendar.getInstance().getTime} - Processing source code using default pass")
 
@@ -169,7 +172,16 @@ object DefaultProcessor {
     val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) => {} }
 
     val msg =
-      processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache, appCache)
+      processCPG(
+        xtocpg,
+        ruleCache,
+        sourceRepoLocation,
+        dataFlowCache,
+        auditCache,
+        s3DatabaseDetailsCache,
+        appCache,
+        propertyFilterCache = propertyFilterCache
+      )
     msg
   }
 }

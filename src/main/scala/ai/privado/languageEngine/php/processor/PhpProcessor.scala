@@ -50,7 +50,8 @@ class PhpProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  returnClosedCpg: Boolean = true
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -60,7 +61,8 @@ class PhpProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      returnClosedCpg
+      returnClosedCpg,
+      propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)

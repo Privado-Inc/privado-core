@@ -77,7 +77,8 @@ class JavaProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  returnClosedCpg: Boolean = true
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -87,7 +88,8 @@ class JavaProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      returnClosedCpg
+      returnClosedCpg,
+      propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -98,7 +100,7 @@ class JavaProcessor(
       if (privadoInput.assetDiscovery)
         new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
       else
-        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA)
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA, propertyFilterCache)
     }) ++
       List(
         new JavaPropertyLinkerPass(cpg),

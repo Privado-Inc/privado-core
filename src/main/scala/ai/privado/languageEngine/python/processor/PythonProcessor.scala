@@ -53,7 +53,8 @@ object PythonProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -97,7 +98,9 @@ object PythonProcessor {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
             new PythonConfigPropertyPass(cpg).createAndApply()
-          } else new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON).createAndApply()
+          } else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON, propertyFilterCache)
+              .createAndApply()
 
           new PythonPropertyLinkerPass(cpg).createAndApply()
 
@@ -142,7 +145,8 @@ object PythonProcessor {
             privadoInput,
             List(),
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -240,7 +244,8 @@ object PythonProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using Python engine")
@@ -273,7 +278,8 @@ object PythonProcessor {
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     )
   }
 
