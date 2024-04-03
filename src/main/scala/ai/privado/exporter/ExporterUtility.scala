@@ -24,7 +24,17 @@
 package ai.privado.exporter
 
 import ai.privado.cache
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  DataFlowCache,
+  Environment,
+  FileSkippedBySizeListModel,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
+import ai.privado.cache.PropertyFilterCacheEncoderDecoder.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
@@ -323,7 +333,8 @@ object ExporterUtility {
     privadoInput: PrivadoInput,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     repoItemTagName: Option[String] = None,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
     List[SourceModel],
@@ -378,11 +389,15 @@ object ExporterUtility {
                                s"${appCache.repoName}/${repoItemTagName.get.replaceAll("--", "/")}"
                              else appCache.repoName).asJson
     )
-    output.addOne(Constants.language           -> appCache.repoLanguage.toString.asJson)
-    output.addOne(Constants.gitMetadata        -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-    output.addOne(Constants.localScanPath      -> appCache.localScanPath.asJson)
-    output.addOne(Constants.probableSinks      -> probableSinkExporter.getProbableSinks.asJson)
-    output.addOne(Constants.repoConfigMetaData -> RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).asJson)
+    output.addOne(Constants.language                  -> appCache.repoLanguage.toString.asJson)
+    output.addOne(Constants.gitMetadata               -> GitMetaDataExporter.getMetaData(repoPath).asJson)
+    output.addOne(Constants.localScanPath             -> appCache.localScanPath.asJson)
+    output.addOne(Constants.probableSinks             -> probableSinkExporter.getProbableSinks.asJson)
+    output.addOne(Constants.repoConfigMetaData        -> RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).asJson)
+    output.addOne(Constants.propertyFileSkippedBySize -> propertyFilterCache.getFileSkippedBySizeData(ruleCache).asJson)
+    output.addOne(
+      Constants.propertyFileSkippedByDirCount -> propertyFilterCache.getFileSkippedDirCountData(ruleCache).asJson
+    )
 
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {

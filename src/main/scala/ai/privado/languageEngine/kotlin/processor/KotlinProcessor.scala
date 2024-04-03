@@ -1,7 +1,15 @@
 package ai.privado.languageEngine.kotlin.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
@@ -33,7 +41,6 @@ import ai.privado.model.Language
 import ai.privado.model.Language.Language
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.cache.S3DatabaseDetailsCache
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.kotlin2cpg.Kotlin2Cpg
@@ -60,7 +67,8 @@ class KotlinProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  propertyFilterCache: PropertyFilterCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -79,7 +87,7 @@ class KotlinProcessor(
       if (privadoInput.assetDiscovery)
         new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
       else
-        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA)
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA, propertyFilterCache)
     }) ++
       List(
         new JavaPropertyLinkerPass(cpg),

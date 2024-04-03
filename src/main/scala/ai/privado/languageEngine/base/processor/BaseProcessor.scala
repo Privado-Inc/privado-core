@@ -42,7 +42,8 @@ abstract class BaseProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -172,7 +173,8 @@ abstract class BaseProcessor(
       privadoInput,
       List(),
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)

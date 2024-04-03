@@ -23,7 +23,15 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
@@ -93,7 +101,8 @@ object RubyProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -124,7 +133,8 @@ object RubyProcessor {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
           else
-            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY).createAndApply()
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY, propertyFilterCache)
+              .createAndApply()
           new RubyPropertyLinkerPass(cpg).createAndApply()
 
           logger.info("Enhancing Ruby graph by post processing pass")
@@ -228,7 +238,8 @@ object RubyProcessor {
             privadoInput,
             monolithPrivadoJsonPaths = monolithPrivadoJsonPaths,
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -355,7 +366,8 @@ object RubyProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -422,7 +434,8 @@ object RubyProcessor {
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     )
   }
 

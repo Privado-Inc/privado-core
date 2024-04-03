@@ -24,7 +24,15 @@
 package ai.privado.languageEngine.csharp.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.metric.MetricHandler
@@ -50,7 +58,6 @@ import ai.privado.semantic.Language.*
 import ai.privado.utility.PropertyParserPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-
 import ai.privado.entrypoint.*
 import ai.privado.model.Language.Language
 
@@ -66,7 +73,8 @@ class CSharpProcessor(
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  propertyFilterCache: PropertyFilterCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -75,7 +83,8 @@ class CSharpProcessor(
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      propertyFilterCache
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 

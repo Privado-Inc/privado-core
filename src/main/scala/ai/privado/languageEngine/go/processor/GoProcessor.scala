@@ -40,7 +40,8 @@ object GoProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -66,7 +67,8 @@ object GoProcessor {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
           else
-            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO).createAndApply()
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO, propertyFilterCache)
+              .createAndApply()
 
           new GoYamlLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
@@ -112,7 +114,8 @@ object GoProcessor {
             ScanProcessor.config,
             List(),
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -212,7 +215,8 @@ object GoProcessor {
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
@@ -239,7 +243,16 @@ object GoProcessor {
         )
         cpg
       }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache, appCache)
+    processCPG(
+      xtocpg,
+      ruleCache,
+      sourceRepoLocation,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      propertyFilterCache
+    )
   }
 
 }
