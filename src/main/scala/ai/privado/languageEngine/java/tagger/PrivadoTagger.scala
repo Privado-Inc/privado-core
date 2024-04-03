@@ -74,11 +74,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
-    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 
     new JavaDBConfigTagger(cpg).createAndApply()

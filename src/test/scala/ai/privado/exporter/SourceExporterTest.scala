@@ -10,11 +10,7 @@ class SourceExporterTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
-    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
   }
 
   override val javaFileContents =

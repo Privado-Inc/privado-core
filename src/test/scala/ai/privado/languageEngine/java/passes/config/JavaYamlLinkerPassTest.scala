@@ -119,12 +119,8 @@ abstract class JavaYamlLinkerPassTestBase
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
     new JavaPropertyLinkerPass(cpg).createAndApply()
     new JavaYamlLinkerPass(cpg).createAndApply()
-    val nodeCache   = CPGNodeCacheForSourceTagger(cpg, ruleCache)
     val taggerCache = TaggerCache()
-    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache).createAndApply()
 
     super.beforeAll()

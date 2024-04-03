@@ -36,12 +36,20 @@ import overflowdb.BatchedUpdate
 import java.util.UUID
 import scala.collection.concurrent.TrieMap
 
-class DirectNodeSourceTagger(
-  cpg: Cpg,
-  cpgNodeCache: CPGNodeCacheForSourceTagger,
-  ruleCache: RuleCache,
-  taggerCache: TaggerCache
-) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+object SourceTagger {
+
+  def runTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache) = {
+
+    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
+    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache).createAndApply()
+    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+  }
+}
+
+class DirectNodeSourceTagger(cpg: Cpg, cpgNodeCache: CPGNodeCacheForSourceTagger, ruleCache: RuleCache)
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   implicit val resolver: ICallResolver = NoResolve
 
@@ -69,6 +77,104 @@ class DirectNodeSourceTagger(
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
+  }
+}
+
+/** Step 2.1 =>
+  *
+  * Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
+  */
+class FirstLevelDerivedSourceTagger(
+  cpg: Cpg,
+  cpgNodeCache: CPGNodeCacheForSourceTagger,
+  ruleCache: RuleCache,
+  taggerCache: TaggerCache
+) extends PrivadoParallelCpgPass[DerivedSourceTaggerPart](cpg) {
+  override def generateParts(): Array[DerivedSourceTaggerPart] = cpgNodeCache.derivedSourceTaggerParts
+
+  override def runOnPart(builder: DiffGraphBuilder, taggerPart: DerivedSourceTaggerPart): Unit = {
+    val typeDeclMember = taggerPart.member
+    val typeDeclVal    = taggerPart.typeDecl.fullName
+    // updating cache
+    taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, taggerPart.ruleInfo.id, typeDeclMember)
+    val typeDeclMemberName = typeDeclMember.name
+    // Have started tagging Parameters as well, as in collection points sometimes there is no referencing Identifier present for a local
+
+    (cpgNodeCache.cachedIdentifier
+      .where(_.typeFullName(typeDeclVal))
+      .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l)
+      .foreach(impactedObject => {
+        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+          storeForTag(builder, impactedObject, ruleCache)(
+            InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+            taggerPart.ruleInfo.id
+          )
+          storeForTag(builder, impactedObject, ruleCache)(
+            Constants.id,
+            Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+          )
+          storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+        }
+        storeForTag(builder, impactedObject, ruleCache)(
+          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+          taggerPart.ruleInfo.id
+        )
+        // Tag for storing memberName in derived Objects -> user --> (email, password)
+        storeForTag(builder, impactedObject, ruleCache)(
+          taggerPart.ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+          typeDeclMemberName
+        )
+      })
+
+    // To Mark all field Access and getters
+    cpgNodeCache.tagAllFieldAccessAndGetters(builder, typeDeclVal, taggerPart.ruleInfo, typeDeclMemberName, true)
+  }
+}
+
+/** Step 2.2 => Object Containment and Delegation =>
+  *
+  * Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
+  */
+class OCDDerivedSourceTagger(
+  cpg: Cpg,
+  cpgNodeCache: CPGNodeCacheForSourceTagger,
+  ruleCache: RuleCache,
+  taggerCache: TaggerCache
+) extends PrivadoParallelCpgPass[DerivedSourceTaggerPart](cpg) {
+  override def generateParts(): Array[DerivedSourceTaggerPart] =
+    cpgNodeCache.secondLevelDerivedSourceTaggerParts
+      .flatMap(memberTypeDecl =>
+        cpgNodeCache.cachedMember
+          .typeFullName(memberTypeDecl.typeDecl.fullName)
+          .map(member => DerivedSourceTaggerPart(member.typeDecl, member, memberTypeDecl.ruleInfo))
+          .dedup
+      )
+      .toArray
+
+  override def runOnPart(builder: DiffGraphBuilder, taggerPart: DerivedSourceTaggerPart): Unit = {
+    val typeDeclVal    = taggerPart.typeDecl.fullName
+    val typeDeclMember = taggerPart.member
+    taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, taggerPart.ruleInfo.id, typeDeclMember)
+
+    (cpgNodeCache.cachedIdentifier
+      .where(_.typeFullName(typeDeclVal))
+      .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l).foreach(impactedObject => {
+      if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
+        storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
+        storeForTag(builder, impactedObject, ruleCache)(
+          Constants.id,
+          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
+        )
+        storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+      }
+      storeForTag(builder, impactedObject, ruleCache)(
+        Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE,
+        taggerPart.ruleInfo.id
+      )
+    })
+
+    // To Mark all field Access and getters
+    cpgNodeCache.tagAllFieldAccessAndGetters(builder, typeDeclVal, taggerPart.ruleInfo, typeDeclMember.name, true)
   }
 }
 
@@ -153,103 +259,6 @@ class ExtendingDerivedSourceTagger(
         }
       }
     })
-  }
-}
-
-/** Step 2.2 => Object Containment and Delegation =>
-  *
-  * Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
-  */
-class OCDDerivedSourceTagger(
-  cpg: Cpg,
-  cpgNodeCache: CPGNodeCacheForSourceTagger,
-  ruleCache: RuleCache,
-  taggerCache: TaggerCache
-) extends PrivadoParallelCpgPass[DerivedSourceTaggerPart](cpg) {
-  override def generateParts(): Array[DerivedSourceTaggerPart] =
-    cpgNodeCache.secondLevelDerivedSourceTaggerParts
-      .flatMap(memberTypeDecl =>
-        cpgNodeCache.cachedMember
-          .typeFullName(memberTypeDecl.typeDecl.fullName)
-          .map(member => DerivedSourceTaggerPart(member.typeDecl, member, memberTypeDecl.ruleInfo))
-          .dedup
-      )
-      .toArray
-
-  override def runOnPart(builder: DiffGraphBuilder, taggerPart: DerivedSourceTaggerPart): Unit = {
-    val typeDeclVal    = taggerPart.typeDecl.fullName
-    val typeDeclMember = taggerPart.member
-    taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, taggerPart.ruleInfo.id, typeDeclMember)
-
-    (cpgNodeCache.cachedIdentifier
-      .where(_.typeFullName(typeDeclVal))
-      .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l).foreach(impactedObject => {
-      if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-        storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
-        storeForTag(builder, impactedObject, ruleCache)(
-          Constants.id,
-          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
-        )
-        storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-      }
-      storeForTag(builder, impactedObject, ruleCache)(
-        Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE,
-        taggerPart.ruleInfo.id
-      )
-    })
-
-    // To Mark all field Access and getters
-    cpgNodeCache.tagAllFieldAccessAndGetters(builder, typeDeclVal, taggerPart.ruleInfo, typeDeclMember.name, true)
-  }
-}
-
-/** Step 2.1 =>
-  *
-  * Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
-  */
-class FirstLevelDerivedSourceTagger(
-  cpg: Cpg,
-  cpgNodeCache: CPGNodeCacheForSourceTagger,
-  ruleCache: RuleCache,
-  taggerCache: TaggerCache
-) extends PrivadoParallelCpgPass[DerivedSourceTaggerPart](cpg) {
-  override def generateParts(): Array[DerivedSourceTaggerPart] = cpgNodeCache.derivedSourceTaggerParts
-  override def runOnPart(builder: DiffGraphBuilder, taggerPart: DerivedSourceTaggerPart): Unit = {
-    val typeDeclMember = taggerPart.member
-    val typeDeclVal    = taggerPart.typeDecl.fullName
-    // updating cache
-    taggerCache.addItemToTypeDeclMemberCache(typeDeclVal, taggerPart.ruleInfo.id, typeDeclMember)
-    val typeDeclMemberName = typeDeclMember.name
-    // Have started tagging Parameters as well, as in collection points sometimes there is no referencing Identifier present for a local
-
-    (cpgNodeCache.cachedIdentifier
-      .where(_.typeFullName(typeDeclVal))
-      .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l)
-      .foreach(impactedObject => {
-        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject, ruleCache)(
-            InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
-            taggerPart.ruleInfo.id
-          )
-          storeForTag(builder, impactedObject, ruleCache)(
-            Constants.id,
-            Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
-          )
-          storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-        }
-        storeForTag(builder, impactedObject, ruleCache)(
-          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-          taggerPart.ruleInfo.id
-        )
-        // Tag for storing memberName in derived Objects -> user --> (email, password)
-        storeForTag(builder, impactedObject, ruleCache)(
-          taggerPart.ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-          typeDeclMemberName
-        )
-      })
-
-    // To Mark all field Access and getters
-    cpgNodeCache.tagAllFieldAccessAndGetters(builder, typeDeclVal, taggerPart.ruleInfo, typeDeclMemberName, true)
   }
 }
 

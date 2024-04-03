@@ -1,9 +1,8 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.DataFlowReport
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, SourcePathInfo}
+import ai.privado.cache.{AppCache, SourcePathInfo}
 import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.Language
@@ -25,11 +24,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
-    new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-    new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)

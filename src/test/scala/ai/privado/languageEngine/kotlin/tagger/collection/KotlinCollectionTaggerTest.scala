@@ -76,11 +76,7 @@ class KotlinCollectionTaggerTest extends AbstractTaggingSpec {
 
         val ruleCache   = ruleCacheWithSourceAndCollectionRules(sourceRule, collectionRule)
         val taggerCache = new TaggerCache()
-        val nodeCache   = CPGNodeCacheForSourceTagger(cpg, ruleCache)
-        new DirectNodeSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-        new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-        new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
-        new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+        SourceTagger.runTagger(cpg, ruleCache, taggerCache)
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()
 
