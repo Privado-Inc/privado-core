@@ -61,6 +61,7 @@ import io.shiftleft.passes.CpgPassBase
 import ai.privado.entrypoint.*
 import ai.privado.model.Language.Language
 import io.circe.Json
+import ai.privado.entrypoint.ScanProcessor.config
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -116,6 +117,7 @@ class CSharpProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withDownloadDependencies(!config.skipDownloadDependencies)
 
     val xtocpg = new CSharpSrc2Cpg().createCpg(cpgconfig).map { cpg =>
       println(
