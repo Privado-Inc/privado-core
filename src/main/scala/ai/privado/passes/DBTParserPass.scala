@@ -171,7 +171,8 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       CatLevelOne.SINKS,
       "storages",
       Language.DEFAULT,
-      Array[String]()
+      Array[String](),
+      true
     )
 
     val dbDetails = DatabaseDetails(dbName, dbPlatform, dbHost, "", "", Some(schema))

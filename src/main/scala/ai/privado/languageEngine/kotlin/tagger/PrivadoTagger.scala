@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.kotlin.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
@@ -29,7 +29,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataflowCache: DataFlowCache
+    dataflowCache: DataFlowCache,
+    appCache: AppCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -57,7 +58,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
     }
 
-    new APITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
+    new APITagger(cpg, ruleCache, privadoInputConfig, appCache = appCache).createAndApply()
 
     new AndroidCollectionTagger(
       cpg,

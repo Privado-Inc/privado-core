@@ -24,11 +24,19 @@
 package ai.privado.languageEngine.csharp.processor
 
 import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.model.Constants.outputFileName
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -50,9 +58,9 @@ import ai.privado.semantic.Language.*
 import ai.privado.utility.PropertyParserPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-
 import ai.privado.entrypoint.*
 import ai.privado.model.Language.Language
+import io.circe.Json
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -62,18 +70,23 @@ class CSharpProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.CSHARP,
       dataFlowCache,
       auditCache,
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache,
+      returnClosedCpg,
+      propertyFilterCache
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -82,15 +95,15 @@ class CSharpProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
   }
 
-  override def processCpg(): Either[String, Unit] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
+    println(s"${Calendar.getInstance().getTime} - Processing source code using CSharp engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"

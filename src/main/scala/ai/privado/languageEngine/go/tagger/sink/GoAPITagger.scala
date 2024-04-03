@@ -22,7 +22,7 @@
  */
 package ai.privado.languageEngine.go.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.tagger.sink.APITagger
@@ -30,8 +30,8 @@ import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 
-class GoAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
-    extends APITagger(cpg, ruleCache, privadoInput) {
+class GoAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
+    extends APITagger(cpg, ruleCache, privadoInput, appCache) {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")

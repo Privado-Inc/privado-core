@@ -7,19 +7,27 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
+import scala.util.Using
 import io.circe.parser.{parse, *}
 import io.circe.*
 
-class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, repoItemTagName: Option[String] = None) {
+class ProbableSinkExporter(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  repoPath: String,
+  repoItemTagName: Option[String] = None,
+  appCache: AppCache
+) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getProbableSinks: List[String] = {
 
-    val lang         = AppCache.repoLanguage
+    val lang         = appCache.repoLanguage
     val isPython     = lang.toString().contains(Language.PYTHON.toString)
     val isJavascript = lang.toString().contains(Language.JAVASCRIPT.toString)
     val isRuby       = lang.toString().contains(Language.RUBY.toString)
     val isGoLang     = lang.toString().contains(Language.GO.toString)
+    val isPHP        = lang.toString().contains(Language.PHP.toString)
 
     if (repoItemTagName.isDefined)
       List() // If this is an export for Monolith repoItem, don't export Probable sink, otherwise this will make the Json very big and will need separate processing on backend
@@ -27,6 +35,9 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
       getProbableSinkForJavascript(repoPath)
     } else if (isRuby) {
       getProbableSinkForRuby(repoPath)
+    } else if (isPHP) {
+      val composerDep = getProbableSinkForPHP(repoPath)
+      composerDep ++ getProbableSinkBasedOnTaggedMethods(isPython, isGoLang)
     } else {
       getProbableSinkBasedOnTaggedMethods(isPython, isGoLang)
     }
@@ -41,10 +52,32 @@ class ProbableSinkExporter(cpg: Cpg, ruleCache: RuleCache, repoPath: String, rep
         .filter(_.endsWith("package.json"))
 
     for (path <- packageJsonFilePaths) {
-      val packageJsonStr = scala.io.Source.fromFile(path).mkString
-      val json           = parse(packageJsonStr).getOrElse(Json.Null)
-      val dependencies   = json.hcursor.downField("dependencies").as[Map[String, String]].getOrElse(Map.empty)
-      uniqueDeps ++= dependencies.keySet
+      Using(scala.io.Source.fromFile(path)) { source =>
+        val packageJsonStr = source.mkString
+        val json           = parse(packageJsonStr).getOrElse(Json.Null)
+        val dependencies   = json.hcursor.downField("dependencies").as[Map[String, String]].getOrElse(Map.empty)
+        uniqueDeps ++= dependencies.keySet
+      }
+    }
+    uniqueDeps.toList
+      .filter((str) => isPrivacySink(str, ruleCache))
+  }
+
+  def getProbableSinkForPHP(repoPath: String): List[String] = {
+    // Set up a set to hold the unique dependencies
+    var uniqueDeps = Set.empty[String]
+    val packageJsonFilePaths =
+      getAllFilesRecursively(repoPath, Set(".json"), ruleCache)
+        .getOrElse(List.empty)
+        .filter(_.endsWith("composer.json"))
+
+    for (path <- packageJsonFilePaths) {
+      Using(scala.io.Source.fromFile(path)) { source =>
+        val packageJsonStr = source.mkString
+        val json           = parse(packageJsonStr).getOrElse(Json.Null)
+        val dependencies   = json.hcursor.downField("require").as[Map[String, String]].getOrElse(Map.empty)
+        uniqueDeps ++= dependencies.keySet
+      }
     }
     uniqueDeps.toList
       .filter((str) => isPrivacySink(str, ruleCache))

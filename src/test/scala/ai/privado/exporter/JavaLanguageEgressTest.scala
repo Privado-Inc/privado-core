@@ -23,10 +23,11 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.S3DatabaseDetailsCache
+import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
+import ai.privado.model.Language
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -36,8 +37,11 @@ import scala.collection.mutable
 
 class JavaLanguageEgressTest extends JavaTaggingTestBase {
 
+  val appCache = new AppCache()
+
   override def beforeAll(): Unit = {
     super.beforeAll()
+    appCache.repoLanguage = Language.JAVA
   }
 
   override val javaFileContents: String =
@@ -75,8 +79,8 @@ class JavaLanguageEgressTest extends JavaTaggingTestBase {
 
   "Java code egresses" should {
     "collect egress url for java code" in {
-      val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
-      val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
+      val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 5
       egressesFromLanguageFiles shouldBe List(
         "api/v1/login",

@@ -23,10 +23,11 @@
 
 package ai.privado.exporter
 
+import ai.privado.cache.AppCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.javascript.JavascriptTaggingTestBase
-import ai.privado.model.ConfigAndRules
+import ai.privado.model.{ConfigAndRules, Language}
 import ai.privado.tagger.sink.RegularSinkTagger
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -36,11 +37,14 @@ import scala.collection.mutable
 
 class JavaScriptLanguageEgressTest extends JavascriptTaggingTestBase {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-  }
   override val rule: ConfigAndRules            = ConfigAndRules()
   override val packageJsonFileContents: String = ""
+  val appCache                                 = new AppCache()
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    appCache.repoLanguage = Language.JAVA
+  }
 
   override val javascriptFileContents: String =
     """
@@ -54,8 +58,8 @@ class JavaScriptLanguageEgressTest extends JavascriptTaggingTestBase {
 
   "Javascript code egresses" should {
     "collect egress url for javascript code" in {
-      val propertyExporter          = new HttpConnectionMetadataExporter(cpg, ruleCache)
-      val egressesFromLanguageFiles = propertyExporter.getLiteralsFromLanguageFiles
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
+      val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 6
       egressesFromLanguageFiles shouldBe List(
         "v1/api/userid",

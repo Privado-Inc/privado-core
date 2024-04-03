@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.passes.read
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.InternalTag
@@ -15,8 +15,13 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
-class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache, privadoInputConfig: PrivadoInput)
-    extends PrivadoParallelCpgPass[Expression](cpg) {
+class DatabaseReadPass(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  taggerCache: TaggerCache,
+  privadoInputConfig: PrivadoInput,
+  appCache: AppCache
+) extends PrivadoParallelCpgPass[Expression](cpg) {
   val sensitiveClassesWithMatchedRules = taggerCache.typeDeclMemberCache
   val sensitiveClasses                 = taggerCache.typeDeclMemberCache.keys
   val selectRegexPattern               = "(?i).*select.*"
@@ -76,7 +81,7 @@ class DatabaseReadPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache,
                   .l
 
               val readFlow =
-                dataElementSinks.reachableByFlows(node)(Utilities.getEngineContext(privadoInputConfig, 4)).l
+                dataElementSinks.reachableByFlows(node)(Utilities.getEngineContext(privadoInputConfig, appCache, 4)).l
               if (readFlow.nonEmpty) {
                 // As a flow is present from Select query to a Data element we can say, the data element is read from the query
                 readFlow

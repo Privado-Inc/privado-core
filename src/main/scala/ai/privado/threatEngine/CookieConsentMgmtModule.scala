@@ -28,11 +28,13 @@ object CookieConsentMgmtModule {
     cpg: Cpg,
     ruleCache: RuleCache,
     dataFlowModel: List[DataFlowPathModel],
-    privadoInput: PrivadoInput
+    privadoInput: PrivadoInput,
+    appCache: AppCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
-      val policyExecutor = new PolicyExecutor(cpg, dataFlowModel, AppCache.repoName, ruleCache, privadoInput)
-      val violatingFlows = policyExecutor.getViolatingOccurrencesForPolicy(threat)
+      val policyExecutor =
+        new PolicyExecutor(cpg, dataFlowModel, appCache.repoName, ruleCache, privadoInput, appCache = appCache)
+      val violatingFlows = policyExecutor.getViolatingOccurrencesForPolicy(threat, appCache)
 
       val consentMgmtModulePresent      = cpg.call.methodFullName(getCookieConsentMgmtModulePattern(threat.config))
       val prebidNonStandardIntergration = cpg.call("__tcfapi")

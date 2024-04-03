@@ -46,11 +46,6 @@ object MetricHandler {
   val internalPoliciesOrThreatsMatched = mutable.Set[String]()
 
   metricsData("privadoCoreVersion") = Environment.privadoVersionCore.asJson
-  val gitMetaData = GitMetaDataExporter.getMetaData(AppCache.localScanPath)
-  metricsData("hashedRepoIdentifier") = Json.fromString(Utilities.getSHA256Hash(gitMetaData.size match {
-    case 0 => AppCache.repoName
-    case _ => gitMetaData("remoteUrl")
-  }))
 
   def timeMetric[R](block: => R, call: String): R = {
     val startTime = System.nanoTime()
@@ -61,7 +56,12 @@ object MetricHandler {
     result
   }
 
-  def compileAndSend() = {
+  def compileAndSend(appCache: AppCache) = {
+    val gitMetaData = GitMetaDataExporter.getMetaData(appCache.localScanPath)
+    metricsData("hashedRepoIdentifier") = Json.fromString(Utilities.getSHA256Hash(gitMetaData.size match {
+      case 0 => appCache.repoName
+      case _ => gitMetaData("remoteUrl")
+    }))
     metricsData("internalRuleIdsMatch") = Json.fromValues(internalRulesMatched.map(key => Json.fromString(key)))
     metricsData("scanProcessErrors") = scanProcessErrors.asJson
     metricsData("otherErrorsOrWarnings") = otherErrorsOrWarnings.asJson

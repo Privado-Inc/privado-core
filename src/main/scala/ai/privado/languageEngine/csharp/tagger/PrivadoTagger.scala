@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.csharp.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
@@ -42,7 +42,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     rules: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    appCache: AppCache
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 

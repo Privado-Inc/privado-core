@@ -6,6 +6,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.go.passes.SQLQueryParser
+import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.metric.MetricHandler
@@ -13,7 +14,7 @@ import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
-import ai.privado.utility.UnresolvedReportUtility
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -23,6 +24,7 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.java.language.*
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -37,7 +39,9 @@ object GoProcessor {
     sourceRepoLocation: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -59,6 +63,14 @@ object GoProcessor {
             s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
+          if (config.assetDiscovery)
+            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+              .createAndApply()
+          else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO, propertyFilterCache)
+              .createAndApply()
+
+          new GoYamlLinkerPass(cpg).createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLQueryParser(cpg).createAndApply()
           // Unresolved function report
@@ -71,13 +83,19 @@ object GoProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = ScanProcessor.config.copy(), dataFlowCache)
+          cpg.runTagger(
+            ruleCache,
+            taggerCache,
+            privadoInputConfig = ScanProcessor.config.copy(),
+            dataFlowCache,
+            appCache
+          )
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache)
+          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
           println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
               .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
           println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
@@ -95,13 +113,15 @@ object GoProcessor {
             dataFlowCache.getDataflowAfterDedup,
             ScanProcessor.config,
             List(),
-            s3DatabaseDetailsCache
+            s3DatabaseDetailsCache,
+            appCache,
+            propertyFilterCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
             case Right(_) =>
-              println(s"Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder")
+              println(s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder")
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
@@ -120,7 +140,7 @@ object GoProcessor {
                 errorMsg += err
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
 
@@ -135,7 +155,7 @@ object GoProcessor {
                 errorMsg += err
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }
@@ -152,7 +172,7 @@ object GoProcessor {
                 errorMsg += err
               case Right(_) =>
                 println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }
@@ -191,13 +211,14 @@ object GoProcessor {
   def createGoCpg(
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    lang: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using GoLang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Converting path to absolute path, we may need that same as JS
@@ -221,7 +242,16 @@ object GoProcessor {
         )
         cpg
       }
-    processCPG(xtocpg, ruleCache, sourceRepoLocation, dataFlowCache, auditCache, s3DatabaseDetailsCache)
+    processCPG(
+      xtocpg,
+      ruleCache,
+      sourceRepoLocation,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      propertyFilterCache
+    )
   }
 
 }

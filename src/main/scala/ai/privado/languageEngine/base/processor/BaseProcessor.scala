@@ -16,12 +16,13 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   outputUnresolvedFilename
 }
-import ai.privado.model.Language
+import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import io.circe.Json
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.Config
@@ -41,7 +42,10 @@ abstract class BaseProcessor(
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  returnClosedCpg: Boolean,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -50,13 +54,13 @@ abstract class BaseProcessor(
   /** Entry method to read files and generate output
     * @return
     */
-  def processCpg(): Either[String, Unit] = ???
+  def processCpg(): Either[String, CpgWithOutputMap] = ???
 
   /** Takes care of consuming the Try[Cpg] and applying privado specific taggers and export json result
     * @param xtocpg
     * @return
     */
-  def tagAndExport(xtocpg: Try[Cpg]): Either[String, Unit] = {
+  def tagAndExport(xtocpg: Try[Cpg]): Either[String, CpgWithOutputMap] = {
     xtocpg match {
       case Success(cpg) =>
         try {
@@ -64,10 +68,13 @@ abstract class BaseProcessor(
 
           applyDataflowAndPostProcessingPasses(cpg)
 
-          applyTaggingAndExport(cpg)
-
+          applyTaggingAndExport(cpg) match
+            case Left(err) =>
+              logger.debug(s"Errors captured in scanning : $err")
+              Left(err)
+            case Right(cpgWithOutputMap) => Right(cpgWithOutputMap)
         } finally {
-          cpg.close()
+          if returnClosedCpg then cpg.close() // To not close cpg, and use it further, pass the returnClosedCpg as false
           import java.io.File
           val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
           val cpgFile       = new File(cpgOutputPath)
@@ -107,7 +114,7 @@ abstract class BaseProcessor(
     * @param cpg
     * @return
     */
-  def applyTaggingAndExport(cpg: Cpg): Either[String, Unit] = {
+  def applyTaggingAndExport(cpg: Cpg): Either[String, CpgWithOutputMap] = {
 
     println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
     val taggerCache = new TaggerCache()
@@ -117,19 +124,14 @@ abstract class BaseProcessor(
     )
 
     println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
     println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
         .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
     println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
 
-    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache)
-
-    // Check if any of the export failed
-    if (errorMsg.toList.isEmpty)
-      Right(())
-    else
-      Left(errorMsg.toList.mkString("\n"))
-
+    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match
+      case Left(err)        => Left(err)
+      case Right(outputMap) => Right(CpgWithOutputMap(cpg, outputMap))
   }
 
   def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = ???
@@ -138,14 +140,29 @@ abstract class BaseProcessor(
     cpg: Cpg,
     taggerCache: TaggerCache,
     dataflowMap: Map[String, Path],
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
-  ): Unit = {
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
+  ): Either[String, Map[String, Json]] = {
 
+    val errorMsgs = ListBuffer[String]()
     reportUnresolvedMethods(cpg, lang)
-    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache)
-    auditReportExport(cpg, taggerCache)
-    unresolvedReportExport(cpg)
-    intermediateReportExport(cpg)
+    auditReportExport(cpg, taggerCache) match
+      case Left(err) => errorMsgs.addOne(err)
+      case Right(_)  =>
+
+    unresolvedReportExport(cpg) match
+      case Left(err) => errorMsgs.addOne(err)
+      case Right(_)  =>
+
+    intermediateReportExport(cpg) match
+      case Left(err) => errorMsgs.addOne(err)
+      case Right(_)  =>
+
+    applyJsonExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match
+      case Left(err) =>
+        errorMsgs.addOne(err)
+        Left(errorMsgs.mkString("\n"))
+      case Right(outputMap) => Right(outputMap)
 
   }
 
@@ -153,8 +170,9 @@ abstract class BaseProcessor(
     cpg: Cpg,
     taggerCache: TaggerCache,
     dataflowMap: Map[String, Path],
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
-  ): Unit = {
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache
+  ): Either[String, Map[String, Json]] = {
     println(s"${Calendar.getInstance().getTime} - Brewing result...")
     MetricHandler.setScanStatus(true)
     // Exporting Results
@@ -168,19 +186,22 @@ abstract class BaseProcessor(
       dataFlowCache.getDataflowAfterDedup,
       privadoInput,
       List(),
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache,
+      propertyFilterCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)
-        errorMsg += err
-      case Right(_) =>
+        Left(err)
+      case Right(outputJson) =>
         println(
-          s"${Calendar.getInstance().getTime} - Successfully exported output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+          s"${Calendar.getInstance().getTime} - Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
+        Right(outputJson)
     }
   }
 
-  protected def auditReportExport(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+  protected def auditReportExport(cpg: Cpg, taggerCache: TaggerCache): Either[String, Unit] = {
     // Exporting the Audit report
     if (privadoInput.generateAuditReport) {
       val moduleCache: ModuleCache = new ModuleCache()
@@ -197,17 +218,18 @@ abstract class BaseProcessor(
       ) match {
         case Left(err) =>
           MetricHandler.otherErrorsOrWarnings.addOne(err)
-          errorMsg += err
+          Left(err)
         case Right(_) =>
           println(
-            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
+          Right(())
       }
-    }
+    } else Right(())
 
   }
 
-  protected def unresolvedReportExport(cpg: Cpg): Unit = {
+  protected def unresolvedReportExport(cpg: Cpg): Either[String, Unit] = {
 
     // Exporting the Unresolved report
     JSONExporter.UnresolvedFlowFileExport(
@@ -217,15 +239,16 @@ abstract class BaseProcessor(
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)
-        errorMsg += err
+        Left(err)
       case Right(_) =>
         println(
-          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
+        Right(())
     }
   }
 
-  protected def intermediateReportExport(cpg: Cpg): Unit = {
+  protected def intermediateReportExport(cpg: Cpg): Either[String, Unit] = {
     // Exporting the Intermediate report
     if (privadoInput.testOutput || privadoInput.generateAuditReport) {
       JSONExporter.IntermediateFileExport(
@@ -235,13 +258,15 @@ abstract class BaseProcessor(
       ) match {
         case Left(err) =>
           MetricHandler.otherErrorsOrWarnings.addOne(err)
-          errorMsg += err
+          Left(err)
         case Right(_) =>
           println(
-            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${AppCache.localScanPath}/$outputDirectoryName' folder..."
+            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
+          Right(())
       }
-    }
+    } else
+      Right(())
   }
 
   protected def reportUnresolvedMethods(cpg: Cpg, lang: Language): Unit = {

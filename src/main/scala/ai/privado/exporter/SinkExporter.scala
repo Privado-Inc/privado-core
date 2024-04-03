@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
@@ -43,7 +43,8 @@ class SinkExporter(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   repoItemTagName: Option[String] = None,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
@@ -81,19 +82,24 @@ class SinkExporter(
         SinkProcessingModel(
           entrySet._1,
           ExporterUtility
-            .convertPathElements({
-              if (privadoInput.disableDeDuplication)
-                entrySet._2.toList
-              else
-                entrySet._2.toList
-                  .distinctBy(_.code)
-                  .distinctBy(_.lineNumber)
-                  .distinctBy(Utilities.getFileNameForNode)
-            })
+            .convertPathElements(
+              {
+                if (privadoInput.disableDeDuplication)
+                  entrySet._2.toList
+                else
+                  entrySet._2.toList
+                    .distinctBy(_.code)
+                    .distinctBy(_.lineNumber)
+                    .distinctBy(Utilities.getFileNameForNode)
+              },
+              appCache = appCache
+            )
         )
       )
       .toList ++ processingMapDisableDedup
-      .map(entrySet => SinkProcessingModel(entrySet._1, ExporterUtility.convertPathElements(entrySet._2.toList)))
+      .map(entrySet =>
+        SinkProcessingModel(entrySet._1, ExporterUtility.convertPathElements(entrySet._2.toList, appCache = appCache))
+      )
       .toList
   }
 

@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.csharp
 
-import ai.privado.RuleInfoTestData
 import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.*
@@ -20,6 +19,7 @@ import io.shiftleft.semanticcpg.layers.*
 import io.joern.dataflowengineoss.layers.dataflows.*
 import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
 import ai.privado.model.SourceCodeModel
+import ai.privado.rule.RuleInfoTestData
 import ai.privado.tagger.source.LiteralTagger
 
 abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
@@ -83,8 +83,9 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
       .withOutputPath(outputFile.pathAsString)
 
     ruleCache.setRule(configAndRules)
-    val cpg = new CSharpSrc2Cpg().createCpg(config).get
-    AppCache.repoLanguage = Language.CSHARP
+    val cpg      = new CSharpSrc2Cpg().createCpg(config).get
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.CSHARP
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -101,7 +102,8 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
         ruleCache,
         null,
         dataFlowCache.getDataflowAfterDedup,
-        privadoInput
+        privadoInput,
+        appCache = appCache
       )
     (cpg, threatEngine)
   }

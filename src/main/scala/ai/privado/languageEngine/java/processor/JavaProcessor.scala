@@ -29,14 +29,14 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, JavaYamlLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.methodFullName.LoggerLombokPass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.languageEngine.java.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.*
+import ai.privado.model.Constants.{value, *}
 import ai.privado.model.Language.Language
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.{
   AndroidXmlParserPass,
   DBTParserPass,
@@ -50,6 +50,7 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
+import io.circe.Json
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -72,18 +73,23 @@ class JavaProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.JAVA,
       dataFlowCache,
       auditCache,
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache,
+      returnClosedCpg,
+      propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -94,23 +100,24 @@ class JavaProcessor(
       if (privadoInput.assetDiscovery)
         new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
       else
-        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA)
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA, propertyFilterCache)
     }) ++
       List(
         new JavaPropertyLinkerPass(cpg),
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
         new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
-        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
+        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache),
+        new JavaYamlLinkerPass(cpg)
       )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache, appCache)
 
-  override def processCpg(): Either[String, Unit] = {
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
     val excludeFileRegex = ruleCache.getExclusionRegex
-    println(s"${Calendar.getInstance().getTime} - Processing source code using ${Languages.JAVASRC} engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Java engine")
     if (!privadoInput.skipDownloadDependencies)
       println(s"${Calendar.getInstance().getTime} - Downloading dependencies and Parsing source code...")
     else
@@ -129,12 +136,12 @@ class JavaProcessor(
     val dependencies        = getDependencyList(cpgconfig)
     val hasLombokDependency = dependencies.exists(_.contains("lombok"))
     if (hasLombokDependency) {
-      Delombok.run(AppCache.scanPath) match
+      Delombok.run(appCache.scanPath) match
         case Left(_) =>
         case Right(delombokPath) =>
-          AppCache.isLombokPresent = true
+          appCache.isLombokPresent = true
           // Update the new ScanPath with delombok folder path
-          AppCache.scanPath = delombokPath
+          appCache.scanPath = delombokPath
           // Creating a new CpgConfig which uses the delombokPath
           cpgconfig =
             Config(fetchDependencies = !privadoInput.skipDownloadDependencies, delombokMode = Some("no-delombok"))
@@ -155,17 +162,21 @@ class JavaProcessor(
       cpg
     }
 
-    val msg = tagAndExport(xtocpg)
+    val tagAndExportOutput = tagAndExport(xtocpg)
 
     // Delete the delomboked directory after scanning is completed
-    if (AppCache.isLombokPresent) {
-      val dirName = AppCache.scanPath // scanPath is  already set to delombok path
+    if (appCache.isLombokPresent) {
+      val dirName = appCache.scanPath // scanPath is  already set to delombok path
       Try(File(dirName).delete()) match {
         case Success(_)         => logger.debug("Succesfully deleted delomboked code")
         case Failure(exception) => logger.debug(s"Exception :", exception)
       }
     }
-    msg
+
+    tagAndExportOutput match {
+      case Left(msg)               => Left(msg)
+      case Right(cpgWithOutputMap) => Right(cpgWithOutputMap)
+    }
   }
 
   def getDependencyList(config: Config): Set[String] = {

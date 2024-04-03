@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
@@ -43,6 +43,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
     """
       |internal.logger.api.base=https://logger.privado.ai/
       |slack.base.url=https://hooks.slack.com/services/some/leaking/url
+      |MY_ENDPOINT=http://myservice.com/user
       |""".stripMargin
 
   override val propertyFileContents = ""
@@ -60,7 +61,7 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
       |
       |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
       |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
-      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL) {
+      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL, @Named(Constants.MY_ENDPOINT) String endpoint) {
       |   }
       |
       |@Value("${internal.logger.api.base}")
@@ -74,25 +75,28 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
   "ConfigFilePass" should {
     "connect annotated parameter to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
-      anno.length shouldBe 3
+      anno.length shouldBe 4
 
       anno.code.l shouldBe List(
         "@Value(\"${internal.logger.api.base}\") String loggerBaseURL",
         "java.lang.String loggerUrl",
+        "@Named(Constants.MY_ENDPOINT) String endpoint",
         "java.lang.String slackWebHookURL"
       )
     }
 
     "connect property to annotated parameter" in {
-      cpg.property.usedAt.originalProperty.l.length shouldBe 3
+      cpg.property.usedAt.originalProperty.l.length shouldBe 4
       cpg.property.usedAt.originalProperty.name.l shouldBe List(
         "internal.logger.api.base",
         "internal.logger.api.base",
+        "MY_ENDPOINT",
         "slack.base.url"
       )
       cpg.property.usedAt.originalProperty.value.l shouldBe List(
         "https://logger.privado.ai/",
         "https://logger.privado.ai/",
+        "http://myservice.com/user",
         "https://hooks.slack.com/services/some/leaking/url"
       )
     }
@@ -190,10 +194,30 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
 }
 
 class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
+
   override val configFileContents = """
                                       |spring:
                                       |   application:
                                       |       name: basepath
+                                      |false-positive-entries:
+                                      |    urls:
+                                      |      - http:
+                                      |          path1: en-wrapper/0.5.6/maven-wrapper-0.5.6.jar
+                                      |          path2: che-maven/3.6.3/apache-maven-3.6.3-bin.zip
+                                      |          path3: dkr.ecr.us-west-2.amazonaws.com/infrastructure/ecr-pusher:latest
+                                      |          path4: mvn -U -P ${ENVIRONMENT} package -DskipTests --settings ${home}/.m2/settings.xml
+                                      |          path5: somename.jpg
+                                      |          path6: somename.png
+                                      |          path7: somename.gif
+                                      |          path8: string having html tags <p>hello</p> and <b>world</b>
+                                      |          path9: /a/b/c containing spaces
+                                      |          path10: github.com/a/b/c
+                                      |          pathe11: ../some/file/path
+                                      |          path12: #somecomment
+                                      |          path13: ///a/b/c
+                                      |          path14: ./some/file/path
+                                      |
+                                      |
                                       |mx-record-delete:
                                       |    events:
                                       |      - http:
@@ -208,6 +232,12 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
                                       |      - ssm:
                                       |          path: /
                                       |          method: PUT
+                                      |      - privado:
+                                      |          path: https://code.privado.ai/repositories
+                                      |          method: PUT
+                                      |      - privado-without-http:
+                                      |          path: code.privado.ai/repositories
+                                      |          method: PUT
                                       |""".stripMargin
   override val codeFileContents =
     """
@@ -216,21 +246,23 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
 
   override val propertyFileContents = ""
 
-  "Fetch egress urls from property files" ignore {
+  "Fetch egress urls from property files" should {
     "Check egress urls" in {
-      val egressExporter   = HttpConnectionMetadataExporter(cpg, new RuleCache)
-      val List(url1, url2) = egressExporter.getEgressUrls
+      val egressExporter               = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
+      val List(url1, url2, url3, url4) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
+      url3 shouldBe "https://code.privado.ai/repositories"
+      url4 shouldBe "code.privado.ai/repositories"
     }
 
     "Check egress urls with single char" in {
-      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
       val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
       egressWithSingleChar.size shouldBe 0
     }
     "Check application base path" in {
-      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache)
+      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
       val List(basePath)                 = httpConnectionMetadataExporter.getEndPointBasePath
       basePath shouldBe "basepath"
     }
@@ -314,6 +346,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
   var inputDir: File   = _
   var outputFile: File = _
   val propertyFileContents: String
+  val appCache = new AppCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -327,6 +360,7 @@ abstract class PropertiesFilePassTestBase(fileExtension: String)
 
     (inputDir / "GeneralConfig.java").write(codeFileContents)
     val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+    appCache.repoLanguage = Language.JAVA
 
     cpg = new JavaSrc2Cpg()
       .createCpg(config)
