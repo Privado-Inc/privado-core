@@ -8,7 +8,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "1.6.10"
-val joernVersion      = "2.0.316"
+val joernVersion      = "2.0.318"
 val overflowdbVersion = "1.190"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -18,7 +18,7 @@ val circeVersion        = "0.14.2"
 val jacksonVersion      = "2.15.2"
 val mockitoVersion      = "1.17.14"
 val goAstGenVersion     = "0.12.0"
-val dotnetAstGenVersion = "0.18.0"
+val dotnetAstGenVersion = "0.34.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
@@ -160,7 +160,7 @@ Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 // download dotnetastgen: start
 lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
 lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
-lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val DotNetAstgenMac      = "dotnetastgen-macos"
 
 lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
