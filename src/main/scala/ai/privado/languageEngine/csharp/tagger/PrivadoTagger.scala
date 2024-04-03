@@ -25,6 +25,7 @@ package ai.privado.languageEngine.csharp.tagger
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
@@ -50,6 +51,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new LiteralTagger(cpg, rules).createAndApply()
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
     new RegularSinkTagger(cpg, rules).createAndApply()
+    new CollectionTagger(cpg, rules).createAndApply()
 
     logger.info("Finished tagging")
     cpg.tag
