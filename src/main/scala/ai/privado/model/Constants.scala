@@ -128,7 +128,7 @@ object Constants {
   val repoConfigMetaData            = "RepoConfigMetaData"
   val propertyFileSkippedBySize     = "PropertyFileSkippedBySize"
   val propertyFileSkippedByDirCount = "PropertyFileSkippedByDirCount"
-  val arguments = "arguments"
+  val arguments                     = "arguments"
 
   // database details
   val dbName      = "dbName"
