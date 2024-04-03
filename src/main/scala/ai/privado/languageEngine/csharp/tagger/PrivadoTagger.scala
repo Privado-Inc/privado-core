@@ -52,7 +52,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
     new SqlQueryTagger(cpg, rules).createAndApply()
     new RegularSinkTagger(cpg, rules).createAndApply()
-    new CollectionTagger(cpg, rules).createAndApply()
+//    new CollectionTagger(cpg, rules).createAndApply()
 
     logger.info("Finished tagging")
     cpg.tag
