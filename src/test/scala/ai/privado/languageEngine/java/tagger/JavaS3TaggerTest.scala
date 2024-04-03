@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger
 
-import ai.privado.cache.S3DatabaseDetailsCache
+import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
@@ -81,7 +81,8 @@ class JavaS3TaggerTest extends JavaTaggingTestBase {
 
   "Java code reading and writing from S3 bucket" should {
     "have bucket name" in {
-      val sinkExporter = new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache)
+      val sinkExporter =
+        new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache, appCache = new AppCache())
       sinkExporter.getSinks.map(_.databaseDetails.dbName) shouldBe List("my-write-bucket", "my-read-bucket")
     }
   }

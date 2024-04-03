@@ -52,7 +52,6 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
     cpg = new JsSrc2Cpg().createCpg(config).get
 
     // Caching Rule
-    AppCache.repoLanguage = Language.JAVASCRIPT
     ruleCache.setRule(rule)
     super.beforeAll()
   }

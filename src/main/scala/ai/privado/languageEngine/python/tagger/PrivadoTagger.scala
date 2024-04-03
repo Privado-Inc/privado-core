@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
@@ -26,7 +26,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    appCache: AppCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -37,7 +38,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
+    new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache).createAndApply()
 
     new PythonDBConfigTagger(cpg).createAndApply()
 
@@ -55,7 +56,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     collectionTagger.createAndApply()
     ingressUrls.addAll(collectionTagger.getIngressUrls())
 
-    new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig).createAndApply()
+    new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, appCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 

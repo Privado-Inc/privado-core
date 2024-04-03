@@ -1,5 +1,6 @@
 package ai.privado.entrypoint
 
+import ai.privado.cache.AppCache
 import ai.privado.model.Constants.{CONFIG_DIR_IN_CONFIG, PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
 import ai.privado.rulevalidator.YamlFileValidator
 import better.files.File
@@ -9,7 +10,7 @@ object RuleValidator extends CommandProcessor {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override def process(): Either[String, Unit] = {
+  override def process(appCache: AppCache): Either[String, Unit] = {
     println("Starting rule validations ...")
     validateRules() match {
       case Some(returnVal) =>

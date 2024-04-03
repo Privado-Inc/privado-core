@@ -47,7 +47,8 @@ class PhpProcessor(
   lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -55,7 +56,8 @@ class PhpProcessor(
       lang,
       dataFlowCache,
       auditCache,
-      s3DatabaseDetailsCache
+      s3DatabaseDetailsCache,
+      appCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -63,7 +65,7 @@ class PhpProcessor(
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List[CpgPassBase]()
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
@@ -110,6 +112,13 @@ object PhpProcessor {
       }
     }
 
-    Paths.get(fixedDir, "/bin/php-parser/php-parser.php").toAbsolutePath.toString
+    val parserPath = Environment.isProduction match {
+      case Some(_) => Paths.get("/home", "privado-core-build", "php-parser", "php-parser.php")
+      case None    => Paths.get(fixedDir, "bin", "php-parser", "php-parser.php")
+    }
+
+    println(s"${TimeMetric.getNewTime()} - Using PHP logger from $parserPath")
+    parserPath.toAbsolutePath.toString
+
   }
 }

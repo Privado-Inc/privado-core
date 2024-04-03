@@ -6,13 +6,14 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
+import ai.privado.languageEngine.java.tagger.sink.api.Utility.tagAPICallByItsUrlMethod
 import ai.privado.tagger.utility.APITaggerUtility.{
   getLiteralCode,
   resolveDomainFromSource,
   tagAPIWithDomainAndUpdateRuleCache
 }
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}
 
 class JavaAPISinkEndpointMapperByNonInitMethod(cpg: Cpg, ruleCache: RuleCache)
     extends PrivadoParallelCpgPass[String](cpg) {
@@ -50,60 +51,21 @@ class JavaAPISinkEndpointMapperByNonInitMethod(cpg: Cpg, ruleCache: RuleCache)
   override def runOnPart(builder: DiffGraphBuilder, typeFullName: String): Unit = {
 
     cpg.method.signature(s"$typeFullName$methodFullNameSplitter.*").foreach { clientReturningMethod =>
-      val matchingProperties = clientReturningMethod.ast.originalProperty.value(apiMatchingRegex).dedup.l
 
       val impactedApiCalls = cpg.call
         .methodFullName(s"$typeFullName.*")
         .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
         .l
 
-      if (matchingProperties.nonEmpty) {
-        matchingProperties.foreach { propertyNode =>
-          val domain = getDomainFromString(propertyNode.value)
-          impactedApiCalls.foreach { apiCall =>
-            tagAPIWithDomainAndUpdateRuleCache(
-              builder,
-              thirdPartyRuleInfo.get,
-              ruleCache,
-              domain,
-              apiCall,
-              propertyNode
-            )
-            storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
-          }
-        }
-      } else { // There is no property node available to be used, try with parameter
-        val variableRegex      = ruleCache.getSystemConfigByKey(Constants.apiIdentifier)
-        val matchingParameters = clientReturningMethod.parameter.name(variableRegex).l
-
-        if (matchingParameters.nonEmpty) {
-          matchingParameters.foreach { parameter =>
-            val domain = resolveDomainFromSource(parameter)
-            impactedApiCalls.foreach { apiCall =>
-              tagAPIWithDomainAndUpdateRuleCache(builder, thirdPartyRuleInfo.get, ruleCache, domain, apiCall, parameter)
-              storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
-            }
-          }
-        } else { // There is no matching parameter to be used, try with identifier
-          val matchingIdentifiers = clientReturningMethod.ast.isIdentifier.name(variableRegex).l
-          if (matchingIdentifiers.nonEmpty) {
-            matchingIdentifiers.foreach { identifier =>
-              val domain = resolveDomainFromSource(identifier)
-              impactedApiCalls.foreach { apiCall =>
-                tagAPIWithDomainAndUpdateRuleCache(
-                  builder,
-                  thirdPartyRuleInfo.get,
-                  ruleCache,
-                  domain,
-                  apiCall,
-                  identifier
-                )
-                storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
-              }
-            }
-          }
-        }
-      }
+      tagAPICallByItsUrlMethod(
+        cpg,
+        builder,
+        clientReturningMethod,
+        impactedApiCalls,
+        apiMatchingRegex,
+        thirdPartyRuleInfo,
+        ruleCache
+      )
     }
   }
 }

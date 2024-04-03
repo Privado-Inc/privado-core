@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 
-class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
@@ -50,7 +50,7 @@ class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 
-  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, appCache, 4)
   val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   override def generateParts(): Array[_ <: AnyRef] = {

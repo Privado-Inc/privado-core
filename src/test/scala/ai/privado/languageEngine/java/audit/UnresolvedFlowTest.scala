@@ -1,12 +1,13 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.UnresolvedFlowReport
-import ai.privado.cache.AuditCache
+import ai.privado.cache.{AppCache, AuditCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator.getSemantics
 import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.model.Language
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -21,6 +22,8 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.JAVA
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
@@ -30,10 +33,10 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
     val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
     val unresolvedFlows = unfilteredSinks
       .reachableByFlows(sources)(
-        Utilities.getEngineContext(config = privadoInput, 4)(getSemantics(cpg, privadoInput, ruleCache))
+        Utilities.getEngineContext(config = privadoInput, appCache, 4)(getSemantics(cpg, privadoInput, ruleCache))
       )
       .l
-    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows))
+    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows, appCache))
   }
 
   def getContent(): Map[String, String] = {

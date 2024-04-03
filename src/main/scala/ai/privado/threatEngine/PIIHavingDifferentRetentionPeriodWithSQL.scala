@@ -1,6 +1,6 @@
 package ai.privado.threatEngine
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{AppCache, TaggerCache}
 import ai.privado.model.exporter.ViolationProcessingModel
 import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.semantic.Language.*
@@ -22,7 +22,8 @@ object PIIHavingDifferentRetentionPeriodWithSQL extends BasePIIThreatEvaluator {
   def getViolations(
     threat: PolicyOrThreat,
     cpg: Cpg,
-    taggerCache: TaggerCache
+    taggerCache: TaggerCache,
+    appCache: AppCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows                               = ListBuffer[ViolationProcessingModel]()
@@ -56,7 +57,8 @@ object PIIHavingDifferentRetentionPeriodWithSQL extends BasePIIThreatEvaluator {
             table,
             violatingFlows,
             tableName,
-            Some(additionalDetails)
+            Some(additionalDetails),
+            appCache = appCache
           )
         }
       })
