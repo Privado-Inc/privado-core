@@ -28,8 +28,10 @@ import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
 import ai.privado.model.Constants.*
+import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
 import ai.privado.utility.Utilities.createCpgFolder
+import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -44,20 +46,23 @@ class PhpProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.PHP,
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      returnClosedCpg,
+      propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -72,8 +77,8 @@ class PhpProcessor(
     Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
   }
 
-  override def processCpg(): Either[String, Unit] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Php engine")
 
     createCpgFolder(sourceRepoLocation)
 

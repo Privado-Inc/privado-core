@@ -23,7 +23,8 @@
 package ai.privado.model
 
 import io.circe.Decoder.Result
-import io.circe.{Decoder, HCursor}
+import io.circe.{Decoder, HCursor, Json}
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import scala.collection.immutable.HashMap
 
@@ -322,3 +323,5 @@ object CirceEnDe {
     }
   }
 }
+
+case class CpgWithOutputMap(cpg: Cpg, outputMap: Map[String, Json])

@@ -123,11 +123,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
-    new AndroidCollectionTagger(
-      cpg,
-      Paths.get(privadoInputConfig.sourceLocation.head).toAbsolutePath.toString,
-      ruleCache
-    ).createAndApply()
+    new AndroidCollectionTagger(cpg, Paths.get(appCache.scanPath).toAbsolutePath.toString, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
 
