@@ -36,7 +36,7 @@ import ai.privado.cache.{
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.model.Constants.outputFileName
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -60,6 +60,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import ai.privado.entrypoint.*
 import ai.privado.model.Language.Language
+import io.circe.Json
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -69,21 +70,22 @@ class CSharpProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  propertyFilterCache: PropertyFilterCache
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.CSHARP,
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      returnClosedCpg,
       propertyFilterCache
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
@@ -100,8 +102,8 @@ class CSharpProcessor(
     super.applyDataflowAndPostProcessingPasses(cpg)
   }
 
-  override def processCpg(): Either[String, Unit] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
+    println(s"${Calendar.getInstance().getTime} - Processing source code using CSharp engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"

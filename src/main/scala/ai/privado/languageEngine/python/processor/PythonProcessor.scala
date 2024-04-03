@@ -241,7 +241,6 @@ object PythonProcessor {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     sourceRepoLocation: String,
-    lang: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
@@ -249,7 +248,7 @@ object PythonProcessor {
     propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Python engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Converting path to absolute path, we may need that same as JS

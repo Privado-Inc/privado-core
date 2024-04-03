@@ -226,7 +226,6 @@ object JavascriptProcessor {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     sourceRepoLocation: String,
-    lang: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
@@ -234,7 +233,7 @@ object JavascriptProcessor {
     propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Javascript engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"

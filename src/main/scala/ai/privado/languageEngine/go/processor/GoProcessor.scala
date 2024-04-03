@@ -211,7 +211,6 @@ object GoProcessor {
   def createGoCpg(
     ruleCache: RuleCache,
     sourceRepoLocation: String,
-    lang: String,
     dataFlowCache: DataFlowCache,
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
@@ -219,7 +218,7 @@ object GoProcessor {
     propertyFilterCache: PropertyFilterCache
   ): Either[String, Unit] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using GoLang engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     // Converting path to absolute path, we may need that same as JS

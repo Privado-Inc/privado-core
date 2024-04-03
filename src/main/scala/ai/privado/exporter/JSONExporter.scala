@@ -90,7 +90,7 @@ object JSONExporter {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache
-  ): Either[String, Unit] = {
+  ): Either[String, Map[String, Json]] = {
 
     try {
       val (
@@ -156,7 +156,7 @@ object JSONExporter {
           logger.debug("Error in getting size of repo ", e)
       }
       MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(jsonFile.size / 1024)
-      Right(())
+      Right(output.toMap)
 
     } catch {
       case ex: Exception =>

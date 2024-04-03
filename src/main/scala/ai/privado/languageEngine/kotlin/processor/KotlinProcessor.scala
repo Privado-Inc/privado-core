@@ -25,7 +25,7 @@ import ai.privado.model.Constants.{
   outputIntermediateFileName,
   outputUnresolvedFilename
 }
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.{
   AndroidXmlParserPass,
   DBTParserPass,
@@ -37,11 +37,11 @@ import ai.privado.passes.{
 }
 import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.kotlin.semantic.Language.*
-import ai.privado.model.Language
 import ai.privado.model.Language.Language
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
 import better.files.File
+import io.circe.Json
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.kotlin2cpg.Kotlin2Cpg
 import io.joern.kotlin2cpg.Config
@@ -63,21 +63,22 @@ class KotlinProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   sourceRepoLocation: String,
-  lang: Language,
   dataFlowCache: DataFlowCache,
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  returnClosedCpg: Boolean = true,
   propertyFilterCache: PropertyFilterCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
       sourceRepoLocation,
-      lang,
+      Language.KOTLIN,
       dataFlowCache,
       auditCache,
       s3DatabaseDetailsCache,
-      appCache
+      appCache,
+      returnClosedCpg
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
@@ -106,9 +107,9 @@ class KotlinProcessor(
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
     cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
 
-  override def processCpg(): Either[String, Unit] = {
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using $lang engine")
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Kotlin engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
@@ -130,7 +131,10 @@ class KotlinProcessor(
       X2Cpg.applyDefaultOverlays(cpg)
       cpg
     }
-    tagAndExport(xtocpg)
+    tagAndExport(xtocpg) match {
+      case Left(msg)               => Left(msg)
+      case Right(cpgWithOutputMap) => Right(cpgWithOutputMap)
+    }
   }
 
 }
