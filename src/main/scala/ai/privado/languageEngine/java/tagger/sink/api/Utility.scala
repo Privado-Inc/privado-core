@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, InternalTag, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.utility.APITaggerUtility.{resolveDomainFromSource, tagAPIWithDomainAndUpdateRuleCache}
 import ai.privado.utility.Utilities.{getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Literal, Method}
@@ -24,7 +24,10 @@ object Utility {
     ruleCache: RuleCache
   ): Unit = {
 
-    val impactedApiCalls = apiCalls.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString)).l
+    val impactedApiCalls = apiCalls
+      .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+      .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .l
 
     if (impactedApiCalls.nonEmpty) {
 

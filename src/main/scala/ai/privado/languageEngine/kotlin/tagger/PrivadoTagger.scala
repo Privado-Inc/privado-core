@@ -61,7 +61,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig)
 
-    new APITagger(cpg, ruleCache, privadoInputConfig, appCache = appCache).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, privadoInputConfig, appCache = appCache).createAndApply()
 
     new AndroidCollectionTagger(
       cpg,
