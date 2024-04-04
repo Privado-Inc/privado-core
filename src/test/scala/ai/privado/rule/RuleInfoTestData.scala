@@ -1,8 +1,9 @@
 package ai.privado.rule
 
+import ai.privado.cache.RuleCache
 import ai.privado.model.*
-import ai.privado.rule.SourceRuleTestData._
-import ai.privado.rule.SinkRuleTestData._
+import ai.privado.rule.SourceRuleTestData.*
+import ai.privado.rule.SinkRuleTestData.*
 
 object RuleInfoTestData {
 
@@ -20,4 +21,10 @@ object RuleInfoTestData {
 
   val rule: ConfigAndRules =
     ConfigAndRules(sources = sourceRule, sinks = sinkRule)
+
+  val ruleCache: RuleCache = {
+    val r = RuleCache()
+    r.setRule(rule)
+    r
+  }
 }

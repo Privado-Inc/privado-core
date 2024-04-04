@@ -57,7 +57,7 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCac
                   // This case is to get the Returned object from the code
                   // Ex - Optional<UserE> resp = userr.findByEmail(login.getEmail());
                   // Our intention is to get the UserE present inside <> and retrieve the corresponding TypeDecl information
-                  methodNode.code.trim.split(" ").headOption match {
+                  methodNode.code.trim.split(" ").find(_.contains(">")) match {
                     case Some(returnValue) =>
                       returnValue.stripSuffix(">").split("<").lastOption match {
                         case Some(returnClassValue) =>
