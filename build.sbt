@@ -70,7 +70,6 @@ libraryDependencies ++= Seq(
   "org.zeromq"                       % "jeromq"                     % "0.5.4",
   "org.sangria-graphql"             %% "sangria"                    % "4.0.0",
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
-  "org.apache.maven.shared"          % "maven-shared-utils"         % "3.4.2",
   "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests",
   scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
 )
