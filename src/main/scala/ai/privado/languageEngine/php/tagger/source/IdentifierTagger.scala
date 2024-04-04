@@ -24,7 +24,10 @@
 package ai.privado.languageEngine.php.tagger.source
 
 import ai.privado.cache.{RuleCache, TaggerCache}
-import ai.privado.languageEngine.java.tagger.source.Utility.{getCallsMatchingReturnRegex, getFieldAccessCallsMatchingRegex}
+import ai.privado.languageEngine.java.tagger.source.Utility.{
+  getCallsMatchingReturnRegex,
+  getFieldAccessCallsMatchingRegex
+}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
