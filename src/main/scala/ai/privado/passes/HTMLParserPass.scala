@@ -28,7 +28,6 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
-//import com.gargoylesoftware.htmlunit.html.*
 import org.htmlunit.html.*
 import org.htmlunit.html.HtmlScript
 import org.htmlunit.{BrowserVersion, WebClient}

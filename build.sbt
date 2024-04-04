@@ -60,7 +60,6 @@ libraryDependencies ++= Seq(
   "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
   "org.apache.maven"                 % "maven-model"                % "3.9.0",
-//  "net.sourceforge.htmlunit"         % "htmlunit"                   % "2.70.0",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
   "org.yaml"                         % "snakeyaml"                  % "1.33",
   "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
