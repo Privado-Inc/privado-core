@@ -81,7 +81,7 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
     }
   }
 
-  "Templated use case of Dervied source" should {
+  "Templated use case of Derived source" should {
     val cpg = code("""
         |public class User {
         |   public String firstName;
@@ -108,10 +108,8 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
         |""".stripMargin)
       .generateScanResult()
 
-    "tag a us identifier" in {
+    "tag a userone and user identifier" in {
       val identifierNodes = cpg.identifier.where(_.tag.nameExact("catLevelOne").valueExact("DerivedSources")).l
-      // TODO: Ideally it should be 2 nodes at line no 4 and line 5. However Line no 4 Identifier node is getting tagged two times.
-      // As it doesn't harm in processing, we will keep this issue on back burner.
       identifierNodes.size shouldBe 5
       identifierNodes.code.l shouldBe List("userone", "userone", "userone", "user", "user")
     }

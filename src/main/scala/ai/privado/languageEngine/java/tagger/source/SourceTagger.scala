@@ -104,17 +104,15 @@ class FirstLevelDerivedSourceTagger(
       .where(_.typeFullName(typeDeclVal))
       .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l)
       .foreach(impactedObject => {
-        if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-          storeForTag(builder, impactedObject, ruleCache)(
-            InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
-            taggerPart.ruleInfo.id
-          )
-          storeForTag(builder, impactedObject, ruleCache)(
-            Constants.id,
-            Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
-          )
-          storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-        }
+        storeForTag(builder, impactedObject, ruleCache)(
+          InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
+          taggerPart.ruleInfo.id
+        )
+        storeForTag(builder, impactedObject, ruleCache)(
+          Constants.id,
+          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+        )
+        storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
         storeForTag(builder, impactedObject, ruleCache)(
           Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
           taggerPart.ruleInfo.id
@@ -159,14 +157,12 @@ class OCDDerivedSourceTagger(
     (cpgNodeCache.cachedIdentifier
       .where(_.typeFullName(typeDeclVal))
       .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l).foreach(impactedObject => {
-      if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-        storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
-        storeForTag(builder, impactedObject, ruleCache)(
-          Constants.id,
-          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
-        )
-        storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-      }
+      storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_TYPE.toString)
+      storeForTag(builder, impactedObject, ruleCache)(
+        Constants.id,
+        Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE
+      )
+      storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
       storeForTag(builder, impactedObject, ruleCache)(
         Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE,
         taggerPart.ruleInfo.id
@@ -230,14 +226,12 @@ class ExtendingDerivedSourceTagger(
     (cpgNodeCache.cachedIdentifier.where(_.typeFullName(typeDeclVal)).l ::: cpgNodeCache.cachedParameter
       .where(_.typeFullName(typeDeclVal))
       .l).foreach(impactedObject => {
-      if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
-        storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
-        storeForTag(builder, impactedObject, ruleCache)(
-          Constants.id,
-          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
-        )
-        storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-      }
+      storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_INHERITANCE.toString)
+      storeForTag(builder, impactedObject, ruleCache)(
+        Constants.id,
+        Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE
+      )
+      storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
       storeForTag(builder, impactedObject, ruleCache)(
         Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE,
         taggerPart.memberType.ruleInfo.id
