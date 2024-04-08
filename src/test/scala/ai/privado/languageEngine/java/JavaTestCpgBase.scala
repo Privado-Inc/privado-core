@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java
 
 import ai.privado.TestCpgBase
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
