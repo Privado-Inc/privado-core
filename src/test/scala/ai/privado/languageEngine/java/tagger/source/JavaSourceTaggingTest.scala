@@ -78,6 +78,7 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
       // As it doesn't harm in processing, we will keep this issue on back burner.
       identifierNodes.size shouldBe 3
       identifierNodes.code.l shouldBe List("us", "us", "us")
+      identifierNodes.lineNumber.l shouldBe List(4, 4, 5)
     }
   }
 
@@ -112,6 +113,7 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
       val identifierNodes = cpg.identifier.where(_.tag.nameExact("catLevelOne").valueExact("DerivedSources")).l
       identifierNodes.size shouldBe 5
       identifierNodes.code.l shouldBe List("userone", "userone", "userone", "user", "user")
+      identifierNodes.lineNumber.l shouldBe List(5, 5, 6, 10, 13)
     }
   }
 }
