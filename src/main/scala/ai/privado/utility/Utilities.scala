@@ -190,7 +190,7 @@ object Utilities {
           .map { case (line, lineNo) =>
             // Zero means no truncate required
             val modifiedLine = if (allowedLineLimit != 0 && line.length > allowedLineLimit) {
-              line.take(allowedLineLimit) + " ..."
+              line.take(allowedLineLimit) + "..."
             } else {
               line
             }

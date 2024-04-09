@@ -206,7 +206,8 @@ object ExporterUtility {
     val allowedLineLimit = ruleCache.getSystemConfigByKey(Constants.MaxLineLimit, true)
     val limitValue       = if (allowedLineLimit.nonEmpty) allowedLineLimit.toInt else 0
     val sample =
-      if (limitValue != 0 && node.code.length < limitValue) node.code else node.code.take(limitValue) + " ..."
+      if (limitValue != 0 && node.code.length > limitValue) node.code.take(limitValue) + "..." else node.code
+    // val sample = node.code
     val lineNumber: Int = {
       node.lineNumber match {
         case Some(n) => n
