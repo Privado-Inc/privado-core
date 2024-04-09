@@ -165,7 +165,8 @@ object Utilities {
     lineToHighlight: Option[Integer],
     message: String = "",
     excerptStartLine: Int = -5,
-    excerptEndLine: Int = 5
+    excerptEndLine: Int = 5,
+    allowedLineLimit: Int = 0
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
@@ -187,10 +188,17 @@ object Utilities {
           .slice(startLine - 1, endLine)
           .zipWithIndex
           .map { case (line, lineNo) =>
-            if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-              line + " " + arrow
+            // Zero means no truncate required
+            val modifiedLine = if (allowedLineLimit != 0 && line.length > allowedLineLimit) {
+              line.take(allowedLineLimit) + " ..."
             } else {
               line
+            }
+
+            if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
+              modifiedLine + " " + arrow
+            } else {
+              modifiedLine
             }
           }
           .mkString("\n")

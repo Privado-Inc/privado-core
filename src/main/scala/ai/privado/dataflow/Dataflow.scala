@@ -126,12 +126,12 @@ class Dataflow(cpg: Cpg) {
         // For Unresolved flow sheet
         val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
         val unresolvedFlows = unfilteredSinks.reachableByFlows(sources).l
-        auditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows, appCache))
+        auditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows, appCache, ruleCache))
       }
 
       // Storing the pathInfo into dataFlowCache
       if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
-        dataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered, appCache)
+        dataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered, appCache, ruleCache)
       }
 
       println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
@@ -243,12 +243,15 @@ object Dataflow {
 
   def getExpendedFlowInfo(
     dataflowPathsUnfiltered: List[Path],
-    appCache: AppCache
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): List[DataFlowPathIntermediateModel] = {
     // Fetching the sourceId, sinkId and path Info
     val expendedFlow = ListBuffer[DataFlowPathIntermediateModel]()
     dataflowPathsUnfiltered.map(path => {
-      val paths    = path.elements.map(node => ExporterUtility.convertIndividualPathElement(node, appCache = appCache))
+      val paths = path.elements.map(node =>
+        ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache)
+      )
       val pathId   = DuplicateFlowProcessor.calculatePathId(path)
       var sourceId = ""
       if (path.elements.head.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name).nonEmpty) {
