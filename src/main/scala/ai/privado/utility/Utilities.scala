@@ -166,7 +166,7 @@ object Utilities {
     message: String = "",
     excerptStartLine: Int = -5,
     excerptEndLine: Int = 5,
-    allowedLineLimit: Int = 0
+    allowedCharLimit: Option[String] = None
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
@@ -188,17 +188,12 @@ object Utilities {
           .slice(startLine - 1, endLine)
           .zipWithIndex
           .map { case (line, lineNo) =>
-            // Zero means no truncate required
-            val modifiedLine = if (allowedLineLimit != 0 && line.length > allowedLineLimit) {
-              line.take(allowedLineLimit) + "..."
-            } else {
-              line
-            }
+            val modifiedTruncatedLine = getTruncatedText(line, allowedCharLimit)
 
             if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-              modifiedLine + " " + arrow
+              modifiedTruncatedLine + " " + arrow
             } else {
-              modifiedLine
+              modifiedTruncatedLine
             }
           }
           .mkString("\n")
@@ -207,6 +202,13 @@ object Utilities {
       case e: Exception =>
         logger.debug("Error : ", e)
         ""
+    }
+  }
+
+  def getTruncatedText(text: String, allowedCharLimit: Option[String]): String = {
+    allowedCharLimit.getOrElse("").toIntOption match {
+      case Some(limit) if text.length > limit => text.take(limit) + "..."
+      case _                                  => text
     }
   }
 

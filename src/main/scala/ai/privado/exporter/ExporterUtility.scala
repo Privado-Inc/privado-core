@@ -63,7 +63,7 @@ import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.dump
+import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -203,11 +203,8 @@ object ExporterUtility {
     appCache: AppCache,
     ruleCache: RuleCache
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
-    val allowedLineLimit = ruleCache.getSystemConfigByKey(Constants.MaxLineLimit, true)
-    val limitValue       = if (allowedLineLimit.nonEmpty) allowedLineLimit.toInt else 0
-    val sample =
-      if (limitValue != 0 && node.code.length > limitValue) node.code.take(limitValue) + "..." else node.code
-    // val sample = node.code
+    val allowedCharLimit = ruleCache.getSystemConfigByKey(Constants.MaxCharLimit, true)
+    val sample           = getTruncatedText(node.code, Some(allowedCharLimit))
     val lineNumber: Int = {
       node.lineNumber match {
         case Some(n) => n
@@ -242,7 +239,7 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedLineLimit = limitValue)
+      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = Some(allowedCharLimit))
       // Get the actual filename
       val actualFileName = {
         if (appCache.isLombokPresent)
