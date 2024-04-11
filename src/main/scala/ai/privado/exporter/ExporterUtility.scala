@@ -63,7 +63,7 @@ import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.dump
+import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -94,14 +94,16 @@ object ExporterUtility {
     nodes: List[AstNode],
     sourceId: String = "",
     taggerCache: TaggerCache = new TaggerCache(),
-    appCache: AppCache
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): List[DataFlowSubCategoryPathExcerptModel] = {
     val lang     = appCache.repoLanguage
     val isPython = lang == Language.PYTHON
 
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
-      val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList, appCache = appCache)
+      val currentNodeModel =
+        convertIndividualPathElement(node, index, sizeOfList, appCache = appCache, ruleCache = ruleCache)
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
@@ -132,17 +134,20 @@ object ExporterUtility {
                 convertIndividualPathElement(
                   member2,
                   messageInExcerpt = generateDSMemberMsg(member2.name, typeFullNameLevel2),
-                  appCache = appCache
+                  appCache = appCache,
+                  ruleCache = ruleCache
                 ) ++ convertIndividualPathElement(
                   member,
                   messageInExcerpt = generateDSMemberMsg(member.name, typeFullName),
-                  appCache = appCache
+                  appCache = appCache,
+                  ruleCache = ruleCache
                 ) ++ currentNodeModel
               case _ =>
                 convertIndividualPathElement(
                   member,
                   messageInExcerpt = generateDSMemberMsg(member.name, typeFullName),
-                  appCache = appCache
+                  appCache = appCache,
+                  ruleCache = ruleCache
                 ) ++ currentNodeModel
             }
 
@@ -162,11 +167,13 @@ object ExporterUtility {
                     convertIndividualPathElement(
                       member,
                       messageInExcerpt = generateDSMemberMsg(member.name, typeDecl.fullName),
-                      appCache = appCache
+                      appCache = appCache,
+                      ruleCache = ruleCache
                     ) ++ convertIndividualPathElement(
                       currentTypeDeclNode.get,
                       messageInExcerpt = generateDSExtendsMsg(typeDecl.name, typeFullName),
-                      appCache = appCache
+                      appCache = appCache,
+                      ruleCache = ruleCache
                     ) ++ currentNodeModel
                   case _ =>
                     currentNodeModel
@@ -193,9 +200,11 @@ object ExporterUtility {
     index: Int = -1,
     sizeOfList: Int = -1,
     messageInExcerpt: String = "",
-    appCache: AppCache
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
-    val sample = node.code
+    val allowedCharLimit: Option[Int] = ruleCache.getSystemConfigByKey(Constants.MaxCharLimit, true).toIntOption
+    val sample                        = getTruncatedText(node.code, allowedCharLimit)
     val lineNumber: Int = {
       node.lineNumber match {
         case Some(n) => n
@@ -230,7 +239,7 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message)
+      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = allowedCharLimit)
       // Get the actual filename
       val actualFileName = {
         if (appCache.isLombokPresent)

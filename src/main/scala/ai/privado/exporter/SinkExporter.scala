@@ -92,13 +92,17 @@ class SinkExporter(
                     .distinctBy(_.lineNumber)
                     .distinctBy(Utilities.getFileNameForNode)
               },
-              appCache = appCache
+              appCache = appCache,
+              ruleCache = ruleCache
             )
         )
       )
       .toList ++ processingMapDisableDedup
       .map(entrySet =>
-        SinkProcessingModel(entrySet._1, ExporterUtility.convertPathElements(entrySet._2.toList, appCache = appCache))
+        SinkProcessingModel(
+          entrySet._1,
+          ExporterUtility.convertPathElements(entrySet._2.toList, appCache = appCache, ruleCache = ruleCache)
+        )
       )
       .toList
   }

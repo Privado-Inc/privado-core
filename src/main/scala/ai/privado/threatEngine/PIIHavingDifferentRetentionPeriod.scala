@@ -1,6 +1,6 @@
 package ai.privado.threatEngine
 
-import ai.privado.cache.{AppCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
 import ai.privado.threatEngine.ThreatUtility.{getPIINameFromSourceId, hasDataElements}
@@ -26,7 +26,8 @@ object PIIHavingDifferentRetentionPeriod {
     threat: PolicyOrThreat,
     cpg: Cpg,
     taggerCache: TaggerCache,
-    appCache: AppCache
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows                               = ListBuffer[ViolationProcessingModel]()
@@ -70,7 +71,8 @@ object PIIHavingDifferentRetentionPeriod {
               violatingFlows,
               tableName,
               Some(additionalDetails),
-              appCache = appCache
+              appCache = appCache,
+              ruleCache = ruleCache
             )
           }
         }
