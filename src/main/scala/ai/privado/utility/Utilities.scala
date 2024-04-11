@@ -166,7 +166,7 @@ object Utilities {
     message: String = "",
     excerptStartLine: Int = -5,
     excerptEndLine: Int = 5,
-    allowedCharLimit: Option[String] = None
+    allowedCharLimit: Option[Int] = None
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
@@ -205,8 +205,9 @@ object Utilities {
     }
   }
 
-  def getTruncatedText(text: String, allowedCharLimit: Option[String]): String = {
-    allowedCharLimit.getOrElse("").toIntOption match {
+  def getTruncatedText(text: String, allowedCharLimit: Option[Int]): String = {
+    println("ppppppppp--- " + allowedCharLimit.getOrElse("nnnnn"))
+    allowedCharLimit match {
       case Some(limit) if text.length > limit => text.take(limit) + "..."
       case _                                  => text
     }

@@ -203,8 +203,8 @@ object ExporterUtility {
     appCache: AppCache,
     ruleCache: RuleCache
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
-    val allowedCharLimit = ruleCache.getSystemConfigByKey(Constants.MaxCharLimit, true)
-    val sample           = getTruncatedText(node.code, Some(allowedCharLimit))
+    val allowedCharLimit: Option[Int] = ruleCache.getSystemConfigByKey(Constants.MaxCharLimit, true).toIntOption
+    val sample                        = getTruncatedText(node.code, allowedCharLimit)
     val lineNumber: Int = {
       node.lineNumber match {
         case Some(n) => n
@@ -239,7 +239,7 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = Some(allowedCharLimit))
+      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = allowedCharLimit)
       // Get the actual filename
       val actualFileName = {
         if (appCache.isLombokPresent)
