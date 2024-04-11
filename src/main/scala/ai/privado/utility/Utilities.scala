@@ -206,7 +206,6 @@ object Utilities {
   }
 
   def getTruncatedText(text: String, allowedCharLimit: Option[Int]): String = {
-    println("ppppppppp--- " + allowedCharLimit.getOrElse("nnnnn"))
     allowedCharLimit match {
       case Some(limit) if text.length > limit => text.take(limit) + "..."
       case _                                  => text
