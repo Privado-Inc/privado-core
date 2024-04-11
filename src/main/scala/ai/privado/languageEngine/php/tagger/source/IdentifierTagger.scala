@@ -73,8 +73,10 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     Try(tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)) match {
       case Success(_) =>
       case Failure(reason) =>
-        logger.error("Error while tagging entities")
-        logger.error(reason.toString)
+        logger.debug(
+          s"Error while tagging derived source for the rule - ${ruleInfo.id}, having pattern ${ruleInfo.combinedRulePattern}"
+        )
+        logger.error(s"Error while tagging entities - ${reason.toString}")
     }
   }
 
