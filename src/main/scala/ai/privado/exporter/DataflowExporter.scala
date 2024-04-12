@@ -103,7 +103,7 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
         apiUrl,
         databaseDetails.getOrElse(DatabaseDetails("", "", "", "", "")),
         sinkPathIds
-          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId, sourceId, appCache))
+          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId, sourceId, appCache, ruleCache))
       )
     }
 
@@ -127,10 +127,16 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
 
   }
 
-  private def convertPathsList(sinkFlow: Path, pathId: String, sourceId: String, appCache: AppCache) = {
+  private def convertPathsList(
+    sinkFlow: Path,
+    pathId: String,
+    sourceId: String,
+    appCache: AppCache,
+    ruleCache: RuleCache
+  ) = {
     DataFlowSubCategoryPathModel(
       pathId,
-      ExporterUtility.convertPathElements(sinkFlow.elements, sourceId, taggerCache, appCache)
+      ExporterUtility.convertPathElements(sinkFlow.elements, sourceId, taggerCache, appCache, ruleCache)
     )
   }
 

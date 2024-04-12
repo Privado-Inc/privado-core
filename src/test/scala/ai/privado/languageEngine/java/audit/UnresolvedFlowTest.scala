@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.UnresolvedFlowReport
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator.getSemantics
@@ -34,7 +34,7 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
         Utilities.getEngineContext(config = privadoInput, appCache, 4)(getSemantics(cpg, privadoInput, ruleCache))
       )
       .l
-    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows, appCache))
+    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows, appCache, new RuleCache()))
   }
 
   def getContent(): Map[String, String] = {

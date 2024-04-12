@@ -6,7 +6,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
 
 class TestCpgWithJava(val fileSuffix: String) extends TestCpg {
-  protected def getLangaugeProcessor(
+  protected def getLanguageProcessor(
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     dataFlowCache: DataFlowCache,

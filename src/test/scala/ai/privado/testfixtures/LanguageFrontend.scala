@@ -76,7 +76,7 @@ trait LanguageFrontend {
     appCache.init(sourceCodePath.getAbsolutePath)
     appCache.repoLanguage = Language.JAVA
     val auditCache = this.auditCache.getOrElse(AuditCache())
-    getLangaugeProcessor(
+    getLanguageProcessor(
       this.ruleCache.getOrElse(RuleInfoTestData.ruleCache),
       privadoInput,
       this.dataFlowCache.getOrElse(DataFlowCache(privadoInput, auditCache)),
@@ -87,7 +87,7 @@ trait LanguageFrontend {
     )
   }
 
-  protected def getLangaugeProcessor(
+  protected def getLanguageProcessor(
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     dataFlowCache: DataFlowCache,

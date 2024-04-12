@@ -2,7 +2,7 @@ package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
 import ThreatUtility.hasDataElements
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -26,7 +26,8 @@ object CustomPrivacyLoggerMustbeUsed {
   def getViolations(
     threat: PolicyOrThreat,
     cpg: Cpg,
-    appCache: AppCache
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val higherOrderLeakgeSinkId = "Leakages.Log.*"
@@ -43,7 +44,7 @@ object CustomPrivacyLoggerMustbeUsed {
                 .append(
                   ViolationProcessingModel(
                     s"${leakage.methodFullName}::${leakage.file.name.headOption.getOrElse(Constants.Unknown)}",
-                    ExporterUtility.convertIndividualPathElement(leakage, appCache = appCache),
+                    ExporterUtility.convertIndividualPathElement(leakage, appCache = appCache, ruleCache = ruleCache),
                     None
                   )
                 )

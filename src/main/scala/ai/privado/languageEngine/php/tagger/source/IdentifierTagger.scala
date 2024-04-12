@@ -33,12 +33,16 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
+import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 
 import java.util.UUID
+import scala.util.{Failure, Success, Try}
 
 class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME: String = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_TYPE: String = UUID.randomUUID.toString
   lazy val RANDOM_ID_OBJECT_OF_TYPE_DECL_EXTENDING_TYPE: String     = UUID.randomUUID.toString
@@ -66,7 +70,14 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       addRuleTags(builder, member, ruleInfo, ruleCache)
     })
 
-    tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)
+    Try(tagObjectOfTypeDeclHavingMemberName(builder, rulePattern, ruleInfo)) match {
+      case Success(_) =>
+      case Failure(reason) =>
+        logger.debug(
+          s"Error while tagging derived source for the rule - ${ruleInfo.id}, having pattern ${ruleInfo.combinedRulePattern}"
+        )
+        logger.error(s"Error while tagging entities - ${reason.toString}")
+    }
   }
 
   /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1

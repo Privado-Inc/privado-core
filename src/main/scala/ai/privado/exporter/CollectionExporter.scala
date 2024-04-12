@@ -213,7 +213,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
                 Some(
                   CollectionOccurrenceDetailModel(
                     sourceId,
-                    ExporterUtility.convertIndividualPathElement(argNode, appCache = appCache) match
+                    ExporterUtility
+                      .convertIndividualPathElement(argNode, appCache = appCache, ruleCache = ruleCache) match
                       case Some(pathElement) =>
                         List(
                           CollectionOccurrenceModel(
@@ -367,7 +368,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       parameterId,
       methodParameterOccurrences
         .flatMap(methodParameter => {
-          ExporterUtility.convertIndividualPathElement(methodParameter, appCache = appCache) match {
+          ExporterUtility
+            .convertIndividualPathElement(methodParameter, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) =>
               getCollectionOccurrenceModel(Iterator(methodParameter).method.head, pathElement)
 
@@ -403,7 +405,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       templatedDomId,
       methodLocalOccurrences
         .flatMap(templateDom => {
-          ExporterUtility.convertIndividualPathElement(templateDom, appCache = appCache) match {
+          ExporterUtility.convertIndividualPathElement(templateDom, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(
@@ -442,7 +444,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
             .convertIndividualPathElement(
               fieldId,
               messageInExcerpt = "Android Form: " + androidXmlFileName,
-              appCache = appCache
+              appCache = appCache,
+              ruleCache = ruleCache
             ) match {
             case Some(pathElement) =>
               Some(
@@ -470,7 +473,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       localVariableId,
       methodLocalOccurrences
         .flatMap(localVar => {
-          ExporterUtility.convertIndividualPathElement(localVar, appCache = appCache) match {
+          ExporterUtility.convertIndividualPathElement(localVar, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) => getCollectionOccurrenceModel(Iterator(localVar).method.head, pathElement)
             case None              => None
           }
@@ -487,7 +490,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       localVariableId,
       methodLiteralOccurrences
         .flatMap(literal => {
-          ExporterUtility.convertIndividualPathElement(literal, appCache = appCache) match {
+          ExporterUtility.convertIndividualPathElement(literal, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) => getCollectionOccurrenceModel(Iterator(literal).method.head, pathElement)
             case None              => None
           }
@@ -501,7 +504,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       variableId,
       nodeOccurrences
         .flatMap(node => {
-          ExporterUtility.convertIndividualPathElement(node, appCache = appCache) match {
+          ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(
