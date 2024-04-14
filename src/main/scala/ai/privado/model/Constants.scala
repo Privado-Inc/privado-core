@@ -57,6 +57,7 @@ object Constants {
   val filePath                  = "filePath"
   val PropertyFileSizeLimit     = "propertyFileSizeLimit"
   val PropertyFileDirCountLimit = "propertyFileDirCountLimit"
+  val MaxCharLimit              = "maxCharLimit"
 
   val third_parties      = "third_parties"
   val internal_apis      = "internal_apis"

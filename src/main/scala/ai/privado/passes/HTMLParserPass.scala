@@ -28,9 +28,9 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities
-import com.gargoylesoftware.htmlunit.html.*
-import com.gargoylesoftware.htmlunit.html.HtmlScript
-import com.gargoylesoftware.htmlunit.{BrowserVersion, WebClient}
+import org.htmlunit.html.*
+import org.htmlunit.html.HtmlScript
+import org.htmlunit.{BrowserVersion, WebClient}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTemplateDom}
 import org.slf4j.LoggerFactory

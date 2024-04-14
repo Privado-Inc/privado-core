@@ -124,13 +124,13 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
             // typeFullName: Profile
             // typeDeclVal: models.py:<module>.Profile
             val impactedObjects = cpg.identifier
-              .filter(n => typeDeclVal.endsWith(n.typeFullName))
+              .filter(n => typeDeclVal.endsWith(n.typeFullName) || n.possibleTypes.exists(typeDeclVal.endsWith))
               .filter(n => {
                 if (n.contains("astSiblings")) { n.astSiblings.isCall.name("import|require").isEmpty }
                 else { true }
               })
               .l ::: cpg.parameter
-              .filter(n => typeDeclVal.endsWith(n.typeFullName))
+              .filter(n => typeDeclVal.endsWith(n.typeFullName) || n.possibleTypes.exists(typeDeclVal.endsWith))
               .l
 
             impactedObjects
@@ -208,8 +208,11 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
         .put(ruleInfo.id, cpg.typeDecl.where(_.fullNameExact(typeDeclName)).head)
 
       val impactedObjects =
-        cpg.identifier.where(_.typeFullName(typeDeclVal)).whereNot(_.code("this")).l ::: cpg.parameter
-          .where(_.typeFullName(typeDeclVal))
+        cpg.identifier
+          .filter(iden => iden.typeFullName.equals(typeDeclVal) || iden.possibleTypes.contains(typeDeclVal))
+          .whereNot(_.code("this"))
+          .l ::: cpg.parameter
+          .filter(iden => iden.typeFullName.equals(typeDeclVal) || iden.possibleTypes.contains(typeDeclVal))
           .whereNot(_.code("this"))
           .l
       impactedObjects.foreach(impactedObject => {

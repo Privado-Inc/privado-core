@@ -92,7 +92,7 @@ class AndroidPermissionsExporter(
   }
 
   private def getPermissionDetail(node: AndroidXmlPermissionNode): Option[AndroidPermissionDetailModel] = {
-    ExporterUtility.convertIndividualPathElement(node, appCache = appCache) match {
+    ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache) match {
       case Some(pathElement) =>
         Some(
           AndroidPermissionDetailModel(

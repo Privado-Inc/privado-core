@@ -1,27 +1,21 @@
-package ai.privado.languageEngine.java
+package ai.privado.languageEngine.csharp
 
 import ai.privado.TestCpgBase
-import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
+import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
-import ai.privado.languageEngine.java.processor.JavaProcessor
+import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.model.Language
 import ai.privado.rule.RuleInfoTestData
-import io.circe.Json
-import io.shiftleft.codepropertygraph.generated.Cpg
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-abstract class JavaTestCpgBase(
+abstract class CSharpTestCpgBase(
   withRuleCache: RuleCache = RuleInfoTestData.ruleCache,
   withPrivadoInput: PrivadoInput = PrivadoInput()
 ) extends TestCpgBase(withPrivadoInput) {
   override def getProcessor(sourceCodeLocation: String): BaseProcessor = {
     appCache.init(sourceCodeLocation)
-    appCache.repoLanguage = Language.JAVA
-    new JavaProcessor(
+    appCache.repoLanguage = Language.CSHARP
+    new CSharpProcessor(
       withRuleCache,
       withPrivadoInput.copy(sourceLocation = Set(sourceCodeLocation)),
       sourceCodeLocation,
@@ -32,5 +26,4 @@ abstract class JavaTestCpgBase(
       returnClosedCpg = false
     )
   }
-
 }
