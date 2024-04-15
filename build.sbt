@@ -14,7 +14,7 @@ val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
-val circeVersion        = "1.15.0"
+val circeVersion        = "0.14.2"
 val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
 val goAstGenVersion     = "0.12.0"
@@ -51,14 +51,14 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules"          %% "scala-xml"                  % "2.2.0",
   "org.scala-lang.modules"          %% "scala-parallel-collections" % "1.0.4",
   "commons-io"                       % "commons-io"                 % "2.16.1",
-  "com.networknt"                    % "json-schema-validator"      % "1.4.0",
+  "com.networknt"                    % "json-schema-validator"      % "1.0.72",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"       % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml"    % jacksonVersion exclude ("org.yaml", "snakeyaml"),
   "com.github.wnameless.json"        % "json-flattener"             % "0.16.6",
   "org.apache.logging.log4j"         % "log4j-core"                 % "2.23.1",
   "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.23.1",
   "org.apache.poi"                   % "poi-ooxml"                  % "5.2.5",
-  "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
+  "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
   "org.apache.maven"                 % "maven-model"                % "3.9.6",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
   "org.yaml"                         % "snakeyaml"                  % "2.2",
