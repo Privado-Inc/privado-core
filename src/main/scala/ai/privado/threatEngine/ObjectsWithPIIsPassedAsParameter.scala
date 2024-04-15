@@ -2,7 +2,7 @@ package ai.privado.threatEngine
 
 import ai.privado.exporter.ExporterUtility
 import ThreatUtility.hasDataElements
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.{CatLevelOne, Constants}
 import ai.privado.model.exporter.ViolationProcessingModel
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -22,7 +22,11 @@ object ObjectsWithPIIsPassedAsParameter {
     *   cpg
     * @return
     */
-  def getViolations(cpg: Cpg, appCache: AppCache): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(
+    cpg: Cpg,
+    appCache: AppCache,
+    ruleCache: RuleCache
+  ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows = ListBuffer[ViolationProcessingModel]()
       val parameters =
@@ -32,7 +36,7 @@ object ObjectsWithPIIsPassedAsParameter {
         violatingFlows.append(
           ViolationProcessingModel(
             parameter.name,
-            ExporterUtility.convertIndividualPathElement(parameter, appCache = appCache),
+            ExporterUtility.convertIndividualPathElement(parameter, appCache = appCache, ruleCache = ruleCache),
             None
           )
         )

@@ -1,10 +1,10 @@
 package ai.privado.languageEngine.java.audit
 
-import scala.collection.mutable
 import ai.privado.audit.LiteralReport
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import io.shiftleft.semanticcpg.language.*
 
+import scala.collection.mutable
 import scala.util.Try
 
 class LiteralReportTest extends LiteralReportTestBase {
@@ -12,7 +12,7 @@ class LiteralReportTest extends LiteralReportTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
   }
 
   def getContent(): Map[String, String] = {

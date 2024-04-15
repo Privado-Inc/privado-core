@@ -25,10 +25,11 @@ package ai.privado.languageEngine.csharp.tagger
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.LiteralTagger
+import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import org.slf4j.LoggerFactory
@@ -49,7 +50,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new LiteralTagger(cpg, rules).createAndApply()
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
+    new SqlQueryTagger(cpg, rules).createAndApply()
     new RegularSinkTagger(cpg, rules).createAndApply()
+    new CollectionTagger(cpg, rules).createAndApply()
 
     logger.info("Finished tagging")
     cpg.tag

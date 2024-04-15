@@ -8,7 +8,7 @@ import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, Metho
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.api.JavaAPISinkTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
-import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
 import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
 import ai.privado.tagger.PrivadoBaseTagger
@@ -40,7 +40,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
 
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 

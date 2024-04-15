@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.tagger.collection
 
 import ai.privado.cache.{AppCache, TaggerCache}
 import ai.privado.exporter.CollectionExporter
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.languageEngine.java.{AbstractTaggingSpec, TestCodeSnippet}
 import ai.privado.model.*
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -67,7 +67,7 @@ class MethodFullNameCollectionTaggerTest extends AbstractTaggingSpec {
 
         val ruleCache   = ruleCacheWithSourceAndCollectionRules(sourceRule, collectionRule)
         val taggerCache = new TaggerCache()
-        new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+        SourceTagger.runTagger(cpg, ruleCache, taggerCache)
 
         val collectionTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
         collectionTagger.createAndApply()

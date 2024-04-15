@@ -165,7 +165,8 @@ object Utilities {
     lineToHighlight: Option[Integer],
     message: String = "",
     excerptStartLine: Int = -5,
-    excerptEndLine: Int = 5
+    excerptEndLine: Int = 5,
+    allowedCharLimit: Option[Int] = None
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
     try {
@@ -187,10 +188,12 @@ object Utilities {
           .slice(startLine - 1, endLine)
           .zipWithIndex
           .map { case (line, lineNo) =>
+            val modifiedTruncatedLine = getTruncatedText(line, allowedCharLimit)
+
             if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-              line + " " + arrow
+              modifiedTruncatedLine + " " + arrow
             } else {
-              line
+              modifiedTruncatedLine
             }
           }
           .mkString("\n")
@@ -199,6 +202,13 @@ object Utilities {
       case e: Exception =>
         logger.debug("Error : ", e)
         ""
+    }
+  }
+
+  def getTruncatedText(text: String, allowedCharLimit: Option[Int]): String = {
+    allowedCharLimit match {
+      case Some(limit) if text.length > limit => text.take(limit) + "..."
+      case _                                  => text
     }
   }
 

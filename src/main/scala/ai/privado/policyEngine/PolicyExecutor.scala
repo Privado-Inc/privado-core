@@ -211,7 +211,7 @@ class PolicyExecutor(
           violatingFlowList.add(
             ViolationProcessingModel(
               sourceNode._1,
-              ExporterUtility.convertIndividualPathElement(sourceNode._2, appCache = appCache),
+              ExporterUtility.convertIndividualPathElement(sourceNode._2, appCache = appCache, ruleCache = ruleCache),
               None
             )
           )
