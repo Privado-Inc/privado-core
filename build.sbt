@@ -66,7 +66,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang"                   % "scala-compiler"             % "2.13.13",
   "com.iheart"                      %% "ficus"                      % "1.5.2" exclude ("com.typesafe", "config"),
   "org.jruby"                        % "jruby-base"                 % "9.4.6.0",
-  "org.zeromq"                       % "jeromq"                     % "0.6.0",
+  "org.zeromq"                       % "jeromq"                     % "0.5.4",
   "org.sangria-graphql"             %% "sangria"                    % "4.1.0",
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
   "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests",
