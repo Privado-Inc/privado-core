@@ -32,12 +32,13 @@ import ai.privado.model.{Constants, Language}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 
-class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
+class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache, appCache: AppCache) {
 
   private val logger                    = LoggerFactory.getLogger(getClass)
   private val FEIGN_CLIENT              = "FeignClient"
   private val SPRING_ANNOTATION_ID      = "Collections.Annotation.Spring"
   private val STRING_START_WITH_SLASH   = "/.{2,}"
+  private val STRING_CONTAINS_URL       = ".*\\.[a-z]{2,5}/[a-z]{2,}.*"
   private val STRING_CONTAINS_TWO_SLASH = ".*/.*/.*"
   private val SPRING_APPLICATION_BASE_PATH =
     "(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)"
@@ -45,7 +46,12 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
   private val ALPHABET                                             = "[a-zA-Z]"
   private val STRING_WITH_CONSECUTIVE_DOTS_OR_DOT_SLASH_OR_NEWLINE = "(?s).*(\\.\\.|\\./|\n).*"
   private val ESCAPE_STRING_SLASHES                                = "(\\\")"
-  private val IMPORT_REGEX_WITH_SLASHES                            = "(?s)^(?=.*/)(?!.*/$).*"
+  //  Regex to eliminate pattern ending with file suffix
+  //  Demo: https://regex101.com/r/ojV93D/1
+  private val FILE_SUFFIX_REGEX_PATTERN = ".*[.][a-z]{2,5}(\\\")?$"
+  private val SUFFIX_PATTERN            = "^(\\.\\/|\\.\\.|\\/\\/).*"
+  private val COMMON_FALSE_POSITIVE_EGRESS_PATTERN =
+    ".*(BEGIN PRIVATE KEY|sha512|googleapis|sha1|amazonaws|github|</div>|</p>|<img|<class|require\\(|\\s).*"
 
   private val SLASH_SYMBOL          = "/"
   private val FORMAT_STRING_SYMBOLS = "[{}]"
@@ -89,7 +95,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
        It can happen that literals may come from imports as well, which was the case for JavaScript, and we handled it.
        Therefore, we might need to do a few things specific to each language. */
     if (
-      AppCache.repoLanguage == Language.JAVA || AppCache.repoLanguage == Language.PYTHON || AppCache.repoLanguage == Language.JAVASCRIPT
+      appCache.repoLanguage == Language.JAVA || appCache.repoLanguage == Language.PYTHON || appCache.repoLanguage == Language.JAVASCRIPT
     ) {
       egressUrls = egressUrls.concat(getLiteralsFromLanguageFiles)
     }
@@ -101,7 +107,14 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
     var egressUrls = List[String]()
 
     egressUrls = egressUrls.concat(
-      cpg.property.or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH)).value.dedup.l
+      cpg.property
+        .filterNot(_.value.matches(FILE_SUFFIX_REGEX_PATTERN))
+        .filterNot(_.value.matches(COMMON_FALSE_POSITIVE_EGRESS_PATTERN))
+        .filterNot(_.value.matches(SUFFIX_PATTERN))
+        .or(_.value(STRING_START_WITH_SLASH), _.value(STRING_CONTAINS_TWO_SLASH), _.value(STRING_CONTAINS_URL))
+        .value
+        .dedup
+        .l
     )
 
     egressUrls = egressUrls.concat(addUrlFromFeignClient())
@@ -110,7 +123,7 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
 
   def getEndPointBasePath: List[String] = {
     var basePaths = List[String]()
-    if (AppCache.repoLanguage.id == Language.JAVA.id) {
+    if (appCache.repoLanguage.id == Language.JAVA.id) {
       basePaths = basePaths.concat(cpg.property.name(SPRING_APPLICATION_BASE_PATH).value.dedup.l)
     }
     basePaths = basePaths.concat(
@@ -128,9 +141,11 @@ class HttpConnectionMetadataExporter(cpg: Cpg, ruleCache: RuleCache) {
       val ruleInfo = ruleCache.getRule.collections
         .filter(_.catLevelTwo == Constants.annotations)
         .filter(_.id == SPRING_ANNOTATION_ID)
-        .head
+        .headOption
 
-      val combinedRulePatterns = ruleInfo.combinedRulePattern
+      if (ruleInfo.isEmpty) return egressUrls
+
+      val combinedRulePatterns = ruleInfo.get.combinedRulePattern
 
 //       filters these annotation to include only those found in files that contain a FeignClient,
 //       producing a list of matched annotations

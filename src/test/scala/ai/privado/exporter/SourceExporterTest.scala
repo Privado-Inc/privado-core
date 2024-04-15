@@ -1,15 +1,16 @@
 package ai.privado.exporter
 
+import ai.privado.cache.AppCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.{CatLevelOne, Constants}
 import io.shiftleft.semanticcpg.language.*
 class SourceExporterTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
   }
 
   override val javaFileContents =
@@ -39,7 +40,8 @@ class SourceExporterTest extends JavaTaggingTestBase {
 
   "Source exporter" should {
     "not export derived source under processing" in {
-      val sourceExporter = SourceExporter(cpg, ruleCache, PrivadoInput(disableDeDuplication = true))
+      val sourceExporter =
+        SourceExporter(cpg, ruleCache, PrivadoInput(disableDeDuplication = true), appCache = new AppCache())
       !sourceExporter.getProcessing.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
     }
   }

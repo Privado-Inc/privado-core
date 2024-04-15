@@ -38,8 +38,9 @@ import ai.privado.utility.Utilities.{
 }
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member}
 import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 object APITaggerUtility {
 
@@ -48,8 +49,9 @@ object APITaggerUtility {
 
   def getLiteralCode(element: AstNode): String = {
     val literalCode = element match {
-      case member: Member => member.name
-      case _              => element.code.split(" ").last
+      case member: Member             => member.name
+      case propertyNode: JavaProperty => propertyNode.value
+      case _                          => element.code.split(" ").last
     }
 
     element.originalPropertyValue.getOrElse(literalCode)
@@ -83,7 +85,9 @@ object APITaggerUtility {
         else {
           val domain = resolveDomainFromSource(sourceNode)
           newRuleIdToUse = ruleInfo.id + "." + domain
-          ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+          ruleCache.setRuleInfo(
+            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true)
+          )
           addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
         }
         storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(sourceNode))
@@ -110,12 +114,27 @@ object APITaggerUtility {
     urlValue.stripPrefix("\"").stripSuffix("\"")
   }
 
-  private def resolveDomainFromSource(sourceNode: AstNode): String = {
+  def resolveDomainFromSource(sourceNode: AstNode): String = {
     val sourceDomain = sourceNode.originalPropertyValue.getOrElse(getLiteralCode(sourceNode))
     if (sourceDomain.matches(SERVICE_URL_REGEX_PATTERN)) {
       sourceDomain.split("//").last
     } else {
       getDomainFromString(sourceDomain)
     }
+  }
+
+  def tagAPIWithDomainAndUpdateRuleCache(
+    builder: DiffGraphBuilder,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    domain: String,
+    apiNode: AstNode,
+    apiUrlNode: AstNode
+  ) = {
+    val newRuleIdToUse = ruleInfo.id + "." + domain
+    ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true))
+    addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(apiUrlNode))
+
   }
 }

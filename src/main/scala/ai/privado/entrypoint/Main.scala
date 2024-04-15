@@ -23,6 +23,7 @@
 package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
+import ai.privado.cache.AppCache
 import ai.privado.metric.MetricHandler
 import org.slf4j.LoggerFactory
 
@@ -34,11 +35,11 @@ object Main {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def main(args: Array[String]): Unit = {
-
+    val appCache = new AppCache()
     CommandParser.parse(args) match {
       case Some(processor) =>
         try {
-          MetricHandler.timeMetric(processor.process(), "Complete") match {
+          MetricHandler.timeMetric(processor.process(appCache), "Complete") match {
             case Right(_) =>
               processor match {
                 case ScanProcessor =>
@@ -48,7 +49,7 @@ object Main {
                     AuthenticationHandler.authenticate(sourceRepoLocation)
                 case _ => ()
               }
-              MetricHandler.compileAndSend()
+              MetricHandler.compileAndSend(appCache)
             // raise error in case of failure, and collect
             // all handled & unhandled exceptions in catch
             case Left(err) =>
@@ -62,7 +63,7 @@ object Main {
             logger.debug("Failure from scan process:", e)
             logger.debug("Skipping auth flow due to scan failure")
             logger.error("Error in scanning, skipping auth flow : " + e.getMessage)
-            MetricHandler.compileAndSend()
+            MetricHandler.compileAndSend(appCache)
             // NOTE: Removed the finally as it will not be invoked after exit(1) is called in exeption.
             // exit(1) is important to indicate scan failure to outer process.
             exit(1)

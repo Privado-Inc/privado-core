@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
@@ -59,11 +59,13 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     builder: DiffGraphBuilder,
     ruleInfo: RuleInfo,
     httpSources: List[AstNode],
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    appCache: AppCache
   ): List[Call] = {
     val (typeDeclWithoutUrl, typeDeclWithUrl) = getTypeDeclUsingFeignClient
     val feignRequestLineTypeDecl              = getFeignClientTypeDeclUsingRequestLine
-    val (feingAPIBeanTypeDecl, beanUrl)       = getFeignClientTypeDeclUsingBean(httpSources, privadoInputConfig)
+    val (feingAPIBeanTypeDecl, beanUrl) =
+      getFeignClientTypeDeclUsingBean(httpSources, privadoInputConfig, appCache = appCache)
 
     val feignClientTypeDeclWithUrl    = mutable.HashMap[String, String]()
     val feignClientTypeDeclWithoutUrl = mutable.Set[TypeDecl]()
@@ -135,7 +137,8 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     */
   private def getFeignClientTypeDeclUsingBean(
     httpSources: List[AstNode],
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    appCache: AppCache
   ): (List[TypeDecl], String) = {
     val feignTargetCalls = cpg.method
       .where(_.annotation.name("Bean"))
@@ -151,7 +154,7 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
       val feignFlows = {
         val flows = feignTargetCalls
           .reachableByFlows(httpSources)(
-            Utilities.getEngineContext(privadoInputConfig, 4)(JavaSemanticGenerator.getDefaultSemantics)
+            Utilities.getEngineContext(privadoInputConfig, appCache, 4)(JavaSemanticGenerator.getDefaultSemantics)
           )
           .l
         if (privadoInputConfig.disableDeDuplication)
@@ -201,7 +204,9 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
           apiCalls.foreach(apiNode => {
             val domain         = getDomainFromString(apiLiteral)
             val newRuleIdToUse = ruleInfo.id + "." + domain
-            ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain))
+            ruleCache.setRuleInfo(
+              ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true)
+            )
             addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
             storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, apiLiteral)
           })

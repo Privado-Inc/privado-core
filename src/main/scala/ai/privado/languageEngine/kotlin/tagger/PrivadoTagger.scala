@@ -1,13 +1,13 @@
 package ai.privado.languageEngine.kotlin.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, MethodFullNameCollectionTagger}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
-import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
 import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
 import ai.privado.tagger.PrivadoBaseTagger
@@ -29,7 +29,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataflowCache: DataFlowCache
+    dataflowCache: DataFlowCache,
+    appCache: AppCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -38,7 +39,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
 
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 
@@ -57,7 +58,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
     }
 
-    new APITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
+    new APITagger(cpg, ruleCache, privadoInputConfig, appCache = appCache).createAndApply()
 
     new AndroidCollectionTagger(
       cpg,

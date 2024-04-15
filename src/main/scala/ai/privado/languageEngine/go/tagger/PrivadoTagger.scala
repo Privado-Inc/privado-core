@@ -4,7 +4,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.tagger.PrivadoBaseTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -23,7 +23,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    appCache: AppCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -36,7 +37,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new GoDBConfigTagger(cpg).createAndApply()
 
-    new GoAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
+    new GoAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache = appCache).createAndApply()
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 

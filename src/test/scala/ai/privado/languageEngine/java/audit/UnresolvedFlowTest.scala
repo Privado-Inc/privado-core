@@ -1,16 +1,15 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.UnresolvedFlowReport
-import ai.privado.cache.AuditCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator.getSemantics
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
+import ai.privado.model.Language
 import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -21,19 +20,21 @@ class UnresolvedFlowTest extends UnresolvedFlowTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.JAVA
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     val sources         = Dataflow.getSources(cpg)
     val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
     val unresolvedFlows = unfilteredSinks
       .reachableByFlows(sources)(
-        Utilities.getEngineContext(config = privadoInput, 4)(getSemantics(cpg, privadoInput, ruleCache))
+        Utilities.getEngineContext(config = privadoInput, appCache, 4)(getSemantics(cpg, privadoInput, ruleCache))
       )
       .l
-    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows))
+    auditCache.setUnfilteredFlow(Dataflow.getExpendedFlowInfo(unresolvedFlows, appCache, new RuleCache()))
   }
 
   def getContent(): Map[String, String] = {

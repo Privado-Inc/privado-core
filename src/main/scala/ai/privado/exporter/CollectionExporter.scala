@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.exporter.{
   CollectionModel,
   CollectionOccurrenceDetailModel,
@@ -32,8 +32,8 @@ import ai.privado.model.exporter.{
 }
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -43,7 +43,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option[String] = None) {
+class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option[String] = None, appCache: AppCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -213,7 +213,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
                 Some(
                   CollectionOccurrenceDetailModel(
                     sourceId,
-                    ExporterUtility.convertIndividualPathElement(argNode) match
+                    ExporterUtility
+                      .convertIndividualPathElement(argNode, appCache = appCache, ruleCache = ruleCache) match
                       case Some(pathElement) =>
                         List(
                           CollectionOccurrenceModel(
@@ -367,7 +368,8 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       parameterId,
       methodParameterOccurrences
         .flatMap(methodParameter => {
-          ExporterUtility.convertIndividualPathElement(methodParameter) match {
+          ExporterUtility
+            .convertIndividualPathElement(methodParameter, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) =>
               getCollectionOccurrenceModel(Iterator(methodParameter).method.head, pathElement)
 
@@ -403,7 +405,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       templatedDomId,
       methodLocalOccurrences
         .flatMap(templateDom => {
-          ExporterUtility.convertIndividualPathElement(templateDom) match {
+          ExporterUtility.convertIndividualPathElement(templateDom, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(
@@ -439,7 +441,12 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
             .stripPrefix(cpg.metaData.root.headOption.getOrElse("") + "/")
 
           ExporterUtility
-            .convertIndividualPathElement(fieldId, messageInExcerpt = "Android Form: " + androidXmlFileName) match {
+            .convertIndividualPathElement(
+              fieldId,
+              messageInExcerpt = "Android Form: " + androidXmlFileName,
+              appCache = appCache,
+              ruleCache = ruleCache
+            ) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(
@@ -466,7 +473,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       localVariableId,
       methodLocalOccurrences
         .flatMap(localVar => {
-          ExporterUtility.convertIndividualPathElement(localVar) match {
+          ExporterUtility.convertIndividualPathElement(localVar, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) => getCollectionOccurrenceModel(Iterator(localVar).method.head, pathElement)
             case None              => None
           }
@@ -483,7 +490,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       localVariableId,
       methodLiteralOccurrences
         .flatMap(literal => {
-          ExporterUtility.convertIndividualPathElement(literal) match {
+          ExporterUtility.convertIndividualPathElement(literal, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) => getCollectionOccurrenceModel(Iterator(literal).method.head, pathElement)
             case None              => None
           }
@@ -497,7 +504,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
       variableId,
       nodeOccurrences
         .flatMap(node => {
-          ExporterUtility.convertIndividualPathElement(node) match {
+          ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache) match {
             case Some(pathElement) =>
               Some(
                 CollectionOccurrenceModel(

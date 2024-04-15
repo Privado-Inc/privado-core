@@ -1,6 +1,5 @@
 package ai.privado.languageEngine.ruby.monolith
 
-import ai.privado.RuleInfoTestData
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
@@ -10,6 +9,7 @@ import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.model.{Constants, Language}
+import ai.privado.rule.RuleInfoTestData
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.language.Path
@@ -84,7 +84,8 @@ class MonolithTest extends MonolithTestBase {
     "be able to export individual privado.json" in {
       val privadoInput = PrivadoInput(isMonolith = true)
       // TODO Need to discard usage of AppCache as a static object and use it as a instance instead
-      AppCache.repoLanguage = Language.RUBY
+      val appCache = new AppCache()
+      appCache.repoLanguage = Language.RUBY
       val monolithJsonPaths = cpg.tag
         .nameExact(Constants.monolithRepoItem)
         .value
@@ -100,7 +101,8 @@ class MonolithTest extends MonolithTestBase {
             new TaggerCache(),
             new DataFlowCache(privadoInput, AuditCache()),
             privadoInput,
-            s3DatabaseDetailsCache
+            s3DatabaseDetailsCache,
+            appCache = appCache
           )
         )
         .l

@@ -1,23 +1,24 @@
 import sbt.Credentials
+import better.files.File
 
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
-ThisBuild / scalaVersion := "3.3.1"
+ThisBuild / scalaVersion := "3.4.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.6.6"
-val joernVersion      = "2.0.290"
-val overflowdbVersion = "1.187"
+val cpgVersion        = "1.6.11"
+val joernVersion      = "2.0.327"
+val overflowdbVersion = "1.192"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
 val circeVersion        = "0.14.2"
-val jacksonVersion      = "2.15.2"
+val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
 val goAstGenVersion     = "0.12.0"
-val dotnetAstGenVersion = "0.18.0"
+val dotnetAstGenVersion = "0.34.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
@@ -59,7 +60,7 @@ libraryDependencies ++= Seq(
   "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
   "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
   "org.apache.maven"                 % "maven-model"                % "3.9.0",
-  "net.sourceforge.htmlunit"         % "htmlunit"                   % "2.70.0",
+  "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
   "org.yaml"                         % "snakeyaml"                  % "1.33",
   "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
   "org.scala-lang"                   % "scala-compiler"             % "2.13.8",
@@ -158,9 +159,8 @@ Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 
 // download dotnetastgen: start
 lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
-lazy val DotNetAstgenWinArm   = "dotnetastgen-win-arm.exe"
 lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
-lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val DotNetAstgenMac      = "dotnetastgen-macos"
 
 lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
@@ -168,7 +168,7 @@ dotnetAstGenDownloadUrl := s"https://github.com/joernio/DotNetAstGen/releases/do
 
 lazy val dotnetAstGenBinaryNames = taskKey[Seq[String]]("dotnetastgen binary names")
 dotnetAstGenBinaryNames := {
-  Seq(DotNetAstgenWin, DotNetAstgenWinArm, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
+  Seq(DotNetAstgenWin, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
 }
 
 lazy val dotnetAstGenDlTask = taskKey[Unit](s"Download dotnetastgen binaries")
@@ -206,12 +206,42 @@ stage := Def
 
 Compile / compile := ((Compile / compile) dependsOn dotnetAstGenDlTask).value
 
-// Also remove astgen binaries with clean, e.g., to allow for updating them.
+// Download php-parser: start
+// This is based on how php2cpg vendors the php-parser in Joern
+val phpParserVersion       = "4.15.7"
+val upstreamParserBinName  = "php-parser.phar"
+val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
+val phpParserDlUrl =
+  s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
+
+Compile / compile := ((Compile / compile) dependsOn phpParseDlTask).value
+
+lazy val phpParseDlTask = taskKey[Unit]("Download php-parser binaries")
+phpParseDlTask := {
+  val phpBinDir = baseDirectory.value / "bin" / "php-parser"
+  phpBinDir.mkdirs()
+
+  val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
+  IO.copyFile(downloadedFile, phpBinDir / versionedParserBinName)
+
+  File((phpBinDir / "php-parser.php").getPath)
+    .createFileIfNotExists()
+    .overwrite(s"<?php\nrequire('$versionedParserBinName');?>")
+
+  val distDir = (Universal / stagingDirectory).value / "bin" / "php-parser"
+  distDir.mkdirs()
+  IO.copyDirectory(phpBinDir, distDir)
+}
+// Download php-parser: end
+
+// Also remove astgen and php-parser binaries with clean, e.g., to allow for updating them.
 // Sadly, we can't define the bin/ folders globally,
 // as .value can only be used within a task or setting macro
 cleanFiles ++= Seq(
   baseDirectory.value / "bin" / "astgen",
-  (Universal / stagingDirectory).value / "bin" / "astgen"
+  (Universal / stagingDirectory).value / "bin" / "astgen",
+  baseDirectory.value / "bin" / "php-parser",
+  (Universal / stagingDirectory).value / "bin" / "php-parser"
 ) ++ astGenBinaryNames.map(fileName => SimpleCache.encodeFile(s"$astGenDlUrl$fileName"))
 Compile / doc / sources                := Seq.empty
 Compile / packageDoc / publishArtifact := false

@@ -1,6 +1,6 @@
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import better.files.File
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -29,7 +29,7 @@ class ProbableSinkExporterTest extends AnyWordSpec with Matchers with BeforeAndA
       cpg
     }
     cpg = xtocpg.get
-    probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, "")
+    probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, "", appCache = new AppCache())
     super.beforeAll()
   }
 

@@ -60,16 +60,19 @@ class Dataflow(cpg: Cpg) {
     privadoScanConfig: PrivadoInput,
     ruleCache: RuleCache,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    appCache: AppCache
   ): Map[String, Path] = {
 
     if (privadoScanConfig.generateAuditReport && privadoScanConfig.enableAuditSemanticsFilter) {
-      auditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache)
+      auditCache.addIntoBeforeSemantics(cpg, privadoScanConfig, ruleCache, appCache)
     }
 
     logger.info("Generating dataflow")
     implicit val engineContext: EngineContext =
-      Utilities.getEngineContext(privadoScanConfig, 4)(semanticsP = getSemantics(cpg, privadoScanConfig, ruleCache))
+      Utilities.getEngineContext(privadoScanConfig, appCache, 4)(semanticsP =
+        getSemantics(cpg, privadoScanConfig, ruleCache, appCache)
+      )
 
     val sources = Dataflow.getSources(cpg)
     var sinks   = Dataflow.getSinks(cpg)
@@ -123,23 +126,23 @@ class Dataflow(cpg: Cpg) {
         // For Unresolved flow sheet
         val unfilteredSinks = UnresolvedFlowReport.getUnresolvedSink(cpg)
         val unresolvedFlows = unfilteredSinks.reachableByFlows(sources).l
-        auditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows))
+        auditCache.setUnfilteredFlow(getExpendedFlowInfo(unresolvedFlows, appCache, ruleCache))
       }
 
       // Storing the pathInfo into dataFlowCache
       if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
-        dataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered)
+        dataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered, appCache, ruleCache)
       }
 
       println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
-      AppCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
+      appCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
 
       // Apply `this` filtering for JS & JAVA also
       val dataflowPaths = {
         if (
-          privadoScanConfig.disableThisFiltering || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
+          privadoScanConfig.disableThisFiltering || (appCache.repoLanguage != Language.JAVA && appCache.repoLanguage != Language.JAVASCRIPT)
         )
           dataflowPathsUnfiltered
         else
@@ -149,7 +152,7 @@ class Dataflow(cpg: Cpg) {
       }
       println(s"${TimeMetric.getNewTime()} - --Filtering flows 1 is done in \t\t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPaths.size}")
-      AppCache.totalFlowAfterThisFiltering = dataflowPaths.size
+      appCache.totalFlowAfterThisFiltering = dataflowPaths.size
       // Stores key -> PathID, value -> Path
       val dataflowMapByPathId = dataflowPaths
         .flatMap(dataflow => {
@@ -173,7 +176,8 @@ class Dataflow(cpg: Cpg) {
         privadoScanConfig,
         ruleCache,
         dataFlowCache,
-        auditCache
+        auditCache,
+        appCache
       )
       println(s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
           .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.getDataflowBeforeDedup.size}")
@@ -191,8 +195,8 @@ class Dataflow(cpg: Cpg) {
       .toMap
   }
 
-  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache): Semantics = {
-    val lang = AppCache.repoLanguage
+  def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache, appCache: AppCache): Semantics = {
+    val lang = appCache.repoLanguage
     lang match {
       case Language.JAVA =>
         JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache, exportRuntimeSemantics = true)
@@ -211,9 +215,10 @@ object Dataflow {
   def dataflowForSourceSinkPair(
     sources: List[AstNode],
     sinks: List[CfgNode],
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    appCache: AppCache
   ): List[Path] = {
-    sinks.reachableByFlows(sources)(Utilities.getEngineContext(privadoInputConfig)).l
+    sinks.reachableByFlows(sources)(Utilities.getEngineContext(privadoInputConfig, appCache)).l
   }
 
   def getSources(cpg: Cpg): List[AstNode] = {
@@ -236,11 +241,17 @@ object Dataflow {
     cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
   }
 
-  def getExpendedFlowInfo(dataflowPathsUnfiltered: List[Path]): List[DataFlowPathIntermediateModel] = {
+  def getExpendedFlowInfo(
+    dataflowPathsUnfiltered: List[Path],
+    appCache: AppCache,
+    ruleCache: RuleCache
+  ): List[DataFlowPathIntermediateModel] = {
     // Fetching the sourceId, sinkId and path Info
     val expendedFlow = ListBuffer[DataFlowPathIntermediateModel]()
     dataflowPathsUnfiltered.map(path => {
-      val paths    = path.elements.map(node => ExporterUtility.convertIndividualPathElement(node))
+      val paths = path.elements.map(node =>
+        ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache)
+      )
       val pathId   = DuplicateFlowProcessor.calculatePathId(path)
       var sourceId = ""
       if (path.elements.head.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name).nonEmpty) {

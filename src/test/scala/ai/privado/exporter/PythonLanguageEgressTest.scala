@@ -38,6 +38,7 @@ import scala.collection.mutable
 
 class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
   val ruleCache = new RuleCache()
+  val appCache  = new AppCache()
   val cpg: PrivadoPySrcTestCpg = code("""
       | LOGGING = {
       |    'version': 1,
@@ -75,13 +76,13 @@ class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
       |""".stripMargin)
 
   override def beforeAll(): Unit = {
-    AppCache.repoLanguage = Language.PYTHON
     super.beforeAll()
+    appCache.repoLanguage = Language.PYTHON
   }
 
   "Python code egresses" should {
     "collect egress url for python code" in {
-      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache)
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
       val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 6
       egressesFromLanguageFiles shouldBe List(

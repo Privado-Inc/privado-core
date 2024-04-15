@@ -22,6 +22,8 @@
 
 package ai.privado.entrypoint
 
+import ai.privado.cache.AppCache
+
 trait CommandProcessor {
 
   var config: PrivadoInput = null
@@ -31,5 +33,5 @@ trait CommandProcessor {
     this
   }
 
-  def process(): Either[String, Unit]
+  def process(appCache: AppCache): Either[String, Unit]
 }

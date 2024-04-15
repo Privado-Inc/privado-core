@@ -1,6 +1,6 @@
 package ai.privado.threatEngine
 
-import ai.privado.cache.TaggerCache
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.model.exporter.ViolationProcessingModel
 import ai.privado.semantic.Language.*
@@ -22,7 +22,9 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
   def getViolations(
     threat: PolicyOrThreat,
     cpg: Cpg,
-    taggerCache: TaggerCache
+    taggerCache: TaggerCache,
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     val violatingFlows = ListBuffer[ViolationProcessingModel]()
 
@@ -41,7 +43,9 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
             groupedSource._2.head,
             violatingFlows,
             piiName,
-            Some(detailedDescription)
+            Some(detailedDescription),
+            appCache = appCache,
+            ruleCache = ruleCache
           )
         }
       })

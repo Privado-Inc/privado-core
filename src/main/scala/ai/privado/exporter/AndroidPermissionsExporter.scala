@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.model.exporter.{
@@ -40,7 +40,12 @@ import overflowdb.traversal.Traversal
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option[String] = None) {
+class AndroidPermissionsExporter(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  repoItemTagName: Option[String] = None,
+  appCache: AppCache
+) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -87,7 +92,7 @@ class AndroidPermissionsExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName
   }
 
   private def getPermissionDetail(node: AndroidXmlPermissionNode): Option[AndroidPermissionDetailModel] = {
-    ExporterUtility.convertIndividualPathElement(node) match {
+    ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache) match {
       case Some(pathElement) =>
         Some(
           AndroidPermissionDetailModel(

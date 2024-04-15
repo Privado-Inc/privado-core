@@ -24,7 +24,17 @@
 package ai.privado.exporter
 
 import ai.privado.cache
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  DataFlowCache,
+  Environment,
+  FileSkippedBySizeListModel,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
+import ai.privado.cache.PropertyFilterCacheEncoderDecoder.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
@@ -53,7 +63,7 @@ import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.dump
+import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -83,14 +93,17 @@ object ExporterUtility {
   def convertPathElements(
     nodes: List[AstNode],
     sourceId: String = "",
-    taggerCache: TaggerCache = new TaggerCache()
+    taggerCache: TaggerCache = new TaggerCache(),
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): List[DataFlowSubCategoryPathExcerptModel] = {
-    val lang     = AppCache.repoLanguage
+    val lang     = appCache.repoLanguage
     val isPython = lang == Language.PYTHON
 
     val sizeOfList = nodes.size
     nodes.zipWithIndex.flatMap { case (node, index) =>
-      val currentNodeModel = convertIndividualPathElement(node, index, sizeOfList)
+      val currentNodeModel =
+        convertIndividualPathElement(node, index, sizeOfList, appCache = appCache, ruleCache = ruleCache)
       if (
         index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
       ) {
@@ -120,15 +133,21 @@ object ExporterUtility {
                 // Going 2 level deep for derived sources to add extra nodes
                 convertIndividualPathElement(
                   member2,
-                  messageInExcerpt = generateDSMemberMsg(member2.name, typeFullNameLevel2)
+                  messageInExcerpt = generateDSMemberMsg(member2.name, typeFullNameLevel2),
+                  appCache = appCache,
+                  ruleCache = ruleCache
                 ) ++ convertIndividualPathElement(
                   member,
-                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName)
+                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName),
+                  appCache = appCache,
+                  ruleCache = ruleCache
                 ) ++ currentNodeModel
               case _ =>
                 convertIndividualPathElement(
                   member,
-                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName)
+                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName),
+                  appCache = appCache,
+                  ruleCache = ruleCache
                 ) ++ currentNodeModel
             }
 
@@ -147,10 +166,14 @@ object ExporterUtility {
                       taggerCache.typeDeclDerivedByExtendsCache.get(typeFullName)
                     convertIndividualPathElement(
                       member,
-                      messageInExcerpt = generateDSMemberMsg(member.name, typeDecl.fullName)
+                      messageInExcerpt = generateDSMemberMsg(member.name, typeDecl.fullName),
+                      appCache = appCache,
+                      ruleCache = ruleCache
                     ) ++ convertIndividualPathElement(
                       currentTypeDeclNode.get,
-                      messageInExcerpt = generateDSExtendsMsg(typeDecl.name, typeFullName)
+                      messageInExcerpt = generateDSExtendsMsg(typeDecl.name, typeFullName),
+                      appCache = appCache,
+                      ruleCache = ruleCache
                     ) ++ currentNodeModel
                   case _ =>
                     currentNodeModel
@@ -176,9 +199,12 @@ object ExporterUtility {
     node: AstNode,
     index: Int = -1,
     sizeOfList: Int = -1,
-    messageInExcerpt: String = ""
+    messageInExcerpt: String = "",
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
-    val sample = node.code
+    val allowedCharLimit: Option[Int] = ruleCache.getSystemConfigByKey(Constants.MaxCharLimit, true).toIntOption
+    val sample                        = getTruncatedText(node.code, allowedCharLimit)
     val lineNumber: Int = {
       node.lineNumber match {
         case Some(n) => n
@@ -197,7 +223,7 @@ object ExporterUtility {
       if (file.exists)
         fileName
       else
-        s"${AppCache.scanPath}/$fileName"
+        s"${appCache.scanPath}/$fileName"
     }
 
     if (fileName.equals(Constants.EMPTY) || sample.equals(Constants.EMPTY)) None
@@ -213,10 +239,10 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message)
+      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = allowedCharLimit)
       // Get the actual filename
       val actualFileName = {
-        if (AppCache.isLombokPresent)
+        if (appCache.isLombokPresent)
           fileName.replace(s"${Constants.delombok}/", "")
         else
           fileName
@@ -315,7 +341,9 @@ object ExporterUtility {
     dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    repoItemTagName: Option[String] = None
+    repoItemTagName: Option[String] = None,
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
     List[SourceModel],
@@ -326,21 +354,31 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
-    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName)
+    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
     val sinkExporter =
-      new SinkExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, s3DatabaseDetailsCache)
-    val dataflowExporter               = new DataflowExporter(dataflows, taggerCache)
-    val collectionExporter             = new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache)
-    val androidPermissionsExporter = new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName)
-    val probableSinkExporter = new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName)
+      new SinkExporter(
+        cpg,
+        ruleCache,
+        privadoInput,
+        repoItemTagName = repoItemTagName,
+        s3DatabaseDetailsCache,
+        appCache
+      )
+    val dataflowExporter = new DataflowExporter(dataflows, taggerCache)
+    val collectionExporter =
+      new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName, appCache = appCache)
+    val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
+    val androidPermissionsExporter =
+      new AndroidPermissionsExporter(cpg, ruleCache, repoItemTagName = repoItemTagName, appCache = appCache)
+    val probableSinkExporter =
+      new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName, appCache)
     val policyAndThreatExporter =
-      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput)
+      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput, appCache)
     val output = mutable.LinkedHashMap[String, Json]()
 
     output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
     output.addOne(Constants.cliVersion  -> Environment.privadoVersionCli.getOrElse(Constants.notDetected).asJson)
-    output.addOne(Constants.mainVersion -> AppCache.privadoVersionMain.asJson)
+    output.addOne(Constants.mainVersion -> appCache.privadoVersionMain.asJson)
     output.addOne(Constants.privadoLanguageEngineVersion -> BuildInfo.joernVersion.asJson)
     output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
 
@@ -357,14 +395,18 @@ object ExporterUtility {
     // To have the repoName as `pay` in nonMonolith case and in case of monolith as `pay/app/controller/payment_methods`
     output.addOne(
       Constants.repoName -> (if (repoItemTagName.isDefined)
-                               s"${AppCache.repoName}/${repoItemTagName.get.replaceAll("--", "/")}"
-                             else AppCache.repoName).asJson
+                               s"${appCache.repoName}/${repoItemTagName.get.replaceAll("--", "/")}"
+                             else appCache.repoName).asJson
     )
-    output.addOne(Constants.language           -> AppCache.repoLanguage.toString.asJson)
-    output.addOne(Constants.gitMetadata        -> GitMetaDataExporter.getMetaData(repoPath).asJson)
-    output.addOne(Constants.localScanPath      -> AppCache.localScanPath.asJson)
-    output.addOne(Constants.probableSinks      -> probableSinkExporter.getProbableSinks.asJson)
-    output.addOne(Constants.repoConfigMetaData -> RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).asJson)
+    output.addOne(Constants.language                  -> appCache.repoLanguage.toString.asJson)
+    output.addOne(Constants.gitMetadata               -> GitMetaDataExporter.getMetaData(repoPath).asJson)
+    output.addOne(Constants.localScanPath             -> appCache.localScanPath.asJson)
+    output.addOne(Constants.probableSinks             -> probableSinkExporter.getProbableSinks.asJson)
+    output.addOne(Constants.repoConfigMetaData        -> RepoConfigMetaDataExporter.getMetaData(cpg, ruleCache).asJson)
+    output.addOne(Constants.propertyFileSkippedBySize -> propertyFilterCache.getFileSkippedBySizeData(ruleCache).asJson)
+    output.addOne(
+      Constants.propertyFileSkippedByDirCount -> propertyFilterCache.getFileSkippedDirCountData(ruleCache).asJson
+    )
 
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {
@@ -386,7 +428,7 @@ object ExporterUtility {
     val finalCollections = Await.result(collections, Duration.Inf)
     logger.debug("Done with exporting Collections")
     val violationResult =
-      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections)).getOrElse(List[ViolationModel]())
+      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)).getOrElse(List[ViolationModel]())
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 
@@ -401,7 +443,7 @@ object ExporterUtility {
     sinkSubCategories.foreach(sinkSubTypeEntry => {
       dataflowsOutput.addOne(
         sinkSubTypeEntry._1 -> dataflowExporter
-          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowModel)
+          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowModel, appCache)
           .toList
       )
     })
@@ -456,7 +498,7 @@ object ExporterUtility {
               if (file.exists)
                 fileName
               else
-                s"${AppCache.scanPath}/$fileName"
+                s"${appCache.scanPath}/$fileName"
             }
 
             DataFlowSubCategoryPathExcerptModel(

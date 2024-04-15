@@ -23,6 +23,7 @@
 
 package ai.privado.threatEngine
 
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants}
@@ -149,9 +150,11 @@ object ThreatUtility {
     node: AstNode,
     violatingFlows: ListBuffer[ViolationProcessingModel],
     sourceId: String,
-    details: Option[String]
+    details: Option[String],
+    appCache: AppCache,
+    ruleCache: RuleCache
   ) = {
-    val occurrence = ExporterUtility.convertIndividualPathElement(node)
+    val occurrence = ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache)
     if (occurrence.isDefined) {
       val newOccurrence = DataFlowSubCategoryPathExcerptModel(
         if sample.isDefined then sample.get else occurrence.get.sample,
