@@ -14,7 +14,7 @@ val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
-val circeVersion        = "0.14.2"
+val circeVersion        = "1.15.0"
 val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
 val goAstGenVersion     = "0.12.0"
@@ -40,7 +40,7 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "joern-cli"     % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
-  "org.scalatest"        %% "scalatest"     % "3.2.16"       % Test,
+  "org.scalatest"        %% "scalatest"     % "3.2.18"       % Test,
   "io.circe"             %% "circe-core"    % circeVersion,
   "io.circe"             %% "circe-generic" % circeVersion,
   "io.circe"             %% "circe-parser"  % circeVersion,
@@ -48,26 +48,26 @@ libraryDependencies ++= Seq(
   "io.circe"                        %% "circe-yaml"                 % circeVersion exclude ("org.yaml", "snakeyaml"),
   "com.lihaoyi"                     %% "upickle"                    % Versions.upickle,
   "com.lihaoyi"                     %% "requests"                   % Versions.requests,
-  "org.scala-lang.modules"          %% "scala-xml"                  % "2.1.0",
+  "org.scala-lang.modules"          %% "scala-xml"                  % "2.2.0",
   "org.scala-lang.modules"          %% "scala-parallel-collections" % "1.0.4",
-  "commons-io"                       % "commons-io"                 % "2.11.0",
-  "com.networknt"                    % "json-schema-validator"      % "1.0.72",
+  "commons-io"                       % "commons-io"                 % "2.16.1",
+  "com.networknt"                    % "json-schema-validator"      % "1.4.0",
   "com.fasterxml.jackson.module"    %% "jackson-module-scala"       % jacksonVersion,
   "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml"    % jacksonVersion exclude ("org.yaml", "snakeyaml"),
-  "com.github.wnameless.json"        % "json-flattener"             % "0.14.0",
-  "org.apache.logging.log4j"         % "log4j-core"                 % "2.19.0",
-  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.19.0",
-  "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
-  "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
-  "org.apache.maven"                 % "maven-model"                % "3.9.0",
+  "com.github.wnameless.json"        % "json-flattener"             % "0.16.6",
+  "org.apache.logging.log4j"         % "log4j-core"                 % "2.23.1",
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.23.1",
+  "org.apache.poi"                   % "poi-ooxml"                  % "5.2.5",
+  "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
+  "org.apache.maven"                 % "maven-model"                % "3.9.6",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
-  "org.yaml"                         % "snakeyaml"                  % "1.33",
-  "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
-  "org.scala-lang"                   % "scala-compiler"             % "2.13.8",
+  "org.yaml"                         % "snakeyaml"                  % "2.2",
+  "org.scala-lang"                   % "scala-reflect"              % "2.13.13",
+  "org.scala-lang"                   % "scala-compiler"             % "2.13.13",
   "com.iheart"                      %% "ficus"                      % "1.5.2" exclude ("com.typesafe", "config"),
-  "org.jruby"                        % "jruby-base"                 % "9.4.3.0",
-  "org.zeromq"                       % "jeromq"                     % "0.5.4",
-  "org.sangria-graphql"             %% "sangria"                    % "4.0.0",
+  "org.jruby"                        % "jruby-base"                 % "9.4.6.0",
+  "org.zeromq"                       % "jeromq"                     % "0.6.0",
+  "org.sangria-graphql"             %% "sangria"                    % "4.1.0",
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
   "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests",
   scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
