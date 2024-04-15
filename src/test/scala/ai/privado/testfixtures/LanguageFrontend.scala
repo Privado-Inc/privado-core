@@ -4,7 +4,6 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.model.Language
-import ai.privado.model.Language.values
 import ai.privado.rule.RuleInfoTestData
 
 trait LanguageFrontend {
