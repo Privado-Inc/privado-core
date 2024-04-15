@@ -4,6 +4,7 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.model.Language
+import ai.privado.model.Language.values
 import ai.privado.rule.RuleInfoTestData
 
 trait LanguageFrontend {
@@ -11,6 +12,7 @@ trait LanguageFrontend {
   /** A standard file extension for the source code files of the given language. E.g. `.c` for C language
     */
   val fileSuffix: String
+  val language: Language.Value
 
   private var privadoInput: Option[PrivadoInput]                     = None
   private var ruleCache: Option[RuleCache]                           = None
@@ -74,7 +76,7 @@ trait LanguageFrontend {
       this.privadoInput.getOrElse(PrivadoInput()).copy(sourceLocation = Set(sourceCodePath.getAbsolutePath))
     val appCache = this.appCache.getOrElse(AppCache())
     appCache.init(sourceCodePath.getAbsolutePath)
-    appCache.repoLanguage = Language.JAVA
+    appCache.repoLanguage = language
     val auditCache = this.auditCache.getOrElse(AuditCache())
     getLanguageProcessor(
       this.ruleCache.getOrElse(RuleInfoTestData.ruleCache),
