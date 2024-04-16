@@ -177,7 +177,7 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
         }
       }) match {
       case Left(failure) => {
-        logger.debug("Failed to parse controller file.")
+        logger.debug("Failed to parse yaml file containing controller aliases.")
         ""
       }
       case Right(someList) => {
