@@ -139,10 +139,10 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       appCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
 
-      // Apply `this` filtering for JS, JAVA, Kotlin
+      // Apply `this` filtering for JS, JAVA
       val dataflowPaths = {
         if (
-          privadoScanConfig.disableThisFiltering || (!List(Language.JAVA, Language.KOTLIN, Language.JAVASCRIPT)
+          privadoScanConfig.disableThisFiltering || (!List(Language.JAVA, Language.JAVASCRIPT)
             .contains(appCache.repoLanguage))
         )
           dataflowPathsUnfiltered
@@ -199,7 +199,7 @@ class Dataflow(cpg: Cpg) {
   def getSemantics(cpg: Cpg, privadoScanConfig: PrivadoInput, ruleCache: RuleCache, appCache: AppCache): Semantics = {
     val lang = appCache.repoLanguage
     lang match {
-      case Language.JAVA | Language.KOTLIN =>
+      case Language.JAVA =>
         JavaSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache, exportRuntimeSemantics = true)
       case Language.PYTHON =>
         PythonSemanticGenerator.getSemantics(cpg, privadoScanConfig, ruleCache, exportRuntimeSemantics = true)

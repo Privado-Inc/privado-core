@@ -50,13 +50,16 @@ class RuleCache {
   def getRule: ConfigAndRules = rule
 
   def setRuleInfo(ruleInfo: RuleInfo): Unit = {
-    ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
-    rule = ruleInfo.catLevelOne match {
-      case ai.privado.model.CatLevelOne.SOURCES     => rule.copy(sources = rule.sources.appended(ruleInfo))
-      case ai.privado.model.CatLevelOne.SINKS       => rule.copy(sinks = rule.sinks.appended(ruleInfo))
-      case ai.privado.model.CatLevelOne.COLLECTIONS => rule.copy(collections = rule.collections.appended(ruleInfo))
-      case _                                        => rule
-    }
+    ruleInfoMap.get(ruleInfo.id) match
+      case Some(_) => // Rule already exists, skip adding again
+      case None =>
+        ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+        rule = ruleInfo.catLevelOne match {
+          case ai.privado.model.CatLevelOne.SOURCES     => rule.copy(sources = rule.sources.appended(ruleInfo))
+          case ai.privado.model.CatLevelOne.SINKS       => rule.copy(sinks = rule.sinks.appended(ruleInfo))
+          case ai.privado.model.CatLevelOne.COLLECTIONS => rule.copy(collections = rule.collections.appended(ruleInfo))
+          case _                                        => rule
+        }
   }
 
   def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
