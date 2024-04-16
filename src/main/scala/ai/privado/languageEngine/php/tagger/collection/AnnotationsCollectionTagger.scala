@@ -1,4 +1,4 @@
-package ai.privado.languageEngine.php.tagger.sink
+package ai.privado.languageEngine.php.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
@@ -11,7 +11,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class AnnotationsCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   protected val methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
   protected val classUrlMap: mutable.HashMap[Long, String]  = mutable.HashMap[Long, String]()
   private val logger                                        = LoggerFactory.getLogger(this.getClass)

@@ -48,7 +48,7 @@ class PhpFrontendTestSuite(fileSuffix: String = ".php", language: Language.Value
       "",
       CatLevelOne.COLLECTIONS,
       catLevelTwo = Constants.annotations,
-      Language.CSHARP,
+      Language.PHP,
       Array()
     )
   )
