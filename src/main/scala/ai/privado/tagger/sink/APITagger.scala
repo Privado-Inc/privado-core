@@ -50,7 +50,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .methodFullName(commonHttpPackages)
-    .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   implicit val engineContext: EngineContext =

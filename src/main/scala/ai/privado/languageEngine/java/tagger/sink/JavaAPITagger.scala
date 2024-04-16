@@ -98,20 +98,20 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
 
   apis = apis
     .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-    .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   val commonHttpPackages: String = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
   val grpcSinks = GRPCTaggerUtility
     .getGrpcSinks(cpg)
     .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-    .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
   val soapSinks =
     SOAPTaggerUtility
       .getAPICallNodes(cpg)
       .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-      .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
       .l
 
   override def generateParts(): Array[_ <: AnyRef] = {
@@ -150,13 +150,13 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
       else
         List()
     }.whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-      .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
       .l
 
     val markedAPISinks = cpg.call
       .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
       .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-      .whereNot(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
       .l
 
     apiTaggerToUse match {
