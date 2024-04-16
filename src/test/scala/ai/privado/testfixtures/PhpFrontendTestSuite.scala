@@ -4,7 +4,8 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCach
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.processor.PhpProcessor
-import ai.privado.model.Language
+import ai.privado.model.*
+
 class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
     ruleCache: RuleCache,
@@ -30,4 +31,26 @@ class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) exten
 }
 
 class PhpFrontendTestSuite(fileSuffix: String = ".php", language: Language.Value = Language.PHP)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithPhp(fileSuffix, language)) {}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithPhp(fileSuffix, language)) {
+
+  protected val collectionRules: List[RuleInfo] = List(
+    RuleInfo(
+      "Collections.Symfony",
+      "Symfony MVC Endpoints",
+      "",
+      FilterProperty.CODE,
+      Array(),
+      List("(?i).*(Route).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.annotations,
+      Language.CSHARP,
+      Array()
+    )
+  )
+
+}
