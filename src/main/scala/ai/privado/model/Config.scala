@@ -60,7 +60,8 @@ case class ConfigAndRules(
   semantics: List[Semantic] = List(),
   sinkSkipList: List[RuleInfo] = List(),
   systemConfig: List[SystemConfig] = List(),
-  auditConfig: List[RuleInfo] = List()
+  auditConfig: List[RuleInfo] = List(),
+  inferences: List[RuleInfo] = List()
 )
 
 case class AllowedSourceFilters(sources: List[String])
@@ -274,6 +275,7 @@ object CirceEnDe {
       val sinkSkipList = c.downField(Constants.sinkSkipList).as[List[RuleInfo]]
       val systemConfig = c.downField(Constants.systemConfig).as[List[SystemConfig]]
       val auditConfig  = c.downField(Constants.auditConfig).as[List[RuleInfo]]
+      val inferences   = c.downField(Constants.inferences).as[List[RuleInfo]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -285,7 +287,8 @@ object CirceEnDe {
           semantics = semantics.getOrElse(List[Semantic]()),
           sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]()),
           systemConfig = systemConfig.getOrElse(List[SystemConfig]()),
-          auditConfig = auditConfig.getOrElse(List[RuleInfo]())
+          auditConfig = auditConfig.getOrElse(List[RuleInfo]()),
+          inferences = inferences.getOrElse(List[RuleInfo]())
         )
       )
     }

@@ -14,6 +14,7 @@ object JavaAPISinkTagger extends APISinkTagger {
     */
   override def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput): Unit = {
 
+    super.applyTagger(cpg, ruleCache, privadoInput)
     new JavaAPIRetrofitTagger(cpg, ruleCache).createAndApply()
 
     if (privadoInput.enableAPIByParameter) {
@@ -22,9 +23,6 @@ object JavaAPISinkTagger extends APISinkTagger {
     }
 
     new JavaAPISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
-
-    // Invoke API Endpoint mappers
-    // new JavaAPISinkEndpointMapperByNonInitMethod(cpg, ruleCache).createAndApply()
   }
 
 }

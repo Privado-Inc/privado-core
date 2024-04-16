@@ -200,6 +200,19 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last)
                           )
                         )
+                        .filter(filterByLang),
+                      inferences = configAndRules.inferences
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.INFERENCES,
+                            catLevelTwo = pathTree.apply(2),
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                          )
+                        )
                         .filter(filterByLang)
                     )
                   case Left(error) =>
@@ -224,7 +237,8 @@ object ScanProcessor extends CommandProcessor {
               semantics = a.semantics ++ b.semantics,
               sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
               systemConfig = a.systemConfig ++ b.systemConfig,
-              auditConfig = a.auditConfig ++ b.auditConfig
+              auditConfig = a.auditConfig ++ b.auditConfig,
+              inferences = a.inferences ++ b.inferences
             )
           )
       catch {
@@ -282,6 +296,7 @@ object ScanProcessor extends CommandProcessor {
     val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
+    val inferences   = externalConfigAndRules.inferences ++ internalConfigAndRules.inferences
     val mergedRules =
       ConfigAndRules(
         sources = mergePatterns(sources),
@@ -293,7 +308,8 @@ object ScanProcessor extends CommandProcessor {
         semantics = semantics.distinctBy(_.signature),
         sinkSkipList = sinkSkipList.distinctBy(_.id),
         systemConfig = systemConfig,
-        auditConfig = auditConfig.distinctBy(_.id)
+        auditConfig = auditConfig.distinctBy(_.id),
+        inferences = mergePatterns(inferences)
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
@@ -307,7 +323,8 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.collections.size +
           mergedRules.policies.size +
           mergedRules.exclusions.size +
-          mergedRules.auditConfig.size
+          mergedRules.auditConfig.size +
+          mergedRules.inferences.size
       )
     }
 

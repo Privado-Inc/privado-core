@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 
 trait APISinkTagger {
 
-  def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput): Unit = ???
+  def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput): Unit = {
+    new InferenceAPIEndpointTagger(cpg, ruleCache).createAndApply()
+  }
 
 }
