@@ -41,11 +41,13 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
     println(route)
     val (controllerClassName, controllerMethodName) = getClassAndMethodNameFromControllerFullName(
       route.controller
-        .getOrElse(findControllerFullNameFromAlias(route.defaults.getOrElse(Defaults(""))._controller))
+        .getOrElse(
+          findControllerFullNameFromAlias(route.defaults.getOrElse(Defaults(""))._controller.replaceFirst(":", ""))
+        )
     )
 
-    println(controllerClassName)
-    println(controllerMethodName)
+    println(s"Controller class name: ${controllerClassName}")
+    println(s"Controller method name: ${controllerMethodName}")
     methodUrlMap.addOne(
       (
         cpg.method.nameExact(controllerMethodName).headOption match {
