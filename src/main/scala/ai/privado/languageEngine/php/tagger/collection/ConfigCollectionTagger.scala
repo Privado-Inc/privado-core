@@ -151,7 +151,7 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
     val controllerClassName =
       classMethodSplit.headOption.getOrElse("").split("\\\\").lastOption.getOrElse("")
 
-    val controllerMethodName = classMethodSplit.lastOption.getOrElse("__invoke")
+    val controllerMethodName = if (classMethodSplit.length > 1) classMethodSplit.last else "__invoke"
 
     (controllerClassName, controllerMethodName)
   }
