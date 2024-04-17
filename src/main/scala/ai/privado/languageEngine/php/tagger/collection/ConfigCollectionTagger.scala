@@ -38,11 +38,14 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
   }
 
   override def runOnPart(builder: DiffGraphBuilder, route: Route): Unit = {
+    println(route)
     val (controllerClassName, controllerMethodName) = getClassAndMethodNameFromControllerFullName(
       route.controller
         .getOrElse(findControllerFullNameFromAlias(route.defaults.getOrElse(Defaults(""))._controller))
     )
 
+    println(controllerClassName)
+    println(controllerMethodName)
     methodUrlMap.addOne(
       (
         cpg.method.nameExact(controllerMethodName).headOption match {
@@ -108,6 +111,9 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
     ruleInfo: RuleInfo,
     collectionMethodsCache: List[Method]
   ): Unit = {
+
+    println(methodUrlMap)
+    println(classUrlMap)
     CollectionUtility.tagDirectSources(
       builder,
       collectionMethodsCache,
