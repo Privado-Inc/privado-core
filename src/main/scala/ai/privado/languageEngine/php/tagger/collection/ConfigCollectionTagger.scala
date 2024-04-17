@@ -101,7 +101,10 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
           .getOrElse(JsonObject.empty)
           .values
           .map(value => {
+            println("Individual route: ")
+            println(value)
             val emptyRoute = Route("", Option(Defaults("")), Option(""))
+            println(value.as[Route].getOrElse(emptyRoute))
             value.as[Route].getOrElse(emptyRoute)
           })
       }
