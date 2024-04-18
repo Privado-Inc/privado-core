@@ -37,9 +37,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new GoDBConfigTagger(cpg).createAndApply()
 
-    GoAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig)
-
-    new GoAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache = appCache).createAndApply()
+    GoAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
 
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 

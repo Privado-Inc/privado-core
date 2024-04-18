@@ -6,7 +6,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.languageEngine.java.JavaTestBase.*
-import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, SourceCodeModel, SystemConfig}
 import ai.privado.rule.RuleInfoTestData
 import io.shiftleft.semanticcpg.language.*

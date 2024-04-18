@@ -1,11 +1,11 @@
-package ai.privado.languageEngine.java.tagger.sink
+package ai.privado.languageEngine.java.tagger.sink.api
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.sink.api.Utility.tagAPICallByItsUrlMethod
 import ai.privado.model.{Constants, NodeType}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory.getLogger
 

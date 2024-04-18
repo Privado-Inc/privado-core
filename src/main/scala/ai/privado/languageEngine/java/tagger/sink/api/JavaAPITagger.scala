@@ -20,15 +20,16 @@
  * For more information, contact support@privado.ai
  *
  */
-package ai.privado.languageEngine.java.tagger.sink
+package ai.privado.languageEngine.java.tagger.sink.api
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
+import ai.privado.languageEngine.java.tagger.sink.{APITaggerVersionJava, FeignAPI}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
+import ai.privado.model.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.{SERVICE_URL_REGEX_PATTERN, sinkTagger}
 import ai.privado.utility.{ImportUtility, Utilities}
