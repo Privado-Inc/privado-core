@@ -76,8 +76,9 @@ class ConfigCollectionTaggerTests extends PhpFrontendTestSuite {
       """
         |<?php
         |final class SomeController {
-        | public function __invoke($firstName) {
-        |   return $firstName;
+        | public function __invoke(Request $request) {
+        |   $salary = $request->salary;
+        |   return $salary;
         | }
         |}
         |>

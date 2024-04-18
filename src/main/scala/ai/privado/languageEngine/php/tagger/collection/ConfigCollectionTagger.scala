@@ -2,13 +2,16 @@ package ai.privado.languageEngine.php.tagger.collection
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
-import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.utility.Utilities.storeForTag
 import better.files.File.VisitOptions
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
+
+import ai.privado.utility.Utilities.resolver
 
 import scala.collection.mutable
 import io.circe.*
@@ -38,7 +41,6 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
   }
 
   override def runOnPart(builder: DiffGraphBuilder, route: Route): Unit = {
-    println(route)
     val (controllerClassName, controllerMethodName) = getClassAndMethodNameFromControllerFullName(
       route.controller
         .getOrElse(
@@ -46,8 +48,6 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
         )
     )
 
-    println(s"Controller class name: ${controllerClassName}")
-    println(s"Controller method name: ${controllerMethodName}")
     methodUrlMap.addOne(
       (
         cpg.method.nameExact(controllerMethodName).headOption match {
@@ -101,10 +101,7 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
           .getOrElse(JsonObject.empty)
           .values
           .map(value => {
-            println("Individual route: ")
-            println(value)
             val emptyRoute = Route("", Option(Defaults("")), Option(""))
-            println(value.as[Route].getOrElse(emptyRoute))
             value.as[Route].getOrElse(emptyRoute)
           })
       }
@@ -116,18 +113,7 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
     ruleInfo: RuleInfo,
     collectionMethodsCache: List[Method]
   ): Unit = {
-
-    println(methodUrlMap)
-    println(classUrlMap)
-    CollectionUtility.tagDirectSources(
-      builder,
-      collectionMethodsCache,
-      ruleCache.getRule.sources,
-      ruleInfo,
-      ruleCache,
-      methodUrlMap = methodUrlMap,
-      classUrlMap = classUrlMap
-    )
+    tagDirectSources(cpg, builder, collectionMethodsCache, ruleInfo)
 
     CollectionUtility.tagDerivedSources(
       cpg,
@@ -195,5 +181,49 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
         someList.headOption.getOrElse("")
       }
     }
+  }
+
+  private def tagDirectSources(
+    cpg: Cpg,
+    builder: DiffGraphBuilder,
+    collectionMethods: List[Method],
+    collectionRuleInfo: RuleInfo
+  ): Unit = {
+    val collectionPoints = collectionMethods.flatMap(collectionMethod => {
+      ruleCache.getRule.sources.flatMap(sourceRule => {
+        val parameters = collectionMethod.parameter
+        val locals     = collectionMethod.local
+        val literals   = collectionMethod.call("(?:get).*").argument.isLiteral
+
+        // TODO: handle cases where `request.args.get('id', None)` used directly in handler block without method param
+        val matchingParameters = parameters.where(_.name(sourceRule.combinedRulePattern)).whereNot(_.code("self")).l
+        val matchingLocals     = locals.code(sourceRule.combinedRulePattern).l
+        val matchingLiterals = literals
+          .code("(\"|'|`)(" + sourceRule.combinedRulePattern + ")(\"|'|`)")
+          .whereNot(_.code(".*\\s.*"))
+          .l
+
+        if (!(matchingParameters.isEmpty && matchingLocals.isEmpty && matchingLiterals.isEmpty)) {
+          matchingParameters.foreach(parameter =>
+            storeForTag(builder, parameter, ruleCache)(Constants.id, sourceRule.id)
+          )
+          matchingLocals.foreach(local => storeForTag(builder, local, ruleCache)(Constants.id, sourceRule.id))
+          matchingLiterals.foreach(literal => storeForTag(builder, literal, ruleCache)(Constants.id, sourceRule.id))
+          Some(collectionMethod)
+        } else {
+          None
+        }
+      })
+    })
+
+    CollectionUtility.tagMethodEndpoints(
+      builder,
+      collectionPoints.l,
+      collectionRuleInfo,
+      ruleCache,
+      false,
+      methodUrlMap,
+      classUrlMap
+    )
   }
 }
