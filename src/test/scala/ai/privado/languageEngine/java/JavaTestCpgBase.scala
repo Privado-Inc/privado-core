@@ -8,6 +8,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.model.Language
 import ai.privado.rule.RuleInfoTestData
+import ai.privado.utility.StatsRecorder
 import io.circe.Json
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
@@ -29,7 +30,8 @@ abstract class JavaTestCpgBase(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      returnClosedCpg = false
+      returnClosedCpg = false,
+      statsRecorder = StatsRecorder()
     )
   }
 

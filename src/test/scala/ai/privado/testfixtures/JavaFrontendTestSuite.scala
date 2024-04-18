@@ -4,6 +4,7 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
+import ai.privado.utility.StatsRecorder
 
 class TestCpgWithJava(val fileSuffix: String) extends TestCpg {
   protected def getLangaugeProcessor(
@@ -24,7 +25,8 @@ class TestCpgWithJava(val fileSuffix: String) extends TestCpg {
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg = false,
-      propertyFilterCache
+      propertyFilterCache,
+      StatsRecorder()
     )
   }
 }

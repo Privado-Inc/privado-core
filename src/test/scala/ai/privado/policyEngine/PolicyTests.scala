@@ -10,6 +10,7 @@ import ai.privado.languageEngine.javascript.tagger.sink.{JSAPITagger, RegularSin
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import ai.privado.tagger.collection.WebFormsCollectionTagger
+import ai.privado.utility.StatsRecorder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
@@ -731,7 +732,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
+    new Dataflow(cpg, StatsRecorder()).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
     val collectionExporter = new CollectionExporter(cpg, ruleCache, appCache = appCache).getCollections
     val policyExecutor =
       new PolicyExecutor(

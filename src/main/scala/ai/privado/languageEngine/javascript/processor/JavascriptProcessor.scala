@@ -25,7 +25,8 @@ package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.dataflow.Dataflow
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
@@ -35,7 +36,7 @@ import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -49,7 +50,18 @@ import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
-object JavascriptProcessor {
+class JavascriptProcessor(
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  sourceRepoLocation: String,
+  dataFlowCache: DataFlowCache,
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  statsRecorder: StatsRecorder
+) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -66,12 +78,14 @@ object JavascriptProcessor {
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
-        // Apply default overlays
         try {
+          statsRecorder.initiateNewStage("Additional passes")
           new NaiveCallLinker(cpg).createAndApply()
           if (privadoInput.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
-
+          statsRecorder.endLastStage()
+          statsRecorder.setSupressSubstagesFlag(false)
+          statsRecorder.initiateNewStage("Privado source passes")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
           if (privadoInput.assetDiscovery) {
@@ -92,7 +106,7 @@ object JavascriptProcessor {
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
+          statsRecorder.endLastStage()
           // Unresolved function report
           if (privadoInput.showUnresolvedFunctionsReport) {
             val path = s"${privadoInput.sourceLocation.head}/${Constants.outputDirectoryName}"
@@ -101,15 +115,16 @@ object JavascriptProcessor {
           logger.info("=====================")
 
           // Run tagger
-          println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
-          val taggerCache = new TaggerCache
+          statsRecorder.initiateNewStage("Tagger ...")
+          val taggerCache = TaggerCache()
           cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
-          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
-          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
-          println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
-          println(s"${Calendar.getInstance().getTime} - Brewing result...")
+          statsRecorder.endLastStage()
+          statsRecorder.initiateNewStage("Finding data flows ...")
+          val dataflowMap =
+            Dataflow(cpg, statsRecorder).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
+          statsRecorder.endLastStage()
+          statsRecorder.justLogMessage(s"Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
+          statsRecorder.initiateNewStage("Brewing result")
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting
@@ -195,7 +210,7 @@ object JavascriptProcessor {
                 )
             }
           }
-
+          statsRecorder.endLastStage()
           // Check if any of the export failed
           if (errorMsg.toList.isEmpty)
             Right(())
@@ -222,20 +237,9 @@ object JavascriptProcessor {
     * @param lang
     * @return
     */
-  def createJavaScriptCpg(
-    ruleCache: RuleCache,
-    privadoInput: PrivadoInput,
-    sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache,
-    auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
-  ): Either[String, Unit] = {
-
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Javascript engine")
-    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
-
+  def createJavaScriptCpg(): Either[String, Unit] = {
+    statsRecorder.justLogMessage("Processing source code using Javascript engine")
+    statsRecorder.initiateNewStage("Base source processing")
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
@@ -249,6 +253,7 @@ object JavascriptProcessor {
         .withOutputPath(cpgOutputPath)
         .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig)
+    statsRecorder.endLastStage()
     processCPG(
       xtocpg,
       privadoInput,

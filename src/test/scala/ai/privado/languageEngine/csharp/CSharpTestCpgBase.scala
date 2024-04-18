@@ -7,6 +7,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.model.Language
 import ai.privado.rule.RuleInfoTestData
+import ai.privado.utility.StatsRecorder
 
 abstract class CSharpTestCpgBase(
   withRuleCache: RuleCache = RuleInfoTestData.ruleCache,
@@ -23,7 +24,8 @@ abstract class CSharpTestCpgBase(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      returnClosedCpg = false
+      returnClosedCpg = false,
+      statsRecorder = StatsRecorder()
     )
   }
 }

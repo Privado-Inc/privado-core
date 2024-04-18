@@ -23,29 +23,29 @@
 
 package ai.privado.languageEngine.default.processor
 
-import ai.privado.cache._
-import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import ai.privado.cache.*
+import ai.privado.dataflow.Dataflow
+import ai.privado.entrypoint.ScanProcessor
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
-import ai.privado.exporter.{JSONExporter}
+import ai.privado.exporter.JSONExporter
+import ai.privado.languageEngine.default.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants._
+import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{HTMLParserPass, SQLParser, DBTParserPass}
-import ai.privado.semantic.Language._
-import ai.privado.languageEngine.default.semantic.Language._
+import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser}
+import ai.privado.semantic.Language.*
+import ai.privado.tagger.source.SqlQueryTagger
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
-import ai.privado.tagger.source.{SqlQueryTagger}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.{Config as JavaConfig}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.joern.javasrc2cpg.Config as JavaConfig
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withNewEmptyCpg}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
@@ -54,7 +54,7 @@ import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-object DefaultProcessor {
+class DefaultProcessor(statsRecorder: StatsRecorder) {
 
   private val logger    = LoggerFactory.getLogger(getClass)
   private var cpgconfig = JavaConfig()
@@ -71,28 +71,23 @@ object DefaultProcessor {
     xtocpg match {
       case Success(cpg) => {
         try {
-          println(s"${Calendar.getInstance().getTime} - HTML parser pass")
-
+          statsRecorder.initiateNewStage("Parser passes")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
             .createAndApply()
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
+          statsRecorder.endLastStage()
           // Run tagger
-          println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
+          statsRecorder.initiateNewStage("Tagging")
           val taggerCache = new TaggerCache
           cpg.runTagger(ruleCache, taggerCache)
-          println(
-            s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
-          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
-          println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
-          println(
-            s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n"
-          )
-          println(s"${Calendar.getInstance().getTime} - Brewing result...")
+          statsRecorder.endLastStage()
+          statsRecorder.initiateNewStage("Finding source to sink flow")
+          val dataflowMap =
+            Dataflow(cpg, statsRecorder).dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
+          statsRecorder.endLastStage()
+          statsRecorder.justLogMessage(s"Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
+          statsRecorder.initiateNewStage("Brewing result...")
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
@@ -114,8 +109,8 @@ object DefaultProcessor {
               MetricHandler.otherErrorsOrWarnings.addOne(err)
               errorMsg += err
             case Right(_) =>
-              println(
-                s"${Calendar.getInstance().getTime} - Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+              statsRecorder.justLogMessage(
+                s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
               )
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
@@ -131,7 +126,9 @@ object DefaultProcessor {
           cpg.close()
           import java.io.File
           val cpgFile = new File(cpgconfig.outputPath)
-          println(s"\n\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n")
+          statsRecorder.justLogMessage(
+            s"Binary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n"
+          )
         }
       }
 

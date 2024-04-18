@@ -7,6 +7,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.model.Language
 import ai.privado.rule.RuleInfoTestData
+import ai.privado.utility.StatsRecorder
 
 abstract class PhpTestCpgBase(
   withRuleCache: RuleCache = RuleInfoTestData.ruleCache,
@@ -24,7 +25,8 @@ abstract class PhpTestCpgBase(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg = false,
-      new PropertyFilterCache()
+      new PropertyFilterCache(),
+      StatsRecorder()
     )
   }
 

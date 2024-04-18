@@ -23,6 +23,7 @@
 package ai.privado.entrypoint
 
 import ai.privado.metric.MetricHandler
+import ai.privado.utility.StatsRecorder
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
@@ -121,11 +122,11 @@ object CommandParser {
       CommandConstants.UPLOAD   -> UploadProcessor,
       CommandConstants.VALIDATE -> RuleValidator
     )
-  def parse(args: Array[String]): Option[CommandProcessor] = {
+  def parse(args: Array[String], statsRecorder: StatsRecorder): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
     val parser = {
-      import builder._
+      import builder.*
       OParser.sequence(
         programName("privado-core"),
         head("privado-core", "*** TODO: Add version details***"),
@@ -321,8 +322,7 @@ object CommandParser {
             println(OParser.usage(parser))
             exit(1)
         }
-        commandProcessor.withConfig(config)
-        Some(commandProcessor)
+        Some(commandProcessor.withConfig(config).withStatsRecorder(statsRecorder))
       case _ =>
         println(OParser.usage(parser))
         exit(1)

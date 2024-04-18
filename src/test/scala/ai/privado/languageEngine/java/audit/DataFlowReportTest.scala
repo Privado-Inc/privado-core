@@ -7,6 +7,7 @@ import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.Language
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.utility.StatsRecorder
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -27,7 +28,7 @@ class DataFlowReportTest extends DataFlowReportTestBase {
     SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
+    new Dataflow(cpg, StatsRecorder()).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
   }
 
   def getContent(): Map[String, String] = {

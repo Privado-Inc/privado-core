@@ -22,27 +22,19 @@
 
 package ai.privado.entrypoint
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  Environment,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache
-}
+import ai.privado.cache.*
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
+import ai.privado.languageEngine.default.processor.DefaultProcessor
+import ai.privado.languageEngine.go.processor.GoProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
+import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
+import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
-import ai.privado.languageEngine.default.processor.DefaultProcessor
-import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
-import ai.privado.languageEngine.go.processor.GoProcessor
-import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Language.Language
 import ai.privado.model.*
+import ai.privado.model.Language.Language
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
@@ -51,13 +43,12 @@ import io.circe.yaml.parser
 import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.csharp.processor.CSharpProcessor
+import privado_core.BuildInfo
 
 import java.util.Calendar
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.sys.exit
 import scala.util.{Failure, Success, Try}
-import privado_core.BuildInfo
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -112,7 +103,7 @@ object ScanProcessor extends CommandProcessor {
             val pathTree = relPath.split("/")
             parser.parse(file.contentAsString) match {
               case Right(json) =>
-                import ai.privado.model.CirceEnDe._
+                import ai.privado.model.CirceEnDe.*
                 json.as[ConfigAndRules] match {
                   case Right(configAndRules) =>
                     configAndRules.copy(
@@ -244,6 +235,7 @@ object ScanProcessor extends CommandProcessor {
       .toList
   }
   def processRules(lang: Set[Language], ruleCache: RuleCache, appCache: AppCache): ConfigAndRules = {
+    statsRecorder.initiateNewStage("Processing rules")
     var internalConfigAndRules = getEmptyConfigAndRule
     if (!config.ignoreInternalRules) {
       try {
@@ -309,7 +301,7 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.auditConfig.size
       )
     }
-
+    statsRecorder.endLastStage()
     mergedRules
   }
   override def process(appCache: AppCache): Either[String, Unit] = {
@@ -355,18 +347,18 @@ object ScanProcessor extends CommandProcessor {
     val sourceRepoLocation = File(config.sourceLocation.head).path.toAbsolutePath.toString.stripSuffix("/")
     // Setting up the application cache
     appCache.init(sourceRepoLocation)
+    statsRecorder.initiateNewStage("Language detection")
     Try(guessLanguage(sourceRepoLocation)) match {
-      case Success(languageDetected) => {
-        println(
-          s"${TimeMetric.getNewTime()} - Language detection done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
+      case Success(languageDetected) =>
+        statsRecorder.endLastStage()
         languageDetected match {
           case Some(lang) =>
             MetricHandler.metricsData("language") = Json.fromString(lang)
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'Java'")
-                new JavaProcessor(
+                statsRecorder.justLogMessage("Detected language 'Java'")
+                println(s"${Calendar.getInstance().getTime} - ")
+                JavaProcessor(
                   getProcessedRule(Set(Language.JAVA), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -374,11 +366,12 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
                 ).processCpg()
               case language if language == Languages.JSSRC =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-                JavascriptProcessor.createJavaScriptCpg(
+                statsRecorder.justLogMessage("Detected language 'JavaScript'")
+                JavascriptProcessor(
                   getProcessedRule(Set(Language.JAVASCRIPT), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -386,11 +379,12 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
-                )
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
+                ).createJavaScriptCpg()
               case language if language == Languages.PYTHONSRC =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
-                PythonProcessor.createPythonCpg(
+                statsRecorder.justLogMessage("Detected language 'Python'")
+                PythonProcessor(
                   getProcessedRule(Set(Language.PYTHON), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -398,11 +392,12 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
-                )
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
+                ).createPythonCpg()
               case language if language == Languages.RUBYSRC =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'Ruby'")
-                RubyProcessor.createRubyCpg(
+                statsRecorder.justLogMessage("Detected language 'Ruby'")
+                RubyProcessor(
                   getProcessedRule(Set(Language.RUBY), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -410,22 +405,25 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
-                )
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
+                ).createRubyCpg()
               case language if language == Languages.GOLANG =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'Go'")
-                GoProcessor.createGoCpg(
+                statsRecorder.justLogMessage("Detected language 'Go'")
+                GoProcessor(
                   getProcessedRule(Set(Language.GO), appCache),
+                  this.config,
                   sourceRepoLocation,
                   dataFlowCache = getDataflowCache,
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
-                )
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
+                ).createGoCpg()
               case language if language == Languages.KOTLIN =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
-                new KotlinProcessor(
+                statsRecorder.justLogMessage("Detected language 'Kotlin'")
+                KotlinProcessor(
                   getProcessedRule(Set(Language.KOTLIN, Language.JAVA), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -433,11 +431,12 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
                 ).processCpg()
               case language if language == Languages.CSHARPSRC =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'C#'")
-                new CSharpProcessor(
+                statsRecorder.justLogMessage("Detected language 'C#'")
+                CSharpProcessor(
                   getProcessedRule(Set(Language.CSHARP), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -445,11 +444,12 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
                 ).processCpg()
               case language if language == Languages.PHP =>
-                println(s"${Calendar.getInstance().getTime} - Detected language 'PHP'")
-                new PhpProcessor(
+                statsRecorder.justLogMessage("Detected language 'PHP'")
+                PhpProcessor(
                   getProcessedRule(Set(Language.PHP), appCache),
                   this.config,
                   sourceRepoLocation,
@@ -457,7 +457,8 @@ object ScanProcessor extends CommandProcessor {
                   auditCache,
                   s3DatabaseDetailsCache,
                   appCache,
-                  propertyFilterCache = propertyFilterCache
+                  propertyFilterCache = propertyFilterCache,
+                  statsRecorder
                 )
                   .processCpg()
               case _ =>
@@ -467,7 +468,7 @@ object ScanProcessor extends CommandProcessor {
                   )
                   println(s"However we only support 'Java' code base scanning as of now.")
 
-                  new JavaProcessor(
+                  JavaProcessor(
                     getProcessedRule(Set(Language.JAVA), appCache),
                     this.config,
                     sourceRepoLocation,
@@ -475,7 +476,8 @@ object ScanProcessor extends CommandProcessor {
                     auditCache,
                     s3DatabaseDetailsCache,
                     appCache,
-                    propertyFilterCache = propertyFilterCache
+                    propertyFilterCache = propertyFilterCache,
+                    statsRecorder
                   ).processCpg()
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
@@ -490,7 +492,7 @@ object ScanProcessor extends CommandProcessor {
               ()
             ) // Ignore the result as not needed for further step, and due to discrepency in output for New and old frontends
         }
-      }
+
       case Failure(exc) =>
         logger.debug("Error while guessing language", exc)
         println(s"Error Occurred: ${exc.getMessage}")
@@ -501,7 +503,7 @@ object ScanProcessor extends CommandProcessor {
   private def processCpgWithDefaultProcessor(sourceRepoLocation: String, appCache: AppCache) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     println(s"Running scan with default processor.")
-    DefaultProcessor.createDefaultCpg(
+    DefaultProcessor(statsRecorder).createDefaultCpg(
       getProcessedRule(Set(Language.UNKNOWN), appCache),
       sourceRepoLocation,
       getDataflowCache,

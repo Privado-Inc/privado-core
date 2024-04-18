@@ -24,12 +24,13 @@
 package ai.privado.languageEngine.php.processor
 
 import ai.privado.cache.*
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
 import ai.privado.model.Constants.*
-import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
+import ai.privado.model.{CpgWithOutputMap, Language}
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
@@ -51,7 +52,8 @@ class PhpProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache
+  propertyFilterCache: PropertyFilterCache,
+  statsRecorder: StatsRecorder
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -62,7 +64,8 @@ class PhpProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
-      propertyFilterCache
+      propertyFilterCache,
+      statsRecorder
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -78,8 +81,8 @@ class PhpProcessor(
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Php engine")
-
+    statsRecorder.justLogMessage("Processing source code using Php engine")
+    statsRecorder.initiateNewStage("Base source processing")
     createCpgFolder(sourceRepoLocation)
 
     val cpgOutput = Paths.get(sourceRepoLocation, outputDirectoryName, cpgOutputFileName)
@@ -90,11 +93,11 @@ class PhpProcessor(
       .withPhpParserBin(PhpProcessor.parserBinPath)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
-      println(
-        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
-
+      statsRecorder.endLastStage()
+      statsRecorder.initiateNewStage("Default overlays")
       applyDefaultOverlays(cpg)
+      statsRecorder.endLastStage()
+      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
 
@@ -122,7 +125,7 @@ object PhpProcessor {
       case None    => Paths.get(fixedDir, "bin", "php-parser", "php-parser.php")
     }
 
-    println(s"${TimeMetric.getNewTime()} - Using PHP logger from $parserPath")
+    println(s"${Calendar.getInstance().getTime} - Using PHP logger from $parserPath")
     parserPath.toAbsolutePath.toString
 
   }

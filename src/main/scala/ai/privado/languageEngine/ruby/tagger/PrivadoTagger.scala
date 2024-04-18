@@ -24,20 +24,21 @@
 package ai.privado.languageEngine.ruby.tagger
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
-import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
+import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
+import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
+import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.languageEngine.ruby.tagger.source.{
   IdentifierDerivedTagger,
   IdentifierTagger,
   RubyLiteralDerivedTagger,
   RubyLiteralTagger
 }
-import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
-import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
-import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -45,7 +46,6 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.util.Calendar
-import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
