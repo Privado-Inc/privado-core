@@ -3,10 +3,11 @@ package ai.privado.languageEngine.java.tagger.sink.api
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants, Language, NodeType, SystemConfig}
 import ai.privado.rule.RuleInfoTestData
+import ai.privado.tagger.sink.api.APIValidator
 import ai.privado.testfixtures.JavaFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite {
+class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite with APIValidator {
 
   "Java api retrofit tagger (case - finding url by literal)" should {
     val cpg = code(
@@ -77,19 +78,12 @@ class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite {
 
     "tag retrofit sink as api sink" in {
       val List(getUserCall) = cpg.call("getUsers").l
-      getUserCall.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name).size shouldBe 1
-      getUserCall.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString).size shouldBe 1
-
+      assertAPISinkCall(getUserCall)
     }
 
     "tag retrofit sink with endpoint" in {
       val List(getUserCall) = cpg.call("getUsers").l
-
-      getUserCall.tag.nameExact("third_partiesapi").value.l shouldBe List("Sinks.ThirdParties.API.api.example.com")
-      getUserCall.tag.nameExact("apiUrlSinks.ThirdParties.API.api.example.com").value.l shouldBe List(
-        "\"https://api.example.com/\""
-      )
-
+      assertAPIEndpointURL(getUserCall, "\"https://api.example.com/\"")
     }
   }
 
@@ -166,19 +160,12 @@ class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite {
 
     "tag retrofit sink as api sink" in {
       val List(getUserCall) = cpg.call("getUsers").l
-      getUserCall.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name).size shouldBe 1
-      getUserCall.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString).size shouldBe 1
-
+      assertAPISinkCall(getUserCall)
     }
 
     "tag retrofit sink with endpoint" in {
       val List(getUserCall) = cpg.call("getUsers").l
-
-      getUserCall.tag.nameExact("third_partiesapi").value.l shouldBe List("Sinks.ThirdParties.API.exampleAPIEndpoint")
-      getUserCall.tag.nameExact("apiUrlSinks.ThirdParties.API.exampleAPIEndpoint").value.l shouldBe List(
-        "exampleAPIEndpoint"
-      )
-
+      assertAPIEndpointURL(getUserCall, "exampleAPIEndpoint")
     }
   }
 
@@ -257,19 +244,12 @@ class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite {
 
     "tag retrofit sink as api sink" in {
       val List(getUserCall) = cpg.call("getUsers").l
-      getUserCall.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name).size shouldBe 1
-      getUserCall.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString).size shouldBe 1
-
+      assertAPISinkCall(getUserCall)
     }
 
     "tag retrofit sink with endpoint" in {
       val List(getUserCall) = cpg.call("getUsers").l
-
-      getUserCall.tag.nameExact("third_partiesapi").value.l shouldBe List("Sinks.ThirdParties.API.exampleAPIEndpoint")
-      getUserCall.tag.nameExact("apiUrlSinks.ThirdParties.API.exampleAPIEndpoint").value.l shouldBe List(
-        "exampleAPIEndpoint"
-      )
-
+      assertAPIEndpointURL(getUserCall, "exampleAPIEndpoint")
     }
   }
 }
