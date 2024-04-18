@@ -27,7 +27,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
-import ai.privado.languageEngine.java.tagger.sink.{APITaggerVersionJava, FeignAPI}
+import ai.privado.languageEngine.java.tagger.sink.FeignAPI
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.tagger.PrivadoParallelCpgPass
