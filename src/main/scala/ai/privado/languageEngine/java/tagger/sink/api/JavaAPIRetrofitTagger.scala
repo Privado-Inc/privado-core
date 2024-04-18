@@ -49,7 +49,7 @@ class JavaAPIRetrofitTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
           tagAPICallByItsUrlMethod(cpg, builder, lit, sinkCalls, apiMatchingRegex, thirdPartyRuleInfo, ruleCache)
         case _ =>
           Try {
-            val methodNode = createCall.start.repeat(_.astParent)(_.until(_.isMethod)).isMethod.head
+            val methodNode = createCall.method
             tagAPICallByItsUrlMethod(
               cpg,
               builder,
