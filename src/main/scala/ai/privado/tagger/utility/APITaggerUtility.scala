@@ -147,6 +147,7 @@ object APITaggerUtility {
     apiNode: AstNode,
     apiUrlNode: Any
   ): Unit = {
+    // TODO Optimise this by adding a cache mechanism
     val flatMapList = ruleCache.getRule.inferences
       .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
       .filter(_.domains.nonEmpty)
