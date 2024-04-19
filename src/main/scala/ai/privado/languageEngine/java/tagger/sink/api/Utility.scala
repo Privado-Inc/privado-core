@@ -20,7 +20,6 @@ object Utility {
     nodeToComputeUrl: AstNode,
     apiCalls: List[Call],
     apiMatchingRegex: String,
-    thirdPartyRuleInfo: Option[RuleInfo],
     ruleCache: RuleCache
   ): Unit = {
 
@@ -33,17 +32,9 @@ object Utility {
 
       nodeToComputeUrl match {
         case lit: Literal =>
-          extractUrlFromLiteralAndTag(cpg, lit, builder, impactedApiCalls, thirdPartyRuleInfo, ruleCache)
+          extractUrlFromLiteralAndTag(cpg, lit, builder, impactedApiCalls, ruleCache)
         case method: Method =>
-          extractUrlFromMethodAndTag(
-            cpg,
-            method,
-            builder,
-            impactedApiCalls,
-            apiMatchingRegex,
-            thirdPartyRuleInfo,
-            ruleCache
-          )
+          extractUrlFromMethodAndTag(cpg, method, builder, impactedApiCalls, apiMatchingRegex, ruleCache)
       }
 
     }
@@ -54,13 +45,12 @@ object Utility {
     literalNode: Literal,
     builder: DiffGraphBuilder,
     impactedApiCalls: List[Call],
-    thirdPartyRuleInfo: Option[RuleInfo],
     ruleCache: RuleCache
   ): Unit = {
 
     val domain = resolveDomainFromSource(literalNode)
     impactedApiCalls.foreach { apiCall =>
-      tagAPIWithDomainAndUpdateRuleCache(builder, thirdPartyRuleInfo.get, ruleCache, domain, apiCall, literalNode)
+      tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, literalNode)
       storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
       storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
     }
@@ -72,7 +62,6 @@ object Utility {
     builder: DiffGraphBuilder,
     impactedApiCalls: List[Call],
     apiMatchingRegex: String,
-    thirdPartyRuleInfo: Option[RuleInfo],
     ruleCache: RuleCache
   ): Unit = {
     /*
@@ -83,7 +72,7 @@ object Utility {
       matchingProperties.foreach { propertyNode =>
         val domain = getDomainFromString(propertyNode.value)
         impactedApiCalls.foreach { apiCall =>
-          tagAPIWithDomainAndUpdateRuleCache(builder, thirdPartyRuleInfo.get, ruleCache, domain, apiCall, propertyNode)
+          tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, propertyNode)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
         }
@@ -144,14 +133,7 @@ object Utility {
       if (endpointNode.isDefined) {
         val domain = resolveDomainFromSource(endpointNode.get)
         impactedApiCalls.foreach { apiCall =>
-          tagAPIWithDomainAndUpdateRuleCache(
-            builder,
-            thirdPartyRuleInfo.get,
-            ruleCache,
-            domain,
-            apiCall,
-            endpointNode.get
-          )
+          tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, endpointNode.get)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
         }
@@ -165,7 +147,7 @@ object Utility {
             matchingParameters.head // Pick only the first parameter as we don't want to tag same sink with multiple API's
           val domain = resolveDomainFromSource(parameter)
           impactedApiCalls.foreach { apiCall =>
-            tagAPIWithDomainAndUpdateRuleCache(builder, thirdPartyRuleInfo.get, ruleCache, domain, apiCall, parameter)
+            tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, parameter)
             storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
             storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
           }
@@ -177,14 +159,7 @@ object Utility {
               matchingIdentifiers.head // Pick only the first identifier as we don't want to tag same sink with multiple API's
             val domain = resolveDomainFromSource(identifier)
             impactedApiCalls.foreach { apiCall =>
-              tagAPIWithDomainAndUpdateRuleCache(
-                builder,
-                thirdPartyRuleInfo.get,
-                ruleCache,
-                domain,
-                apiCall,
-                identifier
-              )
+              tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, identifier)
               storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
               storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
             }

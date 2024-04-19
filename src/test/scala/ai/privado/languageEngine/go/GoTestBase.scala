@@ -333,7 +333,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       .withOutputPath(outputFile.pathAsString)
       .withFetchDependencies(downloadDependency)
 
-    ruleCache.setRule(configAndRules)
+    ruleCache.withRule(configAndRules)
     val cpg      = new GoSrc2Cpg().createCpg(config).get
     val appCache = new AppCache()
     appCache.repoLanguage = Language.GO

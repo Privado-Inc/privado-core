@@ -90,7 +90,7 @@ class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite with APIValidator 
   "Java api retrofit tagger (case - finding url by method parameter regex match)" should {
 
     val systemConfig = List(SystemConfig(Constants.apiIdentifier, "(?i).*endpoint", Language.JAVA, "", Array()))
-    val ruleCache    = RuleCache().setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
+    val ruleCache    = RuleCache().withRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
 
     val cpg = code(
       """
@@ -172,7 +172,7 @@ class JavaAPIRetrofitTaggerTest extends JavaFrontendTestSuite with APIValidator 
   "Java api retrofit tagger (case - finding url by matching identifier in method)" should {
 
     val systemConfig = List(SystemConfig(Constants.apiIdentifier, "(?i).*endpoint", Language.JAVA, "", Array()))
-    val ruleCache    = RuleCache().setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
+    val ruleCache    = RuleCache().withRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
 
     val cpg = code(
       """

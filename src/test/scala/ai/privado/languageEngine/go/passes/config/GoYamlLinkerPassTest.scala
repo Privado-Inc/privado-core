@@ -108,7 +108,7 @@ abstract class GoYamlFileLinkerPassTestBase extends AnyWordSpec with Matchers wi
 
     cpg = xtocpg.get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     appCache.repoLanguage = Language.GO
 
     val context = new LayerCreatorContext(cpg)

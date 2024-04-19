@@ -50,7 +50,7 @@ class JavaAPISinkByMethodFullNameTaggerTest extends AnyWordSpec with Matchers wi
       )
 
       val ruleCache = RuleCache()
-      ruleCache.setRule(
+      ruleCache.withRule(
         ConfigAndRules(systemConfig =
           List(
             SystemConfig(

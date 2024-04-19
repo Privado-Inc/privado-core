@@ -69,7 +69,7 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
       .withOutputPath(outputFile.pathAsString)
       .withPhpParserBin(PhpProcessor.parserBinPath)
 
-    ruleCache.setRule(configAndRules)
+    ruleCache.withRule(configAndRules)
     val cpg = new Php2Cpg().createCpg(config).get
 
     X2Cpg.applyDefaultOverlays(cpg)

@@ -274,7 +274,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
     val rule: ConfigAndRules =
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     val privadoInput = PrivadoInput()
     val config       = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg          = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
@@ -294,7 +294,7 @@ class WebFormsCollectionTaggerTest extends AnyWordSpec with Matchers with Before
     val rule: ConfigAndRules =
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     val ruleCache = new RuleCache()
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()

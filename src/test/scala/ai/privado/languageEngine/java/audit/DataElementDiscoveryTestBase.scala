@@ -36,7 +36,7 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
 
     cpg = xtocpg.get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     super.beforeAll()
   }
 

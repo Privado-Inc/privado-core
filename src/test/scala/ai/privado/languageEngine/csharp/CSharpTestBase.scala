@@ -103,7 +103,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
       .withInputPath(inputDir.pathAsString)
       .withOutputPath(outputFile.pathAsString)
 
-    ruleCache.setRule(configAndRules)
+    ruleCache.withRule(configAndRules)
     val cpg      = new CSharpSrc2Cpg().createCpg(config).get
     val appCache = new AppCache()
     appCache.repoLanguage = Language.CSHARP

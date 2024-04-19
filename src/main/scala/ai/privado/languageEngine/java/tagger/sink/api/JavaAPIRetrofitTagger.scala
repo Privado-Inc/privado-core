@@ -16,8 +16,6 @@ class JavaAPIRetrofitTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
   private val apiMatchingRegex =
     ruleCache.getAllRuleInfo.filter(_.nodeType == NodeType.API).map(_.combinedRulePattern).mkString("(", "|", ")")
 
-  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
-
   private val logger = getLogger(this.getClass)
   override def generateParts(): Array[(Call, Call)] = {
     cpg
@@ -46,19 +44,11 @@ class JavaAPIRetrofitTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
       Try(baseUrlCall.argument.last).toOption match
         case Some(lit: Literal) =>
           // Mark the nodes as API sink
-          tagAPICallByItsUrlMethod(cpg, builder, lit, sinkCalls, apiMatchingRegex, thirdPartyRuleInfo, ruleCache)
+          tagAPICallByItsUrlMethod(cpg, builder, lit, sinkCalls, apiMatchingRegex, ruleCache)
         case _ =>
           Try {
             val methodNode = createCall.method
-            tagAPICallByItsUrlMethod(
-              cpg,
-              builder,
-              methodNode,
-              sinkCalls,
-              apiMatchingRegex,
-              thirdPartyRuleInfo,
-              ruleCache
-            )
+            tagAPICallByItsUrlMethod(cpg, builder, methodNode, sinkCalls, apiMatchingRegex, ruleCache)
           } match
             case Failure(e) => logger.debug(s"Failed to get to a method node for retrofit create call")
             case _          =>

@@ -122,7 +122,7 @@ abstract class PropertiesFilePassFilterTestBase extends AnyWordSpec with Matcher
       }
       .get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
 
     new PropertyParserPass(cpg, inputDir.toString(), ruleCache, Language.JAVA).createAndApply()
 

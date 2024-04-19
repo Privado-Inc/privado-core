@@ -24,7 +24,7 @@ object RuleInfoTestData {
 
   val ruleCache: RuleCache = {
     val r = RuleCache()
-    r.setRule(rule)
+    r.withRule(rule)
     r
   }
 }

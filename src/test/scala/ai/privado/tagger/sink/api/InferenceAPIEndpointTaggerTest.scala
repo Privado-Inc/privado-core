@@ -22,7 +22,7 @@ class InferenceAPIEndpointTaggerTest extends JavaFrontendTestSuite with APIValid
         catLevelTwo = Constants.apiEndpoint
       )
     )
-    val ruleCache = RuleCache().setRule(RuleInfoTestData.rule.copy(inferences = inferences))
+    val ruleCache = RuleCache().withRule(RuleInfoTestData.rule.copy(inferences = inferences))
 
     val cpg = code("""
         |import com.privado.clients.UserServiceClient;
@@ -64,7 +64,7 @@ class InferenceAPIEndpointTaggerTest extends JavaFrontendTestSuite with APIValid
         catLevelTwo = Constants.apiEndpoint
       )
     )
-    val ruleCache = RuleCache().setRule(RuleInfoTestData.rule.copy(inferences = inferences))
+    val ruleCache = RuleCache().withRule(RuleInfoTestData.rule.copy(inferences = inferences))
 
     val cpg = code("""
         |import com.privado.clients.UserServiceClient;

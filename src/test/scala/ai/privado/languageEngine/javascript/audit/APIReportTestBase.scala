@@ -29,7 +29,7 @@ abstract class APIReportTestBase extends AnyWordSpec with Matchers with BeforeAn
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(config)
     cpg = xtocpg.get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     super.beforeAll()
   }
 

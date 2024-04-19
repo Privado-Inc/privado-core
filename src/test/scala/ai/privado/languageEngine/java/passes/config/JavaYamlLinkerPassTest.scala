@@ -111,7 +111,7 @@ abstract class JavaYamlLinkerPassTestBase
       }
       .get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()

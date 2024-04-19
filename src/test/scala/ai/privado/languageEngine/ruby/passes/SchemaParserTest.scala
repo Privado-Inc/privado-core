@@ -23,7 +23,7 @@ import ai.privado.rule.RuleInfoTestData
 class SchemaParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val ruleCache = new RuleCache()
-  ruleCache.setRule(
+  ruleCache.withRule(
     ConfigAndRules(
       sources = RuleInfoTestData.sourceRule,
       List(),

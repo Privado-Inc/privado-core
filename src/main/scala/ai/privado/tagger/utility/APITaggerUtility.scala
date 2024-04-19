@@ -28,7 +28,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.model.{Constants, FilterProperty, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
@@ -41,6 +41,9 @@ import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.Cpg
+import ai.privado.languageEngine.java.language._
+import io.shiftleft.semanticcpg.language._
 
 object APITaggerUtility {
 
@@ -80,33 +83,26 @@ object APITaggerUtility {
         val sourceNode = flow.elements.head
         val apiNode    = flow.elements.last
         // Tag API's when we find a dataflow to them
-        var newRuleIdToUse = ruleInfo.id
-        if (ruleInfo.id.equals(Constants.internalAPIRuleId)) addRuleTags(builder, apiNode, ruleInfo, ruleCache)
-        else {
-          val domain = resolveDomainFromSource(sourceNode)
-          newRuleIdToUse = ruleInfo.id + "." + domain
-          ruleCache.setRuleInfo(
-            ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true)
+        if ruleInfo.id.equals(Constants.internalAPIRuleId) then
+          tagAPINode(builder, ruleCache, ruleInfo, apiNode, getLiteralCode(sourceNode))
+        else
+          tagAPIWithDomainAndUpdateRuleCache(
+            builder,
+            ruleCache,
+            resolveDomainFromSource(sourceNode),
+            apiNode,
+            sourceNode
           )
-          addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
-        }
-        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(sourceNode))
       })
       // Add url as 'API' for non Internal api nodes, so that at-least we show API without domains
       if (showAPI && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
         val literalPathApiNodes        = apiFlows.map(_.elements.last).toSet
         val apiNodesWithoutLiteralPath = apis.toSet.diff(literalPathApiNodes)
-        apiNodesWithoutLiteralPath.foreach(apiNode => {
-          addRuleTags(builder, apiNode, ruleInfo, ruleCache)
-          storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
-        })
+        apiNodesWithoutLiteralPath.foreach(tagAPINode(builder, ruleCache, ruleInfo, _, Constants.API))
       }
     } // Add url as 'API' for non Internal api nodes, for cases where there is no http literal present in source code
     else if (showAPI && filteredSourceNode.isEmpty && !ruleInfo.id.equals(Constants.internalAPIRuleId)) {
-      apis.foreach(apiNode => {
-        addRuleTags(builder, apiNode, ruleInfo, ruleCache)
-        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, Constants.API)
-      })
+      apis.foreach(tagAPINode(builder, ruleCache, ruleInfo, _, Constants.API))
     }
   }
 
@@ -123,33 +119,103 @@ object APITaggerUtility {
     }
   }
 
-  def tagAPIWithDomainAndUpdateRuleCache(
+  /** Tag API or internal api nodes, Don't use this for tagging Third Party API's
+    * @param builder
+    * @param ruleCache
+    * @param apiNode
+    * @param apiUrl
+    * @return
+    */
+  private def tagAPINode(
     builder: DiffGraphBuilder,
-    ruleInfo: RuleInfo,
     ruleCache: RuleCache,
-    domain: String,
+    ruleInfo: RuleInfo,
     apiNode: AstNode,
-    apiUrlNode: AstNode
-  ): DiffGraphBuilder = {
-    val newRuleIdToUse = ruleInfo.id + "." + domain
-    ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true))
-    addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
-    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(apiUrlNode))
-
+    apiUrl: String
+  ) = {
+    addRuleTags(builder, apiNode, ruleInfo, ruleCache)
+    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, apiUrl)
   }
 
   def tagAPIWithDomainAndUpdateRuleCache(
     builder: DiffGraphBuilder,
-    ruleInfo: RuleInfo,
+    cpg: Cpg,
+    ruleCache: RuleCache,
+    domain: String,
+    apiNode: AstNode,
+    apiUrlNode: Any
+  ): Unit = {
+    val domainByInference = ruleCache.getRule.inferences
+      .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
+      .filter(_.domains.nonEmpty)
+      .flatMap { ruleInfo =>
+        ruleInfo.filterProperty match {
+          case FilterProperty.ENDPOINT_DOMAIN_WITH_LITERAL if domain.matches(ruleInfo.combinedRulePattern) =>
+            Some(ruleInfo.domains.head)
+          case FilterProperty.ENDPOINT_DOMAIN_WITH_PROPERTY_NAME
+              if domain.matches(ruleInfo.combinedRulePattern) && cpg.property.name(ruleInfo.domains.head).nonEmpty =>
+            Some(cpg.property.name(ruleInfo.domains.head).value.head)
+          case _ => None
+        }
+      }
+      .headOption match
+      case Some(inferenceDomain) => inferenceDomain
+      case None                  => domain
+
+    apiUrlNode match
+      case x: String  => tagAPIWithDomainAndUpdateRuleCache(builder, ruleCache, domainByInference, apiNode, x)
+      case x: AstNode => tagAPIWithDomainAndUpdateRuleCache(builder, ruleCache, domainByInference, apiNode, x)
+  }
+
+  private def tagAPIWithDomainAndUpdateRuleCache(
+    builder: DiffGraphBuilder,
+    ruleCache: RuleCache,
+    domain: String,
+    apiNode: AstNode,
+    apiUrlNode: AstNode
+  ): Unit =
+    ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
+      case Some(thirdPartyAPIRuleInfo) =>
+        addThirdPartyRuleAndTagAPI(
+          builder,
+          ruleCache,
+          thirdPartyAPIRuleInfo,
+          domain,
+          apiNode,
+          getLiteralCode(apiUrlNode)
+        )
+      case None => // Third party rule doesn't exist, which is ideally not possible
+  private def tagAPIWithDomainAndUpdateRuleCache(
+    builder: DiffGraphBuilder,
     ruleCache: RuleCache,
     domain: String,
     apiNode: AstNode,
     apiUrl: String
-  ): DiffGraphBuilder = {
-    val newRuleIdToUse = ruleInfo.id + "." + domain
-    ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true))
-    addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
-    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, apiUrl)
+  ): Unit =
+    ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
+      case Some(thirdPartyAPIRuleInfo) =>
+        addThirdPartyRuleAndTagAPI(builder, ruleCache, thirdPartyAPIRuleInfo, domain, apiNode, apiUrl)
+      case None => // Third party rule doesn't exist, which is ideally not possible
+  /** Generates a new third party rule, updates ruleCache, and tag the apiSink with this generated rule
+    * @param builder
+    * @param ruleCache
+    * @param thirdPartyAPIRuleInfo
+    * @param domain
+    * @param apiNode
+    * @param apiUrl
+    * @return
+    */
+  private def addThirdPartyRuleAndTagAPI(
+    builder: DiffGraphBuilder,
+    ruleCache: RuleCache,
+    thirdPartyAPIRuleInfo: RuleInfo,
+    domain: String,
+    apiNode: AstNode,
+    apiUrl: String
+  ) = {
+    val newRuleId = ruleCache.addThirdPartyRuleInfo(thirdPartyAPIRuleInfo, domain)
+    addRuleTags(builder, apiNode, thirdPartyAPIRuleInfo, ruleCache, Some(newRuleId))
+    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleId, apiUrl)
 
   }
 }

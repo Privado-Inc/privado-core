@@ -217,6 +217,8 @@ object FilterProperty extends Enumeration {
   // For Inference API Endpoint mapping
   val METHOD_FULL_NAME_WITH_LITERAL: model.FilterProperty.Value       = Value("method_full_name_with_literal")
   val METHOD_FULL_NAME_WITH_PROPERTY_NAME: model.FilterProperty.Value = Value("method_full_name_with_property_name")
+  val ENDPOINT_DOMAIN_WITH_LITERAL: model.FilterProperty.Value        = Value("endpoint_domain_with_literal")
+  val ENDPOINT_DOMAIN_WITH_PROPERTY_NAME: model.FilterProperty.Value  = Value("endpoint_domain_with_property_name")
 
   def withNameWithDefault(name: String): Value = {
     try {

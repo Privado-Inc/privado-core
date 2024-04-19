@@ -29,7 +29,7 @@ abstract class HTTPReportTestBase extends AnyWordSpec with Matchers with BeforeA
     val xtocpg = new JsSrc2Cpg().createCpgWithAllOverlays(config)
     cpg = xtocpg.get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     super.beforeAll()
   }
 

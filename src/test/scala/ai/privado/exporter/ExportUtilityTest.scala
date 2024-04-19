@@ -18,7 +18,7 @@ class ExportUtilityTest extends JavaFrontendTestSuite {
 
     "Test truncate working correctly" in {
       val nodeToTest = cpg.call.methodFullName("<operator>.assignment").head
-      ruleCache.setRule(rule)
+      ruleCache.withRule(rule)
 
       val convertedDataflowModel =
         ExporterUtility.convertIndividualPathElement(nodeToTest, 2, 2, "here", new AppCache(), ruleCache)

@@ -138,7 +138,7 @@ abstract class PropertyFilterExportTestBase extends AnyWordSpec with Matchers wi
       }
       .get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
 
     new PropertyParserPass(cpg, inputDir.toString(), ruleCache, Language.JAVA, propertyFilterCache).createAndApply()
 

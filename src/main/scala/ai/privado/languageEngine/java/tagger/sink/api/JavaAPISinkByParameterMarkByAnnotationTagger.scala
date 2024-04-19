@@ -17,7 +17,6 @@ class JavaAPISinkByParameterMarkByAnnotationTagger(cpg: Cpg, ruleCache: RuleCach
   private val apiMatchingRegex =
     ruleCache.getAllRuleInfo.filter(_.nodeType == NodeType.API).map(_.combinedRulePattern).mkString("(", "|", ")")
 
-  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
   override def generateParts(): Array[(Method, List[String])] = {
 
     val methodWithAnnotationCode = cpg.parameter
@@ -70,7 +69,7 @@ class JavaAPISinkByParameterMarkByAnnotationTagger(cpg: Cpg, ruleCache: RuleCach
         .l
 
       // Mark the nodes as API sink
-      tagAPICallByItsUrlMethod(cpg, builder, methodNode, sinkCalls, apiMatchingRegex, thirdPartyRuleInfo, ruleCache)
+      tagAPICallByItsUrlMethod(cpg, builder, methodNode, sinkCalls, apiMatchingRegex, ruleCache)
 
     }
 

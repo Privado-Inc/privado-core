@@ -19,7 +19,6 @@ class JavaAPISinkByParameterTagger(cpg: Cpg, ruleCache: RuleCache)
   private val apiMatchingRegex =
     ruleCache.getAllRuleInfo.filter(_.nodeType == NodeType.API).map(_.combinedRulePattern).mkString("(", "|", ")")
 
-  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
   override def generateParts(): Array[(Method, String)] = {
 
     /* Below query looks for methods whose parameter names ends with `url|endpoint`,
@@ -96,7 +95,7 @@ class JavaAPISinkByParameterTagger(cpg: Cpg, ruleCache: RuleCache)
         .l
 
       // Mark the nodes as API sink
-      tagAPICallByItsUrlMethod(cpg, builder, methodNode, sinkCalls, apiMatchingRegex, thirdPartyRuleInfo, ruleCache)
+      tagAPICallByItsUrlMethod(cpg, builder, methodNode, sinkCalls, apiMatchingRegex, ruleCache)
 
     }
   }

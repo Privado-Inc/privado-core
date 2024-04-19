@@ -18,8 +18,7 @@ import org.slf4j.LoggerFactory
   */
 class InferenceAPIEndpointTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
-  private val logger             = LoggerFactory.getLogger(getClass)
-  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.inferences.filter(_.catLevelTwo.equals(Constants.apiEndpoint)).toArray
@@ -58,14 +57,7 @@ class InferenceAPIEndpointTagger(cpg: Cpg, ruleCache: RuleCache) extends Privado
   }
 
   private def tagNode(builder: DiffGraphBuilder, apiCall: AstNode, apiUrl: String) = {
-    tagAPIWithDomainAndUpdateRuleCache(
-      builder,
-      thirdPartyRuleInfo.get,
-      ruleCache,
-      getDomainFromString(apiUrl),
-      apiCall,
-      apiUrl
-    )
+    tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, getDomainFromString(apiUrl), apiCall, apiUrl)
     storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
     storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
   }

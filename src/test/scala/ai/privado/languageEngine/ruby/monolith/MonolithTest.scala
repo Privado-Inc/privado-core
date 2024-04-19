@@ -120,7 +120,7 @@ abstract class MonolithTestBase extends AnyWordSpec with Matchers with BeforeAnd
   val ruleCache              = new RuleCache()
   val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
 
-  ruleCache.setRule(RuleInfoTestData.rule)
+  ruleCache.withRule(RuleInfoTestData.rule)
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()

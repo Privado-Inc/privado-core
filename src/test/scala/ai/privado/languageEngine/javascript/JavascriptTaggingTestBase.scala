@@ -52,7 +52,7 @@ abstract class JavascriptTaggingTestBase extends AnyWordSpec with Matchers with 
     cpg = new JsSrc2Cpg().createCpg(config).get
 
     // Caching Rule
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     super.beforeAll()
   }
 

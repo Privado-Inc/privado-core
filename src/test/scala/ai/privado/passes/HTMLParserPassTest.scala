@@ -255,7 +255,7 @@ class HTMLParserPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List(), List())
     val ruleCache    = new RuleCache()
     val privadoInput = PrivadoInput()
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = X2Cpg.withNewEmptyCpg(outputFile.toString(), config)((cpg, config) => {}).get
     new HTMLParserPass(cpg, inputDir.toString(), ruleCache, privadoInput).createAndApply()

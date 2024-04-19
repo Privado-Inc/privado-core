@@ -210,7 +210,7 @@ class AndroidXmlPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
       ConfigAndRules(sources, List(), collections, List(), List(), List(), List(), List(), List(), List())
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg    = new Kotlin2Cpg().createCpgWithOverlays(config).get
     new AndroidXmlParserPass(cpg, inputDir.toString(), ruleCache).createAndApply()

@@ -34,7 +34,7 @@ abstract class CollectionTaggerTestBase extends AnyWordSpec with Matchers with B
 
     cpg = xtocpg.get
 
-    ruleCache.setRule(rule)
+    ruleCache.withRule(rule)
     super.beforeAll()
   }
 

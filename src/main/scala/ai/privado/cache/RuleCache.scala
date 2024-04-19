@@ -38,8 +38,7 @@ class RuleCache {
   val internalPolicies          = mutable.Set[String]()
   private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
 
-  // TODO, rename setRule to withRule as it return the ruleCache object and setters are Unit functions
-  def setRule(rule: ConfigAndRules): RuleCache = {
+  def withRule(rule: ConfigAndRules): RuleCache = {
     this.rule = rule
     rule.sources.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.sinks.foreach(r => ruleInfoMap.addOne(r.id -> r))
@@ -62,6 +61,15 @@ class RuleCache {
           case ai.privado.model.CatLevelOne.COLLECTIONS => rule.copy(collections = rule.collections.appended(ruleInfo))
           case _                                        => rule
         }
+  }
+
+  def addThirdPartyRuleInfo(thirdPartyAPIRuleInfo: RuleInfo, domain: String): String = {
+    val newRuleIdToUse = s"${Constants.thirdPartiesAPIRuleId}.$domain"
+    this.setRuleInfo(
+      thirdPartyAPIRuleInfo
+        .copy(id = newRuleIdToUse, name = s"${thirdPartyAPIRuleInfo.name} $domain", isGenerated = true)
+    )
+    newRuleIdToUse
   }
 
   def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
