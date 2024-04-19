@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.tagger.sink.api.APISinkTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -11,7 +11,10 @@ object JavaAPISinkTagger extends APISinkTagger {
     * @param cpg
     * @param ruleCache
     */
-  override def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput): Unit = {
+  override def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache): Unit = {
+
+    super.applyTagger(cpg, ruleCache, privadoInput, appCache)
+    new JavaAPIRetrofitTagger(cpg, ruleCache).createAndApply()
 
     if (privadoInput.enableAPIByParameter) {
       new JavaAPISinkByParameterMarkByAnnotationTagger(cpg, ruleCache).createAndApply()
@@ -20,8 +23,7 @@ object JavaAPISinkTagger extends APISinkTagger {
 
     new JavaAPISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
 
-    // Invoke API Endpoint mappers
-    // new JavaAPISinkEndpointMapperByNonInitMethod(cpg, ruleCache).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, privadoInput, appCache).createAndApply()
   }
 
 }

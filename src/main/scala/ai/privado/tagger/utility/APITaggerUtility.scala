@@ -130,11 +130,26 @@ object APITaggerUtility {
     domain: String,
     apiNode: AstNode,
     apiUrlNode: AstNode
-  ) = {
+  ): DiffGraphBuilder = {
     val newRuleIdToUse = ruleInfo.id + "." + domain
     ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true))
     addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
     storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, getLiteralCode(apiUrlNode))
+
+  }
+
+  def tagAPIWithDomainAndUpdateRuleCache(
+    builder: DiffGraphBuilder,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    domain: String,
+    apiNode: AstNode,
+    apiUrl: String
+  ): DiffGraphBuilder = {
+    val newRuleIdToUse = ruleInfo.id + "." + domain
+    ruleCache.setRuleInfo(ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + domain, isGenerated = true))
+    addRuleTags(builder, apiNode, ruleInfo, ruleCache, Some(newRuleIdToUse))
+    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleIdToUse, apiUrl)
 
   }
 }
