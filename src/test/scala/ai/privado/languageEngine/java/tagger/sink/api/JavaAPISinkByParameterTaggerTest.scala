@@ -6,7 +6,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.languageEngine.java.JavaTestBase.*
-import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, SourceCodeModel, SystemConfig}
 import ai.privado.rule.RuleInfoTestData
 import io.shiftleft.semanticcpg.language.*
@@ -82,7 +81,7 @@ class JavaAPISinkByParameterTaggerTest extends AnyWordSpec with Matchers with Be
       val systemConfig =
         List(SystemConfig(Constants.apiIdentifier, "(?i).*endpoint.*", Language.UNKNOWN, "", Array[String]()))
       ruleCache.setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
-      JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = privadoInput)
+      JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = privadoInput, appCache = AppCache())
 
       new JavaAPITagger(cpg, ruleCache, privadoInputConfig = privadoInput, appCache = new AppCache()).createAndApply()
 

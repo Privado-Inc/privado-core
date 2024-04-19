@@ -108,6 +108,7 @@ object Constants {
   val sinkType                      = "sinkType"
   val collectionFilters             = "collectionFilters"
   val collectionType                = "collectionType"
+  val inferences                    = "inferences"
   val localScanPath                 = "localScanPath"
   val processing                    = "processing"
   val sinkProcessing                = "sinkProcessing"
@@ -188,8 +189,10 @@ object Constants {
   val UnknownDomain = "unknown-domain"
   val Unknown       = "unknown"
 
+  // catlevelTwo
   val annotations       = "annotations"
   val default           = "default"
+  val apiEndpoint       = "apiEndpoint"
   val semanticDelimeter = "_A_"
   val thisConstant      = "this"
 
