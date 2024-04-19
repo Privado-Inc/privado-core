@@ -1,0 +1,104 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/inferences.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "inferences"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "inferences": {
+      "$id": "#root/inferences",
+      "title": "Inferences",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/inferences/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "domains",
+          "patterns"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$id": "#root/inferences/items/id",
+            "title": "Id",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Storages.AmazonS3.Read"
+            ],
+            "pattern": "^.*$"
+          },
+          "name": {
+            "$id": "#root/inferences/items/name",
+            "title": "Name",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "Amazon S3(Read)"
+            ],
+            "pattern": "^.*$"
+          },
+          "filterProperty": {
+            "$id": "#root/inferences/items/filterProperty",
+            "title": "FilterProperty",
+            "type": "string",
+            "default": "method_full_name",
+            "examples": [
+              "code",
+              "method_full_name"
+            ],
+            "pattern": "^(code|method_full_name|method_full_name_with_literal|method_full_name_with_property_name)$"
+          },
+          "domains": {
+            "$id": "#root/inferences/items/domains",
+            "title": "Domains",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/inferences/items/domains/items",
+              "title": "Items",
+              "type": "string",
+              "default": "",
+              "examples": [
+                "aws.amazon.com"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "patterns": {
+            "$id": "#root/inferences/items/patterns",
+            "title": "Patterns",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/inferences/items/patterns/items",
+              "title": "Items",
+              "type": "string",
+              "format": "regex",
+              "default": "",
+              "examples": [
+                ".*(AmazonS3).*"
+              ],
+              "pattern": "^.*$"
+            }
+          },
+          "tags": {
+            "$id": "#root/inferences/items/tags",
+            "title": "Tags",
+            "type": ["object", "null"],
+            "default": null
+          }
+        }
+      }
+
+    }
+  }
+}

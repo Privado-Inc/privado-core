@@ -22,6 +22,7 @@
 
 package ai.privado.model
 
+import ai.privado.model
 import ai.privado.model.Language.{JAVA, Language}
 
 object InternalTag extends Enumeration {
@@ -80,6 +81,7 @@ object CatLevelOne extends Enumeration {
   val COLLECTIONS = CatLevelOneIn("collections", "Collections")
   val POLICIES    = CatLevelOneIn("policies", "Policies")
   val THREATS     = CatLevelOneIn("threats", "Threats")
+  val INFERENCES  = CatLevelOneIn("inferences", "Inferences")
   val UNKNOWN     = CatLevelOneIn("unknown", "Unknown")
 
   // internal CatLevelOne
@@ -209,8 +211,12 @@ object ConfigRuleType extends Enumeration {
 
 object FilterProperty extends Enumeration {
   type FilterProperty = Value
-  val METHOD_FULL_NAME = Value("method_full_name")
-  val CODE             = Value("code")
+  val METHOD_FULL_NAME: model.FilterProperty.Value = Value("method_full_name")
+  val CODE: model.FilterProperty.Value             = Value("code")
+
+  // For Inference API Endpoint mapping
+  val METHOD_FULL_NAME_WITH_LITERAL: model.FilterProperty.Value       = Value("method_full_name_with_literal")
+  val METHOD_FULL_NAME_WITH_PROPERTY_NAME: model.FilterProperty.Value = Value("method_full_name_with_property_name")
 
   def withNameWithDefault(name: String): Value = {
     try {
