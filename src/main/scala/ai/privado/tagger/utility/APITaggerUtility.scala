@@ -175,49 +175,19 @@ object APITaggerUtility {
         }
       }
       .headOption match
-      case Some(inferenceDomain) => tagWithString(builder, ruleCache, inferenceDomain, apiNode, inferenceDomain)
+      case Some(inferredDomain) =>
+        addThirdPartyRuleAndTagAPI(builder, ruleCache, inferredDomain, apiNode, inferredDomain)
       case None =>
         apiUrlNode match {
-          case x: String  => tagWithString(builder, ruleCache, domain, apiNode, x)
-          case x: AstNode => tagWithAstNode(builder, ruleCache, domain, apiNode, x)
+          case x: String  => addThirdPartyRuleAndTagAPI(builder, ruleCache, domain, apiNode, x)
+          case x: AstNode => addThirdPartyRuleAndTagAPI(builder, ruleCache, domain, apiNode, getLiteralCode(x))
           case _          =>
         }
-
-    def tagWithAstNode(
-      builder: DiffGraphBuilder,
-      ruleCache: RuleCache,
-      domain: String,
-      apiNode: AstNode,
-      apiUrlNode: AstNode
-    ): Unit =
-      ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
-        case Some(thirdPartyAPIRuleInfo) =>
-          addThirdPartyRuleAndTagAPI(
-            builder,
-            ruleCache,
-            thirdPartyAPIRuleInfo,
-            domain,
-            apiNode,
-            getLiteralCode(apiUrlNode)
-          )
-        case None => // Third party rule doesn't exist, which is ideally not possible
-    def tagWithString(
-      builder: DiffGraphBuilder,
-      ruleCache: RuleCache,
-      domain: String,
-      apiNode: AstNode,
-      apiUrl: String
-    ): Unit =
-      ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
-        case Some(thirdPartyAPIRuleInfo) =>
-          addThirdPartyRuleAndTagAPI(builder, ruleCache, thirdPartyAPIRuleInfo, domain, apiNode, apiUrl)
-        case None => // Third party rule doesn't exist, which is ideally not possible
   }
 
   /** Generates a new third party rule, updates ruleCache, and tag the apiSink with this generated rule
     * @param builder
     * @param ruleCache
-    * @param thirdPartyAPIRuleInfo
     * @param domain
     * @param apiNode
     * @param apiUrl
@@ -226,14 +196,15 @@ object APITaggerUtility {
   private def addThirdPartyRuleAndTagAPI(
     builder: DiffGraphBuilder,
     ruleCache: RuleCache,
-    thirdPartyAPIRuleInfo: RuleInfo,
     domain: String,
     apiNode: AstNode,
     apiUrl: String
   ) = {
-    val newRuleId = ruleCache.addThirdPartyRuleInfo(thirdPartyAPIRuleInfo, domain)
-    addRuleTags(builder, apiNode, thirdPartyAPIRuleInfo, ruleCache, Some(newRuleId))
-    storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleId, apiUrl)
-
+    ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
+      case Some(thirdPartyAPIRuleInfo) =>
+        val newRuleId = ruleCache.addThirdPartyRuleInfo(thirdPartyAPIRuleInfo, domain)
+        addRuleTags(builder, apiNode, thirdPartyAPIRuleInfo, ruleCache, Some(newRuleId))
+        storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + newRuleId, apiUrl)
+      case None => // Third party rule doesn't exist, which is ideally not possible
   }
 }
