@@ -82,7 +82,8 @@ class SourceExporter(
                     .distinctBy(_.lineNumber)
                     .distinctBy(Utilities.getFileNameForNode)
               },
-              appCache = appCache
+              appCache = appCache,
+              ruleCache = ruleCache
             )
         )
       )

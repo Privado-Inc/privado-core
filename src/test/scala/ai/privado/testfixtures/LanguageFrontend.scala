@@ -11,6 +11,7 @@ trait LanguageFrontend {
   /** A standard file extension for the source code files of the given language. E.g. `.c` for C language
     */
   val fileSuffix: String
+  val language: Language.Value
 
   private var privadoInput: Option[PrivadoInput]                     = None
   private var ruleCache: Option[RuleCache]                           = None
@@ -74,9 +75,9 @@ trait LanguageFrontend {
       this.privadoInput.getOrElse(PrivadoInput()).copy(sourceLocation = Set(sourceCodePath.getAbsolutePath))
     val appCache = this.appCache.getOrElse(AppCache())
     appCache.init(sourceCodePath.getAbsolutePath)
-    appCache.repoLanguage = Language.JAVA
+    appCache.repoLanguage = language
     val auditCache = this.auditCache.getOrElse(AuditCache())
-    getLangaugeProcessor(
+    getLanguageProcessor(
       this.ruleCache.getOrElse(RuleInfoTestData.ruleCache),
       privadoInput,
       this.dataFlowCache.getOrElse(DataFlowCache(privadoInput, auditCache)),
@@ -87,7 +88,7 @@ trait LanguageFrontend {
     )
   }
 
-  protected def getLangaugeProcessor(
+  protected def getLanguageProcessor(
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     dataFlowCache: DataFlowCache,

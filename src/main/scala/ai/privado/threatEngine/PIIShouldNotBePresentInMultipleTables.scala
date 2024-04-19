@@ -1,6 +1,6 @@
 package ai.privado.threatEngine
 
-import ai.privado.cache.{AppCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.java.passes.read.EntityMapper
 import ThreatUtility.{getPIINameFromSourceId, getSourceNode, hasDataElements}
@@ -29,7 +29,8 @@ object PIIShouldNotBePresentInMultipleTables {
     threat: PolicyOrThreat,
     cpg: Cpg,
     taggerCache: TaggerCache,
-    appCache: AppCache
+    appCache: AppCache,
+    ruleCache: RuleCache
   ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     if (hasDataElements(cpg)) {
       val violatingFlows          = ListBuffer[ViolationProcessingModel]()
@@ -70,7 +71,7 @@ object PIIShouldNotBePresentInMultipleTables {
 
             for ((table, member) <- piiWithTables._2.zip(dataElementToMembersMap(piiId))) {
               val dataFlowSubCategoryPathExcerptModel =
-                ExporterUtility.convertIndividualPathElement(member, appCache = appCache)
+                ExporterUtility.convertIndividualPathElement(member, appCache = appCache, ruleCache = ruleCache)
               if (dataFlowSubCategoryPathExcerptModel.isDefined) {
                 newOccurrenceExcerpt = newOccurrenceExcerpt + "Table Name: " + table
                 additionalDetail = s"${additionalDetail}\t- ${table}\n"
@@ -87,7 +88,8 @@ object PIIShouldNotBePresentInMultipleTables {
               violatingFlows,
               piiName,
               Some(additionalDetail),
-              appCache = appCache
+              appCache = appCache,
+              ruleCache = ruleCache
             )
           }
         }

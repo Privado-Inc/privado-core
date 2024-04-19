@@ -367,7 +367,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).processCpg()
               case language if language == Languages.JSSRC =>
                 statsRecorder.justLogMessage("Detected language 'JavaScript'")
@@ -380,7 +380,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).createJavaScriptCpg()
               case language if language == Languages.PYTHONSRC =>
                 statsRecorder.justLogMessage("Detected language 'Python'")
@@ -393,7 +393,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).createPythonCpg()
               case language if language == Languages.RUBYSRC =>
                 statsRecorder.justLogMessage("Detected language 'Ruby'")
@@ -406,7 +406,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).createRubyCpg()
               case language if language == Languages.GOLANG =>
                 statsRecorder.justLogMessage("Detected language 'Go'")
@@ -419,7 +419,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).createGoCpg()
               case language if language == Languages.KOTLIN =>
                 statsRecorder.justLogMessage("Detected language 'Kotlin'")
@@ -432,7 +432,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).processCpg()
               case language if language == Languages.CSHARPSRC =>
                 statsRecorder.justLogMessage("Detected language 'C#'")
@@ -445,7 +445,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 ).processCpg()
               case language if language == Languages.PHP =>
                 statsRecorder.justLogMessage("Detected language 'PHP'")
@@ -458,7 +458,7 @@ object ScanProcessor extends CommandProcessor {
                   s3DatabaseDetailsCache,
                   appCache,
                   propertyFilterCache = propertyFilterCache,
-                  statsRecorder
+                  statsRecorder = statsRecorder
                 )
                   .processCpg()
               case _ =>
@@ -477,7 +477,7 @@ object ScanProcessor extends CommandProcessor {
                     s3DatabaseDetailsCache,
                     appCache,
                     propertyFilterCache = propertyFilterCache,
-                    statsRecorder
+                    statsRecorder = statsRecorder
                   ).processCpg()
                 } else {
                   processCpgWithDefaultProcessor(sourceRepoLocation, appCache)

@@ -102,7 +102,7 @@ class PolicyAndThreatExporter(
   private def convertProcessingSources(sourceNode: (String, CfgNode)) =
     ViolationProcessingModel(
       sourceNode._1,
-      ExporterUtility.convertIndividualPathElement(sourceNode._2, appCache = appCache),
+      ExporterUtility.convertIndividualPathElement(sourceNode._2, appCache = appCache, ruleCache = ruleCache),
       None
     )
 
