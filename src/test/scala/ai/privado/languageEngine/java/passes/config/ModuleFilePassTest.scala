@@ -472,7 +472,7 @@ abstract class ModuleFilePassTestBase extends AnyWordSpec with Matchers with Bef
     }
 
     cpg = xtocpg.get
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
 
     super.beforeAll()
   }

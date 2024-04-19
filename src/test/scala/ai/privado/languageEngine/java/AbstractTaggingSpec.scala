@@ -48,7 +48,7 @@ abstract class AbstractTaggingSpec extends AnyWordSpec with Matchers with Before
 
   def ruleCacheWithSourceAndCollectionRules(sourceRules: List[RuleInfo], collectionRules: List[RuleInfo]): RuleCache = {
     val ruleCache = RuleCache()
-    ruleCache.withRule(ConfigAndRules(sources = sourceRules, collections = collectionRules))
+    ruleCache.setRule(ConfigAndRules(sources = sourceRules, collections = collectionRules))
     ruleCache
   }
 

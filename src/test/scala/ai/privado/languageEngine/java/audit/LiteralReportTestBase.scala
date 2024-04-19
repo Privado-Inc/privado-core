@@ -35,7 +35,7 @@ abstract class LiteralReportTestBase extends AnyWordSpec with Matchers with Befo
 
     cpg = xtocpg.get
 
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 

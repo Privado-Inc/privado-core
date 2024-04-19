@@ -138,7 +138,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     outPutFiles.addOne(outputFile)
     val rule: ConfigAndRules =
       ConfigAndRules(List(), sinks, List(), List(), List(), List(), List(), List(), List(), List())
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     val taggerCache = new TaggerCache
     appCache.repoLanguage = Language.PYTHON
 

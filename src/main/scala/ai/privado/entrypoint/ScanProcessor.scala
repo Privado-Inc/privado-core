@@ -365,7 +365,7 @@ object ScanProcessor extends CommandProcessor {
       lang.head // we are caching the repo language here, and we will use this to get the repo's lang
     val ruleCache      = new RuleCache()
     val processedRules = processRules(lang, ruleCache, appCache)
-    ruleCache.withRule(processedRules)
+    ruleCache.setRule(processedRules)
     ruleCache
   }
 

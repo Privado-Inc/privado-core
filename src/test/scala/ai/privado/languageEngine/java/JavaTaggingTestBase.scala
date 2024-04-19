@@ -52,7 +52,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
     applyDefaultOverlays(cpg)
 
     // Caching Rule
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 

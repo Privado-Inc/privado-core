@@ -715,7 +715,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val configAndRules =
       ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
     val ruleCache = new RuleCache()
-    ruleCache.withRule(configAndRules)
+    ruleCache.setRule(configAndRules)
     val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val auditCache    = new AuditCache
     val dataFlowCache = new DataFlowCache(privadoInput, auditCache)

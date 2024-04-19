@@ -38,7 +38,8 @@ class RuleCache {
   val internalPolicies          = mutable.Set[String]()
   private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
 
-  def withRule(rule: ConfigAndRules): RuleCache = {
+  // TODO, rename setRule to withRule as it return the ruleCache object and setters are Unit functions
+  def setRule(rule: ConfigAndRules): RuleCache = {
     this.rule = rule
     rule.sources.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.sinks.foreach(r => ruleInfoMap.addOne(r.id -> r))

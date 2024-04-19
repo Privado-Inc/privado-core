@@ -23,7 +23,7 @@ import ai.privado.rule.RuleInfoTestData
 class RubyLiteralDerivedTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   val ruleCache = new RuleCache()
-  ruleCache.withRule(
+  ruleCache.setRule(
     ConfigAndRules(
       sources = RuleInfoTestData.sourceRule,
       List(),

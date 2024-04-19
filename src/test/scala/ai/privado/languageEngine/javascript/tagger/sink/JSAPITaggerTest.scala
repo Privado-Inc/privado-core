@@ -265,7 +265,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val rule: ConfigAndRules =
       ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
     val ruleCache = new RuleCache()
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     val appCache = new AppCache()
     appCache.repoLanguage = Language.JAVASCRIPT
 
@@ -288,7 +288,7 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val rule: ConfigAndRules =
       ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
     val ruleCache = new RuleCache()
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     val config      = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()

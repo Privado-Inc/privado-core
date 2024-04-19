@@ -61,7 +61,7 @@ abstract class RepoConfigMetadataExporterBase
       }
       .get
 
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
 
     super.beforeAll()

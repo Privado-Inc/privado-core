@@ -34,7 +34,7 @@ abstract class ProbableSinkTestBase extends AnyWordSpec with Matchers with Befor
 
     cpg = xtocpg.get
 
-    ruleCache.withRule(rule)
+    ruleCache.setRule(rule)
     super.beforeAll()
   }
 
