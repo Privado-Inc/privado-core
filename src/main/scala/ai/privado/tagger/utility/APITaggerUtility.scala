@@ -61,6 +61,7 @@ object APITaggerUtility {
   }
 
   def sinkTagger(
+    cpg: Cpg,
     apiInternalSinkPattern: List[AstNode],
     apis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
@@ -86,8 +87,9 @@ object APITaggerUtility {
         if ruleInfo.id.equals(Constants.internalAPIRuleId) then
           tagAPINode(builder, ruleCache, ruleInfo, apiNode, getLiteralCode(sourceNode))
         else
-          tagAPIWithDomainAndUpdateRuleCache(
+          tagThirdPartyAPIWithDomainAndUpdateRuleCache(
             builder,
+            cpg,
             ruleCache,
             resolveDomainFromSource(sourceNode),
             apiNode,
@@ -137,7 +139,7 @@ object APITaggerUtility {
     storeForTag(builder, apiNode, ruleCache)(Constants.apiUrl + ruleInfo.id, apiUrl)
   }
 
-  def tagAPIWithDomainAndUpdateRuleCache(
+  def tagThirdPartyAPIWithDomainAndUpdateRuleCache(
     builder: DiffGraphBuilder,
     cpg: Cpg,
     ruleCache: RuleCache,
@@ -145,7 +147,20 @@ object APITaggerUtility {
     apiNode: AstNode,
     apiUrlNode: Any
   ): Unit = {
-    val domainByInference = ruleCache.getRule.inferences
+    val flatMapList = ruleCache.getRule.inferences
+      .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
+      .filter(_.domains.nonEmpty)
+      .flatMap { ruleInfo =>
+        ruleInfo.filterProperty match {
+          case FilterProperty.ENDPOINT_DOMAIN_WITH_LITERAL if domain.matches(ruleInfo.combinedRulePattern) =>
+            Some(ruleInfo.domains.head)
+          case FilterProperty.ENDPOINT_DOMAIN_WITH_PROPERTY_NAME
+              if domain.matches(ruleInfo.combinedRulePattern) && cpg.property.name(ruleInfo.domains.head).nonEmpty =>
+            Some(cpg.property.name(ruleInfo.domains.head).value.head)
+          case _ => None
+        }
+      }
+    ruleCache.getRule.inferences
       .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
       .filter(_.domains.nonEmpty)
       .flatMap { ruleInfo =>
@@ -159,43 +174,45 @@ object APITaggerUtility {
         }
       }
       .headOption match
-      case Some(inferenceDomain) => inferenceDomain
-      case None                  => domain
+      case Some(inferenceDomain) => tagWithString(builder, ruleCache, inferenceDomain, apiNode, inferenceDomain)
+      case None =>
+        apiUrlNode match {
+          case x: String  => tagWithString(builder, ruleCache, domain, apiNode, x)
+          case x: AstNode => tagWithAstNode(builder, ruleCache, domain, apiNode, x)
+          case _          =>
+        }
 
-    apiUrlNode match
-      case x: String  => tagAPIWithDomainAndUpdateRuleCache(builder, ruleCache, domainByInference, apiNode, x)
-      case x: AstNode => tagAPIWithDomainAndUpdateRuleCache(builder, ruleCache, domainByInference, apiNode, x)
+    def tagWithAstNode(
+      builder: DiffGraphBuilder,
+      ruleCache: RuleCache,
+      domain: String,
+      apiNode: AstNode,
+      apiUrlNode: AstNode
+    ): Unit =
+      ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
+        case Some(thirdPartyAPIRuleInfo) =>
+          addThirdPartyRuleAndTagAPI(
+            builder,
+            ruleCache,
+            thirdPartyAPIRuleInfo,
+            domain,
+            apiNode,
+            getLiteralCode(apiUrlNode)
+          )
+        case None => // Third party rule doesn't exist, which is ideally not possible
+    def tagWithString(
+      builder: DiffGraphBuilder,
+      ruleCache: RuleCache,
+      domain: String,
+      apiNode: AstNode,
+      apiUrl: String
+    ): Unit =
+      ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
+        case Some(thirdPartyAPIRuleInfo) =>
+          addThirdPartyRuleAndTagAPI(builder, ruleCache, thirdPartyAPIRuleInfo, domain, apiNode, apiUrl)
+        case None => // Third party rule doesn't exist, which is ideally not possible
   }
 
-  private def tagAPIWithDomainAndUpdateRuleCache(
-    builder: DiffGraphBuilder,
-    ruleCache: RuleCache,
-    domain: String,
-    apiNode: AstNode,
-    apiUrlNode: AstNode
-  ): Unit =
-    ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
-      case Some(thirdPartyAPIRuleInfo) =>
-        addThirdPartyRuleAndTagAPI(
-          builder,
-          ruleCache,
-          thirdPartyAPIRuleInfo,
-          domain,
-          apiNode,
-          getLiteralCode(apiUrlNode)
-        )
-      case None => // Third party rule doesn't exist, which is ideally not possible
-  private def tagAPIWithDomainAndUpdateRuleCache(
-    builder: DiffGraphBuilder,
-    ruleCache: RuleCache,
-    domain: String,
-    apiNode: AstNode,
-    apiUrl: String
-  ): Unit =
-    ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId) match
-      case Some(thirdPartyAPIRuleInfo) =>
-        addThirdPartyRuleAndTagAPI(builder, ruleCache, thirdPartyAPIRuleInfo, domain, apiNode, apiUrl)
-      case None => // Third party rule doesn't exist, which is ideally not possible
   /** Generates a new third party rule, updates ruleCache, and tag the apiSink with this generated rule
     * @param builder
     * @param ruleCache

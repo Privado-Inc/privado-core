@@ -78,6 +78,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
         List()
     }
     sinkTagger(
+      cpg,
       apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
       apis,
       builder,

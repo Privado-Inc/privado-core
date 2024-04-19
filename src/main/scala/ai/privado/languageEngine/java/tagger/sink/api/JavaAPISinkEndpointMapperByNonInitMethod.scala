@@ -10,7 +10,7 @@ import ai.privado.languageEngine.java.tagger.sink.api.Utility.tagAPICallByItsUrl
 import ai.privado.tagger.utility.APITaggerUtility.{
   getLiteralCode,
   resolveDomainFromSource,
-  tagAPIWithDomainAndUpdateRuleCache
+  tagThirdPartyAPIWithDomainAndUpdateRuleCache
 }
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}

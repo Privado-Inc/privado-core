@@ -2,7 +2,10 @@ package ai.privado.languageEngine.java.tagger.sink.api
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.utility.APITaggerUtility.{resolveDomainFromSource, tagAPIWithDomainAndUpdateRuleCache}
+import ai.privado.tagger.utility.APITaggerUtility.{
+  resolveDomainFromSource,
+  tagThirdPartyAPIWithDomainAndUpdateRuleCache
+}
 import ai.privado.utility.Utilities.{getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Literal, Method}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -50,7 +53,7 @@ object Utility {
 
     val domain = resolveDomainFromSource(literalNode)
     impactedApiCalls.foreach { apiCall =>
-      tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, literalNode)
+      tagThirdPartyAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, literalNode)
       storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
       storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
     }
@@ -72,7 +75,7 @@ object Utility {
       matchingProperties.foreach { propertyNode =>
         val domain = getDomainFromString(propertyNode.value)
         impactedApiCalls.foreach { apiCall =>
-          tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, propertyNode)
+          tagThirdPartyAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, propertyNode)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
         }
@@ -133,7 +136,7 @@ object Utility {
       if (endpointNode.isDefined) {
         val domain = resolveDomainFromSource(endpointNode.get)
         impactedApiCalls.foreach { apiCall =>
-          tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, endpointNode.get)
+          tagThirdPartyAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, endpointNode.get)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
           storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
         }
@@ -147,7 +150,7 @@ object Utility {
             matchingParameters.head // Pick only the first parameter as we don't want to tag same sink with multiple API's
           val domain = resolveDomainFromSource(parameter)
           impactedApiCalls.foreach { apiCall =>
-            tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, parameter)
+            tagThirdPartyAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, parameter)
             storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
             storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
           }
@@ -159,7 +162,7 @@ object Utility {
               matchingIdentifiers.head // Pick only the first identifier as we don't want to tag same sink with multiple API's
             val domain = resolveDomainFromSource(identifier)
             impactedApiCalls.foreach { apiCall =>
-              tagAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, identifier)
+              tagThirdPartyAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, domain, apiCall, identifier)
               storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
               storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
             }
