@@ -27,7 +27,7 @@ class MethodCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPara
     val controllerName = extractControllerNameFromFullName(controllerFullName.split("::").headOption.getOrElse(""))
     methodUrlMap.addOne(
       (
-        cpg.method.fullName(s"$controllerName->handle").headOption match {
+        cpg.method.fullName(s".*$controllerName->handle.*").headOption match {
           case Some(method) =>
             method.id()
           case None => -1
