@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
@@ -63,7 +63,7 @@ class JavaAPISinkByMethodFullNameTaggerTest extends AnyWordSpec with Matchers wi
           )
         )
       )
-      JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = PrivadoInput())
+      JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = PrivadoInput(), appCache = AppCache())
 
       val apiSinks = cpg.call("getResponseCode").l
 

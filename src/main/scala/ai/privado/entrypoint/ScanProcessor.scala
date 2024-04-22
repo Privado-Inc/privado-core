@@ -44,6 +44,8 @@ import io.joern.console.cpgcreation.guessLanguage
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
+import ai.privado.languageEngine.csharp.processor.CSharpProcessor
+import io.joern.x2cpg.SourceFiles
 
 import java.util.Calendar
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -190,6 +192,19 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last)
                           )
                         )
+                        .filter(filterByLang),
+                      inferences = configAndRules.inferences
+                        .filter(rule => isValidRule(rule.combinedRulePattern, rule.id, fullPath))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.INFERENCES,
+                            catLevelTwo = pathTree.apply(2),
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                          )
+                        )
                         .filter(filterByLang)
                     )
                   case Left(error) =>
@@ -214,7 +229,8 @@ object ScanProcessor extends CommandProcessor {
               semantics = a.semantics ++ b.semantics,
               sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
               systemConfig = a.systemConfig ++ b.systemConfig,
-              auditConfig = a.auditConfig ++ b.auditConfig
+              auditConfig = a.auditConfig ++ b.auditConfig,
+              inferences = a.inferences ++ b.inferences
             )
           )
       catch {
@@ -273,6 +289,7 @@ object ScanProcessor extends CommandProcessor {
     val sinkSkipList = externalConfigAndRules.sinkSkipList ++ internalConfigAndRules.sinkSkipList
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
+    val inferences   = externalConfigAndRules.inferences ++ internalConfigAndRules.inferences
     val mergedRules =
       ConfigAndRules(
         sources = mergePatterns(sources),
@@ -284,7 +301,8 @@ object ScanProcessor extends CommandProcessor {
         semantics = semantics.distinctBy(_.signature),
         sinkSkipList = sinkSkipList.distinctBy(_.id),
         systemConfig = systemConfig,
-        auditConfig = auditConfig.distinctBy(_.id)
+        auditConfig = auditConfig.distinctBy(_.id),
+        inferences = mergePatterns(inferences)
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
@@ -298,7 +316,8 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.collections.size +
           mergedRules.policies.size +
           mergedRules.exclusions.size +
-          mergedRules.auditConfig.size
+          mergedRules.auditConfig.size +
+          mergedRules.inferences.size
       )
     }
     statsRecorder.endLastStage()
@@ -357,18 +376,36 @@ object ScanProcessor extends CommandProcessor {
             lang match {
               case language if language == Languages.JAVASRC || language == Languages.JAVA =>
                 statsRecorder.justLogMessage("Detected language 'Java'")
-                println(s"${Calendar.getInstance().getTime} - ")
-                JavaProcessor(
-                  getProcessedRule(Set(Language.JAVA), appCache),
-                  this.config,
+                val kotlinPlusJavaRules = getProcessedRule(Set(Language.KOTLIN, Language.JAVA), appCache)
+                val filesWithKtExtension = SourceFiles.determine(
                   sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).processCpg()
+                  Set(".kt"),
+                  ignoredFilesRegex = Option(kotlinPlusJavaRules.getExclusionRegex.r)
+                )
+                if (filesWithKtExtension.isEmpty)
+                  JavaProcessor(
+                    getProcessedRule(Set(Language.JAVA), appCache),
+                    this.config,
+                    sourceRepoLocation,
+                    dataFlowCache = getDataflowCache,
+                    auditCache,
+                    s3DatabaseDetailsCache,
+                    appCache,
+                    propertyFilterCache = propertyFilterCache,
+                    statsRecorder = statsRecorder
+                  ).processCpg()
+                else
+                  new KotlinProcessor(
+                    kotlinPlusJavaRules,
+                    this.config,
+                    sourceRepoLocation,
+                    dataFlowCache = getDataflowCache,
+                    auditCache,
+                    s3DatabaseDetailsCache,
+                    appCache,
+                    propertyFilterCache = propertyFilterCache,
+                    statsRecorder = statsRecorder
+                  ).processCpg()
               case language if language == Languages.JSSRC =>
                 statsRecorder.justLogMessage("Detected language 'JavaScript'")
                 JavascriptProcessor(
