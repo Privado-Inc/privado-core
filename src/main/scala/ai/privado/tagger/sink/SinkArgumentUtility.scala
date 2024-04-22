@@ -47,14 +47,6 @@ object SinkArgumentUtility {
     processAssignmentNodes(assignmentNodes, "", cpg, keyValueStructures)
     processSpreadOperatorNodes(spreadOperatorNodes, "", cpg, keyValueStructures)
 
-    if (node.name.equals("logSegmentEvent")) {
-      keyValueStructures += (("segmentData.page", "page"))
-      keyValueStructures += (("segmentArgs.meta", "analyticsData"))
-      keyValueStructures += (("segmentArgs.unataAppVersion ", "unataAppVersion"))
-      keyValueStructures += (("segmentArgs.unataMobileAppVersion", "unataMobileAppVersion"))
-      keyValueStructures += (("segmentArgs.unataPageViewId", "unataPageViewId"))
-    }
-
     keyValueStructures.toList
   }
 
@@ -127,7 +119,7 @@ object SinkArgumentUtility {
       val identifierNodes = keyVal.astChildren.isIdentifier.lastOption.l
       callNodes.isCall.foreach { callN =>
         handlePayloadCallNode(callN, topLeftKey, cpg, keyValueStructures)
-        handlePICKMethodCallNode(callN, topLeftKey, cpg, keyValueStructures)
+        handlePICKMethodCallNode(callN, topLeftKey, keyValueStructures)
       }
       (childCallNodes.collect { case n: Identifier => n } ++ identifierNodes.collect { case n: Identifier => n })
         .foreach(processIdentifierNode(_, topLeftKey, cpg, keyValueStructures))
@@ -213,7 +205,7 @@ object SinkArgumentUtility {
   ): AstNode = {
     // Handling `payload` method for GTM differently
     handlePayloadCallNode(callNode, topLeftKey.getOrElse("") + ".payload", cpg, keyValueStructures)
-    handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""), cpg, keyValueStructures)
+    handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""), keyValueStructures)
     // TODO: Handle Json.stringify call node
     // TODO: Handle scriptSafe call node
 
@@ -254,7 +246,6 @@ object SinkArgumentUtility {
   private def handlePICKMethodCallNode(
     callNode: Call,
     topLeftKey: String,
-    cpg: Cpg,
     keyValueStructures: ListBuffer[(String, String)]
   ): Unit = {
     if (callNode.name.equals("pick")) {
@@ -281,11 +272,20 @@ object SinkArgumentUtility {
   }
 
   def deserializedArgumentString(serializedString: String): Map[String, String] = {
-    val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
-    val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
-    val result               = objectInputStream.readObject().asInstanceOf[Map[String, String]]
-    objectInputStream.close()
-    result
+    if (serializedString.isEmpty) {
+      Map.empty[String, String]
+    } else {
+      val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
+      val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
+      try {
+        val result = objectInputStream.readObject().asInstanceOf[Map[String, String]]
+        result
+      } catch {
+        case ex: Exception =>
+          Map.empty[String, String]
+      } finally {
+        objectInputStream.close()
+      }
+    }
   }
-
 }
