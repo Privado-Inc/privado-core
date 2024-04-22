@@ -61,6 +61,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
 
     logger.debug("Using Enhanced API tagger to find API sinks")
     sinkTagger(
+      cpg,
       apiInternalSources ++ propertySources ++ identifierSource,
       httpApis.distinct,
       builder,
