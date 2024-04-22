@@ -201,8 +201,7 @@ object ExporterUtility {
     sizeOfList: Int = -1,
     messageInExcerpt: String = "",
     appCache: AppCache,
-    ruleCache: RuleCache,
-    arguments: String = ""
+    ruleCache: RuleCache
   ): Option[DataFlowSubCategoryPathExcerptModel] = {
     val allowedCharLimit: Option[Int] = ruleCache.getSystemConfigByKey(Constants.MaxCharLimit, true).toIntOption
     val sample                        = getTruncatedText(node.code, allowedCharLimit)
@@ -249,20 +248,22 @@ object ExporterUtility {
           fileName
       }
 
-      if (node.tag.nameExact(Constants.arguments).nonEmpty) {
-        val arguments                         = node.tag.nameExact(Constants.arguments).value.head
-        val argumentList: Map[String, String] = SinkArgumentUtility.deserializedArgumentString(arguments)
-        Some(
-          DataFlowSubCategoryPathExcerptModel(
-            sample,
-            lineNumber,
-            columnNumber,
-            actualFileName,
-            excerpt,
-            Some(argumentList)
+      node.tag.nameExact(Constants.arguments).headOption match {
+        case Some(arguments) =>
+          val argumentList: Map[String, String] = SinkArgumentUtility.deserializedArgumentString(arguments.value)
+          Some(
+            DataFlowSubCategoryPathExcerptModel(
+              sample,
+              lineNumber,
+              columnNumber,
+              actualFileName,
+              excerpt,
+              Some(argumentList)
+            )
           )
-        )
-      } else Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+        case None =>
+          Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+      }
     }
   }
 

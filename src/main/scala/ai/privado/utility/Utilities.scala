@@ -76,14 +76,12 @@ object Utilities {
   var ingressUrls = mutable.ListBuffer.empty[String]
 
   def checkIfGTMOrSegment(ruleId: String): Boolean = {
-    val ruleList = List(
+    List(
       Constants.segmentPixelRuleId,
       Constants.segmentAnalyticsRuleId,
       Constants.googleTagManagerRuleId,
       Constants.googleTagManagerPixelRuleId
-    )
-    val ruleExists = ruleList.contains(ruleId)
-    ruleExists
+    ).contains(ruleId)
   }
 
   def getEngineContext(config: PrivadoInput, appCache: AppCache, maxCallDepthP: Int = 4)(implicit
@@ -183,13 +181,17 @@ object Utilities {
               SinkArgumentUtility.addArgumentsForGAPixelNode(callNode, cpg)
             } catch {
               case ex: Exception =>
-                logger.debug(s"An error occurred while processing arguments: ${ex.getMessage}")
+                logger.debug(
+                  s"Exception while processing for arguments - ruleId: ${ruleInfo.id}, Call Node: ${callNode.name}, FileName: ${getFileNameForNode(callNode)} Error: ${ex.getMessage}"
+                )
                 List.empty[(String, String)] // Returning an empty list as a default value
             }
           storeForTagHelper(Constants.arguments, SinkArgumentUtility.serializedArgumentString(argumentList))
         } catch {
           case ex: Exception =>
-            logger.debug(s"An error occurred: ${ex.getMessage}")
+            logger.debug(
+              s"An error while tagging - ruleId: ${ruleInfo.id}, FileName: ${getFileNameForNode(node)} error: ${ex.getMessage}"
+            )
         }
       }
     }

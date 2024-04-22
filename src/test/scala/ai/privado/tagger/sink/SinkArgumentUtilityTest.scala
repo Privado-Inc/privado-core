@@ -92,7 +92,7 @@ class SinkArgumentUtilityTest extends AnyFlatSpec with Matchers {
         |    ...products
         |});
         |""".stripMargin)
-    val argumentsMap = Map(
+    val expectedArgumentsMap = Map(
       "nestedKey.nested1"                      -> "\"N1\"",
       "latitude"                               -> "obj.latitude",
       ".payload.ecommerce.impressions.[].list" -> "location",
@@ -110,14 +110,13 @@ class SinkArgumentUtilityTest extends AnyFlatSpec with Matchers {
       ".payload.\"ic_product_id\""              -> "product.\"ic_product_id\"",
       ".payload.\"name\""                       -> "product.\"name\""
     )
-    val encodedArgumentsList = cpg.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
+    val gaSinkNode = cpg.call.name("push").head
+    gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
+    val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
     val argumentsList        = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
-    cpg.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
-    println(argumentsList)
-    println(argumentsMap)
 
     // Iterate over each key-value pair in the argumentsMap
-    argumentsMap.foreach { case (key, value) =>
+    expectedArgumentsMap.foreach { case (key, value) =>
       // Retrieve the corresponding value from the argumentsList
       val argumentsListValue = argumentsList.getOrElse(key, "")
       assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
