@@ -5,7 +5,7 @@ import ai.privado.languageEngine.java.language.*
 import ai.privado.model.FilterProperty.*
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.tagger.utility.APITaggerUtility.tagAPIWithDomainAndUpdateRuleCache
+import ai.privado.tagger.utility.APITaggerUtility.tagThirdPartyAPIWithDomainAndUpdateRuleCache
 import ai.privado.utility.Utilities.{getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
@@ -18,8 +18,7 @@ import org.slf4j.LoggerFactory
   */
 class InferenceAPIEndpointTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
-  private val logger             = LoggerFactory.getLogger(getClass)
-  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
+  private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[RuleInfo] =
     ruleCache.getRule.inferences.filter(_.catLevelTwo.equals(Constants.apiEndpoint)).toArray
@@ -58,14 +57,7 @@ class InferenceAPIEndpointTagger(cpg: Cpg, ruleCache: RuleCache) extends Privado
   }
 
   private def tagNode(builder: DiffGraphBuilder, apiCall: AstNode, apiUrl: String) = {
-    tagAPIWithDomainAndUpdateRuleCache(
-      builder,
-      thirdPartyRuleInfo.get,
-      ruleCache,
-      getDomainFromString(apiUrl),
-      apiCall,
-      apiUrl
-    )
+    tagThirdPartyAPIWithDomainAndUpdateRuleCache(builder, cpg, ruleCache, getDomainFromString(apiUrl), apiCall, apiUrl)
     storeForTag(builder, apiCall, ruleCache)(InternalTag.API_SINK_MARKED.toString)
     storeForTag(builder, apiCall, ruleCache)(InternalTag.API_URL_MARKED.toString)
   }
