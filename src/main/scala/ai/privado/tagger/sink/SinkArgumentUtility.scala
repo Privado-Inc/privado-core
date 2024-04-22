@@ -32,10 +32,10 @@ object SinkArgumentUtility {
   def addArgumentsForGAPixelNode(node: Call, cpg: Cpg): List[(String, String)] = {
     val keyValueStructures = ListBuffer.empty[(String, String)]
 
-    val assignmentNodes = node.argument.isBlock.astChildren.isCall.name(Operators.assignment).l
+    val assignmentNodes     = node.argument.isBlock.astChildren.isCall.name(Operators.assignment).l
     val spreadOperatorNodes = node.argument.isBlock.astChildren.isCall.name("<operator>.spread").l
-    val identifierNodes = node.argument.isIdentifier.l
-    val literalNodes = node.argument.isLiteral.l
+    val identifierNodes     = node.argument.isIdentifier.l
+    val literalNodes        = node.argument.isLiteral.l
 
     literalNodes.foreach { l =>
       keyValueStructures += ((l.code, l.code))
@@ -58,7 +58,12 @@ object SinkArgumentUtility {
     keyValueStructures.toList
   }
 
-  private def processIdentifierNode(n: Identifier, topLeftKey: String, cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): Unit = {
+  private def processIdentifierNode(
+    n: Identifier,
+    topLeftKey: String,
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): Unit = {
     def updateLeftKey(code: String): String = {
       if (topLeftKey.nonEmpty)
         topLeftKey + "." + code
@@ -67,7 +72,7 @@ object SinkArgumentUtility {
     }
 
     val identifierTypeFullName = n.typeFullName
-    val quotedTypeFullNameStr = Regex.quote(identifierTypeFullName)
+    val quotedTypeFullNameStr  = Regex.quote(identifierTypeFullName)
 
     val memberList = cpg.typeDecl(quotedTypeFullNameStr).member.name.l
 
@@ -91,11 +96,16 @@ object SinkArgumentUtility {
     }
   }
 
-  private def processAssignmentNodes(assignmentNodes: List[Call], topLeftKey: String, cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): Unit = {
+  private def processAssignmentNodes(
+    assignmentNodes: List[Call],
+    topLeftKey: String,
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): Unit = {
     assignmentNodes.foreach { keyVal =>
       val (leftChild, rightChild) = extractKeyValPair(keyVal.astChildren.l, Some(topLeftKey), cpg, keyValueStructures)
       for {
-        left <- leftChild
+        left  <- leftChild
         right <- rightChild
       } {
         if (right.nonEmpty) {
@@ -105,10 +115,15 @@ object SinkArgumentUtility {
     }
   }
 
-  private def processSpreadOperatorNodes(spreadOperatorNodes: List[Call], topLeftKey: String, cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): Unit = {
+  private def processSpreadOperatorNodes(
+    spreadOperatorNodes: List[Call],
+    topLeftKey: String,
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): Unit = {
     spreadOperatorNodes.foreach { keyVal =>
-      val callNodes = keyVal.astChildren.isCall.l
-      val childCallNodes = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
+      val callNodes       = keyVal.astChildren.isCall.l
+      val childCallNodes  = callNodes.headOption.map(_.astChildren.l).getOrElse(List.empty)
       val identifierNodes = keyVal.astChildren.isIdentifier.lastOption.l
       callNodes.isCall.foreach { callN =>
         handlePayloadCallNode(callN, topLeftKey, cpg, keyValueStructures)
@@ -119,10 +134,15 @@ object SinkArgumentUtility {
     }
   }
 
-  private def getLeftKey(leftKey: AstNode, topLeftKey: Option[String], cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): Option[String] = {
+  private def getLeftKey(
+    leftKey: AstNode,
+    topLeftKey: Option[String],
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): Option[String] = {
     val res = Some(leftKey)
       .collect {
-        case c: Call => handleCallNode(c, topLeftKey, cpg, keyValueStructures).astChildren.isFieldIdentifier.head
+        case c: Call    => handleCallNode(c, topLeftKey, cpg, keyValueStructures).astChildren.isFieldIdentifier.head
         case l: Literal => l
       }
       .map(_.code)
@@ -132,18 +152,24 @@ object SinkArgumentUtility {
       res
   }
 
-  private def extractKeyValPair(objKeyVal: List[AstNode], topLeftKey: Option[String], cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): (Option[String], Option[String]) = {
+  private def extractKeyValPair(
+    objKeyVal: List[AstNode],
+    topLeftKey: Option[String],
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): (Option[String], Option[String]) = {
     objKeyVal match {
       case leftKey :: rightVal :: _ =>
         (
           getLeftKey(leftKey, topLeftKey, cpg, keyValueStructures),
           Some(rightVal).collect {
-            case l: Literal => l.code
-            case l: Identifier => l.code
+            case l: Literal         => l.code
+            case l: Identifier      => l.code
             case l: FieldIdentifier => l.code
-            case l: Local => l.code
-            case l: Call => handleCallNode(l, topLeftKey, cpg, keyValueStructures).code
-            case l: Block => handleBlockNode(l, getLeftKey(leftKey, topLeftKey, cpg, keyValueStructures), cpg, keyValueStructures)
+            case l: Local           => l.code
+            case l: Call            => handleCallNode(l, topLeftKey, cpg, keyValueStructures).code
+            case l: Block =>
+              handleBlockNode(l, getLeftKey(leftKey, topLeftKey, cpg, keyValueStructures), cpg, keyValueStructures)
           }
         )
       case _ =>
@@ -151,7 +177,12 @@ object SinkArgumentUtility {
     }
   }
 
-  private def handlePayloadCallNode(callNode: Call, topLeftKey: String, cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): Unit = {
+  private def handlePayloadCallNode(
+    callNode: Call,
+    topLeftKey: String,
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): Unit = {
     if (callNode.name.equals("payload")) {
       val gpEventKey =
         callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption
@@ -174,7 +205,12 @@ object SinkArgumentUtility {
     }
   }
 
-  private def handleCallNode(callNode: Call, topLeftKey: Option[String], cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): AstNode = {
+  private def handleCallNode(
+    callNode: Call,
+    topLeftKey: Option[String],
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): AstNode = {
     // Handling `payload` method for GTM differently
     handlePayloadCallNode(callNode, topLeftKey.getOrElse("") + ".payload", cpg, keyValueStructures)
     handlePICKMethodCallNode(callNode, topLeftKey.getOrElse(""), cpg, keyValueStructures)
@@ -191,11 +227,16 @@ object SinkArgumentUtility {
     callNode
   }
 
-  private def handleBlockNode(blockNode: Block, topLeftKey: Option[String], cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): String = {
-    val assignmentNodes = blockNode.astChildren.isCall.name(Operators.assignment).l
+  private def handleBlockNode(
+    blockNode: Block,
+    topLeftKey: Option[String],
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): String = {
+    val assignmentNodes     = blockNode.astChildren.isCall.name(Operators.assignment).l
     val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
-    val childBlockNodes = blockNode.astChildren.isBlock.l
-    val arrayCallNodes = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
+    val childBlockNodes     = blockNode.astChildren.isBlock.l
+    val arrayCallNodes      = blockNode.astChildren.isCall.methodFullName("__ecma.Array:").astChildren.isBlock.l
 
     processAssignmentNodes(assignmentNodes, topLeftKey.getOrElse(""), cpg, keyValueStructures)
     processSpreadOperatorNodes(spreadOperatorNodes, topLeftKey.getOrElse(""), cpg, keyValueStructures)
@@ -210,11 +251,16 @@ object SinkArgumentUtility {
     ""
   }
 
-  private def handlePICKMethodCallNode(callNode: Call, topLeftKey: String, cpg: Cpg, keyValueStructures: ListBuffer[(String, String)]): Unit = {
+  private def handlePICKMethodCallNode(
+    callNode: Call,
+    topLeftKey: String,
+    cpg: Cpg,
+    keyValueStructures: ListBuffer[(String, String)]
+  ): Unit = {
     if (callNode.name.equals("pick")) {
       var concatKey = ""
-      val keys = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
-      val objName = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
+      val keys      = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
+      val objName   = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
 
       if (objName.nonEmpty) {
         concatKey = objName.head
@@ -228,7 +274,7 @@ object SinkArgumentUtility {
 
   def serializedArgumentString(originalList: List[(String, String)]): String = {
     val byteArrayOutputStream = new ByteArrayOutputStream()
-    val objectOutputStream = new ObjectOutputStream(byteArrayOutputStream)
+    val objectOutputStream    = new ObjectOutputStream(byteArrayOutputStream)
     objectOutputStream.writeObject(originalList.toMap)
     objectOutputStream.close()
     byteArrayOutputStream.toString("ISO-8859-1")
@@ -236,8 +282,8 @@ object SinkArgumentUtility {
 
   def deserializedArgumentString(serializedString: String): Map[String, String] = {
     val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
-    val objectInputStream = new ObjectInputStream(byteArrayInputStream)
-    val result = objectInputStream.readObject().asInstanceOf[Map[String, String]]
+    val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
+    val result               = objectInputStream.readObject().asInstanceOf[Map[String, String]]
     objectInputStream.close()
     result
   }

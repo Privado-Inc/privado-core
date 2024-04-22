@@ -250,7 +250,7 @@ object ExporterUtility {
       }
 
       if (node.tag.nameExact(Constants.arguments).nonEmpty) {
-        val arguments    = node.tag.nameExact(Constants.arguments).value.head
+        val arguments                         = node.tag.nameExact(Constants.arguments).value.head
         val argumentList: Map[String, String] = SinkArgumentUtility.deserializedArgumentString(arguments)
         Some(
           DataFlowSubCategoryPathExcerptModel(

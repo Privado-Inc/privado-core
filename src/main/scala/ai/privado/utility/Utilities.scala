@@ -177,14 +177,15 @@ object Utilities {
       if (node.isInstanceOf[Call]) {
         try {
           val storeForTagHelper = storeForTag(builder, node, ruleCache) _
-          val callNode = node.asInstanceOf[Call]
-          val argumentList: List[(String, String)] = try {
-            SinkArgumentUtility.addArgumentsForGAPixelNode(callNode, cpg)
-          } catch {
-            case ex: Exception =>
-              logger.debug(s"An error occurred while processing arguments: ${ex.getMessage}")
-              List.empty[(String, String)] // Returning an empty list as a default value
-          }
+          val callNode          = node.asInstanceOf[Call]
+          val argumentList: List[(String, String)] =
+            try {
+              SinkArgumentUtility.addArgumentsForGAPixelNode(callNode, cpg)
+            } catch {
+              case ex: Exception =>
+                logger.debug(s"An error occurred while processing arguments: ${ex.getMessage}")
+                List.empty[(String, String)] // Returning an empty list as a default value
+            }
           storeForTagHelper(Constants.arguments, SinkArgumentUtility.serializedArgumentString(argumentList))
         } catch {
           case ex: Exception =>
