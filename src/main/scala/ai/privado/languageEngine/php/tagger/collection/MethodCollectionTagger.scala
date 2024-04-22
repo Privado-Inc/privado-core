@@ -79,7 +79,7 @@ class MethodCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPara
   }
 
   private def getPathAndControllerFromCall(call: Call): (String, String) = {
-    if (call.argument.size >= 2)
+    if (call.argument.size > 2)
       (call.argument(1).code, call.argument(2).code)
     else {
       ("", "")
