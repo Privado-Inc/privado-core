@@ -25,8 +25,11 @@ package ai.privado.languageEngine.php.tagger
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.php.tagger.collection.AnnotationsCollectionTagger
-import ai.privado.languageEngine.php.tagger.collection.ConfigCollectionTagger
+import ai.privado.languageEngine.php.tagger.collection.{
+  AnnotationsCollectionTagger,
+  ConfigCollectionTagger,
+  MethodCollectionTagger
+}
 import ai.privado.languageEngine.php.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.php.tagger.sink.APITagger
 import ai.privado.tagger.PrivadoBaseTagger
@@ -55,6 +58,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new RegularSinkTagger(cpg, rules).createAndApply()
     new AnnotationsCollectionTagger(cpg, rules).createAndApply()
     new ConfigCollectionTagger(cpg, rules, privadoInputConfig.sourceLocation.headOption.getOrElse("")).createAndApply()
+    new MethodCollectionTagger(cpg, rules).createAndApply()
     new APITagger(cpg, rules, privadoInput = privadoInputConfig, appCache = appCache).createAndApply()
 
     logger.info("Finished tagging")
