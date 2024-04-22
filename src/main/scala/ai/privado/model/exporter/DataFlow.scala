@@ -35,7 +35,7 @@ case class DataFlowSubCategoryPathExcerptModel(
   override val columnNumber: Int,
   override val fileName: String,
   override val excerpt: String,
-  val arguments: Option[List[(String, String)]] = None
+  val arguments: Option[Map[String, String]] = None
 ) extends DataFlowSubCategoryPathExcerptTrait
 
 case class DataFlowSubCategoryPathModel(pathId: String, path: List[DataFlowSubCategoryPathExcerptModel])

@@ -63,7 +63,8 @@ import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
 import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
-import ai.privado.utility.Utilities.{deserializedArgumentString, dump, getTruncatedText}
+import ai.privado.utility.Utilities.{dump, getTruncatedText}
+import ai.privado.tagger.sink.SinkArgumentUtility
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -250,7 +251,7 @@ object ExporterUtility {
 
       if (node.tag.nameExact(Constants.arguments).nonEmpty) {
         val arguments    = node.tag.nameExact(Constants.arguments).value.head
-        val argumentList = deserializedArgumentString(arguments)
+        val argumentList: Map[String, String] = SinkArgumentUtility.deserializedArgumentString(arguments)
         Some(
           DataFlowSubCategoryPathExcerptModel(
             sample,
