@@ -64,6 +64,15 @@ class RuleCache {
         }
   }
 
+  def addThirdPartyRuleInfo(thirdPartyAPIRuleInfo: RuleInfo, domain: String): String = {
+    val newRuleIdToUse = s"${Constants.thirdPartiesAPIRuleId}.$domain"
+    this.setRuleInfo(
+      thirdPartyAPIRuleInfo
+        .copy(id = newRuleIdToUse, name = s"${thirdPartyAPIRuleInfo.name} $domain", isGenerated = true)
+    )
+    newRuleIdToUse
+  }
+
   def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)
 
   def getStorageRuleInfo(): List[RuleInfo] = storageRuleInfo.toList
