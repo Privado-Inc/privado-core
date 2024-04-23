@@ -1,33 +1,38 @@
 package ai.privado.tagger.sink
 
+import ai.privado.exporter.ExporterUtility.getClass
 import io.shiftleft.codepropertygraph.generated.nodes.{
   AstNode,
-  CfgNode,
-  NewFile,
-  NewTag,
   Block,
-  Literal,
   Call,
-  Identifier,
+  CfgNode,
   FieldIdentifier,
-  Local
+  Identifier,
+  Literal,
+  Local,
+  NewFile,
+  NewTag
 }
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
+import ai.privado.model.Constants
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 import scala.collection.mutable.ListBuffer
-import java.io.{PrintWriter, ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream, PrintWriter}
 import java.nio.file.Files
 
 object SinkArgumentUtility {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /** Populates argumentList for a GAPixel node. This function processes the given `node` to extract the arguments it
     * contains. Arguments can be literals, identifiers, or derived from assignment, call Nodes and spread operator
@@ -70,17 +75,11 @@ object SinkArgumentUtility {
     cpg: Cpg,
     keyValueStructures: ListBuffer[(String, String)]
   ): Unit = {
-    def updateLeftKey(code: String): String = {
-      if (topLeftKey.nonEmpty)
-        topLeftKey + "." + code
-      else
-        code
-    }
+    def updateLeftKey(code: String): String = if topLeftKey.nonEmpty then s"$topLeftKey.$code" else code
 
     val identifierTypeFullName = n.typeFullName
     val quotedTypeFullNameStr  = Regex.quote(identifierTypeFullName)
-
-    val memberList = cpg.typeDecl(quotedTypeFullNameStr).member.name.l
+    val memberList             = cpg.typeDecl(quotedTypeFullNameStr).member.name.l
 
     val pattern = """\b([a-zA-Z_]\w*):""".r
 
@@ -141,7 +140,7 @@ object SinkArgumentUtility {
         handlePayloadCallNode(callN, topLeftKey, cpg, keyValueStructures)
         handlePICKMethodCallNode(callN, topLeftKey, keyValueStructures)
       }
-      (childCallNodes.collect { case n: Identifier => n } ++ identifierNodes.collect { case n: Identifier => n })
+      (childCallNodes.isIdentifier.l ++ identifierNodes)
         .foreach(processIdentifierNode(_, topLeftKey, cpg, keyValueStructures))
     }
   }
@@ -185,13 +184,13 @@ object SinkArgumentUtility {
         (
           getLeftKey(leftKey, topLeftKey, cpg, keyValueStructures),
           Some(rightVal).collect {
-            case l: Literal         => l.code
-            case l: Identifier      => l.code
-            case l: FieldIdentifier => l.code
-            case l: Local           => l.code
-            case l: Call            => handleCallNode(l, topLeftKey, cpg, keyValueStructures).code
+            case l: (Literal | Identifier | FieldIdentifier | Local) => l.code
+            case l: Call => handleCallNode(l, topLeftKey, cpg, keyValueStructures).code
             case l: Block =>
               handleBlockNode(l, getLeftKey(leftKey, topLeftKey, cpg, keyValueStructures), cpg, keyValueStructures)
+              ""
+            case _ =>
+              ""
           }
         )
       case _ =>
@@ -208,25 +207,30 @@ object SinkArgumentUtility {
     cpg: Cpg,
     keyValueStructures: ListBuffer[(String, String)]
   ): Unit = {
-    if (callNode.name.equals("payload")) {
-      val gpEventKey =
-        callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption
-          .getOrElse("")
-      val blockNode = cpg.call.code(".*tmp.*" + gpEventKey + " =.*").astChildren.isBlock.l
+    try {
+      if (callNode.name.equals("payload")) {
+        val gpEventKey =
+          callNode.astChildren.isCall.astChildren.isCall.astChildren.isCall.astChildren.isFieldIdentifier.code.headOption
+            .getOrElse("")
+        val blockNode = cpg.call.code(".*tmp.*" + gpEventKey + " =.*").astChildren.isBlock.l
 
-      if (blockNode.nonEmpty) {
-        val internalBlockNode = blockNode.head.astChildren.isCall
-          .code(".*payload.*")
-          .astChildren
-          .isMethodRef
-          .referencedMethod
-          .astChildren
-          .isBlock
-          .l
-        val returnBlockNode = internalBlockNode.astChildren.isReturn.astChildren.isBlock.l
-        handleBlockNode(blockNode.head, Some(topLeftKey), cpg, keyValueStructures)
-        handleBlockNode(returnBlockNode.head, Some(topLeftKey), cpg, keyValueStructures)
+        if (blockNode.nonEmpty) {
+          val internalBlockNode = blockNode.head.astChildren.isCall
+            .code(".*payload.*")
+            .astChildren
+            .isMethodRef
+            .referencedMethod
+            .astChildren
+            .isBlock
+            .l
+          val returnBlockNode = internalBlockNode.astChildren.isReturn.astChildren.isBlock.l
+          handleBlockNode(blockNode.head, Some(topLeftKey), cpg, keyValueStructures)
+          handleBlockNode(returnBlockNode.head, Some(topLeftKey), cpg, keyValueStructures)
+        }
       }
+    } catch {
+      case ex: Exception =>
+        logger.debug(f"Exception while processing payload call node with error: ${ex.toString}")
     }
   }
 
@@ -263,7 +267,7 @@ object SinkArgumentUtility {
     topLeftKey: Option[String],
     cpg: Cpg,
     keyValueStructures: ListBuffer[(String, String)]
-  ): String = {
+  ): Unit = {
     val assignmentNodes     = blockNode.astChildren.isCall.name(Operators.assignment).l
     val spreadOperatorNodes = blockNode.astChildren.isCall.name("<operator>.spread").l
     val childBlockNodes     = blockNode.astChildren.isBlock.l
@@ -278,8 +282,6 @@ object SinkArgumentUtility {
     arrayCallNodes.foreach { bNode =>
       handleBlockNode(bNode, Some(topLeftKey.getOrElse("") + ".[]"), cpg, keyValueStructures)
     }
-
-    ""
   }
 
   /** Very specific to lodash pick method pick(product, ['id', 'name', 'ext_id', 'ic_product_id']) here from product obj
@@ -291,13 +293,9 @@ object SinkArgumentUtility {
     keyValueStructures: ListBuffer[(String, String)]
   ): Unit = {
     if (callNode.name.equals("pick")) {
-      var concatKey = ""
       val keys      = callNode.astChildren.isBlock.astChildren.isCall.astChildren.isLiteral.code.l
       val objName   = callNode.astChildren.isIdentifier.filter(i => !i.name.matches("this|pick")).name.l
-
-      if (objName.nonEmpty) {
-        concatKey = objName.head
-      }
+      val concatKey = if objName.nonEmpty then objName.head else ""
 
       keys.foreach { key =>
         keyValueStructures += ((topLeftKey + "." + key, concatKey + "." + key))
@@ -310,23 +308,22 @@ object SinkArgumentUtility {
     val objectOutputStream    = new ObjectOutputStream(byteArrayOutputStream)
     objectOutputStream.writeObject(originalList.toMap)
     objectOutputStream.close()
-    byteArrayOutputStream.toString("ISO-8859-1")
+    byteArrayOutputStream.toString(Constants.BYE_ENCODING_CODE)
   }
 
   def deserializedArgumentString(serializedString: String): Map[String, String] = {
     if (serializedString.isEmpty) {
       Map.empty[String, String]
     } else {
-      val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes("ISO-8859-1"))
-      val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
       try {
-        val result = objectInputStream.readObject().asInstanceOf[Map[String, String]]
+        val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes(Constants.BYE_ENCODING_CODE))
+        val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
+        val result               = objectInputStream.readObject().asInstanceOf[Map[String, String]]
+        objectInputStream.close()
         result
       } catch {
         case ex: Exception =>
           Map.empty[String, String]
-      } finally {
-        objectInputStream.close()
       }
     }
   }
