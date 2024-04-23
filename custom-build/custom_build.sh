@@ -1,5 +1,5 @@
 #!/bin/bash -xv
-# clone https://github.com/Privado-Inc/codepropertygraph with given branch. and execute command "sbt publishM2" and dump all logs in a file and extract version of jar generated.
+# to run the script: sudo bash custom_build.sh <branch_name>
 BRANCH_NAME=$1
 
 BASE_DIRECTORY=$(pwd)
@@ -7,7 +7,7 @@ rm -rf imagebuilder
 mkdir imagebuilder && cd imagebuilder
 
 
-#-------Common Function: Start-------
+echo "-----Common Function: Start-------"
 search_and_delete_line() {
     # Assign the function parameters to variables
     local search_text="$1"
@@ -31,22 +31,22 @@ search_and_delete_line() {
     head -n 15 "$file_path"
     echo "------------"
 }
-#-----Common Function: End---------
+echo "---Common Function: End---------"
 
-#--------clone and publish codepropertygraph: start--------
+echo "------clone and publish codepropertygraph: start--------"
 git clone -b $BRANCH_NAME https://github.com/Privado-Inc/codepropertygraph
 cd codepropertygraph
 sbt publishM2 #&> log_file.txt
 #get the first latest directory name
 cpgVersionGenerated=$(ls -t ~/.m2/repository/io/shiftleft/codepropertygraph-domain-classes_3/ | head -n 1)
 echo $cpgVersionGenerated
-#--------clone and publish codepropertygraph: end--------
+echo "------clone and publish codepropertygraph: end--------"
 
 
-#------------Joern Start-----------
+echo "----------Joern Start-----------"
 cd $BASE_DIRECTORY/imagebuilder
 #clone joern
-git clone -b $BRANCH_NAME https://github.com/joernio/joern
+git clone -b $BRANCH_NAME https://github.com/Privado-Inc/joern
 cd joern
 search_and_delete_line "val cpgVersion" "build.sbt"
 echo "added new version of cpg in Joern"
@@ -59,10 +59,10 @@ echo "publishing jar for Joern"
 sbt publishM2
 joernVersionGenerated=$(ls -t ~/.m2/repository/io/joern/c2cpg_3/ | head -n 1)
 joern_version_statement="val joernVersion = \"$joernVersionGenerated\""
-#------------Joern End-----------
+echo "----------Joern End-----------"
 
 
-#------------Privado-Core Start-----------
+echo "----------Privado-Core Start-----------"
 cd $BASE_DIRECTORY/imagebuilder
 git clone -b $BRANCH_NAME https://github.com/Privado-Inc/privado-core
 cd privado-core
@@ -77,7 +77,13 @@ head -n 15 "build.sbt"
 
 sbt universal:packageBin
 echo "script ended successfully"
-#------------Privado-Core End-----------
+echo "----------Privado-Core End-----------"
 
+echo "----------Build docker image: start-----------"
+cd BASE_DIRECTORY
+
+docker build -t privado-core:$BRANCH_NAME .
+
+echo "----------Build docker image: end-----------"
 
 #rm -rf $BASE_DIRECTORY/imagebuilder
