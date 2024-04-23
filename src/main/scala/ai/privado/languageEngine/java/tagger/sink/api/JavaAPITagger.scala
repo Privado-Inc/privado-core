@@ -165,6 +165,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         logger.debug("Using brute API Tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
         sinkTagger(
+          cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
           apis,
           builder,
@@ -174,6 +175,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
           privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
+          cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
           feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
@@ -185,6 +187,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         logger.debug("Using Enhanced API tagger to find API sinks")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
         sinkTagger(
+          cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
           apis.methodFullName(commonHttpPackages).l ++ feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
@@ -196,6 +199,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
         println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(
+          cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
           feignAPISinks ++ grpcSinks ++ soapSinks ++ markedAPISinks,
           builder,
