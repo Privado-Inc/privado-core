@@ -163,7 +163,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
-        println(s"${Calendar.getInstance().getTime} - --API TAGGER V1 invoked...")
+        println(s"${Calendar.getInstance().getTime} - -- API TAGGER V1 invoked...")
         sinkTagger(
           cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
@@ -185,7 +185,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
-        println(s"${Calendar.getInstance().getTime} - --API TAGGER V2 invoked...")
+        println(s"${Calendar.getInstance().getTime} - -- API TAGGER V2 invoked...")
         sinkTagger(
           cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
@@ -197,7 +197,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
-        println(s"${Calendar.getInstance().getTime} - --API TAGGER SKIPPED, applying Feign client API...")
+        println(s"${Calendar.getInstance().getTime} - -- API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(
           cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,

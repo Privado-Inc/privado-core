@@ -59,8 +59,9 @@ abstract class BaseProcessor(
     xtocpg match {
       case Success(cpg) =>
         try {
+          statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
-
+          statsRecorder.endLastStage()
           applyDataflowAndPostProcessingPasses(cpg)
 
           applyTaggingAndExport(cpg) match

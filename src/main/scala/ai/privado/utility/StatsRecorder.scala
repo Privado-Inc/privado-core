@@ -288,7 +288,7 @@ class StatsRecorder(
     if (lastStageName == STAGE_NOT_SET) {
       logger(s"${getNewTime()} - $message", false)
     } else {
-      logger(s"${getNewTime()} - --$message", false)
+      logger(s"${getNewTime()} - -- $message", false)
     }
   }
 

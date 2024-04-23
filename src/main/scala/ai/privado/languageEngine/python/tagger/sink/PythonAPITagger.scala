@@ -73,7 +73,7 @@ class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput
     }
 
     logger.debug("Using Enhanced API tagger to find API sinks")
-    println(s"${Calendar.getInstance().getTime} - --API TAGGER Common HTTP Libraries Used...")
+    println(s"${Calendar.getInstance().getTime} - -- API TAGGER Common HTTP Libraries Used...")
     sinkTagger(
       cpg,
       apiInternalSources ++ propertySources ++ identifierSource,

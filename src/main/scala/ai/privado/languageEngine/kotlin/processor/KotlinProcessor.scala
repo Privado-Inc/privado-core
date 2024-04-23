@@ -80,7 +80,9 @@ class KotlinProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
+    statsRecorder.initiateNewStage("Kotlin post processing passes")
     Kotlin2Cpg.postProcessingPass(cpg)
+    statsRecorder.endLastStage()
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
