@@ -390,7 +390,7 @@ class StatsRecorder(
       STARTED,
       Some(s"-- $subStageName"),
       None,
-      s"- --$subStageName is invoked"
+      s"- -- $subStageName is invoked"
     )
     logger(logLine, false)
     subStageStartTime = newTime
@@ -409,7 +409,7 @@ class StatsRecorder(
       DONE,
       Some(s"-- $lastSubStageName"),
       Some(getLastSubStageTimeTaken()),
-      s"- --$lastSubStageName is done ..."
+      s"- -- $lastSubStageName is done ..."
     )
     logger(logMessage, false)
     lastSubStageName = STAGE_NOT_SET
