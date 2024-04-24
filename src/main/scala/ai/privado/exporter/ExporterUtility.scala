@@ -64,6 +64,7 @@ import ai.privado.semantic.Language.finder
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{dump, getTruncatedText}
+import ai.privado.tagger.sink.SinkArgumentUtility
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -120,7 +121,6 @@ object ExporterUtility {
             // Picking up only the head as any path to base is sufficient
             val member: Member     = members.head
             var typeFullNameLevel2 = member.typeFullName // java.lang.string
-
             // Temporary fix for python to match the typeFullName
             typeFullNameLevel2 = updateTypeFullNameForPython(typeFullNameLevel2, isPython)
 
@@ -247,7 +247,23 @@ object ExporterUtility {
         else
           fileName
       }
-      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+
+      node.tag.nameExact(Constants.arguments).headOption match {
+        case Some(arguments) =>
+          val argumentList: Map[String, String] = SinkArgumentUtility.deserializedArgumentString(arguments.value)
+          Some(
+            DataFlowSubCategoryPathExcerptModel(
+              sample,
+              lineNumber,
+              columnNumber,
+              actualFileName,
+              excerpt,
+              Some(argumentList)
+            )
+          )
+        case None =>
+          Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+      }
     }
   }
 
