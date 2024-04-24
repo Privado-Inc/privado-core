@@ -1,16 +1,46 @@
 package ai.privado.languageEngine.php.tagger.collection
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, SourceCodeModel}
+import ai.privado.model.{
+  CatLevelOne,
+  Constants,
+  DataFlowPathModel,
+  FilterProperty,
+  Language,
+  NodeType,
+  RuleInfo,
+  SourceCodeModel
+}
 import ai.privado.rule.RuleInfoTestData
-import ai.privado.testfixtures.{PhpFrontendTestSuite, TestCpgWithPhp}
+import ai.privado.tagger.sink.api.CollectionValidator
+import ai.privado.testfixtures.PhpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class AnnotationsCollectionTaggerTests extends PhpFrontendTestSuite {
+class AnnotationsCollectionTaggerTests extends PhpFrontendTestSuite with CollectionValidator {
+
+  val collectionRules: List[RuleInfo] = List(
+    RuleInfo(
+      "Collections.Symfony",
+      "Symfony MVC Endpoints",
+      "",
+      FilterProperty.CODE,
+      Array(),
+      List("(?i).*(Route).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.annotations,
+      Language.PHP,
+      Array()
+    )
+  )
 
   val ruleCache =
     RuleCache()
-  ruleCache.setRule(ConfigAndRules(sources = RuleInfoTestData.sourceRule, collections = collectionRules))
+  ruleCache.setRule(RuleInfoTestData.rule.copy(collections = collectionRules))
 
   "methods with Route annotations" should {
     "be tagged as part of collection tagger" in {
@@ -28,8 +58,9 @@ class AnnotationsCollectionTaggerTests extends PhpFrontendTestSuite {
         .withRuleCache(ruleCache)
 
       val List(editControllerMethod) = cpg.method("edit").l
-      editControllerMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
-      editControllerMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/profile/edit")
+      assertCollectionMethod(editControllerMethod)
+      assertCollectionUrl(editControllerMethod, "/profile/edit")
+      assertCollectionInFinalJson(cpg, 1)
     }
   }
 }

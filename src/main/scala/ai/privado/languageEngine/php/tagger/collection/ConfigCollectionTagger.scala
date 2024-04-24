@@ -57,28 +57,8 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
       )
     )
 
-    // The RuleInfo is intended to be empty
-    tagSources(
-      builder,
-      RuleInfo(
-        "",
-        "",
-        "",
-        FilterProperty.CODE,
-        Array.empty[String],
-        List.empty[String],
-        false,
-        "",
-        Map.empty[String, String],
-        NodeType.UNKNOWN,
-        "",
-        CatLevelOne.COLLECTIONS,
-        catLevelTwo = Constants.annotations,
-        Language.PHP,
-        Array()
-      ),
-      methodUrlMap.flatMap((id, _) => cpg.method.id(id)).toList
-    )
+    // The RuleInfo is intended to be empty as the utility expects one, but there is no rule required to tag endpoints
+    tagSources(builder, RuleInfo.getEmptyRuleInfo, methodUrlMap.flatMap((id, _) => cpg.method.id(id)).toList)
   }
 
   /** Parses a YAML configuration file to extract defined api routes, along with their corresponding controllers.
@@ -89,6 +69,11 @@ class ConfigCollectionTagger(cpg: Cpg, ruleCache: RuleCache, projectRoot: String
     *   An iterable collection of Route objects extracted from the configuration file.
     */
   private def getRoutesFromConfig(fileName: String): Iterable[Route] = {
+    /*
+      This function attempts to read yaml files which contain route information.
+      The tagger is only interested in a path, and the corresponding controller for that path.
+      This information is deserialized, and used to tag sources, further in the flow of the CollectionTagger.
+     */
     yaml.parser
       .parse(better.files.File(fileName).contentAsString)
       .map { parserOp =>

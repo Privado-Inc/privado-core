@@ -25,6 +25,7 @@ package ai.privado.utility
 import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
+import ai.privado.tagger.sink.SinkArgumentUtility
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.*
@@ -32,12 +33,12 @@ import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 
 import scala.collection.mutable
-//import java.io.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Call}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 
 import java.io.PrintWriter
+import scala.collection.mutable.ListBuffer
 import java.math.BigInteger
 import java.net.URL
 import java.nio.file.Paths
@@ -72,6 +74,15 @@ object Utilities {
   private val logger = LoggerFactory.getLogger(getClass)
 
   var ingressUrls = mutable.ListBuffer.empty[String]
+
+  def checkIfGTMOrSegment(ruleId: String): Boolean = {
+    List(
+      Constants.segmentPixelRuleId,
+      Constants.segmentAnalyticsRuleId,
+      Constants.googleTagManagerRuleId,
+      Constants.googleTagManagerPixelRuleId
+    ).contains(ruleId)
+  }
 
   def getEngineContext(config: PrivadoInput, appCache: AppCache, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()
@@ -149,6 +160,43 @@ object Utilities {
       // storing by catLevelTwo and nodeType to get id
       storeForTagHelper(ruleInfo.catLevelTwo + ruleInfo.nodeType.toString, ruleId.getOrElse(ruleInfo.id))
     }
+  }
+
+  def addRuleTagsForGA(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNode,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    cpg: Cpg,
+    ruleId: Option[String] = None
+  ): Unit = {
+    // Generate Arguments for the GTM & Segment Pixels
+    if (checkIfGTMOrSegment(ruleInfo.id)) {
+      if (node.isInstanceOf[Call]) {
+        try {
+          val storeForTagHelper = storeForTag(builder, node, ruleCache) _
+          val callNode          = node.asInstanceOf[Call]
+          val argumentList: List[(String, String)] =
+            try {
+              SinkArgumentUtility.addArgumentsForGAPixelNode(callNode, cpg)
+            } catch {
+              case ex: Exception =>
+                logger.debug(
+                  s"Exception while processing for arguments - ruleId: ${ruleInfo.id}, Call Node: ${callNode.name}, FileName: ${getFileNameForNode(callNode)} Error: ${ex.getMessage}"
+                )
+                List.empty[(String, String)] // Returning an empty list as a default value
+            }
+          storeForTagHelper(Constants.arguments, SinkArgumentUtility.serializedArgumentString(argumentList))
+        } catch {
+          case ex: Exception =>
+            logger.debug(
+              s"An error while tagging - ruleId: ${ruleInfo.id}, FileName: ${getFileNameForNode(node)} error: ${ex.getMessage}"
+            )
+        }
+      }
+    }
+    addRuleTags(builder, node, ruleInfo, ruleCache, ruleId)
+
   }
 
   /** Utility to filter rules by catLevelOne

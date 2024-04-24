@@ -130,6 +130,7 @@ object Constants {
   val repoConfigMetaData            = "RepoConfigMetaData"
   val propertyFileSkippedBySize     = "PropertyFileSkippedBySize"
   val propertyFileSkippedByDirCount = "PropertyFileSkippedByDirCount"
+  val arguments                     = "arguments"
 
   // database details
   val dbName      = "dbName"
@@ -145,6 +146,7 @@ object Constants {
   val EMPTY                         = "<empty>"
   val READ_WITH_BRACKETS            = " (Read)"
   val WRITE_WITH_BRACKETS           = " (Write)"
+  val BYTE_ENCODING_CODE            = "ISO-8859-1"
 
   // Stat files
   val JAVA_STATS   = "java.txt"
@@ -161,6 +163,10 @@ object Constants {
   val jmsConsumerRuleId            = "Messaging.Service.JMS.Consumer"
   val kafkaConsumerRuleId          = "Messaging.Queue.Kafka.Consumer"
   val cookieWriteRuleId            = "Storages.Web.Cookie.Write"
+  val googleTagManagerPixelRuleId  = "ThirdParties.SDK.Pixel.Google.TagManager"
+  val segmentAnalyticsRuleId       = "ThirdParties.SDK.Segment.Analytics"
+  val segmentPixelRuleId           = "ThirdParties.SDK.Pixel.Segment"
+  val googleTagManagerRuleId       = "ThirdParties.SDK.Google.TagManager"
   val cookieSourceRuleId           = "Data.Sensitive.OnlineIdentifiers.Cookies"
   val ignoredSinks                 = "ignoredSinks"
   val apiSinks                     = "apiSinks"

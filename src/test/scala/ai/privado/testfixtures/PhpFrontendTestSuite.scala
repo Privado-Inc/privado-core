@@ -31,26 +31,4 @@ class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) exten
 }
 
 class PhpFrontendTestSuite(fileSuffix: String = ".php", language: Language.Value = Language.PHP)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithPhp(fileSuffix, language)) {
-
-  protected val collectionRules: List[RuleInfo] = List(
-    RuleInfo(
-      "Collections.Symfony",
-      "Symfony MVC Endpoints",
-      "",
-      FilterProperty.CODE,
-      Array(),
-      List("(?i).*(Route).*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.COLLECTIONS,
-      catLevelTwo = Constants.annotations,
-      Language.PHP,
-      Array()
-    )
-  )
-
-}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithPhp(fileSuffix, language)) {}

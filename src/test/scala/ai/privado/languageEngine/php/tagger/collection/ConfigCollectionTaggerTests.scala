@@ -2,9 +2,10 @@ package ai.privado.languageEngine.php.tagger.collection
 
 import ai.privado.testfixtures.PhpFrontendTestSuite
 import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.tagger.sink.api.CollectionValidator
 import io.shiftleft.semanticcpg.language.*
 
-class ConfigCollectionTaggerTests extends PhpFrontendTestSuite {
+class ConfigCollectionTaggerTests extends PhpFrontendTestSuite with CollectionValidator {
   "controllers defined in yaml files" should {
     "be tagged as part of collection tagger (where controller is defined without alias and default method)" in {
       val cpg = code(
@@ -31,12 +32,9 @@ class ConfigCollectionTaggerTests extends PhpFrontendTestSuite {
       )
 
       val List(someControllerInvokeMethod) = cpg.typeDecl("SomeController").astChildren.isMethod.name("__invoke").l
-      someControllerInvokeMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(
-        CatLevelOne.COLLECTIONS.name
-      )
-      someControllerInvokeMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List(
-        "/checkout/{token}/accounts"
-      )
+      assertCollectionMethod(someControllerInvokeMethod)
+      assertCollectionUrl(someControllerInvokeMethod, "/checkout/{token}/accounts")
+      assertCollectionInFinalJson(cpg, 1)
     }
 
     "be tagged as part of collection tagger (where controller is defined without alias and non-default method)" in {
@@ -64,10 +62,9 @@ class ConfigCollectionTaggerTests extends PhpFrontendTestSuite {
       )
 
       val List(someControllerInvokeMethod) = cpg.typeDecl("SomeController").astChildren.isMethod.name("search").l
-      someControllerInvokeMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(
-        CatLevelOne.COLLECTIONS.name
-      )
-      someControllerInvokeMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/{dynamic}")
+      assertCollectionMethod(someControllerInvokeMethod)
+      assertCollectionUrl(someControllerInvokeMethod, "/{dynamic}")
+      assertCollectionInFinalJson(cpg, 1)
     }
   }
 
@@ -101,7 +98,8 @@ class ConfigCollectionTaggerTests extends PhpFrontendTestSuite {
     )
 
     val List(someControllerInvokeMethod) = cpg.typeDecl("SomeController").astChildren.isMethod.name("__invoke").l
-    someControllerInvokeMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
-    someControllerInvokeMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/some/api/route")
+    assertCollectionMethod(someControllerInvokeMethod)
+    assertCollectionUrl(someControllerInvokeMethod, "/some/api/route")
+    assertCollectionInFinalJson(cpg, 1)
   }
 }
