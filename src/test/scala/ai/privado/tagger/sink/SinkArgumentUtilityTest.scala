@@ -76,13 +76,7 @@ class SinkArgumentUtilityTest extends AnyWordSpec with Matchers {
       gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
       val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
       val argumentsList        = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
-
-      // Iterate over each key-value pair in the argumentsMap
-      expectedArgumentsMap.foreach { case (key, value) =>
-        // Retrieve the corresponding value from the argumentsList
-        val argumentsListValue = argumentsList.getOrElse(key, "")
-        assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
-      }
+      compareArgumentsList(expectedArgumentsMap, argumentsList)
     }
 
     "Check nested field arguments" in {
@@ -102,13 +96,7 @@ class SinkArgumentUtilityTest extends AnyWordSpec with Matchers {
       gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
       val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
       val argumentsList        = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
-
-      // Iterate over each key-value pair in the argumentsMap
-      expectedArgumentsMap.foreach { case (key, value) =>
-        // Retrieve the corresponding value from the argumentsList
-        val argumentsListValue = argumentsList.getOrElse(key, "")
-        assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
-      }
+      compareArgumentsList(expectedArgumentsMap, argumentsList)
     }
 
     "Check pick call node arguments" in {
@@ -133,12 +121,7 @@ class SinkArgumentUtilityTest extends AnyWordSpec with Matchers {
       gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
       val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
       val argumentsList        = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
-      // Iterate over each key-value pair in the argumentsMap
-      expectedArgumentsMap.foreach { case (key, value) =>
-        // Retrieve the corresponding value from the argumentsList
-        val argumentsListValue = argumentsList.getOrElse(key, "")
-        assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
-      }
+      compareArgumentsList(expectedArgumentsMap, argumentsList)
     }
 
     "Check payload call mapping with eventName & verify the arguments " in {
@@ -183,47 +166,31 @@ class SinkArgumentUtilityTest extends AnyWordSpec with Matchers {
       gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
       val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
       val argumentsList        = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
-
-      // Iterate over each key-value pair in the argumentsMap
-      expectedArgumentsMap.foreach { case (key, value) =>
-        // Retrieve the corresponding value from the argumentsList
-        val argumentsListValue = argumentsList.getOrElse(key, "")
-        assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
-      }
+      compareArgumentsList(expectedArgumentsMap, argumentsList)
     }
 
-//    "Check spread operator call node arguments" in {
-//      val cpg = code(
-//        """
-//          |const products = {
-//          |        p1: {
-//          |            q1: "q1"
-//          |        },
-//          |        p2: "p2"
-//          |};
-//          |globalThis.dataLayer.push({ /* <=== globalThis */
-//          |    event: googlePayloads.logProductImpression.event,
-//          |    ...products
-//          |});
-//          |""".stripMargin)
-//      val expectedArgumentsMap = Map(
-//        "p1.q1" -> "\"q1\"",
-//        "p2" -> "\"q2\"",
-//        "event" -> "googlePayloads.logProductImpression.event",
-//      )
-//
-//      val gaSinkNode = cpg.call.name("push").head
-//      gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
-//      val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
-//      val argumentsList = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
-//      println(argumentsList)
-//      // Iterate over each key-value pair in the argumentsMap
-//      expectedArgumentsMap.foreach { case (key, value) =>
-//        // Retrieve the corresponding value from the argumentsList
-//        val argumentsListValue = argumentsList.getOrElse(key, "")
-//        assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
-//      }
-//    }
+    "Check spread operator call node arguments" ignore {
+      val cpg = code("""
+          |const products = {
+          |        p1: {
+          |            q1: "q1"
+          |        },
+          |        p2: "p2"
+          |};
+          |globalThis.dataLayer.push({ /* <=== globalThis */
+          |    event: googlePayloads.logProductImpression.event,
+          |    ...products
+          |});
+          |""".stripMargin)
+      val expectedArgumentsMap =
+        Map("p1.q1" -> "\"q1\"", "p2" -> "\"q2\"", "event" -> "googlePayloads.logProductImpression.event")
+
+      val gaSinkNode = cpg.call.name("push").head
+      gaSinkNode.tag.nameExact(Constants.id).value.headOption shouldBe Some(Constants.googleTagManagerPixelRuleId)
+      val encodedArgumentsList = gaSinkNode.tag.nameExact(Constants.arguments).value.headOption.getOrElse("{}")
+      val argumentsList        = SinkArgumentUtility.deserializedArgumentString(encodedArgumentsList)
+      compareArgumentsList(expectedArgumentsMap, argumentsList)
+    }
   }
 
   "For the googleTagManagerPixelRuleId, the verification of the arguments list" should {
@@ -304,4 +271,13 @@ def code(code: String): Cpg = {
   val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
   new RegularSinkTagger(cpg, ruleCache).createAndApply()
   cpg
+}
+
+def compareArgumentsList(expectedArgumentsMap: Map[String, String], argumentsList: Map[String, String]): Unit = {
+  // Iterate over each key-value pair in the argumentsMap
+  expectedArgumentsMap.foreach { case (key, value) =>
+    // Retrieve the corresponding value from the argumentsList
+    val argumentsListValue = argumentsList.getOrElse(key, "")
+    assert(argumentsListValue == value, s"Expected value '$value' for key '$key', but got '$argumentsListValue'")
+  }
 }

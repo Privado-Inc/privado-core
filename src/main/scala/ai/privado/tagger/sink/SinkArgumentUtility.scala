@@ -308,7 +308,7 @@ object SinkArgumentUtility {
     val objectOutputStream    = new ObjectOutputStream(byteArrayOutputStream)
     objectOutputStream.writeObject(originalList.toMap)
     objectOutputStream.close()
-    byteArrayOutputStream.toString(Constants.BYE_ENCODING_CODE)
+    byteArrayOutputStream.toString(Constants.BYTE_ENCODING_CODE)
   }
 
   def deserializedArgumentString(serializedString: String): Map[String, String] = {
@@ -316,7 +316,7 @@ object SinkArgumentUtility {
       Map.empty[String, String]
     } else {
       try {
-        val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes(Constants.BYE_ENCODING_CODE))
+        val byteArrayInputStream = new ByteArrayInputStream(serializedString.getBytes(Constants.BYTE_ENCODING_CODE))
         val objectInputStream    = new ObjectInputStream(byteArrayInputStream)
         val result               = objectInputStream.readObject().asInstanceOf[Map[String, String]]
         objectInputStream.close()

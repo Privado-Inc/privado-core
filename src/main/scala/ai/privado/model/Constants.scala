@@ -145,7 +145,7 @@ object Constants {
   val EMPTY                         = "<empty>"
   val READ_WITH_BRACKETS            = " (Read)"
   val WRITE_WITH_BRACKETS           = " (Write)"
-  val BYE_ENCODING_CODE             = "ISO-8859-1"
+  val BYTE_ENCODING_CODE            = "ISO-8859-1"
 
   // Stat files
   val JAVA_STATS   = "java.txt"
