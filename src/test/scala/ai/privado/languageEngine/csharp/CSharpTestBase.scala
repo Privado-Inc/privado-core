@@ -15,6 +15,7 @@ import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 
 import scala.collection.mutable
 import ai.privado.cache.*
+import ai.privado.languageEngine.csharp.tagger.sink.CSharpAPITagger
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.semanticcpg.layers.*
 import io.joern.dataflowengineoss.layers.dataflows.*
@@ -46,6 +47,25 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
       "",
       Language.CSHARP,
       Array()
+    ),
+    RuleInfo(
+      Constants.thirdPartiesAPIRuleId,
+      "Third Party API",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(
+        "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
+      ),
+      false,
+      "",
+      Map(),
+      NodeType.API,
+      "",
+      CatLevelOne.SINKS,
+      catLevelTwo = Constants.third_parties,
+      Language.CSHARP,
+      Array()
     )
   )
 
@@ -69,6 +89,24 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     )
   )
 
+  val systemConfig = List(
+    SystemConfig("apiHttpLibraries", "^(?i)(HttpClient).*", Language.CSHARP, "", Array()),
+    SystemConfig(
+      "apiSinks",
+      "(?i)((Get|Post|Put|Patch|Delete)(String|ByteArray|Stream)?Async)",
+      Language.CSHARP,
+      "",
+      Array()
+    ),
+    SystemConfig(
+      "apiIdentifier",
+      "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
+      Language.CSHARP,
+      "",
+      Array()
+    )
+  )
+
   val configAndRules: ConfigAndRules =
     ConfigAndRules(
       RuleInfoTestData.sourceRule,
@@ -79,7 +117,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
       List(),
       List(),
       List(),
-      List(),
+      systemConfig,
       List()
     )
 
@@ -115,6 +153,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new LiteralTagger(cpg, ruleCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
+    new CSharpAPITagger(cpg, ruleCache, privadoInput, appCache).createAndApply()
 
     cpgs.addOne(cpg)
     val threatEngine =
