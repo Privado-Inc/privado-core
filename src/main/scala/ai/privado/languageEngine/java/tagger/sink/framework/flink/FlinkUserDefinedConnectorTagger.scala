@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.*
 /** User can define there own flink sink connectors, this tagger focuses on identifying such class and tagging the
   * appropriate sink
   */
-class FlinkUserDefinedSinkTagger(cpg: Cpg, ruleCache: RuleCache)
+class FlinkUserDefinedConnectorTagger(cpg: Cpg, ruleCache: RuleCache)
     extends PrivadoParallelCpgPass[TypeDecl](cpg)
     with TaggerHelper {
 

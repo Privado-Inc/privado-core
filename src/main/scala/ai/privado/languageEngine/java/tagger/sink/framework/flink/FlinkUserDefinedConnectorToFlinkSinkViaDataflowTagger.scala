@@ -5,6 +5,7 @@ import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoSimpleCpgPass
+import scala.util.Try
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Local
 import overflowdb.BatchedUpdate
@@ -16,7 +17,7 @@ import io.shiftleft.semanticcpg.language.*
   * @param privadoInput
   * @param appCache
   */
-class FlinkConnectorInitialisationToFlinkSinkTagger(
+class FlinkUserDefinedConnectorToFlinkSinkViaDataflowTagger(
   cpg: Cpg,
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
@@ -37,10 +38,12 @@ class FlinkConnectorInitialisationToFlinkSinkTagger(
 
     val paths = Dataflow.dataflowForSourceSinkPair(source, sink, privadoInput, appCache)
     DuplicateFlowProcessor.getUniquePathsAfterDedup(paths).foreach { path =>
-      // Again go back to the Local node from Identifier
-      val source = path.elements.head.start.isIdentifier.refsTo.collectAll[Local].head
-      val sink   = path.elements.last
-      copyTags(builder, ruleCache, List(source), sink)
+      Try {
+        // Again go back to the Local node from Identifier
+        val source = path.elements.head.start.isIdentifier.refsTo.collectAll[Local].head
+        val sink   = path.elements.last
+        copyTags(builder, ruleCache, List(source), sink)
+      }
     }
   }
 }
