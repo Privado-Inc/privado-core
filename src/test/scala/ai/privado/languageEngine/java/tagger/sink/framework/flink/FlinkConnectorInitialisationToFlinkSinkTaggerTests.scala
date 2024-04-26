@@ -2,13 +2,16 @@ package ai.privado.languageEngine.java.tagger.sink.framework.flink
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.tagger.sink.JavaLeakageValidator
-import ai.privado.model.SystemConfig
+import ai.privado.model.InternalTag
 import ai.privado.rule.RuleInfoTestData
 import ai.privado.tagger.sink.api.APIValidator
 import ai.privado.testfixtures.JavaFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class FlinkUserDefinedSinkTaggerTests extends JavaFrontendTestSuite with APIValidator with JavaLeakageValidator {
+class FlinkConnectorInitialisationToFlinkSinkTaggerTests
+    extends JavaFrontendTestSuite
+    with APIValidator
+    with JavaLeakageValidator {
 
   "Flink tagger" should {
 
@@ -98,55 +101,32 @@ class FlinkUserDefinedSinkTaggerTests extends JavaFrontendTestSuite with APIVali
         |
         |    public static void main(String[] args) throws Exception {
         |     sample1();
-        |     sample2();
         |    }
         |
         |    public static void sample1() {
         |        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         |        DataStream<String> dataStream = env.fromElements("Data 1", "Data 2", "Data 3");
         |        String apiUrl = "http://example.com/api";
-        |        dataStream.addSink(new ApiSink<String>(apiUrl));
+        |        dataStream.addSink(getApiSink(apiUrl));
         |        env.execute("Flink API Sink Example");
         |    }
         |
-        |    public static void sample2() {
-        |        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
-        |        DataStream<String> dataStream = env.fromElements("Data 1", "Data 2", "Data 3");
-        |        String apiUrl = "http://example.com/api";
+        |    public static ApiSink<String> getApiSink(String apiUrl) {
         |        ApiSink<String> apiSink = new ApiSink<String>(apiUrl);
-        |        dataStream.addSink(apiSink);
-        |        env.execute("Flink API Sink Example");
+        |        return apiSink;
         |    }
         |}
         |""".stripMargin,
       "Main.java"
     ).withRuleCache(ruleCache)
 
-    "tag api call defined inside custom flink connector" in {
-      val List(apiSink) = cpg.call("execute").where(_.method.name("invoke")).l
-      assertAPISinkCall(apiSink)
-      assertAPIEndpointURL(apiSink, "apiUrl")
-    }
-
-    "tag leakage sink, but not flink sink as leakage" in {
-      val List(leakageSink) = cpg.call("println").where(_.method.name("invoke")).l
-      assertLeakageSink(leakageSink)
-
-      val List(flinkSink1) = cpg.call("addSink").where(_.method.name("sample1")).l
-      assertNotLeakageSink(flinkSink1)
-
-      val List(flinkSink2) = cpg.call("addSink").where(_.method.name("sample2")).l
-      assertNotLeakageSink(flinkSink2)
+    "tag custom apiSink's initialisation node as flinkInitialisation node" in {
+      val List(apiSinkLocalNode) = cpg.local.typeFullName("ApiSink").l
+      apiSinkLocalNode.tag.nameExact(InternalTag.FLINK_INITIALISATION_LOCAL_NODE.toString).size shouldBe 1
     }
 
     "tag flink sink node when custom sink is initialised in the same method as that of flink sink from `sample1`" in {
-      val List(flinkSink) = cpg.call("addSink").where(_.method.name("sample1")).l
-      assertAPISinkCall(flinkSink)
-      assertAPIEndpointURL(flinkSink, "apiUrl")
-    }
-
-    "tag flink sink node when custom sink is initialised in the same method as that of flink sink from `sample2`" in {
-      val List(flinkSink) = cpg.call("addSink").where(_.method.name("sample2")).l
+      val List(flinkSink) = cpg.call("addSink").l
       assertAPISinkCall(flinkSink)
       assertAPIEndpointURL(flinkSink, "apiUrl")
     }
