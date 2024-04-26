@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.tagger.sink.framework.flink
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, FilterProperty, Language, RuleInfo}
+import ai.privado.model.{Constants, FilterProperty, Language, RuleInfo, SystemConfig}
 import ai.privado.rule.RuleInfoTestData
 import ai.privado.testfixtures.JavaFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
@@ -20,8 +20,11 @@ class FlinkDefaultConnectorTaggerTests extends JavaFrontendTestSuite {
     language = Language.JAVA
   )
 
+  val systemConfig = SystemConfig(Constants.flinkConnectorProducerRuleIds, "(Messaging.Queue.Kafka.Producer)")
+
   val ruleCache = RuleCache().setRule(
-    RuleInfoTestData.rule.copy(sinks = RuleInfoTestData.rule.sinks ++ List(flinkKafkaConnectorRule))
+    RuleInfoTestData.rule
+      .copy(sinks = RuleInfoTestData.rule.sinks ++ List(flinkKafkaConnectorRule), systemConfig = List(systemConfig))
   )
 
   "Flink default connector present in the same method as the flink sink" should {

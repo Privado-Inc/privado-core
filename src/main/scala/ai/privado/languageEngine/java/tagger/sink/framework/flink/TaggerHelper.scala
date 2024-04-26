@@ -18,11 +18,14 @@ protected trait TaggerHelper {
     * @return
     */
   def getFlinkDefaultConnectors(cpg: Cpg, ruleCache: RuleCache): List[Call] = {
-    val flinkConnectorsRuleIds = ruleCache.getSystemConfigByKey(Constants.flinkConnectorRuleIds)
-    cpg.call
+    val flinkConnectorsRuleIds = ruleCache.getSystemConfigByKey(Constants.flinkConnectorProducerRuleIds)
+
+    val unfilteredConnectors = cpg.call
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
-      .where(_.tag.nameExact(Constants.id).value(flinkConnectorsRuleIds))
       .l
+    // We do the below filtering from Performance POV, as we only need to focus on flink connectors
+    if flinkConnectorsRuleIds.isEmpty then unfilteredConnectors
+    else unfilteredConnectors.where(_.tag.nameExact(Constants.id).value(flinkConnectorsRuleIds)).l
   }
 
   /** Helper function to copy tags from nodeFrom to nodeTo
