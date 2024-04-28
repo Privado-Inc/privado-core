@@ -159,5 +159,13 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       score shouldBe "0.0"
 
     }
+
+    "filter the class having no member" in {
+      val classList = List("com.test.privado.Controller.UserController", "com.test.privado.Entity.Address")
+      val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
+
+      memberMap.size shouldBe 1
+      memberMap.headOption.get._1.fullName should equal("com.test.privado.Entity.Address")
+    }
   }
 }
