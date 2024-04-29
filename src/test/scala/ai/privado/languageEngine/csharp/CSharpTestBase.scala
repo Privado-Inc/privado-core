@@ -24,6 +24,7 @@ import ai.privado.model.SourceCodeModel
 import ai.privado.rule.RuleInfoTestData
 import ai.privado.tagger.source.LiteralTagger
 
+@deprecated
 abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
@@ -45,25 +46,6 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
       "",
       CatLevelOne.SINKS,
       "",
-      Language.CSHARP,
-      Array()
-    ),
-    RuleInfo(
-      Constants.thirdPartiesAPIRuleId,
-      "Third Party API",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List(
-        "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
-      ),
-      false,
-      "",
-      Map(),
-      NodeType.API,
-      "",
-      CatLevelOne.SINKS,
-      catLevelTwo = Constants.third_parties,
       Language.CSHARP,
       Array()
     )
@@ -89,24 +71,6 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     )
   )
 
-  val systemConfig = List(
-    SystemConfig("apiHttpLibraries", "^(?i)(HttpClient).*", Language.CSHARP, "", Array()),
-    SystemConfig(
-      "apiSinks",
-      "(?i)((Get|Post|Put|Patch|Delete)(String|ByteArray|Stream)?Async)",
-      Language.CSHARP,
-      "",
-      Array()
-    ),
-    SystemConfig(
-      "apiIdentifier",
-      "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
-      Language.CSHARP,
-      "",
-      Array()
-    )
-  )
-
   val configAndRules: ConfigAndRules =
     ConfigAndRules(
       RuleInfoTestData.sourceRule,
@@ -117,7 +81,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
       List(),
       List(),
       List(),
-      systemConfig,
+      List(),
       List()
     )
 
