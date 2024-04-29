@@ -24,6 +24,7 @@
 package ai.privado.languageEngine.php.processor
 
 import ai.privado.cache.*
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
@@ -88,6 +89,7 @@ class PhpProcessor(
       .withOutputPath(cpgOutput.toString)
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
       .withPhpParserBin(PhpProcessor.parserBinPath)
+      .withDownloadDependencies(!config.skipDownloadDependencies)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
       println(
