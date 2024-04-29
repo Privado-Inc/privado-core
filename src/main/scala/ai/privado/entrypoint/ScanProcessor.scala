@@ -340,18 +340,18 @@ object ScanProcessor extends CommandProcessor {
     processCpg(appCache)
   }
 
-  private def getAuditCache: AuditCache = {
+  def getAuditCache: AuditCache = {
     new AuditCache()
   }
 
-  private def getS3DatabaseDetailsCache: S3DatabaseDetailsCache = {
+  def getS3DatabaseDetailsCache: S3DatabaseDetailsCache = {
     new S3DatabaseDetailsCache()
   }
 
   private val auditCache             = new AuditCache
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache
   private val propertyFilterCache    = new PropertyFilterCache()
-  private def getDataflowCache: DataFlowCache = {
+  def getDataflowCache: DataFlowCache = {
     new DataFlowCache(config, auditCache)
   }
 
@@ -514,11 +514,33 @@ object ScanProcessor extends CommandProcessor {
                     propertyFilterCache = propertyFilterCache
                   ).processCpg()
                 } else {
-                  processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
+                  MetricHandler.metricsData("language") = Json.fromString("default")
+                  println(s"Running scan with default processor.")
+                  new DefaultProcessor(
+                    getProcessedRule(Set(Language.UNKNOWN), appCache),
+                    this.config,
+                    sourceRepoLocation,
+                    dataFlowCache = getDataflowCache,
+                    auditCache,
+                    s3DatabaseDetailsCache,
+                    appCache,
+                    propertyFilterCache = propertyFilterCache
+                  ).processCpg()
                 }
             }
           case _ =>
-            processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
+            MetricHandler.metricsData("language") = Json.fromString("default")
+            println(s"Running scan with default processor.")
+            new DefaultProcessor(
+              getProcessedRule(Set(Language.UNKNOWN), appCache),
+              this.config,
+              sourceRepoLocation,
+              dataFlowCache = getDataflowCache,
+              auditCache,
+              s3DatabaseDetailsCache,
+              appCache,
+              propertyFilterCache = propertyFilterCache
+            ).processCpg()
         } match {
           case Left(err: String) => Left(err)
           case _ =>
@@ -537,15 +559,16 @@ object ScanProcessor extends CommandProcessor {
   private def processCpgWithDefaultProcessor(sourceRepoLocation: String, appCache: AppCache) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     println(s"Running scan with default processor.")
-    DefaultProcessor.createDefaultCpg(
+    new DefaultProcessor(
       getProcessedRule(Set(Language.UNKNOWN), appCache),
+      this.config,
       sourceRepoLocation,
-      getDataflowCache,
-      getAuditCache,
-      getS3DatabaseDetailsCache,
+      dataFlowCache = getDataflowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
-    )
+      propertyFilterCache = propertyFilterCache
+    ).processCpg()
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {
