@@ -33,7 +33,7 @@ import scala.sys.exit
 
 /** Privado Core main entry point
   */
-object Main {
+object Main extends GeneralMetadataLoggers {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def main(args: Array[String]): Unit = {
@@ -45,6 +45,7 @@ object Main {
         try {
           processor match {
             case ScanProcessor =>
+              logRepositoryFiledata(ScanProcessor.config.sourceLocation.head, statsRecorder)
               statsRecorder.startRecordingWithGivenFrequency(
                 Some(
                   TimeMetricRecordConfig(

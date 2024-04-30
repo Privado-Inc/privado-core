@@ -204,6 +204,7 @@ class StatsRecorder(
           writer.println(
             s"${getNewTime()}, $lastStageName, $lastSubStageName, $additionalMetaData, ${getCpuAndMemoryStatsForCSVInString(stats)}"
           )
+          writer.flush()
           Thread.sleep(timeMetricRecordConfig.recordFreq)
         }
       } catch {
