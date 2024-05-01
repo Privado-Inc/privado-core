@@ -16,6 +16,9 @@ class MethodFullNameCollectionTaggerTests extends PhpFrontendTestSuite with Coll
                        |use Slim\Psr7\Factory\ResponseFactory;
                        |use Slim\Routing\RouteCollector;
                        |use Slim\Routing\RouteCollectorProxy;
+                       |use Pimple\Psr11\Container as PsrContainer;
+                       |use Psr\Log\NullLogger;
+                       |use App\SController as SomeController;
                        |
                        |class Router {
                        |
