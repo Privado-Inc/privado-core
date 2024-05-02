@@ -73,6 +73,7 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
 
     val parserResultKeys = parserResult.map(_.key)
     if (parserResultKeys.forall(p => ALLOWED_KEYS_SYNC.contains(p))) {
+      logger.debug(s"Sync file is parsed: ${fileName}")
       // Sync file
       val destinationNode    = parserResult.find(_.key.equals("destination")).getOrElse(YamlProperty("", "", -1))
       val correspondingModel = parserResult.find(_.key.equals("model")).getOrElse(YamlProperty("", "", -1)).value
@@ -85,9 +86,12 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       builder.addNode(hightouchSink)
       builder.addEdge(hightouchSink, fileNode, EdgeTypes.SOURCE_FILE)
     } else if (parserResultKeys.forall(p => ALLOWED_KEYS_MODEL.contains(p))) {
+      logger.debug(s"Model file is parsed: ${fileName}")
       parserResult :+ YamlProperty("model-slug", fileName, -1)
       val rawSqlNode = parserResult.find(_.key == "rawSql").getOrElse(YamlProperty("", "", -1))
       parseQueryAndCreateNodes(builder, rawSqlNode.value, fileNode, rawSqlNode.lineNumber)
+    } else {
+      logger.debug(s"Could not parse file:  ${fileName}")
     }
 
   }
