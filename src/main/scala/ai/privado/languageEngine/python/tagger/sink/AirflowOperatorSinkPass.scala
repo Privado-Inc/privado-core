@@ -55,13 +55,14 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
   }
 
   private def tagCustomOperator(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    cpg.typeDecl
+    val customOperatorClasses = cpg.typeDecl
       .filter(node =>
         node.inheritsFromTypeFullName.nonEmpty && node.inheritsFromTypeFullName.headOption
           .getOrElse("")
           .matches(".*airflow.*BaseOperator.*")
       )
-      .foreach(node => {
+
+      customOperatorClasses.foreach(node => {
         if (node.name.nonEmpty) {
           cpg.call
             .nameExact(node.name)
