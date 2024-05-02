@@ -92,19 +92,19 @@ class PythonProcessor(
           statsRecorder.initiateNewStage("Privado source passes")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
-          if (privadoInput.assetDiscovery) {
-            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
-              .createAndApply()
-            new PythonConfigPropertyPass(cpg).createAndApply()
-          } else
-            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON, propertyFilterCache)
-              .createAndApply()
-
-          new PythonPropertyLinkerPass(cpg).createAndApply()
-
-          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+//          if (privadoInput.assetDiscovery) {
+//            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+//              .createAndApply()
+//            new PythonConfigPropertyPass(cpg).createAndApply()
+//          } else
+//            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON, propertyFilterCache)
+//              .createAndApply()
+//
+//          new PythonPropertyLinkerPass(cpg).createAndApply()
+//
+//          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+//          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+//          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           // Unresolved function report
           if (privadoInput.showUnresolvedFunctionsReport) {

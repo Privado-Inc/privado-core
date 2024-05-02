@@ -8,17 +8,19 @@ import scala.collection.mutable.Map
 trait GeneralMetadataLoggers {
 
   def logRepositoryFiledata(repoPath: String, statsRecorder: StatsRecorder): Unit = {
-    val extensionCount    = Map[String, Int]()
+    val extensionCount    = Map[String, ExtensionFileMetaData]()
     val folderSizeInBytes = getSizeAndExtensionCount(File(repoPath), extensionCount)
     statsRecorder.justLogMessage(
       s"Repository folder size in bytes -> $folderSizeInBytes -> ${formatSize(folderSizeInBytes)}"
     )
-    extensionCount.toList.sortBy(_._2).reverse.foreach { case (extension, count) =>
-      statsRecorder.justLogMessage(s"%-${15}s%s".format(s"'$extension'", s" -> count '$count'"))
+    extensionCount.toList.sortBy(_._2.count).reverse.foreach { case (extension, count) =>
+      statsRecorder.justLogMessage(
+        s"%-${15}s%s".format(s"'$extension'", s" -> count '${count.count}' -> size -> '${formatSize(count.size)}' ")
+      )
     }
   }
 
-  private def getSizeAndExtensionCount(fileOrFolder: File, extensionCount: Map[String, Int]): Long = {
+  private def getSizeAndExtensionCount(fileOrFolder: File, extensionCount: Map[String, ExtensionFileMetaData]): Long = {
     if (fileOrFolder.getName.startsWith("."))
       return 0L
     if (fileOrFolder.isDirectory) {
@@ -29,19 +31,20 @@ trait GeneralMetadataLoggers {
         0L
       }
     } else {
+      val size = fileOrFolder.length
       val name = fileOrFolder.getName
       if (name.contains('.')) {
         extensionCount.updateWith(name.substring(name.lastIndexOf('.'))) {
-          case Some(count) => Some(count + 1)
-          case None        => Some(1)
+          case Some(count) => Some(count.addFileCountAndSize(size))
+          case None        => Some(ExtensionFileMetaData(1, size))
         }
       } else {
         extensionCount.updateWith("unknown") {
-          case Some(count) => Some(count + 1)
-          case None        => Some(1)
+          case Some(count) => Some(count.addFileCountAndSize(size))
+          case None        => Some(ExtensionFileMetaData(1, size))
         }
       }
-      fileOrFolder.length
+      size
     }
   }
 
@@ -58,5 +61,13 @@ trait GeneralMetadataLoggers {
     } else {
       s"${size} bytes"
     }
+  }
+}
+
+class ExtensionFileMetaData(var count: Int, var size: Long) {
+  def addFileCountAndSize(fileSize: Long): ExtensionFileMetaData = {
+    count += 1
+    size += fileSize
+    this
   }
 }
