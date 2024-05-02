@@ -15,7 +15,7 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
 
   private val AIRFLOW_CUSTOM_RULE_ID = "Airflow.Custom.Operator"
   override def generateParts(): Array[RuleInfo] = {
-    (ruleCache.getRule.sinks.filter(rule => rule.name.contains("Operator")) ++ List(getCustomOperatorTag)).toArray
+    (ruleCache.getRule.sinks.filter(rule => rule.id.contains("ThirdParties.Operator")) ++ List(getCustomOperatorTag)).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
@@ -54,7 +54,7 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
 
   private def tagCustomOperator(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     cpg.typeDecl
-      .filter(_.inheritsFromTypeFullName.headOption.getOrElse("").matches(".*airflow.*BaseOperator.*"))
+      .filter(node => node.inheritsFromTypeFullName.nonEmpty && node.inheritsFromTypeFullName.headOption.getOrElse("").matches(".*airflow.*BaseOperator.*"))
       .foreach(node => {
         if (node.name.nonEmpty) {
           cpg.call
