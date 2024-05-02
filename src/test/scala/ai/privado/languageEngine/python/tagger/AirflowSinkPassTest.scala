@@ -60,7 +60,7 @@ class AirflowSinkPassTest extends PrivadoPySrc2CpgFixture {
       |""".stripMargin)
 
   val rule: ConfigAndRules =
-      ConfigAndRules(sinks = sinks)
+    ConfigAndRules(sinks = sinks)
 
   "Python airflow core operator" should {
     "should correct tagging" in {

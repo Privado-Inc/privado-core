@@ -62,15 +62,15 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
           .matches(".*airflow.*BaseOperator.*")
       )
 
-      customOperatorClasses.foreach(node => {
-        if (node.name.nonEmpty) {
-          cpg.call
-            .nameExact(node.name)
-            .foreach(callNode => {
-              // Tag the custom operator call
-              addRuleTags(builder, callNode, ruleInfo, ruleCache)
-            })
-        }
-      })
+    customOperatorClasses.foreach(node => {
+      if (node.name.nonEmpty) {
+        cpg.call
+          .nameExact(node.name)
+          .foreach(callNode => {
+            // Tag the custom operator call
+            addRuleTags(builder, callNode, ruleInfo, ruleCache)
+          })
+      }
+    })
   }
 }
