@@ -1,0 +1,2030 @@
+[
+  {
+    "id": "ThirdParties.SDK.1o",
+    "name": "1o",
+    "domain": " 10.io",
+    "pattern": "(?i)1o"
+  },
+  {
+    "id": "ThirdParties.SDK.A/BSmartly",
+    "name": "A/BSmartly",
+    "domain": " absmartly.com",
+    "pattern": "(?i)ab-smartly"
+  },
+  {
+    "id": "ThirdParties.SDK.AWSLambda",
+    "name": "AWSLambda",
+    "domain": " aws.amazon.com/lambda",
+    "pattern": "(?i)awsLambda"
+  },
+  {
+    "id": "ThirdParties.SDK.AWeber",
+    "name": "AWeber",
+    "domain": " aweber.com",
+    "pattern": "(?i)aweber"
+  },
+  {
+    "id": "ThirdParties.SDK.Aarki",
+    "name": "Aarki",
+    "domain": " aarki.com",
+    "pattern": "(?i)aarki"
+  },
+  {
+    "id": "ThirdParties.SDK.Acoustic",
+    "name": "Acoustic",
+    "domain": " acoustic.com",
+    "pattern": "(?i)acoustic"
+  },
+  {
+    "id": "ThirdParties.SDK.ActOn",
+    "name": "ActOn",
+    "domain": " act-on.com",
+    "pattern": "(?i)act-on"
+  },
+  {
+    "id": "ThirdParties.SDK.ActiveCampaign",
+    "name": "ActiveCampaign",
+    "domain": " activecampaign.com",
+    "pattern": "(?i)activeCampaign"
+  },
+  {
+    "id": "ThirdParties.SDK.AdMedia",
+    "name": "AdMedia",
+    "domain": " admedia.com",
+    "pattern": "(?i)admedia"
+  },
+  {
+    "id": "ThirdParties.SDK.AdPredictive",
+    "name": "AdPredictive",
+    "domain": " adpredictive.com",
+    "pattern": "(?i)adpredictive"
+  },
+  {
+    "id": "ThirdParties.SDK.AdQuick",
+    "name": "AdQuick",
+    "domain": " adquick.com",
+    "pattern": "(?i)adquick"
+  },
+  {
+    "id": "ThirdParties.SDK.AdRoll",
+    "name": "AdRoll",
+    "domain": " adroll.com",
+    "pattern": "(?i)adroll"
+  },
+  {
+    "id": "ThirdParties.SDK.Adalo",
+    "name": "Adalo",
+    "domain": " adalo.com",
+    "pattern": "(?i)adalo"
+  },
+  {
+    "id": "ThirdParties.SDK.Adikteev",
+    "name": "Adikteev",
+    "domain": " adikteev.com",
+    "pattern": "(?i)adikteev"
+  },
+  {
+    "id": "ThirdParties.SDK.Adjust",
+    "name": "Adjust",
+    "domain": " adjust.com",
+    "pattern": "(?i)adjust"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeAdvertisingCloud",
+    "name": "AdobeAdvertisingCloud",
+    "domain": " advertising.adobe.com",
+    "pattern": "(?i)adobe-advertising-cloud"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeAnalytics",
+    "name": "AdobeAnalytics",
+    "domain": " analytics.adobe.com",
+    "pattern": "(?i)adobe-analytics"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeAudienceManager",
+    "name": "AdobeAudienceManager",
+    "domain": " audience.adobe.com",
+    "pattern": "(?i)adobe-audience"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeCampaign",
+    "name": "AdobeCampaign",
+    "domain": " campaign.adobe.com",
+    "pattern": "(?i)adobe-campaign"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeCommerce",
+    "name": "AdobeCommerce",
+    "domain": " commerce.adobe.com",
+    "pattern": "(?i)adobe-commerce"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeExperienceManager",
+    "name": "AdobeExperienceManager",
+    "domain": " experience.adobe.com",
+    "pattern": "(?i)adobe-experience-manager"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeTarget",
+    "name": "AdobeTarget",
+    "domain": " target.adobe.com",
+    "pattern": "(?i)adobeTarget"
+  },
+  {
+    "id": "ThirdParties.SDK.AdobeWorkfront",
+    "name": "AdobeWorkfront",
+    "domain": " workfront.com",
+    "pattern": "(?i)adobe-workfront"
+  },
+  {
+    "id": "ThirdParties.SDK.Adtriba",
+    "name": "Adtriba",
+    "domain": " adtriba.com",
+    "pattern": "(?i)adtriba"
+  },
+  {
+    "id": "ThirdParties.SDK.Aeries",
+    "name": "Aeries",
+    "domain": " aeries.com",
+    "pattern": "(?i)aeries"
+  },
+  {
+    "id": "ThirdParties.SDK.Affinity",
+    "name": "Affinity",
+    "domain": " affinity.co",
+    "pattern": "(?i)affinity"
+  },
+  {
+    "id": "ThirdParties.SDK.AgileCRM",
+    "name": "AgileCRM",
+    "domain": " agilecrm.com",
+    "pattern": "(?i)agile"
+  },
+  {
+    "id": "ThirdParties.SDK.Airbridge",
+    "name": "Airbridge",
+    "domain": " airbridge.io",
+    "pattern": "(?i)airbridge"
+  },
+  {
+    "id": "ThirdParties.SDK.Aircall",
+    "name": "Aircall",
+    "domain": " aircall.io",
+    "pattern": "(?i)aircall"
+  },
+  {
+    "id": "ThirdParties.SDK.Airship",
+    "name": "Airship",
+    "domain": " airship.com",
+    "pattern": "(?i)airship"
+  },
+  {
+    "id": "ThirdParties.SDK.Airtable",
+    "name": "Airtable",
+    "domain": " airtable.com",
+    "pattern": "(?i)airtable"
+  },
+  {
+    "id": "ThirdParties.SDK.Algolia",
+    "name": "Algolia",
+    "domain": " algolia.com",
+    "pattern": "(?i)algolia"
+  },
+  {
+    "id": "ThirdParties.SDK.AliReviews",
+    "name": "AliReviews",
+    "domain": " alireviews.io",
+    "pattern": "(?i)ali-reviews"
+  },
+  {
+    "id": "ThirdParties.SDK.Alida",
+    "name": "Alida",
+    "domain": " alida.com",
+    "pattern": "(?i)alida"
+  },
+  {
+    "id": "ThirdParties.SDK.AlloyAutomation",
+    "name": "AlloyAutomation",
+    "domain": " alloyautomation.com",
+    "pattern": "(?i)alloy"
+  },
+  {
+    "id": "ThirdParties.SDK.AlloyDB",
+    "name": "AlloyDB",
+    "domain": " alloydb.com",
+    "pattern": "(?i)alloydb"
+  },
+  {
+    "id": "ThirdParties.SDK.Alorica",
+    "name": "Alorica",
+    "domain": " alorica.com",
+    "pattern": "(?i)alorica"
+  },
+  {
+    "id": "ThirdParties.SDK.Alteryx",
+    "name": "Alteryx",
+    "domain": " alteryx.com",
+    "pattern": "(?i)alteryx"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonAds",
+    "name": "AmazonAds",
+    "domain": " advertising.amazon.com",
+    "pattern": "(?i)amazonAds"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonCognito",
+    "name": "AmazonCognito",
+    "domain": " aws.amazon.com/cognito",
+    "pattern": "(?i)amazon-cognito"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonEventBridge",
+    "name": "AmazonEventBridge",
+    "domain": " aws.amazon.com/eventbridge",
+    "pattern": "(?i)amazon-eventbridge"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonKinesis",
+    "name": "AmazonKinesis",
+    "domain": " aws.amazon.com/kinesis",
+    "pattern": "(?i)amazon-kinesis"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonPersonalize",
+    "name": "AmazonPersonalize",
+    "domain": " aws.amazon.com/personalize",
+    "pattern": "(?i)amazon-personalize"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonSNS",
+    "name": "AmazonSNS",
+    "domain": " aws.amazon.com/sns",
+    "pattern": "(?i)amazon-sns"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonSQS",
+    "name": "AmazonSQS",
+    "domain": " aws.amazon.com/sqs",
+    "pattern": "(?i)amazon-sqs"
+  },
+  {
+    "id": "ThirdParties.SDK.AmazonSageMaker",
+    "name": "AmazonSageMaker",
+    "domain": " aws.amazon.com/sagemaker",
+    "pattern": "(?i)amazon-sagemaker"
+  },
+  {
+    "id": "ThirdParties.SDK.Ambassador",
+    "name": "Ambassador",
+    "domain": " ambassador.software",
+    "pattern": "(?i)ambassador"
+  },
+  {
+    "id": "ThirdParties.SDK.Amberflo",
+    "name": "Amberflo",
+    "domain": " amberflo.io",
+    "pattern": "(?i)amberflo"
+  },
+  {
+    "id": "ThirdParties.SDK.Amobee",
+    "name": "Amobee",
+    "domain": " amobee.com",
+    "pattern": "(?i)amobee"
+  },
+  {
+    "id": "ThirdParties.SDK.Amperity",
+    "name": "Amperity",
+    "domain": " amperity.com",
+    "pattern": "(?i)amperity"
+  },
+  {
+    "id": "ThirdParties.SDK.Amplitude",
+    "name": "Amplitude",
+    "domain": " amplitude.com",
+    "pattern": "(?i)amplitude"
+  },
+  {
+    "id": "ThirdParties.SDK.Anaplan",
+    "name": "Anaplan",
+    "domain": " anaplan.com",
+    "pattern": "(?i)anaplan"
+  },
+  {
+    "id": "ThirdParties.SDK.AnnexCloud",
+    "name": "AnnexCloud",
+    "domain": " annexcloud.com",
+    "pattern": "(?i)annex-cloud"
+  },
+  {
+    "id": "ThirdParties.SDK.Anodot",
+    "name": "Anodot",
+    "domain": " anodot.com",
+    "pattern": "(?i)anodot"
+  },
+  {
+    "id": "ThirdParties.SDK.Antavo",
+    "name": "Antavo",
+    "domain": " antavo.com",
+    "pattern": "(?i)antavo"
+  },
+  {
+    "id": "ThirdParties.SDK.ApacheKafka",
+    "name": "ApacheKafka",
+    "domain": " kafka.apache.org",
+    "pattern": "(?i)apacheKafka"
+  },
+  {
+    "id": "ThirdParties.SDK.Aphix",
+    "name": "Aphix",
+    "domain": " aphixsoftware.com",
+    "pattern": "(?i)aphix"
+  },
+  {
+    "id": "ThirdParties.SDK.Apollo",
+    "name": "Apollo",
+    "domain": " apollo.io",
+    "pattern": "(?i)apollo"
+  },
+  {
+    "id": "ThirdParties.SDK.AppDirect",
+    "name": "AppDirect",
+    "domain": " appdirect.com",
+    "pattern": "(?i)appdirect"
+  },
+  {
+    "id": "ThirdParties.SDK.AppLovin",
+    "name": "AppLovin",
+    "domain": " applovin.com",
+    "pattern": "(?i)applovin"
+  },
+  {
+    "id": "ThirdParties.SDK.AppCues",
+    "name": "AppCues",
+    "domain": " appcues.com",
+    "pattern": "(?i)appcues"
+  },
+  {
+    "id": "ThirdParties.SDK.AppsFlyer",
+    "name": "AppsFlyer",
+    "domain": " appsflyer.com",
+    "pattern": "(?i)appsflyer"
+  },
+  {
+    "id": "ThirdParties.SDK.Apptentive",
+    "name": "Apptentive",
+    "domain": " apptentive.com",
+    "pattern": "(?i)apptentive"
+  },
+  {
+    "id": "ThirdParties.SDK.Arandell",
+    "name": "Arandell",
+    "domain": " arandell.com",
+    "pattern": "(?i)arandell"
+  },
+  {
+    "id": "ThirdParties.SDK.Asana",
+    "name": "Asana",
+    "domain": " asana.com",
+    "pattern": "(?i)asana"
+  },
+  {
+    "id": "ThirdParties.SDK.Attentive",
+    "name": "Attentive",
+    "domain": " attentivemobile.com",
+    "pattern": "(?i)attentive"
+  },
+  {
+    "id": "ThirdParties.SDK.Attio",
+    "name": "Attio",
+    "domain": " attio.com",
+    "pattern": "(?i)attio"
+  },
+  {
+    "id": "ThirdParties.SDK.Attractor",
+    "name": "Attractor",
+    "domain": " attractor.com",
+    "pattern": "(?i)attractor"
+  },
+  {
+    "id": "ThirdParties.SDK.Auth0",
+    "name": "Auth0",
+    "domain": " auth0.com",
+    "pattern": "(?i)auth0"
+  },
+  {
+    "id": "ThirdParties.SDK.Awin",
+    "name": "Awin",
+    "domain": " awin.com",
+    "pattern": "(?i)awin"
+  },
+  {
+    "id": "ThirdParties.SDK.AzureActiveDirectory",
+    "name": "AzureActiveDirectory",
+    "domain": " azure.microsoft.com/en-us/services/active-directory/",
+    "pattern": "(?i)azure-active-directory"
+  },
+  {
+    "id": "ThirdParties.SDK.AzureBlobStorage",
+    "name": "AzureBlobStorage",
+    "domain": " azure.microsoft.com/en-us/services/storage/blobs/",
+    "pattern": "(?i)azure-blob-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.AzureCosmosDB",
+    "name": "AzureCosmosDB",
+    "domain": " azure.microsoft.com/en-us/services/cosmos-db/",
+    "pattern": "(?i)cosmos-db"
+  },
+  {
+    "id": "ThirdParties.SDK.AzureFunctions",
+    "name": "AzureFunctions",
+    "domain": " azure.microsoft.com/en-us/services/functions/",
+    "pattern": "(?i)azureFunctions"
+  },
+  {
+    "id": "ThirdParties.SDK.BMCRemedy",
+    "name": "BMCRemedy",
+    "domain": " bmc.com/it-solutions/remedy-itsm.html",
+    "pattern": "(?i)bmc-remedy"
+  },
+  {
+    "id": "ThirdParties.SDK.Baesman",
+    "name": "Baesman",
+    "domain": " baesman.com",
+    "pattern": "(?i)baesman"
+  },
+  {
+    "id": "ThirdParties.SDK.BambooHR",
+    "name": "BambooHR",
+    "domain": " bamboohr.com",
+    "pattern": "(?i)bamboohr"
+  },
+  {
+    "id": "ThirdParties.SDK.Basecamp",
+    "name": "Basecamp",
+    "domain": " basecamp.com",
+    "pattern": "(?i)basecamp"
+  },
+  {
+    "id": "ThirdParties.SDK.Batch",
+    "name": "Batch",
+    "domain": " batch.com",
+    "pattern": "(?i)batch"
+  },
+  {
+    "id": "ThirdParties.SDK.BeProfit",
+    "name": "BeProfit",
+    "domain": " beprofit.co",
+    "pattern": "(?i)beprofit"
+  },
+  {
+    "id": "ThirdParties.SDK.Beamer",
+    "name": "Beamer",
+    "domain": " getbeamer.com",
+    "pattern": "(?i)beamer"
+  },
+  {
+    "id": "ThirdParties.SDK.Beeswax",
+    "name": "Beeswax",
+    "domain": " beeswax.com",
+    "pattern": "(?i)beeswax"
+  },
+  {
+    "id": "ThirdParties.SDK.Benchmark",
+    "name": "Benchmark",
+    "domain": " benchmarkemail.com",
+    "pattern": "(?i)benchmark"
+  },
+  {
+    "id": "ThirdParties.SDK.Bidease",
+    "name": "Bidease",
+    "domain": " bidease.com",
+    "pattern": "(?i)bidease"
+  },
+  {
+    "id": "ThirdParties.SDK.BigCommerce",
+    "name": "BigCommerce",
+    "domain": " bigcommerce.com",
+    "pattern": "(?i)bigcommerce"
+  },
+  {
+    "id": "ThirdParties.SDK.MicrosoftBingAds",
+    "name": "MicrosoftBingAds",
+    "domain": " ads.microsoft.com",
+    "pattern": "(?i)bingads"
+  },
+  {
+    "id": "ThirdParties.SDK.Bizzabo",
+    "name": "Bizzabo",
+    "domain": " bizzabo.com",
+    "pattern": "(?i)bizzabo"
+  },
+  {
+    "id": "ThirdParties.SDK.Blendo",
+    "name": "Blendo",
+    "domain": " blendo.co",
+    "pattern": "(?i)blendo"
+  },
+  {
+    "id": "ThirdParties.SDK.Bloomreach",
+    "name": "Bloomreach",
+    "domain": " bloomreach.com",
+    "pattern": "(?i)bloomreach"
+  },
+  {
+    "id": "ThirdParties.SDK.Bluecore",
+    "name": "Bluecore",
+    "domain": " bluecore.com",
+    "pattern": "(?i)bluecore"
+  },
+  {
+    "id": "ThirdParties.SDK.Blueshift",
+    "name": "Blueshift",
+    "domain": " blueshift.com",
+    "pattern": "(?i)blueshift"
+  },
+  {
+    "id": "ThirdParties.SDK.BoldCommerce",
+    "name": "BoldCommerce",
+    "domain": " boldcommerce.com",
+    "pattern": "(?i)bold-commerce"
+  },
+  {
+    "id": "ThirdParties.SDK.Boostr",
+    "name": "Boostr",
+    "domain": " boostr.com",
+    "pattern": "(?i)boostr"
+  },
+  {
+    "id": "ThirdParties.SDK.Box",
+    "name": "Box",
+    "domain": " box.com",
+    "pattern": "(?i)box"
+  },
+  {
+    "id": "ThirdParties.SDK.Braintree",
+    "name": "Braintree",
+    "domain": " braintreepayments.com",
+    "pattern": "(?i)braintree"
+  },
+  {
+    "id": "ThirdParties.SDK.Branch",
+    "name": "Branch",
+    "domain": " branch.io",
+    "pattern": "(?i)branch"
+  },
+  {
+    "id": "ThirdParties.SDK.Brandfolder",
+    "name": "Brandfolder",
+    "domain": " brandfolder.com",
+    "pattern": "(?i)brandfolder"
+  },
+  {
+    "id": "ThirdParties.SDK.Braze",
+    "name": "Braze",
+    "domain": " braze.com",
+    "pattern": "(?i)braze"
+  },
+  {
+    "id": "ThirdParties.SDK.BrazeCohorts",
+    "name": "BrazeCohorts",
+    "domain": " cohorts.braze.com",
+    "pattern": "(?i)brazeCohorts"
+  },
+  {
+    "id": "ThirdParties.SDK.Brevo",
+    "name": "Brevo",
+    "domain": " brevo.com",
+    "pattern": "(?i)brevo"
+  },
+  {
+    "id": "ThirdParties.SDK.Brightpearl",
+    "name": "Brightpearl",
+    "domain": " brightpearl.com",
+    "pattern": "(?i)brightpearl"
+  },
+  {
+    "id": "ThirdParties.SDK.Button",
+    "name": "Button",
+    "domain": " usebutton.com",
+    "pattern": "(?i)button"
+  },
+  {
+    "id": "ThirdParties.SDK.Bynder",
+    "name": "Bynder",
+    "domain": " bynder.com",
+    "pattern": "(?i)bynder"
+  },
+  {
+    "id": "ThirdParties.SDK.BytePlus",
+    "name": "BytePlus",
+    "domain": " byteplus.com",
+    "pattern": "(?i)byteplus"
+  },
+  {
+    "id": "ThirdParties.SDK.CommissionJunction",
+    "name": "CommissionJunction",
+    "domain": " cj.com",
+    "pattern": "(?i)commission-junction"
+  },
+  {
+    "id": "ThirdParties.SDK.Calixa",
+    "name": "Calixa",
+    "domain": " calixa.com",
+    "pattern": "(?i)calixa"
+  },
+  {
+    "id": "ThirdParties.SDK.CampaignMonitor",
+    "name": "CampaignMonitor",
+    "domain": " campaignmonitor.com",
+    "pattern": "(?i)campaignMonitor"
+  },
+  {
+    "id": "ThirdParties.SDK.Campaigner",
+    "name": "Campaigner",
+    "domain": " campaigner.com",
+    "pattern": "(?i)campaigner"
+  },
+  {
+    "id": "ThirdParties.SDK.Chameleon",
+    "name": "Chameleon",
+    "domain": " trychameleon.com",
+    "pattern": "(?i)chameleon"
+  },
+  {
+    "id": "ThirdParties.SDK.Chargebee",
+    "name": "Chargebee",
+    "domain": " chargebee.com",
+    "pattern": "(?i)chargebee"
+  },
+  {
+    "id": "ThirdParties.SDK.ChartMogul",
+    "name": "ChartMogul",
+    "domain": " chartmogul.com",
+    "pattern": "(?i)chartmogul"
+  },
+  {
+    "id": "ThirdParties.SDK.Churnzero",
+    "name": "Churnzero",
+    "domain": " churnzero.net",
+    "pattern": "(?i)churnzero"
+  },
+  {
+    "id": "ThirdParties.SDK.CitrusAd",
+    "name": "CitrusAd",
+    "domain": " citrusad.com",
+    "pattern": "(?i)citrusad"
+  },
+  {
+    "id": "ThirdParties.SDK.CleverTap",
+    "name": "CleverTap",
+    "domain": " clevertap.com",
+    "pattern": "(?i)clevertap"
+  },
+  {
+    "id": "ThirdParties.SDK.ClickUp",
+    "name": "ClickUp",
+    "domain": " clickup.com",
+    "pattern": "(?i)clickup"
+  },
+  {
+    "id": "ThirdParties.SDK.ClientSuccess",
+    "name": "ClientSuccess",
+    "domain": " clientsuccess.com",
+    "pattern": "(?i)clientSuccess"
+  },
+  {
+    "id": "ThirdParties.SDK.Close",
+    "name": "Close",
+    "domain": " close.com",
+    "pattern": "(?i)closeio"
+  },
+  {
+    "id": "ThirdParties.SDK.Cloudbeds",
+    "name": "Cloudbeds",
+    "domain": " cloudbeds.com",
+    "pattern": "(?i)cloudbeds"
+  },
+  {
+    "id": "ThirdParties.SDK.CockroachDB",
+    "name": "CockroachDB",
+    "domain": " cockroachlabs.com",
+    "pattern": "(?i)cockroachdb"
+  },
+  {
+    "id": "ThirdParties.SDK.Coda",
+    "name": "Coda",
+    "domain": " coda.io",
+    "pattern": "(?i)coda"
+  },
+  {
+    "id": "ThirdParties.SDK.CommonRoom",
+    "name": "CommonRoom",
+    "domain": " commonroom.io",
+    "pattern": "(?i)common-room"
+  },
+  {
+    "id": "ThirdParties.SDK.ConnectWise",
+    "name": "ConnectWise",
+    "domain": " connectwise.com",
+    "pattern": "(?i)connectwise"
+  },
+  {
+    "id": "ThirdParties.SDK.ConstantContact",
+    "name": "ConstantContact",
+    "domain": " constantcontact.com",
+    "pattern": "(?i)constant-contact"
+  },
+  {
+    "id": "ThirdParties.SDK.Contentful",
+    "name": "Contentful",
+    "domain": " contentful.com",
+    "pattern": "(?i)contentful"
+  },
+  {
+    "id": "ThirdParties.SDK.Cordial",
+    "name": "Cordial",
+    "domain": " cordial.com",
+    "pattern": "(?i)cordial"
+  },
+  {
+    "id": "ThirdParties.SDK.Courier",
+    "name": "Courier",
+    "domain": " courier.com",
+    "pattern": "(?i)courier"
+  },
+  {
+    "id": "ThirdParties.SDK.Criteo",
+    "name": "Criteo",
+    "domain": " criteo.com",
+    "pattern": "(?i)criteo"
+  },
+  {
+    "id": "ThirdParties.SDK.Customer.io",
+    "name": "Customer.io",
+    "domain": " customer.io",
+    "pattern": "(?i)customerio"
+  },
+  {
+    "id": "ThirdParties.SDK.Delighted",
+    "name": "Delighted",
+    "domain": " delighted.com",
+    "pattern": "(?i)delighted"
+  },
+  {
+    "id": "ThirdParties.SDK.Demandbase",
+    "name": "Demandbase",
+    "domain": " demandbase.com",
+    "pattern": "(?i)demandbase"
+  },
+  {
+    "id": "ThirdParties.SDK.Discord",
+    "name": "Discord",
+    "domain": " discord.com",
+    "pattern": "(?i)discord"
+  },
+  {
+    "id": "ThirdParties.SDK.DocuSign",
+    "name": "DocuSign",
+    "domain": " docusign.com",
+    "pattern": "(?i)docusign"
+  },
+  {
+    "id": "ThirdParties.SDK.Dotdigital",
+    "name": "Dotdigital",
+    "domain": " dotdigital.com",
+    "pattern": "(?i)dotdigital"
+  },
+  {
+    "id": "ThirdParties.SDK.Drift",
+    "name": "Drift",
+    "domain": " drift.com",
+    "pattern": "(?i)drift"
+  },
+  {
+    "id": "ThirdParties.SDK.Dropbox",
+    "name": "Dropbox",
+    "domain": " dropbox.com",
+    "pattern": "(?i)dropbox"
+  },
+  {
+    "id": "ThirdParties.SDK.DynamicYield",
+    "name": "DynamicYield",
+    "domain": " dynamicyield.com",
+    "pattern": "(?i)dynamic-yield"
+  },
+  {
+    "id": "ThirdParties.SDK.DynamoDB",
+    "name": "DynamoDB",
+    "domain": " aws.amazon.com/dynamodb",
+    "pattern": "(?i)dynamodb"
+  },
+  {
+    "id": "ThirdParties.SDK.Elasticsearch",
+    "name": "Elasticsearch",
+    "domain": " elastic.co",
+    "pattern": "(?i)elasticsearch-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.Eloqua",
+    "name": "Eloqua",
+    "domain": " eloqua.com",
+    "pattern": "(?i)eloqua"
+  },
+  {
+    "id": "ThirdParties.SDK.Emarsys",
+    "name": "Emarsys",
+    "domain": " emarsys.com",
+    "pattern": "(?i)emarsys"
+  },
+  {
+    "id": "ThirdParties.SDK.EmbeddedDestination",
+    "name": "EmbeddedDestination",
+    "domain": " embedded.destination",
+    "pattern": "(?i)custom"
+  },
+  {
+    "id": "ThirdParties.SDK.EnjoyHQ",
+    "name": "EnjoyHQ",
+    "domain": " enjoyhq.com",
+    "pattern": "(?i)enjoy-hq"
+  },
+  {
+    "id": "ThirdParties.SDK.FacebookConversionsAPI",
+    "name": "FacebookConversionsAPI",
+    "domain": " facebook.com",
+    "pattern": "(?i)facebookConversions"
+  },
+  {
+    "id": "ThirdParties.SDK.FacebookCustomAudiences",
+    "name": "FacebookCustomAudiences",
+    "domain": " facebook.com",
+    "pattern": "(?i)facebook"
+  },
+  {
+    "id": "ThirdParties.SDK.FacebookOfflineConversionsAPI",
+    "name": "FacebookOfflineConversionsAPI",
+    "domain": " facebook.com",
+    "pattern": "(?i)facebookOffline"
+  },
+  {
+    "id": "ThirdParties.SDK.FacebookProductCatalog",
+    "name": "FacebookProductCatalog",
+    "domain": " facebook.com",
+    "pattern": "(?i)facebookAdCatalog"
+  },
+  {
+    "id": "ThirdParties.SDK.Feast",
+    "name": "Feast",
+    "domain": " feast.dev",
+    "pattern": "(?i)feast"
+  },
+  {
+    "id": "ThirdParties.SDK.Firestore",
+    "name": "Firestore",
+    "domain": " firebase.google.com/products/firestore",
+    "pattern": "(?i)firestore"
+  },
+  {
+    "id": "ThirdParties.SDK.Five9",
+    "name": "Five9",
+    "domain": " five9.com",
+    "pattern": "(?i)five9"
+  },
+  {
+    "id": "ThirdParties.SDK.Freshdesk",
+    "name": "Freshdesk",
+    "domain": " freshdesk.com",
+    "pattern": "(?i)freshdesk"
+  },
+  {
+    "id": "ThirdParties.SDK.Freshpaint",
+    "name": "Freshpaint",
+    "domain": " freshpaint.io",
+    "pattern": "(?i)freshpaint"
+  },
+  {
+    "id": "ThirdParties.SDK.Freshsales",
+    "name": "Freshsales",
+    "domain": " freshworks.com/sales-crm",
+    "pattern": "(?i)freshsales"
+  },
+  {
+    "id": "ThirdParties.SDK.Front",
+    "name": "Front",
+    "domain": " front.com",
+    "pattern": "(?i)front"
+  },
+  {
+    "id": "ThirdParties.SDK.FullStory",
+    "name": "FullStory",
+    "domain": " fullstory.com",
+    "pattern": "(?i)fullstory"
+  },
+  {
+    "id": "ThirdParties.SDK.Gainsight",
+    "name": "Gainsight",
+    "domain": " gainsight.com",
+    "pattern": "(?i)gainsight"
+  },
+  {
+    "id": "ThirdParties.SDK.GainsightPX",
+    "name": "GainsightPX",
+    "domain": " px.gainsight.com",
+    "pattern": "(?i)gainsightpx"
+  },
+  {
+    "id": "ThirdParties.SDK.Genesys",
+    "name": "Genesys",
+    "domain": " genesys.com",
+    "pattern": "(?i)genesys"
+  },
+  {
+    "id": "ThirdParties.SDK.Gladly",
+    "name": "Gladly",
+    "domain": " gladly.com",
+    "pattern": "(?i)gladly"
+  },
+  {
+    "id": "ThirdParties.SDK.Gong",
+    "name": "Gong",
+    "domain": " gong.io",
+    "pattern": "(?i)gong"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleADH(BigQuery)",
+    "name": "GoogleADH(BigQuery)",
+    "domain": " cloud.google.com/bigquery",
+    "pattern": "(?i)google-adh-bigquery"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleAdManager360",
+    "name": "GoogleAdManager360",
+    "domain": " admanager.google.com",
+    "pattern": "(?i)gam360"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleAds",
+    "name": "GoogleAds",
+    "domain": " ads.google.com",
+    "pattern": "(?i)google"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleAnalytics",
+    "name": "GoogleAnalytics",
+    "domain": " analytics.google.com",
+    "pattern": "(?i)googleAnalytics"
+  },
+  {
+    "id": "ThirdParties.SDK.BigQuery",
+    "name": "BigQuery",
+    "domain": " bigquery.cloud.google.com",
+    "pattern": "(?i)google-bigquery-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleCalendar",
+    "name": "GoogleCalendar",
+    "domain": " calendar.google.com",
+    "pattern": "(?i)google-calendar"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleCampaignManager",
+    "name": "GoogleCampaignManager",
+    "domain": " campaignmanager.google.com",
+    "pattern": "(?i)googleCampaignManager"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleCloudFunctions",
+    "name": "GoogleCloudFunctions",
+    "domain": " cloud.google.com/functions",
+    "pattern": "(?i)googleCloudFunctions"
+  },
+  {
+    "id": "ThirdParties.SDK.GooglePubSub",
+    "name": "GooglePubSub",
+    "domain": " cloud.google.com/pubsub",
+    "pattern": "(?i)googlePubSub"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleCloudStorage",
+    "name": "GoogleCloudStorage",
+    "domain": " cloud.google.com/storage",
+    "pattern": "(?i)gcs"
+  },
+  {
+    "id": "ThirdParties.SDK.Display&Video360",
+    "name": "Display&Video360",
+    "domain": " marketingplatform.google.com/about/dv360/",
+    "pattern": "(?i)display-video"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleDrive",
+    "name": "GoogleDrive",
+    "domain": " drive.google.com",
+    "pattern": "(?i)googleDrive"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleRetail",
+    "name": "GoogleRetail",
+    "domain": " google.com/retail",
+    "pattern": "(?i)google-retail"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleSearchAds360",
+    "name": "GoogleSearchAds360",
+    "domain": " searchads.google.com",
+    "pattern": "(?i)google-search-ads-360"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleSheets(ServiceAccount)",
+    "name": "GoogleSheets(ServiceAccount)",
+    "domain": " sheets.google.com",
+    "pattern": "(?i)googleSheetsSA"
+  },
+  {
+    "id": "ThirdParties.SDK.GoogleSheets",
+    "name": "GoogleSheets",
+    "domain": " sheets.google.com",
+    "pattern": "(?i)googlesheets"
+  },
+  {
+    "id": "ThirdParties.SDK.Greenhouse",
+    "name": "Greenhouse",
+    "domain": " greenhouse.io",
+    "pattern": "(?i)greenhouse"
+  },
+  {
+    "id": "ThirdParties.SDK.Greenplum",
+    "name": "Greenplum",
+    "domain": " greenplum.org",
+    "pattern": "(?i)greenplum-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.HTTPRequest",
+    "name": "HTTPRequest",
+    "domain": " http-request.com",
+    "pattern": "(?i)webhookV2"
+  },
+  {
+    "id": "ThirdParties.SDK.Heap",
+    "name": "Heap",
+    "domain": " heap.io",
+    "pattern": "(?i)heap"
+  },
+  {
+    "id": "ThirdParties.SDK.HelpScout",
+    "name": "HelpScout",
+    "domain": " helpscout.com",
+    "pattern": "(?i)help-scout"
+  },
+  {
+    "id": "ThirdParties.SDK.HightouchPersonalizationAPI",
+    "name": "HightouchPersonalizationAPI",
+    "domain": " hightouch.io",
+    "pattern": "(?i)hightouch-personalization-api"
+  },
+  {
+    "id": "ThirdParties.SDK.HubDB",
+    "name": "HubDB",
+    "domain": " hubdb.com",
+    "pattern": "(?i)hubdb"
+  },
+  {
+    "id": "ThirdParties.SDK.HubSpot",
+    "name": "HubSpot",
+    "domain": " hubspot.com",
+    "pattern": "(?i)hubspot"
+  },
+  {
+    "id": "ThirdParties.SDK.HubspotLegacy",
+    "name": "HubspotLegacy",
+    "domain": " hubspot.com",
+    "pattern": "(?i)hubspotLegacy"
+  },
+  {
+    "id": "ThirdParties.SDK.IBMDB2",
+    "name": "IBMDB2",
+    "domain": " ibm.com/products/db2-database",
+    "pattern": "(?i)ibm-db2"
+  },
+  {
+    "id": "ThirdParties.SDK.IndexExchange",
+    "name": "IndexExchange",
+    "domain": " indexexchange.com",
+    "pattern": "(?i)indexexchange"
+  },
+  {
+    "id": "ThirdParties.SDK.InfoSum",
+    "name": "InfoSum",
+    "domain": " infosum.com",
+    "pattern": "(?i)infosum"
+  },
+  {
+    "id": "ThirdParties.SDK.Insider",
+    "name": "Insider",
+    "domain": " useinsider.com",
+    "pattern": "(?i)insider"
+  },
+  {
+    "id": "ThirdParties.SDK.Intercom",
+    "name": "Intercom",
+    "domain": " intercom.com",
+    "pattern": "(?i)intercom"
+  },
+  {
+    "id": "ThirdParties.SDK.Iterable",
+    "name": "Iterable",
+    "domain": " iterable.com",
+    "pattern": "(?i)iterable"
+  },
+  {
+    "id": "ThirdParties.SDK.Jira",
+    "name": "Jira",
+    "domain": " atlassian.com/software/jira",
+    "pattern": "(?i)jira"
+  },
+  {
+    "id": "ThirdParties.SDK.KakaoTalk",
+    "name": "KakaoTalk",
+    "domain": " kakaocorp.com",
+    "pattern": "(?i)kakao-talk"
+  },
+  {
+    "id": "ThirdParties.SDK.Kameleoon",
+    "name": "Kameleoon",
+    "domain": " kameleoon.com",
+    "pattern": "(?i)kameleoon"
+  },
+  {
+    "id": "ThirdParties.SDK.Klaviyo",
+    "name": "Klaviyo",
+    "domain": " klaviyo.com",
+    "pattern": "(?i)klaviyo"
+  },
+  {
+    "id": "ThirdParties.SDK.Kustomer",
+    "name": "Kustomer",
+    "domain": " kustomer.com",
+    "pattern": "(?i)kustomer"
+  },
+  {
+    "id": "ThirdParties.SDK.LINEAds",
+    "name": "LINEAds",
+    "domain": " line.biz/en",
+    "pattern": "(?i)line-ads"
+  },
+  {
+    "id": "ThirdParties.SDK.LaunchDarkly",
+    "name": "LaunchDarkly",
+    "domain": " launchdarkly.com",
+    "pattern": "(?i)launchdarkly"
+  },
+  {
+    "id": "ThirdParties.SDK.LinkedInAds",
+    "name": "LinkedInAds",
+    "domain": " linkedin.com/advertising",
+    "pattern": "(?i)linkedin"
+  },
+  {
+    "id": "ThirdParties.SDK.LiveRamp",
+    "name": "LiveRamp",
+    "domain": " liveramp.com",
+    "pattern": "(?i)liveramp"
+  },
+  {
+    "id": "ThirdParties.SDK.Magnite",
+    "name": "Magnite",
+    "domain": " magnite.com",
+    "pattern": "(?i)magnite"
+  },
+  {
+    "id": "ThirdParties.SDK.Mailchimp",
+    "name": "Mailchimp",
+    "domain": " mailchimp.com",
+    "pattern": "(?i)mailchimp"
+  },
+  {
+    "id": "ThirdParties.SDK.Mailjet",
+    "name": "Mailjet",
+    "domain": " mailjet.com",
+    "pattern": "(?i)mailjet"
+  },
+  {
+    "id": "ThirdParties.SDK.Make(Integromat)",
+    "name": "Make(Integromat)",
+    "domain": " make.com",
+    "pattern": "(?i)make"
+  },
+  {
+    "id": "ThirdParties.SDK.MariaDB",
+    "name": "MariaDB",
+    "domain": " mariadb.com",
+    "pattern": "(?i)mariadb"
+  },
+  {
+    "id": "ThirdParties.SDK.Marketo",
+    "name": "Marketo",
+    "domain": " marketo.com",
+    "pattern": "(?i)marketo"
+  },
+  {
+    "id": "ThirdParties.SDK.Mattermost",
+    "name": "Mattermost",
+    "domain": " mattermost.com",
+    "pattern": "(?i)mattermost"
+  },
+  {
+    "id": "ThirdParties.SDK.Maxio",
+    "name": "Maxio",
+    "domain": " maxio.com",
+    "pattern": "(?i)maxio"
+  },
+  {
+    "id": "ThirdParties.SDK.Medallia",
+    "name": "Medallia",
+    "domain": " medallia.com",
+    "pattern": "(?i)medallia"
+  },
+  {
+    "id": "ThirdParties.SDK.MicrosoftDynamics365",
+    "name": "MicrosoftDynamics365",
+    "domain": " dynamics.microsoft.com",
+    "pattern": "(?i)microsoft-dynamics"
+  },
+  {
+    "id": "ThirdParties.SDK.MicrosoftExcel",
+    "name": "MicrosoftExcel",
+    "domain": " office.com",
+    "pattern": "(?i)microsoft-excel"
+  },
+  {
+    "id": "ThirdParties.SDK.MicrosoftOneDrive",
+    "name": "MicrosoftOneDrive",
+    "domain": " onedrive.live.com",
+    "pattern": "(?i)onedrive"
+  },
+  {
+    "id": "ThirdParties.SDK.MicrosoftTeams",
+    "name": "MicrosoftTeams",
+    "domain": " microsoft.com/en-us/microsoft-teams",
+    "pattern": "(?i)microsoftTeams"
+  },
+  {
+    "id": "ThirdParties.SDK.MinIO",
+    "name": "MinIO",
+    "domain": " min.io",
+    "pattern": "(?i)minio"
+  },
+  {
+    "id": "ThirdParties.SDK.Mixpanel",
+    "name": "Mixpanel",
+    "domain": " mixpanel.com",
+    "pattern": "(?i)mixpanel"
+  },
+  {
+    "id": "ThirdParties.SDK.MoEngage",
+    "name": "MoEngage",
+    "domain": " moengage.com",
+    "pattern": "(?i)moengage"
+  },
+  {
+    "id": "ThirdParties.SDK.MoPub",
+    "name": "MoPub",
+    "domain": " mopub.com",
+    "pattern": "(?i)mopub"
+  },
+  {
+    "id": "ThirdParties.SDK.Moloco",
+    "name": "Moloco",
+    "domain": " molocoads.com",
+    "pattern": "(?i)moloco"
+  },
+  {
+    "id": "ThirdParties.SDK.Monday",
+    "name": "Monday",
+    "domain": " monday.com",
+    "pattern": "(?i)monday"
+  },
+  {
+    "id": "ThirdParties.SDK.MongoDB",
+    "name": "MongoDB",
+    "domain": " mongodb.com",
+    "pattern": "(?i)mongodb"
+  },
+  {
+    "id": "ThirdParties.SDK.MovableInk",
+    "name": "MovableInk",
+    "domain": " movableink.com",
+    "pattern": "(?i)movable-ink"
+  },
+  {
+    "id": "ThirdParties.SDK.MySQL",
+    "name": "MySQL",
+    "domain": " mysql.com",
+    "pattern": "(?i)mysql-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.NCRAdvancedMarketingSolution",
+    "name": "NCRAdvancedMarketingSolution",
+    "domain": " ncr.com",
+    "pattern": "(?i)ams"
+  },
+  {
+    "id": "ThirdParties.SDK.NetSuiteREST",
+    "name": "NetSuiteREST",
+    "domain": " netsuite.com",
+    "pattern": "(?i)netsuite-rest"
+  },
+  {
+    "id": "ThirdParties.SDK.NetSuite",
+    "name": "NetSuite",
+    "domain": " netsuite.com",
+    "pattern": "(?i)netsuite"
+  },
+  {
+    "id": "ThirdParties.SDK.NewRelic",
+    "name": "NewRelic",
+    "domain": " newrelic.com",
+    "pattern": "(?i)new-relic"
+  },
+  {
+    "id": "ThirdParties.SDK.Nextdoor",
+    "name": "Nextdoor",
+    "domain": " nextdoor.com",
+    "pattern": "(?i)nextdoor"
+  },
+  {
+    "id": "ThirdParties.SDK.Notion",
+    "name": "Notion",
+    "domain": " notion.so",
+    "pattern": "(?i)notion"
+  },
+  {
+    "id": "ThirdParties.SDK.Okta",
+    "name": "Okta",
+    "domain": " okta.com",
+    "pattern": "(?i)okta"
+  },
+  {
+    "id": "ThirdParties.SDK.OmniSense",
+    "name": "OmniSense",
+    "domain": " omnisense.io",
+    "pattern": "(?i)omnisense"
+  },
+  {
+    "id": "ThirdParties.SDK.OneSignal",
+    "name": "OneSignal",
+    "domain": " onesignal.com",
+    "pattern": "(?i)onesignal"
+  },
+  {
+    "id": "ThirdParties.SDK.OneStream",
+    "name": "OneStream",
+    "domain": " onestreamsoftware.com",
+    "pattern": "(?i)onestream"
+  },
+  {
+    "id": "ThirdParties.SDK.OpenSearch",
+    "name": "OpenSearch",
+    "domain": " opensearch.org",
+    "pattern": "(?i)opensearch"
+  },
+  {
+    "id": "ThirdParties.SDK.Optimizely",
+    "name": "Optimizely",
+    "domain": " optimizely.com",
+    "pattern": "(?i)optimizely"
+  },
+  {
+    "id": "ThirdParties.SDK.OracleDB",
+    "name": "OracleDB",
+    "domain": " oracle.com/database",
+    "pattern": "(?i)oracle-db"
+  },
+  {
+    "id": "ThirdParties.SDK.OracleEssbase",
+    "name": "OracleEssbase",
+    "domain": " oracle.com/essbase",
+    "pattern": "(?i)oracle-essbase"
+  },
+  {
+    "id": "ThirdParties.SDK.Orbit",
+    "name": "Orbit",
+    "domain": " orbit.love",
+    "pattern": "(?i)orbit"
+  },
+  {
+    "id": "ThirdParties.SDK.Ortto",
+    "name": "Ortto",
+    "domain": " ortto.com",
+    "pattern": "(?i)ortto"
+  },
+  {
+    "id": "ThirdParties.SDK.Outbrain",
+    "name": "Outbrain",
+    "domain": " outbrain.com",
+    "pattern": "(?i)outbrain"
+  },
+  {
+    "id": "ThirdParties.SDK.Outreach",
+    "name": "Outreach",
+    "domain": " outreach.io",
+    "pattern": "(?i)outreach"
+  },
+  {
+    "id": "ThirdParties.SDK.Paddle",
+    "name": "Paddle",
+    "domain": " paddle.com",
+    "pattern": "(?i)paddle"
+  },
+  {
+    "id": "ThirdParties.SDK.PagerDuty",
+    "name": "PagerDuty",
+    "domain": " pagerduty.com",
+    "pattern": "(?i)pagerduty"
+  },
+  {
+    "id": "ThirdParties.SDK.Partnerstack",
+    "name": "Partnerstack",
+    "domain": " partnerstack.com",
+    "pattern": "(?i)partnerstack"
+  },
+  {
+    "id": "ThirdParties.SDK.Pendo",
+    "name": "Pendo",
+    "domain": " pendo.io",
+    "pattern": "(?i)pendo"
+  },
+  {
+    "id": "ThirdParties.SDK.PeopleSoft",
+    "name": "PeopleSoft",
+    "domain": " oracle.com/applications/peoplesoft/",
+    "pattern": "(?i)peoplesoft"
+  },
+  {
+    "id": "ThirdParties.SDK.Piano",
+    "name": "Piano",
+    "domain": " piano.io",
+    "pattern": "(?i)piano"
+  },
+  {
+    "id": "ThirdParties.SDK.PinterestAds",
+    "name": "PinterestAds",
+    "domain": " business.pinterest.com",
+    "pattern": "(?i)pinterest-ads"
+  },
+  {
+    "id": "ThirdParties.SDK.Pipedrive",
+    "name": "Pipedrive",
+    "domain": " pipedrive.com",
+    "pattern": "(?i)pipedrive"
+  },
+  {
+    "id": "ThirdParties.SDK.PlanetScale",
+    "name": "PlanetScale",
+    "domain": " planetscale.com",
+    "pattern": "(?i)planetscale-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.Planhat",
+    "name": "Planhat",
+    "domain": " planhat.com",
+    "pattern": "(?i)planhat"
+  },
+  {
+    "id": "ThirdParties.SDK.Poplar",
+    "name": "Poplar",
+    "domain": " poplardm.com",
+    "pattern": "(?i)poplar"
+  },
+  {
+    "id": "ThirdParties.SDK.PostHog",
+    "name": "PostHog",
+    "domain": " posthog.com",
+    "pattern": "(?i)posthog"
+  },
+  {
+    "id": "ThirdParties.SDK.Postgres",
+    "name": "Postgres",
+    "domain": " postgresql.org",
+    "pattern": "(?i)postgres"
+  },
+  {
+    "id": "ThirdParties.SDK.Postmark",
+    "name": "Postmark",
+    "domain": " postmarkapp.com",
+    "pattern": "(?i)postmark"
+  },
+  {
+    "id": "ThirdParties.SDK.Productboard",
+    "name": "Productboard",
+    "domain": " productboard.com",
+    "pattern": "(?i)productboard"
+  },
+  {
+    "id": "ThirdParties.SDK.ProsperStack",
+    "name": "ProsperStack",
+    "domain": " prosperstack.com",
+    "pattern": "(?i)prosperstack"
+  },
+  {
+    "id": "ThirdParties.SDK.PubMatic",
+    "name": "PubMatic",
+    "domain": " pubmatic.com",
+    "pattern": "(?i)pubmatic"
+  },
+  {
+    "id": "ThirdParties.SDK.Qualtrics",
+    "name": "Qualtrics",
+    "domain": " qualtrics.com",
+    "pattern": "(?i)qualtrics"
+  },
+  {
+    "id": "ThirdParties.SDK.Quickbooks",
+    "name": "Quickbooks",
+    "domain": " quickbooks.intuit.com",
+    "pattern": "(?i)quickbooks"
+  },
+  {
+    "id": "ThirdParties.SDK.RabbitMQ",
+    "name": "RabbitMQ",
+    "domain": " rabbitmq.com",
+    "pattern": "(?i)rabbitmq"
+  },
+  {
+    "id": "ThirdParties.SDK.RedditAds",
+    "name": "RedditAds",
+    "domain": " redditinc.com/advertising",
+    "pattern": "(?i)redditAds"
+  },
+  {
+    "id": "ThirdParties.SDK.Redis",
+    "name": "Redis",
+    "domain": " redis.io",
+    "pattern": "(?i)redis"
+  },
+  {
+    "id": "ThirdParties.SDK.Redtail",
+    "name": "Redtail",
+    "domain": " redtailtechnology.com",
+    "pattern": "(?i)redtail"
+  },
+  {
+    "id": "ThirdParties.SDK.Reply.io",
+    "name": "Reply.io",
+    "domain": " reply.io",
+    "pattern": "(?i)replyio"
+  },
+  {
+    "id": "ThirdParties.SDK.Responsys",
+    "name": "Responsys",
+    "domain": " responsys.com",
+    "pattern": "(?i)responsys"
+  },
+  {
+    "id": "ThirdParties.SDK.RetentionScience",
+    "name": "RetentionScience",
+    "domain": " retentionscience.com",
+    "pattern": "(?i)retention-science"
+  },
+  {
+    "id": "ThirdParties.SDK.Rippling",
+    "name": "Rippling",
+    "domain": " rippling.com",
+    "pattern": "(?i)rippling"
+  },
+  {
+    "id": "ThirdParties.SDK.Rockerbox",
+    "name": "Rockerbox",
+    "domain": " rockerbox.com",
+    "pattern": "(?i)rockerbox"
+  },
+  {
+    "id": "ThirdParties.SDK.Rockset",
+    "name": "Rockset",
+    "domain": " rockset.com",
+    "pattern": "(?i)rockset-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.Rokt",
+    "name": "Rokt",
+    "domain": " rokt.com",
+    "pattern": "(?i)rokt"
+  },
+  {
+    "id": "ThirdParties.SDK.RudderStack",
+    "name": "RudderStack",
+    "domain": " rudderstack.com",
+    "pattern": "(?i)rudderstack"
+  },
+  {
+    "id": "ThirdParties.SDK.S3",
+    "name": "S3",
+    "domain": " aws.amazon.com/s3",
+    "pattern": "(?i)s3"
+  },
+  {
+    "id": "ThirdParties.SDK.SAPHana",
+    "name": "SAPHana",
+    "domain": " sap.com/products/hana.html",
+    "pattern": "(?i)sap-hana"
+  },
+  {
+    "id": "ThirdParties.SDK.SAPIBP",
+    "name": "SAPIBP",
+    "domain": " sap.com/products/integrated-business-planning.html",
+    "pattern": "(?i)sap-ibp"
+  },
+  {
+    "id": "ThirdParties.SDK.SAPS/4HANA",
+    "name": "SAPS/4HANA",
+    "domain": " sap.com/products/s4hana-erp.html",
+    "pattern": "(?i)sap-s4hana"
+  },
+  {
+    "id": "ThirdParties.SDK.SFTP",
+    "name": "SFTP",
+    "domain": " sftp.com",
+    "pattern": "(?i)sftp"
+  },
+  {
+    "id": "ThirdParties.SDK.Email",
+    "name": "Email",
+    "domain": " n/a",
+    "pattern": "(?i)email"
+  },
+  {
+    "id": "ThirdParties.SDK.SQLServer",
+    "name": "SQLServer",
+    "domain": " microsoft.com/sql",
+    "pattern": "(?i)sqlserver-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.SageIntacct",
+    "name": "SageIntacct",
+    "domain": " sageintacct.com",
+    "pattern": "(?i)sage-intacct"
+  },
+  {
+    "id": "ThirdParties.SDK.Sailthru",
+    "name": "Sailthru",
+    "domain": " sailthru.com",
+    "pattern": "(?i)sailthru"
+  },
+  {
+    "id": "ThirdParties.SDK.Salesforce",
+    "name": "Salesforce",
+    "domain": " salesforce.com",
+    "pattern": "(?i)salesforce"
+  },
+  {
+    "id": "ThirdParties.SDK.Salesforce(Sandbox)",
+    "name": "Salesforce(Sandbox)",
+    "domain": " test.salesforce.com",
+    "pattern": "(?i)salesforceSandbox"
+  },
+  {
+    "id": "ThirdParties.SDK.SalesforceCommerceCloud",
+    "name": "SalesforceCommerceCloud",
+    "domain": " commercecloud.salesforce.com",
+    "pattern": "(?i)salesforce-commerce-cloud"
+  },
+  {
+    "id": "ThirdParties.SDK.SalesforceMarketingCloud",
+    "name": "SalesforceMarketingCloud",
+    "domain": " marketingcloud.com",
+    "pattern": "(?i)sfmc"
+  },
+  {
+    "id": "ThirdParties.SDK.SalesforceMarketingCloudFileDrop",
+    "name": "SalesforceMarketingCloudFileDrop",
+    "domain": " n/a",
+    "pattern": "(?i)sfmcFileDrop"
+  },
+  {
+    "id": "ThirdParties.SDK.SalesforcePardot",
+    "name": "SalesforcePardot",
+    "domain": " pardot.com",
+    "pattern": "(?i)pardot"
+  },
+  {
+    "id": "ThirdParties.SDK.SalesforcePardot(Sandbox)",
+    "name": "SalesforcePardot(Sandbox)",
+    "domain": " pi.pardot.com",
+    "pattern": "(?i)pardotSandbox"
+  },
+  {
+    "id": "ThirdParties.SDK.Salesloft",
+    "name": "Salesloft",
+    "domain": " salesloft.com",
+    "pattern": "(?i)salesloft"
+  },
+  {
+    "id": "ThirdParties.SDK.Sanity",
+    "name": "Sanity",
+    "domain": " sanity.io",
+    "pattern": "(?i)sanity"
+  },
+  {
+    "id": "ThirdParties.SDK.Segment",
+    "name": "Segment",
+    "domain": " segment.com",
+    "pattern": "(?i)segment"
+  },
+  {
+    "id": "ThirdParties.SDK.Selligent",
+    "name": "Selligent",
+    "domain": " selligent.com",
+    "pattern": "(?i)selligent"
+  },
+  {
+    "id": "ThirdParties.SDK.ServiceNow",
+    "name": "ServiceNow",
+    "domain": " servicenow.com",
+    "pattern": "(?i)servicenow"
+  },
+  {
+    "id": "ThirdParties.SDK.Sharethrough",
+    "name": "Sharethrough",
+    "domain": " sharethrough.com",
+    "pattern": "(?i)sharethrough"
+  },
+  {
+    "id": "ThirdParties.SDK.Shopify",
+    "name": "Shopify",
+    "domain": " shopify.com",
+    "pattern": "(?i)shopify"
+  },
+  {
+    "id": "ThirdParties.SDK.Singular",
+    "name": "Singular",
+    "domain": " singular.net",
+    "pattern": "(?i)singular"
+  },
+  {
+    "id": "ThirdParties.SDK.Slack",
+    "name": "Slack",
+    "domain": " slack.com",
+    "pattern": "(?i)slack"
+  },
+  {
+    "id": "ThirdParties.SDK.Smartsheet",
+    "name": "Smartsheet",
+    "domain": " smartsheet.com",
+    "pattern": "(?i)smartsheet"
+  },
+  {
+    "id": "ThirdParties.SDK.Snapchat",
+    "name": "Snapchat",
+    "domain": " snap.com",
+    "pattern": "(?i)snapchat"
+  },
+  {
+    "id": "ThirdParties.SDK.Snowflake",
+    "name": "Snowflake",
+    "domain": " snowflake.com",
+    "pattern": "(?i)snowflake-destination"
+  },
+  {
+    "id": "ThirdParties.SDK.Split",
+    "name": "Split",
+    "domain": " split.io",
+    "pattern": "(?i)split"
+  },
+  {
+    "id": "ThirdParties.SDK.Spotify",
+    "name": "Spotify",
+    "domain": " spotify.com",
+    "pattern": "(?i)spotify"
+  },
+  {
+    "id": "ThirdParties.SDK.StackAdapt",
+    "name": "StackAdapt",
+    "domain": " stackadapt.com",
+    "pattern": "(?i)stackadapt"
+  },
+  {
+    "id": "ThirdParties.SDK.Statsig",
+    "name": "Statsig",
+    "domain": " statsig.com",
+    "pattern": "(?i)statsig"
+  },
+  {
+    "id": "ThirdParties.SDK.Stripe",
+    "name": "Stripe",
+    "domain": " stripe.com",
+    "pattern": "(?i)stripe"
+  },
+  {
+    "id": "ThirdParties.SDK.SumoLogic",
+    "name": "SumoLogic",
+    "domain": " sumologic.com",
+    "pattern": "(?i)sumo-logic"
+  },
+  {
+    "id": "ThirdParties.SDK.Taboola",
+    "name": "Taboola",
+    "domain": " taboola.com",
+    "pattern": "(?i)taboola"
+  },
+  {
+    "id": "ThirdParties.SDK.TheTradeDesk",
+    "name": "TheTradeDesk",
+    "domain": " thetradedesk.com",
+    "pattern": "(?i)tradedesk"
+  },
+  {
+    "id": "ThirdParties.SDK.TikTokAds",
+    "name": "TikTokAds",
+    "domain": " tiktok.com/business/ads",
+    "pattern": "(?i)tiktok"
+  },
+  {
+    "id": "ThirdParties.SDK.Totango",
+    "name": "Totango",
+    "domain": " totango.com",
+    "pattern": "(?i)totango"
+  },
+  {
+    "id": "ThirdParties.SDK.TritonDigital",
+    "name": "TritonDigital",
+    "domain": " tritondigital.com",
+    "pattern": "(?i)triton"
+  },
+  {
+    "id": "ThirdParties.SDK.Twilio",
+    "name": "Twilio",
+    "domain": " twilio.com",
+    "pattern": "(?i)twilio"
+  },
+  {
+    "id": "ThirdParties.SDK.SendGrid",
+    "name": "SendGrid",
+    "domain": " sendgrid.com",
+    "pattern": "(?i)sendgrid"
+  },
+  {
+    "id": "ThirdParties.SDK.UserInterviews",
+    "name": "UserInterviews",
+    "domain": " userinterviews.com",
+    "pattern": "(?i)user-interviews"
+  },
+  {
+    "id": "ThirdParties.SDK.Userflow",
+    "name": "Userflow",
+    "domain": " userflow.com",
+    "pattern": "(?i)userflow"
+  },
+  {
+    "id": "ThirdParties.SDK.Vero",
+    "name": "Vero",
+    "domain": " vero.co",
+    "pattern": "(?i)vero"
+  },
+  {
+    "id": "ThirdParties.SDK.Vitally",
+    "name": "Vitally",
+    "domain": " vitally.io",
+    "pattern": "(?i)vitally"
+  },
+  {
+    "id": "ThirdParties.SDK.WarehouseSyncLogs",
+    "name": "WarehouseSyncLogs",
+    "domain": " n/a",
+    "pattern": "(?i)sync-logs"
+  },
+  {
+    "id": "ThirdParties.SDK.Webflow",
+    "name": "Webflow",
+    "domain": " webflow.com",
+    "pattern": "(?i)webflow"
+  },
+  {
+    "id": "ThirdParties.SDK.Webhook",
+    "name": "Webhook",
+    "domain": " webhook.site",
+    "pattern": "(?i)webhook"
+  },
+  {
+    "id": "ThirdParties.SDK.WhatsApp",
+    "name": "WhatsApp",
+    "domain": " whatsapp.com",
+    "pattern": "(?i)whatsapp"
+  },
+  {
+    "id": "ThirdParties.SDK.WooCommerce",
+    "name": "WooCommerce",
+    "domain": " woocommerce.com",
+    "pattern": "(?i)woocommerce"
+  },
+  {
+    "id": "ThirdParties.SDK.Wordpress",
+    "name": "Wordpress",
+    "domain": " wordpress.org",
+    "pattern": "(?i)wordpress"
+  },
+  {
+    "id": "ThirdParties.SDK.Workato",
+    "name": "Workato",
+    "domain": " workato.com",
+    "pattern": "(?i)workato"
+  },
+  {
+    "id": "ThirdParties.SDK.Workday",
+    "name": "Workday",
+    "domain": " workday.com",
+    "pattern": "(?i)workday"
+  },
+  {
+    "id": "ThirdParties.SDK.WorkdayAdaptivePlanning",
+    "name": "WorkdayAdaptivePlanning",
+    "domain": " adaptiveinsights.com",
+    "pattern": "(?i)workday-adaptive-planning"
+  },
+  {
+    "id": "ThirdParties.SDK.TwitterAds",
+    "name": "TwitterAds",
+    "domain": " ads.twitter.com",
+    "pattern": "(?i)twitter"
+  },
+  {
+    "id": "ThirdParties.SDK.Xandr",
+    "name": "Xandr",
+    "domain": " xandr.com",
+    "pattern": "(?i)xandr"
+  },
+  {
+    "id": "ThirdParties.SDK.Xero",
+    "name": "Xero",
+    "domain": " xero.com",
+    "pattern": "(?i)xero"
+  },
+  {
+    "id": "ThirdParties.SDK.Yahoo",
+    "name": "Yahoo",
+    "domain": " yahoo.com",
+    "pattern": "(?i)yahoo"
+  },
+  {
+    "id": "ThirdParties.SDK.Yandex",
+    "name": "Yandex",
+    "domain": " yandex.com",
+    "pattern": "(?i)yandex"
+  },
+  {
+    "id": "ThirdParties.SDK.Zapier",
+    "name": "Zapier",
+    "domain": " zapier.com",
+    "pattern": "(?i)zapier"
+  },
+  {
+    "id": "ThirdParties.SDK.Zendesk",
+    "name": "Zendesk",
+    "domain": " zendesk.com",
+    "pattern": "(?i)zendesk"
+  },
+  {
+    "id": "ThirdParties.SDK.Zohocrm",
+    "name": "Zohocrm",
+    "domain": " zoho.com/crm",
+    "pattern": "(?i)zohocrm"
+  },
+  {
+    "id": "ThirdParties.SDK.Zuora",
+    "name": "Zuora",
+    "domain": " zuora.com",
+    "pattern": "(?i)zuora"
+  },
+  {
+    "id": "ThirdParties.SDK.eBay",
+    "name": "eBay",
+    "domain": " ebay.com",
+    "pattern": "(?i)ebay"
+  },
+  {
+    "id": "ThirdParties.SDK.i2c",
+    "name": "i2c",
+    "domain": " i2cinc.com",
+    "pattern": "(?i)i2c"
+  },
+  {
+    "id": "ThirdParties.SDK.inSided",
+    "name": "inSided",
+    "domain": " insided.com",
+    "pattern": "(?i)insided"
+  },
+  {
+    "id": "ThirdParties.SDK.mParticle",
+    "name": "mParticle",
+    "domain": " mparticle.com",
+    "pattern": "(?i)mparticle"
+  },
+  {
+    "id": "ThirdParties.SDK.n8n",
+    "name": "n8n",
+    "domain": " n8n.io",
+    "pattern": "(?i)n8n"
+  }
+]

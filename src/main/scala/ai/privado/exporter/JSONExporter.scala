@@ -34,6 +34,7 @@ import ai.privado.cache.{
   TaggerCache
 }
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
 import ai.privado.model.exporter.{
@@ -47,7 +48,7 @@ import ai.privado.model.exporter.{
   SourceProcessingModel,
   ViolationModel
 }
-import ai.privado.model.{Constants, DataFlowPathModel, PolicyThreatType}
+import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
