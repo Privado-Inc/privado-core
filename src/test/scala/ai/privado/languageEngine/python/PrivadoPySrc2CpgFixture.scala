@@ -2,7 +2,6 @@ package ai.privado.languageEngine.python
 
 import ai.privado.cache.AppCache
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
-import ai.privado.languageEngine.python.passes.analytics.AirflowSinkPass
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
