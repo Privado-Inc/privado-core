@@ -94,7 +94,11 @@ object DataElementDiscovery {
         classNameSet.foreach(className => {
           cpg.typeDecl
             .where(_.fullName(className))
-            .foreach(typeDeclNode => memberInfoMap.put(typeDeclNode, typeDeclNode.member.l))
+            .foreach(typeDeclNode => {
+              if (typeDeclNode.member.nonEmpty) {
+                memberInfoMap.put(typeDeclNode, typeDeclNode.member.l)
+              }
+            })
         })
       }
       case Failure(exception) => {
