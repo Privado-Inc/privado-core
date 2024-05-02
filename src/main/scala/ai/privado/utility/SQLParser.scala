@@ -56,6 +56,7 @@ object SQLParser {
   val NUMBER_ONE      = 1
   val NUMBER_MINUSONE = -1
 
+  @deprecated
   private def createSQLNodesForSelect(selectStmts: List[SelectBody]): Option[List[SQLQuery]] = {
     Some(selectStmts.flatMap {
       case plainSelect: PlainSelect =>

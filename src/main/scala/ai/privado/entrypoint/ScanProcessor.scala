@@ -516,31 +516,13 @@ object ScanProcessor extends CommandProcessor {
                 } else {
                   MetricHandler.metricsData("language") = Json.fromString("default")
                   println(s"Running scan with default processor.")
-                  new DefaultProcessor(
-                    getProcessedRule(Set(Language.UNKNOWN), appCache),
-                    this.config,
-                    sourceRepoLocation,
-                    dataFlowCache = getDataflowCache,
-                    auditCache,
-                    s3DatabaseDetailsCache,
-                    appCache,
-                    propertyFilterCache = propertyFilterCache
-                  ).processCpg()
+                  processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
                 }
             }
           case _ =>
             MetricHandler.metricsData("language") = Json.fromString("default")
             println(s"Running scan with default processor.")
-            new DefaultProcessor(
-              getProcessedRule(Set(Language.UNKNOWN), appCache),
-              this.config,
-              sourceRepoLocation,
-              dataFlowCache = getDataflowCache,
-              auditCache,
-              s3DatabaseDetailsCache,
-              appCache,
-              propertyFilterCache = propertyFilterCache
-            ).processCpg()
+            processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
         } match {
           case Left(err: String) => Left(err)
           case _ =>
