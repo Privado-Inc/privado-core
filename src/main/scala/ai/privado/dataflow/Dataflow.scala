@@ -28,6 +28,7 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.dataflow.Dataflow.getExpendedFlowInfo
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.ExporterUtility
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.javascript.JavascriptSemanticGenerator
 import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator
@@ -237,7 +238,10 @@ object Dataflow {
   }
 
   def getSinks(cpg: Cpg): List[CfgNode] = {
-    cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
+    cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l ++ cpg.highTouchSink
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .l
+      .asInstanceOf[List[CfgNode]]
   }
 
   def getExpendedFlowInfo(
