@@ -1,7 +1,7 @@
 Privado Core 
 =============================================
 
-Branch structure
+Branch structure 
 
 main - This branch will contain the released version of the code.
 

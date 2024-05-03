@@ -36,7 +36,11 @@ class FlinkUserDefinedConnectorTagger(cpg: Cpg, ruleCache: RuleCache)
        localWithoutSink - flink sink call is not present in the enclosed method having initialisation of custom sink
      */
     val (localAndSinkInSameMethod, localWithoutSink) =
-      cpg.local.typeFullName(typeDeclNode.fullName).l.partition(_.method.ast.isCall.name(flinkSinkName).nonEmpty)
+      cpg.local
+        .typeFullName(s"${typeDeclNode.fullName}(<.*>)?")
+        .whereNot(_.nameExact("this"))
+        .l
+        .partition(_.method.ast.isCall.name(flinkSinkName).nonEmpty)
 
     localAndSinkInSameMethod.method.ast.isCall.name(flinkSinkName).dedup.foreach { flinkSink =>
       copyTags(builder, ruleCache, sinkNodesInTypeDecl, flinkSink)
