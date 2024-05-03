@@ -59,7 +59,7 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
       .filter(node =>
         node.inheritsFromTypeFullName.nonEmpty && node.inheritsFromTypeFullName.headOption
           .getOrElse("")
-          .equals("BaseOperator")
+          .matches(".*BaseOperator.*")
       )
       .l
 
