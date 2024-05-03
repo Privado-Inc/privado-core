@@ -121,7 +121,7 @@ class FlinkUserDefinedConnectorToFlinkSinkViaDataflowTaggerTests
     ).withRuleCache(ruleCache)
 
     "tag custom apiSink's initialisation node as flinkInitialisation node" in {
-      val List(apiSinkLocalNode) = cpg.local.typeFullName("ApiSink<java.lang.String>").l
+      val List(apiSinkLocalNode) = cpg.local.typeFullName("ApiSink.*").l
       apiSinkLocalNode.tag.nameExact(InternalTag.FLINK_INITIALISATION_LOCAL_NODE.toString).size shouldBe 1
     }
 
