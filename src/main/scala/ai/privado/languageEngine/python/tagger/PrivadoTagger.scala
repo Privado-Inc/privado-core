@@ -6,7 +6,7 @@ import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.python.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.python.tagger.sink.{InheritMethodTagger, PythonAPITagger}
+import ai.privado.languageEngine.python.tagger.sink.{AirflowOperatorSinkPass, InheritMethodTagger, PythonAPITagger}
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
@@ -59,6 +59,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, appCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+
+    new AirflowOperatorSinkPass(cpg, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
     cpg.tag
