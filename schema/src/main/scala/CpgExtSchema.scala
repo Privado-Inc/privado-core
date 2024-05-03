@@ -172,8 +172,8 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   // Android XML Layout Node - Begin
   val androidLayoutNode = builder
     .addNodeType(CpgSchemaConstants.ANDROID_XML_LAYOUT_NODE_NAME)
-    .addProperty(name)            // this is "android-id" used in code eg. "emailEditText"
-    .addProperty(typeFullName)    // type in code derived from tag eg. <EditText>
+    .addProperty(name)         // this is "android-id" used in code eg. "emailEditText"
+    .addProperty(typeFullName) // type in code derived from tag eg. <EditText>
     .extendz(astNode)
 
   androidLayoutNode.addOutEdge(edge = sourceFile, inNode = file)
@@ -188,8 +188,8 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   val androidPermissionNode = builder
     .addNodeType(CpgSchemaConstants.ANDROID_XML_PERMISSION_NODE_NAME)
-    .addProperty(name)              // this is tag name eg. <uses-permission>
-    .addProperty(permissionType)    // value of permission eg. "android.permission.READ_CONTACTS"
+    .addProperty(name)           // this is tag name eg. <uses-permission>
+    .addProperty(permissionType) // value of permission eg. "android.permission.READ_CONTACTS"
     .extendz(astNode)
 
   androidPermissionNode.addOutEdge(edge = sourceFile, inNode = file)
@@ -197,6 +197,27 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Android XML Permission Node - End
 
+  // HighTouch sink node - Begin
+
+  val correspondingModel = builder
+    .addProperty(name = CpgSchemaConstants.HIGHTOUCH_MODEL_PROPERTY_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+
+  val actualDestinatioName = builder
+    .addProperty(name = CpgSchemaConstants.ACTUAL_DESINATION_NAME, valueType = ValueType.String)
+    .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+
+  val highTouchSinkNode = builder
+    .addNodeType(CpgSchemaConstants.HIGHTOUCH_SINK_NODE_NAME)
+    .addProperty(name)
+    .addProperty(correspondingModel)
+    .addProperty(actualDestinatioName)
+    .extendz(astNode)
+
+  highTouchSinkNode.addOutEdge(edge = sourceFile, inNode = file)
+  highTouchSinkNode.addOutEdge(edge = taggedBy, inNode = tag)
+
+  // HighTouch sink node - End
 }
 
 object CpgExtSchema {

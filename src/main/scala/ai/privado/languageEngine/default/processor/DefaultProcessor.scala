@@ -24,161 +24,83 @@
 package ai.privado.languageEngine.default.processor
 
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.ScanProcessor
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.exporter.JSONExporter
-import ai.privado.languageEngine.default.semantic.Language.*
-import ai.privado.metric.MetricHandler
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{DBTParserPass, HTMLParserPass, SQLParser}
-import ai.privado.semantic.Language.*
-import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
+import ai.privado.passes.{DBTParserPass, HTMLParserPass, HighTouchPass, SQLParser}
+import ai.privado.languageEngine.default.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
-import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.Config as JavaConfig
-import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withNewEmptyCpg}
-import io.joern.x2cpg.utils.ExternalCommand
-import io.joern.x2cpg.utils.dependency.DependencyResolver
+import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
+import ai.privado.languageEngine.default.tagger.PrivadoTagger
+import ai.privado.utility.StatsRecorder
 
-import java.nio.file.Paths
 import java.util.Calendar
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 
-class DefaultProcessor(statsRecorder: StatsRecorder) {
+class DefaultProcessor(
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  sourceRepoLocation: String,
+  dataFlowCache: DataFlowCache,
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  returnClosedCpg: Boolean = true,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  statsRecorder: StatsRecorder
+) extends BaseProcessor(
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      Language.UNKNOWN,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      returnClosedCpg,
+      propertyFilterCache,
+      statsRecorder
+    ) {
 
-  private val logger    = LoggerFactory.getLogger(getClass)
-  private var cpgconfig = JavaConfig()
-  private def processCPG(
-    xtocpg: Try[codepropertygraph.Cpg],
-    ruleCache: RuleCache,
-    sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache,
-    auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
-  ): Either[String, Unit] = {
-    xtocpg match {
-      case Success(cpg) => {
-        try {
-          statsRecorder.initiateNewStage("Parser passes")
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = ScanProcessor.config.copy())
-            .createAndApply()
-          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          statsRecorder.endLastStage()
-          // Run tagger
-          statsRecorder.initiateNewStage("Tagging")
-          val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache)
-          statsRecorder.endLastStage()
-          statsRecorder.initiateNewStage("Finding source to sink flow")
-          val dataflowMap =
-            Dataflow(cpg, statsRecorder).dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
-          statsRecorder.endLastStage()
-          statsRecorder.justLogMessage(s"Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
-          statsRecorder.initiateNewStage("Brewing result...")
-          MetricHandler.setScanStatus(true)
-          val errorMsg = new ListBuffer[String]()
-          // Exporting Results
-          JSONExporter.fileExport(
-            cpg,
-            outputFileName,
-            sourceRepoLocation,
-            dataflowMap,
-            ruleCache,
-            taggerCache,
-            dataFlowCache.getDataflowAfterDedup,
-            ScanProcessor.config,
-            List(),
-            s3DatabaseDetailsCache,
-            appCache,
-            propertyFilterCache
-          ) match {
-            case Left(err) =>
-              MetricHandler.otherErrorsOrWarnings.addOne(err)
-              errorMsg += err
-            case Right(_) =>
-              statsRecorder.justLogMessage(
-                s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
-              )
-              logger.debug(
-                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-              )
-          }
+  private val logger = LoggerFactory.getLogger(getClass)
 
-          // Check if any of the export failed
-          if (errorMsg.toList.isEmpty)
-            Right(())
-          else
-            Left(errorMsg.toList.mkString("\n"))
-        } finally {
-          cpg.close()
-          import java.io.File
-          val cpgFile = new File(cpgconfig.outputPath)
-          statsRecorder.justLogMessage(
-            s"Binary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n"
-          )
-        }
-      }
-
-      case Failure(exception) => {
-        logger.error("Error while parsing the source code!")
-        logger.debug("Error : ", exception)
-        MetricHandler.setScanStatus(false)
-        Left("Error while parsing the source code: " + exception.toString)
-      }
-    }
+  override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
+    List[CpgPassBase](
+      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
+      new SQLParser(cpg, sourceRepoLocation, ruleCache),
+      new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+      new HighTouchPass(cpg, sourceRepoLocation, ruleCache)
+    )
   }
 
-  /** Create cpg using default pass
-    *
-    * @param sourceRepoLocation
-    * @param lang
-    * @return
-    */
-  def createDefaultCpg(
-    ruleCache: RuleCache,
-    sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache,
-    auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
-  ): Either[String, Unit] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using default pass")
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    cpg.runTagger(ruleCache, taggerCache)
+  }
+
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
+    statsRecorder.justLogMessage("Processing source code using Default engine")
+    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
 
     // Create the .privado folder if not present
     createCpgFolder(sourceRepoLocation);
+    val excludeFileRegex = ruleCache.getExclusionRegex
 
-    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-    cpgconfig = JavaConfig(fetchDependencies = !config.skipDownloadDependencies)
+    val cpgconfig = JavaConfig(fetchDependencies = !privadoInput.skipDownloadDependencies)
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
 
-    val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) => {} }
-
-    val msg =
-      processCPG(
-        xtocpg,
-        ruleCache,
-        sourceRepoLocation,
-        dataFlowCache,
-        auditCache,
-        s3DatabaseDetailsCache,
-        appCache,
-        propertyFilterCache = propertyFilterCache
-      )
-    msg
+    val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) =>
+      {
+        cpg
+      }
+    }
+    tagAndExport(xtocpg)
   }
 }

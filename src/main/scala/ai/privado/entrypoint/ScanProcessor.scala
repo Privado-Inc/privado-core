@@ -45,6 +45,7 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
+import ai.privado.utility.StatsRecorder
 import io.joern.x2cpg.SourceFiles
 
 import java.util.Calendar
@@ -517,11 +518,15 @@ object ScanProcessor extends CommandProcessor {
                     statsRecorder = statsRecorder
                   ).processCpg()
                 } else {
-                  processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
+                  MetricHandler.metricsData("language") = Json.fromString("default")
+                  println(s"Running scan with default processor.")
+                  processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder)
                 }
             }
           case _ =>
-            processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
+            MetricHandler.metricsData("language") = Json.fromString("default")
+            println(s"Running scan with default processor.")
+            processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder)
         } match {
           case Left(err: String) => Left(err)
           case _ =>
@@ -537,18 +542,24 @@ object ScanProcessor extends CommandProcessor {
     }
   }
 
-  private def processCpgWithDefaultProcessor(sourceRepoLocation: String, appCache: AppCache) = {
+  private def processCpgWithDefaultProcessor(
+    sourceRepoLocation: String,
+    appCache: AppCache,
+    statsRecorder: StatsRecorder
+  ) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     println(s"Running scan with default processor.")
-    DefaultProcessor(statsRecorder).createDefaultCpg(
+    DefaultProcessor(
       getProcessedRule(Set(Language.UNKNOWN), appCache),
+      this.config,
       sourceRepoLocation,
       getDataflowCache,
       getAuditCache,
       getS3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
-    )
+      propertyFilterCache = propertyFilterCache,
+      statsRecorder = statsRecorder
+    ).processCpg()
   }
 
   private def checkJavaSourceCodePresent(sourcePath: String): Boolean = {

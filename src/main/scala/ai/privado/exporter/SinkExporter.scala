@@ -25,6 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.semantic.Language.*
@@ -134,7 +135,7 @@ class SinkExporter(
           .where(filterSink)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
           .where(filterSink)
-          .l
+          .l ++ cpg.highTouchSink.where(filterSink).l
     ExporterUtility.filterNodeBasedOnRepoItemTagName(sinks, repoItemTagName)
   }
 

@@ -17,6 +17,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     logger.info("Starting tagger")
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
+    new HighTouchSinkTagger(cpg, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
     cpg.tag
