@@ -8,7 +8,7 @@ import ai.privado.tagger.sink.api.APIValidator
 import ai.privado.testfixtures.JavaFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class FlinkConnectorInitialisationToFlinkSinkTaggerTests
+class FlinkUserDefinedConnectorToFlinkSinkViaDataflowTaggerTests
     extends JavaFrontendTestSuite
     with APIValidator
     with JavaLeakageValidator {
@@ -121,7 +121,7 @@ class FlinkConnectorInitialisationToFlinkSinkTaggerTests
     ).withRuleCache(ruleCache)
 
     "tag custom apiSink's initialisation node as flinkInitialisation node" in {
-      val List(apiSinkLocalNode) = cpg.local.typeFullName("ApiSink").l
+      val List(apiSinkLocalNode) = cpg.local.typeFullName("ApiSink<java.lang.String>").l
       apiSinkLocalNode.tag.nameExact(InternalTag.FLINK_INITIALISATION_LOCAL_NODE.toString).size shouldBe 1
     }
 
