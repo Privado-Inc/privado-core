@@ -4,8 +4,8 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCach
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
-
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
 
 class TestCpgWithDefaultLanguage(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
@@ -26,7 +26,8 @@ class TestCpgWithDefaultLanguage(val fileSuffix: String, val language: Language.
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg = false,
-      propertyFilterCache
+      propertyFilterCache,
+      StatsRecorder()
     )
   }
 }
