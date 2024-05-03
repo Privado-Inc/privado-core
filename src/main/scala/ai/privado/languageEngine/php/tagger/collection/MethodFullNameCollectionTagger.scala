@@ -35,7 +35,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
   protected val classUrlMap: mutable.HashMap[Long, String]  = mutable.HashMap[Long, String]()
 
   override def generateParts(): Array[Call] = {
-    cpg.call.methodFullName("(Slim\\\\App|Slim\\\\Routing\\\\RouteCollectorProxy)->(get|post|put|delete|any).*").toArray
+    cpg.call.methodFullName("(Slim\\\\.*Routing\\\\RouteCollectorProxy)->(get|post|put|delete|any).*").toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, callNode: Call): Unit = {
