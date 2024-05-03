@@ -32,7 +32,7 @@ class HighTouchPassTests extends DefaultFrontendTestSuite {
             | Some description
             |type: raw_sql
             |rawSql: >
-            |  SELECT salary FROM user;
+            |  SELECT salary, email FROM user;
             |primaryKey: salary
             |""".stripMargin,
           "some-unique-id.yaml"
@@ -57,7 +57,7 @@ class HighTouchPassTests extends DefaultFrontendTestSuite {
 
       val src  = cpg.sqlColumn.where(_.tag.nameExact(InternalTag.VARIABLE_REGEX_LITERAL.toString)).l
       val sink = cpg.highTouchSink.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
-      src.size shouldBe 1
+      src.size shouldBe 2
       sink.size shouldBe 1
     }
   }

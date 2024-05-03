@@ -36,9 +36,10 @@ import ai.privado.cache.{
 }
 import ai.privado.cache.PropertyFilterCacheEncoderDecoder.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, PolicyThreatType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType, PolicyThreatType}
 import ai.privado.model.exporter.{
   AndroidPermissionModel,
   CollectionModel,
@@ -60,8 +61,8 @@ import ai.privado.model.exporter.CollectionEncoderDecoder.*
 import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
-import ai.privado.semantic.Language.finder
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import ai.privado.semantic.Language.{NodeStarterForSqlQueryNode, finder}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, NodeTypes}
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import ai.privado.tagger.sink.SinkArgumentUtility
@@ -463,6 +464,47 @@ object ExporterUtility {
           .toList
       )
     })
+
+    def populateHighTouchDataflows(): Unit = {
+      val sources = cpg.sqlColumn.where(_.tag.nameExact(InternalTag.VARIABLE_REGEX_LITERAL.toString)).l
+      val sinks   = cpg.highTouchSink.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
+
+      val highTouchDataflows = sinks.flatMap(sink => {
+        val sourceFlowingToSink = sources.where(_.file.name(s".*${sink.correspondingModel}.*")).l
+        sourceFlowingToSink.flatMap(source => {
+          // create dataflow between each source and sink
+          val _dataflowModel = DataFlowPathModel(
+            source.tag.nameExact(Constants.id).value.headOption.getOrElse(""),
+            sink.tag.nameExact(Constants.id).value.headOption.getOrElse(""),
+            "third_parties",
+            NodeType.REGULAR.toString,
+            s"${source.id()}-${sink.id()}"
+          )
+
+          val extraFlows: Map[String, Path] =
+            Map[String, Path](s"${source.id()}-${sink.id()}" -> Path(List(source, sink)))
+
+          try {
+            dataflowExporter
+              .getFlowByType("third_parties", Set("REGULAR"), ruleCache, List(_dataflowModel), appCache, extraFlows)
+              .toList
+          } catch {
+            case (e: Exception) => {
+              logger.debug(e.getMessage)
+              e.printStackTrace()
+              List.empty[DataFlowSubCategoryModel]
+            }
+          }
+        })
+      })
+
+      dataflowsOutput.update(
+        "third_parties",
+        dataflowsOutput.getOrElse("third_parties", List.empty[DataFlowSubCategoryModel]) ++ highTouchDataflows
+      )
+    }
+
+    populateHighTouchDataflows()
 
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
 
