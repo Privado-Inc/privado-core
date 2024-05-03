@@ -1,13 +1,20 @@
 package ai.privado.tagger.sink.api
 
-import ai.privado.model.{CatLevelOne, Constants}
+import ai.privado.model.{CatLevelOne, Constants, NodeType, SystemConfig}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
-import ai.privado.model.NodeType
 import org.scalatest.Assertion
 
 trait APIValidator extends Matchers {
+
+  // Keeping these rules here as there are mostly used with API Validation
+  val apiIdentifier    = SystemConfig(Constants.apiIdentifier, "(?i).*url")
+  val apiHttpLibraries = SystemConfig(Constants.apiHttpLibraries, "org.apache.http.*")
+  val apiSinks = SystemConfig(
+    Constants.apiSinks,
+    "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject|call|createCall|createEndpoint|dispatch|invoke|newMessage|getInput|getOutput|getResponse|marshall|unmarshall|send|asyncSend)"
+  )
 
   /** Asserts if the given callNode is an API sink node
     * @param callNode

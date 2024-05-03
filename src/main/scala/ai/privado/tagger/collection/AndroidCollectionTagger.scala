@@ -6,8 +6,8 @@ import ai.privado.passes.FileExtensions
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier}
+import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 

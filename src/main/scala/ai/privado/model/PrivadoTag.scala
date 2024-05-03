@@ -50,6 +50,9 @@ object InternalTag extends Enumeration {
   val API_SINK_MARKED = Value("API_SINK_MARKED")
   val API_URL_MARKED  = Value("API_URL_MARKED")
 
+  // Apache Flink Tag
+  val FLINK_INITIALISATION_LOCAL_NODE = Value("FLINK_INITIALISATION_LOCAL_NODE")
+
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
 }
