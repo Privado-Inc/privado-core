@@ -22,7 +22,7 @@ class ProbableSinkExporterTest extends AnyWordSpec with Matchers with BeforeAndA
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
-    val config  = Config().withInputPath(inputDir.pathAsString)
+    val config  = Config().withInputPath(inputDir.pathAsString).withUseDeprecatedFrontend(true)
     val rubySrc = new RubySrc2Cpg()
     val xtocpg = rubySrc.createCpg(config).map { cpg =>
       applyDefaultOverlays(cpg)

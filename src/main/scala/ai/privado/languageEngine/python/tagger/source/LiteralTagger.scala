@@ -25,11 +25,24 @@ package ai.privado.languageEngine.python.tagger.source
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.*
+import io.joern.x2cpg.utils.LinkingUtil
+import io.shiftleft.codepropertygraph.generated.nodes.Literal
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.Node
 
-class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+object LiteralTagger {
+  def tag(cpg: Cpg, ruleCache: RuleCache): Unit = {
+    List(GeneralAndSqlLiteralTagger(cpg, ruleCache), BigSQLLiteralTagger(cpg, ruleCache)).foreach(_.createAndApply())
+  }
+}
+
+class GeneralAndSqlLiteralTagger(cpg: Cpg, ruleCache: RuleCache)
+    extends PrivadoParallelCpgPass[List[Literal]](cpg)
+    with LinkingUtil
+    with LiteralTagger {
   // Step 1.2
   // val literals = cpg.literal.code("\"(" + ruleInfo.patterns.head + ")\"").whereNot(_.code(".*\\s.*")).l
   private lazy val generalLiteralCached = cpg.literal
@@ -42,20 +55,54 @@ class LiteralTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
     .where(_.inCall.name("(?:sql|query|select|find|execute|hasattr)"))
     .l
 
-  private lazy val sqlBigQueryLiteralCached = cpg.literal
-    .where(_.code(".*(?i)(CREATE|DELETE|ALTER|INSERT|SELECT|UPDATE).*"))
-    .where(_.inCall.name(Operators.assignment))
-    .l
+  override def generateParts(): Array[List[Literal]] = {
+    val nodes = (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
+    nodes.grouped(getBatchSize(nodes.size)).toArray
+  }
 
-  private lazy val impactedLiteralCached =
-    (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
-  override def generateParts(): Array[RuleInfo] = ruleCache.getRule.sources.toArray
-  override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
-    val rulePattern = ruleInfo.combinedRulePattern
-    val impactedLiteral =
-      impactedLiteralCached.code("(?:\"|'|`)(" + rulePattern + ")(?:\"|'|`)").l ::: sqlBigQueryLiteralCached
-        .code("(?:\"|'|`|\"\"\")(.*\\s" + rulePattern + "\\s.*)(?:\"|'|`|\"\"\")")
-        .l
+  override def runOnPart(builder: DiffGraphBuilder, literals: List[Literal]): Unit = {
+
+    ruleCache.getRule.sources.foreach(rule => {
+      processRulesAndTag(builder, literals, ruleCache, s"(?:\"|'|`)(${rule.combinedRulePattern})(?:\"|'|`)", rule)
+    })
+  }
+}
+
+class BigSQLLiteralTagger(cpg: Cpg, ruleCache: RuleCache)
+    extends PrivadoParallelCpgPass[List[Literal]](cpg)
+    with LinkingUtil
+    with LiteralTagger {
+
+  override def generateParts(): Array[List[Literal]] = {
+    val nodes = cpg.literal
+      .where(_.code(".*(?i)(CREATE|DELETE|ALTER|INSERT|SELECT|UPDATE).*"))
+      .where(_.inCall.name(Operators.assignment))
+      .l
+    nodes.grouped(getBatchSize(nodes.size)).toArray
+  }
+
+  override def runOnPart(builder: DiffGraphBuilder, literals: List[Literal]): Unit = {
+    ruleCache.getRule.sources.foreach(rule => {
+      processRulesAndTag(
+        builder,
+        literals,
+        ruleCache,
+        s"(?:\"|'|`|\"\"\")(.*\\s${rule.combinedRulePattern}\\s.*)(?:\"|'|`|\"\"\")",
+        rule
+      )
+    })
+  }
+}
+
+trait LiteralTagger {
+  def processRulesAndTag(
+    builder: DiffGraphBuilder,
+    literals: List[Literal],
+    ruleCache: RuleCache,
+    rulePattern: String,
+    ruleInfo: RuleInfo
+  ): Unit = {
+    val impactedLiteral = literals.code(rulePattern).l
 
     impactedLiteral.foreach(literal => {
       storeForTag(builder, literal, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
