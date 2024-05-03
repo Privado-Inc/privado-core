@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 import ai.privado.utility.Utilities.{resolver, storeForTag}
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 
 import scala.collection.mutable
 
@@ -79,13 +80,13 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
     if (call.argument.size > 2)
       if (call.argument(1).isLiteral) {
         (call.argument(1).code.replaceAll(".*\"(.*?)\".*", "$1"), call.argument(2).code)
-      } else if (call.argument(1).isCallTo(Operators.fieldAccess)) {
+      }
+      if (call.argument(1).isCall) {
         // Here we possibly don't have a URL directly but a field access call like this: $app->post(self::MY_ROUTE, SomeController::class)
         // We first extract constant identifier MY_ROUTE
         val constantId = call
           .argument(1)
           .isCallTo(Operators.fieldAccess)
-          .argument(2)
           .argument(2)
           .isFieldIdentifier
           .canonicalName
@@ -98,10 +99,11 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
             .where(_.argument(1).isIdentifier.nameExact(s"$constantId"))
             .argument(2)
             .code
+            .head
             .replaceAll(".*\"(.*?)\".*", "$1"),
           call.argument(2).code
         )
-      }
+      } else ("", "")
     else {
       ("", "")
     }
