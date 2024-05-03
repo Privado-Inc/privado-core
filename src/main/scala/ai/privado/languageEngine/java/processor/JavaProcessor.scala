@@ -149,7 +149,7 @@ class JavaProcessor(
               .withInputPath(delombokPath)
               .withOutputPath(cpgOutputPath)
               .withIgnoredFilesRegex(excludeFileRegex)
-          // .withKeepTypeArguments(true)
+        // .withKeepTypeArguments(true)
     }
 
     val javasrc = JavaSrc2Cpg()
