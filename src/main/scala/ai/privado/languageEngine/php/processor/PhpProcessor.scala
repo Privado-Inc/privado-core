@@ -90,7 +90,7 @@ class PhpProcessor(
       .withOutputPath(cpgOutput.toString)
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
       .withPhpParserBin(PhpProcessor.parserBinPath)
-      .withDownloadDependencies(Try(!config.skipDownloadDependencies).getOrElse(false))
+      .withDownloadDependencies(!privadoInput.skipDownloadDependencies)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
       println(
