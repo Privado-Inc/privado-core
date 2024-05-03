@@ -9,7 +9,6 @@ dev - This branch will be used to merge all under-development features.
 
 Local development steps while working on a common repository.
 
-
 ```
 Steps to step up the project
 
