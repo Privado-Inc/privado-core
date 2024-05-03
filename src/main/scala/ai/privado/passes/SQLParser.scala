@@ -26,15 +26,16 @@ package ai.privado.passes
 import ai.privado.cache.RuleCache
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{SQLParser => UtilitySQLParser, Utilities}
+import ai.privado.utility.{Utilities, SQLParser as UtilitySQLParser}
 import ai.privado.utility.SQLNodeBuilder
-import better.files._
+import better.files.*
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
+import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 import better.files.File.VisitOptions
+import org.jruby.ast.FileNode
 
 import scala.collection.mutable
 import scala.util.Try
