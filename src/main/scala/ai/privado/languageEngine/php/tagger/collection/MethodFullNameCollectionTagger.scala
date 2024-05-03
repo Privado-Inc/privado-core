@@ -36,7 +36,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
   protected val classUrlMap: mutable.HashMap[Long, String]  = mutable.HashMap[Long, String]()
 
   override def generateParts(): Array[Call] = {
-    cpg.call.methodFullName("(Slim\\\\.*Routing\\\\RouteCollectorProxy)->(get|post|put|delete|any).*").toArray
+    cpg.call.methodFullName("(Slim\\\\App|Slim\\\\Routing\\\\RouteCollectorProxy)->(get|post|put|delete|any).*").toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, callNode: Call): Unit = {
@@ -77,11 +77,10 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
   }
 
   private def getPathAndControllerFromCall(call: Call): (String, String) = {
-    if (call.argument.size > 2)
+    if (call.argument.size > 2) {
       if (call.argument(1).isLiteral) {
         (call.argument(1).code.replaceAll(".*\"(.*?)\".*", "$1"), call.argument(2).code)
-      }
-      if (call.argument(1).isCall) {
+      } else if (call.argument(1).isCall) {
         // Here we possibly don't have a URL directly but a field access call like this: $app->post(self::MY_ROUTE, SomeController::class)
         // We first extract constant identifier MY_ROUTE
         val constantId = call
@@ -104,7 +103,7 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
           call.argument(2).code
         )
       } else ("", "")
-    else {
+    } else {
       ("", "")
     }
   }
