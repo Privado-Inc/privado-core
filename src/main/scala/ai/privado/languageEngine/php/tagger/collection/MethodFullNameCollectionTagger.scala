@@ -3,7 +3,7 @@ package ai.privado.languageEngine.php.tagger.collection
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
@@ -77,7 +77,31 @@ class MethodFullNameCollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends Pri
 
   private def getPathAndControllerFromCall(call: Call): (String, String) = {
     if (call.argument.size > 2)
-      (call.argument(1).code.replaceAll(".*\"(.*?)\".*", "$1"), call.argument(2).code)
+      if (call.argument(1).isLiteral) {
+        (call.argument(1).code.replaceAll(".*\"(.*?)\".*", "$1"), call.argument(2).code)
+      } else if (call.argument(1).isCallTo(Operators.fieldAccess)) {
+        // Here we possibly don't have a URL directly but a field access call like this: $app->post(self::MY_ROUTE, SomeController::class)
+        // We first extract constant identifier MY_ROUTE
+        val constantId = call
+          .argument(1)
+          .isCallTo(Operators.fieldAccess)
+          .argument(2)
+          .argument(2)
+          .isFieldIdentifier
+          .canonicalName
+          .headOption
+          .getOrElse("")
+        // Now we check all assignments for this constant and get URL from code there
+        // for example, MY_ROUTE = "/route"
+        (
+          cpg.assignment
+            .where(_.argument(1).isIdentifier.nameExact(s"$constantId"))
+            .argument(2)
+            .code
+            .replaceAll(".*\"(.*?)\".*", "$1"),
+          call.argument(2).code
+        )
+      }
     else {
       ("", "")
     }
