@@ -28,11 +28,13 @@ import ai.privado.model.exporter.{DataFlowSubCategoryModel, DataFlowSubCategoryP
 import ai.privado.model.{Constants, DataFlowPathModel, DatabaseDetails, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.util.Try
 
 class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache) {
 
@@ -50,7 +52,8 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     sinkNodeTypes: Set[String],
     ruleCache: RuleCache,
     dataFlowModel: List[DataFlowPathModel],
-    appCache: AppCache
+    appCache: AppCache,
+    extraFlowMap: Map[String, Path] = dataflowsMap
   ): Set[DataFlowSubCategoryModel] = {
     val dataflowModelFilteredByType = dataFlowModel.filter(dataflowModel =>
       dataflowModel.sinkSubCategory.equals(sinkSubCategory) && sinkNodeTypes.contains(dataflowModel.sinkNodeType)
@@ -65,7 +68,8 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
             dataflowBySourceEntrySet._2,
             sinkSubCategory,
             ruleCache,
-            appCache
+            appCache,
+            dataflowsMap ++ extraFlowMap
           )
         )
       })
@@ -77,7 +81,8 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     sourceModelList: List[DataFlowPathModel],
     sinkSubCategory: String,
     ruleCache: RuleCache,
-    appCache: AppCache
+    appCache: AppCache,
+    dataflowMap: Map[String, Path] = dataflowsMap
   ): List[DataFlowSubCategorySinkModel] = {
     def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String], urls: Set[String]) = {
 
@@ -103,7 +108,7 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
         apiUrl,
         databaseDetails.getOrElse(DatabaseDetails("", "", "", "", "")),
         sinkPathIds
-          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId, sourceId, appCache, ruleCache))
+          .map(sinkPathId => convertPathsList(dataflowMap(sinkPathId), sinkPathId, sourceId, appCache, ruleCache))
       )
     }
 
@@ -112,7 +117,7 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     val sinkApiUrls = mutable.HashMap[String, mutable.Set[String]]()
     sourceModelList.foreach(sourceModel => {
       var sinkId = sourceModel.sinkId
-      val sinkAPITag = dataflowsMap(sourceModel.pathId).elements.last.tag
+      val sinkAPITag = dataflowMap(sourceModel.pathId).elements.last.tag
         .filter(node => node.name.equals(Constants.apiUrl + sourceModel.sinkId))
       if (!sinkApiUrls.contains(sinkId))
         sinkApiUrls(sinkId) = mutable.Set()
