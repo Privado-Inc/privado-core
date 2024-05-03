@@ -253,6 +253,7 @@ class PythonProcessor(
       .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       statsRecorder.endLastStage()
+      statsRecorder.justLogMessage(s"Total no of graph nodes -> ${cpg.graph.nodeCount()}")
       cpg
     }
     processCPG(
