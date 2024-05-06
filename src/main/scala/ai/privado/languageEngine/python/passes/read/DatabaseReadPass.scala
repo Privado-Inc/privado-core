@@ -6,8 +6,8 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.InternalTag
 import ai.privado.model.sql.SQLQuery
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{SQLParser, Utilities}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
+import ai.privado.utility.{SQLParser, Utilities}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -73,21 +73,24 @@ class DatabaseReadPass(
                         System.out.println("ID: " + id + ", Name: " + firstName + ", Age: " + age)
                     }
                */
-              val dataElementSinks =
-                Dataflow
-                  .getSources(cpg)
-                  .filterNot(_.isMember)
-                  .map(_.asInstanceOf[CfgNode])
-                  .l
+              // TODO Need to find a optimized way to solve this
+              if (!privadoInputConfig.disableReadDataflow) {
+                val dataElementSinks =
+                  Dataflow
+                    .getSources(cpg)
+                    .filterNot(_.isMember)
+                    .map(_.asInstanceOf[CfgNode])
+                    .l
 
-              val readFlow =
-                dataElementSinks.reachableByFlows(node)(Utilities.getEngineContext(privadoInputConfig, appCache, 4)).l
-              if (readFlow.nonEmpty) {
-                // As a flow is present from Select query to a Data element we can say, the data element is read from the query
-                readFlow
-                  .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
-                  .value
-                  .foreach(ruleId => addTagsToNode(ruleId, node, builder))
+                val readFlow =
+                  dataElementSinks.reachableByFlows(node)(Utilities.getEngineContext(privadoInputConfig, appCache, 4)).l
+                if (readFlow.nonEmpty) {
+                  // As a flow is present from Select query to a Data element we can say, the data element is read from the query
+                  readFlow
+                    .flatMap(_.elements.last.tag.value("Data.Sensitive.*"))
+                    .value
+                    .foreach(ruleId => addTagsToNode(ruleId, node, builder))
+                }
               }
             }
           } else {

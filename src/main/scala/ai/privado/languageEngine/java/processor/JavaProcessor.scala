@@ -131,6 +131,7 @@ class JavaProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+    // .withKeepTypeArguments(true)
 
     // Create delomboked directory if source code uses lombok
     val dependencies        = getDependencyList(cpgconfig)
@@ -148,6 +149,7 @@ class JavaProcessor(
               .withInputPath(delombokPath)
               .withOutputPath(cpgOutputPath)
               .withIgnoredFilesRegex(excludeFileRegex)
+        // .withKeepTypeArguments(true)
     }
 
     val javasrc = JavaSrc2Cpg()

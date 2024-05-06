@@ -11,7 +11,7 @@ trait JavaLeakageValidator extends LeakageValidator {
     "",
     FilterProperty.METHOD_FULL_NAME,
     Array(),
-    List("(?i)(java.io.PrintStream|android.util.(?:Log){0,1}Printer).(?:print|println|write).*"),
+    List("(?i)(java.io.PrintStream|kotlin.io|android.util.(?:Log){0,1}Printer).(?:print|println|write).*"),
     false,
     "",
     Map(),

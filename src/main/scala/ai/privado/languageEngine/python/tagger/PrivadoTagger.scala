@@ -12,12 +12,12 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
 import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -32,7 +32,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    new LiteralTagger(cpg, ruleCache).createAndApply()
+    LiteralTagger.tag(cpg, ruleCache)
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
