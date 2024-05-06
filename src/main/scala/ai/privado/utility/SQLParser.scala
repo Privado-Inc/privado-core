@@ -229,8 +229,9 @@ object SQLNodeBuilder {
       /* As queries from .sql files are processed individually,
         an offset equal to the lineNumber of the query in the original file - 1 is added to the isolated column lineNumber */
       val lineNumber = fileName match
-        case Some(f) if f.endsWith(".sql") => queryColumn.lineNumber + queryLineNumber - 1
-        case _                             => queryColumn.lineNumber
+        case Some(f) if f.endsWith(".sql")                       => queryColumn.lineNumber + queryLineNumber - 1
+        case Some(f) if f.endsWith(".yaml") | f.endsWith(".yml") => queryColumn.lineNumber + queryLineNumber
+        case _                                                   => queryColumn.lineNumber
 
       val columnNode = NewSqlColumnNode()
         .name(queryColumn.name)
@@ -247,7 +248,8 @@ object SQLNodeBuilder {
     builder: DiffGraphBuilder,
     query: String,
     fileNode: NodeOrDetachedNode,
-    queryLineNumber: Int = -1
+    queryLineNumber: Int = -1,
+    fileName: Option[String] = None
   ): Unit = {
     try {
       parseSqlQuery(query) match {
@@ -260,7 +262,7 @@ object SQLNodeBuilder {
               query,
               queryLineNumber,
               queryOrder,
-              fileName = None
+              fileName = fileName
             )
           }
         case None =>
