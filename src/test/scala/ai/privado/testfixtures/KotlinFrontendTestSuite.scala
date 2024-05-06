@@ -25,6 +25,7 @@ class TestCpgWithKotlin(val fileSuffix: String, val language: Language.Value) ex
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg = false,
+      dumpCpgAtBasePath = true,
       propertyFilterCache
     )
   }

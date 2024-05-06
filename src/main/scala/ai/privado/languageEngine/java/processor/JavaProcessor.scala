@@ -89,7 +89,7 @@ class JavaProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
-      propertyFilterCache
+      propertyFilterCache = propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)

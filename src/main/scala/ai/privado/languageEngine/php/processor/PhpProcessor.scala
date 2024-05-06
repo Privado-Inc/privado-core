@@ -63,7 +63,7 @@ class PhpProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
-      propertyFilterCache
+      propertyFilterCache = propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)

@@ -45,6 +45,7 @@ abstract class BaseProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean,
+  dumpCpgAtBasePath: Boolean = false,
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 

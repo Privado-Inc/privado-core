@@ -68,6 +68,7 @@ class KotlinProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
+  dumpCpgAtBasePath: Boolean = false,
   propertyFilterCache: PropertyFilterCache
 ) extends BaseProcessor(
       ruleCache,
@@ -78,7 +79,8 @@ class KotlinProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      returnClosedCpg
+      returnClosedCpg,
+      dumpCpgAtBasePath
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
@@ -112,10 +114,13 @@ class KotlinProcessor(
     println(s"${Calendar.getInstance().getTime} - Processing source code using Kotlin engine")
     println(s"${Calendar.getInstance().getTime} - Parsing source code...")
 
-    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-
-    // Create the .privado folder if not present
-    createCpgFolder(sourceRepoLocation);
+    val cpgOutputPath =
+      if (dumpCpgAtBasePath) s"$sourceRepoLocation/$cpgOutputFileName"
+      else {
+        // Create the .privado folder if not present
+        createCpgFolder(sourceRepoLocation)
+        s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+      }
     val excludeFileRegex = ruleCache.getExclusionRegex
 
     val cpgconfig = Config(includeJavaSourceFiles = true)

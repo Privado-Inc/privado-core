@@ -87,7 +87,7 @@ class CSharpProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
-      propertyFilterCache
+      propertyFilterCache = propertyFilterCache
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
