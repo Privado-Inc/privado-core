@@ -6,7 +6,7 @@ import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.model.Constants
-import ai.privado.utility.Utilities.addRuleTags
+import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -15,9 +15,9 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
 
   private val AIRFLOW_CUSTOM_RULE_ID = "Airflow.Custom.Operator"
   override def generateParts(): Array[RuleInfo] = {
-    (ruleCache.getRule.sinks.filter(rule => rule.id.contains("ThirdParties.Operator")) ++ List(
-      getCustomOperatorTag
-    )).toArray
+    val customRuleList = getCustomOperatorTag
+    setCustomRuleToRuleCache(customRuleList)
+    (ruleCache.getRule.sinks.filter(rule => rule.id.contains("ThirdParties.Operator")) ++ customRuleList).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
@@ -33,24 +33,32 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
     }
   }
 
+  private def setCustomRuleToRuleCache(ruleInfoList: List[RuleInfo]): Unit = {
+    ruleInfoList.foreach(rule => {
+      ruleCache.setRuleInfo(rule)
+    })
+  }
+
   // Rule for Custom Operator
-  private def getCustomOperatorTag: RuleInfo = {
-    RuleInfo(
-      AIRFLOW_CUSTOM_RULE_ID,
-      "Airflow",
-      "Third Parties",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("AirflowOperator"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      Constants.third_parties,
-      Language.PYTHON,
-      Array()
+  private def getCustomOperatorTag: List[RuleInfo] = {
+    List(
+      RuleInfo(
+        AIRFLOW_CUSTOM_RULE_ID,
+        "Airflow",
+        "",
+        FilterProperty.METHOD_FULL_NAME,
+        Array(),
+        List("AirflowOperator"),
+        false,
+        "",
+        Map(),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.SINKS,
+        Constants.third_parties,
+        Language.PYTHON,
+        Array()
+      )
     )
   }
 
