@@ -41,6 +41,7 @@ import ai.privado.languageEngine.java.tagger.collection.{
 }
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
 import ai.privado.languageEngine.java.tagger.sink.api.{JavaAPISinkTagger, JavaAPITagger}
+import ai.privado.languageEngine.java.tagger.sink.framework.flink.FlinkTagger
 import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, MessagingConsumerCustomTagger}
 import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.tagger.PrivadoBaseTagger
@@ -93,6 +94,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new MessagingConsumerCustomTagger(cpg, ruleCache).createAndApply()
       new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache, privadoInputConfig, appCache).createAndApply()
     }
+
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
 
     new DatabaseQueryReadPass(
       cpg,

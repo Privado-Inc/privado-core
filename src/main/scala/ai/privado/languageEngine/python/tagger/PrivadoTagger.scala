@@ -6,18 +6,18 @@ import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.python.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.python.tagger.sink.{InheritMethodTagger, PythonAPITagger}
+import ai.privado.languageEngine.python.tagger.sink.{AirflowOperatorSinkPass, InheritMethodTagger, PythonAPITagger}
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
 import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -32,7 +32,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    new LiteralTagger(cpg, ruleCache).createAndApply()
+    LiteralTagger.tag(cpg, ruleCache)
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
@@ -59,6 +59,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, appCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
+
+    new AirflowOperatorSinkPass(cpg, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
     cpg.tag
