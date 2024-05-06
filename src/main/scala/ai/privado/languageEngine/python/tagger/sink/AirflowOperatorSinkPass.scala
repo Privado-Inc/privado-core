@@ -57,7 +57,8 @@ class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
         CatLevelOne.SINKS,
         Constants.third_parties,
         Language.PYTHON,
-        Array()
+        Array(),
+        true
       )
     )
   }
