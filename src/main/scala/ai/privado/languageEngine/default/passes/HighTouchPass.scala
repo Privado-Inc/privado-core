@@ -83,13 +83,14 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
           .lineNumber(destinationNode.lineNumber)
           .correspondingModel(correspondingModel)
           .actualDestinationName(slugToActualDestinationMap.getOrElse(destinationNode.value, destinationNode.value))
+          .code(destinationNode.value)
       builder.addNode(hightouchSink)
       builder.addEdge(hightouchSink, fileNode, EdgeTypes.SOURCE_FILE)
     } else if (parserResultKeys.forall(p => ALLOWED_KEYS_MODEL.contains(p))) {
       logger.debug(s"Model file is parsed: ${fileName}")
       parserResult :+ YamlProperty("model-slug", fileName, -1)
       val rawSqlNode = parserResult.find(_.key == "rawSql").getOrElse(YamlProperty("", "", -1))
-      parseQueryAndCreateNodes(builder, rawSqlNode.value, fileNode, rawSqlNode.lineNumber)
+      parseQueryAndCreateNodes(builder, rawSqlNode.value, fileNode, rawSqlNode.lineNumber, Some(fileName))
     } else {
       logger.debug(s"Could not parse file:  ${fileName}")
     }
