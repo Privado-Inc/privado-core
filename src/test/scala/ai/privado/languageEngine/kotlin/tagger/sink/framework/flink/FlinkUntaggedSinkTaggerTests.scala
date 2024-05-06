@@ -33,7 +33,7 @@ class FlinkUntaggedSinkTaggerTests extends KotlinFrontendTestSuite {
         |        env.execute("Flink Kafka Example")
         |    }
         |}
-        |""".stripMargin).moreCode("", "sample.kts")
+        |""".stripMargin)
 
     "tag the flink's sink default flink rule" in {
       val List(flinkSink) = cpg.call("addSink").l
