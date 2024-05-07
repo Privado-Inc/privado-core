@@ -58,7 +58,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j"         % "log4j-core"                 % "2.19.0",
   "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.19.0",
   "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
-  "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
+  "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
   "org.apache.maven"                 % "maven-model"                % "3.9.0",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
   "org.yaml"                         % "snakeyaml"                  % "1.33",

@@ -39,7 +39,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, HightouchSink}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -238,6 +238,15 @@ object Dataflow {
   }
 
   def getSinks(cpg: Cpg): List[CfgNode] = {
+    // TODO:  This print statement is for debug purpose only, remove it after testing
+    cpg.highTouchSink
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .foreach(sink =>
+        println(
+          s"Tagged: ${sink.name}, which has corresponding model as ```${sink.correspondingModel}``` which corresponds to the 3P: ```${sink.actualDestinationName}```. This was discovered in ```${sink.sourceFileOut.name.headOption
+              .getOrElse("Unknown file")}```"
+        )
+      )
     cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l ++ cpg.highTouchSink
       .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
       .l
