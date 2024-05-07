@@ -50,6 +50,29 @@ case class RuleInfo(
     patterns.mkString("(", "|", ")")
   }
 }
+
+object RuleInfo {
+  def getEmptyRuleInfo: RuleInfo = {
+    RuleInfo(
+      "",
+      "",
+      "",
+      FilterProperty.CODE,
+      Array.empty[String],
+      List.empty[String],
+      false,
+      "",
+      Map.empty[String, String],
+      NodeType.UNKNOWN,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.annotations,
+      Language.PHP,
+      Array()
+    )
+  }
+}
+
 case class ConfigAndRules(
   sources: List[RuleInfo] = List(),
   sinks: List[RuleInfo] = List(),
