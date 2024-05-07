@@ -8,13 +8,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode
 import java.io.StringReader
 import scala.util.matching.Regex
 import net.sf.jsqlparser.JSQLParserException
-import net.sf.jsqlparser.expression.{BinaryExpression, CastExpression, Function}
+import net.sf.jsqlparser.expression.{BinaryExpression, CastExpression, Expression, Function}
 import net.sf.jsqlparser.parser.{ASTNodeAccess, CCJSqlParserUtil}
 import net.sf.jsqlparser.schema.Table
 import net.sf.jsqlparser.statement.Statement
 import net.sf.jsqlparser.statement.create.table.CreateTable
 import net.sf.jsqlparser.statement.insert.Insert
-import net.sf.jsqlparser.statement.select.{PlainSelect, Select, SelectBody, SelectItem, SetOperationList, SubSelect}
+import net.sf.jsqlparser.statement.select.{PlainSelect, Select, SelectItem, SetOperationList, ParenthesedSelect}
 import net.sf.jsqlparser.statement.update.Update
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -57,11 +57,13 @@ object SQLParser {
   val NUMBER_MINUSONE = -1
 
   @deprecated
-  private def createSQLNodesForSelect(selectStmts: List[SelectBody]): Option[List[SQLQuery]] = {
+  private def createSQLNodesForSelect(selectStmts: List[Select]): Option[List[SQLQuery]] = {
     Some(selectStmts.flatMap {
       case plainSelect: PlainSelect =>
         val sqlTable = createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table])
         List(SQLQuery(SQLQueryType.SELECT, sqlTable, getColumns(plainSelect, sqlTable)))
+      case parenthesedSelect: ParenthesedSelect =>
+        createSQLNodesForSelect(List(parenthesedSelect.getPlainSelect)).getOrElse(List.empty[SQLQuery])
       /*
          Example of SetOperation SQL Queries:
         -- SELECT column_name FROM table1
@@ -92,8 +94,8 @@ object SQLParser {
           Some(
             Try(
               selectStmt.getWithItemsList.asScala
-                .map(_.getSubSelect.getSelectBody)
-            ).toOption.getOrElse(List.empty[SelectBody]).toList ++ List(selectStmt.getSelectBody)
+                .map(p => p.getSelect)
+            ).toOption.getOrElse(List.empty[PlainSelect]).toList ++ List(selectStmt.getSelectBody)
           ).flatMap(p => createSQLNodesForSelect(p))
         }
         case insertStmt: Insert =>
@@ -146,7 +148,7 @@ object SQLParser {
   }
 
   def getColumns(plainSelect: PlainSelect, sqlTable: SQLTable): List[SQLColumn] = {
-    plainSelect.getSelectItems.asScala.flatMap { (item: SelectItem) =>
+    plainSelect.getSelectItems.asScala.flatMap { (item: SelectItem[?]) =>
       item.toString match {
         case f: String if f.contains("(") =>
           val parsedResult = CCJSqlParserUtil.parseExpression(f)

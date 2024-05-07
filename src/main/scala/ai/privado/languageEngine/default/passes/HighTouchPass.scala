@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.circe.*
 import io.circe.generic.auto.*
 import ai.privado.utility.Utilities.{addFileNode, storeForTag}
-import io.shiftleft.codepropertygraph.generated.nodes.NewHightouchSink
+import io.shiftleft.codepropertygraph.generated.nodes.{NewHightouchSink, NewJavaProperty}
 import org.slf4j.LoggerFactory
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.{LoaderOptions, Yaml}
@@ -30,7 +30,7 @@ case class Model(
   rawSql: Option[String]
 )
 case class Sync(model: String, destination: String, schedulePaused: Boolean)
-case class Manifest(sources: Map[String, Source], destinations: Map[String, Destination])
+case class Manifest(sources: Option[Map[String, Source]], destinations: Option[Map[String, Destination]])
 case class Source(name: String, `type`: String)
 case class Destination(name: String, `type`: String)
 case class EmptySchema()
@@ -63,7 +63,13 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
   }
 
   override def runOnPart(builder: DiffGraphBuilder, fileName: String): Unit = {
-    val fileNode = addFileNode(fileName, builder)
+    val fileNode               = addFileNode(fileName, builder)
+    val parseYamlWithHierarchy = parseYaml(fileName, true)
+    parseYamlWithHierarchy.foreach(property => {
+      val propertyNode = addPropertyNode(builder, property)
+      builder.addEdge(propertyNode, fileNode, EdgeTypes.SOURCE_FILE)
+    })
+
     val parserResult =
       parseYaml(fileName)
         .filter(p => (ALLOWED_KEYS_MODEL ++ ALLOWED_KEYS_SYNC).contains(p.key))
@@ -90,7 +96,18 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       logger.debug(s"Model file is parsed: ${fileName}")
       parserResult :+ YamlProperty("model-slug", fileName, -1)
       val rawSqlNode = parserResult.find(_.key == "rawSql").getOrElse(YamlProperty("", "", -1))
-      parseQueryAndCreateNodes(builder, rawSqlNode.value, fileNode, rawSqlNode.lineNumber, Some(fileName))
+      val patterns   = List("date", "string", "boolean", "boolean,", "date", "string")
+      val regex      = patterns.map(word => s":: *${word}").mkString("|").r.pattern
+      val filteredSql =
+        regex
+          .matcher(rawSqlNode.value)
+          .replaceAll("")
+          .trim
+          .split("\n")
+          .filter(p => !p.startsWith("--"))
+          .mkString("\n")
+          .replaceAll("\n\n\n", "")
+      parseQueryAndCreateNodes(builder, filteredSql, fileNode, rawSqlNode.lineNumber, Some(fileName))
     } else {
       logger.debug(s"Could not parse file:  ${fileName}")
     }
@@ -102,13 +119,19 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       .parse(File(manifestFileName).contentAsString)
       .map(_.as[Manifest])
       .fold(
-        l => Manifest(Map.empty[String, Source], Map.empty[String, Destination]),
-        r => r.getOrElse(Manifest(Map.empty[String, Source], Map.empty[String, Destination]))
+        l => Manifest(Some(Map.empty[String, Source]), Some(Map.empty[String, Destination])),
+        r => r.getOrElse(Manifest(Some(Map.empty[String, Source]), Some(Map.empty[String, Destination])))
       )
-    slugToActualDestinationMap.addAll(manifestParsed.destinations.map(p => (p._1, p._2.`type`)))
+    slugToActualDestinationMap.addAll(
+      manifestParsed.destinations
+        .getOrElse(Map.empty[String, Destination])
+        .map(p => {
+          (p._1, p._2.`type`)
+        })
+    )
   }
 
-  private def parseYaml(file: String): List[YamlProperty] = {
+  private def parseYaml(file: String, preserveHierarchy: Boolean = false): List[YamlProperty] = {
     try {
       val yamlContent = better.files
         .File(file)
@@ -125,7 +148,8 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
             mappingNode.getValue.asScala.foreach { (nodeTuple: NodeTuple) =>
               val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
               val valueNode = nodeTuple.getValueNode
-              processNode(valueNode, keyNode.getValue)
+              val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
+              if (preserveHierarchy) processNode(valueNode, fullPath) else processNode(valueNode, keyNode.getValue)
             }
           case sequenceNode: SequenceNode =>
             sequenceNode.getValue.asScala.zipWithIndex.foreach { case (valueNode, index) =>
@@ -143,9 +167,16 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       result
     } catch {
       case e: Throwable => {
-        logger.debug(s"Could not parse YAML file. Please double check the syntax. ${e.getMessage}")
+        logger.debug(s"Could not parse YAML file. Please double check the syntax. ${file}")
         List[YamlProperty]()
       }
     }
+  }
+
+  private def addPropertyNode(builder: DiffGraphBuilder, yamlProperty: YamlProperty): NewJavaProperty = {
+    val YamlProperty(key: String, value: String, lineNumber: Int) = yamlProperty
+    val propertyNode = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
+    builder.addNode(propertyNode)
+    propertyNode
   }
 }
