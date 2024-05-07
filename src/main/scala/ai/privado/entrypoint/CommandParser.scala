@@ -26,6 +26,7 @@ import ai.privado.metric.MetricHandler
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
+import ai.privado.model.Language
 import scala.sys.exit
 
 case class PrivadoInput(
@@ -57,7 +58,8 @@ case class PrivadoInput(
   offlineMode: Boolean = false,
   isMonolith: Boolean = false,
   enableIngressAndEgressUrls: Boolean = false,
-  assetDiscovery: Boolean = false
+  assetDiscovery: Boolean = false,
+  forceLanguage: String = Language.UNKNOWN.toString
 )
 
 object CommandConstants {
@@ -112,6 +114,8 @@ object CommandConstants {
   val IS_MONOLITH                                  = "monolith"
   val ENABLE_INGRESS_AND_EGRESS_URLS               = "enableIngressAndEgressUrls"
   val ASSEST_DISCOVERY                             = "asset-discovery"
+  val FORCE_LANGUAGE                               = "force-language"
+  val FORCE_LANGUAGE_ABBR                          = "fl"
 }
 
 object CommandParser {
@@ -125,7 +129,7 @@ object CommandParser {
     val builder = OParser.builder[PrivadoInput]
 
     val parser = {
-      import builder._
+      import builder.*
       OParser.sequence(
         programName("privado-core"),
         head("privado-core", "*** TODO: Add version details***"),
@@ -268,6 +272,13 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(limitArgExpansionDataflows = x))
               .text("Max Limit for argument expansion being done while finding dataflows"),
+            opt[String](CommandConstants.FORCE_LANGUAGE)
+              .abbr(CommandConstants.FORCE_LANGUAGE_ABBR)
+              .optional()
+              .action((x, c) => c.copy(forceLanguage = x))
+              .text(
+                "Force scan with the given language JAVA, JAVASCRIPT, GOLANG, CSHARP, PYTHON, PHP, KOTLIN, RUBYSRC"
+              ),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
