@@ -96,8 +96,8 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
       logger.debug(s"Model file is parsed: ${fileName}")
       parserResult :+ YamlProperty("model-slug", fileName, -1)
       val rawSqlNode = parserResult.find(_.key == "rawSql").getOrElse(YamlProperty("", "", -1))
-      val patterns = List("date", "string", "boolean", "boolean,", "date", "string")
-      val regex    = patterns.map(word => s":: *${word}").mkString("|").r.pattern
+      val patterns   = List("date", "string", "boolean", "boolean,", "date", "string")
+      val regex      = patterns.map(word => s":: *${word}").mkString("|").r.pattern
       val filteredSql =
         regex
           .matcher(rawSqlNode.value)
