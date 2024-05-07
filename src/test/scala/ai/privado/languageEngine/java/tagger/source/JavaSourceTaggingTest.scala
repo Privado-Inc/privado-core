@@ -116,4 +116,26 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
       identifierNodes.lineNumber.l shouldBe List(5, 5, 6, 10, 13)
     }
   }
+
+  "Field access of an external class" should {
+    val cpg = code("""
+        |import ai.privado.User;
+        |public class Test {
+        |   public static void main(String[] args){
+        |       User us = new User();
+        |       String firstName = us.firstName; // As a field access is present we can infer the User class has firstName member
+        |       System.out.println(us);
+        |   }
+        |}
+        |""".stripMargin)
+
+    "tag derive source" in {
+      val identifierNodes = cpg.identifier.where(_.tag.nameExact("catLevelOne").valueExact("DerivedSources")).l
+      identifierNodes.size shouldBe 4
+      identifierNodes.code.l shouldBe List("us", "us", "us", "us")
+      identifierNodes.lineNumber.l shouldBe List(5, 5, 6, 7)
+
+      cpg.typeDecl.fullName(identifierNodes.head.typeFullName).isExternal.l shouldBe List(true)
+    }
+  }
 }
