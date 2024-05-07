@@ -26,12 +26,15 @@ package ai.privado.languageEngine.java.tagger.source
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.tagger.source.Utility.*
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.tagger.{PrivadoParallelCpgPass, PrivadoSimpleCpgPass}
 import ai.privado.utility.Utilities.*
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Member, MethodParameterIn, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Identifier, Member, MethodParameterIn, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
+import org.apache.commons.lang3.builder.DiffBuilder
 import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util.UUID
 import scala.collection.concurrent.TrieMap
@@ -43,6 +46,7 @@ object SourceTagger {
     val nodeCache = CPGNodeCacheForSourceTagger(cpg, ruleCache)
     new DirectNodeSourceTagger(cpg, nodeCache, ruleCache).createAndApply()
     new FirstLevelDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
+    new FirstLevelDerivedSourceExternalClassTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     new OCDDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
     new ExtendingDerivedSourceTagger(cpg, nodeCache, ruleCache, taggerCache).createAndApply()
   }
@@ -80,6 +84,56 @@ class DirectNodeSourceTagger(cpg: Cpg, cpgNodeCache: CPGNodeCacheForSourceTagger
   }
 }
 
+/** Tag all identifier and parameter which are external and have a fieldAccess of original source.
+  *
+  * Ex - user.firstName, If the class `User` is external, which means there will be no members in the User class, so
+  * this tagger facilitates tagging such variables
+  */
+class FirstLevelDerivedSourceExternalClassTagger(
+  cpg: Cpg,
+  cpgNodeCache: CPGNodeCacheForSourceTagger,
+  ruleCache: RuleCache,
+  taggerCache: TaggerCache
+) extends PrivadoSimpleCpgPass(cpg) {
+
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+
+    val derivedSourceModels = cpgNodeCache.cachedFieldAccess
+      .where(_.argument.argumentIndex(1).isIdentifier)
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name))
+      .map(item => (item.tag.nameExact(Constants.id).value.headOption.getOrElse(""), item))
+      .distinctBy(_._1)
+      .map(_._2)
+      .flatMap { fieldAccess =>
+        val typeDeclFullName = fieldAccess.argument.argumentIndex(1).isIdentifier.typeFullName.headOption.getOrElse("")
+        val isExternal       = cpg.typeDecl.fullName(typeDeclFullName).isExternal.nonEmpty
+        if (isExternal) {
+          val ruleId = fieldAccess.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+          val fieldIdentifierName =
+            fieldAccess.start.collectAll[FieldAccess].fieldIdentifier.canonicalName.headOption.getOrElse("")
+          Some(DerivedSourceModel(typeDeclFullName, ruleId, fieldIdentifierName))
+        } else None
+      }
+      .l
+
+    derivedSourceModels.foreach(deriveSource => {
+      (cpgNodeCache.cachedIdentifier
+        .where(_.typeFullName(deriveSource.typeDeclFullName))
+        .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(deriveSource.typeDeclFullName)).l)
+        .foreach(impactedObject => {
+          addFirstLevelDerivedSourceTags(
+            builder,
+            impactedObject,
+            ruleCache,
+            cpgNodeCache,
+            deriveSource.ruleId,
+            deriveSource.memberName
+          )
+        })
+    })
+  }
+}
+
 /** Step 2.1 =>
   *
   * Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
@@ -104,22 +158,12 @@ class FirstLevelDerivedSourceTagger(
       .where(_.typeFullName(typeDeclVal))
       .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l)
       .foreach(impactedObject => {
-        storeForTag(builder, impactedObject, ruleCache)(
-          InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
-          taggerPart.ruleInfo.id
-        )
-        storeForTag(builder, impactedObject, ruleCache)(
-          Constants.id,
-          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
-        )
-        storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
-        storeForTag(builder, impactedObject, ruleCache)(
-          Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
-          taggerPart.ruleInfo.id
-        )
-        // Tag for storing memberName in derived Objects -> user --> (email, password)
-        storeForTag(builder, impactedObject, ruleCache)(
-          taggerPart.ruleInfo.id + Constants.underScore + Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+        addFirstLevelDerivedSourceTags(
+          builder,
+          impactedObject,
+          ruleCache,
+          cpgNodeCache,
+          taggerPart.ruleInfo.id,
           typeDeclMemberName
         )
       })
@@ -325,4 +369,31 @@ case class CPGNodeCacheForSourceTagger(cpg: Cpg, ruleCache: RuleCache) {
       .foreach(storeForTag(builder, _, ruleCache)(InternalTag.SENSITIVE_METHOD_RETURN.toString, ruleInfo.id))
 
   }
+}
+case class DerivedSourceModel(typeDeclFullName: String, ruleId: String, memberName: String)
+
+def addFirstLevelDerivedSourceTags(
+  builder: DiffGraphBuilder,
+  impactedObject: AstNode,
+  ruleCache: RuleCache,
+  cpgNodeCache: CPGNodeCacheForSourceTagger,
+  ruleId: String,
+  memberName: String
+) = {
+
+  storeForTag(builder, impactedObject, ruleCache)(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString, ruleId)
+  storeForTag(builder, impactedObject, ruleCache)(
+    Constants.id,
+    Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+  )
+  storeForTag(builder, impactedObject, ruleCache)(Constants.catLevelOne, CatLevelOne.DERIVED_SOURCES.name)
+  storeForTag(builder, impactedObject, ruleCache)(
+    Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+    ruleId
+  )
+  // Tag for storing memberName in derived Objects -> user --> (email, password)
+  storeForTag(builder, impactedObject, ruleCache)(
+    ruleId + Constants.underScore + Constants.privadoDerived + Constants.underScore + cpgNodeCache.RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME,
+    memberName
+  )
 }
