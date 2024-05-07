@@ -58,7 +58,9 @@ class HighTouchPassTests extends DefaultFrontendTestSuite {
       val src  = cpg.sqlColumn.where(_.tag.nameExact(InternalTag.VARIABLE_REGEX_LITERAL.toString)).l
       val sink = cpg.highTouchSink.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
       src.size shouldBe 2
+      src.lineNumber.l shouldBe List(8, 8)
       sink.size shouldBe 1
+      sink.lineNumber.l shouldBe List(3)
     }
   }
 }
