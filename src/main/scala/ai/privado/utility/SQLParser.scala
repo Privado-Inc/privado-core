@@ -59,11 +59,14 @@ object SQLParser {
   @deprecated
   private def createSQLNodesForSelect(selectStmts: List[Select]): Option[List[SQLQuery]] = {
     Some(selectStmts.flatMap {
-      case plainSelect: PlainSelect =>
+      case plainSelect: PlainSelect if plainSelect.getFromItem.isInstanceOf[Table] =>
         val sqlTable = createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table])
         List(SQLQuery(SQLQueryType.SELECT, sqlTable, getColumns(plainSelect, sqlTable)))
+      case plainSelect: PlainSelect if plainSelect.getFromItem.isInstanceOf[ParenthesedSelect] =>
+        createSQLNodesForSelect(List(plainSelect.getFromItem.asInstanceOf[ParenthesedSelect].getSelect))
+          .getOrElse(List.empty[SQLQuery])
       case parenthesedSelect: ParenthesedSelect =>
-        createSQLNodesForSelect(List(parenthesedSelect.getPlainSelect)).getOrElse(List.empty[SQLQuery])
+        createSQLNodesForSelect(List(parenthesedSelect.getSelect)).getOrElse(List.empty[SQLQuery])
       /*
          Example of SetOperation SQL Queries:
         -- SELECT column_name FROM table1

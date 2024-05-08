@@ -44,6 +44,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import java.nio.file.Paths
 import java.util.Calendar
+import scala.util.Try
 
 class PhpProcessor(
   ruleCache: RuleCache,
@@ -93,7 +94,7 @@ class PhpProcessor(
       .withOutputPath(cpgOutput.toString)
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
       .withPhpParserBin(PhpProcessor.parserBinPath)
-      .withDownloadDependencies(!config.skipDownloadDependencies)
+      .withDownloadDependencies(!privadoInput.skipDownloadDependencies)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
       statsRecorder.endLastStage()
