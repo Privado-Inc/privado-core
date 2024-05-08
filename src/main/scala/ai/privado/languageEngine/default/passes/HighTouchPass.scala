@@ -102,6 +102,12 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
         regex
           .matcher(rawSqlNode.value)
           .replaceAll("")
+          .replaceAll("::", ".")
+          .replaceAll(":", ".") // As these result in invalid token
+          .replaceAll(
+            "(?i)final",
+            "myFinal"
+          ) // FINAL keyword is reserved keyword resulting into unexpected token in this case
           .trim
           .split("\n")
           .filter(p => !p.startsWith("--"))
