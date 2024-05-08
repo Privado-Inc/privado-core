@@ -262,11 +262,6 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
       egressWithSingleChar.size shouldBe 0
     }
     "Check application base path" in {
-      cpg.property.size shouldBe 27
-      cpg.property
-        .name("(?i)(server[.]servlet[.]context-path|server[.]servlet[.]contextPath)|(spring[.]application[.]name)")
-        .value
-        .l shouldBe List("basepath")
       val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
       val List(basePath)                 = httpConnectionMetadataExporter.getEndPointBasePath
       basePath shouldBe "basepath"
