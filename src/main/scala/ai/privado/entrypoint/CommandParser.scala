@@ -23,10 +23,10 @@
 package ai.privado.entrypoint
 
 import ai.privado.metric.MetricHandler
+import ai.privado.model.Language
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
-import ai.privado.model.Language
 import scala.sys.exit
 
 case class PrivadoInput(
@@ -59,7 +59,7 @@ case class PrivadoInput(
   isMonolith: Boolean = false,
   enableIngressAndEgressUrls: Boolean = false,
   assetDiscovery: Boolean = false,
-  forceLanguage: String = Language.UNKNOWN.toString
+  forceLanguage: Language.Language = Language.UNKNOWN
 )
 
 object CommandConstants {
@@ -275,9 +275,9 @@ object CommandParser {
             opt[String](CommandConstants.FORCE_LANGUAGE)
               .abbr(CommandConstants.FORCE_LANGUAGE_ABBR)
               .optional()
-              .action((x, c) => c.copy(forceLanguage = x))
+              .action((x, c) => c.copy(forceLanguage = Language.withNameWithDefault(x)))
               .text(
-                "Force scan with the given language JAVA, JAVASCRIPT, GOLANG, CSHARP, PYTHON, PHP, KOTLIN, RUBYSRC"
+                "Force scan with the given language java, javascript, go, csharp, python, php, kotlin, ruby, and default"
               ),
             arg[String]("<Source directory>")
               .required()
