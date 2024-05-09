@@ -171,6 +171,11 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     } catch {
       case e: Throwable => {
         logger.debug(s"Could not parse YAML file. Please double check the syntax. ${file}")
+        logger.debug(
+          better.files
+            .File(file)
+            .contentAsString
+        )
         List[YamlProperty]()
       }
     }
