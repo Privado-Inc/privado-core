@@ -63,7 +63,7 @@ object SQLParser {
         val sqlTable = createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table])
         List(SQLQuery(SQLQueryType.SELECT, sqlTable, getColumns(plainSelect, sqlTable)))
       case parenthesedSelect: ParenthesedSelect =>
-        createSQLNodesForSelect(List(parenthesedSelect.getPlainSelect)).getOrElse(List.empty[SQLQuery])
+        createSQLNodesForSelect(List(parenthesedSelect.getSelect)).getOrElse(List.empty[SQLQuery])
       /*
          Example of SetOperation SQL Queries:
         -- SELECT column_name FROM table1
