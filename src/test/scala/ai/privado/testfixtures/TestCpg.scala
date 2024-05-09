@@ -3,7 +3,6 @@ package ai.privado.testfixtures
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import io.circe.Json
-import io.joern.x2cpg.utils.TestCodeWriter
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.Graph
 

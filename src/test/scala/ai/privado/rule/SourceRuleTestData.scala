@@ -10,7 +10,7 @@ object SourceRuleTestData {
     "",
     FilterProperty.METHOD_FULL_NAME,
     Array(),
-    List("(?i).*firstName|first_name.*"),
+    List("(?i)firstName|first_name"),
     false,
     "",
     Map(),

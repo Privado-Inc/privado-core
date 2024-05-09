@@ -22,8 +22,14 @@
 
 package ai.privado.model
 
+import ai.privado.entrypoint.ScanProcessor.logger
 import ai.privado.model
 import ai.privado.model.Language.{JAVA, Language}
+import io.shiftleft.codepropertygraph.generated.Languages
+import org.slf4j.LoggerFactory
+
+import scala.sys.exit
+import scala.util.{Failure, Success, Try}
 
 object InternalTag extends Enumeration {
 
@@ -100,6 +106,7 @@ object CatLevelOne extends Enumeration {
 }
 
 object Language extends Enumeration {
+  private val logger = LoggerFactory.getLogger(this.getClass)
   type Language = Value
 
   val JAVA       = Value("java")
@@ -112,6 +119,29 @@ object Language extends Enumeration {
   val CSHARP     = Value("csharp")
   val DEFAULT    = Value("default")
   val UNKNOWN    = Value("unknown")
+
+  def withJoernLangName(name: Try[Option[String]]): Value = {
+    name match {
+      case Success(guessedLang) =>
+        guessedLang match {
+          case Some(language) if language == Languages.JAVASRC || language == Languages.JAVA     => JAVA
+          case Some(language) if language == Languages.JSSRC || language == Languages.JAVASCRIPT => JAVASCRIPT
+          case Some(language) if language == Languages.PYTHONSRC || language == Languages.PYTHON => PYTHON
+          case Some(language) if language == Languages.RUBYSRC                                   => RUBY
+          case Some(language) if language == Languages.GOLANG                                    => GO
+          case Some(language) if language == Languages.KOTLIN                                    => KOTLIN
+          case Some(language) if language == Languages.CSHARPSRC || language == Languages.CSHARP => CSHARP
+          case Some(language) if language == Languages.PHP                                       => PHP
+          case _                                                                                 => UNKNOWN
+        }
+      case Failure(exc) =>
+        logger.debug("Error while guessing language", exc)
+        println(s"Error Occurred: ${exc.getMessage}")
+        exit(1)
+    }
+
+  }
+
   def withNameWithDefault(name: String): Value = {
     try {
       withName(name)
