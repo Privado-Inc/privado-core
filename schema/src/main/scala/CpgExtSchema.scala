@@ -203,15 +203,19 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addProperty(name = CpgSchemaConstants.HIGHTOUCH_MODEL_PROPERTY_NAME, valueType = ValueType.String)
     .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
-  val actualDestinatioName = builder
+  val actualDestinationName = builder
     .addProperty(name = CpgSchemaConstants.ACTUAL_DESINATION_NAME, valueType = ValueType.String)
     .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
+  val schedulePaused = builder
+    .addProperty(name = CpgSchemaConstants.SCHEDULE_PAUSED_NAME, valueType = ValueType.Boolean)
+    .mandatory(false)
 
   val highTouchSinkNode = builder
     .addNodeType(CpgSchemaConstants.HIGHTOUCH_SINK_NODE_NAME)
     .addProperty(name)
     .addProperty(correspondingModel)
-    .addProperty(actualDestinatioName)
+    .addProperty(actualDestinationName)
+    .addProperty(schedulePaused)
     .extendz(astNode)
 
   highTouchSinkNode.addOutEdge(edge = sourceFile, inNode = file)
