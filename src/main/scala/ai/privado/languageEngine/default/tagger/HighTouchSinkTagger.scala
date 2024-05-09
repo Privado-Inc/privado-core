@@ -54,7 +54,10 @@ class HighTouchSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParalle
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val matchingSinks =
-      cpg.highTouchSink.filter(_.actualDestinationName.matches(ruleInfo.combinedRulePattern)).toList
+      cpg.highTouchSink
+        .filterNot(_.schedulePaused)
+        .filter(_.actualDestinationName.matches(ruleInfo.combinedRulePattern))
+        .toList
     matchingSinks.foreach(sink => {
       addRuleTags(builder, sink, ruleInfo, ruleCache)
     })
