@@ -37,6 +37,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.{Language, UNKNOWN}
 import ai.privado.rulevalidator.YamlFileValidator
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
@@ -46,9 +47,6 @@ import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
-import ai.privado.languageEngine.csharp.processor.CSharpProcessor
-import ai.privado.utility.StatsRecorder
-import io.joern.x2cpg.SourceFiles
 
 import java.util.Calendar
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -108,7 +106,7 @@ object ScanProcessor extends CommandProcessor {
             val pathTree = relPath.split("/")
             parser.parse(file.contentAsString) match {
               case Right(json) =>
-                import ai.privado.model.CirceEnDe._
+                import ai.privado.model.CirceEnDe.*
                 json.as[ConfigAndRules] match {
                   case Right(configAndRules) =>
                     configAndRules.copy(
@@ -371,12 +369,11 @@ object ScanProcessor extends CommandProcessor {
     appCache.init(sourceRepoLocation)
     statsRecorder.initiateNewStage("Language detection")
     val languageDetected = if (config.forceLanguage == UNKNOWN) {
-      println(
-        s"${TimeMetric.getNewTime()} - Language detection done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
-      Language.withJoernLangName(Try(guessLanguage(sourceRepoLocation)))
+      val langDect = Try(guessLanguage(sourceRepoLocation))
+      statsRecorder.endLastStage()
+      Language.withJoernLangName(langDect)
     } else {
-      println(s"${TimeMetric.getNewTime()} - Language forced ...")
+      statsRecorder.justLogMessage("Language forced ...")
       config.forceLanguage
     }
     MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
@@ -507,7 +504,7 @@ object ScanProcessor extends CommandProcessor {
         )
           .processCpg()
       case _ =>
-        processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
+        processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder)
     } match {
       case Left(err: String) => Left(err)
       case _ =>

@@ -59,7 +59,8 @@ case class PrivadoInput(
   offlineMode: Boolean = false,
   isMonolith: Boolean = false,
   enableIngressAndEgressUrls: Boolean = false,
-  assetDiscovery: Boolean = false
+  assetDiscovery: Boolean = false,
+  forceLanguage: Language.Language = Language.UNKNOWN
 )
 
 object CommandConstants {
