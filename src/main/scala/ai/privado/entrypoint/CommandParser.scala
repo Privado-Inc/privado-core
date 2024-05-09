@@ -24,6 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.metric.MetricHandler
 import ai.privado.utility.StatsRecorder
+import ai.privado.model.Language
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
@@ -113,6 +114,8 @@ object CommandConstants {
   val IS_MONOLITH                                  = "monolith"
   val ENABLE_INGRESS_AND_EGRESS_URLS               = "enableIngressAndEgressUrls"
   val ASSEST_DISCOVERY                             = "asset-discovery"
+  val FORCE_LANGUAGE                               = "force-language"
+  val FORCE_LANGUAGE_ABBR                          = "fl"
 }
 
 object CommandParser {
@@ -269,6 +272,13 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(limitArgExpansionDataflows = x))
               .text("Max Limit for argument expansion being done while finding dataflows"),
+            opt[String](CommandConstants.FORCE_LANGUAGE)
+              .abbr(CommandConstants.FORCE_LANGUAGE_ABBR)
+              .optional()
+              .action((x, c) => c.copy(forceLanguage = Language.withNameWithDefault(x)))
+              .text(
+                "Force scan with the given language java, javascript, go, csharp, python, php, kotlin, ruby, and default"
+              ),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

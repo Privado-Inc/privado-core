@@ -23,6 +23,7 @@
 package ai.privado.entrypoint
 
 import ai.privado.cache.*
+import ai.privado.entrypoint.ScanProcessor.statsRecorder
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
 import ai.privado.languageEngine.go.processor.GoProcessor
@@ -34,13 +35,14 @@ import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
-import ai.privado.model.Language.Language
+import ai.privado.model.Language.{Language, UNKNOWN}
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
 import io.circe.yaml.parser
 import io.joern.console.cpgcreation.guessLanguage
+import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
@@ -106,7 +108,7 @@ object ScanProcessor extends CommandProcessor {
             val pathTree = relPath.split("/")
             parser.parse(file.contentAsString) match {
               case Right(json) =>
-                import ai.privado.model.CirceEnDe.*
+                import ai.privado.model.CirceEnDe._
                 json.as[ConfigAndRules] match {
                   case Right(configAndRules) =>
                     configAndRules.copy(
@@ -368,177 +370,150 @@ object ScanProcessor extends CommandProcessor {
     // Setting up the application cache
     appCache.init(sourceRepoLocation)
     statsRecorder.initiateNewStage("Language detection")
-    Try(guessLanguage(sourceRepoLocation)) match {
-      case Success(languageDetected) =>
-        statsRecorder.endLastStage()
-        languageDetected match {
-          case Some(lang) =>
-            MetricHandler.metricsData("language") = Json.fromString(lang)
-            lang match {
-              case language if language == Languages.JAVASRC || language == Languages.JAVA =>
-                statsRecorder.justLogMessage("Detected language 'Java'")
-                val kotlinPlusJavaRules = getProcessedRule(Set(Language.KOTLIN, Language.JAVA), appCache)
-                val filesWithKtExtension = SourceFiles.determine(
-                  sourceRepoLocation,
-                  Set(".kt"),
-                  ignoredFilesRegex = Option(kotlinPlusJavaRules.getExclusionRegex.r)
-                )
-                if (filesWithKtExtension.isEmpty)
-                  JavaProcessor(
-                    getProcessedRule(Set(Language.JAVA), appCache),
-                    this.config,
-                    sourceRepoLocation,
-                    dataFlowCache = getDataflowCache,
-                    auditCache,
-                    s3DatabaseDetailsCache,
-                    appCache,
-                    propertyFilterCache = propertyFilterCache,
-                    statsRecorder = statsRecorder
-                  ).processCpg()
-                else
-                  new KotlinProcessor(
-                    kotlinPlusJavaRules,
-                    this.config,
-                    sourceRepoLocation,
-                    dataFlowCache = getDataflowCache,
-                    auditCache,
-                    s3DatabaseDetailsCache,
-                    appCache,
-                    propertyFilterCache = propertyFilterCache,
-                    statsRecorder = statsRecorder
-                  ).processCpg()
-              case language if language == Languages.JSSRC =>
-                statsRecorder.justLogMessage("Detected language 'JavaScript'")
-                JavascriptProcessor(
-                  getProcessedRule(Set(Language.JAVASCRIPT), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).createJavaScriptCpg()
-              case language if language == Languages.PYTHONSRC =>
-                statsRecorder.justLogMessage("Detected language 'Python'")
-                PythonProcessor(
-                  getProcessedRule(Set(Language.PYTHON), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).createPythonCpg()
-              case language if language == Languages.RUBYSRC =>
-                statsRecorder.justLogMessage("Detected language 'Ruby'")
-                RubyProcessor(
-                  getProcessedRule(Set(Language.RUBY), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).createRubyCpg()
-              case language if language == Languages.GOLANG =>
-                statsRecorder.justLogMessage("Detected language 'Go'")
-                GoProcessor(
-                  getProcessedRule(Set(Language.GO), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).createGoCpg()
-              case language if language == Languages.KOTLIN =>
-                statsRecorder.justLogMessage("Detected language 'Kotlin'")
-                KotlinProcessor(
-                  getProcessedRule(Set(Language.KOTLIN, Language.JAVA), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).processCpg()
-              case language if language == Languages.CSHARPSRC =>
-                statsRecorder.justLogMessage("Detected language 'C#'")
-                CSharpProcessor(
-                  getProcessedRule(Set(Language.CSHARP), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                ).processCpg()
-              case language if language == Languages.PHP =>
-                statsRecorder.justLogMessage("Detected language 'PHP'")
-                PhpProcessor(
-                  getProcessedRule(Set(Language.PHP), appCache),
-                  this.config,
-                  sourceRepoLocation,
-                  dataFlowCache = getDataflowCache,
-                  auditCache,
-                  s3DatabaseDetailsCache,
-                  appCache,
-                  propertyFilterCache = propertyFilterCache,
-                  statsRecorder = statsRecorder
-                )
-                  .processCpg()
-              case _ =>
-                if (checkJavaSourceCodePresent(sourceRepoLocation)) {
-                  println(
-                    s"We detected presence of 'Java' code base along with other major language code base '${lang}'."
-                  )
-                  println(s"However we only support 'Java' code base scanning as of now.")
+    val languageDetected = if (config.forceLanguage == UNKNOWN) {
+      println(
+        s"${TimeMetric.getNewTime()} - Language detection done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+      )
+      Language.withJoernLangName(Try(guessLanguage(sourceRepoLocation)))
+    } else {
+      println(s"${TimeMetric.getNewTime()} - Language forced ...")
+      config.forceLanguage
+    }
+    MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
 
-                  JavaProcessor(
-                    getProcessedRule(Set(Language.JAVA), appCache),
-                    this.config,
-                    sourceRepoLocation,
-                    dataFlowCache = getDataflowCache,
-                    auditCache,
-                    s3DatabaseDetailsCache,
-                    appCache,
-                    propertyFilterCache = propertyFilterCache,
-                    statsRecorder = statsRecorder
-                  ).processCpg()
-                } else {
-                  MetricHandler.metricsData("language") = Json.fromString("default")
-                  println(s"Running scan with default processor.")
-                  processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder)
-                }
-            }
-          case _ =>
-            MetricHandler.metricsData("language") = Json.fromString("default")
-            println(s"Running scan with default processor.")
-            processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder)
-        } match {
-          case Left(err: String) => Left(err)
-          case _ =>
-            Right(
-              ()
-            ) // Ignore the result as not needed for further step, and due to discrepency in output for New and old frontends
-        }
-
-      case Failure(exc) =>
-        logger.debug("Error while guessing language", exc)
-        println(s"Error Occurred: ${exc.getMessage}")
-        exit(1)
+    languageDetected match {
+      case Language.JAVA =>
+        statsRecorder.justLogMessage("Detected language 'Java'")
+        val kotlinPlusJavaRules = getProcessedRule(Set(Language.KOTLIN, Language.JAVA), appCache)
+        val filesWithKtExtension = SourceFiles.determine(
+          sourceRepoLocation,
+          Set(".kt"),
+          ignoredFilesRegex = Option(kotlinPlusJavaRules.getExclusionRegex.r)
+        )
+        if (filesWithKtExtension.isEmpty)
+          JavaProcessor(
+            getProcessedRule(Set(Language.JAVA), appCache),
+            this.config,
+            sourceRepoLocation,
+            dataFlowCache = getDataflowCache,
+            auditCache,
+            s3DatabaseDetailsCache,
+            appCache,
+            propertyFilterCache = propertyFilterCache,
+            statsRecorder = statsRecorder
+          ).processCpg()
+        else
+          KotlinProcessor(
+            kotlinPlusJavaRules,
+            this.config,
+            sourceRepoLocation,
+            dataFlowCache = getDataflowCache,
+            auditCache,
+            s3DatabaseDetailsCache,
+            appCache,
+            propertyFilterCache = propertyFilterCache,
+            statsRecorder = statsRecorder
+          ).processCpg()
+      case Language.JAVASCRIPT =>
+        statsRecorder.justLogMessage("Detected language 'JavaScript'")
+        JavascriptProcessor(
+          getProcessedRule(Set(Language.JAVASCRIPT), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        ).createJavaScriptCpg()
+      case Language.PYTHON =>
+        statsRecorder.justLogMessage("Detected language 'Python'")
+        PythonProcessor(
+          getProcessedRule(Set(Language.PYTHON), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        ).createPythonCpg()
+      case Language.RUBY =>
+        statsRecorder.justLogMessage("Detected language 'Ruby'")
+        RubyProcessor(
+          getProcessedRule(Set(Language.RUBY), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        ).createRubyCpg()
+      case Language.GO =>
+        statsRecorder.justLogMessage("Detected language 'Go'")
+        GoProcessor(
+          getProcessedRule(Set(Language.GO), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        ).createGoCpg()
+      case Language.KOTLIN =>
+        statsRecorder.justLogMessage("Detected language 'Kotlin'")
+        KotlinProcessor(
+          getProcessedRule(Set(Language.KOTLIN, Language.JAVA), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        ).processCpg()
+      case Language.CSHARP =>
+        statsRecorder.justLogMessage("Detected language 'C#'")
+        CSharpProcessor(
+          getProcessedRule(Set(Language.CSHARP), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        ).processCpg()
+      case Language.PHP =>
+        statsRecorder.justLogMessage("Detected language 'PHP'")
+        PhpProcessor(
+          getProcessedRule(Set(Language.PHP), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          propertyFilterCache = propertyFilterCache,
+          statsRecorder = statsRecorder
+        )
+          .processCpg()
+      case _ =>
+        processCpgWithDefaultProcessor(sourceRepoLocation, appCache)
+    } match {
+      case Left(err: String) => Left(err)
+      case _ =>
+        Right(
+          ()
+        ) // Ignore the result as not needed for further step, and due to discrepency in output for New and old frontends
     }
   }
 
@@ -548,7 +523,7 @@ object ScanProcessor extends CommandProcessor {
     statsRecorder: StatsRecorder
   ) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
-    println(s"Running scan with default processor.")
+    statsRecorder.justLogMessage("Running scan with default processor.")
     DefaultProcessor(
       getProcessedRule(Set(Language.UNKNOWN), appCache),
       this.config,
