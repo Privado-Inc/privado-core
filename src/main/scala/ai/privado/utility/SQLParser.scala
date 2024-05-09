@@ -62,6 +62,9 @@ object SQLParser {
       case plainSelect: PlainSelect if plainSelect.getFromItem.isInstanceOf[Table] =>
         val sqlTable = createSQLTableItem(plainSelect.getFromItem.asInstanceOf[Table])
         List(SQLQuery(SQLQueryType.SELECT, sqlTable, getColumns(plainSelect, sqlTable)))
+      case plainSelect: PlainSelect if plainSelect.getFromItem.isInstanceOf[ParenthesedSelect] =>
+        createSQLNodesForSelect(List(plainSelect.getFromItem.asInstanceOf[ParenthesedSelect].getSelect))
+          .getOrElse(List.empty[SQLQuery])
       case parenthesedSelect: ParenthesedSelect =>
         createSQLNodesForSelect(List(parenthesedSelect.getSelect)).getOrElse(List.empty[SQLQuery])
       /*
