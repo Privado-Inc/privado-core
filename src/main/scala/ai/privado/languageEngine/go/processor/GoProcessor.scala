@@ -233,7 +233,7 @@ object GoProcessor {
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
-      .withFetchDependencies(!config.skipDownloadDependencies)
+      .withFetchDependencies(false)
     val xtocpg = new GoSrc2Cpg()
       .createCpg(cpgconfig)
       .map { cpg =>
