@@ -17,23 +17,28 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
 import org.yaml.snakeyaml.constructor.SafeConstructor
+import overflowdb.NodeOrDetachedNode
 
 import java.io.StringReader
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-case class Model(
-  `model-slug`: Option[String],
-  name: Option[String],
-  source: String,
-  `type`: String,
-  rawSql: Option[String]
-)
-case class Sync(model: String, destination: String, schedulePaused: Boolean)
+object HightouchKeys {
+  val NAME   = "name"
+  val SOURCE = "source"
+  val TYPE   = "type"
+
+  val MODEL           = "model"
+  val RAW_SQL         = "rawSql"
+  val DESTINATION     = "destination"
+  val SCHEDULE_PAUSED = "schedulePaused"
+
+  val MODEL_SLUG = "model_slug"
+}
+
 case class Manifest(sources: Option[Map[String, Source]], destinations: Option[Map[String, Destination]])
 case class Source(name: String, `type`: String)
 case class Destination(name: String, `type`: String)
-case class EmptySchema()
 
 case class YamlProperty(key: String, value: String, lineNumber: Int)
 
@@ -43,8 +48,9 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
   val logger                                                  = LoggerFactory.getLogger(getClass)
 
   val ALLOWED_KEYS_MODEL: Set[String] =
-    Set("name", "source", "type", "rawSql")
-  val ALLOWED_KEYS_SYNC: Set[String] = Set("model", "destination", "schedulePaused", "type")
+    Set(HightouchKeys.NAME, HightouchKeys.SOURCE, HightouchKeys.TYPE, HightouchKeys.RAW_SQL)
+  val ALLOWED_KEYS_SYNC: Set[String] =
+    Set(HightouchKeys.MODEL, HightouchKeys.DESTINATION, HightouchKeys.SCHEDULE_PAUSED, HightouchKeys.TYPE)
 
   override def generateParts(): Array[String] = {
 
@@ -65,6 +71,7 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
   override def runOnPart(builder: DiffGraphBuilder, fileName: String): Unit = {
     val fileNode               = addFileNode(fileName, builder)
     val parseYamlWithHierarchy = parseYaml(fileName, true)
+    // TODO: Remove this before final deployment -- Only for debugging
     parseYamlWithHierarchy.foreach(property => {
       val propertyNode = addPropertyNode(builder, property)
       builder.addEdge(propertyNode, fileNode, EdgeTypes.SOURCE_FILE)
@@ -81,21 +88,11 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     if (parserResultKeys.forall(p => ALLOWED_KEYS_SYNC.contains(p))) {
       logger.debug(s"Sync file is parsed: ${fileName}")
       // Sync file
-      val destinationNode    = parserResult.find(_.key.equals("destination")).getOrElse(YamlProperty("", "", -1))
-      val correspondingModel = parserResult.find(_.key.equals("model")).getOrElse(YamlProperty("", "", -1)).value
-      val hightouchSink =
-        NewHightouchSink()
-          .name(destinationNode.value)
-          .lineNumber(destinationNode.lineNumber)
-          .correspondingModel(correspondingModel)
-          .actualDestinationName(slugToActualDestinationMap.getOrElse(destinationNode.value, destinationNode.value))
-          .code(destinationNode.value)
-      builder.addNode(hightouchSink)
-      builder.addEdge(hightouchSink, fileNode, EdgeTypes.SOURCE_FILE)
+      addHighTouchSinkNode(builder, parserResult, fileNode)
     } else if (parserResultKeys.forall(p => ALLOWED_KEYS_MODEL.contains(p))) {
       logger.debug(s"Model file is parsed: ${fileName}")
-      parserResult :+ YamlProperty("model-slug", fileName, -1)
-      val rawSqlNode = parserResult.find(_.key == "rawSql").getOrElse(YamlProperty("", "", -1))
+      parserResult :+ YamlProperty(HightouchKeys.MODEL_SLUG, fileName, -1)
+      val rawSqlNode = parserResult.find(_.key == HightouchKeys.RAW_SQL).getOrElse(YamlProperty("", "", -1))
       val patterns   = List("date", "string", "boolean", "boolean,", "date", "string")
       val regex      = patterns.map(word => s":: *${word}").mkString("|").r.pattern
       val filteredSql =
@@ -174,6 +171,11 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     } catch {
       case e: Throwable => {
         logger.debug(s"Could not parse YAML file. Please double check the syntax. ${file}")
+        logger.debug(
+          better.files
+            .File(file)
+            .contentAsString
+        )
         List[YamlProperty]()
       }
     }
@@ -184,5 +186,29 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     val propertyNode = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
     builder.addNode(propertyNode)
     propertyNode
+  }
+
+  private def addHighTouchSinkNode(
+    builder: DiffGraphBuilder,
+    parserResult: List[YamlProperty],
+    fileNode: NodeOrDetachedNode
+  ): Unit = {
+    val destinationNode = parserResult.find(_.key.equals(HightouchKeys.DESTINATION)).getOrElse(YamlProperty("", "", -1))
+    val correspondingModel =
+      parserResult.find(_.key.equals(HightouchKeys.MODEL)).getOrElse(YamlProperty("", "", -1)).value
+    val schedulePaused =
+      parserResult
+        .find(_.key.equals(HightouchKeys.SCHEDULE_PAUSED))
+        .getOrElse(YamlProperty(HightouchKeys.SCHEDULE_PAUSED, "false", -1))
+    val hightouchSink =
+      NewHightouchSink()
+        .name(destinationNode.value)
+        .lineNumber(destinationNode.lineNumber)
+        .correspondingModel(correspondingModel)
+        .actualDestinationName(slugToActualDestinationMap.getOrElse(destinationNode.value, destinationNode.value))
+        .schedulePaused(schedulePaused.value.toBoolean)
+        .code(destinationNode.value)
+    builder.addNode(hightouchSink)
+    builder.addEdge(hightouchSink, fileNode, EdgeTypes.SOURCE_FILE)
   }
 }
