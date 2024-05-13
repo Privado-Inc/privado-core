@@ -83,7 +83,7 @@ class DefaultProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

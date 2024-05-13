@@ -43,7 +43,7 @@ echo $cpgVersionGenerated
 echo "------clone and publish codepropertygraph: end--------"
 
 
-echo "----------Joern Start-----------"
+echo "----------Joern: Start-----------"
 cd $BASE_DIRECTORY/imagebuilder
 #clone joern
 git clone -b $BRANCH_NAME https://github.com/Privado-Inc/joern
@@ -59,7 +59,7 @@ echo "publishing jar for Joern"
 sbt publishM2
 joernVersionGenerated=$(ls -t ~/.m2/repository/io/joern/c2cpg_3/ | head -n 1)
 joern_version_statement="val joernVersion = \"$joernVersionGenerated\""
-echo "----------Joern End-----------"
+echo "----------Joern: End-----------"
 
 
 echo "----------Privado-Core Start-----------"
