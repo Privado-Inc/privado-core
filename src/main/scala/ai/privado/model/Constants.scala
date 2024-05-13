@@ -211,4 +211,7 @@ object Constants {
 
   // operator
   val scopeResolutionOperator = "<operator>.scopeResolution"
+
+  // Routes folder, or file name
+  val routes = "routes"
 }

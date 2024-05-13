@@ -93,7 +93,7 @@ object CollectionUtility {
     )
   }
 
-  private def tagMethodEndpoints(
+  def tagMethodEndpoints(
     builder: DiffGraphBuilder,
     collectionPoints: List[Method],
     collectionRuleInfo: RuleInfo,

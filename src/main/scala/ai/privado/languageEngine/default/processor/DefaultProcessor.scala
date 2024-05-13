@@ -27,6 +27,7 @@ import ai.privado.cache.*
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.languageEngine.base.processor.BaseProcessor
+import ai.privado.languageEngine.default.passes.{PropertyVerificationPass}
 import ai.privado.model.Constants.*
 import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.{DBTParserPass, HTMLParserPass, HighTouchPass, SQLParser}
@@ -73,12 +74,13 @@ class DefaultProcessor(
       new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
-      new HighTouchPass(cpg, sourceRepoLocation, ruleCache)
+      new HighTouchPass(cpg, sourceRepoLocation, ruleCache),
+      new PropertyVerificationPass(cpg)
     )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
