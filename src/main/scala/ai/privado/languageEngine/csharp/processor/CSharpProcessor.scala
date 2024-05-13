@@ -108,7 +108,8 @@ class CSharpProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
-      .withDownloadDependencies(!config.skipDownloadDependencies)
+      .withDownloadDependencies(Try(!config.skipDownloadDependencies).getOrElse(false))
+
     val xtocpg = new CSharpSrc2Cpg().createCpg(cpgconfig).map { cpg =>
       statsRecorder.endLastStage()
       statsRecorder.initiateNewStage("Default overlays")
