@@ -23,8 +23,8 @@
 package ai.privado.entrypoint
 
 import ai.privado.metric.MetricHandler
-import ai.privado.utility.StatsRecorder
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
@@ -60,7 +60,9 @@ case class PrivadoInput(
   isMonolith: Boolean = false,
   enableIngressAndEgressUrls: Boolean = false,
   assetDiscovery: Boolean = false,
-  forceLanguage: Language.Language = Language.UNKNOWN
+  forceLanguage: Language.Language = Language.UNKNOWN,
+  threadDumpFreq: Int = 600000,
+  threadDumpAvgCPULimit: Int = 50
 )
 
 object CommandConstants {
@@ -117,6 +119,10 @@ object CommandConstants {
   val ASSEST_DISCOVERY                             = "asset-discovery"
   val FORCE_LANGUAGE                               = "force-language"
   val FORCE_LANGUAGE_ABBR                          = "fl"
+  val THREAD_DUMP_FREQ                             = "thread-dump-freq"
+  val THREAD_DUMP_FREQ_ABBR                        = "tdf"
+  val THREAD_DUMP_AVG_CPU_LIMIT                    = "thread-dump-avg-cpu-limit"
+  val THREAD_DUMP_AVG_CPU_LIMIT_ABBR               = "tdacl"
 }
 
 object CommandParser {
@@ -280,6 +286,16 @@ object CommandParser {
               .text(
                 "Force scan with the given language java, javascript, go, csharp, python, php, kotlin, ruby, and default"
               ),
+            opt[Int](CommandConstants.THREAD_DUMP_FREQ)
+              .abbr(CommandConstants.THREAD_DUMP_FREQ_ABBR)
+              .optional()
+              .action((x, c) => c.copy(threadDumpFreq = x))
+              .text("Thread dump frequency default is set to 10 mins."),
+            opt[Int](CommandConstants.THREAD_DUMP_AVG_CPU_LIMIT)
+              .abbr(CommandConstants.THREAD_DUMP_AVG_CPU_LIMIT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(threadDumpFreq = x))
+              .text("Thread dump only if avg CPU utilsation % of a stage is below this value. Default is set to 50%"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
