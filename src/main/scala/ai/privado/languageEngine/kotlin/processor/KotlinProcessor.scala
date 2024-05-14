@@ -122,6 +122,7 @@ class KotlinProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withKeepTypeArguments(true)
 
     val xtocpg = new Kotlin2Cpg().createCpg(cpgconfig).map { cpg =>
       println(
