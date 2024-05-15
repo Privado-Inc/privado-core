@@ -25,6 +25,7 @@ package ai.privado.entrypoint
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language
 import ai.privado.utility.StatsRecorder
+import ai.privado.utility.StatsRecorder.*
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
@@ -61,8 +62,8 @@ case class PrivadoInput(
   enableIngressAndEgressUrls: Boolean = false,
   assetDiscovery: Boolean = false,
   forceLanguage: Language.Language = Language.UNKNOWN,
-  threadDumpFreq: Int = 600000,
-  threadDumpAvgCPULimit: Int = 50
+  threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
+  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT
 )
 
 object CommandConstants {

@@ -50,7 +50,6 @@ object Main extends GeneralMetadataLoggers {
                 Some(
                   TimeMetricRecordConfig(
                     basePath = s"${ScanProcessor.config.sourceLocation.head}/.privado",
-                    recordFreq = 1000,
                     threadDumpFreq = ScanProcessor.config.threadDumpFreq,
                     threadDumpAvgCPULimit = ScanProcessor.config.threadDumpAvgCPULimit
                   )

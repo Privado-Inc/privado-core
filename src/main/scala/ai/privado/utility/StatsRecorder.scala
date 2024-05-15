@@ -1,5 +1,6 @@
 package ai.privado.utility
 
+import ai.privado.utility.StatsRecorder.*
 import better.files.*
 import com.sun.management.OperatingSystemMXBean
 import io.shiftleft.utils.DataLogger
@@ -12,6 +13,14 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.{Calendar, Date}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+object StatsRecorder {
+  // Default record frequency for performance stats in milliseconds.
+  val DEFAULT_RECORD_FREQ = 1000 // in milliseconds - 1 second.
+  // default thread dump recording frequency
+  val DEFAULT_THREAD_DUMP_FREQ = 600000 // in milliseconds - 10 Min.
+  // Defaul thread dump avg cpu limit of ongoing stage below which thread dump will be recorded.
+  val DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT = 50 // In %
+}
 
 /** Stage wise Time, cpu, and memory recording config to pass file path and the recording frequency
   *
@@ -26,9 +35,9 @@ import scala.jdk.CollectionConverters.*
   */
 case class TimeMetricRecordConfig(
   basePath: String = "",
-  recordFreq: Int = 60000,
-  threadDumpFreq: Int = 600000,
-  threadDumpAvgCPULimit: Int = 50
+  recordFreq: Int = DEFAULT_RECORD_FREQ,
+  threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
+  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT
 )
 
 /** These buffers are used for console logs to set the output fix length of the column. This will help make the console
