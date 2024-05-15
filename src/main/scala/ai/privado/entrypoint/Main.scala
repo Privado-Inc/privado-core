@@ -49,8 +49,9 @@ object Main extends GeneralMetadataLoggers {
               statsRecorder.startRecordingWithGivenFrequency(
                 Some(
                   TimeMetricRecordConfig(
-                    resultFile = s"${ScanProcessor.config.sourceLocation.head}/.privado/performancematrix.csv",
-                    recordFreq = 1000
+                    basePath = s"${ScanProcessor.config.sourceLocation.head}/.privado",
+                    threadDumpFreq = ScanProcessor.config.threadDumpFreq,
+                    threadDumpAvgCPULimit = ScanProcessor.config.threadDumpAvgCPULimit
                   )
                 )
               )

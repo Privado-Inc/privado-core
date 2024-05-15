@@ -1,15 +1,26 @@
 package ai.privado.utility
 
+import ai.privado.utility.StatsRecorder.*
+import better.files.*
 import com.sun.management.OperatingSystemMXBean
 import io.shiftleft.utils.DataLogger
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.io.{File, PrintWriter}
+import java.io.{PrintWriter, File as JFile}
 import java.lang.management.ManagementFactory
 import java.util
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.{Calendar, Date}
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
+object StatsRecorder {
+  // Default record frequency for performance stats in milliseconds.
+  val DEFAULT_RECORD_FREQ = 1000 // in milliseconds - 1 second.
+  // default thread dump recording frequency
+  val DEFAULT_THREAD_DUMP_FREQ = 600000 // in milliseconds - 10 Min.
+  // Defaul thread dump avg cpu limit of ongoing stage below which thread dump will be recorded.
+  val DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT = 50 // In %
+}
 
 /** Stage wise Time, cpu, and memory recording config to pass file path and the recording frequency
   *
@@ -17,8 +28,17 @@ import scala.collection.mutable
   *   \- complete file path where the recording will be saved in csv format.
   * @param recordFreq
   *   \- Frequency to write the records in milliseconds.
+  * @param threadDumpFreq
+  *   \- Frequency to write thread dumps
+  * @param threadDumpAvgCPULimit
+  *   \- Thread dump only if avg CPU utilsation % of a stage is below this value. Default is set to 50%
   */
-case class TimeMetricRecordConfig(resultFile: String = "cpuandmemoryusage.csv", recordFreq: Int = 60000)
+case class TimeMetricRecordConfig(
+  basePath: String = "",
+  recordFreq: Int = DEFAULT_RECORD_FREQ,
+  threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
+  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT
+)
 
 /** These buffers are used for console logs to set the output fix length of the column. This will help make the console
   * output more readable. This has been kept configurable so that end consumer can adjust according to their use case.
@@ -120,6 +140,8 @@ class StatsRecorder(
     */
   private var recorder: Option[TimeRecorder] = None
 
+  private var threadDumpRecorder: Option[ThreadDumpRecorder] = None
+
   /** Calculate the buffer when it is being used. This is to avoid calculation again and again. Done lazy initialization
     * as the buffer configuration can be done by calling {@link StatsRecorder#initialize()}
     */
@@ -156,6 +178,8 @@ class StatsRecorder(
         stagePerformance += (ACROSS_PROCESS_STAGE -> NumberProcessor())
         recorder = Some(TimeRecorder(config))
         recorder.get.start()
+        threadDumpRecorder = Some(ThreadDumpRecorder(config))
+        threadDumpRecorder.get.start()
       case _ =>
     }
   }
@@ -187,7 +211,7 @@ class StatsRecorder(
       * then log the stats of ongoing stage.
       */
     override def run(): Unit = {
-      val file = new File(timeMetricRecordConfig.resultFile)
+      val file = new JFile(s"${timeMetricRecordConfig.basePath}/performancematrix.csv")
       file.getParentFile.mkdirs() // Create parent directories if they don't exist
       val writer = new PrintWriter(file)
       try {
@@ -209,12 +233,49 @@ class StatsRecorder(
         }
       } catch {
         case exception: Exception =>
-          baseLogger.debug("Some error in Time Recorder: ", exception)
+          baseLogger.trace("Some error in Time Recorder: ", exception)
       } finally {
         // This while loop will take care of writing all the accumulated events in the queue first.
         while (!queue.isEmpty) writer.println(queue.poll)
         writer.flush()
         writer.close()
+      }
+    }
+  }
+
+  private class ThreadDumpRecorder(timeMetricRecordConfig: TimeMetricRecordConfig) extends Thread {
+    override def run(): Unit = {
+      try {
+        val folder = File(s"${timeMetricRecordConfig.basePath}/threaddumps/")
+        if folder.exists() then folder.delete(swallowIOExceptions = true)
+        while (true) {
+          Thread.sleep(timeMetricRecordConfig.threadDumpFreq)
+          val stats = getCurrentCpuMemoryStats()
+          if (stats.usedOrAvgCpu <= timeMetricRecordConfig.threadDumpAvgCPULimit) {
+            val file = new JFile(
+              s"${timeMetricRecordConfig.basePath}/threaddumps/${getNewTime().toString.replace(" ", "-").replace(":", "-")}.txt"
+            )
+            file.getParentFile.mkdirs() // Create parent directories if they don't exist
+            val writer = new PrintWriter(file)
+            writer.println(
+              s"${getNewTime()}, $lastStageName, $lastSubStageName, $additionalMetaData, ${getCpuAndMemoryStatsForCSVInString(stats)}"
+            )
+            val bean              = ManagementFactory.getThreadMXBean()
+            val infos             = bean.dumpAllThreads(true, true)
+            val threadInfoStrings = infos.map(_.toString)
+            val allThreadInfo     = threadInfoStrings.mkString("\n")
+            writer.println(allThreadInfo)
+            writer.flush()
+            writer.close()
+          } else {
+            justLogMessage(
+              s"Thread dump invoked but avg cpu usage of the current stage -> ${stats.usedOrAvgCpu} is higher than the limit ${timeMetricRecordConfig.threadDumpAvgCPULimit}"
+            )
+          }
+        }
+      } catch {
+        case exception: Exception =>
+          baseLogger.trace("Some error in Thread Dump Recorder: ", exception)
       }
     }
   }
@@ -312,6 +373,13 @@ class StatsRecorder(
     )
     logger(logMessage, false)
     recorder match {
+      case Some(rec) =>
+        // this small delay to make sure writer thread logs the last record before it gets exited with rec.interrupt() invocation.
+        Thread.sleep(200)
+        rec.interrupt()
+      case _ =>
+    }
+    threadDumpRecorder match {
       case Some(rec) =>
         // this small delay to make sure writer thread logs the last record before it gets exited with rec.interrupt() invocation.
         Thread.sleep(200)
