@@ -163,7 +163,7 @@ object PythonProcessor {
           if (privadoInput.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg, ruleCache),
+              AuditReportEntryPoint.getAuditWorkbookPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>

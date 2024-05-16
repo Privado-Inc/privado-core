@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
-import org.apache.xmlbeans.XmlException
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
@@ -109,8 +108,20 @@ object AuditReportEntryPoint {
     workbook
   }
 
-  def getAuditWorkbookPy(auditCache: AuditCache, xtocpg: Try[Cpg], ruleCache: RuleCache): Workbook = {
-    val workbook: Workbook = new XSSFWorkbook()
+  def getAuditWorkbookPy(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    repoPath: String,
+    auditCache: AuditCache,
+    ruleCache: RuleCache
+  ): Workbook = {
+    val workbook: Workbook       = new XSSFWorkbook()
+    val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
+    createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
+    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
+    // Changed Background colour when tagged
+    changeTaggedBackgroundColour(workbook, List(4, 6))
+
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
