@@ -142,6 +142,7 @@ object JSONExporter {
       ExternalScalaScriptRunner
         .postExportTrigger(cpg, ruleCache, output)
 
+      DataflowExporter.limitDataflowsInExport(ruleCache, output, repoPath)
       val jsonFile = ExporterUtility.writeJsonToFile(cpg, outputFileName, repoPath, ruleCache, output.toMap)
 
       logger.info("Shutting down Exporter engine")
