@@ -50,11 +50,9 @@ abstract class TestCpg extends Cpg() with TestCodeWriter with LanguageFrontend {
     this
   }
 
-  def getPrivadoJson() = _privadoJson.get
-
-  def generateScanResult(): this.type = {
+  def getPrivadoJson() = {
     graph
-    this
+    _privadoJson.get
   }
 
   override def graph: Graph = {

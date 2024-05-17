@@ -37,7 +37,7 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
                      |   public String getFirstName() {return firstName;}
                      |   public void setFirstName(String firstName) {this.firstName = firstName;}
                      |}
-                     |""".stripMargin).generateScanResult()
+                     |""".stripMargin)
 
     "tag a firstName identifier" in {
       val identifierNodes = cpg.identifier("firstName").tag.nameExact(Constants.id).l
@@ -70,7 +70,6 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
         |   }
         |}
         |""".stripMargin)
-      .generateScanResult()
 
     "tag a us identifier" in {
       val identifierNodes = cpg.identifier.where(_.tag.nameExact("catLevelOne").valueExact("DerivedSources")).l
@@ -107,7 +106,6 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
         |   }
         |}
         |""".stripMargin)
-      .generateScanResult()
 
     "tag a userone and user identifier" in {
       val identifierNodes = cpg.identifier.where(_.tag.nameExact("catLevelOne").valueExact("DerivedSources")).l

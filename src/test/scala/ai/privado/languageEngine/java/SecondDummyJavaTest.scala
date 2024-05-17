@@ -22,7 +22,7 @@ class SecondDummyJavaTest extends JavaFrontendTestSuite {
         |        this.firstName = firstName;
         |    }
         |}
-        |""".stripMargin).generateScanResult()
+        |""".stripMargin)
 
     "show using only cpg" in {
       cpg.identifier("firstName").nonEmpty shouldBe true

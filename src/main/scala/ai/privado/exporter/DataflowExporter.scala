@@ -175,9 +175,17 @@ object DataflowExporter {
           val newDataflows = dataflows.map { subCatModel =>
             val subCatSinks = subCatModel.sinks.map { sink =>
               val sinkFilteredByElementInPathLimit =
-                if (elementInPathLimit > 0 && !sink.paths.exists(_.path.size <= elementInPathLimit)) {
-                  removedFlows.addOne(sink.copy(paths = sink.paths.drop(1)))
-                  sink.copy(paths = sink.paths.take(1))
+                if (elementInPathLimit > 0) {
+                  val sortedPaths = sink.paths.sortBy(_.path.size)
+                  // If there is no path which is less than the limit, we may need atleast a single path to show a flow for the source-sink pair
+                  if (!sink.paths.exists(_.path.size <= elementInPathLimit)) {
+                    removedFlows.addOne(sink.copy(paths = sortedPaths.drop(1)))
+                    sink.copy(paths = sortedPaths.take(1))
+                  } else {
+                    val (lessThanLimit, moreThanLimit) = sink.paths.partition(_.path.size <= elementInPathLimit)
+                    removedFlows.addOne(sink.copy(paths = moreThanLimit))
+                    sink.copy(paths = lessThanLimit)
+                  }
                 } else sink
 
               val sinkFilteredBySourceSinkPairLimit = if (sourceSinkPairPathLimit > 0) {

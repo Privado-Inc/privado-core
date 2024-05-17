@@ -14,7 +14,7 @@ class ExportUtilityTest extends JavaFrontendTestSuite {
         |public class Dummy {
         |   private String firstName = "random strings";
         |}
-        |""".stripMargin).generateScanResult()
+        |""".stripMargin)
 
     "Test truncate working correctly" in {
       val nodeToTest = cpg.call.methodFullName("<operator>.assignment").head
