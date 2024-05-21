@@ -53,6 +53,7 @@ import scala.util.{Failure, Success, Try}
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
+  // TODO: InferenceRuleInfo
 
   def getEmptyConfigAndRule: ConfigAndRules =
     ConfigAndRules(
@@ -65,7 +66,9 @@ object ScanProcessor extends CommandProcessor {
       List[Semantic](),
       List[RuleInfo](),
       List[SystemConfig](),
-      List[RuleInfo]()
+      List[RuleInfo](),
+      List[RuleInfo](),
+      List[DEDRuleInfo]()
     )
 
   def parseRules(rulesPath: String, lang: Set[Language]): ConfigAndRules = {
@@ -126,6 +129,7 @@ object ScanProcessor extends CommandProcessor {
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
                             nodeType = NodeType.REGULAR
+                            // TODO: add isExternal = True as additional field
                           )
                         )
                         .filter(filterByLang),
@@ -204,7 +208,8 @@ object ScanProcessor extends CommandProcessor {
                             nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
                           )
                         )
-                        .filter(filterByLang)
+                        .filter(filterByLang),
+                      dedRules = configAndRules.dedRules
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -229,7 +234,8 @@ object ScanProcessor extends CommandProcessor {
               sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
               systemConfig = a.systemConfig ++ b.systemConfig,
               auditConfig = a.auditConfig ++ b.auditConfig,
-              inferences = a.inferences ++ b.inferences
+              inferences = a.inferences ++ b.inferences,
+              dedRules = a.dedRules ++ b.dedRules
             )
           )
       catch {
@@ -264,6 +270,8 @@ object ScanProcessor extends CommandProcessor {
     }
     var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
+      println("External")
+      println(config.externalConfigPath.head)
       externalConfigAndRules = parseRules(config.externalConfigPath.head, lang)
     }
     /*
@@ -288,6 +296,7 @@ object ScanProcessor extends CommandProcessor {
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
     val inferences   = externalConfigAndRules.inferences ++ internalConfigAndRules.inferences
+    val dedRules     = externalConfigAndRules.dedRules ++ internalConfigAndRules.dedRules
     val mergedRules =
       ConfigAndRules(
         sources = mergePatterns(sources),
@@ -300,10 +309,12 @@ object ScanProcessor extends CommandProcessor {
         sinkSkipList = sinkSkipList.distinctBy(_.id),
         systemConfig = systemConfig,
         auditConfig = auditConfig.distinctBy(_.id),
-        inferences = mergePatterns(inferences)
+        inferences = mergePatterns(inferences),
+        dedRules = dedRules
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
+    println(s"DED Rules: ${mergedRules.dedRules}")
 
     ruleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
     ruleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))
@@ -315,7 +326,8 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.policies.size +
           mergedRules.exclusions.size +
           mergedRules.auditConfig.size +
-          mergedRules.inferences.size
+          mergedRules.inferences.size +
+          mergedRules.dedRules.size
       )
     }
 

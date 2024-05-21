@@ -91,6 +91,7 @@ object CatLevelOne extends Enumeration {
   val POLICIES    = CatLevelOneIn("policies", "Policies")
   val THREATS     = CatLevelOneIn("threats", "Threats")
   val INFERENCES  = CatLevelOneIn("inferences", "Inferences")
+  val DED         = CatLevelOneIn("ded", "Ded")
   val UNKNOWN     = CatLevelOneIn("unknown", "Unknown")
 
   // internal CatLevelOne

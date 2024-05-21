@@ -84,7 +84,8 @@ case class ConfigAndRules(
   sinkSkipList: List[RuleInfo] = List(),
   systemConfig: List[SystemConfig] = List(),
   auditConfig: List[RuleInfo] = List(),
-  inferences: List[RuleInfo] = List()
+  inferences: List[RuleInfo] = List(),
+  dedRules: List[DEDRuleInfo] = List()
 )
 
 case class AllowedSourceFilters(sources: List[String])
@@ -122,6 +123,12 @@ case class PolicyOrThreat(
   file: String,
   categoryTree: Array[String]
 )
+
+case class DEDVariable(name: String, typeInSrc: String, lineNumber: Option[Int])
+
+case class DEDClassificationData(id: String, variables: List[DEDVariable])
+
+case class DEDRuleInfo(id: String, filePath: String, classificationData: List[DEDClassificationData])
 
 case class Semantic(
   signature: String,
@@ -286,6 +293,47 @@ object CirceEnDe {
     }
   }
 
+  implicit val decodeDEDVariable: Decoder[DEDVariable] = new Decoder[DEDVariable] {
+    override def apply(c: HCursor): Result[DEDVariable] = {
+      val name       = c.downField(Constants.name).as[String]
+      val typeInSrc  = c.downField(Constants.typeInSrc).as[String]
+      val lineNumber = c.downField(Constants.lineNumber).as[Int]
+
+      Right(
+        DEDVariable(
+          name = name.getOrElse(""),
+          typeInSrc = typeInSrc.getOrElse(""),
+          lineNumber = Some(lineNumber.getOrElse(Constants.defaultLineNumber))
+        )
+      )
+    }
+  }
+
+  implicit val decodeDEDClassificationData: Decoder[DEDClassificationData] = new Decoder[DEDClassificationData] {
+    override def apply(c: HCursor): Result[DEDClassificationData] = {
+      val id        = c.downField(Constants.filePath).as[String]
+      val variables = c.downField(Constants.variables).as[List[DEDVariable]]
+
+      Right(DEDClassificationData(id = id.getOrElse(""), variables = variables.getOrElse(List[DEDVariable]())))
+    }
+  }
+
+  implicit val decodeDEDRuleInfo: Decoder[DEDRuleInfo] = new Decoder[DEDRuleInfo] {
+    override def apply(c: HCursor): Result[DEDRuleInfo] = {
+      val id                 = c.downField(Constants.filePath).as[String]
+      val filePath           = c.downField(Constants.filePath).as[String]
+      val classificationData = c.downField(Constants.classificationData).as[List[DEDClassificationData]]
+
+      Right(
+        DEDRuleInfo(
+          id = id.getOrElse(""),
+          filePath = filePath.getOrElse(""),
+          classificationData = classificationData.getOrElse(List[DEDClassificationData]())
+        )
+      )
+    }
+  }
+
   implicit val decodeRules: Decoder[ConfigAndRules] = new Decoder[ConfigAndRules] {
     override def apply(c: HCursor): Result[ConfigAndRules] = {
       val sources      = c.downField(Constants.sources).as[List[RuleInfo]]
@@ -299,6 +347,7 @@ object CirceEnDe {
       val systemConfig = c.downField(Constants.systemConfig).as[List[SystemConfig]]
       val auditConfig  = c.downField(Constants.auditConfig).as[List[RuleInfo]]
       val inferences   = c.downField(Constants.inferences).as[List[RuleInfo]]
+      val dedRules     = c.downField(Constants.DED).as[List[DEDRuleInfo]]
       Right(
         ConfigAndRules(
           sources = sources.getOrElse(List[RuleInfo]()),
@@ -311,7 +360,8 @@ object CirceEnDe {
           sinkSkipList = sinkSkipList.getOrElse(List[RuleInfo]()),
           systemConfig = systemConfig.getOrElse(List[SystemConfig]()),
           auditConfig = auditConfig.getOrElse(List[RuleInfo]()),
-          inferences = inferences.getOrElse(List[RuleInfo]())
+          inferences = inferences.getOrElse(List[RuleInfo]()),
+          dedRules = dedRules.getOrElse(List[DEDRuleInfo]())
         )
       )
     }
