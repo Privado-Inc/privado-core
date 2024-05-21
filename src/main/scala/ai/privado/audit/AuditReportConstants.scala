@@ -45,6 +45,8 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_METHOD_NAME = "Collection Method Full Name"
 
+  val ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER = "Source Line Number"
+
   val ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX = "^(.*)(Controller|Service|Impl|Helper|Util|Processor|Dao)$"
 
   val ELEMENT_DISCOVERY_GET_SET_METHOD_REGEX = "^(get|set).*"

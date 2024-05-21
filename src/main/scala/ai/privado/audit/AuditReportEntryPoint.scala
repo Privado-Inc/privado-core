@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
-import org.apache.xmlbeans.XmlException
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
@@ -25,7 +24,8 @@ object AuditReportEntryPoint {
     sourceRuleId: String,
     inputToCollection: Boolean,
     collectionEndpointPath: String,
-    collectionMethodFullName: String
+    collectionMethodFullName: String,
+    sourceLineNumber: String
   )
 
   implicit val DataElementDiscoveryAuditModelDecoder: Decoder[DataElementDiscoveryAudit] =
@@ -35,6 +35,9 @@ object AuditReportEntryPoint {
 
   def eliminateEmptyCellValueIfExist(str: String): String =
     if (str == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) "" else str
+
+  private def mapValidLineNumbers(str: String): String =
+    if (str == "-1") "" else str
 
   def createDataElementDiscoveryJson(dataElementDiscoveryData: List[List[String]], repoPath: String) = {
 
@@ -51,7 +54,8 @@ object AuditReportEntryPoint {
         eliminateEmptyCellValueIfExist(item(6)),
         if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(8)),
-        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        if (item.size >= 11) mapValidLineNumbers(item(10)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
       )
     }
     JSONExporter.dataElementDiscoveryAuditFileExport(

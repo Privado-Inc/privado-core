@@ -105,6 +105,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
 
+      val hs = mutable.HashSet[String]()
       workbookList.foreach(row => {
         classNameList += row.head
         fileScoreList += row(2)
@@ -113,7 +114,15 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!collectionTagMap.contains(row.head)) collectionTagMap.put(row.head, row(7))
         if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(8))
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
+        // Bind entity's name to its line number for testing.
+        hs += s"${row(3)}+${row.last}"
       })
+
+      hs should contain("firstName+5")
+      hs should contain("accountNo+5")
+      hs should contain("invoiceNo+6")
+      hs should contain("payment+11")
+      hs should not contain ("nonExistentEntity+8")
 
       // Validate class name in result
       classNameList should contain("com.test.privado.Entity.User")

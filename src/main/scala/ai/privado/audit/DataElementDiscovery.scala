@@ -1,13 +1,13 @@
 package ai.privado.audit
 
-import ai.privado.audit.DataElementDiscovery.{CollectionMethodInfo, getClass, getFileScore, getSourceUsingRules, logger}
+import ai.privado.audit.DataElementDiscovery.getClass
 import ai.privado.cache.TaggerCache
+import ai.privado.dataflow.Dataflow
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{File, Identifier, Local, Member, MethodParameterIn, TypeDecl}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import ai.privado.dataflow.Dataflow
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -239,7 +239,8 @@ object DataElementDiscovery {
       AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER
     )
 
     // Construct the excel sheet and fill the data
@@ -260,7 +261,8 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
-                  info.methodDetail
+                  info.methodDetail,
+                  key.lineNumber.getOrElse(-1).toString
                 )
               })
             } else {
@@ -274,7 +276,8 @@ object DataElementDiscovery {
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                key.lineNumber.getOrElse(-1).toString
               )
             }
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
@@ -291,7 +294,8 @@ object DataElementDiscovery {
                     ruleMemberInfo.getOrElse(member.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    member.lineNumber.getOrElse(-1).toString
                   )
                 } else {
                   workbookResult += List(
@@ -304,7 +308,8 @@ object DataElementDiscovery {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    member.lineNumber.getOrElse(-1).toString
                   )
                 }
               }
@@ -322,7 +327,8 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
-                  info.methodDetail
+                  info.methodDetail,
+                  key.lineNumber.getOrElse(-1).toString
                 )
               })
             } else {
@@ -336,7 +342,8 @@ object DataElementDiscovery {
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                key.lineNumber.getOrElse(-1).toString
               )
             }
             value.foreach {
@@ -351,7 +358,8 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  member.lineNumber.getOrElse(-1).toString
                 )
               }
             }
@@ -580,7 +588,8 @@ object DataElementDiscoveryJS {
       AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER
     )
     // Construct the excel sheet and fill the data
     try {
@@ -596,7 +605,8 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            key.lineNumber.getOrElse(-1).toString
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
           val addedMembers   = mutable.Set[String]()
@@ -619,7 +629,8 @@ object DataElementDiscoveryJS {
                     ruleMemberInfo.getOrElse(member.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    member.lineNumber.getOrElse(-1).toString
                   )
                 } else {
                   workbookResult += List(
@@ -632,7 +643,8 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    member.lineNumber.getOrElse(-1).toString
                   )
                 }
               }
@@ -652,7 +664,8 @@ object DataElementDiscoveryJS {
                     ruleMemberInfo.getOrElse(param.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    param.lineNumber.getOrElse(-1).toString
                   )
                 } else {
                   workbookResult += List(
@@ -665,7 +678,8 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    param.lineNumber.getOrElse(-1).toString
                   )
                 }
               }
@@ -697,7 +711,8 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            identifier.lineNumber.getOrElse(-1).toString
           )
       })
 
@@ -723,7 +738,8 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            local.lineNumber.getOrElse(-1).toString
           )
       })
 
