@@ -416,7 +416,7 @@ object RubyProcessor {
                 override def call(): (String, ProgramContext) = {
                   parser.parse(x) match
                     case Failure(exception) =>
-                      logger.warn(s"Could not parse file: $x, skipping", exception); throw exception
+                      logger.error(s"Could not parse file: $x, skipping", exception); throw exception
                     case Success(ast) => x -> ast
                 }
               }
