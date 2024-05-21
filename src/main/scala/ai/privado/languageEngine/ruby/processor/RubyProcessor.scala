@@ -88,6 +88,14 @@ import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.ProgramContext
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
+import java.util
+import java.util.concurrent.{Callable, Executors}
+import java.util.stream.{Collectors, StreamSupport}
+import java.util.{Collections, Spliterator, Spliterators}
+import scala.jdk.CollectionConverters.*
+import scala.util.Try
+
+import java.util.concurrent.{Callable, Executors, TimeUnit}
 
 object RubyProcessor {
 
@@ -403,15 +411,27 @@ object RubyProcessor {
               ignoredFilesRegex = Option(config.ignoredFilesRegex),
               ignoredFilesPath = Option(config.ignoredFiles)
             )
-            .map(x =>
-              () =>
-                parser.parse(x) match
-                  case Failure(exception) =>
-                    logger.warn(s"Could not parse file: $x, skipping", exception); throw exception
-                  case Success(ast) => x -> ast
-            )
-            .iterator
-          ConcurrentTaskUtil.runUsingThreadPool(tasks).flatMap(_.toOption)
+            .map { x =>
+              new Callable[(String, ProgramContext)] {
+                override def call(): (String, ProgramContext) = {
+                  parser.parse(x) match
+                    case Failure(exception) =>
+                      logger.warn(s"Could not parse file: $x, skipping", exception); throw exception
+                    case Success(ast) => x -> ast
+                }
+              }
+            }
+            .asJavaCollection
+          val ex = Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE)
+          try {
+            ex.invokeAll(tasks, privadoInput.rubyParserTimeout, TimeUnit.SECONDS)
+              .asScala
+              .map(x => Try(x.get()))
+              .flatMap(_.toOption)
+              .toList
+          } finally {
+            ex.shutdown()
+          }
         }
 
         new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
