@@ -388,7 +388,6 @@ object RubyProcessor {
               ignoredFilesPath = Option(config.ignoredFiles)
             )
             .map { x =>
-              println(x)
               ParserTask(x, parser)
             }
           val ex = Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE)
@@ -400,13 +399,18 @@ object RubyProcessor {
               val file   = tasks(index).file
               val result = results(index)
               if (result.isDone) {
-                finalResult += result.get()
+                try {
+                  finalResult += result.get()
+                } catch {
+                  case _ =>
+                    logger.error(s"Error while parsing file -> '$file'")
+                }
               } else {
                 logger.error(s"Parser timed out for file -> '$file'")
               }
             }
             println(
-              s"${TimeMetric.getNewTime()} - No of files that are not parsed - '${tasks.size - finalResult.size}'"
+              s"${TimeMetric.getNewTime()} - No of files that are not parsed (including timeout and with error) - '${tasks.size - finalResult.size}'"
             )
             finalResult.toList
           } finally {
