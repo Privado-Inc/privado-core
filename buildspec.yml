@@ -10,24 +10,24 @@ phases:
       - echo "-----Common Function: Start-------"
       - |
         search_and_delete_line() {
-          # Assign the function parameters to variables
-          local search_text="$1"
-          local file_path="$2"
-          # Find the line number of the first occurrence of the search text
-          local line_number=$(grep -n -m 1 "$search_text" "$file_path" | cut -d: -f1)
-          if [ -z "$line_number" ]; then
-            echo "Text '$search_text' not found in the file."
-          else
-            echo "First occurrence of '$search_text' found at line number: $line_number"
-            # Comment out the line with the given line number
-            # sed -i "" "${line_number}s~^~//~" "$file_path"
-            sed -i "${line_number}d" "$file_path"
-            echo "Line number $line_number is now deleted."
-          fi
-          echo "------------"
-          # Display the first 10 lines of the file
-          head -n 15 "$file_path"
-          echo "------------"
+        # Assign the function parameters to variables
+        local search_text="$1"
+        local file_path="$2"
+        # Find the line number of the first occurrence of the search text
+        local line_number=$(grep -n -m 1 "$search_text" "$file_path" | cut -d: -f1)
+        if [ -z "$line_number" ]; then
+          echo "Text '$search_text' not found in the file."
+        else
+          echo "First occurrence of '$search_text' found at line number: $line_number"
+          # Comment out the line with the given line number
+          # sed -i "" "${line_number}s~^~//~" "$file_path"
+          sed -i "${line_number}d" "$file_path"
+          echo "Line number $line_number is now deleted."
+        fi
+        echo "------------"
+        # Display the first 10 lines of the file
+        head -n 15 "$file_path"
+        echo "------------"
         }
       - echo "---Common Function: End---------"
       - echo "------clone and publish codepropertygraph: start--------"
