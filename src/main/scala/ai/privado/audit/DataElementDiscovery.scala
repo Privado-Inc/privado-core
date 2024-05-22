@@ -14,6 +14,23 @@ import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
+object DataElementDiscoveryUtils {
+  // Not used for security-purposes. Only to generate a unique identifier.
+  private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
+
+  def nodeIdentifier(path: String, name: String, tpe: String, offset: String): String =
+    md5
+      .digest(s"$path-$name-$tpe-$offset".getBytes)
+      .map(0xff & _)
+      .map("%02x".format(_))
+      .foldLeft("")(_ + _)
+
+  def nodeOffset(node: TypeDecl | Member | MethodParameterIn | Identifier | Local): String = node.lineNumber match {
+    case Some(offset) => offset.toString
+    case _            => ""
+  }
+}
+
 object DataElementDiscovery {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -240,7 +257,9 @@ object DataElementDiscovery {
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
       AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
+      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
     )
 
     // Construct the excel sheet and fill the data
@@ -249,12 +268,17 @@ object DataElementDiscovery {
         case (key, value) => {
           val isCollectionInput = if (collectionInputList.contains(key.fullName)) "YES" else "NO"
           if (taggedMemberInfo.contains(key.fullName)) {
+            val path   = key.file.name.headOption.getOrElse(Constants.EMPTY)
+            val tpe    = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_METHOD
+            val offset = DataElementDiscoveryUtils.nodeOffset(key)
+            val hash   = DataElementDiscoveryUtils.nodeIdentifier(path, key.fullName, tpe, offset)
+
             if (collectionMethodInfo.contains(key.fullName)) {
               collectionMethodInfo(key.fullName).foreach(info => {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  getFileScore(path, xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -262,14 +286,16 @@ object DataElementDiscovery {
                   isCollectionInput,
                   info.endpoint,
                   info.methodDetail,
-                  key.lineNumber.getOrElse(-1).toString
+                  offset,
+                  hash,
+                  tpe
                 )
               })
             } else {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                getFileScore(path, xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -277,12 +303,19 @@ object DataElementDiscovery {
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                key.lineNumber.getOrElse(-1).toString
+                hash,
+                offset,
+                tpe
               )
             }
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
             value.foreach {
               case (member: Member) => {
+                val path   = member.file.name.headOption.getOrElse(Constants.EMPTY)
+                val tpe    = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+                val offset = DataElementDiscoveryUtils.nodeOffset(member)
+                val hash   = DataElementDiscoveryUtils.nodeIdentifier(path, member.name, tpe, offset)
+
                 if (ruleMemberInfo.contains(member.name)) {
                   workbookResult += List(
                     key.fullName,
@@ -295,7 +328,9 @@ object DataElementDiscovery {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    member.lineNumber.getOrElse(-1).toString
+                    offset,
+                    hash,
+                    tpe
                   )
                 } else {
                   workbookResult += List(
@@ -309,18 +344,25 @@ object DataElementDiscovery {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    member.lineNumber.getOrElse(-1).toString
+                    offset,
+                    hash,
+                    tpe
                   )
                 }
               }
             }
           } else {
+            val path   = key.file.name.headOption.getOrElse(Constants.EMPTY)
+            val tpe    = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+            val offset = DataElementDiscoveryUtils.nodeOffset(key)
+            val hash   = DataElementDiscoveryUtils.nodeIdentifier(path, key.name, tpe, offset)
+
             if (collectionMethodInfo.contains(key.fullName)) {
               collectionMethodInfo(key.fullName).foreach(info => {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  getFileScore(path, xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -328,14 +370,16 @@ object DataElementDiscovery {
                   isCollectionInput,
                   info.endpoint,
                   info.methodDetail,
-                  key.lineNumber.getOrElse(-1).toString
+                  offset,
+                  hash,
+                  tpe
                 )
               })
             } else {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                getFileScore(path, xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -343,11 +387,18 @@ object DataElementDiscovery {
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                key.lineNumber.getOrElse(-1).toString
+                offset,
+                hash,
+                tpe
               )
             }
             value.foreach {
               case (member: Member) => {
+                val path   = member.file.name.headOption.getOrElse(Constants.EMPTY)
+                val tpe    = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+                val offset = DataElementDiscoveryUtils.nodeOffset(member)
+                val hash   = DataElementDiscoveryUtils.nodeIdentifier(path, member.name, tpe, offset)
+
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
@@ -359,7 +410,9 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  member.lineNumber.getOrElse(-1).toString
+                  offset,
+                  hash,
+                  tpe
                 )
               }
             }
@@ -589,12 +642,16 @@ object DataElementDiscoveryJS {
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
       AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
+      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
     )
     // Construct the excel sheet and fill the data
     try {
       elementInfo.foreach {
         case (key, value) => {
+          val offset = DataElementDiscoveryUtils.nodeOffset(key)
+
           workbookResult += List(
             key.name,
             key.file.head.name,
@@ -606,7 +663,9 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            key.lineNumber.getOrElse(-1).toString
+            offset,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
           val addedMembers   = mutable.Set[String]()
@@ -614,8 +673,13 @@ object DataElementDiscoveryJS {
 
           value.foreach {
             case (member: Member) => {
+              val path   = member.file.name.headOption.getOrElse(Constants.EMPTY)
+              val tpe    = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+              val offset = DataElementDiscoveryUtils.nodeOffset(member)
+              val hash   = DataElementDiscoveryUtils.nodeIdentifier(path, member.name, tpe, offset)
               val memberUniqueKey =
                 s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
+
               if (member.name.nonEmpty && !addedMembers.contains(memberUniqueKey)) {
                 addedMembers.add(memberUniqueKey)
                 if (ruleMemberInfo.contains(member.name)) {
@@ -630,7 +694,9 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    member.lineNumber.getOrElse(-1).toString
+                    offset,
+                    hash,
+                    tpe
                   )
                 } else {
                   workbookResult += List(
@@ -644,13 +710,20 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    member.lineNumber.getOrElse(-1).toString
+                    offset,
+                    hash,
+                    tpe
                   )
                 }
               }
             }
             case (param: MethodParameterIn) => {
+              val path           = param.file.name.headOption.getOrElse(Constants.EMPTY)
+              val tpe            = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_METHOD_PARAM
+              val offset         = DataElementDiscoveryUtils.nodeOffset(param)
+              val hash           = DataElementDiscoveryUtils.nodeIdentifier(path, param.name, tpe, offset)
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
+
               if (!addedParams.contains(paramUniqueKey)) {
                 addedParams.add(paramUniqueKey)
                 if (ruleMemberInfo.contains(param.name)) {
@@ -665,7 +738,9 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    param.lineNumber.getOrElse(-1).toString
+                    offset,
+                    hash,
+                    tpe
                   )
                 } else {
                   workbookResult += List(
@@ -679,7 +754,9 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    param.lineNumber.getOrElse(-1).toString
+                    offset,
+                    hash,
+                    tpe
                   )
                 }
               }
@@ -690,8 +767,12 @@ object DataElementDiscoveryJS {
       }
       val addedIdentifiers = mutable.Set[String]()
       identifiers.foreach(identifier => {
-        val identifierUniqueKey =
-          s"${identifier.typeFullName}${identifier.file.name.headOption.getOrElse(Constants.EMPTY)}${identifier.name}"
+        val path                = identifier.file.name.headOption.getOrElse(Constants.EMPTY)
+        val tpe                 = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER
+        val offset              = DataElementDiscoveryUtils.nodeOffset(identifier)
+        val hash                = DataElementDiscoveryUtils.nodeIdentifier(path, identifier.name, tpe, offset)
+        val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
+
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
@@ -704,7 +785,7 @@ object DataElementDiscoveryJS {
           workbookResult += List(
             identifier.typeFullName,
             identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
-            getFileScoreJS(identifier.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(path, xtocpg),
             identifier.name,
             identifier.typeFullName,
             AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -712,14 +793,20 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            identifier.lineNumber.getOrElse(-1).toString
+            offset,
+            hash,
+            tpe
           )
       })
 
       val addedLocals = mutable.Set[String]()
       locals.foreach(local => {
-        val localsUniqueKey =
-          s"${local.typeFullName}${local.file.name.headOption.getOrElse(Constants.EMPTY)}${local.name}"
+        val path            = local.file.name.headOption.getOrElse(Constants.EMPTY)
+        val tpe             = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_LOCAL
+        val offset          = DataElementDiscoveryUtils.nodeOffset(local)
+        val hash            = DataElementDiscoveryUtils.nodeIdentifier(path, local.name, tpe, offset)
+        val localsUniqueKey = s"${local.typeFullName}$path${local.name}"
+
         if (
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
@@ -731,7 +818,7 @@ object DataElementDiscoveryJS {
           workbookResult += List(
             local.typeFullName,
             local.file.head.name,
-            getFileScoreJS(local.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(path, xtocpg),
             local.name,
             local.typeFullName,
             AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -739,7 +826,9 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            local.lineNumber.getOrElse(-1).toString
+            offset,
+            hash,
+            tpe
           )
       })
 

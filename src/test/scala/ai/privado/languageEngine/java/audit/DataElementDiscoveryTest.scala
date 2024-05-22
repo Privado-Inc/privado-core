@@ -95,17 +95,17 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     }
 
     "Test final discovery result" in {
-      val classNameList    = new mutable.HashSet[String]()
-      val fileScoreList    = new mutable.HashSet[String]()
-      val memberList       = new mutable.HashSet[String]()
-      val sourceRuleIdMap  = new mutable.HashMap[String, String]()
-      val collectionTagMap = new mutable.HashMap[String, String]()
-      val endpointMap      = new mutable.HashMap[String, String]()
-      val methodNameMap    = new mutable.HashMap[String, String]()
+      val classNameList     = new mutable.HashSet[String]()
+      val fileScoreList     = new mutable.HashSet[String]()
+      val memberList        = new mutable.HashSet[String]()
+      val sourceRuleIdMap   = new mutable.HashMap[String, String]()
+      val collectionTagMap  = new mutable.HashMap[String, String]()
+      val endpointMap       = new mutable.HashMap[String, String]()
+      val methodNameMap     = new mutable.HashMap[String, String]()
+      val members           = mutable.HashSet[String]()
+      val uniqueIdentifiers = mutable.ArrayBuffer[String]()
+      val workbookList      = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
 
-      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
-
-      val hs = mutable.HashSet[String]()
       workbookList.foreach(row => {
         classNameList += row.head
         fileScoreList += row(2)
@@ -115,14 +115,18 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(8))
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
         // Bind entity's name to its line number for testing.
-        hs += s"${row(3)}+${row.last}"
+        members += s"${row(3)}+${row(10)}+${row.last}"
+        uniqueIdentifiers += row(11)
       })
 
-      hs should contain("firstName+5")
-      hs should contain("accountNo+5")
-      hs should contain("invoiceNo+6")
-      hs should contain("payment+11")
-      hs should not contain ("nonExistentEntity+8")
+      members should contain("firstName+5+Member")
+      members should contain("accountNo+5+Member")
+      members should contain("invoiceNo+6+Member")
+      members should contain("payment+11+Member")
+      members should not contain ("nonExistentEntity+8+Member")
+
+      // All identifiers generated via MD5 should be unique
+      uniqueIdentifiers.size shouldBe uniqueIdentifiers.distinct.size
 
       // Validate class name in result
       classNameList should contain("com.test.privado.Entity.User")

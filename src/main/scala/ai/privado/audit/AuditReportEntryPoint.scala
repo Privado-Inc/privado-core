@@ -25,7 +25,9 @@ object AuditReportEntryPoint {
     inputToCollection: Boolean,
     collectionEndpointPath: String,
     collectionMethodFullName: String,
-    sourceLineNumber: String
+    variableDeclarationLineNumber: String,
+    variableIdentifier: String,
+    variableType: String
   )
 
   implicit val DataElementDiscoveryAuditModelDecoder: Decoder[DataElementDiscoveryAudit] =
@@ -35,9 +37,6 @@ object AuditReportEntryPoint {
 
   def eliminateEmptyCellValueIfExist(str: String): String =
     if (str == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) "" else str
-
-  private def mapValidLineNumbers(str: String): String =
-    if (str == "-1") "" else str
 
   def createDataElementDiscoveryJson(dataElementDiscoveryData: List[List[String]], repoPath: String) = {
 
@@ -55,7 +54,15 @@ object AuditReportEntryPoint {
         if (item(5) == "YES") true else false,
         eliminateEmptyCellValueIfExist(item(8)),
         if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        if (item.size >= 11) mapValidLineNumbers(item(10)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+
+        // Line number
+        if (item.size >= 11) eliminateEmptyCellValueIfExist(item(10)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+
+        // variable identifier
+        if (item.size >= 12) eliminateEmptyCellValueIfExist(item(11)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+
+        // variable type
+        if (item.size >= 13) eliminateEmptyCellValueIfExist(item(12)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
       )
     }
     JSONExporter.dataElementDiscoveryAuditFileExport(
