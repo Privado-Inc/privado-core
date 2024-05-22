@@ -12,7 +12,7 @@ import ai.privado.model.{CatLevelOne, Constants, SourceCodeModel}
 class RetrofitAPITaggerTest extends KotlinFrontendTestSuite {
 
   val ruleCache =
-    RuleCache().setRule(RuleInfoTestData.rule.copy(collections = CollectionRuleTestData.kotlinCollectionRule))
+    RuleCache().setRule(RuleInfoTestData.rule.copy(collections = CollectionRuleTestData.annotationCollectionRule))
 
   "API call made using Retrofit library" should {
     val cpg = code(

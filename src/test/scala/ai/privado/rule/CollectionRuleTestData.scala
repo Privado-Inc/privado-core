@@ -4,9 +4,9 @@ import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeT
 
 object CollectionRuleTestData {
 
-  val kotlinCollectionRule = List(
+  val annotationCollectionRule = List(
     RuleInfo(
-      "Collections.Kotlin.Annotation",
+      "Collections.HTTP.Annotations",
       "Annotation",
       "",
       FilterProperty.CODE,
@@ -19,7 +19,7 @@ object CollectionRuleTestData {
       "",
       CatLevelOne.COLLECTIONS,
       catLevelTwo = Constants.annotations,
-      Language.KOTLIN,
+      Language.UNKNOWN,
       Array()
     )
   )
