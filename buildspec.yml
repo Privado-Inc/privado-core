@@ -6,6 +6,7 @@ phases:
       java: corretto21
   build:
     commands:
+      - BASE_DIRECTORY=$(pwd)
       - mkdir imagebuilder && cd imagebuilder
       - curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
       - apt-get install git-lfs
