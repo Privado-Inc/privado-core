@@ -1,69 +1,78 @@
 version: 0.2
 
-env:
-  shell: bash
 phases:
-  pre_build:
-    commands:
-      - echo Logging in to Amazon ECR...
-      - docker login -u $DOCKER_USER -p $DOCKER_ACCESS_TOKEN
-      - aws --version
-      - ACCOUNT_ID=${CODEBUILD_BUILD_ARN} && IFS=':' && set -- $ACCOUNT_ID && ACCOUNT_ID=$5
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-      - REPOSITORY_URI=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/privado-core
-      - CODE_ARTIFACT_URL=privado-$ACCOUNT_ID.d.codeartifact.$AWS_REGION.amazonaws.com
-      - CODEARTIFACT_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain privado --domain-owner $ACCOUNT_ID --query authorizationToken --output text)
-      - |
-        if [[ $AWS_REGION = "eu-west-1" ]]
-        then
-            LATEST_TAG="$(git describe --tags --abbrev=0)"
-            VERSION=${LATEST_TAG:1}
-        else
-            LATEST_TAG=$(curl -i https://api.github.com/repos/Privado-Inc/privado-core/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-            VERSION_INITIAL=${LATEST_TAG:1}
-            VERSION=$VERSION_INITIAL-$CODEBUILD_BUILD_NUMBER
-        fi
-      - echo $VERSION
-      - echo $BRANCH_NAME
-      - |
-        if [[ $AWS_REGION = "eu-west-1" ]]
-        then
-            TAG_1=latest
-        else
-            TAG_1=${CODEBUILD_WEBHOOK_TRIGGER:7}
-        fi
-      - TAG_2=$VERSION
-      - TAG_3=${CODEBUILD_WEBHOOK_HEAD_REF##*/}
-
+  install:
+    runtime-versions:
+      java: corretto17
   build:
     commands:
-      - echo Build started on `date`
-      - echo Building the Docker image...
+      - mkdir imagebuilder && cd imagebuilder
+      - echo "-----Common Function: Start-------"
       - |
-        if [[ $AWS_REGION = "eu-west-1" ]]
-        then
-            docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION=$VERSION --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
-        else
-            docker build -t $REPOSITORY_URI:latest --build-arg JAR_VERSION="dev-SNAPSHOT" --build-arg VERSION=$VERSION --build-arg CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL --build-arg CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN .
-        fi
-      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_1
-      - docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_2
-  post_build:
-    commands:
-      - echo Build completed on `date`
-      - echo "Removing older <untagged> images"
-      - IMAGES_TO_DELETE=$(aws ecr list-images --region $AWS_REGION --repository-name privado-core --filter "tagStatus=UNTAGGED" --query 'imageIds[*]' --max-items 100 --output json)
-      - echo "$IMAGES_TO_DELETE"
-      - aws ecr batch-delete-image --region $AWS_REGION --repository-name privado-core --image-ids "$IMAGES_TO_DELETE" || true
-      - echo Pushing the Docker images...
-      - docker push $REPOSITORY_URI:$TAG_1
-      - docker push $REPOSITORY_URI:$TAG_2
-      - |
-        if [[ -z "$TAG_3" ]]
-        then
-              echo "\$TAG_3 is empty"
-        else
-              docker tag $REPOSITORY_URI:latest $REPOSITORY_URI:$TAG_3
-              docker push $REPOSITORY_URI:$TAG_3
-        fi
-      - echo completed pushing image to ecr
+        search_and_delete_line() {
+          # Assign the function parameters to variables
+          local search_text="$1"
+          local file_path="$2"
+          # Find the line number of the first occurrence of the search text
+          local line_number=$(grep -n -m 1 "$search_text" "$file_path" | cut -d: -f1)
+          if [ -z "$line_number" ]; then
+            echo "Text '$search_text' not found in the file."
+          else
+            echo "First occurrence of '$search_text' found at line number: $line_number"
+            # Comment out the line with the given line number
+            # sed -i "" "${line_number}s~^~//~" "$file_path"
+            sed -i "${line_number}d" "$file_path"
+            echo "Line number $line_number is now deleted."
+          fi
+          echo "------------"
+          # Display the first 10 lines of the file
+          head -n 15 "$file_path"
+          echo "------------"
+        }
+      - echo "---Common Function: End---------"
+      - echo "------clone and publish codepropertygraph: start--------"
+      - git clone -b $BRANCH_NAME https://github.com/Privado-Inc/codepropertygraph
+      - cd codepropertygraph
+      - sbt publishM2
+      - cpgVersionGenerated=$(ls -t ~/.m2/repository/io/shiftleft/codepropertygraph-domain-classes_3/ | head -n 1)
+      - echo $cpgVersionGenerated
+      - echo "------clone and publish codepropertygraph: end--------"
+      - echo "----------Joern: Start-----------"
+      - cd $BASE_DIRECTORY/imagebuilder
+      - git clone -b $BRANCH_NAME https://github.com/Privado-Inc/joern
+      - cd joern
+      - search_and_delete_line "val cpgVersion" "build.sbt"
+      - echo "added new version of cpg in Joern"
+      - cpg_version_statement="val cpgVersion = \"$cpgVersionGenerated\""
+      - sed -i "5s/^/$cpg_version_statement\n/" "build.sbt"
+      - echo "first 10 line from build.sbt"
+      - head -n 15 "build.sbt"
+      - sbt publishM2
+      - joernVersionGenerated=$(ls -t ~/.m2/repository/io/joern/c2cpg_3/ | head -n 1)
+      - joern_version_statement="val joernVersion = \"$joernVersionGenerated\""
+      - echo "----------Joern: End-----------"
+      - echo "----------Privado-Core Start-----------"
+      - cd $BASE_DIRECTORY/imagebuilder
+      - git clone -b $BRANCH_NAME https://github.com/Privado-Inc/privado-core
+      - cd privado-core
+      - search_and_delete_line "val cpgVersion" "build.sbt"
+      - echo "added new version of cpg in privado-core"
+      - sed -i "10s/^/$cpg_version_statement\n/" "build.sbt"
+      - search_and_delete_line "val joernVersion" "build.sbt"
+      - echo "added new version of joern in privado-core"
+      - sed -i  "11s/^/$joern_version_statement\n/" "build.sbt"
+      - head -n 15 "build.sbt"
+      - sbt universal:packageBin
+      - echo "script ended successfully"
+      - echo "----------Privado-Core End-----------"
+      - echo "----------Replace Dockerfile Start-----------"
+      - cp $BASE_DIRECTORY/imagebuilder/privado-core/custom-build/Dockerfile $BASE_DIRECTORY/imagebuilder/privado-core/Dockerfile
+      - echo "----------Replace Dockerfile End-----------"
+      - echo "----------Building privado-core docker Start-----------"
+      - cd $BASE_DIRECTORY/imagebuilder/privado-core
+      - docker build -t $ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/privado-core:$BRANCH_NAME .
+      - echo "----------Building privado-core docker End-----------"
+      - echo "----------Pushing privado-core Start-----------"
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin $ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com
+      - docker push $ACCOUNT_ID.dkr.ecr.ap-south-1.amazonaws.com/privado-core:$BRANCH_NAME
+      - echo "----------Pushing privado-core End-----------"
