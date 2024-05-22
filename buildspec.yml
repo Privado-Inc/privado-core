@@ -3,10 +3,12 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: corretto17
+      java: corretto21
   build:
     commands:
       - mkdir imagebuilder && cd imagebuilder
+      - curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
+      - apt-get install git-lfs
       - echo "-----Common Function:Start-------"
       - |
           search_and_delete_line() {
