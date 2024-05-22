@@ -405,11 +405,11 @@ object RubyProcessor {
                   finalResult += result.get()
                 } catch {
                   case _ =>
-                    logger.error(s"Error while parsing file -> '$file'")
+                    logger.debug(s"Error while parsing file -> '$file'")
                     errorFileCount += 1
                 }
               } else {
-                logger.error(s"Parser timed out for file -> '$file'")
+                logger.debug(s"Parser timed out for file -> '$file'")
                 timeoutFileCount += 1
               }
             }
