@@ -23,79 +23,55 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache,
-  TaggerCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.JSONExporter
 import ai.privado.exporter.monolith.MonolithExporter
+import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
-import ai.privado.languageEngine.ruby.passes.{
-  GlobalImportPass,
-  MethodFullNamePassForRORBuiltIn,
-  PrivadoRubyTypeRecoveryPassGenerator,
-  RubyExternalTypesPass,
-  RubyImportResolverPass
-}
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, JsonPropertyParserPass, SQLParser}
-import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.semantic.Language.*
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.*
-import io.joern.rubysrc2cpg.passes.ConfigFileCreationPass
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
+import io.joern.rubysrc2cpg.passes.ConfigFileCreationPass
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
-import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
-import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.layers.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, JumpLabel, Literal, Method}
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import scopt.Validation
 
-import java.util.Calendar
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.{Failure, Success, Try, Using}
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
-import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.ProgramContext
-import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
-import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import java.util
-import java.util.concurrent.{Callable, Executors}
-import java.util.stream.{Collectors, StreamSupport}
-import java.util.{Collections, Spliterator, Spliterators}
-import scala.jdk.CollectionConverters.*
-import scala.util.Try
-
+import java.util.Calendar
 import java.util.concurrent.{Callable, Executors, TimeUnit}
+import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try, Using}
 
 object RubyProcessor {
 
@@ -412,23 +388,27 @@ object RubyProcessor {
               ignoredFilesPath = Option(config.ignoredFiles)
             )
             .map { x =>
-              new Callable[(String, ProgramContext)] {
-                override def call(): (String, ProgramContext) = {
-                  parser.parse(x) match
-                    case Failure(exception) =>
-                      logger.error(s"Could not parse file: $x, skipping", exception); throw exception
-                    case Success(ast) => x -> ast
-                }
-              }
+              println(x)
+              ParserTask(x, parser)
             }
-            .asJavaCollection
           val ex = Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE)
           try {
-            ex.invokeAll(tasks, privadoInput.rubyParserTimeout, TimeUnit.SECONDS)
-              .asScala
-              .map(x => Try(x.get()))
-              .flatMap(_.toOption)
-              .toList
+            val results =
+              ex.invokeAll(tasks.asJavaCollection, privadoInput.rubyParserTimeout, TimeUnit.SECONDS).asScala.toList
+            val finalResult = ListBuffer[(String, ProgramContext)]()
+            for (index <- 0 until tasks.size) {
+              val file   = tasks(index).file
+              val result = results(index)
+              if (result.isDone) {
+                finalResult += result.get()
+              } else {
+                logger.error(s"Parser timed out for file -> '$file'")
+              }
+            }
+            println(
+              s"${TimeMetric.getNewTime()} - No of files that are not parsed - '${tasks.size - finalResult.size}'"
+            )
+            finalResult.toList
           } finally {
             ex.shutdown()
           }
@@ -456,6 +436,16 @@ object RubyProcessor {
       appCache,
       propertyFilterCache
     )
+  }
+  private class ParserTask(val file: String, val parser: ResourceManagedParser)
+      extends Callable[(String, ProgramContext)] {
+
+    override def call(): (String, ProgramContext) = {
+      parser.parse(file) match
+        case Failure(exception) =>
+          logger.error(s"Could not parse file: $file, skipping", exception); throw exception
+        case Success(ast) => file -> ast
+    }
   }
 
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {
