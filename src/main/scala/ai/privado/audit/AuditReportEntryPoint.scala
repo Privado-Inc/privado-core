@@ -26,8 +26,8 @@ object AuditReportEntryPoint {
     collectionEndpointPath: String,
     collectionMethodFullName: String,
     variableDeclarationLineNumber: String,
-    variableIdentifier: String,
-    variableType: String
+    memberId: String,
+    nodeType: String
   )
 
   implicit val DataElementDiscoveryAuditModelDecoder: Decoder[DataElementDiscoveryAudit] =
