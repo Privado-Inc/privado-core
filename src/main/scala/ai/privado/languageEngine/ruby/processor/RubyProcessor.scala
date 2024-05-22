@@ -394,7 +394,9 @@ object RubyProcessor {
           try {
             val results =
               ex.invokeAll(tasks.asJavaCollection, privadoInput.rubyParserTimeout, TimeUnit.SECONDS).asScala.toList
-            val finalResult = ListBuffer[(String, ProgramContext)]()
+            val finalResult      = ListBuffer[(String, ProgramContext)]()
+            var errorFileCount   = 0
+            var timeoutFileCount = 0
             for (index <- 0 until tasks.size) {
               val file   = tasks(index).file
               val result = results(index)
@@ -404,13 +406,16 @@ object RubyProcessor {
                 } catch {
                   case _ =>
                     logger.error(s"Error while parsing file -> '$file'")
+                    errorFileCount += 1
                 }
               } else {
                 logger.error(s"Parser timed out for file -> '$file'")
+                timeoutFileCount += 1
               }
             }
+            println(s"${TimeMetric.getNewTime()} - No of files that are timeout - '$timeoutFileCount'")
             println(
-              s"${TimeMetric.getNewTime()} - No of files that are not parsed (including timeout and with error) - '${tasks.size - finalResult.size}'"
+              s"${TimeMetric.getNewTime()} - No of files that are not parsed because of error - '$errorFileCount'"
             )
             finalResult.toList
           } finally {
