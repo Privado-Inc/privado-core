@@ -51,6 +51,8 @@ object InternalTag extends Enumeration {
   val SENSITIVE_SETTER                         = Value("SENSITIVE_SETTER")
   val PROBABLE_ASSET                           = Value("PROBABLE_ASSET")
   val SOURCE_PROPERTY                          = Value("SOURCE_PROPERTY")
+  val TAGGED_BY_DED                            = Value("TAGGED_BY_DED")
+  val TAGGING_DISABLED_BY_DED                  = Value("TAGGING_DISABLED_BY_DED")
 
   // API Tags
   val API_SINK_MARKED = Value("API_SINK_MARKED")

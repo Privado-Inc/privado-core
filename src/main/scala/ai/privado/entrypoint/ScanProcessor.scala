@@ -71,7 +71,7 @@ object ScanProcessor extends CommandProcessor {
       List[DEDRuleInfo]()
     )
 
-  def parseRules(rulesPath: String, lang: Set[Language]): ConfigAndRules = {
+  def parseRules(rulesPath: String, lang: Set[Language], isExternal: Boolean = false): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
@@ -128,7 +128,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
-                            nodeType = NodeType.REGULAR
+                            nodeType = NodeType.REGULAR,
+                            isExternal = isExternal
                             // TODO: add isExternal = True as additional field
                           )
                         )
@@ -142,7 +143,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
-                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3)),
+                            isExternal = isExternal
                           )
                         )
                         .filter(filterByLang),
@@ -154,7 +156,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
                             catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
-                            nodeType = NodeType.REGULAR
+                            nodeType = NodeType.REGULAR,
+                            isExternal = isExternal
                           )
                         )
                         .filter(filterByLang),
@@ -205,7 +208,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
-                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3)),
+                            isExternal = isExternal
                           )
                         )
                         .filter(filterByLang),
@@ -272,7 +276,7 @@ object ScanProcessor extends CommandProcessor {
     if (config.externalConfigPath.nonEmpty) {
       println("External")
       println(config.externalConfigPath.head)
-      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang)
+      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang, true)
     }
     /*
      * NOTE: We want to override the external rules over internal in case of duplicates by id.

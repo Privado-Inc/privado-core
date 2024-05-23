@@ -30,7 +30,7 @@ import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPITagger, RegularSinkTagger}
-import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
+import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger, DEDTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, SqlQueryTagger}
@@ -55,6 +55,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
+
+    new DEDTagger(cpg, ruleCache).createAndApply()
 
     new LiteralTagger(cpg, ruleCache).createAndApply()
 

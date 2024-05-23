@@ -185,6 +185,7 @@ object Constants {
   val googleTagManagerRuleId      = "ThirdParties.SDK.Google.TagManager"
   val cookieSourceRuleId          = "Data.Sensitive.OnlineIdentifiers.Cookies"
   val flinkCustomProducerRuleId   = "ThirdParties.SDK.Flink.Producer"
+  val disabledByDEDId           = "DISABLED_BY_DED"
 
   // External script keys
   val postExportTrigger = "postExportTrigger"

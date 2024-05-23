@@ -47,8 +47,20 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern              = ruleInfo.combinedRulePattern
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
+    val regexMatchingIdentifiers = cpg.identifier(rulePattern)
+                                    .filter((identifier) => {
+                                      println(s"------------------${identifier.name}")
+                                      if (ruleInfo.isExternal) {
+                                        true
+                                      } else {
+                                        val res = identifier.tag.filter(t => t.name.contains(InternalTag.TAGGED_BY_DED.toString) || t.name.contains(InternalTag.TAGGING_DISABLED_BY_DED.toString))
+                                        println(s"Result Names -> ${res.size}")
+                                        res.nonEmpty
+                                      }
+                                    })
+                                    .l
     regexMatchingIdentifiers.foreach(identifier => {
+      println(s"------------------Filtered Identifier Name: ${identifier.name}")
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
