@@ -4,6 +4,8 @@ import ai.privado.cache.{AuditCache, RuleCache, TaggerCache}
 import ai.privado.exporter.JSONExporter
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
+import ai.privado.model.{Language}
+import ai.privado.model.Language.Language
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
@@ -73,8 +75,29 @@ object AuditReportEntryPoint {
 
   }
 
-  // Audit report generation for java
   def getAuditWorkbook(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    dependencies: Set[ModuleDependency],
+    repoPath: String,
+    auditCache: AuditCache,
+    ruleCache: RuleCache,
+    lang: Language = Language.JAVA
+  ): Workbook = {
+    lang match {
+      case Language.JAVASCRIPT =>
+        getAuditWorkbookJS(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
+      case Language.PYTHON =>
+        getAuditWorkbookPy(auditCache, xtocpg, ruleCache)
+      case Language.JAVA =>
+        getAuditWorkbookJava(xtocpg, taggerCache, dependencies, repoPath, auditCache, ruleCache)
+      case _ =>
+        new XSSFWorkbook()
+    }
+  }
+
+  // Audit report generation for java
+  def getAuditWorkbookJava(
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
     dependencies: Set[ModuleDependency],
@@ -136,6 +159,7 @@ object AuditReportEntryPoint {
 
     workbook
   }
+
   // Audit report generation for Python and javaScript
   def getAuditWorkbookJS(
     xtocpg: Try[Cpg],
