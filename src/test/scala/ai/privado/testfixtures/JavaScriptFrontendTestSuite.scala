@@ -31,4 +31,4 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
 }
 
 class JavaScriptFrontendTestSuite(fileSuffix: String = ".js", language: Language.Value = Language.JAVASCRIPT)
-  extends PrivadoBaseTestFixture(() => new TestCpgWithJavaScript(fileSuffix, language)) {}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithJavaScript(fileSuffix, language)) {}
