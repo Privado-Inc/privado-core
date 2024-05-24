@@ -45,8 +45,7 @@ class MethodFullNameCollectionTaggerTests extends PhpFrontendTestSuite with Coll
 
       val List(controllerMethod) = cpg.method("handle").l
       assertCollectionMethod(controllerMethod)
-      // TODO need to root cause and fix the adding empty url
-      assertCollectionUrl(controllerMethod, List("", "/test-route"))
+      assertCollectionUrl(controllerMethod, "/test-route")
       assertCollectionInFinalJson(cpg, 1)
     }
 
@@ -90,7 +89,7 @@ class MethodFullNameCollectionTaggerTests extends PhpFrontendTestSuite with Coll
 
       val List(controllerMethod) = cpg.method("handle").l
       assertCollectionMethod(controllerMethod)
-      assertCollectionUrl(controllerMethod, List("", "/route"))
+      assertCollectionUrl(controllerMethod, "/route")
       assertCollectionInFinalJson(cpg, 1)
     }
   }

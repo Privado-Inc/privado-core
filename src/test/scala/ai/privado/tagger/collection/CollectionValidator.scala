@@ -45,10 +45,6 @@ trait CollectionValidator extends Matchers {
     methodNode.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List(collectionEndpoint)
   }
 
-  def assertCollectionUrl(methodNode: Method, collectionEndpoints: List[String]): Assertion = {
-    methodNode.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe collectionEndpoints
-  }
-
   /** Asserts if the privado.json contains the tagged collections.
     *
     * @param cpg
