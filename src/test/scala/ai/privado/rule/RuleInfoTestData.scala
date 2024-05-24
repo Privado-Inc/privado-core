@@ -9,6 +9,7 @@ object RuleInfoTestData {
 
   val sourceRule = List(
     firstNameSourceRule,
+    userNameSourceRule,
     accountPasswordSourceRule,
     lastNameSourceRule,
     dobSourceRule,
