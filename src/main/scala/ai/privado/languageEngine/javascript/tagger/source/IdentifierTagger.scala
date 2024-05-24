@@ -26,6 +26,7 @@ package ai.privado.languageEngine.javascript.tagger.source
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.tagger.utility.APITaggerUtility.{getFilteredIdentifiers, getFilteredMembers}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
@@ -47,18 +48,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern              = ruleInfo.combinedRulePattern
-    val regexMatchingIdentifiers = cpg.identifier(rulePattern)
-                                    .filter((identifier) => {
-                                      println(s"------------------${identifier.name}")
-                                      if (ruleInfo.isExternal) {
-                                        true
-                                      } else {
-                                        val res = identifier.tag.filter(t => t.name.contains(InternalTag.TAGGED_BY_DED.toString) || t.name.contains(InternalTag.TAGGING_DISABLED_BY_DED.toString))
-                                        println(s"Result Names -> ${res.size}")
-                                        res.nonEmpty
-                                      }
-                                    })
-                                    .l
+    val regexMatchingIdentifiers = getFilteredIdentifiers(cpg, rulePattern, ruleInfo.isExternal)
     regexMatchingIdentifiers.foreach(identifier => {
       println(s"------------------Filtered Identifier Name: ${identifier.name}")
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
@@ -93,8 +83,9 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       addRuleTags(builder, iaCall, ruleInfo, ruleCache)
     })
 
-    val regexMatchingMembers = cpg.member.name(rulePattern).l
+    val regexMatchingMembers = getFilteredMembers(cpg, rulePattern, ruleInfo.isExternal).l
     regexMatchingMembers.foreach(member => {
+      println(s"------------------Filtered Member Name: ${member.name}")
       storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
       addRuleTags(builder, member, ruleInfo, ruleCache)
     })

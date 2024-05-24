@@ -53,7 +53,6 @@ import scala.util.{Failure, Success, Try}
 
 object ScanProcessor extends CommandProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
-  // TODO: InferenceRuleInfo
 
   def getEmptyConfigAndRule: ConfigAndRules =
     ConfigAndRules(
@@ -130,7 +129,6 @@ object ScanProcessor extends CommandProcessor {
                             language = Language.withNameWithDefault(pathTree.last),
                             nodeType = NodeType.REGULAR,
                             isExternal = isExternal
-                            // TODO: add isExternal = True as additional field
                           )
                         )
                         .filter(filterByLang),
@@ -274,8 +272,6 @@ object ScanProcessor extends CommandProcessor {
     }
     var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
-      println("External")
-      println(config.externalConfigPath.head)
       externalConfigAndRules = parseRules(config.externalConfigPath.head, lang, true)
     }
     /*
@@ -318,7 +314,6 @@ object ScanProcessor extends CommandProcessor {
       )
     logger.trace(mergedRules.toString)
     println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
-    println(s"DED Rules: ${mergedRules.dedRules}")
 
     ruleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
     ruleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))

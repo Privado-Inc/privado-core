@@ -36,7 +36,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       CatLevelOne.SOURCES,
       "",
       Language.JAVASCRIPT,
-      Array()
+      Array(),
+      false,
+      false
     ),
     RuleInfo(
       "Data.Sensitive.Password",
@@ -53,7 +55,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       CatLevelOne.SOURCES,
       "",
       Language.JAVASCRIPT,
-      Array()
+      Array(),
+      false,
+      false
     ),
     RuleInfo(
       "Data.Sensitive.AccountName",
@@ -70,7 +74,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       CatLevelOne.SOURCES,
       "",
       Language.JAVASCRIPT,
-      Array()
+      Array(),
+      false,
+      false
     )
   )
 
@@ -713,7 +719,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val privadoInput =
       PrivadoInput(generateAuditReport = true, enableAuditSemanticsFilter = true)
     val configAndRules =
-      ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
+      ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List(), List(), List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
     val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get

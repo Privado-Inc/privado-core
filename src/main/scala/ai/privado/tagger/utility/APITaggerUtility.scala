@@ -28,7 +28,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, FilterProperty, RuleInfo}
+import ai.privado.model.{Constants, FilterProperty, RuleInfo, InternalTag}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
@@ -38,7 +38,7 @@ import ai.privado.utility.Utilities.{
 }
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member, Identifier}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -49,6 +49,42 @@ object APITaggerUtility {
 
   // for cases where services defined as https://exampleService
   val SERVICE_URL_REGEX_PATTERN = ".*(http|https):\\/\\/[a-zA-Z0-9_-]+$"
+
+  def getFilteredIdentifiers(cpg: Cpg, rulePattern: String, isExternal: Boolean): List[Identifier] = {
+    cpg
+      .identifier(rulePattern)
+      .filter((identifier) => {
+        println(s"------------------${identifier.name}")
+        if (isExternal) {
+          true
+        } else {
+          val res = identifier.tag.filter(t =>
+            t.name.contains(InternalTag.TAGGED_BY_DED.toString) || t.name
+              .contains(InternalTag.TAGGING_DISABLED_BY_DED.toString)
+          )
+          res.isEmpty
+        }
+      })
+      .l
+  }
+
+  def getFilteredMembers(cpg: Cpg, rulePattern: String, isExternal: Boolean): List[Member] = {
+    cpg.member
+      .name(rulePattern)
+      .filter((member) => {
+        println(s"------------------${member.name}")
+        if (isExternal) {
+          true
+        } else {
+          val res = member.tag.filter(t =>
+            t.name.contains(InternalTag.TAGGED_BY_DED.toString) || t.name
+              .contains(InternalTag.TAGGING_DISABLED_BY_DED.toString)
+          )
+          res.isEmpty
+        }
+      })
+      .l
+  }
 
   def getLiteralCode(element: AstNode): String = {
     val literalCode = element match {

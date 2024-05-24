@@ -52,8 +52,6 @@ object YamlFileValidator {
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}systemConfig.json")).mkString
   private val AUDIT_CONFIG =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}auditConfig.json")).mkString
-//  private val DED_RULES =
-//    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}ded.json")).mkString
   val mapper = new ObjectMapper(new YAMLFactory())
 
   val factory: JsonSchemaFactory = JsonSchemaFactory
