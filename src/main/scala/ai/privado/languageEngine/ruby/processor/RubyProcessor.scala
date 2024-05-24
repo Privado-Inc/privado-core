@@ -297,11 +297,11 @@ object RubyProcessor {
 
   class RubyControlFlow extends ControlFlow {
 
-    override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+    override def create(context: LayerCreatorContext): Unit = {
       val cpg    = context.cpg
       val passes = Iterator(new RubyCfgCreationPass(cpg), new CfgDominatorPass(cpg), new CdgPass(cpg))
       passes.zipWithIndex.foreach { case (pass, index) =>
-        runPass(pass, context, storeUndoInfo, index)
+        runPass(pass, context, index)
       }
     }
 
