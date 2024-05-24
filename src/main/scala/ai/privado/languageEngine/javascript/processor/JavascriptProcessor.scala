@@ -31,6 +31,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName}
 import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
@@ -118,10 +119,11 @@ class JavascriptProcessor(
 
     createCpgFolder(sourceRepoLocation)
 
-    val cpgOutput = Paths.get(sourceRepoLocation, outputDirectoryName, cpgOutputFileName)
+    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+//    val cpgOutput = Paths.get(sourceRepoLocation, outputDirectoryName, cpgOutputFileName)
     val cpgConfig = Config()
       .withInputPath(sourceRepoLocation)
-      .withOutputPath(cpgOutput.toString)
+      .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
 
     val xtocpg = new JsSrc2Cpg().createCpg(cpgConfig).map { cpg =>
