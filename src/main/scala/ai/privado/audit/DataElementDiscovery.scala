@@ -1,18 +1,47 @@
 package ai.privado.audit
 
-import ai.privado.audit.DataElementDiscovery.{CollectionMethodInfo, getClass, getFileScore, getSourceUsingRules, logger}
+import ai.privado.audit.DataElementDiscovery.getClass
 import ai.privado.cache.TaggerCache
+import ai.privado.dataflow.Dataflow
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{File, Identifier, Local, Member, MethodParameterIn, TypeDecl}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import ai.privado.dataflow.Dataflow
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
+
+object DataElementDiscoveryUtils {
+  // Not used for security-purposes. Only to generate a unique identifier.
+  private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
+
+  def nodeIdentifier(filePath: String, name: String, nodeType: String, lineNumber: String): String =
+    md5
+      .digest(s"$filePath-$name-$nodeType-$lineNumber".getBytes)
+      .map(0xff & _)
+      .map("%02x".format(_))
+      .foldLeft("")(_ + _)
+
+  def nodeOffset(node: TypeDecl | Member | MethodParameterIn | Identifier | Local): String = node.lineNumber match {
+    case Some(offset) => offset.toString
+    case _            => ""
+  }
+
+  def getNodeLocationAndUniqueId(
+    node: TypeDecl | Member | MethodParameterIn | Identifier | Local,
+    name: String,
+    nodeType: String
+  ): (String, String, String) = {
+    val path         = node.file.name.headOption.getOrElse(Constants.EMPTY)
+    val lineNumber   = DataElementDiscoveryUtils.nodeOffset(node)
+    val nodeUniqueId = DataElementDiscoveryUtils.nodeIdentifier(path, name, nodeType, lineNumber)
+
+    (path, lineNumber, nodeUniqueId)
+  }
+}
 
 object DataElementDiscovery {
 
@@ -239,7 +268,10 @@ object DataElementDiscovery {
       AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
+      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
     )
 
     // Construct the excel sheet and fill the data
@@ -248,38 +280,52 @@ object DataElementDiscovery {
         case (key, value) => {
           val isCollectionInput = if (collectionInputList.contains(key.fullName)) "YES" else "NO"
           if (taggedMemberInfo.contains(key.fullName)) {
+            val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+            val (path, lineNumber, nodeUniqueId) =
+              DataElementDiscoveryUtils.getNodeLocationAndUniqueId(key, key.fullName, nodeType)
+
             if (collectionMethodInfo.contains(key.fullName)) {
               collectionMethodInfo(key.fullName).foreach(info => {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  getFileScore(path, xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_CHECKED_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
-                  info.methodDetail
+                  info.methodDetail,
+                  lineNumber,
+                  nodeUniqueId,
+                  nodeType
                 )
               })
             } else {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                getFileScore(path, xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_CHECKED_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                nodeUniqueId,
+                lineNumber,
+                nodeType
               )
             }
             val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
             value.foreach {
               case (member: Member) => {
+                val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+                val (_, lineNumber, nodeUniqueId) =
+                  DataElementDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
+
                 if (ruleMemberInfo.contains(member.name)) {
                   workbookResult += List(
                     key.fullName,
@@ -291,7 +337,10 @@ object DataElementDiscovery {
                     ruleMemberInfo.getOrElse(member.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    lineNumber,
+                    nodeUniqueId,
+                    nodeType
                   )
                 } else {
                   workbookResult += List(
@@ -304,43 +353,60 @@ object DataElementDiscovery {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    lineNumber,
+                    nodeUniqueId,
+                    nodeType
                   )
                 }
               }
             }
           } else {
+            val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+            val (path, lineNumber, nodeUniqueId) =
+              DataElementDiscoveryUtils.getNodeLocationAndUniqueId(key, key.fullName, nodeType)
+
             if (collectionMethodInfo.contains(key.fullName)) {
               collectionMethodInfo(key.fullName).foreach(info => {
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
-                  getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                  getFileScore(path, xtocpg),
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   isCollectionInput,
                   info.endpoint,
-                  info.methodDetail
+                  info.methodDetail,
+                  lineNumber,
+                  nodeUniqueId,
+                  nodeType
                 )
               })
             } else {
               workbookResult += List(
                 key.fullName,
                 key.file.head.name,
-                getFileScore(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                getFileScore(path, xtocpg),
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                 isCollectionInput,
                 AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                lineNumber,
+                nodeUniqueId,
+                nodeType
               )
             }
             value.foreach {
               case (member: Member) => {
+                val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+                val (_, lineNumber, nodeUniqueId) =
+                  DataElementDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
+
                 workbookResult += List(
                   key.fullName,
                   key.file.head.name,
@@ -351,7 +417,10 @@ object DataElementDiscovery {
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                   AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                  AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                  lineNumber,
+                  nodeUniqueId,
+                  nodeType
                 )
               }
             }
@@ -580,12 +649,17 @@ object DataElementDiscoveryJS {
       AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
       AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
       AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
+      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
     )
     // Construct the excel sheet and fill the data
     try {
       elementInfo.foreach {
         case (key, value) => {
+          val offset = DataElementDiscoveryUtils.nodeOffset(key)
+
           workbookResult += List(
             key.name,
             key.file.head.name,
@@ -596,6 +670,9 @@ object DataElementDiscoveryJS {
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            offset,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
@@ -604,8 +681,13 @@ object DataElementDiscoveryJS {
 
           value.foreach {
             case (member: Member) => {
+              val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
+              val (_, lineNumber, nodeUniqueId) =
+                DataElementDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
+
               val memberUniqueKey =
                 s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
+
               if (member.name.nonEmpty && !addedMembers.contains(memberUniqueKey)) {
                 addedMembers.add(memberUniqueKey)
                 if (ruleMemberInfo.contains(member.name)) {
@@ -619,7 +701,10 @@ object DataElementDiscoveryJS {
                     ruleMemberInfo.getOrElse(member.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    lineNumber,
+                    nodeUniqueId,
+                    nodeType
                   )
                 } else {
                   workbookResult += List(
@@ -632,13 +717,20 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    lineNumber,
+                    nodeUniqueId,
+                    nodeType
                   )
                 }
               }
             }
             case (param: MethodParameterIn) => {
+              val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_METHOD_PARAM
+              val (_, lineNumber, nodeUniqueId) =
+                DataElementDiscoveryUtils.getNodeLocationAndUniqueId(param, param.name, nodeType)
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
+
               if (!addedParams.contains(paramUniqueKey)) {
                 addedParams.add(paramUniqueKey)
                 if (ruleMemberInfo.contains(param.name)) {
@@ -652,7 +744,10 @@ object DataElementDiscoveryJS {
                     ruleMemberInfo.getOrElse(param.name, "Default value"),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    lineNumber,
+                    nodeUniqueId,
+                    nodeType
                   )
                 } else {
                   workbookResult += List(
@@ -665,7 +760,10 @@ object DataElementDiscoveryJS {
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+                    AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+                    lineNumber,
+                    nodeUniqueId,
+                    nodeType
                   )
                 }
               }
@@ -676,8 +774,12 @@ object DataElementDiscoveryJS {
       }
       val addedIdentifiers = mutable.Set[String]()
       identifiers.foreach(identifier => {
-        val identifierUniqueKey =
-          s"${identifier.typeFullName}${identifier.file.name.headOption.getOrElse(Constants.EMPTY)}${identifier.name}"
+        val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER
+        val (path, lineNumber, nodeUniqueId) =
+          DataElementDiscoveryUtils.getNodeLocationAndUniqueId(identifier, identifier.name, nodeType)
+
+        val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
+
         if (
           identifier.name.nonEmpty && !identifier.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
@@ -690,21 +792,27 @@ object DataElementDiscoveryJS {
           workbookResult += List(
             identifier.typeFullName,
             identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
-            getFileScoreJS(identifier.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(path, xtocpg),
             identifier.name,
             identifier.typeFullName,
             AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            lineNumber,
+            nodeUniqueId,
+            nodeType
           )
       })
 
       val addedLocals = mutable.Set[String]()
       locals.foreach(local => {
-        val localsUniqueKey =
-          s"${local.typeFullName}${local.file.name.headOption.getOrElse(Constants.EMPTY)}${local.name}"
+        val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_LOCAL
+        val (path, lineNumber, nodeUniqueId) =
+          DataElementDiscoveryUtils.getNodeLocationAndUniqueId(local, local.name, nodeType)
+        val localsUniqueKey = s"${local.typeFullName}$path${local.name}"
+
         if (
           local.name.nonEmpty && !local.name
             .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
@@ -716,14 +824,17 @@ object DataElementDiscoveryJS {
           workbookResult += List(
             local.typeFullName,
             local.file.head.name,
-            getFileScoreJS(local.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            getFileScoreJS(path, xtocpg),
             local.name,
             local.typeFullName,
             AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            lineNumber,
+            nodeUniqueId,
+            nodeType
           )
       })
 

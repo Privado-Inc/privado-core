@@ -82,6 +82,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
       cpg.annotation
         .name(combinedRulePatterns)
         .filter(_.method.nonEmpty)
+        .whereNot(_.fullName("retrofit.*")) // annotations like retrofit2.http.POST are actually APIs
         .l
     (
       methodAnnotations.map(ma => ma.method.head.id() -> CollectionUtility.getUrlFromAnnotation(ma)).toMap,
@@ -93,6 +94,7 @@ class CollectionTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCp
     cpg.annotation
       .name(combinedRulePatterns)
       .filter(_.typeDecl.nonEmpty)
+      .whereNot(_.fullName("retrofit.*")) // annotations like retrofit2.http.POST are actually APIs
       .map(classAnnotation => {
         classAnnotation.typeDecl.head.id() -> CollectionUtility.getUrlFromAnnotation(classAnnotation)
       })

@@ -95,15 +95,16 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     }
 
     "Test final discovery result" in {
-      val classNameList    = new mutable.HashSet[String]()
-      val fileScoreList    = new mutable.HashSet[String]()
-      val memberList       = new mutable.HashSet[String]()
-      val sourceRuleIdMap  = new mutable.HashMap[String, String]()
-      val collectionTagMap = new mutable.HashMap[String, String]()
-      val endpointMap      = new mutable.HashMap[String, String]()
-      val methodNameMap    = new mutable.HashMap[String, String]()
-
-      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
+      val classNameList                  = new mutable.HashSet[String]()
+      val fileScoreList                  = new mutable.HashSet[String]()
+      val memberList                     = new mutable.HashSet[String]()
+      val sourceRuleIdMap                = new mutable.HashMap[String, String]()
+      val collectionTagMap               = new mutable.HashMap[String, String]()
+      val endpointMap                    = new mutable.HashMap[String, String]()
+      val methodNameMap                  = new mutable.HashMap[String, String]()
+      val memberLineNumberAndTypeMapping = mutable.HashMap[String, (String, String)]()
+      val uniqueIdentifiers              = mutable.ArrayBuffer[String]()
+      val workbookList                   = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
 
       workbookList.foreach(row => {
         classNameList += row.head
@@ -113,7 +114,20 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!collectionTagMap.contains(row.head)) collectionTagMap.put(row.head, row(7))
         if (!endpointMap.contains(row.head)) endpointMap.put(row.head, row(8))
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
+        // Bind entity's name to its line number for testing.
+        memberLineNumberAndTypeMapping += (row(3) -> (row(10), row.last))
+//        memberLineNumberAndTypeMapping += s"${row(3)}+${row(10)}+${row.last}"
+        uniqueIdentifiers += row(11)
       })
+
+      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "5", "Member")
+      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "5", "Member")
+      memberLineNumberAndTypeMapping("invoiceNo") shouldBe (/* line number */ "6", "Member")
+      memberLineNumberAndTypeMapping("payment") shouldBe (/* line number */ "11", "Member")
+      memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
+
+      // All identifiers generated via MD5 should be unique
+      uniqueIdentifiers.size shouldBe uniqueIdentifiers.distinct.size
 
       // Validate class name in result
       classNameList should contain("com.test.privado.Entity.User")
