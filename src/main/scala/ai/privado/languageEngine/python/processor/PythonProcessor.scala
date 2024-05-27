@@ -4,7 +4,6 @@ import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.javascript.passes.config.JsConfigPropertyPass
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
@@ -154,7 +153,8 @@ object PythonProcessor {
           if (privadoInput.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
+              AuditReportEntryPoint
+                .getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
