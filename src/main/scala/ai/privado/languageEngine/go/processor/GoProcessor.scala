@@ -9,13 +9,14 @@ import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
+import ai.privado.languageEngine.java.language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import ai.privado.utility.Utilities.createCpgFolder
+import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
@@ -24,7 +25,6 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import ai.privado.languageEngine.java.language.*
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
@@ -132,7 +132,8 @@ object GoProcessor {
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg, ruleCache),
+              AuditReportEntryPoint
+                .getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>

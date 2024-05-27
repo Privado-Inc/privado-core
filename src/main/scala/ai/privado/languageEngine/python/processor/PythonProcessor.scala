@@ -13,21 +13,13 @@ import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, Language}
-import ai.privado.passes.{
-  DBTParserPass,
-  ExperimentalLambdaDataFlowSupportPass,
-  HTMLParserPass,
-  JsonPropertyParserPass,
-  SQLParser,
-  SQLPropertyPass
-}
+import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg.*
-import io.joern.pysrc2cpg.PythonImportResolverPass
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -35,7 +27,6 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-import io.joern.pysrc2cpg.DynamicTypeHintFullNamePass
 
 import java.nio.file.Paths
 import java.util.Calendar
@@ -163,7 +154,7 @@ object PythonProcessor {
           if (privadoInput.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg, ruleCache),
+              AuditReportEntryPoint.getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
