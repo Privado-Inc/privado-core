@@ -419,7 +419,7 @@ object ScanProcessor extends CommandProcessor {
           ).processCpg()
       case Language.JAVASCRIPT =>
         println(s"${Calendar.getInstance().getTime} - Detected language 'JavaScript'")
-        JavascriptProcessor.createJavaScriptCpg(
+        new JavascriptProcessor(
           getProcessedRule(Set(Language.JAVASCRIPT), appCache),
           this.config,
           sourceRepoLocation,
@@ -429,6 +429,7 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache
         )
+          .processCpg()
       case Language.PYTHON =>
         println(s"${Calendar.getInstance().getTime} - Detected language 'Python'")
         PythonProcessor.createPythonCpg(
