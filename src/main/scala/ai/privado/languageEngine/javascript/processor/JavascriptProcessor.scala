@@ -79,7 +79,10 @@ class JavascriptProcessor(
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    var passesList = List(new NaiveCallLinker(cpg))
+    val passesList = List(
+      new NaiveCallLinker(cpg),
+      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
+    )
 
     if (privadoInput.enableLambdaFlows)
       passesList.appendedAll(List(new ExperimentalLambdaDataFlowSupportPass(cpg)))
@@ -99,7 +102,6 @@ class JavascriptProcessor(
         )
     }) ++ List(
       new JSPropertyLinkerPass(cpg),
-      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
       new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
