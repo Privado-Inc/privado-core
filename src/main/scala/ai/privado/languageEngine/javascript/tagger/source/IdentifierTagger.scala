@@ -50,7 +50,6 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     val rulePattern              = ruleInfo.combinedRulePattern
     val regexMatchingIdentifiers = getFilteredIdentifiers(cpg, rulePattern, ruleInfo.isExternal)
     regexMatchingIdentifiers.foreach(identifier => {
-      println(s"------------------Filtered Identifier Name: ${identifier.name}")
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
     })
@@ -85,7 +84,6 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
     val regexMatchingMembers = getFilteredMembers(cpg, rulePattern, ruleInfo.isExternal).l
     regexMatchingMembers.foreach(member => {
-      println(s"------------------Filtered Member Name: ${member.name}")
       storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
       addRuleTags(builder, member, ruleInfo, ruleCache)
     })
