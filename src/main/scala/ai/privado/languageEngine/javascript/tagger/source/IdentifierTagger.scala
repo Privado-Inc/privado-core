@@ -26,7 +26,6 @@ package ai.privado.languageEngine.javascript.tagger.source
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.tagger.utility.APITaggerUtility.{getFilteredIdentifiers, getFilteredMembers}
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
@@ -48,7 +47,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     val rulePattern              = ruleInfo.combinedRulePattern
-    val regexMatchingIdentifiers = getFilteredIdentifiers(cpg, rulePattern, ruleInfo.isExternal)
+    val regexMatchingIdentifiers = cpg.identifier(rulePattern).l
     regexMatchingIdentifiers.foreach(identifier => {
       storeForTag(builder, identifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
       addRuleTags(builder, identifier, ruleInfo, ruleCache)
@@ -82,7 +81,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
       addRuleTags(builder, iaCall, ruleInfo, ruleCache)
     })
 
-    val regexMatchingMembers = getFilteredMembers(cpg, rulePattern, ruleInfo.isExternal).l
+    val regexMatchingMembers = cpg.member.name(rulePattern).l
     regexMatchingMembers.foreach(member => {
       storeForTag(builder, member, ruleCache)(InternalTag.VARIABLE_REGEX_MEMBER.toString)
       addRuleTags(builder, member, ruleInfo, ruleCache)

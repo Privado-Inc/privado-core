@@ -36,7 +36,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.{Language, UNKNOWN}
 import ai.privado.rulevalidator.YamlFileValidator
-import ai.privado.utility.Utilities.isValidRule
+import ai.privado.utility.Utilities.{isValidRule, isValidDEDRule}
 import better.files.File
 import io.circe.Json
 import io.circe.yaml.parser
@@ -84,6 +84,8 @@ object ScanProcessor extends CommandProcessor {
     }
 
     def filterByLang(rule: RuleInfo): Boolean =
+      lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+    def filterDEDByLang(rule: DEDRuleInfo): Boolean =
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSemanticByLang(rule: Semantic): Boolean =
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
@@ -212,6 +214,19 @@ object ScanProcessor extends CommandProcessor {
                         )
                         .filter(filterByLang),
                       dedRules = configAndRules.dedRules
+                        .filter(rule => isValidDEDRule(rule))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.DED,
+                            catLevelTwo = pathTree.apply(1),
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(2)),
+                            isExternal = isExternal
+                          )
+                        )
+                        .filter(filterDEDByLang)
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -242,7 +257,7 @@ object ScanProcessor extends CommandProcessor {
           )
       catch {
         case ex: Throwable =>
-          logger.debug("File error: ", ex)
+          logger.error("File error: ", ex)
           logger.error(s"Rules path $rulesPath is not accessible")
           exit(1)
       }

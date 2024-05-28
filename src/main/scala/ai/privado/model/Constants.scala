@@ -44,6 +44,7 @@ object Constants {
   val monolithRepoReachingFileList = "monolithRepoReachingFileList"
   val monolithJsonPath             = "monolithJsonPath"
   val monolithRepoDepth            = "monolithRepoDepth"
+  val externalRule                 = "externalRule"
 
   // semantic
   val signature = "signature"

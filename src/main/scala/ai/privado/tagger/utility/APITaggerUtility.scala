@@ -50,42 +50,6 @@ object APITaggerUtility {
   // for cases where services defined as https://exampleService
   val SERVICE_URL_REGEX_PATTERN = ".*(http|https):\\/\\/[a-zA-Z0-9_-]+$"
 
-  def getFilteredIdentifiers(cpg: Cpg, rulePattern: String, isExternal: Boolean): List[Identifier] = {
-    if (isExternal) {
-      cpg.identifier(rulePattern).l
-    } else {
-      cpg
-        .identifier(rulePattern)
-        .filter((identifier) => {
-          identifier.tag
-            .filter(t =>
-              t.name.contains(InternalTag.TAGGED_BY_DED.toString) || t.name
-                .contains(InternalTag.TAGGING_DISABLED_BY_DED.toString)
-            )
-            .isEmpty
-        })
-        .l
-    }
-  }
-
-  def getFilteredMembers(cpg: Cpg, rulePattern: String, isExternal: Boolean): List[Member] = {
-    if (isExternal) {
-      cpg.member.name(rulePattern).l
-    } else {
-      cpg.member
-        .name(rulePattern)
-        .filter((member) => {
-          member.tag
-            .filter(t =>
-              t.name.contains(InternalTag.TAGGED_BY_DED.toString) || t.name
-                .contains(InternalTag.TAGGING_DISABLED_BY_DED.toString)
-            )
-            .isEmpty
-        })
-        .l
-    }
-  }
-
   def getLiteralCode(element: AstNode): String = {
     val literalCode = element match {
       case member: Member             => member.name

@@ -34,13 +34,19 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
   override def generateParts(): Array[DEDRuleInfo] = ruleCache.getRule.dedRules.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, dedRuleInfo: DEDRuleInfo): Unit = {
-    val filteredIdentifiers = cpg.identifier.filter(p => p.file.name.contains(dedRuleInfo.filePath)).l
-    val filteredMembers     = cpg.member.filter(p => p.file.name.contains(dedRuleInfo.filePath)).l
+    val filteredIdentifiers =
+      cpg.identifier.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedRuleInfo.filePath.trim)).l
+    val filteredMembers = cpg.member.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedRuleInfo.filePath.trim)).l
+
+    //  FieldAccess
+    //  Parameters
+    //  Locals
+    //  SqlColumnNode
 
     dedRuleInfo.classificationData.foreach { dedData =>
-      val id        = dedData.id
-      val variables = dedData.variables
-      val ruleInfo  = ruleCache.getRuleInfo(id).getOrElse(null)
+      val id           = dedData.id
+      val variables    = dedData.variables
+      val someRuleInfo = ruleCache.getRuleInfo(id)
 
       if (id.contentEquals(Constants.disabledByDEDId)) {
         variables.foreach { v =>
@@ -52,18 +58,20 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
         }
       }
 
-      if (ruleInfo != null && ruleInfo.isInstanceOf[RuleInfo]) {
-        variables.foreach { v =>
-          val matchedNodes: List[AstNode] =
-            filteredIdentifiers.filter(_.name == v.name) ++ filteredMembers.filter(_.name == v.name)
+      someRuleInfo match
+        case Some(ruleInfo): Some[RuleInfo] =>
+          variables.foreach { v =>
+            val matchedNodes: List[AstNode] =
+              filteredIdentifiers.filter(_.name == v.name) ++ filteredMembers.filter(_.name == v.name)
 
-          matchedNodes.foreach { mIdentifier =>
-            storeForTag(builder, mIdentifier, ruleCache)(InternalTag.TAGGED_BY_DED.toString)
-            storeForTag(builder, mIdentifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
-            addRuleTags(builder, mIdentifier, ruleInfo, ruleCache)
+            matchedNodes.foreach { mIdentifier =>
+              storeForTag(builder, mIdentifier, ruleCache)(InternalTag.TAGGED_BY_DED.toString)
+              storeForTag(builder, mIdentifier, ruleCache)(InternalTag.VARIABLE_REGEX_IDENTIFIER.toString)
+              addRuleTags(builder, mIdentifier, ruleInfo, ruleCache)
+            }
           }
-        }
-      }
+        case None =>
+          None
     }
   }
 }

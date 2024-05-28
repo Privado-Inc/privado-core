@@ -129,7 +129,18 @@ case class DEDVariable(name: String, typeInSrc: String, lineNumber: Option[Int])
 
 case class DEDClassificationData(id: String, variables: List[DEDVariable])
 
-case class DEDRuleInfo(id: String, filePath: String, classificationData: List[DEDClassificationData])
+case class DEDRuleInfo(
+  id: String,
+  filePath: String,
+  classificationData: List[DEDClassificationData],
+  nodeType: NodeType.NodeType = NodeType.UNKNOWN,
+  file: String = "",
+  catLevelOne: CatLevelOne.CatLevelOne = CatLevelOne.UNKNOWN,
+  catLevelTwo: String = "",
+  language: Language.Language = Language.UNKNOWN,
+  categoryTree: Array[String] = Array(),
+  isExternal: Boolean = false
+)
 
 case class Semantic(
   signature: String,

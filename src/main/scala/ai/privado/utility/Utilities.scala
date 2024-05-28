@@ -152,6 +152,10 @@ object Utilities {
       storeForTagHelper(Constants.catLevelOne, ruleInfo.catLevelOne.name)
       storeForTagHelper(Constants.catLevelTwo, ruleInfo.catLevelTwo)
 
+      if (ruleInfo.isExternal) {
+        storeForTagHelper(Constants.externalRule, ruleInfo.isExternal.toString)
+      }
+
       MetricHandler.totalRulesMatched.addOne(ruleInfo.id)
       ruleCache.internalRules.get(ruleInfo.id) match {
         case Some(_) => MetricHandler.internalRulesMatched.addOne(ruleInfo.id)
@@ -274,6 +278,23 @@ object Utilities {
         false
       case _: Throwable => false
     }
+  }
+
+  def isValidDEDRule(rule: DEDRuleInfo): Boolean = {
+    def isValidDEDVariable(variable: DEDVariable): Boolean = {
+      variable.name.nonEmpty && variable.typeInSrc.nonEmpty
+    }
+
+    def isValidDEDClassificationData(classificationData: DEDClassificationData): Boolean = {
+      classificationData.id.nonEmpty &&
+      classificationData.variables.nonEmpty &&
+      classificationData.variables.forall(isValidDEDVariable)
+    }
+
+    rule.id.nonEmpty &&
+    rule.filePath.nonEmpty &&
+    rule.classificationData.nonEmpty &&
+    rule.classificationData.forall(isValidDEDClassificationData)
   }
 
   /** If environment variable present will return that otherwise the repoPath
