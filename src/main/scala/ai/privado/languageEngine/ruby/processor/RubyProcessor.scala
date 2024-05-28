@@ -68,7 +68,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util
 import java.util.Calendar
-import java.util.concurrent.{Callable, Executors, TimeUnit}
+import java.util.concurrent.{Callable, Executors, TimeUnit, TimeoutException}
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
@@ -393,30 +393,26 @@ object RubyProcessor {
           val ex = Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE)
           try {
             val results =
-              ex.invokeAll(tasks.asJavaCollection, privadoInput.rubyParserTimeout, TimeUnit.SECONDS).asScala.toList
+              ex.invokeAll(tasks.asJavaCollection).asScala.toList
             val finalResult      = ListBuffer[(String, ProgramContext)]()
             var errorFileCount   = 0
             var timeoutFileCount = 0
             for (index <- 0 until tasks.size) {
               val file   = tasks(index).file
               val result = results(index)
-              if (result.isDone) {
-                try {
-                  finalResult += result.get()
-                } catch {
-                  case _ =>
-                    logger.debug(s"Error while parsing file -> '$file'")
-                    errorFileCount += 1
-                }
-              } else {
-                logger.debug(s"Parser timed out for file -> '$file'")
-                timeoutFileCount += 1
+              try {
+                finalResult += result.get(privadoInput.rubyParserTimeout, TimeUnit.SECONDS)
+              } catch {
+                case ex: TimeoutException =>
+                  logger.debug(s"Parser timed out for file -> '$file'")
+                  timeoutFileCount += 1
+                case _ =>
+                  logger.debug(s"Error while parsing file -> '$file'")
+                  errorFileCount += 1
               }
             }
-            println(s"${TimeMetric.getNewTime()} - No of files that are timeout - '$timeoutFileCount'")
-            println(
-              s"${TimeMetric.getNewTime()} - No of files that are not parsed because of error - '$errorFileCount'"
-            )
+            println(s"${TimeMetric.getNewTime()} - No of files skipped because of timeout - '$timeoutFileCount'")
+            println(s"${TimeMetric.getNewTime()} - No of files that are skipped because of error - '$errorFileCount'")
             finalResult.toList
           } finally {
             ex.shutdown()
