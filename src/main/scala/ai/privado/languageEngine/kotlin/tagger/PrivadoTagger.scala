@@ -15,7 +15,7 @@ import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
-import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{AndroidXmlPermissionTagger, DEDTagger, LiteralTagger, SqlQueryTagger}
 import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -36,6 +36,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
+
+    new DEDTagger(cpg, ruleCache).createAndApply()
 
     new LiteralTagger(cpg, ruleCache).createAndApply()
 

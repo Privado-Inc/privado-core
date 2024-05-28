@@ -30,7 +30,7 @@ import ai.privado.languageEngine.csharp.tagger.sink.{CSharpAPISinkTagger, CSharp
 import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{DEDTagger, LiteralTagger, SqlQueryTagger}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import org.slf4j.LoggerFactory
@@ -49,6 +49,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 
+    new DEDTagger(cpg, rules).createAndApply()
     new LiteralTagger(cpg, rules).createAndApply()
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
     new SqlQueryTagger(cpg, rules).createAndApply()

@@ -3,7 +3,7 @@ package ai.privado.languageEngine.go.tagger
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.tagger.PrivadoBaseTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{DEDTagger, LiteralTagger, SqlQueryTagger}
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import org.slf4j.LoggerFactory
@@ -28,6 +28,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
+
+    new DEDTagger(cpg, ruleCache).createAndApply()
 
     new LiteralTagger(cpg, ruleCache).createAndApply()
 

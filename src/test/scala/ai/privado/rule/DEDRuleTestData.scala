@@ -18,4 +18,19 @@ object DEDRuleTestData {
       )
     )
   )
+
+  val dedRuleTestJava = DEDRuleInfo(
+    id = "User.java",
+    filePath = "User.java",
+    classificationData = List(
+      DEDClassificationData(
+        id = "Data.Sensitive.AccountData.AccountPassword",
+        variables = List(DEDVariable(name = "passwd", typeInSrc = "ANY", lineNumber = Some(-1)))
+      ),
+      DEDClassificationData(
+        id = "DISABLED_BY_DED",
+        variables = List(DEDVariable(name = "emailId", typeInSrc = "ANY", lineNumber = Some(-1)))
+      )
+    )
+  )
 }

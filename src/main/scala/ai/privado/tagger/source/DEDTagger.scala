@@ -23,7 +23,7 @@
 package ai.privado.tagger.source
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{Constants, DEDRuleInfo, InternalTag, RuleInfo}
+import ai.privado.model.{Constants, DEDRuleInfo, DEDVariable, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -34,14 +34,42 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
   override def generateParts(): Array[DEDRuleInfo] = ruleCache.getRule.dedRules.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, dedRuleInfo: DEDRuleInfo): Unit = {
+    val dedFilePath = dedRuleInfo.filePath.trim
+
+    // Identifiers
     val filteredIdentifiers =
-      cpg.identifier.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedRuleInfo.filePath.trim)).l
-    val filteredMembers = cpg.member.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedRuleInfo.filePath.trim)).l
+      cpg.identifier.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath)).l
+
+    // Members
+    val filteredMembers = cpg.member.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath)).l
 
     //  FieldAccess
+    val filteredFieldAccessIdentifier =
+      cpg.fieldAccess.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath)).isCall.l
+
     //  Parameters
+    val filteredParameter =
+      cpg.parameter
+        .filter(p => p.file.name.nonEmpty)
+        .filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath))
+        .l
+
     //  Locals
-    //  SqlColumnNode
+    val filteredLocals =
+      cpg.local
+        .filter(p => p.file.name.nonEmpty)
+        .filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath))
+        .l
+
+    //  TODO: SqlColumnNode
+
+    def getMatchesNodes(v: DEDVariable): List[AstNode] = {
+      filteredIdentifiers.filter(_.name == v.name)
+        ++ filteredMembers.filter(_.name == v.name)
+        ++ filteredFieldAccessIdentifier.filter(_.name == v.name)
+        ++ filteredLocals.filter(_.name == v.name)
+        ++ filteredParameter.filter(_.name == v.name)
+    }
 
     dedRuleInfo.classificationData.foreach { dedData =>
       val id           = dedData.id
@@ -50,8 +78,7 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
 
       if (id.contentEquals(Constants.disabledByDEDId)) {
         variables.foreach { v =>
-          val matchedNodes: List[AstNode] =
-            filteredIdentifiers.filter(_.name == v.name) ++ filteredMembers.filter(_.name == v.name)
+          val matchedNodes: List[AstNode] = getMatchesNodes(v)
           matchedNodes.foreach { mIdentifier =>
             storeForTag(builder, mIdentifier, ruleCache)(InternalTag.TAGGING_DISABLED_BY_DED.toString)
           }
@@ -61,8 +88,7 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
       someRuleInfo match
         case Some(ruleInfo): Some[RuleInfo] =>
           variables.foreach { v =>
-            val matchedNodes: List[AstNode] =
-              filteredIdentifiers.filter(_.name == v.name) ++ filteredMembers.filter(_.name == v.name)
+            val matchedNodes: List[AstNode] = getMatchesNodes(v)
 
             matchedNodes.foreach { mIdentifier =>
               storeForTag(builder, mIdentifier, ruleCache)(InternalTag.TAGGED_BY_DED.toString)

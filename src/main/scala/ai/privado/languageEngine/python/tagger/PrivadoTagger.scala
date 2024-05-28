@@ -11,7 +11,7 @@ import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, Literal
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
-import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.tagger.source.{DEDTagger, SqlQueryTagger}
 import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -31,6 +31,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
+    new DEDTagger(cpg, ruleCache).createAndApply()
 
     LiteralTagger.tag(cpg, ruleCache)
 

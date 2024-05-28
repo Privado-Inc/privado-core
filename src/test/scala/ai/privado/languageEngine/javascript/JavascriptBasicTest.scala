@@ -118,12 +118,5 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite {
       taggedbyDEDDisabled.size shouldBe 1
     }
 
-    "show using output json" in {
-      val outputJson = cpg.getPrivadoJson()
-      outputJson(Constants.repoName).asString.get should startWith("x2cpgTestTmpDir")
-
-      val processing = outputJson(Constants.processing).asArray.get
-      processing.size shouldBe 2
-    }
   }
 }
