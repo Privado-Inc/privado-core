@@ -2,13 +2,17 @@ package ai.privado.languageEngine.javascript
 
 import ai.privado.testfixtures.JavaScriptFrontendTestSuite
 import ai.privado.cache.RuleCache
+import ai.privado.exporter.DataflowExporterValidator
+import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.{Constants, InternalTag, SystemConfig}
-import ai.privado.rule.{DEDRuleTestData, RuleInfoTestData}
+import ai.privado.rule.{DEDRuleTestData, RuleInfoTestData, SinkRuleTestData}
+import ai.privado.model.exporter.{SourceProcessingModel}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
+import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language.*
 
-class JavascriptBasicTest extends JavaScriptFrontendTestSuite {
+class JavascriptBasicTest extends JavaScriptFrontendTestSuite with DataflowExporterValidator {
 
   "Check normal source tagging flow" should {
     val ruleCache = RuleCache().setRule(RuleInfoTestData.rule)
@@ -61,7 +65,7 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite {
   "Check support for ai_inference rules" should {
     val ruleCache = RuleCache().setRule(
       RuleInfoTestData.rule
-        .copy(dedRules = List(DEDRuleTestData.dedRuleTestJS))
+        .copy(sinks = List(SinkRuleTestData.leakageRule), dedRules = List(DEDRuleTestData.dedRuleTestJS))
     )
     val cpg = code("""
         |import { HttpClient } from '@angular/common/http';
@@ -116,6 +120,32 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite {
 
       val taggedbyDEDDisabled = tags.filter(t => t.name.contains(InternalTag.TAGGING_DISABLED_BY_DED.toString)).l
       taggedbyDEDDisabled.size shouldBe 1
+    }
+
+    "should verify processings from privadojson output " in {
+      val outputJson = cpg.getPrivadoJson()
+      val processings = outputJson(Constants.processing)
+        .as[List[SourceProcessingModel]]
+        .getOrElse(List())
+      val sourceIds         = ListBuffer[String]()
+      val expectedSourceIds = ListBuffer("Data.Sensitive.User", "Data.Sensitive.AccountData.AccountPassword")
+
+      processings.foreach((p) => {
+        sourceIds += p.sourceId
+      })
+      sourceIds shouldBe expectedSourceIds
+    }
+
+    "should verify if only expected dataflow coming in privadojson" in {
+      val outputJson        = cpg.getPrivadoJson()
+      val leakageDataflows  = getLeakageFlows(outputJson)
+      val sourceIds         = ListBuffer[String]()
+      val expectedSourceIds = ListBuffer("Data.Sensitive.AccountData.AccountPassword", "Data.Sensitive.User")
+
+      leakageDataflows.foreach((lDataflow) => {
+        sourceIds += lDataflow.sourceId
+      })
+      sourceIds shouldBe expectedSourceIds
     }
 
   }
