@@ -25,25 +25,13 @@ package ai.privado.tagger.utility
 
 import ai.privado.cache.RuleCache
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.languageEngine.java.language.NodeToProperty
-import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, FilterProperty, RuleInfo, InternalTag}
-import ai.privado.utility.Utilities.{
-  addRuleTags,
-  getDomainFromString,
-  getFileNameForNode,
-  isFileProcessable,
-  storeForTag
-}
+import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member, Identifier}
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Member, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.languageEngine.java.language._
-import io.shiftleft.semanticcpg.language._
+import ai.privado.languageEngine.java.language.*
+import io.shiftleft.semanticcpg.language.*
 
 object SourceTaggerUtility {
 
@@ -57,4 +45,29 @@ object SourceTaggerUtility {
     }
   }
 
+  def getMembersWithAdditionalDEDTags(members: List[Member], rule: RuleInfo): List[Member] = {
+    members.name(rule.combinedRulePattern).l ++ members
+      .filter(_.tag.nameExact(InternalTag.TAGGED_BY_DED.toString).nonEmpty)
+      .filter(_.tag.nameExact(Constants.id).valueExact(rule.id).nonEmpty)
+      .l
+  }
+
+  def getFilteredMembersWithDEDMembersAdded(members: List[Member], rule: RuleInfo): List[Member] = {
+    var filteredMembers = members
+    if (!rule.isExternal) {
+      filteredMembers = getFilteredSourcesByTaggingDisabled(members).asInstanceOf[List[Member]]
+    }
+    // println(s"ID: ${rule.id} ${rule.isExternal} Before: ${members.name.l} Intermediate: ${filteredMembers.name.l}  After: ${getMembersWithAdditionalDEDTags(filteredMembers, rule).name.l}")
+    getMembersWithAdditionalDEDTags(filteredMembers, rule)
+  }
+
+  def getTypeDeclWithMemberNameHavingMemberName(cpg: Cpg, rule: RuleInfo): List[(TypeDecl, List[Member])] = {
+    cpg.typeDecl
+      .filter(_.member.nonEmpty)
+      .flatMap { typeDecl =>
+        val filteredMembers = getFilteredMembersWithDEDMembersAdded(typeDecl.member.l, rule)
+        if (filteredMembers.nonEmpty) Some((typeDecl, filteredMembers)) else None
+      }
+      .l
+  }
 }
