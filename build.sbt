@@ -7,9 +7,9 @@ ThisBuild / scalaVersion := "3.4.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "0.1.4"
-val joernVersion      = "0.1.3"
-val overflowdbVersion = "0.1.4"
+val cpgVersion        = "0.1.5"
+val joernVersion      = "0.1.4"
+val overflowdbVersion = "0.1.5"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
@@ -82,7 +82,7 @@ ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / resolvers ++= Seq(
-  "Github Maven Repo" at "https://maven.pkg.github.com/Privado-Inc/joern",
+  "Github Package Registry Joern" at "https://maven.pkg.github.com/Privado-Inc/joern",
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases"
