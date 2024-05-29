@@ -2,17 +2,19 @@ package ai.privado.languageEngine.javascript
 
 import ai.privado.testfixtures.JavaScriptFrontendTestSuite
 import ai.privado.cache.RuleCache
-import ai.privado.exporter.DataflowExporterValidator
-import ai.privado.model.exporter.SourceEncoderDecoder.*
+import ai.privado.exporter.{DataflowExporterValidator, SourceExporterValidator}
 import ai.privado.model.{Constants, InternalTag, SystemConfig}
 import ai.privado.rule.{DEDRuleTestData, RuleInfoTestData, SinkRuleTestData}
-import ai.privado.model.exporter.{SourceProcessingModel}
 import io.circe.Json
 import io.circe.syntax.EncoderOps
+
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language.*
 
-class JavascriptBasicTest extends JavaScriptFrontendTestSuite with DataflowExporterValidator {
+class JavascriptBasicTest
+    extends JavaScriptFrontendTestSuite
+    with DataflowExporterValidator
+    with SourceExporterValidator {
 
   "Check normal source tagging flow" should {
     val ruleCache = RuleCache().setRule(RuleInfoTestData.rule)
@@ -46,11 +48,11 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite with DataflowExpor
     "show sources matches using cpg" in {
       val emailIdIdentifier = cpg.identifier("emailId")
       emailIdIdentifier.nonEmpty shouldBe true
-      emailIdIdentifier.tag.nameExact(Constants.id).value.head shouldBe "Data.Sensitive.ContactData.EmailAddress"
+      emailIdIdentifier.tag.nameExact(Constants.id).value.l shouldBe List("Data.Sensitive.ContactData.EmailAddress")
 
       val userNameIdentifier = cpg.identifier("userName")
       userNameIdentifier.nonEmpty shouldBe true
-      userNameIdentifier.tag.nameExact(Constants.id).value.head shouldBe "Data.Sensitive.User"
+      userNameIdentifier.tag.nameExact(Constants.id).value.dedup.l shouldBe List("Data.Sensitive.User")
     }
 
     "show using output json" in {
@@ -97,7 +99,7 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite with DataflowExpor
     "should match the regular variable not present in ai_inference" in {
       val userNameIdentifier = cpg.identifier("userName")
       userNameIdentifier.nonEmpty shouldBe true
-      userNameIdentifier.tag.nameExact(Constants.id).value.head shouldBe "Data.Sensitive.User"
+      userNameIdentifier.tag.nameExact(Constants.id).value.dedup.l shouldBe List("Data.Sensitive.User")
     }
 
     "should match the variable tagged by ai_inference as PII" in {
@@ -107,7 +109,7 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite with DataflowExpor
 
       val idTags = tags.nameExact(Constants.id).value
       idTags.nonEmpty shouldBe true
-      idTags.head shouldBe "Data.Sensitive.AccountData.AccountPassword"
+      idTags.l shouldBe List("Data.Sensitive.AccountData.AccountPassword")
 
       val taggedbyDED = tags.filter(t => t.name.contains(InternalTag.TAGGED_BY_DED.toString)).l
       taggedbyDED.size shouldBe 1
@@ -122,29 +124,21 @@ class JavascriptBasicTest extends JavaScriptFrontendTestSuite with DataflowExpor
       taggedbyDEDDisabled.size shouldBe 1
     }
 
-    "should verify processings from privadojson output " in {
-      val outputJson = cpg.getPrivadoJson()
-      val processings = outputJson(Constants.processing)
-        .as[List[SourceProcessingModel]]
-        .getOrElse(List())
-      val sourceIds         = ListBuffer[String]()
-      val expectedSourceIds = ListBuffer("Data.Sensitive.User", "Data.Sensitive.AccountData.AccountPassword")
+    "should verify processing from privadojson output " in {
+      val outputJson        = cpg.getPrivadoJson()
+      val processings       = getProcessings(outputJson)
+      val sourceIds         = processings.map((p) => p.sourceId)
+      val expectedSourceIds = List("Data.Sensitive.User", "Data.Sensitive.AccountData.AccountPassword")
 
-      processings.foreach((p) => {
-        sourceIds += p.sourceId
-      })
       sourceIds shouldBe expectedSourceIds
     }
 
     "should verify if only expected dataflow coming in privadojson" in {
       val outputJson        = cpg.getPrivadoJson()
       val leakageDataflows  = getLeakageFlows(outputJson)
-      val sourceIds         = ListBuffer[String]()
-      val expectedSourceIds = ListBuffer("Data.Sensitive.AccountData.AccountPassword", "Data.Sensitive.User")
+      val sourceIds         = leakageDataflows.map((lDataflow) => lDataflow.sourceId)
+      val expectedSourceIds = List("Data.Sensitive.AccountData.AccountPassword", "Data.Sensitive.User")
 
-      leakageDataflows.foreach((lDataflow) => {
-        sourceIds += lDataflow.sourceId
-      })
       sourceIds shouldBe expectedSourceIds
     }
 

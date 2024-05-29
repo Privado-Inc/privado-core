@@ -33,7 +33,7 @@ class DEDTaggerTest extends JavaFrontendTestSuite {
     "should match the regular variable not present in ai_inference" in {
       val userNameIdentifier = cpg.member("userName")
       userNameIdentifier.nonEmpty shouldBe true
-      userNameIdentifier.tag.nameExact(Constants.id).value.head shouldBe "Data.Sensitive.User"
+      userNameIdentifier.tag.nameExact(Constants.id).value.l shouldBe List("Data.Sensitive.User")
     }
 
     "should match the variable tagged by ai_inference as PII" in {
@@ -43,7 +43,7 @@ class DEDTaggerTest extends JavaFrontendTestSuite {
 
       val idTags = tags.nameExact(Constants.id).value
       idTags.nonEmpty shouldBe true
-      idTags.head shouldBe "Data.Sensitive.AccountData.AccountPassword"
+      idTags.l shouldBe List("Data.Sensitive.AccountData.AccountPassword")
 
       val taggedbyDED = tags.filter(t => t.name.contains(InternalTag.TAGGED_BY_DED.toString)).l
       taggedbyDED.size shouldBe 1

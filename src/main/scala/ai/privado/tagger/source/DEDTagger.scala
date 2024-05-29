@@ -37,29 +37,19 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
     val dedFilePath = dedRuleInfo.filePath.trim
 
     // Identifiers
-    val filteredIdentifiers =
-      cpg.identifier.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath)).l
+    val filteredIdentifiers = cpg.identifier.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
 
     // Members
-    val filteredMembers = cpg.member.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath)).l
+    val filteredMembers = cpg.member.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
 
     //  FieldAccess
-    val filteredFieldAccessIdentifier =
-      cpg.fieldAccess.filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath)).isCall.l
+    val filteredFieldAccessIdentifier = cpg.fieldAccess.filter(p => p.file.nameExact(dedFilePath).nonEmpty).isCall.l
 
     //  Parameters
-    val filteredParameter =
-      cpg.parameter
-        .filter(p => p.file.name.nonEmpty)
-        .filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath))
-        .l
+    val filteredParameter = cpg.parameter.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
 
     //  Locals
-    val filteredLocals =
-      cpg.local
-        .filter(p => p.file.name.nonEmpty)
-        .filter(p => p.file.name.head.trim.equalsIgnoreCase(dedFilePath))
-        .l
+    val filteredLocals = cpg.local.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
 
     //  TODO: SqlColumnNode
 
