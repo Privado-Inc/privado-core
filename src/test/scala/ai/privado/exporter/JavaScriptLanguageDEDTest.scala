@@ -9,7 +9,7 @@ import io.circe.Json
 import io.circe.syntax.EncoderOps
 
 class JavaScriptLanguageDEDTest
-  extends JavaScriptFrontendTestSuite
+    extends JavaScriptFrontendTestSuite
     with SourceExporterValidator
     with DataflowExporterValidator {
 

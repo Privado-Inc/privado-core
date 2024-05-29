@@ -28,7 +28,10 @@ import ai.privado.languageEngine.java.tagger.source.Utility.*
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.{PrivadoParallelCpgPass, PrivadoSimpleCpgPass}
 import ai.privado.utility.Utilities.*
-import ai.privado.tagger.utility.SourceTaggerUtility.{getFilteredSourcesByTaggingDisabled, getMembersWithAdditionalDEDTags}
+import ai.privado.tagger.utility.SourceTaggerUtility.{
+  getFilteredSourcesByTaggingDisabled,
+  getMembersWithAdditionalDEDTags
+}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Member, MethodParameterIn, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -314,9 +317,8 @@ case class CPGNodeCacheForSourceTagger(cpg: Cpg, ruleCache: RuleCache) {
     .filterNot(_.code.equals(Constants.thisConstant))
     .l
   // Filter Members & FieldAccess based on DISABLED_BY_DED_TAGGING
-  val cachedMember = getFilteredSourcesByTaggingDisabled(
-    cpg.member.filterNot(item => item.name.equals(item.name.toUpperCase)).l
-  ).asInstanceOf[List[Member]]
+  val withoutDEDFilterCachedMember = cpg.member.filterNot(item => item.name.equals(item.name.toUpperCase)).l
+  val cachedMember = getFilteredSourcesByTaggingDisabled(withoutDEDFilterCachedMember).asInstanceOf[List[Member]]
   val cachedFieldAccess = getFilteredSourcesByTaggingDisabled(
     cpg.method
       .fullNameExact(Operators.fieldAccess, Operators.indirectFieldAccess)
@@ -326,14 +328,16 @@ case class CPGNodeCacheForSourceTagger(cpg: Cpg, ruleCache: RuleCache) {
   ).asInstanceOf[List[Call]]
   val derivedSourceTaggerParts = ruleCache.getRule.sources
     .flatMap(rule => {
-      getMembersWithAdditionalDEDTags(cachedMember, rule)
+      val members = if (rule.isExternal) withoutDEDFilterCachedMember else cachedMember
+      getMembersWithAdditionalDEDTags(members, rule)
         .map(memberNode => DerivedSourceTaggerPart(memberNode.typeDecl, memberNode, rule))
         .l
     })
     .toArray
   val secondLevelDerivedSourceTaggerParts = ruleCache.getRule.sources
     .flatMap(rule => {
-      getMembersWithAdditionalDEDTags(cachedMember, rule)
+      val members = if (rule.isExternal) withoutDEDFilterCachedMember else cachedMember
+      getMembersWithAdditionalDEDTags(members, rule)
         .name(rule.combinedRulePattern)
         .map(_.typeDecl)
         .distinctBy(_.fullName)
