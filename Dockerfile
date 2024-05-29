@@ -13,6 +13,7 @@ ARG VERSION
 ARG JAR_VERSION
 ARG CODE_ARTIFACT_URL
 ARG CODEARTIFACT_AUTH_TOKEN
+ARG GITHUB_TOKEN
 
 RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
