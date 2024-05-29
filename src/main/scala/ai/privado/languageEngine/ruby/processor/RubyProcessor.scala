@@ -73,6 +73,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.*
 import scala.concurrent.duration.DurationLong
 import scala.util.{Failure, Success, Try, Using}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 object RubyProcessor {
 
@@ -379,9 +380,6 @@ object RubyProcessor {
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-        implicit val ec: ExecutionContext =
-          ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE))
-
         val parsedFiles: List[(String, ProgramContext)] = {
           val tasks = SourceFiles
             .determine(
@@ -441,10 +439,9 @@ object RubyProcessor {
       propertyFilterCache
     )
   }
-  private class ParserTask(val file: String, val parser: ResourceManagedParser)
-      extends Callable[(String, ProgramContext)] {
+  private class ParserTask(val file: String, val parser: ResourceManagedParser) {
 
-    override def call(): (String, ProgramContext) = {
+    def call(): (String, ProgramContext) = {
       parser.parse(file) match
         case Failure(exception) =>
           logger.error(s"Could not parse file: $file, skipping", exception); throw exception
