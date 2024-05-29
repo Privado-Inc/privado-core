@@ -19,6 +19,8 @@ jobs:
           java-version: '17'
       - name: Check formatting
         run: sbt scalafmtCheck test:scalafmtCheck
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
 
@@ -36,5 +38,7 @@ jobs:
           java-version: '17'
       - name: Run unit test
         run: sbt -J-Xmx4G test test:test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: echo "Previous step failed because unit test failed."
         if: ${{ failure() }}
