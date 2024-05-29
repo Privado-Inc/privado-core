@@ -68,9 +68,10 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util
 import java.util.Calendar
-import java.util.concurrent.{Callable, Executors, TimeUnit, TimeoutException}
+import java.util.concurrent.{Callable, Executors}
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.*
+import scala.concurrent.*
+import scala.concurrent.duration.DurationLong
 import scala.util.{Failure, Success, Try, Using}
 
 object RubyProcessor {
@@ -378,6 +379,8 @@ object RubyProcessor {
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+        implicit val ec: ExecutionContext =
+          ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE))
 
         val parsedFiles: List[(String, ProgramContext)] = {
           val tasks = SourceFiles
@@ -390,33 +393,29 @@ object RubyProcessor {
             .map { x =>
               ParserTask(x, parser)
             }
-          val ex = Executors.newFixedThreadPool(ConcurrentTaskUtil.MAX_POOL_SIZE)
-          try {
-            val results =
-              ex.invokeAll(tasks.asJavaCollection).asScala.toList
-            val finalResult      = ListBuffer[(String, ProgramContext)]()
-            var errorFileCount   = 0
-            var timeoutFileCount = 0
-            for (index <- 0 until tasks.size) {
-              val file   = tasks(index).file
-              val result = results(index)
-              try {
-                finalResult += result.get(privadoInput.rubyParserTimeout, TimeUnit.SECONDS)
-              } catch {
-                case ex: TimeoutException =>
-                  logger.debug(s"Parser timed out for file -> '$file'")
-                  timeoutFileCount += 1
-                case _ =>
-                  logger.debug(s"Error while parsing file -> '$file'")
-                  errorFileCount += 1
-              }
+          val results = tasks.map(task =>
+            Future {
+              task.call()
             }
-            println(s"${TimeMetric.getNewTime()} - No of files skipped because of timeout - '$timeoutFileCount'")
-            println(s"${TimeMetric.getNewTime()} - No of files that are skipped because of error - '$errorFileCount'")
-            finalResult.toList
-          } finally {
-            ex.shutdown()
+          )
+          var errorFileCount   = 0
+          var timeoutFileCount = 0
+          val finalResult      = ListBuffer[(String, ProgramContext)]()
+          results.zip(tasks).foreach { case (result, task) =>
+            try {
+              finalResult += Await.result(result, privadoInput.rubyParserTimeout.seconds)
+            } catch {
+              case ex: TimeoutException =>
+                println(s"${TimeMetric.getNewTime()} - Parser timed out for file -> '${task.file}'")
+                timeoutFileCount += 1
+              case ex: Exception =>
+                println(s"${TimeMetric.getNewTime()} - Error while parsing file -> '${task.file}'")
+                errorFileCount += 1
+            }
           }
+          println(s"${TimeMetric.getNewTime()} - No of files skipped because of timeout - '$timeoutFileCount'")
+          println(s"${TimeMetric.getNewTime()} - No of files that are skipped because of error - '$errorFileCount'")
+          finalResult.toList
         }
 
         new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
