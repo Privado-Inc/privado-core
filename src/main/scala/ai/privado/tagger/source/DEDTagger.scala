@@ -43,7 +43,7 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
     val filteredMembers = cpg.member.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
 
     //  FieldAccess
-    val filteredFieldAccessIdentifier = cpg.fieldAccess.filter(p => p.file.nameExact(dedFilePath).nonEmpty).isCall.l
+    val filteredFieldAccessIdentifier = cpg.fieldAccess.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
 
     //  Parameters
     val filteredParameter = cpg.parameter.filter(p => p.file.nameExact(dedFilePath).nonEmpty).l
@@ -56,7 +56,7 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
     def getMatchesNodes(v: DEDVariable): List[AstNode] = {
       filteredIdentifiers.filter(_.name == v.name)
         ++ filteredMembers.filter(_.name == v.name)
-        ++ filteredFieldAccessIdentifier.filter(_.name == v.name)
+        ++ filteredFieldAccessIdentifier.filter(_.fieldIdentifier.canonicalName(v.name).nonEmpty).isCall.l
         ++ filteredLocals.filter(_.name == v.name)
         ++ filteredParameter.filter(_.name == v.name)
     }
