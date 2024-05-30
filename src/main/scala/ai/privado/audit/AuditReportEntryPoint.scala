@@ -2,10 +2,10 @@ package ai.privado.audit
 
 import ai.privado.cache.{AuditCache, RuleCache, TaggerCache}
 import ai.privado.exporter.JSONExporter
+import ai.privado.model.Language
+import ai.privado.model.Language.Language
 import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
 import io.circe.{Decoder, Encoder}
-import ai.privado.model.{Language}
-import ai.privado.model.Language.Language
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
@@ -87,8 +87,8 @@ object AuditReportEntryPoint {
     lang match {
       case Language.JAVASCRIPT =>
         getAuditWorkbookJS(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
-      case Language.PYTHON =>
-        getAuditWorkbookPy(auditCache, xtocpg, ruleCache)
+      case Language.GO | Language.PYTHON =>
+        getAuditWorkbookGoAndPy(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
       case Language.JAVA =>
         getAuditWorkbookJava(xtocpg, taggerCache, dependencies, repoPath, auditCache, ruleCache)
       case _ =>
@@ -143,8 +143,20 @@ object AuditReportEntryPoint {
     workbook
   }
 
-  def getAuditWorkbookPy(auditCache: AuditCache, xtocpg: Try[Cpg], ruleCache: RuleCache): Workbook = {
-    val workbook: Workbook = new XSSFWorkbook()
+  def getAuditWorkbookGoAndPy(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    repoPath: String,
+    auditCache: AuditCache,
+    ruleCache: RuleCache
+  ): Workbook = {
+    val workbook: Workbook       = new XSSFWorkbook()
+    val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
+    createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
+    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
+    // Changed Background colour when tagged
+    changeTaggedBackgroundColour(workbook, List(4, 6))
+
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
