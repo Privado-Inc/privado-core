@@ -32,23 +32,26 @@ class GoIdentifierTaggingTest extends GoTestBase {
     val (cpg, _) = code("""
         package main
         |
+        |import "fmt"
+        |
         |type User struct {
-        |	FirstName     string
-        |	Age      int
-        |	Location string
-        |	Email    string
+        |	FirstName string
+        |	Age       int
+        |	Location  string
+        |	Email     string
+        |	passwd    string // Note: this field is unexported
         |}
         |
         |func main() {
         |	// Creating a user instance
         |	user := User{
-        |		Name:     "John Doe",
-        |		Age:      25,
-        |		Location: "New York",
-        |		Email: "abc@gmail.com",
+        |		FirstName: "John Doe",
+        |		Age:       25,
+        |		Location:  "New York",
+        |		Email:     "abc@gmail.com",
+        |		passwd:    "yourPassword",
         |	}
         |}
-        |
         |""".stripMargin)
 
     "tag member in a structure" in {
@@ -58,11 +61,31 @@ class GoIdentifierTaggingTest extends GoTestBase {
     }
 
     "tag user(of type structure) object" in {
-      val List(userIdentifier) = cpg.identifier("user").lineNumber(13).l
+      val List(userIdentifier) = cpg.identifier("user").lineNumber(16).l
       userIdentifier.tag
         .where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
         .value
         .head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+      userIdentifier.tag.where(_.nameExact(Constants.id)).size shouldBe 1
+      userIdentifier.tag.where(_.nameExact(Constants.catLevelOne)).value.head shouldBe "DerivedSources"
+    }
+
+    "tag ded variable in a structure" in {
+      val identifierNodes = cpg.member("passwd").tag.nameExact(Constants.id).l
+      identifierNodes.size shouldBe 1
+      identifierNodes.value.head shouldBe "Data.Sensitive.AccountData.AccountPassword"
+    }
+
+    "tag user(of type structure) object using DED rule" in {
+      val List(userIdentifier) = cpg.identifier("user").lineNumber(16).l
+      userIdentifier.tag
+        .where(_.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
+        .value
+        .l shouldBe List(
+        "Data.Sensitive.PersonalIdentification.FirstName",
+        "Data.Sensitive.AccountData.AccountPassword",
+        "Data.Sensitive.ContactData.EmailAddress"
+      )
       userIdentifier.tag.where(_.nameExact(Constants.id)).size shouldBe 1
       userIdentifier.tag.where(_.nameExact(Constants.catLevelOne)).value.head shouldBe "DerivedSources"
     }

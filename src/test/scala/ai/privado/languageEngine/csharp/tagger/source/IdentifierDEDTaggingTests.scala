@@ -61,8 +61,7 @@ class IdentifierDEDTaggingTests
       )
       val cpg = code(sourceCode, "Test0.cs").withRuleCache(ruleCache)
 
-      val outputJson = cpg.getPrivadoJson()
-      println(outputJson)
+      val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)
       val sourceIds   = processings.map((p) => p.sourceId)
       sourceIds shouldBe List("Data.Sensitive.FirstName", "Data.Sensitive.ContactData.EmailAddress")

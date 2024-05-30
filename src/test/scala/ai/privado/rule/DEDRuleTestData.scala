@@ -20,6 +20,9 @@ object DEDRuleTestData {
 
   val dedRuleTestCSharp = DEDRuleInfo(id = "Test0.cs", filePath = "Test0.cs", classificationData = classificationData)
 
+  val dedRuleTestGolang =
+    DEDRuleInfo(id = "generalFile.go", filePath = "generalFile.go", classificationData = classificationData)
+
   val dedRuleTestKotlin = DEDRuleInfo(
     id = "extraKotlinFolder/Test0.kt",
     filePath = "extraKotlinFolder/Test0.kt",

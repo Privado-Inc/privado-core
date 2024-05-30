@@ -53,12 +53,10 @@ object SourceTaggerUtility {
   }
 
   def getFilteredMembersWithDEDMembersAdded(members: List[Member], rule: RuleInfo): List[Member] = {
-    var filteredMembers = members
-    if (!rule.isExternal) {
-      filteredMembers = getFilteredSourcesByTaggingDisabled(members).asInstanceOf[List[Member]]
-    }
-    // println(s"ID: ${rule.id} ${rule.isExternal} Before: ${members.name.l} Intermediate: ${filteredMembers.name.l}  After: ${getMembersWithAdditionalDEDTags(filteredMembers, rule).name.l}")
-    getMembersWithAdditionalDEDTags(filteredMembers, rule)
+    getMembersWithAdditionalDEDTags(
+      if (rule.isExternal) members else getFilteredSourcesByTaggingDisabled(members).asInstanceOf[List[Member]],
+      rule
+    )
   }
 
   def getTypeDeclWithMemberNameHavingMemberName(cpg: Cpg, rule: RuleInfo): List[(TypeDecl, List[Member])] = {
