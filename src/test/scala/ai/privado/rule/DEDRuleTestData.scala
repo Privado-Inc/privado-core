@@ -18,9 +18,12 @@ object DEDRuleTestData {
 
   val dedRuleTestJava = DEDRuleInfo(id = "User.java", filePath = "User.java", classificationData = classificationData)
 
+  val dedRuleTestCSharp = DEDRuleInfo(id = "Test0.cs", filePath = "Test0.cs", classificationData = classificationData)
+
   val dedRuleTestKotlin = DEDRuleInfo(
     id = "extraKotlinFolder/Test0.kt",
     filePath = "extraKotlinFolder/Test0.kt",
     classificationData = classificationData
   )
+
 }

@@ -60,4 +60,22 @@ object SinkRuleTestData {
     Array()
   )
 
+  val leakageCSharpRule: RuleInfo = RuleInfo(
+    "Leakages.Log.Console",
+    "Log Console",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List("(?i)(System.Console).(?:print|println|WriteLine).*"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.leakages,
+    Language.CSHARP,
+    Array()
+  )
+
 }
