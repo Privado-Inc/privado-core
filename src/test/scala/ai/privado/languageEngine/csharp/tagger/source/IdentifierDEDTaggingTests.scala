@@ -1,46 +1,65 @@
-package ai.privado.exporter
+package ai.privado.languageEngine.csharp.tagger.source
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, SystemConfig}
 import ai.privado.exporter.{DataflowExporterValidator, SourceExporterValidator}
 import ai.privado.rule.{DEDRuleTestData, RuleInfoTestData, SinkRuleTestData, SourceRuleTestData}
-import ai.privado.testfixtures.KotlinFrontendTestSuite
+import ai.privado.testfixtures.CSharpFrontendTestSuite
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 
-class KotlinLanguageExporterTests
-    extends KotlinFrontendTestSuite
+class IdentifierDEDTaggingTests
+    extends CSharpFrontendTestSuite
     with SourceExporterValidator
     with DataflowExporterValidator {
 
   "DED Rule handling with exporter" should {
     val sourceCode = """
-                       |data class User(
-                       |    val firstName: String,
-                       |    val passwd: String,
-                       |    val emailId: String
-                       |)
+                       |using System;
                        |
-                       |fun main() {
-                       |    // Create an instance of the User data class
-                       |    val user = User(
-                       |        "firstName1",
-                       |        "yourPassword",
-                       |        "yourEmail@example.com"
-                       |    )
+                       |// Define the User class with required properties
+                       |public class User
+                       |{
+                       |    public string firstName { get; }
+                       |    public string passwd { get; }
+                       |    public string emailId { get; }
                        |
-                       |    // Access and print the properties
-                       |    println(user)
+                       |    public User(string firstName, string passwd, string emailId)
+                       |    {
+                       |        firstName = firstName;
+                       |        passwd = passwd;
+                       |        emailId = emailId;
+                       |    }
+                       |
+                       |    public override string ToString()
+                       |    {
+                       |        return $"User(FirstName={firstName}, Passwd={passwd}, EmailId={emailId})";
+                       |    }
                        |}
                        |
+                       |class Program
+                       |{
+                       |    static void Main()
+                       |    {
+                       |        // Create an instance of the User class
+                       |        User user = new User(
+                       |            "firstName1",
+                       |            "yourPassword",
+                       |            "yourEmail@example.com"
+                       |        );
+                       |
+                       |        // Access and print the properties
+                       |        Console.WriteLine(user);
+                       |    }
+                       |}
                        |""".stripMargin
 
     "should verify if only expected processing & dataflow in privadojson without DED rules" in {
       val ruleCache = RuleCache().setRule(
         RuleInfoTestData.rule
-          .copy(sinks = List(SinkRuleTestData.leakageKotlinRule))
+          .copy(sinks = List(SinkRuleTestData.leakageCSharpRule))
       )
-      val cpg = code(sourceCode, "Test0.kt").withRuleCache(ruleCache)
+      val cpg = code(sourceCode, "Test0.cs").withRuleCache(ruleCache)
 
       val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)
@@ -55,9 +74,9 @@ class KotlinLanguageExporterTests
     "should verify if only expected processing & dataflow in privadojson after DED Rule applied " in {
       val ruleCache = RuleCache().setRule(
         RuleInfoTestData.rule
-          .copy(sinks = List(SinkRuleTestData.leakageKotlinRule), dedRules = List(DEDRuleTestData.dedRuleTestKotlin))
+          .copy(sinks = List(SinkRuleTestData.leakageCSharpRule), dedRules = List(DEDRuleTestData.dedRuleTestCSharp))
       )
-      val cpg = code(sourceCode, "Test0.kt").withRuleCache(ruleCache)
+      val cpg = code(sourceCode, "Test0.cs").withRuleCache(ruleCache)
 
       val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)
@@ -74,11 +93,11 @@ class KotlinLanguageExporterTests
         RuleInfoTestData.rule
           .copy(
             sources = RuleInfoTestData.rule.sources ++ List(SourceRuleTestData.externalEmailSourceRule),
-            sinks = List(SinkRuleTestData.leakageKotlinRule),
-            dedRules = List(DEDRuleTestData.dedRuleTestKotlin)
+            sinks = List(SinkRuleTestData.leakageCSharpRule),
+            dedRules = List(DEDRuleTestData.dedRuleTestCSharp)
           )
       )
-      val cpg = code(sourceCode, "Test0.kt").withRuleCache(ruleCache)
+      val cpg = code(sourceCode, "Test0.cs").withRuleCache(ruleCache)
 
       val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)

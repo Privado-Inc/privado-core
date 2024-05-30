@@ -4,43 +4,46 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, SystemConfig}
 import ai.privado.exporter.{DataflowExporterValidator, SourceExporterValidator}
 import ai.privado.rule.{DEDRuleTestData, RuleInfoTestData, SinkRuleTestData, SourceRuleTestData}
-import ai.privado.testfixtures.KotlinFrontendTestSuite
+import ai.privado.testfixtures.JavaScriptFrontendTestSuite
 import io.circe.Json
 import io.circe.syntax.EncoderOps
 
-class KotlinLanguageExporterTests
-    extends KotlinFrontendTestSuite
+class JavaScriptLanguageDEDTest
+    extends JavaScriptFrontendTestSuite
     with SourceExporterValidator
     with DataflowExporterValidator {
 
   "DED Rule handling with exporter" should {
     val sourceCode = """
-                       |data class User(
-                       |    val firstName: String,
-                       |    val passwd: String,
-                       |    val emailId: String
-                       |)
-                       |
-                       |fun main() {
-                       |    // Create an instance of the User data class
-                       |    val user = User(
-                       |        "firstName1",
-                       |        "yourPassword",
-                       |        "yourEmail@example.com"
-                       |    )
-                       |
-                       |    // Access and print the properties
-                       |    println(user)
+                       |// Define the User class with required properties
+                       |class User {
+                       |  constructor(firstName, passwd, emailId) {
+                       |      this.firstName = firstName;
+                       |      this.passwd = passwd;
+                       |      this.emailId = emailId;
+                       |  }
                        |}
                        |
+                       |// Main function to run the program
+                       |function main() {
+                       |  // Create an instance of the User class
+                       |  const user = new User(
+                       |      "firstName1",
+                       |      "yourPassword",
+                       |      "yourEmail@example.com"
+                       |  );
+                       |
+                       |  // Access and print the properties
+                       |  console.log(user);
+                       |}
                        |""".stripMargin
 
     "should verify if only expected processing & dataflow in privadojson without DED rules" in {
       val ruleCache = RuleCache().setRule(
         RuleInfoTestData.rule
-          .copy(sinks = List(SinkRuleTestData.leakageKotlinRule))
+          .copy(sinks = List(SinkRuleTestData.leakageRule))
       )
-      val cpg = code(sourceCode, "Test0.kt").withRuleCache(ruleCache)
+      val cpg = code(sourceCode, "Test0.js").withRuleCache(ruleCache)
 
       val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)
@@ -55,9 +58,9 @@ class KotlinLanguageExporterTests
     "should verify if only expected processing & dataflow in privadojson after DED Rule applied " in {
       val ruleCache = RuleCache().setRule(
         RuleInfoTestData.rule
-          .copy(sinks = List(SinkRuleTestData.leakageKotlinRule), dedRules = List(DEDRuleTestData.dedRuleTestKotlin))
+          .copy(sinks = List(SinkRuleTestData.leakageRule), dedRules = List(DEDRuleTestData.dedRuleTestJS))
       )
-      val cpg = code(sourceCode, "Test0.kt").withRuleCache(ruleCache)
+      val cpg = code(sourceCode, "Test0.js").withRuleCache(ruleCache)
 
       val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)
@@ -74,11 +77,11 @@ class KotlinLanguageExporterTests
         RuleInfoTestData.rule
           .copy(
             sources = RuleInfoTestData.rule.sources ++ List(SourceRuleTestData.externalEmailSourceRule),
-            sinks = List(SinkRuleTestData.leakageKotlinRule),
-            dedRules = List(DEDRuleTestData.dedRuleTestKotlin)
+            sinks = List(SinkRuleTestData.leakageRule),
+            dedRules = List(DEDRuleTestData.dedRuleTestJS)
           )
       )
-      val cpg = code(sourceCode, "Test0.kt").withRuleCache(ruleCache)
+      val cpg = code(sourceCode, "Test0.js").withRuleCache(ruleCache)
 
       val outputJson  = cpg.getPrivadoJson()
       val processings = getProcessings(outputJson)
