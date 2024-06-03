@@ -11,7 +11,7 @@ check_installed() {
 
 check_installed curl
 
-# check if xmllint is installed
+# check if jq is installed
 if type jq > /dev/null; then
   USE_JQ=1 #true
 else
