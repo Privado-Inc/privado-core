@@ -12,30 +12,38 @@ check_installed() {
 check_installed curl
 
 # check if xmllint is installed
-if type xmllint > /dev/null; then
-  USE_XMLLINT=1 #true
+if type jq > /dev/null; then
+  USE_JQ=1 #true
 else
-  echo "warning: xmllint is not installed - will try with 'grep' as a fallback..."
-  USE_XMLLINT=0 #false
+  echo "warning: jq is not installed - will try with 'grep' as a fallback..."
+  USE_JQ=0 #false
 fi
 
 declare -A repos=(
-  [cpg]=https://repo1.maven.org/maven2/io/shiftleft/codepropertygraph-schema_3
-  [joern]=https://repo1.maven.org/maven2/io/joern/console_3
-  [overflowdb]=https://repo1.maven.org/maven2/io/shiftleft/overflowdb-core_3
+  [cpg]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.shiftleft.codepropertygraph-schema_3/versions
+  [joern]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.joern.console_3/versions
+  [overflowdb]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.shiftleft.overflowdb-core_3/versions
 )
 
 function latest_version {
   local NAME=$1
   local REPO_URL=${repos[$NAME]}
-  local MVN_META_URL=$REPO_URL/maven-metadata.xml
-  local CURL_PARAMS="--silent --show-error $MVN_META_URL"
+  local CURL_PARAMS="--silent --show-error"
+  local TOKEN=$(printenv GITHUB_TOKEN)
 
-  if (( $USE_XMLLINT ))
+  if (( $USE_JQ ))
   then
-    curl $CURL_PARAMS | xmllint --xpath "/metadata/versioning/latest/text()" -
+    curl $CURL_PARAMS -L \
+                       -H "Accept: application/vnd.github+json" \
+                       -H "Authorization: Bearer ${TOKEN}" \
+                       -H "X-GitHub-Api-Version: 2022-11-28" \
+                       "$REPO_URL" | jq '[.[]|select(.name)][0]|.name' | sed 's/[",[:space:]]//g' # get the latest version, and extract the version number
   else
-    curl $CURL_PARAMS | grep '<latest>' | sed 's/[ ]*<latest>\([0-9.]*\)<\/latest>/\1/'
+    curl $CURL_PARAMS -L \
+                   -H "Accept: application/vnd.github+json" \
+                   -H "Authorization: Bearer ${TOKEN}" \
+                   -H "X-GitHub-Api-Version: 2022-11-28" \
+                   "$REPO_URL" | grep -m 1 "\"name\":" | sed 's/[",[:space:]]//g' | awk '{split($0,a,":"); print a[2]}' # use grep to get the first occurrence of the name key which contains the latest version
   fi
 }
 
