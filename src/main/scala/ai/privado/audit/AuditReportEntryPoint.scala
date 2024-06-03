@@ -85,10 +85,10 @@ object AuditReportEntryPoint {
     lang: Language = Language.JAVA
   ): Workbook = {
     lang match {
-      case Language.JAVASCRIPT =>
-        getAuditWorkbookJS(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
-      case Language.GO | Language.PYTHON =>
-        getAuditWorkbookGoAndPy(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
+      case Language.JAVASCRIPT | Language.PHP | Language.CSHARP | Language.PYTHON =>
+        getAuditWorkbookJSAndPy(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
+      case Language.GO =>
+        getAuditWorkbookGo(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
       case Language.JAVA | Language.KOTLIN =>
         getAuditWorkbookJava(xtocpg, taggerCache, dependencies, repoPath, auditCache, ruleCache)
       case _ =>
@@ -107,7 +107,7 @@ object AuditReportEntryPoint {
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     // Set Element Discovery Data into Sheet
-    val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache)
+    val dataElementDiscoveryData = DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath)
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
     // Changed Background colour when tagged
@@ -143,7 +143,7 @@ object AuditReportEntryPoint {
     workbook
   }
 
-  def getAuditWorkbookGoAndPy(
+  def getAuditWorkbookGo(
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
     repoPath: String,
@@ -151,7 +151,7 @@ object AuditReportEntryPoint {
     ruleCache: RuleCache
   ): Workbook = {
     val workbook: Workbook       = new XSSFWorkbook()
-    val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
+    val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, false)
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
     // Changed Background colour when tagged
@@ -173,7 +173,7 @@ object AuditReportEntryPoint {
   }
 
   // Audit report generation for Python and javaScript
-  def getAuditWorkbookJS(
+  def getAuditWorkbookJSAndPy(
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
     repoPath: String,
@@ -181,7 +181,7 @@ object AuditReportEntryPoint {
     ruleCache: RuleCache
   ): Workbook = {
     val workbook: Workbook       = new XSSFWorkbook()
-    val dataElementDiscoveryData = DataElementDiscoveryJS.processDataElementDiscovery(xtocpg, taggerCache)
+    val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache)
 
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)

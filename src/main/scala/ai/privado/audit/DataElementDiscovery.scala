@@ -1,6 +1,6 @@
 package ai.privado.audit
 
-import ai.privado.audit.DataElementDiscovery.getClass
+import ai.privado.audit.DataElementDiscovery.{getClass, logger}
 import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
@@ -15,8 +15,17 @@ import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object DataElementDiscoveryUtils {
+
+  private val logger = LoggerFactory.getLogger(getClass)
   // Not used for security-purposes. Only to generate a unique identifier.
   private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
+
+  private val filterMemberNames =
+    "(?i)(json|use|rows|name|data|event|env|push|start|buffer|length|len|window|string|msg|app|obj|next|end|err|res|req|console|handler|server|catch|then|uri|split|require|exp|other|module|export|exports|use|tmp|img|file|this|val|key|size|max|result|test|item|items|text|url|http|path|find|query|href|write|__init__)"
+
+  private val filterMemberNamesStartsWith =
+    "$obj|_tmp_|tmp|$iterLocal|get|set|post|put|update|param|attr|_iterator|{|log|error"
+  private val filterMemberNamesStartsWithArr = filterMemberNamesStartsWith.split("\\|")
 
   def nodeIdentifier(filePath: String, name: String, nodeType: String, lineNumber: String): String =
     md5
@@ -25,13 +34,14 @@ object DataElementDiscoveryUtils {
       .map("%02x".format(_))
       .foldLeft("")(_ + _)
 
-  def nodeOffset(node: TypeDecl | Member | MethodParameterIn | Identifier | Local): String = node.lineNumber match {
-    case Some(offset) => offset.toString
-    case _            => ""
-  }
+  def nodeOffset(node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier): String =
+    node.lineNumber match {
+      case Some(offset) => offset.toString
+      case _            => ""
+    }
 
   def getNodeLocationAndUniqueId(
-    node: TypeDecl | Member | MethodParameterIn | Identifier | Local,
+    node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier,
     name: String,
     nodeType: String
   ): (String, String, String) = {
@@ -41,9 +51,296 @@ object DataElementDiscoveryUtils {
 
     (path, lineNumber, nodeUniqueId)
   }
+
+  def getIdentifiers(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
+    val identifiers = xtocpg match {
+      case Success(cpg) => {
+        println(cpg.identifier.filter(i => i.name.length > 2).l.size)
+        cpg.identifier
+          .filter(i => i.name.length > 2)
+          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
+          .filter(i => !i.name.matches(filterMemberNames))
+          .dedup
+          .l
+      }
+      case Failure(ex) => {
+        ex.printStackTrace()
+        List[Identifier]()
+      }
+    }
+    println(f"Identifiers: ${identifiers.size}")
+    println(identifiers.name.l)
+
+    val addedIdentifiers = mutable.Set[String]()
+    identifiers.foreach(identifier => {
+      val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER
+      val (path, lineNumber, nodeUniqueId) =
+        DataElementDiscoveryUtils.getNodeLocationAndUniqueId(identifier, identifier.name, nodeType)
+
+      val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
+      val sourceRuleId =
+        identifier.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+
+      if (
+        identifier.name.nonEmpty && !identifier.name
+          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
+        && !identifier.name
+          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+        && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
+        && !addedIdentifiers.contains(identifierUniqueKey)
+      )
+        addedIdentifiers.add(identifierUniqueKey)
+      workbookResult += List(
+        identifier.typeFullName,
+        identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
+        "0.0",
+        identifier.name,
+        identifier.typeFullName,
+        sourceRuleId.startsWith("Data.Sensitive.").toString,
+        sourceRuleId,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        lineNumber,
+        nodeUniqueId,
+        nodeType
+      )
+    })
+
+    workbookResult
+  }
+
+  def getLocals(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
+    val locals = xtocpg match {
+      case Success(cpg) => {
+        cpg.local
+          .filter(i => i.name.length > 2)
+          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
+          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.code.startsWith(xx)))
+          .filter(i => !i.name.matches(filterMemberNames))
+          .dedup
+          .l
+      }
+      case Failure(ex) => {
+        ex.printStackTrace()
+        List[Local]()
+      }
+    }
+
+    val addedLocals = mutable.Set[String]()
+    locals.foreach(local => {
+      val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_LOCAL
+      val (path, lineNumber, nodeUniqueId) =
+        DataElementDiscoveryUtils.getNodeLocationAndUniqueId(local, local.name, nodeType)
+      val localsUniqueKey = s"${local.typeFullName}$path${local.name}"
+      val sourceRuleId =
+        local.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+
+      if (
+        local.name.nonEmpty && !local.name
+          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
+          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+        && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
+        && !addedLocals.contains(localsUniqueKey)
+      )
+        addedLocals.add(localsUniqueKey)
+      workbookResult += List(
+        local.typeFullName,
+        local.file.head.name,
+        "0.0",
+        local.name,
+        local.typeFullName,
+        sourceRuleId.startsWith("Data.Sensitive.").toString,
+        sourceRuleId,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        lineNumber,
+        nodeUniqueId,
+        nodeType
+      )
+    })
+
+    workbookResult
+  }
+
+  def getFieldAccessIdentifier(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
+    val fieldIdentifiers = xtocpg match {
+      case Success(cpg) => {
+        cpg.fieldAccess.fieldIdentifier
+          .filter(i => i.canonicalName.length > 2)
+          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.canonicalName.startsWith(xx)))
+          .filter(i => !i.canonicalName.matches(filterMemberNames))
+          .l
+      }
+      case Failure(ex) => {
+        ex.printStackTrace()
+        List[FieldIdentifier]()
+      }
+    }
+
+    val addedFieldIdentifiers = mutable.Set[String]()
+    fieldIdentifiers.foreach(idenfier => {
+      val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_FIELD_IDENTIFIER
+      val (path, lineNumber, nodeUniqueId) =
+        DataElementDiscoveryUtils.getNodeLocationAndUniqueId(idenfier, idenfier.canonicalName, nodeType)
+      val localsUniqueKey = s"NA$path${idenfier.canonicalName}"
+      val sourceRuleId =
+        idenfier.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+      // TODO: sourceRuleId not getting populated
+      if (
+        idenfier.canonicalName.nonEmpty && !idenfier.canonicalName
+          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !idenfier.canonicalName
+          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
+        && !idenfier.canonicalName.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
+        && !addedFieldIdentifiers.contains(localsUniqueKey)
+      )
+        addedFieldIdentifiers.add(localsUniqueKey)
+      workbookResult += List(
+        "NA",
+        idenfier.file.head.name,
+        "0.0",
+        idenfier.canonicalName,
+        "NA",
+        sourceRuleId.startsWith("Data.Sensitive.").toString,
+        sourceRuleId,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+        lineNumber,
+        nodeUniqueId,
+        nodeType
+      )
+    })
+
+    workbookResult
+  }
+
+  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): Map[TypeDecl, List[Member]] = {
+    logger.info("Process Member Name from cpg")
+    val memberInfoMap = mutable.HashMap[TypeDecl, List[Member]]()
+
+    xtocpg match {
+      case Success(cpg) => {
+        classNameSet.foreach(className => {
+          cpg.typeDecl
+            .where(_.fullName(className))
+            .foreach(typeDeclNode => {
+              if (typeDeclNode.member.nonEmpty) {
+                val members =
+                  typeDeclNode.member
+                    .filter(i => i.name.length > 2)
+                    .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
+                    .filter(i => !i.name.matches(filterMemberNames))
+                    .dedup
+                    .l
+                memberInfoMap.put(typeDeclNode, members)
+              }
+            })
+        })
+      }
+      case Failure(exception) => {
+        println("Failed to process member name from cpg")
+        logger.debug("Failed to process member name from cpg", exception)
+        println(exception.printStackTrace())
+      }
+    }
+    logger.info("Successfully Processed member name from cpg")
+    memberInfoMap.toMap
+  }
+
+  // Add logic to filter out the unwanted entries from audit Sources
+  def filterEntriesWithEmptyMemberName(auditData: List[List[String]]): List[List[String]] = {
+    auditData.filter { data =>
+      val memberName: String = data(3)
+      memberName.nonEmpty
+    }
+  }
+
+  def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
+    logger.info("Process Class Name from cpg")
+    val classNameList = ListBuffer[String]()
+    xtocpg match {
+      case Success(cpg) => {
+        val typeDeclList = cpg.typeDecl
+          .filter(_.order > 0)
+          .toList
+
+        typeDeclList.foreach(node => {
+          if (node.fullName.nonEmpty) {
+            classNameList += node.fullName
+          }
+        })
+      }
+      case Failure(exception) => {
+        println("Failed to process class name from cpg")
+        logger.debug("Failed to process class name from cpg", exception)
+        println(exception.printStackTrace())
+      }
+    }
+    logger.info("Successfully Processed Class Name from cpg")
+    classNameList.toList
+  }
+
+  def getMethodParametersFromTypes(
+    xtocpg: Try[Cpg],
+    classNameRuleList: Set[String],
+    exludeParamaRegex: String
+  ): Map[TypeDecl, ListBuffer[MethodParameterIn]] = {
+    val methodParameterMap = new mutable.HashMap[TypeDecl, ListBuffer[MethodParameterIn]]()
+    xtocpg match {
+      case Success(cpg) => {
+        classNameRuleList.foreach(className => {
+          cpg.typeDecl.where(_.fullName(className)).l.headOption match {
+            case Some(typeDecl) =>
+              cpg.method
+                .fullName(typeDecl.fullName)
+                .foreach(method => {
+                  if (!methodParameterMap.contains(typeDecl)) {
+                    methodParameterMap.put(typeDecl, new ListBuffer[MethodParameterIn])
+                  }
+                  val methodParameterInfo = methodParameterMap(typeDecl)
+                  method.parameter.l
+                    .whereNot(_.name(exludeParamaRegex))
+                    .foreach(parameter => {
+                      methodParameterInfo += parameter
+                    })
+                  methodParameterMap.put(typeDecl, methodParameterInfo)
+                })
+            case None =>
+              logger.debug("head of empty list")
+          }
+        })
+      }
+      case Failure(exception) => {
+        println("Failed to process method parameter info from cpg")
+        logger.debug("Failed to process method parameter info from cpg", exception)
+        exception.printStackTrace()
+      }
+    }
+    methodParameterMap.toMap
+  }
+
+  def getHeaderList(): List[String] = {
+    List(
+      AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
+      AuditReportConstants.FILE_PRIORITY_SCORE,
+      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
+      AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
+      AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
+      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
+      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
+      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
+      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
+    )
+  }
 }
 
-object DataElementDiscovery {
+object DataElementDiscoveryJava {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -111,33 +408,6 @@ object DataElementDiscovery {
       }
     }
     derivedClassName.toSet
-  }
-
-  // Get list of member variable present in given class
-  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): Map[TypeDecl, List[Member]] = {
-    logger.info("Process Member Name from cpg")
-    val memberInfoMap = mutable.HashMap[TypeDecl, List[Member]]()
-
-    xtocpg match {
-      case Success(cpg) => {
-        classNameSet.foreach(className => {
-          cpg.typeDecl
-            .where(_.fullName(className))
-            .foreach(typeDeclNode => {
-              if (typeDeclNode.member.nonEmpty) {
-                memberInfoMap.put(typeDeclNode, typeDeclNode.member.l)
-              }
-            })
-        })
-      }
-      case Failure(exception) => {
-        println("Failed to process member name from cpg")
-        logger.debug("Failed to process member name from cpg", exception)
-        println(exception.printStackTrace())
-      }
-    }
-    logger.info("Successfully Processed member name from cpg")
-    memberInfoMap.toMap
   }
 
   // Get Collection Input Class Name
@@ -237,9 +507,11 @@ object DataElementDiscovery {
     val collectionInputList  = getCollectionInputList(xtocpg)
     val collectionMethodInfo = getCollectionMethodInfo(xtocpg)
     val derivedClassName     = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
-    val memberInfo =
-      getMemberUsingClassName(xtocpg, (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet)
-    val workbookResult      = new ListBuffer[List[String]]()
+    val memberInfo = DataElementDiscoveryUtils.getMemberUsingClassName(
+      xtocpg,
+      (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet
+    )
+    var workbookResult      = new ListBuffer[List[String]]()
     val typeDeclMemberCache = taggerCache.typeDeclMemberCache
 
     // Stores ClassName --> (MemberName --> SourceRuleID)
@@ -258,21 +530,7 @@ object DataElementDiscovery {
 
     // Header List
     // rearranging this list will affect the ordering on audit-sources.json file
-    workbookResult += List(
-      AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
-      AuditReportConstants.FILE_PRIORITY_SCORE,
-      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
-      AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
-      AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
-      AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
-      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
-      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
-    )
+    workbookResult += DataElementDiscoveryUtils.getHeaderList()
 
     // Construct the excel sheet and fill the data
     try {
@@ -427,6 +685,10 @@ object DataElementDiscovery {
           }
         }
       }
+
+      // Adding Identifiers
+      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
+
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
@@ -440,94 +702,8 @@ object DataElementDiscovery {
 
 }
 
-object DataElementDiscoveryJS {
+object DataElementDiscovery {
   private val logger = LoggerFactory.getLogger(getClass)
-
-  def getSourceUsingRules(xtocpg: Try[Cpg]): List[String] = {
-    logger.info("Process Class Name from cpg")
-    val classNameList = ListBuffer[String]()
-    xtocpg match {
-      case Success(cpg) => {
-        val typeDeclList = cpg.typeDecl
-          .filter(_.order > 0)
-          .toList
-
-        typeDeclList.foreach(node => {
-          if (node.fullName.nonEmpty) {
-            classNameList += node.fullName
-          }
-        })
-      }
-      case Failure(exception) => {
-        println("Failed to process class name from cpg")
-        logger.debug("Failed to process class name from cpg", exception)
-        println(exception.printStackTrace())
-      }
-    }
-    logger.info("Successfully Processed Class Name from cpg")
-    classNameList.toList
-  }
-
-  def getMethodParametersFromTypes(
-    xtocpg: Try[Cpg],
-    classNameRuleList: Set[String]
-  ): Map[TypeDecl, ListBuffer[MethodParameterIn]] = {
-    val methodParameterMap = new mutable.HashMap[TypeDecl, ListBuffer[MethodParameterIn]]()
-    xtocpg match {
-      case Success(cpg) => {
-        classNameRuleList.foreach(className => {
-          cpg.typeDecl.where(_.fullName(className)).l.headOption match
-            case Some(typeDecl) =>
-              cpg.method
-                .fullName(typeDecl.fullName)
-                .foreach(method => {
-                  if (!methodParameterMap.contains(typeDecl)) {
-                    methodParameterMap.put(typeDecl, new ListBuffer[MethodParameterIn])
-                  }
-                  val methodParameterInfo = methodParameterMap(typeDecl)
-                  method.parameter.l
-                    .whereNot(_.name(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX))
-                    .foreach(parameter => {
-                      methodParameterInfo += parameter
-                    })
-                  methodParameterMap.put(typeDecl, methodParameterInfo)
-                })
-            case None =>
-              logger.debug("head of empty list")
-        })
-      }
-      case Failure(exception) => {
-        println("Failed to process method parameter info from cpg")
-        logger.debug("Failed to process method parameter info from cpg", exception)
-        exception.printStackTrace()
-      }
-    }
-    methodParameterMap.toMap
-  }
-
-  def getIdentifiers(xtocpg: Try[Cpg]): List[Identifier] = {
-    xtocpg match {
-      case Success(cpg) => {
-        cpg.identifier.l
-      }
-      case Failure(ex) => {
-        ex.printStackTrace()
-        List[Identifier]()
-      }
-    }
-  }
-
-  def getLocals(xtocpg: Try[Cpg]): List[Local] = {
-    xtocpg match {
-      case Success(cpg) => {
-        cpg.local.l
-      }
-      case Failure(ex) => {
-        ex.printStackTrace()
-        List[Local]()
-      }
-    }
-  }
 
   def getFileScoreJS(absoluteFileName: String, xtocpg: Try[Cpg]): String = {
     var score = 0.0
@@ -573,15 +749,21 @@ object DataElementDiscoveryJS {
     }
   }
 
-  def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
-    val classNameRuleList         = getSourceUsingRules(xtocpg)
-    val memberInfo                = DataElementDiscovery.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
-    val workbookResult            = new ListBuffer[List[String]]()
-    val typeDeclMemberCache       = taggerCache.typeDeclMemberCache
-    val methodParametersFromTypes = getMethodParametersFromTypes(xtocpg, classNameRuleList.toSet)
-    val identifiers               = getIdentifiers(xtocpg)
-    val locals                    = getLocals(xtocpg)
-    val elementInfo               = mutable.HashMap[TypeDecl, ListBuffer[Any]]()
+  def processDataElementDiscovery(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    isFieldIdentier: Boolean = true
+  ): List[List[String]] = {
+    val classNameRuleList   = DataElementDiscoveryUtils.getSourceUsingRules(xtocpg)
+    val memberInfo          = DataElementDiscoveryUtils.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
+    var workbookResult      = new ListBuffer[List[String]]()
+    val typeDeclMemberCache = taggerCache.typeDeclMemberCache
+    val methodParametersFromTypes = DataElementDiscoveryUtils.getMethodParametersFromTypes(
+      xtocpg,
+      classNameRuleList.toSet,
+      AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX
+    )
+    val elementInfo = mutable.HashMap[TypeDecl, ListBuffer[Any]]()
 
     methodParametersFromTypes.foreach {
       case (typeDecl, paramList) => {
@@ -639,21 +821,7 @@ object DataElementDiscoveryJS {
     }
 
     // Header List
-    workbookResult += List(
-      AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
-      AuditReportConstants.FILE_PRIORITY_SCORE,
-      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
-      AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
-      AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
-      AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
-      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
-      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
-    )
+    workbookResult += DataElementDiscoveryUtils.getHeaderList()
     // Construct the excel sheet and fill the data
     try {
       elementInfo.foreach {
@@ -731,7 +899,7 @@ object DataElementDiscoveryJS {
                 DataElementDiscoveryUtils.getNodeLocationAndUniqueId(param, param.name, nodeType)
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
 
-              if (!addedParams.contains(paramUniqueKey)) {
+              if (!addedParams.contains(paramUniqueKey) && param.name.length > 2) {
                 addedParams.add(paramUniqueKey)
                 if (ruleMemberInfo.contains(param.name)) {
                   workbookResult += List(
@@ -772,71 +940,14 @@ object DataElementDiscoveryJS {
           }
         }
       }
-      val addedIdentifiers = mutable.Set[String]()
-      identifiers.foreach(identifier => {
-        val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER
-        val (path, lineNumber, nodeUniqueId) =
-          DataElementDiscoveryUtils.getNodeLocationAndUniqueId(identifier, identifier.name, nodeType)
 
-        val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
+      // Adding Identifiers
+      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
 
-        if (
-          identifier.name.nonEmpty && !identifier.name
-            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
-          && !identifier.name
-            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
-          && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-          && !addedIdentifiers.contains(identifierUniqueKey)
-        )
-          addedIdentifiers.add(identifierUniqueKey)
-          workbookResult += List(
-            identifier.typeFullName,
-            identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
-            getFileScoreJS(path, xtocpg),
-            identifier.name,
-            identifier.typeFullName,
-            AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            lineNumber,
-            nodeUniqueId,
-            nodeType
-          )
-      })
-
-      val addedLocals = mutable.Set[String]()
-      locals.foreach(local => {
-        val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_LOCAL
-        val (path, lineNumber, nodeUniqueId) =
-          DataElementDiscoveryUtils.getNodeLocationAndUniqueId(local, local.name, nodeType)
-        val localsUniqueKey = s"${local.typeFullName}$path${local.name}"
-
-        if (
-          local.name.nonEmpty && !local.name
-            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
-            .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
-          && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-          && !addedLocals.contains(localsUniqueKey)
-        )
-          addedLocals.add(localsUniqueKey)
-          workbookResult += List(
-            local.typeFullName,
-            local.file.head.name,
-            getFileScoreJS(path, xtocpg),
-            local.name,
-            local.typeFullName,
-            AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            lineNumber,
-            nodeUniqueId,
-            nodeType
-          )
-      })
+      // Adding FieldIdentifiers
+      if (isFieldIdentier) {
+        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult)
+      }
 
       logger.info("Shutting down audit engine")
     } catch {
@@ -845,6 +956,6 @@ object DataElementDiscoveryJS {
         logger.debug("Failed to process Data Element Discovery report", ex)
         ex.printStackTrace()
     }
-    workbookResult.toList
+    DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(workbookResult.toList)
   }
 }

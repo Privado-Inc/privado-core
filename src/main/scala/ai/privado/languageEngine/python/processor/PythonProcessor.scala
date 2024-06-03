@@ -154,7 +154,7 @@ object PythonProcessor {
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint
-                .getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
+                .getAuditWorkbookJSAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
               sourceRepoLocation
             ) match {
               case Left(err) =>
