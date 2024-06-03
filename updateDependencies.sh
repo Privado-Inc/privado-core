@@ -29,7 +29,7 @@ function latest_version {
   local NAME=$1
   local REPO_URL=${repos[$NAME]}
   local CURL_PARAMS="--silent --show-error"
-  local TOKEN=$(printenv GITHUB_TOKEN)
+  local TOKEN=$(printenv GITHUB_TOKEN) # important to add this to an environment variable as the package registry is private
 
   if (( $USE_JQ ))
   then
