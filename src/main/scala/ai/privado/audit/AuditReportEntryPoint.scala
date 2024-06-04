@@ -85,10 +85,8 @@ object AuditReportEntryPoint {
     lang: Language = Language.JAVA
   ): Workbook = {
     lang match {
-      case Language.JAVASCRIPT | Language.PHP | Language.CSHARP | Language.PYTHON =>
-        getAuditWorkbookJSAndPy(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
-      case Language.GO =>
-        getAuditWorkbookGo(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
+      case Language.JAVASCRIPT | Language.PHP | Language.CSHARP | Language.PYTHON | Language.GO | Language.RUBY =>
+        getAuditWorkbookForLanguage(xtocpg, taggerCache, repoPath, auditCache, ruleCache, lang)
       case Language.JAVA | Language.KOTLIN =>
         getAuditWorkbookJava(xtocpg, taggerCache, dependencies, repoPath, auditCache, ruleCache)
       case _ =>
@@ -143,61 +141,31 @@ object AuditReportEntryPoint {
     workbook
   }
 
-  def getAuditWorkbookGo(
+  // Audit report generation for all major lanaguges
+  def getAuditWorkbookForLanguage(
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
     repoPath: String,
     auditCache: AuditCache,
-    ruleCache: RuleCache
+    ruleCache: RuleCache,
+    lang: Language
   ): Workbook = {
-    val workbook: Workbook       = new XSSFWorkbook()
-    val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, false)
+    val workbook: Workbook = new XSSFWorkbook()
+    val dataElementDiscoveryData = lang match {
+      case Language.RUBY | Language.CSHARP =>
+        println(lang)
+        DataElementDiscovery.processDataElementDiscoveryForIdentifierAndFieldIdentfier(xtocpg, true)
+      case _ =>
+        DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang != Language.GO)
+    }
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
     // Changed Background colour when tagged
     changeTaggedBackgroundColour(workbook, List(4, 6))
-
     createSheet(
       workbook,
       AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
       DataFlowReport.processDataFlowAudit(auditCache)
-    )
-
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
-
-    workbook
-  }
-
-  // Audit report generation for Python and javaScript
-  def getAuditWorkbookJSAndPy(
-    xtocpg: Try[Cpg],
-    taggerCache: TaggerCache,
-    repoPath: String,
-    auditCache: AuditCache,
-    ruleCache: RuleCache
-  ): Workbook = {
-    val workbook: Workbook       = new XSSFWorkbook()
-    val dataElementDiscoveryData = DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache)
-
-    createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
-    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
-    // Changed Background colour when tagged
-    changeTaggedBackgroundColour(workbook, List(4, 6))
-    // Set Data Flow report into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
-      DataFlowReport.processDataFlowAudit(auditCache)
-    )
-    // Set Unresolved flow into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-      UnresolvedFlowReport.processUnresolvedFlow(auditCache)
     )
 
     createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))

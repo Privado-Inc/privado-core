@@ -1,6 +1,5 @@
 package ai.privado.audit
 
-import ai.privado.audit.DataElementDiscovery.{getClass, logger}
 import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
@@ -11,7 +10,6 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
 object DataElementDiscoveryUtils {
@@ -20,11 +18,14 @@ object DataElementDiscoveryUtils {
   // Not used for security-purposes. Only to generate a unique identifier.
   private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
 
+  private val filterLangTypes =
+    "(?i)(window|string|str|list|dict|bool|number|num|int|nil|json|true|false|arr|typeof|array|ints|floats|byte|bytes|strings)"
+
   private val filterMemberNames =
-    "(?i)(json|use|rows|name|data|event|env|push|start|buffer|length|len|window|string|msg|app|obj|next|end|err|res|req|console|handler|server|catch|then|uri|split|require|exp|other|module|export|exports|use|tmp|img|file|this|val|key|size|max|result|test|item|items|text|url|http|path|find|query|href|write|__init__)"
+    "(?i)(cls|self|ctx|main|use|row|rows|sql|stmt|name|data|event|env|cmd|push|start|buffer|length|len|msg|app|obj|next|end|err|res|req|console|handler|server|catch|then|uri|split|require|exp|other|module|import|export|exports|use|tmp|img|file|this|val|key|size|max|result|test|item|items|text|url|http|path|query|href|write|<fakeNew>)"
 
   private val filterMemberNamesStartsWith =
-    "$obj|_tmp_|tmp|$iterLocal|get|set|post|put|update|param|attr|_iterator|{|log|error"
+    "$obj|__|_tmp_|tmp|$iterLocal|get|set|post|put|update|create|find|insert|param|attr|arg|_iterator|{|log|error|iterator_"
   private val filterMemberNamesStartsWithArr = filterMemberNamesStartsWith.split("\\|")
 
   def nodeIdentifier(filePath: String, name: String, nodeType: String, lineNumber: String): String =
@@ -59,6 +60,7 @@ object DataElementDiscoveryUtils {
         cpg.identifier
           .filter(i => i.name.length > 2)
           .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
+          .filter(i => !i.name.matches(filterLangTypes))
           .filter(i => !i.name.matches(filterMemberNames))
           .dedup
           .l
@@ -70,6 +72,7 @@ object DataElementDiscoveryUtils {
     }
     println(f"Identifiers: ${identifiers.size}")
     println(identifiers.name.l)
+    println(identifiers.name.dedup.l)
 
     val addedIdentifiers = mutable.Set[String]()
     identifiers.foreach(identifier => {
@@ -110,66 +113,13 @@ object DataElementDiscoveryUtils {
     workbookResult
   }
 
-  def getLocals(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
-    val locals = xtocpg match {
-      case Success(cpg) => {
-        cpg.local
-          .filter(i => i.name.length > 2)
-          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
-          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.code.startsWith(xx)))
-          .filter(i => !i.name.matches(filterMemberNames))
-          .dedup
-          .l
-      }
-      case Failure(ex) => {
-        ex.printStackTrace()
-        List[Local]()
-      }
-    }
-
-    val addedLocals = mutable.Set[String]()
-    locals.foreach(local => {
-      val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_LOCAL
-      val (path, lineNumber, nodeUniqueId) =
-        DataElementDiscoveryUtils.getNodeLocationAndUniqueId(local, local.name, nodeType)
-      val localsUniqueKey = s"${local.typeFullName}$path${local.name}"
-      val sourceRuleId =
-        local.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
-
-      if (
-        local.name.nonEmpty && !local.name
-          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !local.name
-          .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
-        && !local.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-        && !addedLocals.contains(localsUniqueKey)
-      )
-        addedLocals.add(localsUniqueKey)
-      workbookResult += List(
-        local.typeFullName,
-        local.file.head.name,
-        "0.0",
-        local.name,
-        local.typeFullName,
-        sourceRuleId.startsWith("Data.Sensitive.").toString,
-        sourceRuleId,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        lineNumber,
-        nodeUniqueId,
-        nodeType
-      )
-    })
-
-    workbookResult
-  }
-
   def getFieldAccessIdentifier(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
     val fieldIdentifiers = xtocpg match {
       case Success(cpg) => {
         cpg.fieldAccess.fieldIdentifier
           .filter(i => i.canonicalName.length > 2)
           .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.canonicalName.startsWith(xx)))
+          .filter(i => !i.canonicalName.matches(filterLangTypes))
           .filter(i => !i.canonicalName.matches(filterMemberNames))
           .l
       }
@@ -231,6 +181,7 @@ object DataElementDiscoveryUtils {
                   typeDeclNode.member
                     .filter(i => i.name.length > 2)
                     .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
+                    .filter(i => !i.name.matches(filterLangTypes))
                     .filter(i => !i.name.matches(filterMemberNames))
                     .dedup
                     .l
@@ -749,10 +700,33 @@ object DataElementDiscovery {
     }
   }
 
+  def processDataElementDiscoveryForIdentifierAndFieldIdentfier(
+    xtocpg: Try[Cpg],
+    isFieldIdentierRequired: Boolean = true
+  ): List[List[String]] = {
+    var workbookResult = new ListBuffer[List[String]]()
+    try {
+      // Adding Identifiers
+      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
+
+      // Adding FieldIdentifiers
+      if (isFieldIdentierRequired) {
+        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult)
+      }
+    } catch {
+      case ex: Exception =>
+        println("Failed to process Data Element Discovery report")
+        logger.debug("Failed to process Data Element Discovery report", ex)
+        ex.printStackTrace()
+    }
+
+    DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(workbookResult.toList)
+  }
+
   def processDataElementDiscovery(
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
-    isFieldIdentier: Boolean = true
+    isFieldIdentierRequired: Boolean = true
   ): List[List[String]] = {
     val classNameRuleList   = DataElementDiscoveryUtils.getSourceUsingRules(xtocpg)
     val memberInfo          = DataElementDiscoveryUtils.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
@@ -831,7 +805,7 @@ object DataElementDiscovery {
           workbookResult += List(
             key.name,
             key.file.head.name,
-            getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -862,7 +836,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -878,7 +852,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -905,7 +879,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                     param.name,
                     param.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -921,7 +895,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
                     param.name,
                     param.typeFullName,
                     AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -945,7 +919,7 @@ object DataElementDiscovery {
       workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
 
       // Adding FieldIdentifiers
-      if (isFieldIdentier) {
+      if (isFieldIdentierRequired) {
         workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult)
       }
 
