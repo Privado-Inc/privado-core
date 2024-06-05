@@ -88,57 +88,10 @@ object AuditReportEntryPoint {
       case Language.JAVASCRIPT | Language.PHP | Language.CSHARP | Language.PYTHON | Language.GO | Language.RUBY =>
         getAuditWorkbookForLanguage(xtocpg, taggerCache, repoPath, auditCache, ruleCache, lang)
       case Language.JAVA | Language.KOTLIN =>
-        getAuditWorkbookJava(xtocpg, taggerCache, dependencies, repoPath, auditCache, ruleCache)
+        getAuditWorkbookForLanguage(xtocpg, taggerCache, repoPath, auditCache, ruleCache, lang, dependencies)
       case _ =>
         new XSSFWorkbook()
     }
-  }
-
-  // Audit report generation for java
-  def getAuditWorkbookJava(
-    xtocpg: Try[Cpg],
-    taggerCache: TaggerCache,
-    dependencies: Set[ModuleDependency],
-    repoPath: String,
-    auditCache: AuditCache,
-    ruleCache: RuleCache
-  ): Workbook = {
-    val workbook: Workbook = new XSSFWorkbook()
-    // Set Element Discovery Data into Sheet
-    val dataElementDiscoveryData = DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
-    createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath)
-    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
-    // Changed Background colour when tagged
-    changeTaggedBackgroundColour(workbook, List(4, 6))
-
-    // Set Dependency Report data into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
-      DependencyReport.processDependencyAudit(dependencies)
-    )
-
-    // Set Data Flow report into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
-      DataFlowReport.processDataFlowAudit(auditCache)
-    )
-
-    // Set Unresolved flow into Sheet
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-      UnresolvedFlowReport.processUnresolvedFlow(auditCache)
-    )
-
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
-
-    workbook
   }
 
   // Audit report generation for all major languages
@@ -148,17 +101,22 @@ object AuditReportEntryPoint {
     repoPath: String,
     auditCache: AuditCache,
     ruleCache: RuleCache,
-    lang: Language
+    lang: Language,
+    dependencies: Set[ModuleDependency] = Set()
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     val dataElementDiscoveryData = lang match {
+      case Language.JAVA | Language.KOTLIN =>
+        DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
       case Language.RUBY =>
         DataElementDiscovery.processDataElementDiscoveryForIdentifierAndFieldIdentfier(xtocpg, lang)
       case _ =>
         DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
+
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
+
     // Changed Background colour when tagged
     changeTaggedBackgroundColour(workbook, List(4, 6))
     createSheet(
@@ -172,6 +130,22 @@ object AuditReportEntryPoint {
     createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
 
     createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
+
+    if (lang == Language.JAVA || lang == Language.KOTLIN) {
+      // Set Unresolved flow into Sheet
+      createSheet(
+        workbook,
+        AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
+        UnresolvedFlowReport.processUnresolvedFlow(auditCache)
+      )
+
+      // Set Dependency Report data into Sheet
+      createSheet(
+        workbook,
+        AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
+        DependencyReport.processDependencyAudit(dependencies)
+      )
+    }
 
     workbook
   }

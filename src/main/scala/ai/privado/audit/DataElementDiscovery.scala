@@ -20,12 +20,15 @@ object DataElementDiscoveryUtils {
   // Not used for security-purposes. Only to generate a unique identifier.
   private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
 
+  // Regular expression pattern to filter common language types
   private val filterCommonLangTypes =
     "(?i)(class|window|str|list|dict|bool|boolean|number|nil|null|none|undefined|nan|empty|json|true|false|before|after|arr|typeof|match|case|(array|int|num|float|byte|string|blob).{0,1})"
 
+  // Regular expression pattern to filter common variable names
   private val filterCommonVars =
     "(?i)(cls|self|ctx|main|use|stmt|name|data|event|env|cmd|push|join|split|start|buffer|thread|length|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|use|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log).{0,1})"
 
+  // List of prefixes to filter out common variables that start with these values
   private val filterCommonVarsStartsWith =
     "$obj|__|_tmp_|tmp|$iterLocal|file|is|sha_|this|get|set|post|put|update|create|find|insert|generate|process|delete|handle|param|attr|arg|_iterator|{|log|error|iterator_"
   private val filterCommonVarsStartsWithArr = filterCommonVarsStartsWith.split("\\|")
@@ -83,18 +86,21 @@ object DataElementDiscoveryUtils {
   ): ListBuffer[List[String]] = {
     val identifiers = xtocpg match {
       case Success(cpg) => {
-        println(cpg.identifier.filter(i => i.name.length > 2).l.size)
         cpg.identifier
+          // Filter out identifiers with length <= 2
           .filter(i => i.name.length > 2)
+          // Filter out identifiers that start with any of the specified prefixes
           .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.name.startsWith(xx)))
+          // Filter out identifiers matching common language types pattern
           .filter(i => !i.name.matches(filterCommonLangTypes))
+          // Filter out identifiers matching common variable names pattern
           .filter(i => !i.name.matches(filterCommonVars))
+          // Filter out identifiers matching language-specific filters
           .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
-          .dedup
           .l
       }
       case Failure(ex) => {
-        ex.printStackTrace()
+        logger.debug(f"Error while getting Identifier ", ex)
         List[Identifier]()
       }
     }
@@ -147,15 +153,20 @@ object DataElementDiscoveryUtils {
     val fieldIdentifiers = xtocpg match {
       case Success(cpg) => {
         cpg.fieldAccess.fieldIdentifier
+          // Filter out identifiers with length <= 2
           .filter(i => i.canonicalName.length > 2)
+          // Filter out identifiers that start with any of the specified prefixes
           .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.canonicalName.startsWith(xx)))
+          // Filter out identifiers matching common language types pattern
           .filter(i => !i.canonicalName.matches(filterCommonLangTypes))
+          // Filter out identifiers matching common variable names pattern
           .filter(i => !i.canonicalName.matches(filterCommonVars))
+          // Filter out identifiers matching language-specific filters
           .filter(i => !i.canonicalName.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
           .l
       }
       case Failure(ex) => {
-        ex.printStackTrace()
+        logger.debug(f"Error while getting FieldIdentifier ", ex)
         List[FieldIdentifier]()
       }
     }
@@ -216,10 +227,15 @@ object DataElementDiscoveryUtils {
                 if (typeDeclNode.member.nonEmpty) {
                   val members =
                     typeDeclNode.member
+                      // Filter out members with length <= 2
                       .filter(i => i.name.length > 2)
+                      // Filter out members that start with any of the specified prefixes
                       .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.name.startsWith(xx)))
+                      // Filter out members matching common language types pattern
                       .filter(i => !i.name.matches(filterCommonLangTypes))
+                      // Filter out members matching common variable names pattern
                       .filter(i => !i.name.matches(filterCommonVars))
+                      // Filter out members matching language-specific filters
                       .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
                       .dedup
                       .l
@@ -233,9 +249,7 @@ object DataElementDiscoveryUtils {
         })
       }
       case Failure(exception) => {
-        println("Failed to process member name from cpg")
         logger.debug("Failed to process member name from cpg", exception)
-        println(exception.printStackTrace())
       }
     }
     logger.info("Successfully Processed member name from cpg")
@@ -266,9 +280,7 @@ object DataElementDiscoveryUtils {
         })
       }
       case Failure(exception) => {
-        println("Failed to process class name from cpg")
         logger.debug("Failed to process class name from cpg", exception)
-        println(exception.printStackTrace())
       }
     }
     logger.info("Successfully Processed Class Name from cpg")
@@ -311,9 +323,7 @@ object DataElementDiscoveryUtils {
         })
       }
       case Failure(exception) => {
-        println("Failed to process method parameter info from cpg")
         logger.debug("Failed to process method parameter info from cpg", exception)
-        exception.printStackTrace()
       }
     }
     methodParameterMap.toMap
@@ -365,9 +375,7 @@ object DataElementDiscoveryJava {
         })
       }
       case Failure(exception) => {
-        println("Failed to process class name from cpg")
         logger.debug("Failed to process class name from cpg", exception)
-        println(exception.printStackTrace())
       }
     }
     logger.info("Successfully Processed Class Name from cpg")
@@ -400,9 +408,7 @@ object DataElementDiscoveryJava {
         })
       }
       case Failure(exception) => {
-        println("Failed to Extract package classes from cpg")
         logger.debug("Failed to Extract package classes from cpg", exception)
-        println(exception.printStackTrace())
       }
     }
     derivedClassName.toSet
@@ -425,9 +431,8 @@ object DataElementDiscoveryJava {
         })
       }
       case Failure(exception) => {
-        println("Failed to process method parameter from cpg")
         logger.debug("Failed to process method parameter from cpg", exception)
-        println(exception.printStackTrace())
+        logger.debug("exception: ", exception.printStackTrace())
       }
     }
     collectionInputList.toList
@@ -458,9 +463,8 @@ object DataElementDiscoveryJava {
         })
       }
       case Failure(exception) => {
-        println("Failed to process collection method info from cpg")
         logger.debug("Failed to process collection method info from cpg", exception)
-        println(exception.printStackTrace())
+        logger.debug("exception: ", exception.printStackTrace())
       }
     }
     collectionMethodInfoMap.toMap
@@ -491,7 +495,6 @@ object DataElementDiscoveryJava {
         score.toString
       }
       case Failure(exception) => {
-        println("Failed to calculate file score")
         logger.debug("Failed to calculate file score", exception)
         logger.debug("exception: ", exception.printStackTrace())
         "0"
@@ -695,7 +698,6 @@ object DataElementDiscoveryJava {
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
-        println("Failed to process Data Element Discovery report")
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
     workbookResult.toList
@@ -767,9 +769,7 @@ object DataElementDiscovery {
       }
     } catch {
       case ex: Exception =>
-        println("Failed to process Data Element Discovery report")
         logger.debug("Failed to process Data Element Discovery report", ex)
-        ex.printStackTrace()
     }
 
     DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(workbookResult.toList)
@@ -974,9 +974,7 @@ object DataElementDiscovery {
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
-        println("Failed to process Data Element Discovery report")
         logger.debug("Failed to process Data Element Discovery report", ex)
-        ex.printStackTrace()
     }
     DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(workbookResult.toList)
   }
