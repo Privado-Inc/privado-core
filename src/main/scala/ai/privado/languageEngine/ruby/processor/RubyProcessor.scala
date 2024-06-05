@@ -23,17 +23,18 @@
 
 package ai.privado.languageEngine.ruby.processor
 
+import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
-import ai.privado.exporter.JSONExporter
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.exporter.monolith.MonolithExporter
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputAuditFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, JsonPropertyParserPass, SQLParser}
 import ai.privado.semantic.Language.*
@@ -213,6 +214,32 @@ object RubyProcessor {
             appCache
           )
 
+          val errorMsg = new ListBuffer[String]()
+          // Exporting the Audit report
+          if (ScanProcessor.config.generateAuditReport) {
+            ExcelExporter.auditExport(
+              outputAuditFileName,
+              AuditReportEntryPoint
+                .getAuditWorkbookForLanguage(
+                  xtocpg,
+                  taggerCache,
+                  sourceRepoLocation,
+                  auditCache,
+                  ruleCache,
+                  Language.RUBY
+                ),
+              sourceRepoLocation
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
+          }
+
           JSONExporter.fileExport(
             cpg,
             outputFileName,
@@ -229,15 +256,20 @@ object RubyProcessor {
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
-              Left(err)
+              errorMsg += err
             case Right(_) =>
               println(s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder")
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
-
-              Right(())
           }
+
+          // Check if any of the export failed
+          if (errorMsg.toList.isEmpty)
+            Right(())
+          else
+            Left(errorMsg.toList.mkString("\n"))
+
         } catch {
           case ex: Exception =>
             logger.error("Error while processing the CPG after source code parsing ", ex)

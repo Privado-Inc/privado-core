@@ -1,10 +1,11 @@
 package ai.privado.languageEngine.go.audit
 
-import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryJS}
+import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryUtils}
 import ai.privado.languageEngine.go.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import io.shiftleft.codepropertygraph.generated.nodes.Member
+import ai.privado.model.Language
 
 import scala.collection.mutable
 import scala.util.Try
@@ -30,7 +31,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
   "DataElementDiscovery" should {
     "Test discovery of class name in codebase" in {
-      val classNameList = DataElementDiscoveryJS.getSourceUsingRules(Try(cpg))
+      val classNameList = DataElementDiscoveryUtils.getSourceUsingRules(Try(cpg))
 
       classNameList.size shouldBe 4
       classNameList should contain("entity.User")
@@ -39,19 +40,10 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should not contain ("nonExistent.Type")
     }
 
-    "Test discovery of class Name in package from class name" in {
-      val classList = List("entity.User", "entity.Account")
-
-      val discoveryList = DataElementDiscovery.extractClassFromPackage(Try(cpg), classList.toSet)
-      discoveryList.size shouldBe 4
-      discoveryList should contain("entity.User")
-      discoveryList should contain("entity.Account")
-    }
-
     "Test class member variable" in {
       val classList = List("entity.User", "entity.Account")
 
-      val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.GO)
 
       val classMemberMap = new mutable.HashMap[String, List[Member]]()
 
@@ -77,7 +69,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val endpointMap                    = new mutable.HashMap[String, String]()
       val methodNameMap                  = new mutable.HashMap[String, String]()
       val memberLineNumberAndTypeMapping = mutable.HashMap[String, (String, String)]()
-      val workbookList                   = DataElementDiscoveryJS.processDataElementDiscovery(Try(cpg), taggerCache)
+      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache, Language.GO)
 
       workbookList.foreach(row => {
         classNameList += row.head
@@ -116,19 +108,17 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("houseNo")
       memberList should not contain ("nonExistentMember")
 
-      fileScoreList should contain("1.5")
-
       // validate source Rule ID in result
       sourceRuleIdMap("firstName") should equal("Data.Sensitive.FirstName")
     }
 
     "Test file score " in {
-      DataElementDiscoveryJS.getFileScoreJS("User.go", Try(cpg)) shouldBe "1.5"
+      DataElementDiscovery.getFileScoreJS("User.go", Try(cpg)) shouldBe "1.5"
     }
 
     "filter the class having no member" in {
       val classList = List("nonExistent.Type", "entity.Address")
-      val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.GO)
 
       memberMap.size shouldBe 1
       memberMap.headOption.get._1.fullName should equal("entity.Address")

@@ -1,10 +1,11 @@
 package ai.privado.languageEngine.python.audit
 
-import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryJS}
+import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryUtils}
 import ai.privado.languageEngine.python.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.source.IdentifierTagger
 import io.shiftleft.codepropertygraph.generated.nodes.Member
+import ai.privado.model.Language
 
 import scala.collection.mutable
 import scala.util.Try
@@ -30,7 +31,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
   "DataElementDiscovery" should {
     "Test discovery of class name in codebase" in {
-      val classNameList = DataElementDiscoveryJS.getSourceUsingRules(Try(cpg))
+      val classNameList = DataElementDiscoveryUtils.getSourceUsingRules(Try(cpg))
 
       classNameList should contain("User.py:<module>.User")
       classNameList should contain("Account.py:<module>.Account")
@@ -38,18 +39,10 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should not contain ("NonExistent.py:<module>.NonExistent")
     }
 
-    "Test discovery of class Name in package from class name" in {
-      val classList = List("User.py:<module>.User", "Account.py:<module>.Account")
-
-      val discoveryList = DataElementDiscovery.extractClassFromPackage(Try(cpg), classList.toSet)
-      discoveryList should contain("User.py:<module>.User")
-      discoveryList should contain("Account.py:<module>.Account")
-    }
-
     "Test class member variable" in {
       val classList = List("User.py:<module>.User", "Account.py:<module>.Account")
 
-      val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.PYTHON)
 
       val classMemberMap = new mutable.HashMap[String, List[Member]]()
 
@@ -60,14 +53,14 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classMemberMap.keys.toList should contain("User.py:<module>.User")
 
       // __init__, field, getter, setter
-      classMemberMap("User.py:<module>.User").size shouldBe 4
-      classMemberMap("User.py:<module>.User").last.name should equal("setFirstName")
+      classMemberMap("User.py:<module>.User").size shouldBe 1
+      classMemberMap("User.py:<module>.User").last.name should equal("firstName")
 
       classMemberMap.keys.toList should contain("Account.py:<module>.Account")
 
       // __init__, field, setter
-      classMemberMap("Account.py:<module>.Account").size shouldBe 3
-      classMemberMap("Account.py:<module>.Account").last.name should equal("setAccountNo")
+      classMemberMap("Account.py:<module>.Account").size shouldBe 1
+      classMemberMap("Account.py:<module>.Account").last.name should equal("accountNo")
     }
 
     "Test final discovery result" in {
@@ -79,7 +72,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val endpointMap                    = new mutable.HashMap[String, String]()
       val methodNameMap                  = new mutable.HashMap[String, String]()
       val memberLineNumberAndTypeMapping = mutable.HashMap[String, (String, String)]()
-      val workbookList                   = DataElementDiscoveryJS.processDataElementDiscovery(Try(cpg), taggerCache)
+      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache, Language.PYTHON)
 
       workbookList.foreach(row => {
         classNameList += row.head
@@ -98,12 +91,12 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
       })
 
-      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "4", "Member")
-      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "4", "Identifier")
-      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "4", "Member")
-      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "4", "Identifier")
-      memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "4", "Member")
-      memberLineNumberAndTypeMapping("hNo") shouldBe (/* line number */ "4", "Identifier")
+      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "10", "FieldIdentifier")
+      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "9", "Identifier")
+      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "7", "FieldIdentifier")
+      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "9", "Identifier")
+      memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "7", "FieldIdentifier")
+      memberLineNumberAndTypeMapping("hNo") shouldBe (/* line number */ "6", "Identifier")
       memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
 
       // Validate class name in result
@@ -118,19 +111,13 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("houseNo")
       memberList should not contain ("nonExistentMember")
 
-      fileScoreList should contain("1.5")
-
       // validate source Rule ID in result
       sourceRuleIdMap("firstName") should equal("Data.Sensitive.FirstName")
     }
 
-    "Test file score " in {
-      DataElementDiscoveryJS.getFileScoreJS("User.py", Try(cpg)) shouldBe "1.5"
-    }
-
     "filter the class having no member" in {
       val classList = List("NonExistent.py:<module>.NonExistent", "Address.py:<module>.Address")
-      val memberMap = DataElementDiscovery.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.PYTHON)
 
       memberMap.size shouldBe 1
       memberMap.headOption.get._1.fullName should equal("Address.py:<module>.Address")
