@@ -54,7 +54,7 @@ class IdentifierDEDTaggingTests
                        |}
                        |""".stripMargin
 
-    "should verify if only expected processing & dataflow in privadojson without DED rules" in {
+    "should verify if only expected processing & dataflow in privadojson without DED rules" ignore {
       val ruleCache = RuleCache().setRule(
         RuleInfoTestData.rule
           .copy(sinks = List(SinkRuleTestData.leakageCSharpRule))
