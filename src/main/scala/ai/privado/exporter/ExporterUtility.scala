@@ -438,14 +438,17 @@ object ExporterUtility {
     val processingSinks = Future {
       Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
     }
+    /*
     val collections = Future {
       Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
     }
 
     val finalCollections = Await.result(collections, Duration.Inf)
+     */
     logger.debug("Done with exporting Collections")
     val violationResult =
-      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)).getOrElse(List[ViolationModel]())
+      Try(policyAndThreatExporter.getViolations(repoPath, collectionExporter.getCollections, appCache))
+        .getOrElse(List[ViolationModel]())
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 
