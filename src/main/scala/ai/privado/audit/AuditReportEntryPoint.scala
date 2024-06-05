@@ -89,7 +89,7 @@ object AuditReportEntryPoint {
         getAuditWorkbookJS(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
       case Language.GO | Language.PYTHON =>
         getAuditWorkbookGoAndPy(xtocpg, taggerCache, repoPath, auditCache, ruleCache)
-      case Language.JAVA =>
+      case Language.JAVA | Language.KOTLIN =>
         getAuditWorkbookJava(xtocpg, taggerCache, dependencies, repoPath, auditCache, ruleCache)
       case _ =>
         new XSSFWorkbook()
