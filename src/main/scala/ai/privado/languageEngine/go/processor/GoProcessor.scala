@@ -133,7 +133,14 @@ object GoProcessor {
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint
-                .getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
+                .getAuditWorkbookForLanguage(
+                  xtocpg,
+                  taggerCache,
+                  sourceRepoLocation,
+                  auditCache,
+                  ruleCache,
+                  Language.GO
+                ),
               sourceRepoLocation
             ) match {
               case Left(err) =>

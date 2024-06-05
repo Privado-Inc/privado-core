@@ -59,7 +59,8 @@ case class PrivadoInput(
   isMonolith: Boolean = false,
   enableIngressAndEgressUrls: Boolean = false,
   assetDiscovery: Boolean = false,
-  forceLanguage: Language.Language = Language.UNKNOWN
+  forceLanguage: Language.Language = Language.UNKNOWN,
+  rubyParserTimeout: Long = 120
 )
 
 object CommandConstants {
@@ -116,6 +117,8 @@ object CommandConstants {
   val ASSEST_DISCOVERY                             = "asset-discovery"
   val FORCE_LANGUAGE                               = "force-language"
   val FORCE_LANGUAGE_ABBR                          = "fl"
+  val RUBY_PARSER_TIMEOUT                          = "ruby-parser-timeout"
+  val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
 }
 
 object CommandParser {
@@ -279,6 +282,11 @@ object CommandParser {
               .text(
                 "Force scan with the given language java, javascript, go, csharp, python, php, kotlin, ruby, and default"
               ),
+            opt[Long](CommandConstants.RUBY_PARSER_TIMEOUT)
+              .abbr(CommandConstants.RUBY_PARSER_TIMEOUT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(rubyParserTimeout = x))
+              .text("Ruby Parser Timeout in seconds. By default set to 2 mins i.e. 120 seconds"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
