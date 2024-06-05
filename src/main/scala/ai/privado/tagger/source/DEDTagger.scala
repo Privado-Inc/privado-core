@@ -54,6 +54,7 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
     //  TODO: SqlColumnNode
 
     def getMatchesNodes(v: DEDVariable): List[AstNode] = {
+      // TODO: Add the filter for lineNumber also
       filteredIdentifiers.filter(_.name == v.name)
         ++ filteredMembers.filter(_.name == v.name)
         ++ filteredFieldAccessIdentifier.filter(_.fieldIdentifier.canonicalName(v.name).nonEmpty).isCall.l
