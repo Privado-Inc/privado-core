@@ -445,6 +445,7 @@ object ExporterUtility {
 
     val finalCollections = Await.result(collections, Duration.Inf)
      */
+    val finalCollections = collectionExporter.getCollections
     logger.debug("Done with exporting Collections")
     val violationResult =
       Try(policyAndThreatExporter.getViolations(repoPath, collectionExporter.getCollections, appCache))
