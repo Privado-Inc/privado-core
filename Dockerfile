@@ -151,7 +151,7 @@ ENV PATH $GOPATH/bin:$PATH
 
 #RUN export BUILD_VERSION=$JAR_VERSION && export CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACT_AUTH_TOKEN && export CODE_ARTIFACT_URL=$CODE_ARTIFACT_URL && sbt publish universal:packageBin
 
-RUN export BUILD_VERSION=$JAR_VERSION
+RUN export BUILD_VERSION=$JAR_VERSION && sbt test universal:packageBin
 
 FROM alpine:3.16
 RUN apk add --no-cache bash
