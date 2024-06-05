@@ -3,6 +3,8 @@ package ai.privado.audit
 import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
+import ai.privado.model.Language
+import ai.privado.model.Language.Language
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -18,15 +20,35 @@ object DataElementDiscoveryUtils {
   // Not used for security-purposes. Only to generate a unique identifier.
   private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
 
-  private val filterLangTypes =
-    "(?i)(window|string|str|list|dict|bool|number|num|int|nil|json|true|false|arr|typeof|array|ints|floats|byte|bytes|strings)"
+  private val filterCommonLangTypes =
+    "(?i)(class|window|str|list|dict|bool|boolean|number|nil|null|none|undefined|nan|empty|json|true|false|before|after|arr|typeof|match|case|(array|int|num|float|byte|string|blob).{0,1})"
 
-  private val filterMemberNames =
-    "(?i)(cls|self|ctx|main|use|row|rows|sql|stmt|name|data|event|env|cmd|push|start|buffer|length|len|msg|app|obj|next|end|err|res|req|console|handler|server|catch|then|uri|split|require|exp|other|module|import|export|exports|use|tmp|img|file|this|val|key|size|max|result|test|item|items|text|url|http|path|query|href|write|<fakeNew>)"
+  private val filterCommonVars =
+    "(?i)(cls|self|ctx|main|use|stmt|name|data|event|env|cmd|push|join|split|start|buffer|thread|length|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|use|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log).{0,1})"
 
-  private val filterMemberNamesStartsWith =
-    "$obj|__|_tmp_|tmp|$iterLocal|get|set|post|put|update|create|find|insert|param|attr|arg|_iterator|{|log|error|iterator_"
-  private val filterMemberNamesStartsWithArr = filterMemberNamesStartsWith.split("\\|")
+  private val filterCommonVarsStartsWith =
+    "$obj|__|_tmp_|tmp|$iterLocal|file|is|sha_|this|get|set|post|put|update|create|find|insert|generate|process|delete|handle|param|attr|arg|_iterator|{|log|error|iterator_"
+  private val filterCommonVarsStartsWithArr = filterCommonVarsStartsWith.split("\\|")
+
+  // Additional Language specific filters
+  def getLanguageSpecificFilters(lang: Language): String = {
+    lang match {
+      case Language.JAVASCRIPT =>
+        "(?i)(axios|require|express)"
+      case Language.PYTHON =>
+        "(?i)(<fakeNew>|print|retry|logger|delete|boto.{0,1}|requests|append|extend|loads)"
+      case Language.JAVA | Language.KOTLIN =>
+        "(?i)(system|out|buf|(com|io|org).{1}.*)"
+      case Language.GO =>
+        "(?i)(context|block|nonce|syscall|buf)"
+      case Language.PHP =>
+        "(?i)(<global>|_post|_get|_session|_files|_server|_cookie|uid)"
+      case Language.RUBY =>
+        "(?i)(node|tree|raise|object)"
+      case Language.CSHARP =>
+        "(?i)(table|migrationBuilder|modelBuilder|program|yaml|context|cts|instance|idx)"
+    }
+  }
 
   def nodeIdentifier(filePath: String, name: String, nodeType: String, lineNumber: String): String =
     md5
@@ -53,15 +75,21 @@ object DataElementDiscoveryUtils {
     (path, lineNumber, nodeUniqueId)
   }
 
-  def getIdentifiers(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
+  // Add Identifiers in workbookResult
+  def getIdentifiers(
+    xtocpg: Try[Cpg],
+    workbookResult: ListBuffer[List[String]],
+    lang: Language
+  ): ListBuffer[List[String]] = {
     val identifiers = xtocpg match {
       case Success(cpg) => {
         println(cpg.identifier.filter(i => i.name.length > 2).l.size)
         cpg.identifier
           .filter(i => i.name.length > 2)
-          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
-          .filter(i => !i.name.matches(filterLangTypes))
-          .filter(i => !i.name.matches(filterMemberNames))
+          .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.name.startsWith(xx)))
+          .filter(i => !i.name.matches(filterCommonLangTypes))
+          .filter(i => !i.name.matches(filterCommonVars))
+          .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
           .dedup
           .l
       }
@@ -70,9 +98,6 @@ object DataElementDiscoveryUtils {
         List[Identifier]()
       }
     }
-    println(f"Identifiers: ${identifiers.size}")
-    println(identifiers.name.l)
-    println(identifiers.name.dedup.l)
 
     val addedIdentifiers = mutable.Set[String]()
     identifiers.foreach(identifier => {
@@ -113,14 +138,20 @@ object DataElementDiscoveryUtils {
     workbookResult
   }
 
-  def getFieldAccessIdentifier(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): ListBuffer[List[String]] = {
+  // Add FieldIdentifiers in workbookResult
+  def getFieldAccessIdentifier(
+    xtocpg: Try[Cpg],
+    workbookResult: ListBuffer[List[String]],
+    lang: Language
+  ): ListBuffer[List[String]] = {
     val fieldIdentifiers = xtocpg match {
       case Success(cpg) => {
         cpg.fieldAccess.fieldIdentifier
           .filter(i => i.canonicalName.length > 2)
-          .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.canonicalName.startsWith(xx)))
-          .filter(i => !i.canonicalName.matches(filterLangTypes))
-          .filter(i => !i.canonicalName.matches(filterMemberNames))
+          .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.canonicalName.startsWith(xx)))
+          .filter(i => !i.canonicalName.matches(filterCommonLangTypes))
+          .filter(i => !i.canonicalName.matches(filterCommonVars))
+          .filter(i => !i.canonicalName.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
           .l
       }
       case Failure(ex) => {
@@ -166,28 +197,39 @@ object DataElementDiscoveryUtils {
     workbookResult
   }
 
-  def getMemberUsingClassName(xtocpg: Try[Cpg], classNameSet: Set[String]): Map[TypeDecl, List[Member]] = {
+  // Add Members in workbookResult for given className set
+  def getMemberUsingClassName(
+    xtocpg: Try[Cpg],
+    classNameSet: Set[String],
+    lang: Language
+  ): Map[TypeDecl, List[Member]] = {
     logger.info("Process Member Name from cpg")
     val memberInfoMap = mutable.HashMap[TypeDecl, List[Member]]()
 
     xtocpg match {
       case Success(cpg) => {
         classNameSet.foreach(className => {
-          cpg.typeDecl
-            .where(_.fullName(className))
-            .foreach(typeDeclNode => {
-              if (typeDeclNode.member.nonEmpty) {
-                val members =
-                  typeDeclNode.member
-                    .filter(i => i.name.length > 2)
-                    .filter(i => !filterMemberNamesStartsWithArr.exists(xx => i.name.startsWith(xx)))
-                    .filter(i => !i.name.matches(filterLangTypes))
-                    .filter(i => !i.name.matches(filterMemberNames))
-                    .dedup
-                    .l
-                memberInfoMap.put(typeDeclNode, members)
-              }
-            })
+          try {
+            cpg.typeDecl
+              .where(_.fullName(className))
+              .foreach(typeDeclNode => {
+                if (typeDeclNode.member.nonEmpty) {
+                  val members =
+                    typeDeclNode.member
+                      .filter(i => i.name.length > 2)
+                      .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.name.startsWith(xx)))
+                      .filter(i => !i.name.matches(filterCommonLangTypes))
+                      .filter(i => !i.name.matches(filterCommonVars))
+                      .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
+                      .dedup
+                      .l
+                  memberInfoMap.put(typeDeclNode, members)
+                }
+              })
+          } catch {
+            case ex: Exception =>
+              logger.debug(f"Skipping the class ${className} due to invalid regex issue", ex)
+          }
         })
       }
       case Failure(exception) => {
@@ -242,24 +284,29 @@ object DataElementDiscoveryUtils {
     xtocpg match {
       case Success(cpg) => {
         classNameRuleList.foreach(className => {
-          cpg.typeDecl.where(_.fullName(className)).l.headOption match {
-            case Some(typeDecl) =>
-              cpg.method
-                .fullName(typeDecl.fullName)
-                .foreach(method => {
-                  if (!methodParameterMap.contains(typeDecl)) {
-                    methodParameterMap.put(typeDecl, new ListBuffer[MethodParameterIn])
-                  }
-                  val methodParameterInfo = methodParameterMap(typeDecl)
-                  method.parameter.l
-                    .whereNot(_.name(exludeParamaRegex))
-                    .foreach(parameter => {
-                      methodParameterInfo += parameter
-                    })
-                  methodParameterMap.put(typeDecl, methodParameterInfo)
-                })
-            case None =>
-              logger.debug("head of empty list")
+          try {
+            cpg.typeDecl.where(_.fullName(className)).l.headOption match {
+              case Some(typeDecl) =>
+                cpg.method
+                  .fullName(typeDecl.fullName)
+                  .foreach(method => {
+                    if (!methodParameterMap.contains(typeDecl)) {
+                      methodParameterMap.put(typeDecl, new ListBuffer[MethodParameterIn])
+                    }
+                    val methodParameterInfo = methodParameterMap(typeDecl)
+                    method.parameter.l
+                      .whereNot(_.name(exludeParamaRegex))
+                      .foreach(parameter => {
+                        methodParameterInfo += parameter
+                      })
+                    methodParameterMap.put(typeDecl, methodParameterInfo)
+                  })
+              case None =>
+                logger.debug("head of empty list")
+            }
+          } catch {
+            case ex: Exception =>
+              logger.debug(f"Skipping the class ${className} due to invalid regex issue", ex)
           }
         })
       }
@@ -452,7 +499,11 @@ object DataElementDiscoveryJava {
     }
   }
 
-  def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache): List[List[String]] = {
+  def processDataElementDiscovery(
+    xtocpg: Try[Cpg],
+    taggerCache: TaggerCache,
+    lang: Language = Language.JAVA
+  ): List[List[String]] = {
     logger.info("Initiated the audit engine")
     val classNameRuleList    = getSourceUsingRules(xtocpg)
     val collectionInputList  = getCollectionInputList(xtocpg)
@@ -460,7 +511,8 @@ object DataElementDiscoveryJava {
     val derivedClassName     = extractClassFromPackage(xtocpg, (classNameRuleList ++ collectionInputList).toSet)
     val memberInfo = DataElementDiscoveryUtils.getMemberUsingClassName(
       xtocpg,
-      (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet
+      (classNameRuleList ++ collectionInputList ++ derivedClassName).toSet,
+      lang
     )
     var workbookResult      = new ListBuffer[List[String]]()
     val typeDeclMemberCache = taggerCache.typeDeclMemberCache
@@ -638,7 +690,7 @@ object DataElementDiscoveryJava {
       }
 
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
+      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
 
       logger.info("Shutting down audit engine")
     } catch {
@@ -702,16 +754,16 @@ object DataElementDiscovery {
 
   def processDataElementDiscoveryForIdentifierAndFieldIdentfier(
     xtocpg: Try[Cpg],
-    isFieldIdentierRequired: Boolean = true
+    lang: Language
   ): List[List[String]] = {
     var workbookResult = new ListBuffer[List[String]]()
     try {
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
+      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
 
       // Adding FieldIdentifiers
-      if (isFieldIdentierRequired) {
-        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult)
+      if (lang != Language.GO) {
+        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
       }
     } catch {
       case ex: Exception =>
@@ -723,13 +775,9 @@ object DataElementDiscovery {
     DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(workbookResult.toList)
   }
 
-  def processDataElementDiscovery(
-    xtocpg: Try[Cpg],
-    taggerCache: TaggerCache,
-    isFieldIdentierRequired: Boolean = true
-  ): List[List[String]] = {
+  def processDataElementDiscovery(xtocpg: Try[Cpg], taggerCache: TaggerCache, lang: Language): List[List[String]] = {
     val classNameRuleList   = DataElementDiscoveryUtils.getSourceUsingRules(xtocpg)
-    val memberInfo          = DataElementDiscoveryUtils.getMemberUsingClassName(xtocpg, classNameRuleList.toSet)
+    val memberInfo          = DataElementDiscoveryUtils.getMemberUsingClassName(xtocpg, classNameRuleList.toSet, lang)
     var workbookResult      = new ListBuffer[List[String]]()
     val typeDeclMemberCache = taggerCache.typeDeclMemberCache
     val methodParametersFromTypes = DataElementDiscoveryUtils.getMethodParametersFromTypes(
@@ -805,7 +853,7 @@ object DataElementDiscovery {
           workbookResult += List(
             key.name,
             key.file.head.name,
-            "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+            "0.0",
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -836,7 +884,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0",
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -852,7 +900,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0",
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
@@ -879,7 +927,7 @@ object DataElementDiscovery {
                   workbookResult += List(
                     key.fullName,
                     key.file.head.name,
-                    "0.0", // getFileScoreJS(key.file.name.headOption.getOrElse(Constants.EMPTY), xtocpg),
+                    "0.0",
                     param.name,
                     param.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
@@ -916,11 +964,11 @@ object DataElementDiscovery {
       }
 
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult)
+      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
 
       // Adding FieldIdentifiers
-      if (isFieldIdentierRequired) {
-        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult)
+      if (lang != Language.GO) {
+        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
       }
 
       logger.info("Shutting down audit engine")

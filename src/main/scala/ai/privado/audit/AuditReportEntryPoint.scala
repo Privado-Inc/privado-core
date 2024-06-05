@@ -141,7 +141,7 @@ object AuditReportEntryPoint {
     workbook
   }
 
-  // Audit report generation for all major lanaguges
+  // Audit report generation for all major languages
   def getAuditWorkbookForLanguage(
     xtocpg: Try[Cpg],
     taggerCache: TaggerCache,
@@ -152,11 +152,10 @@ object AuditReportEntryPoint {
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
     val dataElementDiscoveryData = lang match {
-      case Language.RUBY | Language.CSHARP =>
-        println(lang)
-        DataElementDiscovery.processDataElementDiscoveryForIdentifierAndFieldIdentfier(xtocpg, true)
+      case Language.RUBY =>
+        DataElementDiscovery.processDataElementDiscoveryForIdentifierAndFieldIdentfier(xtocpg, lang)
       case _ =>
-        DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang != Language.GO)
+        DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)

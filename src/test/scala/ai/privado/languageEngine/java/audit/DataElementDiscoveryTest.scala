@@ -4,6 +4,7 @@ import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.source.*
 import io.shiftleft.codepropertygraph.generated.nodes.Member
+import ai.privado.model.Language
 
 import scala.collection.mutable
 import scala.util.Try
@@ -65,7 +66,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     "Test class member variable" in {
       val classList = List("com.test.privado.Entity.User", "com.test.privado.Entity.Account")
 
-      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.JAVA)
 
       val classMemberMap = new mutable.HashMap[String, List[Member]]()
 
@@ -176,7 +177,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
     "filter the class having no member" in {
       val classList = List("com.test.privado.Controller.UserController", "com.test.privado.Entity.Address")
-      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.JAVA)
 
       memberMap.size shouldBe 1
       memberMap.headOption.get._1.fullName should equal("com.test.privado.Entity.Address")

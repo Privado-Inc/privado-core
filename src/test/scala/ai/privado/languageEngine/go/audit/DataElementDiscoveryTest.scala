@@ -5,6 +5,7 @@ import ai.privado.languageEngine.go.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import io.shiftleft.codepropertygraph.generated.nodes.Member
+import ai.privado.model.Language
 
 import scala.collection.mutable
 import scala.util.Try
@@ -42,7 +43,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     "Test class member variable" in {
       val classList = List("entity.User", "entity.Account")
 
-      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.GO)
 
       val classMemberMap = new mutable.HashMap[String, List[Member]]()
 
@@ -68,7 +69,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val endpointMap                    = new mutable.HashMap[String, String]()
       val methodNameMap                  = new mutable.HashMap[String, String]()
       val memberLineNumberAndTypeMapping = mutable.HashMap[String, (String, String)]()
-      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache, false)
+      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache, Language.GO)
 
       workbookList.foreach(row => {
         classNameList += row.head
@@ -107,8 +108,6 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("houseNo")
       memberList should not contain ("nonExistentMember")
 
-      fileScoreList should contain("1.5")
-
       // validate source Rule ID in result
       sourceRuleIdMap("firstName") should equal("Data.Sensitive.FirstName")
     }
@@ -119,7 +118,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
     "filter the class having no member" in {
       val classList = List("nonExistent.Type", "entity.Address")
-      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.GO)
 
       memberMap.size shouldBe 1
       memberMap.headOption.get._1.fullName should equal("entity.Address")

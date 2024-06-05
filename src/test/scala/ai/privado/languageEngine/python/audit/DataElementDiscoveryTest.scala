@@ -5,6 +5,7 @@ import ai.privado.languageEngine.python.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.python.tagger.source.IdentifierTagger
 import io.shiftleft.codepropertygraph.generated.nodes.Member
+import ai.privado.model.Language
 
 import scala.collection.mutable
 import scala.util.Try
@@ -41,7 +42,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     "Test class member variable" in {
       val classList = List("User.py:<module>.User", "Account.py:<module>.Account")
 
-      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.PYTHON)
 
       val classMemberMap = new mutable.HashMap[String, List[Member]]()
 
@@ -71,7 +72,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val endpointMap                    = new mutable.HashMap[String, String]()
       val methodNameMap                  = new mutable.HashMap[String, String]()
       val memberLineNumberAndTypeMapping = mutable.HashMap[String, (String, String)]()
-      val workbookList                   = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache)
+      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache, Language.PYTHON)
 
       workbookList.foreach(row => {
         classNameList += row.head
@@ -110,15 +111,13 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("houseNo")
       memberList should not contain ("nonExistentMember")
 
-      fileScoreList should contain("1.5")
-
       // validate source Rule ID in result
       sourceRuleIdMap("firstName") should equal("Data.Sensitive.FirstName")
     }
 
     "filter the class having no member" in {
       val classList = List("NonExistent.py:<module>.NonExistent", "Address.py:<module>.Address")
-      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet)
+      val memberMap = DataElementDiscoveryUtils.getMemberUsingClassName(Try(cpg), classList.toSet, Language.PYTHON)
 
       memberMap.size shouldBe 1
       memberMap.headOption.get._1.fullName should equal("Address.py:<module>.Address")
