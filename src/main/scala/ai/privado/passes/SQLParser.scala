@@ -102,7 +102,7 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
           }
         } catch {
           case ex: Exception =>
-            println(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
+            logger.debug(s"Error while parsing SQL query at line $queryLineNumber: ${ex.getMessage}")
             None
         }
       })
