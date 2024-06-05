@@ -83,7 +83,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import privado_core.BuildInfo
 
 object ExporterUtility {
@@ -450,6 +450,14 @@ object ExporterUtility {
     val violationResult =
       Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
         .getOrElse(List[ViolationModel]())
+
+    println(s"Printing retrieved violation : ${violationResult}")
+    println(s"Violation generated are printed below")
+    Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)) match
+      case Failure(exception) => println(s"Exception caught : $exception")
+      case Success(value) =>
+        println(s"Size of violation : ${value.size}")
+        value.foreach(println)
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 
