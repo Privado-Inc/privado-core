@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.tagger.schema
 
 import ai.privado.cache.RuleCache
-import ai.privado.model.{CatLevelOne, DatabaseColumn, DatabaseTable, RuleInfo}
+import ai.privado.model.{CatLevelOne, DatabaseColumn, DatabaseTable, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.storeForTag
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -36,7 +36,7 @@ class RubyMongoSchemaTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
 
     columnLiteralList.foreach(lit => {
 
-      storeForTag(builder, lit, ruleCache)("RUBY_MONGO_COLUMN")
+      storeForTag(builder, lit, ruleCache)(InternalTag.RUBY_MONGO_COLUMN.toString)
 
       val dataType = lit.astSiblings.headOption match
         case Some(i: Identifier) => i.name
@@ -45,7 +45,7 @@ class RubyMongoSchemaTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
         case Some(x) => x.code
         case _       => ""
 
-      storeForTag(builder, lit, ruleCache)("RUBY_MONGO_COLUMN_DATATYPE", dataType)
+      storeForTag(builder, lit, ruleCache)(InternalTag.RUBY_MONGO_COLUMN_DATATYPE.toString, dataType)
     })
 
     val clientName = Try(typeDeclNode.ast.isCall.name("store_in").head.astChildren.head.astChildren.last.code).toOption
@@ -53,8 +53,8 @@ class RubyMongoSchemaTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
       .replaceAll("\"", "")
       .replaceAll("'", "")
 
-    storeForTag(builder, typeDeclNode, ruleCache)("RUBY_MONGO_CLASS")
-    storeForTag(builder, typeDeclNode, ruleCache)("RUBY_MONGO_CLASS_CLIENT", clientName)
+    storeForTag(builder, typeDeclNode, ruleCache)(InternalTag.RUBY_MONGO_COLUMN.toString)
+    storeForTag(builder, typeDeclNode, ruleCache)(InternalTag.RUBY_MONGO_CLASS_CLIENT.toString, clientName)
 
   }
 }

@@ -9,6 +9,7 @@ import ai.privado.model.{
   DatabaseSchema,
   DatabaseTable,
   FilterProperty,
+  InternalTag,
   Language,
   NodeType,
   RuleInfo
@@ -46,14 +47,15 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
     val clientTableMap = clientsSet
       .map(clientName => {
         val tables = cpg.typeDecl
-          .where(_.tag.nameExact("RUBY_MONGO_CLASS_CLIENT").valueExact(clientName))
+          .where(_.tag.nameExact(InternalTag.RUBY_MONGO_CLASS_CLIENT.toString).valueExact(clientName))
           .map(typeDecl => {
             val columns = typeDecl.ast.isLiteral
-              .where(_.tag.nameExact("RUBY_MONGO_COLUMN"))
+              .where(_.tag.nameExact(InternalTag.RUBY_MONGO_COLUMN.toString))
               .map(lit => {
                 val columnName = lit.code.stripPrefix(":")
-                val dataType   = lit.tag.nameExact("RUBY_MONGO_COLUMN_DATATYPE").value.headOption.getOrElse("")
-                val sourceId   = lit.tag.nameExact(Constants.id).value.headOption.getOrElse("")
+                val dataType =
+                  lit.tag.nameExact(InternalTag.RUBY_MONGO_COLUMN_DATATYPE.toString).value.headOption.getOrElse("")
+                val sourceId = lit.tag.nameExact(Constants.id).value.headOption.getOrElse("")
                 DatabaseColumn(columnName, "", dataType, sourceId)
               })
               .l
@@ -148,7 +150,6 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
 
     val lineNumber = findLinesContainingText(fileNode.name, dbName).headOption.getOrElse(1)
 
-    // TODO need to work on this
     val databaseNode = NewDbNode()
       .name(dbName)
       .code(dbName)
