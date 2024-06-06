@@ -23,13 +23,16 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.model.exporter.{DataFlowSubCategoryModel, DataFlowSubCategoryPathModel, DataFlowSubCategorySinkModel}
-import ai.privado.model.{Constants, DataFlowPathModel, DatabaseDetails, NodeType}
+import ai.privado.model.{Constants, DataFlowPathModel, DatabaseDetails}
+import io.circe.Json
 import io.joern.dataflowengineoss.language.Path
-import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
+import better.files.File
+import ai.privado.model.exporter.DataFlowEncoderDecoder._
+import io.circe.syntax.EncoderOps
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -50,7 +53,8 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     sinkNodeTypes: Set[String],
     ruleCache: RuleCache,
     dataFlowModel: List[DataFlowPathModel],
-    appCache: AppCache
+    appCache: AppCache,
+    extraFlowMap: Map[String, Path] = dataflowsMap
   ): Set[DataFlowSubCategoryModel] = {
     val dataflowModelFilteredByType = dataFlowModel.filter(dataflowModel =>
       dataflowModel.sinkSubCategory.equals(sinkSubCategory) && sinkNodeTypes.contains(dataflowModel.sinkNodeType)
@@ -65,7 +69,8 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
             dataflowBySourceEntrySet._2,
             sinkSubCategory,
             ruleCache,
-            appCache
+            appCache,
+            dataflowsMap ++ extraFlowMap
           )
         )
       })
@@ -77,7 +82,8 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     sourceModelList: List[DataFlowPathModel],
     sinkSubCategory: String,
     ruleCache: RuleCache,
-    appCache: AppCache
+    appCache: AppCache,
+    dataflowMap: Map[String, Path] = dataflowsMap
   ): List[DataFlowSubCategorySinkModel] = {
     def convertSink(sourceId: String, sinkId: String, sinkPathIds: List[String], urls: Set[String]) = {
 
@@ -103,7 +109,7 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
         apiUrl,
         databaseDetails.getOrElse(DatabaseDetails("", "", "", "", "")),
         sinkPathIds
-          .map(sinkPathId => convertPathsList(dataflowsMap(sinkPathId), sinkPathId, sourceId, appCache, ruleCache))
+          .map(sinkPathId => convertPathsList(dataflowMap(sinkPathId), sinkPathId, sourceId, appCache, ruleCache))
       )
     }
 
@@ -112,7 +118,7 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     val sinkApiUrls = mutable.HashMap[String, mutable.Set[String]]()
     sourceModelList.foreach(sourceModel => {
       var sinkId = sourceModel.sinkId
-      val sinkAPITag = dataflowsMap(sourceModel.pathId).elements.last.tag
+      val sinkAPITag = dataflowMap(sourceModel.pathId).elements.last.tag
         .filter(node => node.name.equals(Constants.apiUrl + sourceModel.sinkId))
       if (!sinkApiUrls.contains(sinkId))
         sinkApiUrls(sinkId) = mutable.Set()
@@ -140,4 +146,64 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
     )
   }
 
+}
+
+object DataflowExporter {
+
+  /** Function to limit the dataflows, in export
+    * @param ruleCache
+    * @param outputMap
+    * @param repoPath
+    */
+  def limitDataflowsInExport(
+    ruleCache: RuleCache,
+    outputMap: mutable.LinkedHashMap[String, Json],
+    repoPath: String
+  ): Unit = {
+    val elementInPathLimit: Int =
+      ruleCache.getSystemConfigByKey(Constants.dataflowElementInPathLimit, true).toIntOption.getOrElse(-1)
+    val sourceSinkPairPathLimit: Int =
+      ruleCache.getSystemConfigByKey(Constants.dataflowSourceSinkPairPathLimit, true).toIntOption.getOrElse(-1)
+
+    if (elementInPathLimit > 0 || sourceSinkPairPathLimit > 0) {
+      val removedFlows = mutable.ListBuffer[DataFlowSubCategorySinkModel]()
+      val alldataflows = outputMap(Constants.dataFlow)
+        .as[mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]]
+        .getOrElse(Map.empty[String, List[DataFlowSubCategoryModel]])
+      val allnewDataflows = alldataflows
+        .map((key, dataflows) => {
+          val newDataflows = dataflows.map { subCatModel =>
+            val subCatSinks = subCatModel.sinks.map { sink =>
+              val sinkFilteredByElementInPathLimit =
+                if (elementInPathLimit > 0) {
+                  val sortedPaths = sink.paths.sortBy(_.path.size)
+                  // If there is no path which is less than the limit, we may need atleast a single path to show a flow for the source-sink pair
+                  if (!sink.paths.exists(_.path.size <= elementInPathLimit)) {
+                    removedFlows.addOne(sink.copy(paths = sortedPaths.drop(1)))
+                    sink.copy(paths = sortedPaths.take(1))
+                  } else {
+                    val (lessThanLimit, moreThanLimit) = sink.paths.partition(_.path.size <= elementInPathLimit)
+                    removedFlows.addOne(sink.copy(paths = moreThanLimit))
+                    sink.copy(paths = lessThanLimit)
+                  }
+                } else sink
+
+              val sinkFilteredBySourceSinkPairLimit = if (sourceSinkPairPathLimit > 0) {
+                val sortedPaths = sinkFilteredByElementInPathLimit.paths.sortBy(_.path.size)
+                removedFlows.addOne(
+                  sinkFilteredByElementInPathLimit.copy(paths = sortedPaths.drop(sourceSinkPairPathLimit))
+                )
+                sinkFilteredByElementInPathLimit.copy(paths = sortedPaths.take(sourceSinkPairPathLimit))
+              } else sinkFilteredByElementInPathLimit
+              sinkFilteredBySourceSinkPairLimit
+            }
+            subCatModel.copy(sinks = subCatSinks)
+          }
+          (key, newDataflows)
+        })
+      outputMap.addOne(Constants.dataFlow -> allnewDataflows.asJson)
+      val removedFlowsPath = s"$repoPath/${Constants.outputDirectoryName}/removedDataflows.json"
+      File(removedFlowsPath).write(removedFlows.asJson.toString)
+    }
+  }
 }

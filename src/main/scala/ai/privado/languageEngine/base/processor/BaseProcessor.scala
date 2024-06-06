@@ -213,7 +213,7 @@ abstract class BaseProcessor(
       ExcelExporter.auditExport(
         outputAuditFileName,
         AuditReportEntryPoint
-          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache),
+          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache, lang),
         sourceRepoLocation
       ) match {
         case Left(err) =>

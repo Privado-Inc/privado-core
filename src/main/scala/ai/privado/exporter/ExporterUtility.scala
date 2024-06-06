@@ -36,9 +36,10 @@ import ai.privado.cache.{
 }
 import ai.privado.cache.PropertyFilterCacheEncoderDecoder.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.outputDirectoryName
-import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, PolicyThreatType}
+import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType, PolicyThreatType}
 import ai.privado.model.exporter.{
   AndroidPermissionModel,
   CollectionModel,
@@ -60,10 +61,11 @@ import ai.privado.model.exporter.CollectionEncoderDecoder.*
 import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
-import ai.privado.semantic.Language.finder
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import ai.privado.semantic.Language.{NodeStarterForSqlQueryNode, finder}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, NodeTypes}
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{dump, getTruncatedText}
+import ai.privado.tagger.sink.SinkArgumentUtility
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
@@ -81,7 +83,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import privado_core.BuildInfo
 
 object ExporterUtility {
@@ -120,7 +122,6 @@ object ExporterUtility {
             // Picking up only the head as any path to base is sufficient
             val member: Member     = members.head
             var typeFullNameLevel2 = member.typeFullName // java.lang.string
-
             // Temporary fix for python to match the typeFullName
             typeFullNameLevel2 = updateTypeFullNameForPython(typeFullNameLevel2, isPython)
 
@@ -247,7 +248,23 @@ object ExporterUtility {
         else
           fileName
       }
-      Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+
+      node.tag.nameExact(Constants.arguments).headOption match {
+        case Some(arguments) =>
+          val argumentList: Map[String, String] = SinkArgumentUtility.deserializedArgumentString(arguments.value)
+          Some(
+            DataFlowSubCategoryPathExcerptModel(
+              sample,
+              lineNumber,
+              columnNumber,
+              actualFileName,
+              excerpt,
+              Some(argumentList)
+            )
+          )
+        case None =>
+          Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+      }
     }
   }
 
@@ -428,7 +445,9 @@ object ExporterUtility {
     val finalCollections = Await.result(collections, Duration.Inf)
     logger.debug("Done with exporting Collections")
     val violationResult =
-      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)).getOrElse(List[ViolationModel]())
+      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
+        .getOrElse(List[ViolationModel]())
+
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 

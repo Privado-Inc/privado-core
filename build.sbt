@@ -7,9 +7,9 @@ ThisBuild / scalaVersion := "3.4.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.6.11"
-val joernVersion      = "2.0.330"
-val overflowdbVersion = "1.192"
+val cpgVersion        = "0.1.5"
+val joernVersion      = "0.1.4"
+val overflowdbVersion = "0.1.5"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
@@ -17,7 +17,7 @@ val upickle           = "3.1.2"
 val circeVersion        = "0.14.2"
 val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
-val goAstGenVersion     = "0.12.0"
+val goAstGenVersion     = "0.14.0"
 val dotnetAstGenVersion = "0.34.0"
 
 lazy val schema         = Projects.schema
@@ -58,7 +58,7 @@ libraryDependencies ++= Seq(
   "org.apache.logging.log4j"         % "log4j-core"                 % "2.19.0",
   "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.19.0",
   "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
-  "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
+  "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
   "org.apache.maven"                 % "maven-model"                % "3.9.0",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
   "org.yaml"                         % "snakeyaml"                  % "1.33",
@@ -82,6 +82,7 @@ ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / resolvers ++= Seq(
+  "Github Package Registry Joern" at "https://maven.pkg.github.com/Privado-Inc/joern",
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases"
@@ -257,3 +258,11 @@ ThisBuild / publishTo := Some(
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")
+
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )

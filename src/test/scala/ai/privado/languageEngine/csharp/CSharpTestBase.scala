@@ -15,6 +15,7 @@ import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 
 import scala.collection.mutable
 import ai.privado.cache.*
+import ai.privado.languageEngine.csharp.tagger.sink.CSharpAPITagger
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.semanticcpg.layers.*
 import io.joern.dataflowengineoss.layers.dataflows.*
@@ -23,6 +24,7 @@ import ai.privado.model.SourceCodeModel
 import ai.privado.rule.RuleInfoTestData
 import ai.privado.tagger.source.LiteralTagger
 
+@deprecated
 abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll with BeforeAndAfterEach {
 
   private val cpgs        = mutable.ArrayBuffer.empty[Cpg]
@@ -115,6 +117,7 @@ abstract class CSharpTestBase extends AnyWordSpec with Matchers with BeforeAndAf
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new LiteralTagger(cpg, ruleCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
+    new CSharpAPITagger(cpg, ruleCache, privadoInput, appCache).createAndApply()
 
     cpgs.addOne(cpg)
     val threatEngine =

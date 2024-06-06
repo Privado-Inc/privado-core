@@ -28,6 +28,7 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.dataflow.Dataflow.getExpendedFlowInfo
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
 import ai.privado.exporter.ExporterUtility
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.javascript.JavascriptSemanticGenerator
 import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator
@@ -35,7 +36,7 @@ import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, HightouchSink}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -139,10 +140,11 @@ class Dataflow(cpg: Cpg) {
       println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
       appCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
 
-      // Apply `this` filtering for JS & JAVA also
+      // Apply `this` filtering for JS, JAVA
       val dataflowPaths = {
         if (
-          privadoScanConfig.disableThisFiltering || (appCache.repoLanguage != Language.JAVA && appCache.repoLanguage != Language.JAVASCRIPT)
+          privadoScanConfig.disableThisFiltering || (!List(Language.JAVA, Language.JAVASCRIPT)
+            .contains(appCache.repoLanguage))
         )
           dataflowPathsUnfiltered
         else
@@ -238,7 +240,19 @@ object Dataflow {
   }
 
   def getSinks(cpg: Cpg): List[CfgNode] = {
-    cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l
+    // TODO:  This print statement is for debug purpose only, remove it after testing
+    cpg.highTouchSink
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .foreach(sink =>
+        println(
+          s"Tagged: ${sink.name}, which has corresponding model as ```${sink.correspondingModel}``` which corresponds to the 3P: ```${sink.actualDestinationName}```. This was discovered in ```${sink.sourceFileOut.name.headOption
+              .getOrElse("Unknown file")}```"
+        )
+      )
+    cpg.call.where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).l ++ cpg.highTouchSink
+      .where(_.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name))
+      .l
+      .asInstanceOf[List[CfgNode]]
   }
 
   def getExpendedFlowInfo(

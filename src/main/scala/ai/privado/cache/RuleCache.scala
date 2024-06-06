@@ -38,25 +38,39 @@ class RuleCache {
   val internalPolicies          = mutable.Set[String]()
   private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
 
-  def setRule(rule: ConfigAndRules): Unit = {
+  // TODO, rename setRule to withRule as it return the ruleCache object and setters are Unit functions
+  def setRule(rule: ConfigAndRules): RuleCache = {
     this.rule = rule
     rule.sources.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.sinks.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.collections.foreach(r => ruleInfoMap.addOne(r.id -> r))
     rule.policies.foreach(r => policyOrThreatMap.addOne(r.id -> r))
     rule.threats.foreach(r => policyOrThreatMap.addOne(r.id -> r))
+    this
   }
 
   def getRule: ConfigAndRules = rule
 
   def setRuleInfo(ruleInfo: RuleInfo): Unit = {
-    ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
-    rule = ruleInfo.catLevelOne match {
-      case ai.privado.model.CatLevelOne.SOURCES     => rule.copy(sources = rule.sources.appended(ruleInfo))
-      case ai.privado.model.CatLevelOne.SINKS       => rule.copy(sinks = rule.sinks.appended(ruleInfo))
-      case ai.privado.model.CatLevelOne.COLLECTIONS => rule.copy(collections = rule.collections.appended(ruleInfo))
-      case _                                        => rule
-    }
+    ruleInfoMap.get(ruleInfo.id) match
+      case Some(_) => // Rule already exists, skip adding again
+      case None =>
+        ruleInfoMap.addOne(ruleInfo.id -> ruleInfo)
+        rule = ruleInfo.catLevelOne match {
+          case ai.privado.model.CatLevelOne.SOURCES     => rule.copy(sources = rule.sources.appended(ruleInfo))
+          case ai.privado.model.CatLevelOne.SINKS       => rule.copy(sinks = rule.sinks.appended(ruleInfo))
+          case ai.privado.model.CatLevelOne.COLLECTIONS => rule.copy(collections = rule.collections.appended(ruleInfo))
+          case _                                        => rule
+        }
+  }
+
+  def addThirdPartyRuleInfo(thirdPartyAPIRuleInfo: RuleInfo, domain: String): String = {
+    val newRuleIdToUse = s"${Constants.thirdPartiesAPIRuleId}.$domain"
+    this.setRuleInfo(
+      thirdPartyAPIRuleInfo
+        .copy(id = newRuleIdToUse, name = s"${thirdPartyAPIRuleInfo.name} $domain", isGenerated = true)
+    )
+    newRuleIdToUse
   }
 
   def addStorageRuleInfo(ruleInfo: RuleInfo): Unit = storageRuleInfo.addOne(ruleInfo)

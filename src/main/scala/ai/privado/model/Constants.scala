@@ -50,14 +50,26 @@ object Constants {
   val flow      = "flow"
 
   // systemConfig
-  val key                       = "key"
-  val value                     = "value"
-  val MAX_SOCKET_COUNT          = "maxSocketCount"
-  val RepoPropertyConfig        = "RepoPropertyConfig"
-  val filePath                  = "filePath"
-  val PropertyFileSizeLimit     = "propertyFileSizeLimit"
-  val PropertyFileDirCountLimit = "propertyFileDirCountLimit"
-  val MaxCharLimit              = "maxCharLimit"
+  val key                             = "key"
+  val value                           = "value"
+  val MAX_SOCKET_COUNT                = "maxSocketCount"
+  val RepoPropertyConfig              = "RepoPropertyConfig"
+  val filePath                        = "filePath"
+  val PropertyFileSizeLimit           = "propertyFileSizeLimit"
+  val PropertyFileDirCountLimit       = "propertyFileDirCountLimit"
+  val MaxCharLimit                    = "maxCharLimit"
+  val ignoredSinks                    = "ignoredSinks"
+  val apiSinks                        = "apiSinks"
+  val apiMethodFullNames              = "apiMethodFullNames"
+  val apiHttpLibraries                = "apiHttpLibraries"
+  val apiIdentifier                   = "apiIdentifier"
+  val apiGraphqlLibraries             = "apiGraphqlLibraries"
+  val apiGraphqlReadSink              = "apiGraphqlReadSink"
+  val apiGraphqlWriteSink             = "apiGraphqlWriteSink"
+  val clientCreationBaseUrlPattern    = "clientCreationBaseUrlPattern"
+  val flinkConnectorProducerRuleIds   = "flinkConnectorProducerRuleIds"
+  val dataflowElementInPathLimit      = "dataflowElementInPathLimit"
+  val dataflowSourceSinkPairPathLimit = "dataflowSourceSinkPairPathLimit"
 
   val third_parties      = "third_parties"
   val internal_apis      = "internal_apis"
@@ -108,6 +120,7 @@ object Constants {
   val sinkType                      = "sinkType"
   val collectionFilters             = "collectionFilters"
   val collectionType                = "collectionType"
+  val inferences                    = "inferences"
   val localScanPath                 = "localScanPath"
   val processing                    = "processing"
   val sinkProcessing                = "sinkProcessing"
@@ -129,6 +142,7 @@ object Constants {
   val repoConfigMetaData            = "RepoConfigMetaData"
   val propertyFileSkippedBySize     = "PropertyFileSkippedBySize"
   val propertyFileSkippedByDirCount = "PropertyFileSkippedByDirCount"
+  val arguments                     = "arguments"
 
   // database details
   val dbName      = "dbName"
@@ -144,6 +158,7 @@ object Constants {
   val EMPTY                         = "<empty>"
   val READ_WITH_BRACKETS            = " (Read)"
   val WRITE_WITH_BRACKETS           = " (Write)"
+  val BYTE_ENCODING_CODE            = "ISO-8859-1"
 
   // Stat files
   val JAVA_STATS   = "java.txt"
@@ -155,21 +170,17 @@ object Constants {
   val API      = "API"
 
   // Rule ids
-  val internalAPIRuleId            = "Sinks.API.InternalAPI"
-  val thirdPartiesAPIRuleId        = "Sinks.ThirdParties.API"
-  val jmsConsumerRuleId            = "Messaging.Service.JMS.Consumer"
-  val kafkaConsumerRuleId          = "Messaging.Queue.Kafka.Consumer"
-  val cookieWriteRuleId            = "Storages.Web.Cookie.Write"
-  val cookieSourceRuleId           = "Data.Sensitive.OnlineIdentifiers.Cookies"
-  val ignoredSinks                 = "ignoredSinks"
-  val apiSinks                     = "apiSinks"
-  val apiMethodFullNames           = "apiMethodFullNames"
-  val apiHttpLibraries             = "apiHttpLibraries"
-  val apiIdentifier                = "apiIdentifier"
-  val apiGraphqlLibraries          = "apiGraphqlLibraries"
-  val apiGraphqlReadSink           = "apiGraphqlReadSink"
-  val apiGraphqlWriteSink          = "apiGraphqlWriteSink"
-  val clientCreationBaseUrlPattern = "clientCreationBaseUrlPattern"
+  val internalAPIRuleId           = "Sinks.API.InternalAPI"
+  val thirdPartiesAPIRuleId       = "Sinks.ThirdParties.API"
+  val jmsConsumerRuleId           = "Messaging.Service.JMS.Consumer"
+  val kafkaConsumerRuleId         = "Messaging.Queue.Kafka.Consumer"
+  val cookieWriteRuleId           = "Storages.Web.Cookie.Write"
+  val googleTagManagerPixelRuleId = "ThirdParties.SDK.Pixel.Google.TagManager"
+  val segmentAnalyticsRuleId      = "ThirdParties.SDK.Segment.Analytics"
+  val segmentPixelRuleId          = "ThirdParties.SDK.Pixel.Segment"
+  val googleTagManagerRuleId      = "ThirdParties.SDK.Google.TagManager"
+  val cookieSourceRuleId          = "Data.Sensitive.OnlineIdentifiers.Cookies"
+  val flinkCustomProducerRuleId   = "ThirdParties.SDK.Flink.Producer"
 
   // External script keys
   val postExportTrigger = "postExportTrigger"
@@ -188,8 +199,10 @@ object Constants {
   val UnknownDomain = "unknown-domain"
   val Unknown       = "unknown"
 
+  // catlevelTwo
   val annotations       = "annotations"
   val default           = "default"
+  val apiEndpoint       = "apiEndpoint"
   val semanticDelimeter = "_A_"
   val thisConstant      = "this"
 
@@ -200,4 +213,7 @@ object Constants {
 
   // operator
   val scopeResolutionOperator = "<operator>.scopeResolution"
+
+  // Routes folder, or file name
+  val routes = "routes"
 }

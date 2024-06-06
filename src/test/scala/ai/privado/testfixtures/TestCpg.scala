@@ -3,7 +3,6 @@ package ai.privado.testfixtures
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import io.circe.Json
-import io.joern.x2cpg.utils.TestCodeWriter
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.Graph
 
@@ -51,11 +50,9 @@ abstract class TestCpg extends Cpg() with TestCodeWriter with LanguageFrontend {
     this
   }
 
-  def getPrivadoJson() = _privadoJson.get
-
-  def generateScanResult(): this.type = {
+  def getPrivadoJson() = {
     graph
-    this
+    _privadoJson.get
   }
 
   override def graph: Graph = {

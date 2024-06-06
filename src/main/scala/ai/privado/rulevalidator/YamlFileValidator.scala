@@ -34,6 +34,8 @@ object YamlFileValidator {
   private val THREATS = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}threats.json")).mkString
   private val COLLECTIONS =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}collections.json")).mkString
+  private val INFERENCES =
+    Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}inferences.json")).mkString
   private val EXCLUSIONS =
     Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}exclusions.json")).mkString
   private val SEMANTICS =
@@ -178,6 +180,7 @@ object YamlFileValidator {
       case CatLevelOne.THREATS     => Right(CatLevelOne.THREATS.name, THREATS)
       case CatLevelOne.COLLECTIONS => Right(CatLevelOne.COLLECTIONS.name, COLLECTIONS)
       case CatLevelOne.SINKS       => Right(CatLevelOne.SINKS.name, SINKS)
+      case CatLevelOne.INFERENCES  => Right(CatLevelOne.INFERENCES.name, INFERENCES)
       case _ =>
         matchSchemaConfigFile(ruleFile, ruleJsonTree, callerCommand)
     }

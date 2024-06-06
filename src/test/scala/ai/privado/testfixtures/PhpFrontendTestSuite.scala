@@ -4,7 +4,8 @@ import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCach
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.processor.PhpProcessor
-import ai.privado.model.Language
+import ai.privado.model.*
+
 class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
     ruleCache: RuleCache,
