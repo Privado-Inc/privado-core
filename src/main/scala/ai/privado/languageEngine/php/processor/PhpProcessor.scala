@@ -53,7 +53,8 @@ class PhpProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache
+  propertyFilterCache: PropertyFilterCache,
+  databaseDetailsCache: DatabaseDetailsCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -64,6 +65,7 @@ class PhpProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
+      databaseDetailsCache,
       propertyFilterCache
     ) {
 
@@ -72,7 +74,7 @@ class PhpProcessor(
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List[CpgPassBase]()
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)

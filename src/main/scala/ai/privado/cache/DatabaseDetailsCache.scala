@@ -28,7 +28,7 @@ import scala.collection.mutable
 
 /** Cache to store Rules specific things
   */
-object DatabaseDetailsCache {
+class DatabaseDetailsCache {
 
   private val databaseDetailsMap = mutable.HashMap[String, DatabaseDetails]()
 

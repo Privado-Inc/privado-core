@@ -24,7 +24,8 @@ import ai.privado.languageEngine.java.language.*
 import scala.collection.immutable.{HashMap, HashSet}
 import scala.collection.mutable
 
-class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
+class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoSimpleCpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit = {
     addToDatabaseCache(builder)
@@ -164,7 +165,7 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
     val dbDetails = DatabaseDetails(dbName, dbPlatform, dbHost, "", "", Some(schema))
 
     ruleCache.setRuleInfo(customDatabaseSinkRule)
-    DatabaseDetailsCache.addDatabaseDetails(dbDetails, ruleId)
+    databaseDetailsCache.addDatabaseDetails(dbDetails, ruleId)
 
     val lineNumber = findLinesContainingText(fileNode.name, dbName).headOption.getOrElse(1)
 

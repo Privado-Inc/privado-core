@@ -5,6 +5,7 @@ import ai.privado.cache.{
   AppCache,
   AuditCache,
   DataFlowCache,
+  DatabaseDetailsCache,
   PropertyFilterCache,
   RuleCache,
   S3DatabaseDetailsCache,
@@ -68,7 +69,8 @@ class KotlinProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache
+  propertyFilterCache: PropertyFilterCache,
+  databaseDetailsCache: DatabaseDetailsCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -78,7 +80,9 @@ class KotlinProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      returnClosedCpg
+      returnClosedCpg,
+      databaseDetailsCache,
+      propertyFilterCache
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
@@ -105,7 +109,14 @@ class KotlinProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
+    cpg.runTagger(
+      ruleCache,
+      taggerCache,
+      privadoInputConfig = privadoInput,
+      dataFlowCache,
+      appCache,
+      databaseDetailsCache
+    )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
 

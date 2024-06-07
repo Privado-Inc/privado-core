@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.model.*
@@ -102,6 +102,6 @@ def code(code: String): Cpg = {
   ruleCache.setRule(rule)
   val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
   val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
-  new RegularSinkTagger(cpg, ruleCache).createAndApply()
+  new RegularSinkTagger(cpg, ruleCache, DatabaseDetailsCache()).createAndApply()
   cpg
 }

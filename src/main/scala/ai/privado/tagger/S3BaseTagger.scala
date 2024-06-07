@@ -12,8 +12,11 @@ import overflowdb.traversal.*
 
 import scala.collection.mutable.ListBuffer
 
-abstract class S3BaseTagger(cpg: Cpg, s3DatabaseDetailsCache: S3DatabaseDetailsCache)
-    extends PrivadoSimpleCpgPass(cpg) {
+abstract class S3BaseTagger(
+  cpg: Cpg,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  databaseDetailsCache: DatabaseDetailsCache
+) extends PrivadoSimpleCpgPass(cpg) {
 
   val logger          = LoggerFactory.getLogger(getClass)
   val bucketPattern   = "(?!(^xn--|.+-s3alias$))^[a-z0-9][a-z0-9-]{1,61}[a-z0-9]$"
@@ -23,7 +26,7 @@ abstract class S3BaseTagger(cpg: Cpg, s3DatabaseDetailsCache: S3DatabaseDetailsC
 
   def addReadS3Details(readBucketNames: ListBuffer[String], s3DatabaseDetailsCache: S3DatabaseDetailsCache): Unit = {
     // remove existing DB details from rule and add READ DB DETAILS to separate S3 DB details
-    DatabaseDetailsCache.removeDatabaseDetails(readRuleId)
+    databaseDetailsCache.removeDatabaseDetails(readRuleId)
     s3DatabaseDetailsCache.addS3DatabaseDetails(
       readBucketNames.toList.map(bucketName => DatabaseDetails(bucketName, "Amazon S3", "amazon.com", "Read", "")),
       readRuleId
@@ -32,7 +35,7 @@ abstract class S3BaseTagger(cpg: Cpg, s3DatabaseDetailsCache: S3DatabaseDetailsC
 
   def addWriteS3Details(writeBucketNames: ListBuffer[String], s3DatabaseDetailsCache: S3DatabaseDetailsCache): Unit = {
     // remove existing DB details from rule and add WRITE DETAILS to separate S3 DB details
-    DatabaseDetailsCache.removeDatabaseDetails(writeRuleId)
+    databaseDetailsCache.removeDatabaseDetails(writeRuleId)
     s3DatabaseDetailsCache.addS3DatabaseDetails(
       writeBucketNames.toList.map(bucketName => DatabaseDetails(bucketName, "Amazon S3", "amazon.com", "Write", "")),
       writeRuleId
@@ -44,7 +47,7 @@ abstract class S3BaseTagger(cpg: Cpg, s3DatabaseDetailsCache: S3DatabaseDetailsC
     s3DatabaseDetailsCache: S3DatabaseDetailsCache
   ): Unit = {
     // remove existing DB details from rule and add READ-WRITE DETAILS to separate S3 DB details
-    DatabaseDetailsCache.removeDatabaseDetails(readWriteRuleId)
+    databaseDetailsCache.removeDatabaseDetails(readWriteRuleId)
     s3DatabaseDetailsCache.addS3DatabaseDetails(
       readWriteBucketNames.toList.map(bucketName =>
         DatabaseDetails(bucketName, "Amazon S3", "amazon.com", "Read/Write", "")

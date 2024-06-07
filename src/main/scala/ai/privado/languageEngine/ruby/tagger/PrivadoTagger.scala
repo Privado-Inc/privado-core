@@ -56,7 +56,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
     logger.info("Starting tagging")
     new LiteralTagger(cpg, ruleCache).createAndApply()
@@ -72,7 +73,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     collectionTagger.createAndApply()
     ingressUrls.addAll(collectionTagger.getIngressUrls())
 
-    new RubyDBConfigTagger(cpg).createAndApply()
+    new RubyDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
     if (!privadoInputConfig.ignoreInternalRules) {
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
@@ -82,7 +83,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     }
 
     new RubyMongoSchemaTagger(cpg, ruleCache).createAndApply()
-    new RubyMongoSchemaMapper(cpg, ruleCache).createAndApply()
+    new RubyMongoSchemaMapper(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     // Run monolith tagger at the end
     new MonolithTagger(cpg, ruleCache).createAndApply()

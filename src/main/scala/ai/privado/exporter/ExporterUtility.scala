@@ -27,6 +27,7 @@ import ai.privado.cache
 import ai.privado.cache.{
   AppCache,
   DataFlowCache,
+  DatabaseDetailsCache,
   Environment,
   FileSkippedBySizeListModel,
   PropertyFilterCache,
@@ -360,6 +361,7 @@ object ExporterUtility {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
     propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
@@ -379,9 +381,10 @@ object ExporterUtility {
         privadoInput,
         repoItemTagName = repoItemTagName,
         s3DatabaseDetailsCache,
-        appCache
+        appCache,
+        databaseDetailsCache
       )
-    val dataflowExporter = new DataflowExporter(dataflows, taggerCache)
+    val dataflowExporter = new DataflowExporter(dataflows, taggerCache, databaseDetailsCache)
     val collectionExporter =
       new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName, appCache = appCache)
     val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)

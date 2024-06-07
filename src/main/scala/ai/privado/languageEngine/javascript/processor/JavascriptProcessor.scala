@@ -62,7 +62,8 @@ class JavascriptProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache
+  propertyFilterCache: PropertyFilterCache,
+  databaseDetailsCache: DatabaseDetailsCache
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -73,6 +74,7 @@ class JavascriptProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
+      databaseDetailsCache,
       propertyFilterCache
     ) {
 
@@ -97,13 +99,13 @@ class JavascriptProcessor(
     }) ++ List(
       new JSPropertyLinkerPass(cpg),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
-      new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+      new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
       new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
     )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)

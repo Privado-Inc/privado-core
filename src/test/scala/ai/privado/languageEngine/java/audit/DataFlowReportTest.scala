@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.DataFlowReport
-import ai.privado.cache.{AppCache, SourcePathInfo}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, SourcePathInfo}
 import ai.privado.dataflow.Dataflow
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.source.*
@@ -18,14 +18,15 @@ class DataFlowReportTest extends DataFlowReportTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    val appCache = new AppCache()
+    val appCache             = new AppCache()
+    val databaseDetailsCache = new DatabaseDetailsCache()
     appCache.repoLanguage = Language.JAVA
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     SourceTagger.runTagger(cpg, ruleCache, taggerCache)
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
     new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
   }

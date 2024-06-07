@@ -44,7 +44,8 @@ object PythonProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -96,7 +97,7 @@ object PythonProcessor {
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache).createAndApply()
 
           // Unresolved function report
           if (privadoInput.showUnresolvedFunctionsReport) {
@@ -107,13 +108,20 @@ object PythonProcessor {
           // Run tagger
           println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
           val taggerCache = new TaggerCache
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
+          cpg.runTagger(
+            ruleCache,
+            taggerCache,
+            privadoInputConfig = privadoInput,
+            dataFlowCache,
+            appCache,
+            databaseDetailsCache
+          )
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
           )
 
           // we run S3 buckets detection after tagging
-          new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+          new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
@@ -136,7 +144,8 @@ object PythonProcessor {
             List(),
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache
+            propertyFilterCache,
+            databaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -243,7 +252,8 @@ object PythonProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using Python engine")
@@ -277,7 +287,8 @@ object PythonProcessor {
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
 
