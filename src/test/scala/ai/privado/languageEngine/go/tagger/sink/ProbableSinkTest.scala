@@ -11,7 +11,7 @@ class ProbableSinkTest extends ProbableSinkTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
   }
 
   override val goFileContentMap: Map[String, String] = getContent()

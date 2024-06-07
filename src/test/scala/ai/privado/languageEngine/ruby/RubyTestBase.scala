@@ -26,6 +26,8 @@ object RubyTestBase {
   private def code(sourceCodes: List[SourceCodeModel]): (Cpg, Config) = {
     val inputDir = File.newTemporaryDirectory()
     for (sourceCode <- sourceCodes) {
+      val parentList = sourceCode.fileName.split("/").dropRight(1).mkString("/")
+      if parentList.nonEmpty then (inputDir / parentList).createDirectoryIfNotExists(createParents = true)
       (inputDir / sourceCode.fileName).write(sourceCode.sourceCode)
     }
     val outputFile = File.newTemporaryFile()

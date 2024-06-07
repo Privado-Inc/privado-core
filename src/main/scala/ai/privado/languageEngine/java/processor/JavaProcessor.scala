@@ -78,7 +78,8 @@ class JavaProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -89,6 +90,7 @@ class JavaProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
+      databaseDetailsCache,
       propertyFilterCache
     ) {
 
@@ -106,14 +108,22 @@ class JavaProcessor(
         new JavaPropertyLinkerPass(cpg),
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
-        new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+        new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
         new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache),
         new JavaYamlLinkerPass(cpg)
       )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache, appCache)
+    cpg.runTagger(
+      ruleCache,
+      taggerCache,
+      privadoInput,
+      dataFlowCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      databaseDetailsCache
+    )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
     val excludeFileRegex = ruleCache.getExclusionRegex

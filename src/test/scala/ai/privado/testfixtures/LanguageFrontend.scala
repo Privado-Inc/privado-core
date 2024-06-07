@@ -20,6 +20,7 @@ trait LanguageFrontend {
   private var s3DatabaseDetailsCache: Option[S3DatabaseDetailsCache] = None
   private var appCache: Option[AppCache]                             = None
   private var propertyFilterCache: Option[PropertyFilterCache]       = None
+  private var databaseDetailsCache: Option[DatabaseDetailsCache]     = None
 
   def setPrivadoInput(privadoInput: PrivadoInput): Unit = {
     if (this.privadoInput.isDefined) {
@@ -70,6 +71,13 @@ trait LanguageFrontend {
     this.propertyFilterCache = Some(propertyFilterCache)
   }
 
+  def setDatabaseDetailsCache(databaseDetailsCache: DatabaseDetailsCache): Unit = {
+    if (this.databaseDetailsCache.isDefined) {
+      throw new RuntimeException("DatabaseDetailsCache may only be set once per test")
+    }
+    this.databaseDetailsCache = Some(databaseDetailsCache)
+  }
+
   protected def getProcessor(sourceCodePath: java.io.File): BaseProcessor = {
     val privadoInput =
       this.privadoInput.getOrElse(PrivadoInput()).copy(sourceLocation = Set(sourceCodePath.getAbsolutePath))
@@ -84,7 +92,8 @@ trait LanguageFrontend {
       auditCache,
       this.s3DatabaseDetailsCache.getOrElse(S3DatabaseDetailsCache()),
       appCache,
-      this.propertyFilterCache.getOrElse(PropertyFilterCache())
+      this.propertyFilterCache.getOrElse(PropertyFilterCache()),
+      this.databaseDetailsCache.getOrElse(DatabaseDetailsCache())
     )
   }
 
@@ -95,6 +104,7 @@ trait LanguageFrontend {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): BaseProcessor
 }

@@ -33,7 +33,8 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call] = cpg.call.or(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
 
   override def generateParts(): Array[RuleInfo] = {
@@ -55,7 +56,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
           .l
 
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
-      val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(ruleInfo.id)
+      val databaseDetails = databaseDetailsCache.getDatabaseDetails(ruleInfo.id)
       if (databaseDetails.isDefined) {
         sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get, ruleCache))
       }
