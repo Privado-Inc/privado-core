@@ -62,8 +62,8 @@ class JavascriptProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache,
-  databaseDetailsCache: DatabaseDetailsCache
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,

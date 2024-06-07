@@ -69,8 +69,8 @@ class KotlinProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache,
-  databaseDetailsCache: DatabaseDetailsCache
+  propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,

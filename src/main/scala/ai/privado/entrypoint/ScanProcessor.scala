@@ -484,7 +484,8 @@ object ScanProcessor extends CommandProcessor {
           auditCache,
           s3DatabaseDetailsCache,
           appCache,
-          propertyFilterCache = propertyFilterCache
+          propertyFilterCache = propertyFilterCache,
+          databaseDetailsCache = databaseDetailsCache
         ).processCpg()
       case Language.PHP =>
         println(s"${Calendar.getInstance().getTime} - Detected language 'PHP'")

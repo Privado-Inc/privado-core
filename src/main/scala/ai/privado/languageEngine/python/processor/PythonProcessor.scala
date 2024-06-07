@@ -44,8 +44,8 @@ object PythonProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {

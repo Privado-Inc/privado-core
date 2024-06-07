@@ -79,7 +79,7 @@ class JavaProcessor(
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  databaseDetailsCache: DatabaseDetailsCache
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,

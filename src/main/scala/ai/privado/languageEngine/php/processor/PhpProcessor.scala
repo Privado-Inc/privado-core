@@ -34,7 +34,7 @@ import ai.privado.model.Language.Language
 import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, newEmptyCpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.{Logger, LoggerFactory}
@@ -53,8 +53,8 @@ class PhpProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache,
-  databaseDetailsCache: DatabaseDetailsCache
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
