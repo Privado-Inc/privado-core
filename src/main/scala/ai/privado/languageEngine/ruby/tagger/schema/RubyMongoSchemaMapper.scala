@@ -30,6 +30,19 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
     addToDatabaseCache(builder)
   }
   def addToDatabaseCache(builder: DiffGraphBuilder): Unit = {
+    /* Look for property nodes which match the regex `.*clients.*database` and are present in the file `config/mongoid.yaml`
+      These gives us all the client nodes defined for the project
+
+      production:
+        <<: *base_mongoid_specific_options
+        clients:
+          default:
+            database: default_production
+          noncustomer_default:
+            database: noncustomer_production
+
+      Here we are interested in property nodes with values `default_production` and `noncustomer_production`
+     */
     val clientNodes =
       cpg.property.where(_.file.name(".*config/mongoid[.](yml|yaml)")).where(_.name(".*clients.*database")).l
 
@@ -44,6 +57,9 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
       clientsSet.add(clientName)
     })
 
+    /*
+    For each identifies database client, fetch the tables, column, datatype info and create corresponding nodes
+     */
     val clientTableMap = clientsSet
       .map(clientName => {
         val tables = cpg.typeDecl
@@ -80,6 +96,8 @@ class RubyMongoSchemaMapper(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpl
             .value
             .headOption
             .getOrElse("")
+
+          // Create Database details node and update it to the cache
           if (dbName.nonEmpty) {
             createDatabaseSinkRule(
               builder,

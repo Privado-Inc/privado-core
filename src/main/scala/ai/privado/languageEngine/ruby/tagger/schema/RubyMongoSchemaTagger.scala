@@ -14,6 +14,23 @@ class RubyMongoSchemaTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParal
 
   val sourceRules: List[RuleInfo] = ruleCache.getAllRuleInfo.filter(_.catLevelOne == CatLevelOne.SOURCES).l
   override def generateParts(): Array[TypeDecl] = {
+    /*
+    Check if the given class have a statement `Mongoid::Document` which corresponds to it being a mongo document
+    which can be used to determine the schema of the collection
+
+    class User
+      include Mongoid::Document
+      include Mongoid::Timestamps
+
+      belongs_to :team
+      belongs_to :permission_set
+
+      field :last_logged_in, type: DateTime
+      field :last_logged_out, type: DateTime
+    end
+
+    In the above code `User` is a Mongo repository, with `last_logged_in` and `last_logged_out` being its field
+     */
     cpg.typeDecl
       .filter(
         _.code.startsWith("class")
