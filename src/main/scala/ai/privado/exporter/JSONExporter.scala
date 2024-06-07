@@ -27,6 +27,7 @@ import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
 import ai.privado.cache.{
   AppCache,
   DataFlowCache,
+  DatabaseDetailsCache,
   Environment,
   PropertyFilterCache,
   RuleCache,
@@ -90,7 +91,8 @@ object JSONExporter {
     monolithPrivadoJsonPaths: List[String] = List(),
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Either[String, Map[String, Json]] = {
 
     try {
@@ -113,6 +115,7 @@ object JSONExporter {
         privadoInput,
         s3DatabaseDetailsCache,
         appCache = appCache,
+        databaseDetailsCache = databaseDetailsCache,
         propertyFilterCache = propertyFilterCache
       )
 

@@ -33,7 +33,8 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call] = cpg.call
     .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
     .whereNot(_.method.name(".*<meta.*>$"))
@@ -92,7 +93,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
             ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + cookieName, isGenerated = true)
           )
           addRuleTags(builder, sink, ruleInfo, ruleCache, Some(newRuleIdToUse))
-          DatabaseDetailsCache.addDatabaseDetails(
+          databaseDetailsCache.addDatabaseDetails(
             DatabaseDetails(
               cookieName,
               "cookie",

@@ -21,6 +21,7 @@ class RubyMongoSchemaMapperTest extends AnyWordSpec with Matchers with BeforeAnd
 
   val ruleCache = new RuleCache()
   ruleCache.setRule(ConfigAndRules(sources = RuleInfoTestData.sourceRule))
+  val databaseDetailsCache = DatabaseDetailsCache()
 
   "Ruby mongo schema mapper" should {
     val (cpg, cpgConfig) = code(
@@ -71,17 +72,16 @@ class RubyMongoSchemaMapperTest extends AnyWordSpec with Matchers with BeforeAnd
     new PropertyParserPass(cpg, cpgConfig.inputPath, ruleCache, Language.RUBY, PropertyFilterCache())
       .createAndApply()
     new RubyMongoSchemaTagger(cpg, ruleCache).createAndApply()
-    new RubyMongoSchemaMapper(cpg, ruleCache).createAndApply()
-    val databaseDetailsCache = DatabaseDetailsCache.getAllDatabaseDetails
+    new RubyMongoSchemaMapper(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     "detect all databases in yaml" in {
-      databaseDetailsCache.size shouldBe 3
-      databaseDetailsCache
+      databaseDetailsCache.getAllDatabaseDetails.size shouldBe 3
+      databaseDetailsCache.getAllDatabaseDetails
         .map(_.dbName) shouldBe List("noncustomer_production", "people_production", "default_production")
     }
 
     "detect schema for User" in {
-      val defaultDB = databaseDetailsCache.filter(_.dbName == "default_production").head
+      val defaultDB = databaseDetailsCache.getAllDatabaseDetails.filter(_.dbName == "default_production").head
       defaultDB shouldBe DatabaseDetails(
         "default_production",
         "",

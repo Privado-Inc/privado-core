@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
@@ -27,7 +27,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -40,7 +41,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache).createAndApply()
 
-    new PythonDBConfigTagger(cpg).createAndApply()
+    new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
     // Custom Rule tagging
     // Adding custom rule to cache
@@ -48,7 +49,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new InheritMethodTagger(cpg, ruleCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     new LogShareSinkTagger(cpg, ruleCache).createAndApply()
 

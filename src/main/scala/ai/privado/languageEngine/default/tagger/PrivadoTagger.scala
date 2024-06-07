@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.default.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.default.passes.HighTouchDataflow
 import ai.privado.tagger.source.SqlQueryTagger
@@ -19,7 +19,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInput: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagger")

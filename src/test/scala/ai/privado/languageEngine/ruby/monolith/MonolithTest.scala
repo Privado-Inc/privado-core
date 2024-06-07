@@ -1,6 +1,14 @@
 package ai.privado.languageEngine.ruby.monolith
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.monolith.MonolithExporter
@@ -102,7 +110,8 @@ class MonolithTest extends MonolithTestBase {
             new DataFlowCache(privadoInput, AuditCache()),
             privadoInput,
             s3DatabaseDetailsCache,
-            appCache = appCache
+            appCache = appCache,
+            databaseDetailsCache = DatabaseDetailsCache()
           )
         )
         .l
