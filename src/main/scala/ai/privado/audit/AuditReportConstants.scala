@@ -55,6 +55,8 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_NODE_TYPE_METHOD = "Method"
 
+  val ELEMENT_DISCOVERY_NODE_TYPE_TYPEDECL = "TypeDecl"
+
   val ELEMENT_DISCOVERY_NODE_TYPE_METHOD_PARAM = "Method Parameter"
 
   val ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER = "Identifier"

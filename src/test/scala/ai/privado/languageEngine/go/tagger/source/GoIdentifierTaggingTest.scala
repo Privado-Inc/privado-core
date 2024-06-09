@@ -38,8 +38,8 @@ class GoIdentifierTaggingTest extends GoTestBase {
         |	FirstName string
         |	Age       int
         |	Location  string
-        |	Email     string
-        |	passwd    string // Note: this field is unexported
+        |	Email     string // 10
+        |	passwd    string // 11 Note: this field is unexported
         |}
         |
         |func main() {
@@ -48,8 +48,8 @@ class GoIdentifierTaggingTest extends GoTestBase {
         |		FirstName: "John Doe",
         |		Age:       25,
         |		Location:  "New York",
-        |		Email:     "abc@gmail.com",
-        |		passwd:    "yourPassword",
+        |		Email:     "abc@gmail.com", //20
+        |		passwd:    "yourPassword", //21
         |	}
         |}
         |""".stripMargin)

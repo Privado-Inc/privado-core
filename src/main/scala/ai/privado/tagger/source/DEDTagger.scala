@@ -27,7 +27,14 @@ import ai.privado.model.{Constants, DEDRuleInfo, DEDVariable, InternalTag, RuleI
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Identifier, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
+  Identifier,
+  Member,
+  FieldIdentifier,
+  Local,
+  MethodParameterIn
+}
 import io.shiftleft.semanticcpg.language.*
 
 class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[DEDRuleInfo](cpg) {
@@ -54,12 +61,20 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
     //  TODO: SqlColumnNode
 
     def getMatchesNodes(v: DEDVariable): List[AstNode] = {
-      // TODO: Add the filter for lineNumber also
-      filteredIdentifiers.filter(_.name == v.name)
-        ++ filteredMembers.filter(_.name == v.name)
-        ++ filteredFieldAccessIdentifier.filter(_.fieldIdentifier.canonicalName(v.name).nonEmpty).isCall.l
-        ++ filteredLocals.filter(_.name == v.name)
-        ++ filteredParameter.filter(_.name == v.name)
+      // Helper function to filter nodes by name and optional lineNumber
+      def matchesNameAndLineNumber(name: String, lineNumber: Option[Integer]): Boolean = {
+        name == v.name && (v.lineNumber.isEmpty || lineNumber == v.lineNumber)
+      }
+
+      filteredIdentifiers.filter((i: Identifier) => matchesNameAndLineNumber(i.name, i.lineNumber))
+        ++ filteredMembers.filter((m: Member) => matchesNameAndLineNumber(m.name, m.lineNumber))
+        ++ filteredFieldAccessIdentifier
+          .where(_.fieldIdentifier.canonicalName(v.name))
+          .filter((fa) => v.lineNumber.isEmpty || fa.lineNumber == v.lineNumber)
+          .isCall
+          .l
+        ++ filteredLocals.filter((m: Local) => matchesNameAndLineNumber(m.name, m.lineNumber))
+        ++ filteredParameter.filter((m: MethodParameterIn) => matchesNameAndLineNumber(m.name, m.lineNumber))
     }
 
     dedRuleInfo.classificationData.foreach { dedData =>

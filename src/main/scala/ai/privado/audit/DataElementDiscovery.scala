@@ -848,7 +848,8 @@ object DataElementDiscovery {
     try {
       elementInfo.foreach {
         case (key, value) => {
-          val offset = DataElementDiscoveryUtils.nodeOffset(key)
+          val (_, offset, nodeUniqueId) =
+            DataElementDiscoveryUtils.getNodeLocationAndUniqueId(key, key.name, "")
 
           workbookResult += List(
             key.name,
@@ -856,14 +857,14 @@ object DataElementDiscovery {
             "0.0",
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_CHECKED_VALUE,
+            AuditReportConstants.AUDIT_NOT_CHECKED_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
             offset,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+            nodeUniqueId,
+            AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_TYPEDECL
           )
           val ruleMemberInfo = taggedMemberInfo.getOrElse(key.fullName, new mutable.HashMap[String, String])
           val addedMembers   = mutable.Set[String]()

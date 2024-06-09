@@ -309,13 +309,13 @@ object CirceEnDe {
     override def apply(c: HCursor): Result[DEDVariable] = {
       val name       = c.downField(Constants.name).as[String]
       val typeInSrc  = c.downField(Constants.typeInSrc).as[String]
-      val lineNumber = c.downField(Constants.lineNumber).as[Int]
+      val lineNumber = c.downField(Constants.lineNumber).as[Option[Int]]
 
       Right(
         DEDVariable(
           name = name.getOrElse(""),
           typeInSrc = typeInSrc.getOrElse(""),
-          lineNumber = Some(lineNumber.getOrElse(Constants.defaultLineNumber))
+          lineNumber = lineNumber.getOrElse(None)
         )
       )
     }
