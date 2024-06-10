@@ -1,6 +1,14 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
@@ -14,7 +22,8 @@ class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) ex
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): BaseProcessor = {
     new CSharpProcessor(
       ruleCache,
@@ -25,7 +34,8 @@ class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) ex
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg = false,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
 }

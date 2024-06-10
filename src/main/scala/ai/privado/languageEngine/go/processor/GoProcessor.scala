@@ -41,7 +41,8 @@ object GoProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -88,7 +89,8 @@ object GoProcessor {
             taggerCache,
             privadoInputConfig = ScanProcessor.config.copy(),
             dataFlowCache,
-            appCache
+            appCache,
+            databaseDetailsCache
           )
           println(
             s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
@@ -115,7 +117,8 @@ object GoProcessor {
             List(),
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache
+            propertyFilterCache,
+            databaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -133,7 +136,14 @@ object GoProcessor {
             ExcelExporter.auditExport(
               outputAuditFileName,
               AuditReportEntryPoint
-                .getAuditWorkbookGoAndPy(xtocpg, taggerCache, sourceRepoLocation, auditCache, ruleCache),
+                .getAuditWorkbookForLanguage(
+                  xtocpg,
+                  taggerCache,
+                  sourceRepoLocation,
+                  auditCache,
+                  ruleCache,
+                  Language.GO
+                ),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -216,7 +226,8 @@ object GoProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Either[String, Unit] = {
 
     println(s"${Calendar.getInstance().getTime} - Processing source code using GoLang engine")
@@ -251,7 +262,8 @@ object GoProcessor {
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
 

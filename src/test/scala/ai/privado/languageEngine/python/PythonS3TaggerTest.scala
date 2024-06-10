@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.python
 
-import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
@@ -98,7 +98,15 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
     "have bucket name" in {
       val sinkExporter =
-        new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache, appCache = appCache)
+        new SinkExporter(
+          cpg,
+          ruleCache,
+          privadoInput,
+          None,
+          s3DatabaseDetailsCache,
+          appCache = appCache,
+          databaseDetailsCache = DatabaseDetailsCache()
+        )
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "mera-bucket"
     }
   }
@@ -125,7 +133,15 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
 
     "have bucket name" in {
       val sinkExporter =
-        new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache, appCache = appCache)
+        new SinkExporter(
+          cpg,
+          ruleCache,
+          privadoInput,
+          None,
+          s3DatabaseDetailsCache,
+          appCache = appCache,
+          databaseDetailsCache = DatabaseDetailsCache()
+        )
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "meri-prod-bucket"
     }
   }
@@ -141,6 +157,7 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     ruleCache.setRule(rule)
     val taggerCache = new TaggerCache
     appCache.repoLanguage = Language.PYTHON
+    val databaseDetailsCache = DatabaseDetailsCache()
 
     // Generate CPG and run overlays for S3 tagger prep
     val cpgconfig = Py2CpgOnFileSystemConfig(Option(File(".venv").path), ignoreVenvDir = true)
@@ -156,11 +173,11 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
         new NaiveCallLinker(cpg).createAndApply()
         new AstLinkerPass(cpg).createAndApply()
-        new RegularSinkTagger(cpg, ruleCache).createAndApply()
-        new PythonDBConfigTagger(cpg).createAndApply()
+        new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
+        new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
         // Run S3 tagger - needs sink tagging to be run before
-        new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+        new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
         cpgs.addOne(cpg)
         cpg
       }

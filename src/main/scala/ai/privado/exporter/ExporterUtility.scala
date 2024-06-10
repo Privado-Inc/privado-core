@@ -27,6 +27,7 @@ import ai.privado.cache
 import ai.privado.cache.{
   AppCache,
   DataFlowCache,
+  DatabaseDetailsCache,
   Environment,
   FileSkippedBySizeListModel,
   PropertyFilterCache,
@@ -83,7 +84,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import privado_core.BuildInfo
 
 object ExporterUtility {
@@ -360,6 +361,7 @@ object ExporterUtility {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
     propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
@@ -379,9 +381,10 @@ object ExporterUtility {
         privadoInput,
         repoItemTagName = repoItemTagName,
         s3DatabaseDetailsCache,
-        appCache
+        appCache,
+        databaseDetailsCache
       )
-    val dataflowExporter = new DataflowExporter(dataflows, taggerCache)
+    val dataflowExporter = new DataflowExporter(dataflows, taggerCache, databaseDetailsCache)
     val collectionExporter =
       new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName, appCache = appCache)
     val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
@@ -445,7 +448,9 @@ object ExporterUtility {
     val finalCollections = Await.result(collections, Duration.Inf)
     logger.debug("Done with exporting Collections")
     val violationResult =
-      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)).getOrElse(List[ViolationModel]())
+      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
+        .getOrElse(List[ViolationModel]())
+
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 

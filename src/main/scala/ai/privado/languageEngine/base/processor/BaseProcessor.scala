@@ -45,6 +45,7 @@ abstract class BaseProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean,
+  databaseDetailsCache: DatabaseDetailsCache,
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 
@@ -188,7 +189,8 @@ abstract class BaseProcessor(
       List(),
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)

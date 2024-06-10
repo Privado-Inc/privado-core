@@ -59,6 +59,11 @@ object InternalTag extends Enumeration {
   // Apache Flink Tag
   val FLINK_INITIALISATION_LOCAL_NODE = Value("FLINK_INITIALISATION_LOCAL_NODE")
 
+  // Ruby Mongo Repository
+  val RUBY_MONGO_CLASS_CLIENT    = Value("RUBY_MONGO_CLASS_CLIENT")
+  val RUBY_MONGO_COLUMN          = Value("RUBY_MONGO_COLUMN")
+  val RUBY_MONGO_COLUMN_DATATYPE = Value("RUBY_MONGO_COLUMN_DATATYPE")
+
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
 }

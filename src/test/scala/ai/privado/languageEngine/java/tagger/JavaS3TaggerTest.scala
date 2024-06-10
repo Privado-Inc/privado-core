@@ -36,8 +36,8 @@ class JavaS3TaggerTest extends JavaTaggingTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
-    new JavaS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
+    new JavaS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
   }
 
   override val javaFileContents: String =
@@ -82,7 +82,15 @@ class JavaS3TaggerTest extends JavaTaggingTestBase {
   "Java code reading and writing from S3 bucket" should {
     "have bucket name" in {
       val sinkExporter =
-        new SinkExporter(cpg, ruleCache, privadoInput, None, s3DatabaseDetailsCache, appCache = new AppCache())
+        new SinkExporter(
+          cpg,
+          ruleCache,
+          privadoInput,
+          None,
+          s3DatabaseDetailsCache,
+          appCache = new AppCache(),
+          databaseDetailsCache = databaseDetailsCache
+        )
       sinkExporter.getSinks.map(_.databaseDetails.dbName) shouldBe List("my-write-bucket", "my-read-bucket")
     }
   }

@@ -14,7 +14,8 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): BaseProcessor = {
     new JavascriptProcessor(
       ruleCache,
@@ -25,7 +26,8 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg = false,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
 }

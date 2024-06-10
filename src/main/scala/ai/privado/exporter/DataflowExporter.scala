@@ -37,7 +37,11 @@ import io.circe.syntax.EncoderOps
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache) {
+class DataflowExporter(
+  dataflowsMap: Map[String, Path],
+  taggerCache: TaggerCache,
+  databaseDetailsCache: DatabaseDetailsCache
+) {
 
   val falsePositiveSources: List[String] = List[String](
     "Data.Sensitive.OnlineIdentifiers.Cookies",
@@ -92,7 +96,7 @@ class DataflowExporter(dataflowsMap: Map[String, Path], taggerCache: TaggerCache
 
       val databaseDetails = ruleCache.getRuleInfo(sinkId) match {
         case Some(rule) =>
-          DatabaseDetailsCache.getDatabaseDetails(rule.id)
+          databaseDetailsCache.getDatabaseDetails(rule.id)
         case _ => Option.empty[DatabaseDetails]
       }
 
