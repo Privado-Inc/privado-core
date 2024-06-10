@@ -62,7 +62,7 @@ jobs:
 
       # langauge specific repository file
       - name: Run the script
-        run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -ju -guf
+        run: export GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} && export SLACK_TOKEN=${{ secrets.SLACK_TOKEN }} && cd ./temp/standalone-monitoring-stability && pip install -r requirements.txt && python3 ./run.py -r ./repos/${{matrix.language}}.txt -ju -guf
 
       - name: Run aws-export
         run: cd ./temp/standalone-monitoring-stability/ && python3 aws-export.py ${{matrix.language}}
