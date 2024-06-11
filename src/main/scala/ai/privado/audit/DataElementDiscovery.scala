@@ -22,30 +22,30 @@ object DataElementDiscoveryUtils {
 
   // Regular expression pattern to filter common language types
   private val filterCommonLangTypes =
-    "(?i)(class|window|str|list|dict|bool|boolean|number|nil|null|none|undefined|nan|empty|json|true|false|before|after|arr|typeof|match|case|(array|int|num|float|byte|string|blob).{0,1})"
+    "(?i)(class|window|str|list|dict|bool|boolean|number|bigdecimal|let|define|enum|asttype|nil|null|none|java|undefined|nan|empty|tostring|valueof|json|true|false|before|after|arr|typeof|match|to_dict|case|<global>|<fakeNew>|(array|int|num|type|float|byte|string|blob).{0,1})"
 
   // Regular expression pattern to filter common variable names
   private val filterCommonVars =
-    "(?i)(cls|self|ctx|main|use|stmt|name|data|event|env|cmd|push|join|split|start|buffer|thread|length|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|use|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log).{0,1})"
+    "(?i)(cls|self|ctx|constructor|prototype|main|use|map|foreach|sort|copy|skip|replace|slice|fill|some|every|concat|contains|apply|merge|stmt|format|name|data|event|env|cmd|push|join|split|splice|filter|reduce|shift|unshift|retry|start|buffer|thread|length|staticmethod|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|info|debug|warning|critical|exception|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log|key|value|include|load|dump).{0,1})"
 
   // List of prefixes to filter out common variables that start with these values
   private val filterCommonVarsStartsWith =
-    "$obj|__|_tmp_|tmp|$iterLocal|file|is|sha_|this|get|set|post|put|update|create|find|insert|generate|process|delete|handle|param|attr|arg|_iterator|{|log|error|iterator_"
+    "$obj|__|_tmp_|tmp|$iterLocal|file|is|sha_|this|get|set|post|put|update|create|find|insert|assert|parse|generate|process|download|upload|delete|handle|param|attr|arg|_iterator|{|log|error|iterator_|logger|<tmp-|iter_tmp|toLocale|indexOf"
   private val filterCommonVarsStartsWithArr = filterCommonVarsStartsWith.split("\\|")
 
   // Additional Language specific filters
   def getLanguageSpecificFilters(lang: Language): String = {
     lang match {
       case Language.JAVASCRIPT =>
-        "(?i)(axios|require|express)"
+        "(?i)(axios|require|express|hasOwnProperty|date|usestate|useeffect|dispatch)"
       case Language.PYTHON =>
-        "(?i)(<fakeNew>|print|retry|logger|delete|boto.{0,1}|requests|append|extend|loads)"
+        "(?i)(print|boto.{0,1}|s3|requests|append|extend|list_objects.{0,6}|pytest|datetime)"
       case Language.JAVA | Language.KOTLIN =>
         "(?i)(system|out|buf|(com|io|org).{1}.*)"
       case Language.GO =>
         "(?i)(context|block|nonce|syscall|buf)"
       case Language.PHP =>
-        "(?i)(<global>|_post|_get|_session|_files|_server|_cookie|uid)"
+        "(?i)(_post|_get|_session|_files|_server|_cookie|uid)"
       case Language.RUBY =>
         "(?i)(node|tree|raise|object)"
       case Language.CSHARP =>
