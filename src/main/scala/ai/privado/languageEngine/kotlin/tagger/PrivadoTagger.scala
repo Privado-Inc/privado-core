@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.kotlin.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
@@ -32,7 +32,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataflowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -49,9 +50,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
-    new JavaDBConfigTagger(cpg).createAndApply()
+    new JavaDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     // Custom Rule tagging
     if (!privadoInputConfig.ignoreInternalRules) {

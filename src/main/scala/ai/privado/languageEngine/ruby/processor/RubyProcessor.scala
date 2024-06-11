@@ -89,7 +89,8 @@ object RubyProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -174,7 +175,7 @@ object RubyProcessor {
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
@@ -190,7 +191,8 @@ object RubyProcessor {
             taggerCache,
             privadoInputConfig = ScanProcessor.config.copy(),
             dataFlowCache,
-            appCache
+            appCache,
+            databaseDetailsCache
           )
           println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
           val dataflowMap = cpg.dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
@@ -211,7 +213,8 @@ object RubyProcessor {
             dataFlowCache,
             privadoInput,
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            databaseDetailsCache
           )
 
           val errorMsg = new ListBuffer[String]()
@@ -252,7 +255,8 @@ object RubyProcessor {
             monolithPrivadoJsonPaths = monolithPrivadoJsonPaths,
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache
+            propertyFilterCache,
+            databaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -384,7 +388,8 @@ object RubyProcessor {
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Either[String, Unit] = {
     logger.warn("Warnings are getting printed")
     println(s"${Calendar.getInstance().getTime} - Processing source code using ruby engine")
@@ -468,7 +473,8 @@ object RubyProcessor {
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
   private class ParserTask(val file: String, val parser: ResourceManagedParser) {

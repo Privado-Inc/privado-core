@@ -4,7 +4,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.tagger.PrivadoBaseTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import ai.privado.tagger.source.{DEDTagger, LiteralTagger, SqlQueryTagger}
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -14,7 +14,7 @@ import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.go.tagger.config.GoDBConfigTagger
 import ai.privado.languageEngine.go.tagger.sink.{GoAPISinkTagger, GoAPITagger}
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.utility.Utilities.ingressUrls
+import ai.privado.utility.Utilities.{databaseURLPriority, ingressUrls}
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -24,7 +24,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -37,11 +38,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
-    new GoDBConfigTagger(cpg).createAndApply()
+    new GoDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
     GoAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()

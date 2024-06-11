@@ -66,7 +66,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -80,11 +81,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 
-    new JavaDBConfigTagger(cpg).createAndApply()
+    new JavaDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
-    new JavaS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+    new JavaS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
     JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
 

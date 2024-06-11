@@ -34,7 +34,7 @@ import ai.privado.model.Language.Language
 import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
-import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
+import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, newEmptyCpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.{Logger, LoggerFactory}
@@ -53,7 +53,8 @@ class PhpProcessor(
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -64,6 +65,7 @@ class PhpProcessor(
       s3DatabaseDetailsCache,
       appCache,
       returnClosedCpg,
+      databaseDetailsCache,
       propertyFilterCache
     ) {
 
@@ -72,7 +74,7 @@ class PhpProcessor(
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List[CpgPassBase]()
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)

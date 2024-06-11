@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.csharp.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.csharp.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.csharp.tagger.sink.{CSharpAPISinkTagger, CSharpAPITagger}
@@ -45,7 +45,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 
@@ -56,7 +57,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     CSharpAPISinkTagger.applyTagger(cpg, rules, privadoInputConfig, appCache)
 
-    new RegularSinkTagger(cpg, rules).createAndApply()
+    new RegularSinkTagger(cpg, rules, databaseDetailsCache).createAndApply()
     new CollectionTagger(cpg, rules).createAndApply()
 
     logger.info("Finished tagging")

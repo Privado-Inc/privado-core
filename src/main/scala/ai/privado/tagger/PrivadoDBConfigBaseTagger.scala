@@ -1,12 +1,14 @@
 package ai.privado.tagger
 
+import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import ai.privado.utility.Utilities.addDatabaseDetailsMultiple
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import org.slf4j.LoggerFactory
 
-abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(cpg) {
+abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoSimpleCpgPass(cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -19,7 +21,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
       val dbLocation = dbUrl.value.split("\\.")(1)
       val dbName     = dbUrl.value.split("/").last
 
-      addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+      addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
     } catch {
       case e: Throwable => logger.debug("Error parsing details for dynamo db")
     }
@@ -35,7 +37,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
       val dbName     = dbUrl.value.split("/").last
       val dbVendor   = "postgresql"
 
-      addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+      addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
     } catch {
       case e: Throwable => logger.debug("Error parsing details for postgre SQL")
     }
@@ -55,7 +57,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
       val dbLocation = tokens.last.split("/")(0)
       val dbName     = dbUrl.value.split("/").last.split("\\?")(0)
 
-      addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+      addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
     } catch {
       case e: Throwable => logger.debug("Error parsing details for mongodb")
@@ -77,7 +79,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
       dbName = tokens(5)
     }
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 
@@ -103,7 +105,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
       }
     }
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 
@@ -113,7 +115,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 
@@ -127,7 +129,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg) extends PrivadoSimpleCpgPass(
     val dbLocation = dbUrl.value
     val dbName     = "Neo4j Graph Database"
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 }

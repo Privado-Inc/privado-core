@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.php.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.php.tagger.collection.MethodFullNameCollectionTagger
 import ai.privado.languageEngine.php.tagger.collection.AnnotationsCollectionTagger
@@ -47,14 +47,15 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 
     new DEDTagger(cpg, rules).createAndApply()
     new LiteralTagger(cpg, rules).createAndApply()
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
-    new RegularSinkTagger(cpg, rules).createAndApply()
+    new RegularSinkTagger(cpg, rules, databaseDetailsCache).createAndApply()
     new AnnotationsCollectionTagger(cpg, rules).createAndApply()
     new ConfigCollectionTagger(cpg, rules, privadoInputConfig.sourceLocation.headOption.getOrElse("")).createAndApply()
     new MethodFullNameCollectionTagger(cpg, rules).createAndApply()

@@ -27,6 +27,7 @@ import ai.privado.cache
 import ai.privado.cache.{
   AppCache,
   DataFlowCache,
+  DatabaseDetailsCache,
   Environment,
   FileSkippedBySizeListModel,
   PropertyFilterCache,
@@ -360,6 +361,7 @@ object ExporterUtility {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
     propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
@@ -379,9 +381,10 @@ object ExporterUtility {
         privadoInput,
         repoItemTagName = repoItemTagName,
         s3DatabaseDetailsCache,
-        appCache
+        appCache,
+        databaseDetailsCache
       )
-    val dataflowExporter = new DataflowExporter(dataflows, taggerCache)
+    val dataflowExporter = new DataflowExporter(dataflows, taggerCache, databaseDetailsCache)
     val collectionExporter =
       new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName, appCache = appCache)
     val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
@@ -438,26 +441,16 @@ object ExporterUtility {
     val processingSinks = Future {
       Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
     }
-    /*
     val collections = Future {
       Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
     }
 
     val finalCollections = Await.result(collections, Duration.Inf)
-     */
-    val finalCollections = collectionExporter.getCollections
     logger.debug("Done with exporting Collections")
     val violationResult =
       Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
         .getOrElse(List[ViolationModel]())
 
-    println(s"Printing retrieved violation : ${violationResult}")
-    println(s"Violation generated are printed below")
-    Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)) match
-      case Failure(exception) => println(s"Exception caught : $exception")
-      case Success(value) =>
-        println(s"Size of violation : ${value.size}")
-        value.foreach(println)
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 
