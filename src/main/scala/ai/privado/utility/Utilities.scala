@@ -218,19 +218,6 @@ object Utilities {
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
 
-    println(s"Line number from caller: ${lineToHighlight}")
-    val _lineToHighlight: Option[Integer] =
-      if (lineToHighlight.isDefined) {
-        if (filename.endsWith(".cs")) {
-          Option(lineToHighlight.get + 1)
-        } else {
-          Option(lineToHighlight.get)
-        }
-      } else {
-        None
-      }
-
-    println(s"Changed line number: ${lineToHighlight}")
     try {
       if (!filename.equals("<empty>")) {
         val lines = File(filename).lines.toList

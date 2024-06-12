@@ -241,9 +241,15 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val _lineNumber: Integer = if (fileName.endsWith(".cs")) node.lineNumber.get + 1 else node.lineNumber.get
-      val _columnNumber: Int   = if (fileName.endsWith(".cs")) node.columnNumber.get + 1 else node.columnNumber.get
-      val excerpt = dump(absoluteFileName, Option(_lineNumber), message, allowedCharLimit = allowedCharLimit)
+      val _lineNumber: Option[Integer] =
+        if (node.lineNumber.isDefined) then
+          if (fileName.endsWith(".cs")) Option(node.lineNumber.get + 1) else Option(node.lineNumber.get)
+        else None
+      val _columnNumber: Option[Int] =
+        if (node.columnNumber.isDefined) then
+          if (fileName.endsWith(".cs")) Option(node.columnNumber.get + 1) else Option(node.columnNumber.get)
+        else None
+      val excerpt = dump(absoluteFileName, _lineNumber, message, allowedCharLimit = allowedCharLimit)
       // Get the actual filename
       val actualFileName = {
         if (appCache.isLombokPresent)
@@ -258,15 +264,23 @@ object ExporterUtility {
           Some(
             DataFlowSubCategoryPathExcerptModel(
               sample,
-              _lineNumber,
-              _columnNumber,
+              _lineNumber.getOrElse(-1).asInstanceOf[Int],
+              _columnNumber.getOrElse(-1),
               actualFileName,
               excerpt,
               Some(argumentList)
             )
           )
         case None =>
-          Some(DataFlowSubCategoryPathExcerptModel(sample, _lineNumber, _columnNumber, actualFileName, excerpt))
+          Some(
+            DataFlowSubCategoryPathExcerptModel(
+              sample,
+              _lineNumber.getOrElse(-1).asInstanceOf[Int],
+              _columnNumber.getOrElse(-1),
+              actualFileName,
+              excerpt
+            )
+          )
       }
     }
   }
@@ -525,15 +539,20 @@ object ExporterUtility {
                 s"${appCache.scanPath}/$fileName"
             }
 
-            val _lineNumber: Integer = if (fileName.endsWith(".cs")) node.lineNumber.get + 1 else node.lineNumber.get
-            val _columnNumber: Int =
-              if (fileName.endsWith(".cs")) node.columnNumber.get + 1 else node.columnNumber.get
+            val _lineNumber: Option[Integer] =
+              if (node.lineNumber.isDefined) then
+                if (fileName.endsWith(".cs")) Option(node.lineNumber.get + 1) else Option(node.lineNumber.get)
+              else None
+            val _columnNumber: Option[Int] =
+              if (node.columnNumber.isDefined) then
+                if (fileName.endsWith(".cs")) Option(node.columnNumber.get + 1) else Option(node.columnNumber.get)
+              else None
             DataFlowSubCategoryPathExcerptModel(
               node.code,
-              _lineNumber,
-              _columnNumber,
+              _lineNumber.getOrElse(-1).asInstanceOf[Int],
+              _columnNumber.getOrElse(-1),
               fileName,
-              Utilities.dump(absoluteFileName, Option(_lineNumber), excerptStartLine = -1, excerptEndLine = 1)
+              Utilities.dump(absoluteFileName, _lineNumber, excerptStartLine = -1, excerptEndLine = 1)
             )
           })
           .asJson
