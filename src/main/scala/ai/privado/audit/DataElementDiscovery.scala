@@ -54,7 +54,7 @@ object DataElementDiscoveryUtils {
 
   def nodeIdentifier(filePath: String, name: String, nodeType: String, lineNumber: String): String =
     md5
-      .digest(s"$filePath-$name-$nodeType-$lineNumber".getBytes)
+      .digest(s"$filePath-$name".getBytes)
       .map(0xff & _)
       .map("%02x".format(_))
       .foldLeft("")(_ + _)
