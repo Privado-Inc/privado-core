@@ -345,6 +345,27 @@ object DataElementDiscoveryUtils {
       AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
     )
   }
+
+  def updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult: List[List[String]]): List[List[String]] = {
+    try {
+      println(workbookResult.size)
+      // Group entries by filename
+      val groupedByFilename = workbookResult.groupBy(entry => entry(1))
+
+      // For each group, filter unique items based on name
+      val filteredResults = groupedByFilename.values.flatMap { entries =>
+        val uniqueByName = entries.groupBy(entry => entry(3)).values.map(_.head)
+        uniqueByName
+      }.toList
+      println("Done filter results")
+      println(filteredResults.size)
+      DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(filteredResults)
+    } catch {
+      case e: Exception =>
+        println(s"An error occurred while filtering the workbook result: ${e.getMessage}")
+        workbookResult
+    }
+  }
 }
 
 object DataElementDiscoveryJava {
@@ -533,10 +554,6 @@ object DataElementDiscoveryJava {
       taggedMemberInfo.put(key, reverseMap)
     }
 
-    // Header List
-    // rearranging this list will affect the ordering on audit-sources.json file
-    workbookResult += DataElementDiscoveryUtils.getHeaderList()
-
     // Construct the excel sheet and fill the data
     try {
       memberInfo.foreach {
@@ -699,7 +716,7 @@ object DataElementDiscoveryJava {
       case ex: Exception =>
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
-    workbookResult.toList
+    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils.updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
 
   case class CollectionMethodInfo(var methodDetail: String, var endpoint: String)
@@ -841,8 +858,6 @@ object DataElementDiscovery {
       taggedMemberInfo.put(key, reverseMap)
     }
 
-    // Header List
-    workbookResult += DataElementDiscoveryUtils.getHeaderList()
     // Construct the excel sheet and fill the data
     try {
       elementInfo.foreach {
@@ -976,6 +991,6 @@ object DataElementDiscovery {
       case ex: Exception =>
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
-    DataElementDiscoveryUtils.filterEntriesWithEmptyMemberName(workbookResult.toList)
+    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils.updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
 }

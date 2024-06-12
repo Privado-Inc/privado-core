@@ -41,37 +41,41 @@ object AuditReportEntryPoint {
     if (str == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) "" else str
 
   def createDataElementDiscoveryJson(dataElementDiscoveryData: List[List[String]], repoPath: String) = {
+    try {
+      val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
 
-    val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
+      for (item <- dataElementDiscoveryData.drop(1)) {
+        auditDataList += DataElementDiscoveryAudit(
+          eliminateEmptyCellValueIfExist(item(0)),
+          eliminateEmptyCellValueIfExist(item(1)),
+          if (item(2) == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) 0.0 else item(2).toDouble,
+          eliminateEmptyCellValueIfExist(item(3)),
+          eliminateEmptyCellValueIfExist(item(4)),
+          if (item(5) == "YES") true else false,
+          eliminateEmptyCellValueIfExist(item(6)),
+          if (item(5) == "YES") true else false,
+          eliminateEmptyCellValueIfExist(item(8)),
+          if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
 
-    for (item <- dataElementDiscoveryData.drop(1)) {
-      auditDataList += DataElementDiscoveryAudit(
-        eliminateEmptyCellValueIfExist(item(0)),
-        eliminateEmptyCellValueIfExist(item(1)),
-        if (item(2) == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) 0.0 else item(2).toDouble,
-        eliminateEmptyCellValueIfExist(item(3)),
-        eliminateEmptyCellValueIfExist(item(4)),
-        if (item(5) == "YES") true else false,
-        eliminateEmptyCellValueIfExist(item(6)),
-        if (item(5) == "YES") true else false,
-        eliminateEmptyCellValueIfExist(item(8)),
-        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+          // Line number
+          if (item.size >= 11) eliminateEmptyCellValueIfExist(item(10)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
 
-        // Line number
-        if (item.size >= 11) eliminateEmptyCellValueIfExist(item(10)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+          // variable identifier
+          if (item.size >= 12) eliminateEmptyCellValueIfExist(item(11)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
 
-        // variable identifier
-        if (item.size >= 12) eliminateEmptyCellValueIfExist(item(11)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-
-        // variable type
-        if (item.size >= 13) eliminateEmptyCellValueIfExist(item(12)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+          // variable type
+          if (item.size >= 13) eliminateEmptyCellValueIfExist(item(12)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+        )
+      }
+      JSONExporter.dataElementDiscoveryAuditFileExport(
+        AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
+        repoPath,
+        auditDataList.toList
       )
+    } catch {
+      case ex: Exception =>
+        println(f"Failed to create Data Element Discovery json ${ex}")
     }
-    JSONExporter.dataElementDiscoveryAuditFileExport(
-      AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
-      repoPath,
-      auditDataList.toList
-    )
 
   }
 
@@ -113,8 +117,9 @@ object AuditReportEntryPoint {
       case _ =>
         DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
+    println(dataElementDiscoveryData.size)
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
-
+    println("DOne writing createDataElementDiscoveryJson")
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
     // Changed Background colour when tagged
