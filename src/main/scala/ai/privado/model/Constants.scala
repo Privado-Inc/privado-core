@@ -131,6 +131,7 @@ object Constants {
   val egressUrlsFromCode            = "egressUrlsFromCode"
   val httpEndPointBasePaths         = "httpEndPointBasePaths"
   val outputFileName                = "privado.json"
+  val systemInfoFileName            = "systemInfo.json"
   val outputDirectoryName           = ".privado"
   val generatedConfigFolderName     = ".privado/config"
   val outputIntermediateFileName    = "intermediate.json"
