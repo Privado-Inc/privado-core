@@ -69,7 +69,8 @@ libraryDependencies ++= Seq(
   "org.zeromq"                       % "jeromq"                     % "0.5.4",
   "org.sangria-graphql"             %% "sangria"                    % "4.0.0",
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
-  "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests",
+  "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests" exclude("com.google.protobuf", "protobuf-java"),
+  "com.google.protobuf"              % "protobuf-java"              % "3.19.6",
   scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
 )
 
