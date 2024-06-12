@@ -241,7 +241,9 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = allowedCharLimit)
+      val _lineNumber: Integer = if (fileName.endsWith(".cs")) node.lineNumber.get + 1 else node.lineNumber.get
+      val _columnNumber: Int   = if (fileName.endsWith(".cs")) node.columnNumber.get + 1 else node.columnNumber.get
+      val excerpt = dump(absoluteFileName, Option(_lineNumber), message, allowedCharLimit = allowedCharLimit)
       // Get the actual filename
       val actualFileName = {
         if (appCache.isLombokPresent)
@@ -256,15 +258,15 @@ object ExporterUtility {
           Some(
             DataFlowSubCategoryPathExcerptModel(
               sample,
-              lineNumber,
-              columnNumber,
+              _lineNumber,
+              _columnNumber,
               actualFileName,
               excerpt,
               Some(argumentList)
             )
           )
         case None =>
-          Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+          Some(DataFlowSubCategoryPathExcerptModel(sample, _lineNumber, _columnNumber, actualFileName, excerpt))
       }
     }
   }
@@ -523,12 +525,15 @@ object ExporterUtility {
                 s"${appCache.scanPath}/$fileName"
             }
 
+            val _lineNumber: Integer = if (fileName.endsWith(".cs")) node.lineNumber.get + 1 else node.lineNumber.get
+            val _columnNumber: Int =
+              if (fileName.endsWith(".cs")) node.columnNumber.get + 1 else node.columnNumber.get
             DataFlowSubCategoryPathExcerptModel(
               node.code,
-              node.lineNumber.get,
-              node.columnNumber.get,
+              _lineNumber,
+              _columnNumber,
               fileName,
-              Utilities.dump(absoluteFileName, node.lineNumber, excerptStartLine = -1, excerptEndLine = 1)
+              Utilities.dump(absoluteFileName, Option(_lineNumber), excerptStartLine = -1, excerptEndLine = 1)
             )
           })
           .asJson
