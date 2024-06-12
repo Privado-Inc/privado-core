@@ -34,10 +34,10 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "kotlin2cpg"    % Versions.joern,
+  "io.joern"             %% "kotlin2cpg"    % Versions.joern exclude("com.squareup.okhttp3", "okhttp"),
   "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "csharpsrc2cpg" % Versions.joern,
-  "io.joern"             %% "joern-cli"     % Versions.joern,
+  "io.joern"             %% "joern-cli"     % Versions.joern exclude ("io.undertow", "undertow-core"),
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
   "org.scalatest"        %% "scalatest"     % "3.2.16"       % Test,
@@ -71,6 +71,9 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
   "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests" exclude("com.google.protobuf", "protobuf-java"),
   "com.google.protobuf"              % "protobuf-java"              % "3.19.6",
+  "io.undertow"                      % "undertow-core"              % "2.3.13.Final" exclude("org.jboss.xnio", "xnio-api"),
+  "org.jboss.xnio"                   % "xnio-api"                   % "3.8.14.Final",
+  "com.squareup.okhttp3"             % "okhttp"                     % "4.9.2",
   scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
 )
 
