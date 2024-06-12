@@ -4,6 +4,7 @@ import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
@@ -11,7 +12,7 @@ import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
@@ -23,14 +24,70 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.slf4j.LoggerFactory
+import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+
+
+class PythonProcessor(
+                       ruleCache: RuleCache,
+                       privadoInput: PrivadoInput,
+                       sourceRepoLocation: String,
+                       dataFlowCache: DataFlowCache,
+                       auditCache: AuditCache,
+                       s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+                       appCache: AppCache,
+                       returnClosedCpg: Boolean = true,
+                       propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+                       databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+                     ) extends BaseProcessor(
+  ruleCache,
+  privadoInput,
+  sourceRepoLocation,
+  Language.PYTHON,
+  dataFlowCache,
+  auditCache,
+  s3DatabaseDetailsCache,
+  appCache,
+  returnClosedCpg,
+  databaseDetailsCache,
+  propertyFilterCache
+) {
+
+  override val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
+  override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
+    val passesList = List(new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput))
+
+    passesList ++ List({
+      if (privadoInput.assetDiscovery) {
+        new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+        new PythonConfigPropertyPass(cpg)
+      } else {
+        new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON, propertyFilterCache)
+      }
+    }) ++ List(
+      new PythonPropertyLinkerPass(cpg),
+      new SQLParser(cpg, sourceRepoLocation, ruleCache),
+      new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache)
+    )
+  }
+
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
+  }
+
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
+
+  }
+}
 
 object PythonProcessor {
   private val logger = LoggerFactory.getLogger(getClass)

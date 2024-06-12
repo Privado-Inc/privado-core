@@ -33,7 +33,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     logger.info("Starting tagging")
 
-    LiteralTagger.tag(cpg, ruleCache)
+    new LiteralTagger.tag(cpg, ruleCache)
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 

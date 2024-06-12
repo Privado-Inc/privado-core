@@ -1,0 +1,24 @@
+package ai.privado.testfixtures
+
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, DatabaseDetailsCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.base.processor.BaseProcessor
+import ai.privado.model.Language
+
+class TestCpgWithPython(val fileSuffix: String, val  language: Language.Value) extends TestCpg {
+
+  protected def getLanguageProcessor(ruleCache: RuleCache, 
+                                     privadoInput: PrivadoInput, 
+                                     dataFlowCache: DataFlowCache, 
+                                     auditCache: AuditCache, 
+                                     s3DatabaseDetailsCache: S3DatabaseDetailsCache, 
+                                     appCache: AppCache, 
+                                     propertyFilterCache: PropertyFilterCache, 
+                                     databaseDetailsCache: DatabaseDetailsCache
+                                    ): BaseProcessor = PythonProcessor
+  
+}
+class PythonFrontendTestSuite(fileSuffix: String = ".py", language: Language.Value = Language.PYTHON) 
+  extends PrivadoBaseTestFixture(() => Tes)
+
+{}
