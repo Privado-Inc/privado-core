@@ -14,7 +14,8 @@ val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
-val circeVersion        = "0.14.2"
+val circeYamlVersion    = "1.15.0"
+val circeGenericVersion = "0.14.7"
 val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
 val goAstGenVersion     = "0.14.0"
@@ -41,11 +42,11 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
   "org.scalatest"        %% "scalatest"     % "3.2.16"       % Test,
-  "io.circe"             %% "circe-core"    % circeVersion,
-  "io.circe"             %% "circe-generic" % circeVersion,
-  "io.circe"             %% "circe-parser"  % circeVersion,
+  "io.circe"             %% "circe-core" % circeGenericVersion,
+  "io.circe"             %% "circe-generic" % circeGenericVersion,
+  "io.circe"              %% "circe-parser" % circeGenericVersion,
   // NOTE: circe-yaml currently only goes until 0.14.2 (Last checked 06/07/2023)
-  "io.circe"                        %% "circe-yaml"                 % circeVersion exclude ("org.yaml", "snakeyaml"),
+  "io.circe"                        %% "circe-yaml"                 % circeYamlVersion exclude ("org.yaml", "snakeyaml"),
   "com.lihaoyi"                     %% "upickle"                    % Versions.upickle,
   "com.lihaoyi"                     %% "requests"                   % Versions.requests,
   "org.scala-lang.modules"          %% "scala-xml"                  % "2.1.0",
@@ -61,7 +62,7 @@ libraryDependencies ++= Seq(
   "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
   "org.apache.maven"                 % "maven-model"                % "3.9.0",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
-  "org.yaml"                         % "snakeyaml"                  % "2.0",
+  "org.yaml"                         % "snakeyaml"                  % "2.2",
   "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
   "org.scala-lang"                   % "scala-compiler"             % "2.13.8",
   "com.iheart"                      %% "ficus"                      % "1.5.2" exclude ("com.typesafe", "config"),
