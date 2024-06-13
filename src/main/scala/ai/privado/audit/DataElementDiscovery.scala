@@ -65,14 +65,15 @@ object DataElementDiscoveryUtils {
       case _            => ""
     }
 
-  def getSourceRuleId(node: TypeDecl| Member | MethodParameterIn | Identifier | Local | FieldIdentifier): String = {
+  def getSourceRuleId(node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier): String = {
     // Extract the source rule ID, defaulting to AUDIT_EMPTY_CELL_VALUE if not found
-    val sourceRuleId = node.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+    val sourceRuleId =
+      node.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
 
     // Determine if tagging is disabled by DED
     val taggingDisabledByDED = node.tag.nameExact(InternalTag.TAGGING_DISABLED_BY_DED.toString).nonEmpty
 
-    if (taggingDisabledByDED)  {
+    if (taggingDisabledByDED) {
       AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
     } else {
       sourceRuleId
@@ -127,7 +128,7 @@ object DataElementDiscoveryUtils {
         DataElementDiscoveryUtils.getNodeLocationAndUniqueId(identifier, identifier.name, nodeType)
 
       val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
-      val sourceRuleId = DataElementDiscoveryUtils.getSourceRuleId(identifier)
+      val sourceRuleId        = DataElementDiscoveryUtils.getSourceRuleId(identifier)
 
       if (
         identifier.name.nonEmpty && !identifier.name
@@ -193,7 +194,7 @@ object DataElementDiscoveryUtils {
       val (path, lineNumber, nodeUniqueId) =
         DataElementDiscoveryUtils.getNodeLocationAndUniqueId(idenfier, idenfier.canonicalName, nodeType)
       val localsUniqueKey = s"NA$path${idenfier.canonicalName}"
-      val sourceRuleId = DataElementDiscoveryUtils.getSourceRuleId(idenfier)
+      val sourceRuleId    = DataElementDiscoveryUtils.getSourceRuleId(idenfier)
 
       if (
         idenfier.canonicalName.nonEmpty && !idenfier.canonicalName
@@ -732,7 +733,8 @@ object DataElementDiscoveryJava {
       case ex: Exception =>
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
-    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils.updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
+    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils
+      .updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
 
   case class CollectionMethodInfo(var methodDetail: String, var endpoint: String)
@@ -1007,6 +1009,7 @@ object DataElementDiscovery {
       case ex: Exception =>
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
-    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils.updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
+    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils
+      .updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
 }
