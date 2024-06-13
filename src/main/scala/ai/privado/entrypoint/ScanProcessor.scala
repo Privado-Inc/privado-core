@@ -453,8 +453,9 @@ object ScanProcessor extends CommandProcessor {
         )
       case Language.GO =>
         println(s"${Calendar.getInstance().getTime} - Detected language 'Go'")
-        GoProcessor.createGoCpg(
+        new GoProcessor(
           getProcessedRule(Set(Language.GO), appCache),
+          this.config,
           sourceRepoLocation,
           dataFlowCache = getDataflowCache,
           auditCache,
