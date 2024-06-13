@@ -22,6 +22,7 @@
 
 package ai.privado.entrypoint
 
+import ai.privado.entrypoint
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language
 import io.circe.syntax.EncoderOps
@@ -64,7 +65,12 @@ case class PrivadoInput(
 )
 
 object CommandConstants {
-  val SCAN                                         = "scan"
+  val SCAN        = "scan"
+  val VALIDATE    = "validate"
+  val UPLOAD      = "upload"
+  val UPLOAD_ABBR = "u"
+  val METADATA    = "metadata"
+
   val INTERNAL_CONFIG                              = "internal-config"
   val INTERNAL_CONFIG_ABBR                         = "ic"
   val EXTERNAL_CONFIG                              = "external-config"
@@ -93,11 +99,8 @@ object CommandConstants {
   val ENABLE_API_BY_PARAMETER_ABBR                 = "eabyp"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
-  val UPLOAD                                       = "upload"
-  val UPLOAD_ABBR                                  = "u"
   val SKIP_UPLOAD                                  = "skip-upload"
   val SKIP_UPLOAD_ABBR                             = "su"
-  val VALIDATE                                     = "validate"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
   val TEST_OUTPUT                                  = "test-output"
@@ -126,7 +129,8 @@ object CommandParser {
     Map(
       CommandConstants.SCAN     -> ScanProcessor,
       CommandConstants.UPLOAD   -> UploadProcessor,
-      CommandConstants.VALIDATE -> RuleValidator
+      CommandConstants.VALIDATE -> RuleValidator,
+      CommandConstants.METADATA -> MetadataProcessor
     )
   def parse(args: Array[String]): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
@@ -316,6 +320,20 @@ object CommandParser {
           .required()
           .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.UPLOAD))
           .text("Uploads the result file to Privado.ai UI dashboard.")
+          .children(
+            arg[String]("<Source directory>")
+              .required()
+              .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
+              .text("Source code location"),
+            checkConfig(c =>
+              if (c.cmd.isEmpty) failure("")
+              else success
+            )
+          ),
+        cmd(CommandConstants.METADATA)
+          .required()
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.METADATA))
+          .text("Generate metadata for the repository")
           .children(
             arg[String]("<Source directory>")
               .required()
