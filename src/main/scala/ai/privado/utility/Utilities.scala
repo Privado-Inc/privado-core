@@ -221,6 +221,7 @@ object Utilities {
     allowedCharLimit: Option[Int] = None
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
+
     try {
       if (!filename.equals("<empty>")) {
         val lines = File(filename).lines.toList

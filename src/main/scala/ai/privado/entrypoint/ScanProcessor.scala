@@ -32,6 +32,7 @@ import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
 import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
+import ai.privado.metadata.SystemInfo
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.{Language, UNKNOWN}
@@ -354,6 +355,7 @@ object ScanProcessor extends CommandProcessor {
     if (!File(config.sourceLocation.head).isWritable) {
       println(s"Warning: Privado doesn't have write permission on give repo location - ${config.sourceLocation.head}")
     }
+    SystemInfo.getInfo
     processCpg(appCache)
   }
 
