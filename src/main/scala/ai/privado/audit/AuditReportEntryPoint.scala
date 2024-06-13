@@ -117,9 +117,7 @@ object AuditReportEntryPoint {
       case _ =>
         DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
-    println(dataElementDiscoveryData.size)
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
-    println("DOne writing createDataElementDiscoveryJson")
     createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
     // Changed Background colour when tagged

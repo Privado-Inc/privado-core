@@ -22,21 +22,21 @@ object DataElementDiscoveryUtils {
 
   // Regular expression pattern to filter common language types
   private val filterCommonLangTypes =
-    "(?i)(class|window|str|list|dict|bool|boolean|number|bigdecimal|let|define|enum|asttype|nil|null|none|java|undefined|nan|empty|objectid|_id|tostring|valueof|json|mime|true|false|before|after|arr|typeof|match|to_dict|toarray|todate|case|<global>|<fakeNew>|(array|int|num|type|float|byte|string|blob).{0,1}|set|map|hashmap|vector|deque|function|method|property|char|short|long|double|decimal|datetime|date|time|timestamp|enum|flag|void|interface|trait|package|namespace|record|tuple|struct|component|hook|hoc|service)"
+    "(?i)(class|window|str|list|dict|bool|chr|icon|boolean|number|bigdecimal|let|define|enum|asttype|nil|null|none|java|undefined|nan|empty|objectid|_id|tostring|valueof|json|mime|true|false|before|after|arr|typeof|match|to_dict|toarray|todate|case|<global>|<fakeNew>|(buf|array|int|num|type|float|byte|string|blob).{0,1}|set|map|hashmap|vector|deque|function|method|property|char|short|long|double|decimal|datetime|date|time|timestamp|enum|flag|void|interface|trait|package|namespace|record|tuple|struct|component|hook|hoc|service)"
   // Regular expression pattern to filter common variable names
   private val filterCommonVars =
     "(?i)(cls|self|ctx|constructor|prototype|main|use|foreach|copy|skip|replace|slice|fill|some|every|concat|contains|apply|merge|stmt|format|name|data|regexp|.{0,1}(sort|in|slug|match|ne|regex|or|sum|and)|session|status|event|env|cmd|push|join|split|splice|filter|reduce|shift|unshift|retry|start|buffer|thread|length|staticmethod|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|info|debug|warning|critical|exception|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log|key|value|include|load|dump).{0,1})"
 
   // List of prefixes to filter out common variables that start with these values
   private val filterCommonVarsStartsWith =
-    "$obj|$group|$set|__|_tmp_|tmp|$iterLocal|file|is|sha_|this|get|set|post|put|update|create|clear|check|find|insert|assert|parse|generate|validate|process|download|upload|delete|handle|param|attr|arg|_iterator|{|log|error|iterator|logger|<tmp-|iter_tmp|toLocale|indexOf"
+    "$obj|$group|$set|__|_tmp_|tmp|$iterLocal|_result|file|is|sha_|this|get|set|post|put|update|create|clear|check|find|insert|assert|parse|generate|validate|process|download|upload|delete|handle|param|attr|arg|_iterator|{|log|error|iterator|logger|<tmp-|iter_tmp|toLocale|indexOf"
   private val filterCommonVarsStartsWithArr = filterCommonVarsStartsWith.split("\\|")
 
   // Additional Language specific filters
   def getLanguageSpecificFilters(lang: Language): String = {
     lang match {
       case Language.JAVASCRIPT =>
-        "(?i)(axios|require|express|moment|hasOwnProperty|date|usestate|useeffect|dispatch|ngif|ngforof|inject|component|router|validators|formgroup|formcontrol|subscribe|observable|jquery|vue|react|angular)"
+        "(?i)(i18n|ajv|axios|require|express|moment|document|hasOwnProperty|date|usestate|useeffect|dispatch|ngif|ngforof|inject|component|router|validators|formgroup|formcontrol|subscribe|observable|jquery|vue|react|angular)"
       case Language.PYTHON =>
         "(?i)(print|boto.{0,1}|s3|requests|append|extend|list_objects.{0,6}|pytest|datetime|pandas|numpy|scipy|sklearn|matplotlib|flask|django|argparse|os|sys)"
       case Language.JAVA | Language.KOTLIN =>
@@ -64,6 +64,20 @@ object DataElementDiscoveryUtils {
       case Some(offset) => offset.toString
       case _            => ""
     }
+
+  def getSourceRuleId(node: TypeDecl| Member | MethodParameterIn | Identifier | Local | FieldIdentifier): String = {
+    // Extract the source rule ID, defaulting to AUDIT_EMPTY_CELL_VALUE if not found
+    val sourceRuleId = node.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+
+    // Determine if tagging is disabled by DED
+    val taggingDisabledByDED = node.tag.nameExact(InternalTag.TAGGING_DISABLED_BY_DED.toString).nonEmpty
+
+    if (taggingDisabledByDED)  {
+      AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+    } else {
+      sourceRuleId
+    }
+  }
 
   def getNodeLocationAndUniqueId(
     node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier,
@@ -96,6 +110,8 @@ object DataElementDiscoveryUtils {
           .filter(i => !i.name.matches(filterCommonVars))
           // Filter out identifiers matching language-specific filters
           .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
+          // Filter out identifier which are potentially function calls
+          .filter(i => !i.typeFullName.matches("\\(.*\\).=>.*"))
           .l
       }
       case Failure(ex) => {
@@ -111,8 +127,7 @@ object DataElementDiscoveryUtils {
         DataElementDiscoveryUtils.getNodeLocationAndUniqueId(identifier, identifier.name, nodeType)
 
       val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
-      val sourceRuleId =
-        identifier.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+      val sourceRuleId = DataElementDiscoveryUtils.getSourceRuleId(identifier)
 
       if (
         identifier.name.nonEmpty && !identifier.name
@@ -162,6 +177,8 @@ object DataElementDiscoveryUtils {
           .filter(i => !i.canonicalName.matches(filterCommonVars))
           // Filter out identifiers matching language-specific filters
           .filter(i => !i.canonicalName.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
+          // Filter out fieldIdentifiers like `session` of format `res.session.XXX`
+          .whereNot(_.astParent.astParent.isCall.name("<operator>.fieldAccess"))
           .l
       }
       case Failure(ex) => {
@@ -176,9 +193,8 @@ object DataElementDiscoveryUtils {
       val (path, lineNumber, nodeUniqueId) =
         DataElementDiscoveryUtils.getNodeLocationAndUniqueId(idenfier, idenfier.canonicalName, nodeType)
       val localsUniqueKey = s"NA$path${idenfier.canonicalName}"
-      val sourceRuleId =
-        idenfier.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
-      // TODO: sourceRuleId not getting populated
+      val sourceRuleId = DataElementDiscoveryUtils.getSourceRuleId(idenfier)
+
       if (
         idenfier.canonicalName.nonEmpty && !idenfier.canonicalName
           .matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX) && !idenfier.canonicalName
@@ -614,7 +630,7 @@ object DataElementDiscoveryJava {
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
-                    ruleMemberInfo.getOrElse(member.name, "Default value"),
+                    ruleMemberInfo.getOrElse(member.name, ""),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
@@ -903,7 +919,7 @@ object DataElementDiscovery {
                     member.name,
                     member.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
-                    ruleMemberInfo.getOrElse(member.name, "Default value"),
+                    ruleMemberInfo.getOrElse(member.name, ""),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
@@ -946,7 +962,7 @@ object DataElementDiscovery {
                     param.name,
                     param.typeFullName,
                     AuditReportConstants.AUDIT_CHECKED_VALUE,
-                    ruleMemberInfo.getOrElse(param.name, "Default value"),
+                    ruleMemberInfo.getOrElse(param.name, ""),
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
                     AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
