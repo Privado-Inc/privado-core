@@ -61,7 +61,7 @@ libraryDependencies ++= Seq(
   "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
   "org.apache.maven"                 % "maven-model"                % "3.9.0",
   "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
-  "org.yaml"                         % "snakeyaml"                  % "1.33",
+  "org.yaml"                         % "snakeyaml"                  % "2.0",
   "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
   "org.scala-lang"                   % "scala-compiler"             % "2.13.8",
   "com.iheart"                      %% "ficus"                      % "1.5.2" exclude ("com.typesafe", "config"),
@@ -71,7 +71,7 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
   "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests" exclude("com.google.protobuf", "protobuf-java"),
   "com.google.protobuf"              % "protobuf-java"              % "3.19.6",
-  "io.undertow"                      % "undertow-core"              % "2.3.12.Final" exclude("org.jboss.xnio", "xnio-api"),
+  "io.undertow"                      % "undertow-core"              % "2.3.13.Final" exclude("org.jboss.xnio", "xnio-api"),
   "org.jboss.xnio"                   % "xnio-api"                   % "3.8.14.Final",
   "com.squareup.okhttp3"             % "okhttp"                     % "4.9.2",
   scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
