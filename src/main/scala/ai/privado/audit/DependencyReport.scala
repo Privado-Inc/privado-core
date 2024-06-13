@@ -45,7 +45,7 @@ object DependencyReport {
     ) ++ workbookResult.groupBy(_.head).values.flatMap(identity).toList
   }
 
-  def getDependencyList(xtocpg: Try[Cpg]): Set[ModuleDependency] = {
+  def getDependencyList(xtocpg: Try[Cpg]): mutable.HashSet[ModuleDependency] = {
     val dependencies = new mutable.HashSet[ModuleDependency]()
 
     xtocpg match {
@@ -61,7 +61,7 @@ object DependencyReport {
         println(exception.printStackTrace())
       }
     }
-    dependencies.toSet
+    dependencies
   }
 
   private def getDependencyCategory(moduleDependency: ModuleDependency): Set[RuleCategoryInfo] = {

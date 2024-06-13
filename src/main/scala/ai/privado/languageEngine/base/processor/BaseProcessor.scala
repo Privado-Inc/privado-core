@@ -28,11 +28,13 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.javasrc2cpg.Config
 import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.Calendar
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 abstract class BaseProcessor(
@@ -206,16 +208,27 @@ abstract class BaseProcessor(
   protected def auditReportExport(cpg: Cpg, taggerCache: TaggerCache): Either[String, Unit] = {
     // Exporting the Audit report
     if (privadoInput.generateAuditReport) {
-      val moduleCache: ModuleCache = new ModuleCache()
-      new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
-      new DependenciesNodePass(cpg, moduleCache).createAndApply()
-      // Fetch all dependency after pass
-      val dependencies = DependencyReport.getDependencyList(Success(cpg))
-      new DependenciesCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
+      var dependencies = new mutable.HashSet[ModuleDependency]()
+      if (lang == Language.JAVA || lang == Language.KOTLIN) {
+        val moduleCache: ModuleCache = new ModuleCache()
+        new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
+        new DependenciesNodePass(cpg, moduleCache).createAndApply()
+        // Fetch all dependency after pass
+        dependencies = DependencyReport.getDependencyList(Success(cpg))
+        new DependenciesCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
+      }
       ExcelExporter.auditExport(
         outputAuditFileName,
         AuditReportEntryPoint
-          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache, lang),
+          .getAuditWorkbook(
+            Success(cpg),
+            taggerCache,
+            dependencies.toSet,
+            sourceRepoLocation,
+            auditCache,
+            ruleCache,
+            lang
+          ),
         sourceRepoLocation
       ) match {
         case Left(err) =>
@@ -274,8 +287,13 @@ abstract class BaseProcessor(
   protected def reportUnresolvedMethods(cpg: Cpg, lang: Language): Unit = {
     // Unresolved function report
     if (privadoInput.showUnresolvedFunctionsReport) {
-      val path = s"${privadoInput.sourceLocation.head}/$outputDirectoryName"
-      UnresolvedReportUtility.reportUnresolvedMethods(Success(cpg), path, lang)
+      try {
+        val path = s"${privadoInput.sourceLocation.head}/$outputDirectoryName"
+        UnresolvedReportUtility.reportUnresolvedMethods(Success(cpg), path, lang)
+      } catch {
+        case ex: Exception =>
+          println(f"Failed to unresolved methods report: ${ex}")
+      }
     }
   }
 

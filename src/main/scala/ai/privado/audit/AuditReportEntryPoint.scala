@@ -1,6 +1,7 @@
 package ai.privado.audit
 
 import ai.privado.cache.{AuditCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.TimeMetric
 import ai.privado.exporter.JSONExporter
 import ai.privado.model.Language
 import ai.privado.model.Language.Language
@@ -11,6 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
 
+import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
@@ -111,6 +113,7 @@ object AuditReportEntryPoint {
     dependencies: Set[ModuleDependency] = Set()
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
+    println(s"${Calendar.getInstance().getTime} - Audit sources report generation started...")
     val dataElementDiscoveryData = lang match {
       case Language.JAVA | Language.KOTLIN =>
         DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
@@ -120,38 +123,47 @@ object AuditReportEntryPoint {
         DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
-    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
-    // Changed Background colour when tagged
-    changeTaggedBackgroundColour(workbook, List(4, 6))
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
-      DataFlowReport.processDataFlowAudit(auditCache)
-    )
+    try {
+      createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
-
-    if (lang == Language.JAVA || lang == Language.KOTLIN) {
-      // Set Unresolved flow into Sheet
+      // Changed Background colour when tagged
+      changeTaggedBackgroundColour(workbook, List(4, 6))
       createSheet(
         workbook,
-        AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-        UnresolvedFlowReport.processUnresolvedFlow(auditCache)
+        AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
+        DataFlowReport.processDataFlowAudit(auditCache)
       )
 
-      // Set Dependency Report data into Sheet
-      createSheet(
-        workbook,
-        AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
-        DependencyReport.processDependencyAudit(dependencies)
-      )
+      createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
+
+      createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
+
+      createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
+
+      if (lang == Language.JAVA || lang == Language.KOTLIN) {
+        // Set Unresolved flow into Sheet
+        createSheet(
+          workbook,
+          AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
+          UnresolvedFlowReport.processUnresolvedFlow(auditCache)
+        )
+
+        // Set Dependency Report data into Sheet
+        createSheet(
+          workbook,
+          AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
+          DependencyReport.processDependencyAudit(dependencies)
+        )
+      }
+    } catch {
+      case ex: Exception =>
+        println(f"Failed to create excel sheets: ${ex}")
     }
 
+    println(
+      s"${TimeMetric.getNewTime()} - Audit sources report generation is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+    )
     workbook
   }
 

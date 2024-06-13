@@ -13,7 +13,7 @@ import scala.util.Try
 class DependencyReportTest extends DependencyReportTestBase {
 
   override val javaFileContentMap: Map[String, String] = getContent()
-  var dependencies: Set[ModuleDependency]              = Set.empty
+  var dependencies                                     = new mutable.HashSet[ModuleDependency]()
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -50,7 +50,7 @@ class DependencyReportTest extends DependencyReportTestBase {
 
   "Test final Result" in {
     val dependencySet  = new mutable.HashSet[String]()
-    val workbookResult = DependencyReport.processDependencyAudit(dependencies)
+    val workbookResult = DependencyReport.processDependencyAudit(dependencies.toSet)
 
     workbookResult.size shouldBe 6
 
@@ -67,7 +67,7 @@ class DependencyReportTest extends DependencyReportTestBase {
     val dependencyProcessedMap = new mutable.HashMap[String, String]()
     val dependencyRuleMap      = new mutable.HashMap[String, String]()
 
-    val workflowResult = DependencyReport.processDependencyAudit(dependencies)
+    val workflowResult = DependencyReport.processDependencyAudit(dependencies.toSet)
 
     workflowResult.foreach(row => {
       dependencyCategoryMap.put(row(1), row(4))
