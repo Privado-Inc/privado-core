@@ -107,9 +107,10 @@ object ThreatUtility {
     excerptPostfix: String = ""
   ): DataFlowSubCategoryPathExcerptModel = {
 
-    val lineNumber = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
-    val excerpt    = Utilities.dump(filename, Some(lineNumber), "") + "\n" + excerptPostfix + "\n"
-    DataFlowSubCategoryPathExcerptModel(sample, lineNumber, -1, filename, excerpt)
+    val lineNumber        = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
+    val _lineNumberToDump = if (filename.endsWith(".cs")) lineNumber + 1 else lineNumber
+    val excerpt           = Utilities.dump(filename, Some(_lineNumberToDump), "") + "\n" + excerptPostfix + "\n"
+    DataFlowSubCategoryPathExcerptModel(sample, _lineNumberToDump, -1, filename, excerpt)
   }
 
   def getOccurrenceObjectWithCustomExcerpt(
@@ -118,8 +119,9 @@ object ThreatUtility {
     filename: String,
     excerptPostfix: String = ""
   ): DataFlowSubCategoryPathExcerptModel = {
-    val lineNumber = getLineNumberOfMatchingEditText(filename, sample)
-    DataFlowSubCategoryPathExcerptModel(sample, lineNumber, -1, filename, excerpt + "\n" + excerptPostfix + "\n")
+    val lineNumber        = getLineNumberOfMatchingEditText(filename, sample)
+    val _lineNumberToDump = if (filename.endsWith(".cs")) lineNumber + 1 else lineNumber
+    DataFlowSubCategoryPathExcerptModel(sample, _lineNumberToDump, -1, filename, excerpt + "\n" + excerptPostfix + "\n")
   }
 
   def getSourceNode(cpg: Cpg, sourceId: String): Option[(String, CfgNode)] = {
