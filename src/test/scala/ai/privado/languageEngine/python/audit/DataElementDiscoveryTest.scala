@@ -30,15 +30,6 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
   }
 
   "DataElementDiscovery" should {
-    "Test discovery of class name in codebase" in {
-      val classNameList = DataElementDiscoveryUtils.getSourceUsingRules(Try(cpg))
-
-      classNameList should contain("User.py:<module>.User")
-      classNameList should contain("Account.py:<module>.Account")
-      classNameList should contain("Address.py:<module>.Address")
-      classNameList should not contain ("NonExistent.py:<module>.NonExistent")
-    }
-
     "Test class member variable" in {
       val classList = List("User.py:<module>.User", "Account.py:<module>.Account")
 
@@ -91,11 +82,11 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
       })
 
-      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "4", "Member")
-      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "4", "Member")
+      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "4", "FieldIdentifier")
+      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "4", "FieldIdentifier")
       memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "3", "Method Parameter")
-      memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "4", "Member")
-      memberLineNumberAndTypeMapping("hNo") shouldBe (/* line number */ "6", "Method Parameter")
+      memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "4", "FieldIdentifier")
+      memberLineNumberAndTypeMapping("hNo") shouldBe (/* line number */ "3", "Method Parameter")
       memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
 
       // Validate class name in result

@@ -113,17 +113,18 @@ object AuditReportEntryPoint {
     dependencies: Set[ModuleDependency] = Set()
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
-    println(s"${Calendar.getInstance().getTime} - Audit sources report generation started...")
+    println(s"${Calendar.getInstance().getTime} - Audit report generation started...")
     val dataElementDiscoveryData = lang match {
       case Language.JAVA | Language.KOTLIN =>
-        DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
+        DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
       case Language.RUBY =>
         DataElementDiscovery.processDataElementDiscoveryForIdentifierAndFieldIdentfier(xtocpg, lang)
       case _ =>
         DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
+    println(s"No of sources after dedup: ${dataElementDiscoveryData.size}")
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
-
+    println(s"${Calendar.getInstance().getTime} - Audit Sources COMPLETED...")
     try {
       createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
@@ -162,7 +163,7 @@ object AuditReportEntryPoint {
     }
 
     println(
-      s"${TimeMetric.getNewTime()} - Audit sources report generation is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
+      s"${TimeMetric.getNewTime()} - Audit report generation is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
     )
     workbook
   }
