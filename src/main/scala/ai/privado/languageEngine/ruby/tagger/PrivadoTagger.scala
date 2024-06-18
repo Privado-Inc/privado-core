@@ -73,7 +73,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new IdentifierDerivedTagger(cpg, ruleCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
-    new APITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache).createAndApply()
+    new APITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache, statsRecorder).createAndApply()
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
