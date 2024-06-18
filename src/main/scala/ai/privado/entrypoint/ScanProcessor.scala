@@ -463,7 +463,7 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache,
           databaseDetailsCache = databaseDetailsCache
-        )
+        ).processCpg()
       case Language.KOTLIN =>
         println(s"${Calendar.getInstance().getTime} - Detected language 'Kotlin'")
         new KotlinProcessor(
