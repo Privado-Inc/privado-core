@@ -11,7 +11,7 @@ import ai.privado.cache.{
   S3DatabaseDetailsCache,
   TaggerCache
 }
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
@@ -52,10 +52,10 @@ class KotlinProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  statsRecorder: StatsRecorder
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
-  propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,

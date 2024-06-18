@@ -55,7 +55,7 @@ class DefaultProcessor(
   appCache: AppCache,
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,

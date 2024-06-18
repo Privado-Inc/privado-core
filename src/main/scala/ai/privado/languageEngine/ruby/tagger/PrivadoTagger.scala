@@ -24,7 +24,7 @@
 package ai.privado.languageEngine.ruby.tagger
 
 import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
 import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}

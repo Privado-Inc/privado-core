@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.{Calendar, Date}
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
+
 object StatsRecorder {
   // Default record frequency for performance stats in milliseconds.
   val DEFAULT_RECORD_FREQ = 1000 // in milliseconds - 1 second.

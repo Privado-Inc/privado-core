@@ -26,7 +26,7 @@ package ai.privado.languageEngine.ruby.processor
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.exporter.monolith.MonolithExporter
 import ai.privado.languageEngine.ruby.passes.*
@@ -67,6 +67,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import ai.privado.dataflow.Dataflow
 
 import java.util
 import java.util.Calendar
@@ -85,9 +86,10 @@ class RubyProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  statsRecorder: StatsRecorder
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 
   private val logger    = LoggerFactory.getLogger(getClass)
@@ -231,7 +233,7 @@ class RubyProcessor(
             }
           }
 
-          val result = JSONExporter.fileExport(
+          JSONExporter.fileExport(
             cpg,
             outputFileName,
             sourceRepoLocation,
@@ -255,8 +257,13 @@ class RubyProcessor(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
           }
-          statsRecorder.endLastStage()
-          result
+
+          // Check if any of the export failed
+          if (errorMsg.toList.isEmpty)
+            Right(())
+          else
+            Left(errorMsg.toList.mkString("\n"))
+
         } catch {
           case ex: Exception =>
             logger.error("Error while processing the CPG after source code parsing ", ex)
@@ -407,15 +414,15 @@ class RubyProcessor(
               finalResult += Await.result(result, privadoInput.rubyParserTimeout.seconds)
             } catch {
               case ex: TimeoutException =>
-                println(s"${TimeMetric.getNewTime()} - Parser timed out for file -> '${task.file}'")
+                statsRecorder.justLogMessage(s"Parser timed out for file -> '${task.file}'")
                 timeoutFileCount += 1
               case ex: Exception =>
-                println(s"${TimeMetric.getNewTime()} - Error while parsing file -> '${task.file}'")
+                statsRecorder.justLogMessage(s"Error while parsing file -> '${task.file}'")
                 errorFileCount += 1
             }
           }
-          println(s"${TimeMetric.getNewTime()} - No of files skipped because of timeout - '$timeoutFileCount'")
-          println(s"${TimeMetric.getNewTime()} - No of files that are skipped because of error - '$errorFileCount'")
+          statsRecorder.justLogMessage(s"No of files skipped because of timeout - '$timeoutFileCount'")
+          statsRecorder.justLogMessage(s"No of files that are skipped because of error - '$errorFileCount'")
           finalResult.toList
         }
 

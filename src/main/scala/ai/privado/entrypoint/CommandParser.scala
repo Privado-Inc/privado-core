@@ -64,7 +64,7 @@ case class PrivadoInput(
   assetDiscovery: Boolean = false,
   forceLanguage: Language.Language = Language.UNKNOWN,
   threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
-  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT
+  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
   rubyParserTimeout: Long = 120
 )
 

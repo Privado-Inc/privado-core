@@ -54,10 +54,10 @@ class PhpProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  statsRecorder: StatsRecorder
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,

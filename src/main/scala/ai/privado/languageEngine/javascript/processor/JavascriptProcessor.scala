@@ -65,7 +65,7 @@ class JavascriptProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -119,7 +119,6 @@ class JavascriptProcessor(
     statsRecorder.justLogMessage("Processing source code using Javascript engine")
     statsRecorder.initiateNewStage("Base source processing")
 
-
     createCpgFolder(sourceRepoLocation)
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
@@ -130,10 +129,7 @@ class JavascriptProcessor(
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
 
     val xtocpg = new JsSrc2Cpg().createCpg(cpgConfig).map { cpg =>
-      println(
-        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
-
+      statsRecorder.endLastStage()
       applyDefaultOverlays(cpg)
       cpg
     }

@@ -41,9 +41,10 @@ class PythonProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  statsRecorder: StatsRecorder
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -89,24 +90,11 @@ class PythonProcessor(
           statsRecorder.endLastStage()
           statsRecorder.setSupressSubstagesFlag(false)
 
-<<<<<<< stats-logging
           statsRecorder.initiateNewStage("Privado source passes")
+
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
-//          if (privadoInput.assetDiscovery) {
-//            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
-//              .createAndApply()
-//            new PythonConfigPropertyPass(cpg).createAndApply()
-//          } else
-//            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON, propertyFilterCache)
-//              .createAndApply()
-//
-//          new PythonPropertyLinkerPass(cpg).createAndApply()
-//
-//          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-//          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-//          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
-=======
+
           if (privadoInput.assetDiscovery) {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
               .createAndApply()
@@ -120,7 +108,6 @@ class PythonProcessor(
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
           new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache).createAndApply()
->>>>>>> dev
 
           // Unresolved function report
           if (privadoInput.showUnresolvedFunctionsReport) {
@@ -131,9 +118,6 @@ class PythonProcessor(
           // Run tagger
           statsRecorder.initiateNewStage("Tagger ...")
           val taggerCache = new TaggerCache
-<<<<<<< stats-logging
-          cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
-=======
           cpg.runTagger(
             ruleCache,
             taggerCache,
@@ -142,10 +126,8 @@ class PythonProcessor(
             appCache,
             databaseDetailsCache
           )
-          println(
-            s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
->>>>>>> dev
+
+          statsRecorder.endLastStage()
 
           // we run S3 buckets detection after tagging
           new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
@@ -273,26 +255,9 @@ class PythonProcessor(
     * @param lang
     * @return
     */
-<<<<<<< stats-logging
   def createPythonCpg(): Either[String, Unit] = {
     statsRecorder.justLogMessage("Processing source code using Python engine")
     statsRecorder.initiateNewStage("Base source processing")
-=======
-  def createPythonCpg(
-    ruleCache: RuleCache,
-    privadoInput: PrivadoInput,
-    sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache,
-    auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
-  ): Either[String, Unit] = {
-
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Python engine")
-    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
->>>>>>> dev
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
