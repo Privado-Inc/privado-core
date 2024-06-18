@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
@@ -27,13 +27,14 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
 
-    new LiteralTagger.tag(cpg, ruleCache)
+    LiteralTagger.tag(cpg, ruleCache)
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
@@ -62,6 +63,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
     new AirflowOperatorSinkPass(cpg, ruleCache).createAndApply()
+
+    new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache)
 
     logger.info("Done with tagging")
     cpg.tag

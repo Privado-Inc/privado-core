@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
@@ -32,20 +32,19 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.testfixtures.JavaFrontendTestSuite
 
 import scala.collection.mutable
 
-class JavaLanguageEgressTest extends JavaTaggingTestBase {
+class JavaLanguageEgressTest extends JavaFrontendTestSuite {
 
   val appCache = new AppCache()
+  appCache.repoLanguage = Language.JAVA
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    appCache.repoLanguage = Language.JAVA
-  }
+  "Java code egresses" should {
 
-  override val javaFileContents: String =
-    """
+    val cpg = code(
+      """
       |package com.twilio;
       |
       |import org.springframework.beans.factory.annotation.Autowired;
@@ -75,11 +74,12 @@ class JavaLanguageEgressTest extends JavaTaggingTestBase {
       |        return responseEntity.getBody();
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin,
+      "generalFile.java"
+    )
 
-  "Java code egresses" should {
     "collect egress url for java code" in {
-      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, new RuleCache(), appCache)
       val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 5
       egressesFromLanguageFiles shouldBe List(

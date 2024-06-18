@@ -1,24 +1,43 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, DatabaseDetailsCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
+import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.model.Language
 
-class TestCpgWithPython(val fileSuffix: String, val  language: Language.Value) extends TestCpg {
+class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) extends TestCpg {
 
-  protected def getLanguageProcessor(ruleCache: RuleCache, 
-                                     privadoInput: PrivadoInput, 
-                                     dataFlowCache: DataFlowCache, 
-                                     auditCache: AuditCache, 
-                                     s3DatabaseDetailsCache: S3DatabaseDetailsCache, 
-                                     appCache: AppCache, 
-                                     propertyFilterCache: PropertyFilterCache, 
-                                     databaseDetailsCache: DatabaseDetailsCache
-                                    ): BaseProcessor = PythonProcessor
-  
+  protected def getLanguageProcessor(
+    ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
+  ): BaseProcessor = new PythonProcessor(
+    ruleCache,
+    privadoInput,
+    privadoInput.sourceLocation.head,
+    dataFlowCache,
+    auditCache,
+    s3DatabaseDetailsCache,
+    appCache,
+    returnClosedCpg = false,
+    propertyFilterCache,
+    databaseDetailsCache
+  )
+
 }
-class PythonFrontendTestSuite(fileSuffix: String = ".py", language: Language.Value = Language.PYTHON) 
-  extends PrivadoBaseTestFixture(() => Tes)
-
-{}
+class PythonFrontendTestSuite(fileSuffix: String = ".py", language: Language.Value = Language.PYTHON)
+    extends PrivadoBaseTestFixture(() => new TestCpgWithPython(fileSuffix, language)) {}

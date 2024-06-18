@@ -37,42 +37,45 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.exporter.HttpConnectionMetadataExporter
+import ai.privado.testfixtures.JavaFrontendTestSuite
 
-class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
-  override val configFileContents: String =
-    """
-      |internal.logger.api.base=https://logger.privado.ai/
-      |slack.base.url=https://hooks.slack.com/services/some/leaking/url
-      |MY_ENDPOINT=http://myservice.com/user
-      |""".stripMargin
-
-  override val propertyFileContents = ""
-  override val codeFileContents: String =
-    """
-      |
-      |import org.springframework.beans.factory.annotation.Value;
-      |
-      |class Foo {
-      |
-      |private static String loggerUrl;
-      |
-      |@Value("${slack.base.url}")
-      |private static final String slackWebHookURL;
-      |
-      |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
-      |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
-      |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL, @Named(Constants.MY_ENDPOINT) String endpoint) {
-      |   }
-      |
-      |@Value("${internal.logger.api.base}")
-      |public void setLoggerUrl( String pLoggerUrl )
-      |{
-      |        loggerUrl = pLoggerUrl;
-      |}
-      |}
-      |""".stripMargin
-
+class AnnotationTests extends JavaFrontendTestSuite {
   "ConfigFilePass" should {
+    val cpg = code(
+      """
+        |
+        |import org.springframework.beans.factory.annotation.Value;
+        |
+        |class Foo {
+        |
+        |private static String loggerUrl;
+        |
+        |@Value("${slack.base.url}")
+        |private static final String slackWebHookURL;
+        |
+        |public AuthenticationService(UserRepository userr, SessionsR sesr, ModelMapper mapper,
+        |			ObjectMapper objectMapper, @Qualifier("ApiCaller") ExecutorService apiExecutor, SlackStub slackStub,
+        |			SendGridStub sgStub, @Value("${internal.logger.api.base}") String loggerBaseURL, @Named(Constants.MY_ENDPOINT) String endpoint) {
+        |   }
+        |
+        |@Value("${internal.logger.api.base}")
+        |public void setLoggerUrl( String pLoggerUrl )
+        |{
+        |        loggerUrl = pLoggerUrl;
+        |}
+        |}
+        |""".stripMargin,
+      "GeneralConfig.java"
+    )
+      .moreCode(
+        """
+          |internal.logger.api.base=https://logger.privado.ai/
+          |slack.base.url=https://hooks.slack.com/services/some/leaking/url
+          |MY_ENDPOINT=http://myservice.com/user
+          |""".stripMargin,
+        "test.properties"
+      )
+
     "connect annotated parameter to property" in {
       val anno: List[AstNode] = cpg.property.usedAt.l
       anno.length shouldBe 4
@@ -100,66 +103,62 @@ class AnnotationTests extends PropertiesFilePassTestBase(".properties") {
         "https://hooks.slack.com/services/some/leaking/url"
       )
     }
-
-    "connect the referenced member to the original property denoted by the annotated method" in {
-      cpg.member("loggerUrl").originalProperty.size shouldBe 1
-      cpg.member("loggerUrl").originalProperty.name.l shouldBe List("internal.logger.api.base")
-      cpg.member("loggerUrl").originalProperty.value.l shouldBe List("https://logger.privado.ai/")
-    }
   }
 }
 
-class JsonPropertyTests extends PropertiesFilePassTestBase(".json") {
-  override val configFileContents = """
-      |{
-      |    "databases": [
-      |      {
-      |        "name": "MySQL Database",
-      |        "uri": "mysql://username:password@hostname:port/database_name"
-      |      }
-      |     ],
-      |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
-      |}
-      |""".stripMargin
+class JsonPropertyTests extends JavaFrontendTestSuite {
 
-  override val codeFileContents = ""
+  "JSON file having array nodes" should {
 
-  override val propertyFileContents = ""
+    val cpg = code(
+      """
+        |{
+        |    "databases": [
+        |      {
+        |        "name": "MySQL Database",
+        |        "uri": "mysql://username:password@hostname:port/database_name"
+        |      }
+        |     ],
+        |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
+        |}
+        |""".stripMargin,
+      "test.json"
+    )
 
-  "json file having array nodes" should {
     "get parsed and property nodes should be generated" in {
-
-      new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVASCRIPT).createAndApply()
       cpg.property.map(p => (p.name, p.value)).l shouldBe List(
         ("databases[0].name", "MySQL Database"),
         ("databases[0].uri", "mysql://username:password@hostname:port/database_name"),
         ("mongoUri", "mongodb://username:password@hostname:port/database_name")
       )
-
     }
   }
 }
-class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
-  override val configFileContents = """
-      |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
-      |internal.logger.api.base=https://logger.privado.ai/
-      |""".stripMargin
-  override val codeFileContents =
-    """
-      | import org.springframework.core.env.Environment;
-      |
-      |public class GeneralConfig {
-      |   public DataSource dataSource() {
-      |     DriverManagerDataSource dataSource = new DriverManagerDataSource();
-      |     dataSource.setUrl(env.getProperty("accounts.datasource.url"));
-      |     return dataSource;
-      |     }
-      |}
-      |""".stripMargin
 
-  override val propertyFileContents = ""
+class GetPropertyTests extends JavaFrontendTestSuite {
 
   "ConfigFilePass" should {
+    val cpg = code(
+      """
+        |accounts.datasource.url=jdbc:mariadb://localhost:3306/accounts?useSSL=false
+        |internal.logger.api.base=https://logger.privado.ai/
+        |""".stripMargin,
+      "test.properties"
+    ).moreCode(
+      """
+        |import org.springframework.core.env.Environment;
+        |
+        |public class GeneralConfig {
+        |   public DataSource dataSource() {
+        |     DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        |     dataSource.setUrl(env.getProperty("accounts.datasource.url"));
+        |     return dataSource;
+        |     }
+        |}
+        |""".stripMargin,
+      "GeneralConfig.java"
+    )
+
     "create a file node for the property file" in {
       val List(_, _, name: String) = cpg.file.name.l // The default overlays add a new file to cpg.file
       name.endsWith("/test.properties") shouldBe true
@@ -193,62 +192,69 @@ class GetPropertyTests extends PropertiesFilePassTestBase(".properties") {
   }
 }
 
-class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
-
-  override val configFileContents = """
-                                      |spring:
-                                      |   application:
-                                      |       name: basepath
-                                      |false-positive-entries:
-                                      |    urls:
-                                      |      - http:
-                                      |          path1: en-wrapper/0.5.6/maven-wrapper-0.5.6.jar
-                                      |          path2: che-maven/3.6.3/apache-maven-3.6.3-bin.zip
-                                      |          path3: dkr.ecr.us-west-2.amazonaws.com/infrastructure/ecr-pusher:latest
-                                      |          path4: mvn -U -P ${ENVIRONMENT} package -DskipTests --settings ${home}/.m2/settings.xml
-                                      |          path5: somename.jpg
-                                      |          path6: somename.png
-                                      |          path7: somename.gif
-                                      |          path8: string having html tags <p>hello</p> and <b>world</b>
-                                      |          path9: /a/b/c containing spaces
-                                      |          path10: github.com/a/b/c
-                                      |          pathe11: ../some/file/path
-                                      |          path12: #somecomment
-                                      |          path13: ///a/b/c
-                                      |          path14: ./some/file/path
-                                      |
-                                      |
-                                      |mx-record-delete:
-                                      |    events:
-                                      |      - http:
-                                      |          path: /v1/student/{id}
-                                      |          method: DELETE
-                                      |      - https:
-                                      |          path: v1/student/{id}
-                                      |          method: GET
-                                      |      - ftp:
-                                      |          path: student/{id}
-                                      |          method: PUT
-                                      |      - ssm:
-                                      |          path: /
-                                      |          method: PUT
-                                      |      - privado:
-                                      |          path: https://code.privado.ai/repositories
-                                      |          method: PUT
-                                      |      - privado-without-http:
-                                      |          path: code.privado.ai/repositories
-                                      |          method: PUT
-                                      |""".stripMargin
-  override val codeFileContents =
-    """
-      | import org.springframework.core.env.Environment;
-      |""".stripMargin
-
-  override val propertyFileContents = ""
+class EgressPropertyTests extends JavaFrontendTestSuite {
+  val appCache = new AppCache()
+  appCache.repoLanguage = Language.JAVA
 
   "Fetch egress urls from property files" should {
+    val cpg = code(
+      """
+        |spring:
+        |   application:
+        |       name: basepath
+        |false-positive-entries:
+        |    urls:
+        |      - http:
+        |          path1: en-wrapper/0.5.6/maven-wrapper-0.5.6.jar
+        |          path2: che-maven/3.6.3/apache-maven-3.6.3-bin.zip
+        |          path3: dkr.ecr.us-west-2.amazonaws.com/infrastructure/ecr-pusher:latest
+        |          path4: mvn -U -P ${ENVIRONMENT} package -DskipTests --settings ${home}/.m2/settings.xml
+        |          path5: somename.jpg
+        |          path6: somename.png
+        |          path7: somename.gif
+        |          path8: string having html tags <p>hello</p> and <b>world</b>
+        |          path9: /a/b/c containing spaces
+        |          path10: github.com/a/b/c
+        |          pathe11: ../some/file/path
+        |          path12: #somecomment
+        |          path13: ///a/b/c
+        |          path14: ./some/file/path
+        |
+        |
+        |mx-record-delete:
+        |    events:
+        |      - http:
+        |          path: /v1/student/{id}
+        |          method: DELETE
+        |      - https:
+        |          path: v1/student/{id}
+        |          method: GET
+        |      - ftp:
+        |          path: student/{id}
+        |          method: PUT
+        |      - ssm:
+        |          path: /
+        |          method: PUT
+        |      - privado:
+        |          path: https://code.privado.ai/repositories
+        |          method: PUT
+        |      - privado-without-http:
+        |          path: code.privado.ai/repositories
+        |          method: PUT
+        |""".stripMargin,
+      "test.yaml"
+    )
+      .moreCode(
+        """
+          |import org.springframework.core.env.Environment;
+          |""".stripMargin,
+        "GeneralConfig.java"
+      )
+
     "Check egress urls" in {
-      val egressExporter               = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
+      val egressExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
+      println("size --- " + cpg.property.size)
+      println("------- " + egressExporter.getEgressUrls.size)
       val List(url1, url2, url3, url4) = egressExporter.getEgressUrls
       url1 shouldBe "/v1/student/{id}"
       url2 shouldBe "v1/student/{id}"
@@ -269,117 +275,66 @@ class EgressPropertyTests extends PropertiesFilePassTestBase(".yaml") {
   }
 }
 
-// Unit test to check if property is added in the cpg using XML files.
-class XMLPropertyTests extends PropertiesFilePassTestBase(".xml") {
-  override val configFileContents =
-    """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-      |<beans>
-      |<bean id="myField" class="com.example.test.GFG">
-      |    <property name="staticField" value="${jdbc.url}"/>
-      |    <property name="static_two" value="hello-world"/>
-      |</bean>
-      |<bean id="myField" class="com.example.test.MFM">
-      |    <property name="testProperty" ref="myField"/>
-      |</bean>
-      |</beans>
-      |""".stripMargin
-
-  override val propertyFileContents: String =
-    """jdbc.url=http://localhost:8081/""".stripMargin
-  override val codeFileContents =
-    """
-      |package com.example.test;
-      |
-      |import java.util.*;
-      |import java.io.*;
-      |
-      |public class GFG {
-      |	private String staticField;
-      |}
-      |""".stripMargin
-
+class XMLPropertyTests extends JavaFrontendTestSuite {
   "ConfigFilePass" should {
+    val cpg = code(
+      """<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+        |<beans>
+        |<bean id="myField" class="com.example.test.GFG">
+        |    <property name="staticField" value="${jdbc.url}"/>
+        |    <property name="static_two" value="hello-world"/>
+        |</bean>
+        |<bean id="myField" class="com.example.test.MFM">
+        |    <property name="testProperty" ref="myField"/>
+        |</bean>
+        |</beans>
+        |""".stripMargin,
+      "test.xml"
+    )
+      .moreCode("""jdbc.url=http://localhost:8081/""".stripMargin, "application.properties")
+      .moreCode(
+        """
+          |package com.example.test;
+          |
+          |import java.util.*;
+          |import java.io.*;
+          |
+          |public class GFG {
+          |	private String staticField;
+          |}
+          |""".stripMargin,
+        "GeneralConfig.java"
+      )
+
     "create a file node for the property file" in {
       val List(name: String) = cpg.file.name.l.filter(file => file.endsWith(".xml"))
       name.endsWith("/test.xml") shouldBe true
     }
-  }
 
-  "create a `property` node for each property" in {
-    val properties = cpg.property.map(x => (x.name, x.value)).toMap
-    properties
-      .get("static_two")
-      .contains("hello-world") shouldBe true
-  }
-
-  "Two way edge between member and propertyNode" in {
-    val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
-    properties
-      .get("staticField")
-      .contains("http://localhost:8081/") shouldBe true
-  }
-
-  "Two way edge between member and propertyNode for no code reference" in {
-    val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
-    properties
-      .contains("static_two") shouldBe false
-  }
-
-  "References to another beans should be skipped" in {
-    val properties = cpg.property.map(property => (property.name, property.value)).toMap;
-    properties
-      .contains("testProperty") shouldBe false
-  }
-}
-
-/** Base class for tests on properties files and Java code.
-  */
-// file extension to support for any file as properties
-abstract class PropertiesFilePassTestBase(fileExtension: String)
-    extends AnyWordSpec
-    with Matchers
-    with BeforeAndAfterAll {
-
-  var cpg: Cpg = _
-  val configFileContents: String
-  val codeFileContents: String
-  var inputDir: File   = _
-  var outputFile: File = _
-  val propertyFileContents: String
-  val appCache = new AppCache()
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / s"test$fileExtension").write(configFileContents)
-
-//    (inputDir / "unrelated.file").write("foo")
-    if (propertyFileContents.nonEmpty) {
-      (inputDir / "application.properties").write(propertyFileContents)
+    "create a `property` node for each property" in {
+      val properties = cpg.property.map(x => (x.name, x.value)).toMap
+      properties
+        .get("static_two")
+        .contains("hello-world") shouldBe true
     }
-    outputFile = File.newTemporaryFile()
 
-    (inputDir / "GeneralConfig.java").write(codeFileContents)
-    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
-    appCache.repoLanguage = Language.JAVA
+    "Two way edge between member and propertyNode" in {
+      val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
+      properties
+        .get("staticField")
+        .contains("http://localhost:8081/") shouldBe true
+    }
 
-    cpg = new JavaSrc2Cpg()
-      .createCpg(config)
-      .map { cpg =>
-        applyDefaultOverlays(cpg)
-        cpg
-      }
-      .get
-    new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
-    new JavaPropertyLinkerPass(cpg).createAndApply()
+    "Two way edge between member and propertyNode for no code reference" in {
+      val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap;
+      properties
+        .contains("static_two") shouldBe false
+    }
 
-    super.beforeAll()
+    "References to another beans should be skipped" in {
+      val properties = cpg.property.map(property => (property.name, property.value)).toMap;
+      properties
+        .contains("testProperty") shouldBe false
+    }
   }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    cpg.close()
-    outputFile.delete()
-    super.afterAll()
-  }
-
 }

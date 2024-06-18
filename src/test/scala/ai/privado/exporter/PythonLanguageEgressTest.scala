@@ -30,16 +30,20 @@ import ai.privado.languageEngine.javascript.JavascriptTaggingTestBase
 import ai.privado.languageEngine.python.{PrivadoPySrc2CpgFixture, PrivadoPySrcTestCpg}
 import ai.privado.model.{ConfigAndRules, Language}
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.testfixtures.PythonFrontendTestSuite
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.mutable
 
-class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
-  val ruleCache = new RuleCache()
-  val appCache  = new AppCache()
-  val cpg: PrivadoPySrcTestCpg = code("""
+class PythonLanguageEgressTest extends PythonFrontendTestSuite {
+  val appCache = new AppCache()
+  appCache.repoLanguage = Language.PYTHON
+
+  "Python code egresses" should {
+
+    val cpg = code("""
       | LOGGING = {
       |    'version': 1,
       |    'disable_existing_loggers': True,
@@ -75,14 +79,8 @@ class PythonLanguageEgressTest extends PrivadoPySrc2CpgFixture {
       | API_5 =      "api/v2" + "/ce/customers"
       |""".stripMargin)
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    appCache.repoLanguage = Language.PYTHON
-  }
-
-  "Python code egresses" should {
     "collect egress url for python code" in {
-      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
+      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, new RuleCache(), appCache)
       val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
       egressesFromLanguageFiles.size shouldBe 6
       egressesFromLanguageFiles shouldBe List(
