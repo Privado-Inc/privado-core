@@ -307,7 +307,7 @@ object ScanProcessor extends CommandProcessor {
         inferences = mergePatterns(inferences)
       )
     logger.trace(mergedRules.toString)
-    println(s"${Calendar.getInstance().getTime} - Configuration parsed...")
+    statsRecorder.justLogMessage(s"- Configuration parsed...")
 
     ruleCache.internalPolicies.addAll(internalConfigAndRules.policies.map(policy => (policy.id)))
     ruleCache.internalPolicies.addAll(internalConfigAndRules.threats.map(threat => (threat.id)))

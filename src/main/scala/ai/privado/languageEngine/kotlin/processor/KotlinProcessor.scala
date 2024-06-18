@@ -103,7 +103,8 @@ class KotlinProcessor(
       privadoInputConfig = privadoInput,
       dataFlowCache,
       appCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      statsRecorder
     )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

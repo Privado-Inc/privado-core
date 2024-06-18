@@ -32,7 +32,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.{SERVICE_URL_REGEX_PATTERN, sinkTagger}
-import ai.privado.utility.{ImportUtility, Utilities}
+import ai.privado.utility.{ImportUtility, StatsRecorder, Utilities}
 import io.circe.Json
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -56,8 +56,13 @@ object APITaggerVersionJava extends Enumeration {
   val SkipTagger, V1Tagger, V2Tagger = Value
 }
 
-class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoInput, appCache: AppCache)
-    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class JavaAPITagger(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInputConfig: PrivadoInput,
+  appCache: AppCache,
+  statsRecorder: StatsRecorder
+) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   implicit val engineContext: EngineContext =
     Utilities.getEngineContext(privadoInputConfig, appCache, 4)(JavaSemanticGenerator.getDefaultSemantics)
@@ -163,7 +168,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
     apiTaggerToUse match {
       case APITaggerVersionJava.V1Tagger =>
         logger.debug("Using brute API Tagger to find API sinks")
-        println(s"${Calendar.getInstance().getTime} - -- API TAGGER V1 invoked...")
+        statsRecorder.justLogMessage(s"-- API TAGGER V1 invoked...")
         sinkTagger(
           cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
@@ -185,7 +190,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
-        println(s"${Calendar.getInstance().getTime} - -- API TAGGER V2 invoked...")
+        statsRecorder.justLogMessage(s"-- API TAGGER V2 invoked...")
         sinkTagger(
           cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
@@ -197,7 +202,7 @@ class JavaAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInputConfig: PrivadoI
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
-        println(s"${Calendar.getInstance().getTime} - -- API TAGGER SKIPPED, applying Feign client API...")
+        statsRecorder.justLogMessage(s"-- API TAGGER SKIPPED, applying Feign client API...")
         sinkTagger(
           cpg,
           apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,

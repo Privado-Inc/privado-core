@@ -108,7 +108,7 @@ class JavascriptProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
@@ -130,7 +130,10 @@ class JavascriptProcessor(
 
     val xtocpg = new JsSrc2Cpg().createCpg(cpgConfig).map { cpg =>
       statsRecorder.endLastStage()
+      statsRecorder.initiateNewStage("Applying default overlays")
       applyDefaultOverlays(cpg)
+      statsRecorder.endLastStage()
+      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
 

@@ -105,7 +105,8 @@ class GoProcessor(
             privadoInputConfig = ScanProcessor.config.copy(),
             dataFlowCache,
             appCache,
-            databaseDetailsCache
+            databaseDetailsCache,
+            statsRecorder
           )
           statsRecorder.endLastStage()
 
@@ -163,8 +164,8 @@ class GoProcessor(
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
 
@@ -178,8 +179,8 @@ class GoProcessor(
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported Unresolved flow output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }
@@ -195,8 +196,8 @@ class GoProcessor(
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported intermediate output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }

@@ -34,6 +34,7 @@ import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, Lit
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, SqlQueryTagger}
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -53,7 +54,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")

@@ -16,6 +16,7 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -33,7 +34,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataflowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -61,9 +63,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
     }
 
-    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
-    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
     new AndroidCollectionTagger(
       cpg,

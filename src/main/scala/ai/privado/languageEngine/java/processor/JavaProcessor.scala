@@ -116,7 +116,8 @@ class JavaProcessor(
       dataFlowCache,
       s3DatabaseDetailsCache,
       appCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      statsRecorder
     )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

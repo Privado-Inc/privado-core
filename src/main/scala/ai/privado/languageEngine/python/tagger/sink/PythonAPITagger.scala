@@ -30,7 +30,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
-import ai.privado.utility.Utilities
+import ai.privado.utility.{StatsRecorder, Utilities}
 import io.circe.Json
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -39,8 +39,13 @@ import org.slf4j.LoggerFactory
 
 import java.util.Calendar
 
-class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
-    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class PythonAPITagger(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  appCache: AppCache,
+  statsRecorder: StatsRecorder
+) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
@@ -73,7 +78,7 @@ class PythonAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput
     }
 
     logger.debug("Using Enhanced API tagger to find API sinks")
-    println(s"${Calendar.getInstance().getTime} - -- API TAGGER Common HTTP Libraries Used...")
+    statsRecorder.justLogMessage(s"-- API TAGGER Common HTTP Libraries Used...")
     sinkTagger(
       cpg,
       apiInternalSources ++ propertySources ++ identifierSource,

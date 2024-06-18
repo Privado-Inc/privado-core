@@ -182,7 +182,8 @@ class RubyProcessor(
             privadoInputConfig = ScanProcessor.config.copy(),
             dataFlowCache,
             appCache,
-            databaseDetailsCache
+            databaseDetailsCache,
+            statsRecorder
           )
           statsRecorder.endLastStage()
           statsRecorder.initiateNewStage("Finding data flows ...")
@@ -227,8 +228,8 @@ class RubyProcessor(
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
           }
