@@ -66,8 +66,6 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
 
-    new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache)
-
     logger.info("Done with tagging")
     cpg.tag
   }
