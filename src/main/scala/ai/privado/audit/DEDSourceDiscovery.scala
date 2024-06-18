@@ -30,11 +30,11 @@ object DEDSourceDiscoveryUtils {
 
   // Regular expression pattern to filter common variable names
   private val filterCommonVars =
-    "(?i)(cls|self|ctx|constructor|context|super|new|prototype|main|use|foreach|copy|skip|replace|.*(dto)|slice|fill|some|every|concat|contains|apply|merge|stmt|format|name|data|regexp|.{0,1}(sort|in|slug|match|ne|regex|or|sum|and)|session|status|event|env|cmd|push|join|split|splice|filter|reduce|shift|unshift|retry|start|buffer|thread|length|staticmethod|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|info|debug|warning|critical|exception|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log|key|value|include|load|dump).{0,1})"
+    "(?i)(cls|self|ctx|constructor|context|super|new|prototype|main|use|foreach|copy|skip|replace|.*(dto|exception)|slice|fill|some|every|concat|contains|apply|merge|stmt|format|name|data|regexp|.{0,1}(sort|in|slug|match|ne|regex|or|sum|and)|session|status|event|env|cmd|push|join|split|splice|filter|reduce|shift|unshift|retry|start|buffer|thread|length|staticmethod|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|info|debug|warning|critical|exception|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log|key|value|include|load|dump).{0,1})"
 
   // List of prefixes to filter out common variables that start with these values
   private val filterCommonVarsStartsWith =
-    "$obj|$group|$set|$id|$lte|$gte|$options|__|_tmp_|tmp|$iterLocal|_result|file|is|sha_|this|get|set|post|put|update|create|clear|check|find|insert|assert|parse|generate|validate|process|download|upload|delete|handle|mongo|validation|exception|param|attr|arg|_iterator|{|log|error|iterator|logger|<tmp-|iter_tmp|toLocale|indexOf"
+    "$obj|$group|$set|$id|$lte|$gte|$options|__|_tmp_|tmp|$iterLocal|_result|file|return|is|sha_|this|get|set|post|put|update|create|clear|check|find|insert|assert|parse|generate|validate|process|download|upload|delete|handle|mongo|validation|exception|param|attr|arg|_iterator|{|log|error|iterator|logger|<tmp-|iter_tmp|toLocale|indexOf"
   private val filterCommonVarsStartsWithArr = filterCommonVarsStartsWith.split("\\|")
 
   // Additional Language specific filters
