@@ -13,6 +13,7 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
 
 class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) extends TestCpg {
 
@@ -33,9 +34,10 @@ class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) ex
     auditCache,
     s3DatabaseDetailsCache,
     appCache,
+    StatsRecorder(),
     returnClosedCpg = false,
-    propertyFilterCache,
-    databaseDetailsCache
+    databaseDetailsCache,
+    propertyFilterCache
   )
 
 }
