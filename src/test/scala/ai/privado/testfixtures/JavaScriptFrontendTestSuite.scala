@@ -5,6 +5,7 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
 
 class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
@@ -25,9 +26,10 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      StatsRecorder(),
       returnClosedCpg = false,
-      propertyFilterCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      propertyFilterCache
     )
   }
 }
