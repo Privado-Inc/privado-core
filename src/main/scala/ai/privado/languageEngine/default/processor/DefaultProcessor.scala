@@ -25,7 +25,7 @@ package ai.privado.languageEngine.default.processor
 
 import ai.privado.cache.*
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.default.passes.{PropertyVerificationPass}
 import ai.privado.model.Constants.*
@@ -41,6 +41,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 import ai.privado.languageEngine.default.tagger.PrivadoTagger
+import ai.privado.utility.StatsRecorder
 
 import java.util.Calendar
 
@@ -52,9 +53,10 @@ class DefaultProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -64,6 +66,7 @@ class DefaultProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache
@@ -82,17 +85,11 @@ class DefaultProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
-  }
-
-  override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
-    super.applyDataflowAndPostProcessingPasses(cpg)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Default engine")
-    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
-
+    statsRecorder.justLogMessage("Processing source code using Default engine")
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
 
     // Create the .privado folder if not present
@@ -105,11 +102,6 @@ class DefaultProcessor(
 
     val xtocpg = withNewEmptyCpg(cpgOutputPath, cpgconfig: JavaConfig) { (cpg, config) =>
       {
-        println(
-          s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-        )
-        // Apply default overlays
-        X2Cpg.applyDefaultOverlays(cpg)
         cpg
       }
     }

@@ -5,6 +5,7 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.default.passes.HighTouchDataflow
 import ai.privado.tagger.source.SqlQueryTagger
 import ai.privado.tagger.PrivadoBaseTagger
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -20,7 +21,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInput: PrivadoInput,
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagger")

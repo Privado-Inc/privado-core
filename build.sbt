@@ -7,8 +7,8 @@ ThisBuild / scalaVersion := "3.4.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "0.1.5"
-val joernVersion      = "0.1.12"
+val cpgVersion        = "0.1.6"
+val joernVersion      = "0.1.13"
 val overflowdbVersion = "0.1.5"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -35,47 +35,47 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "kotlin2cpg"    % Versions.joern exclude("com.squareup.okhttp3", "okhttp"),
+  "io.joern"             %% "kotlin2cpg"    % Versions.joern exclude ("com.squareup.okhttp3", "okhttp"),
   "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "csharpsrc2cpg" % Versions.joern,
   "io.joern"             %% "joern-cli"     % Versions.joern exclude ("io.undertow", "undertow-core"),
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
   "org.scalatest"        %% "scalatest"     % "3.2.16"       % Test,
-  "io.circe"             %% "circe-core" % circeGenericVersion,
+  "io.circe"             %% "circe-core"    % circeGenericVersion,
   "io.circe"             %% "circe-generic" % circeGenericVersion,
-  "io.circe"              %% "circe-parser" % circeGenericVersion,
+  "io.circe"             %% "circe-parser"  % circeGenericVersion,
   // NOTE: circe-yaml currently only goes until 0.14.2 (Last checked 06/07/2023)
-  "io.circe"                        %% "circe-yaml"                 % circeYamlVersion exclude ("org.yaml", "snakeyaml"),
-  "com.lihaoyi"                     %% "upickle"                    % Versions.upickle,
-  "com.lihaoyi"                     %% "requests"                   % Versions.requests,
-  "org.scala-lang.modules"          %% "scala-xml"                  % "2.1.0",
-  "org.scala-lang.modules"          %% "scala-parallel-collections" % "1.0.4",
-  "commons-io"                       % "commons-io"                 % "2.11.0",
-  "com.networknt"                    % "json-schema-validator"      % "1.0.72",
-  "com.fasterxml.jackson.module"    %% "jackson-module-scala"       % jacksonVersion,
-  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml"    % jacksonVersion exclude ("org.yaml", "snakeyaml"),
-  "com.github.wnameless.json"        % "json-flattener"             % "0.14.0",
-  "org.apache.logging.log4j"         % "log4j-core"                 % "2.19.0",
-  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.19.0",
-  "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
-  "com.github.jsqlparser"            % "jsqlparser"                 % "4.9",
-  "org.apache.maven"                 % "maven-model"                % "3.9.0",
-  "org.htmlunit"                     % "htmlunit"                   % "4.0.0",
-  "org.yaml"                         % "snakeyaml"                  % "2.2",
-  "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
-  "org.scala-lang"                   % "scala-compiler"             % "2.13.8",
-  "com.iheart"                      %% "ficus"                      % "1.5.2" exclude ("com.typesafe", "config"),
-  "org.jruby"                        % "jruby-base"                 % "9.4.3.0",
-  "org.zeromq"                       % "jeromq"                     % "0.5.4",
-  "org.sangria-graphql"             %% "sangria"                    % "4.0.0",
-  "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
-  "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests" exclude("com.google.protobuf", "protobuf-java"),
-  "com.google.protobuf"              % "protobuf-java"              % "3.19.6",
-  "io.undertow"                      % "undertow-core"              % "2.3.13.Final" exclude("org.jboss.xnio", "xnio-api"),
-  "org.jboss.xnio"                   % "xnio-api"                   % "3.8.14.Final",
-  "com.squareup.okhttp3"             % "okhttp"                     % "4.9.2",
-  scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
+  "io.circe"                     %% "circe-yaml"                 % circeYamlVersion exclude ("org.yaml", "snakeyaml"),
+  "com.lihaoyi"                  %% "upickle"                    % Versions.upickle,
+  "com.lihaoyi"                  %% "requests"                   % Versions.requests,
+  "org.scala-lang.modules"       %% "scala-xml"                  % "2.1.0",
+  "org.scala-lang.modules"       %% "scala-parallel-collections" % "1.0.4",
+  "commons-io"                    % "commons-io"                 % "2.11.0",
+  "com.networknt"                 % "json-schema-validator"      % "1.0.72",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala"       % jacksonVersion,
+  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion exclude ("org.yaml", "snakeyaml"),
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
+  "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0",
+  "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
+  "com.github.jsqlparser"            % "jsqlparser"              % "4.9",
+  "org.apache.maven"                 % "maven-model"             % "3.9.0",
+  "org.htmlunit"                     % "htmlunit"                % "4.0.0",
+  "org.yaml"                         % "snakeyaml"               % "2.2",
+  "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
+  "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
+  "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config"),
+  "org.jruby"                        % "jruby-base"              % "9.4.3.0",
+  "org.zeromq"                       % "jeromq"                  % "0.5.4",
+  "org.sangria-graphql"             %% "sangria"                 % "4.0.0",
+  "com.michaelpollmeier"             % "versionsort"             % "1.0.11",
+  "io.joern" %% "dataflowengineoss" % Versions.joern % Test classifier "tests" exclude ("com.google.protobuf", "protobuf-java"),
+  "com.google.protobuf"    % "protobuf-java"   % "3.19.6",
+  "io.undertow"            % "undertow-core"   % "2.3.13.Final" exclude ("org.jboss.xnio", "xnio-api"),
+  "org.jboss.xnio"         % "xnio-api"        % "3.8.14.Final",
+  "com.squareup.okhttp3"   % "okhttp"          % "4.9.2",
+  scalaOrganization.value %% "scala3-compiler" % scalaVersion.value
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")

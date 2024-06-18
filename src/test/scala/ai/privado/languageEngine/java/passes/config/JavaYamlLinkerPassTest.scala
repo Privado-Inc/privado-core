@@ -6,7 +6,7 @@ import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.tagger.sink.api.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.*
-import ai.privado.utility.PropertyParserPass
+import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -121,7 +121,8 @@ abstract class JavaYamlLinkerPassTestBase
     new JavaYamlLinkerPass(cpg).createAndApply()
     val taggerCache = TaggerCache()
     SourceTagger.runTagger(cpg, ruleCache, taggerCache)
-    new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache, statsRecorder = StatsRecorder())
+      .createAndApply()
 
     super.beforeAll()
   }

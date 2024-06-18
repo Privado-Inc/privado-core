@@ -4,6 +4,7 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
+import ai.privado.utility.StatsRecorder
 import ai.privado.model.Language
 
 class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) extends TestCpg {
@@ -25,9 +26,10 @@ class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) exte
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      StatsRecorder(),
       returnClosedCpg = false,
-      propertyFilterCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      propertyFilterCache
     )
   }
 }

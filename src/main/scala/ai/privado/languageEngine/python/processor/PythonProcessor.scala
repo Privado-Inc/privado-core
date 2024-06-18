@@ -2,7 +2,8 @@ package ai.privado.languageEngine.python.processor
 
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.dataflow.Dataflow
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
@@ -15,7 +16,7 @@ import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg.*
@@ -32,7 +33,19 @@ import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
-object PythonProcessor {
+class PythonProcessor(
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  sourceRepoLocation: String,
+  dataFlowCache: DataFlowCache,
+  auditCache: AuditCache,
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  statsRecorder: StatsRecorder,
+  returnClosedCpg: Boolean = true,
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   private def processCPG(
@@ -52,38 +65,35 @@ object PythonProcessor {
         try {
           logger.info("Applying default overlays")
           logger.info("=====================")
-          println(
-            s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
-
+          statsRecorder.initiateNewStage("Default overlays")
           // Apply default overlays
           X2Cpg.applyDefaultOverlays(cpg)
+          statsRecorder.endLastStage()
+          statsRecorder.initiateNewStage("Overriden passes")
           new ImportsPass(cpg).createAndApply()
           new PythonImportResolverPass(cpg).createAndApply()
           new PythonInheritanceNamePass(cpg).createAndApply()
-          println(
-            s"${TimeMetric.getNewTime()} - Run InheritanceFullNamePass done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
-
-          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
-            .createAndApply()
-
           new DynamicTypeHintFullNamePass(cpg).createAndApply()
           new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
-          println(
-            s"${TimeMetric.getNewTime()} - Run PythonTypeRecovery done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
           new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
           new NaiveCallLinker(cpg).createAndApply()
 
           // Some of passes above create new methods, so, we
           // need to run the ASTLinkerPass one more time
           new AstLinkerPass(cpg).createAndApply()
-
+          statsRecorder.endLastStage()
+          statsRecorder.initiateNewStage("Oss data flow")
           // Apply OSS Dataflow overlay
           new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
           if (privadoInput.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
+          statsRecorder.endLastStage()
+          statsRecorder.setSupressSubstagesFlag(false)
+
+          statsRecorder.initiateNewStage("Privado source passes")
+
+          new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
+            .createAndApply()
 
           if (privadoInput.assetDiscovery) {
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
@@ -104,9 +114,9 @@ object PythonProcessor {
             val path = s"${privadoInput.sourceLocation.head}/${Constants.outputDirectoryName}"
             UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.PYTHON)
           }
-
+          statsRecorder.endLastStage()
           // Run tagger
-          println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
+          statsRecorder.initiateNewStage("Tagger ...")
           val taggerCache = new TaggerCache
           cpg.runTagger(
             ruleCache,
@@ -114,21 +124,23 @@ object PythonProcessor {
             privadoInputConfig = privadoInput,
             dataFlowCache,
             appCache,
-            databaseDetailsCache
+            databaseDetailsCache,
+            statsRecorder
           )
-          println(
-            s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-          )
+
+          statsRecorder.endLastStage()
 
           // we run S3 buckets detection after tagging
           new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
-          println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-          val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
-          println(s"\n${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-              .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
-          println(s"\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n")
-          println(s"${Calendar.getInstance().getTime} - Brewing result...")
+          statsRecorder.endLastStage()
+
+          statsRecorder.initiateNewStage("Finding data flows ...")
+          val dataflowMap =
+            Dataflow(cpg, statsRecorder).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
+          statsRecorder.endLastStage()
+          statsRecorder.justLogMessage(s"Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
+          statsRecorder.initiateNewStage("Brewing result")
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
           // Exporting Results
@@ -177,8 +189,8 @@ object PythonProcessor {
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
 
@@ -192,8 +204,8 @@ object PythonProcessor {
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported Unresolved flow output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }
@@ -209,12 +221,12 @@ object PythonProcessor {
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err
               case Right(_) =>
-                println(
-                  s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
+                statsRecorder.justLogMessage(
+                  s" Successfully exported intermediate output to '${appCache.localScanPath}/${Constants.outputDirectoryName}' folder..."
                 )
             }
           }
-
+          statsRecorder.endLastStage()
           // Check if any of the export failed
           if (errorMsg.toList.isEmpty)
             Right(())
@@ -244,20 +256,9 @@ object PythonProcessor {
     * @param lang
     * @return
     */
-  def createPythonCpg(
-    ruleCache: RuleCache,
-    privadoInput: PrivadoInput,
-    sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache,
-    auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
-  ): Either[String, Unit] = {
-
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Python engine")
-    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
+  def createPythonCpg(): Either[String, Unit] = {
+    statsRecorder.justLogMessage("Processing source code using Python engine")
+    statsRecorder.initiateNewStage("Base source processing")
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
@@ -273,9 +274,8 @@ object PythonProcessor {
       .withOutputPath(Paths.get(cpgOutputPath).toString)
       .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
-      println(
-        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
+      statsRecorder.endLastStage()
+      statsRecorder.justLogMessage(s"Total no of graph nodes -> ${cpg.graph.nodeCount()}")
       cpg
     }
     processCPG(

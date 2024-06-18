@@ -3,6 +3,7 @@ package ai.privado.languageEngine.java.tagger.sink.api
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.tagger.sink.api.APISinkTagger
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 
 object JavaAPISinkTagger extends APISinkTagger {
@@ -11,9 +12,15 @@ object JavaAPISinkTagger extends APISinkTagger {
     * @param cpg
     * @param ruleCache
     */
-  override def applyTagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache): Unit = {
+  override def applyTagger(
+    cpg: Cpg,
+    ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
+    appCache: AppCache,
+    statsRecorder: StatsRecorder
+  ): Unit = {
 
-    super.applyTagger(cpg, ruleCache, privadoInput, appCache)
+    super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder)
     new JavaAPIRetrofitTagger(cpg, ruleCache).createAndApply()
 
     if (privadoInput.enableAPIByParameter) {
@@ -23,7 +30,7 @@ object JavaAPISinkTagger extends APISinkTagger {
 
     new JavaAPISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
 
-    new JavaAPITagger(cpg, ruleCache, privadoInput, appCache).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, privadoInput, appCache, statsRecorder).createAndApply()
   }
 
 }
