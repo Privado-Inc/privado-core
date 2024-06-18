@@ -23,8 +23,8 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.PrivadoInput
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
@@ -40,6 +40,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import ai.privado.utility.Utilities.{databaseURLPriority, ingressUrls}
 
 import java.util.Calendar
 
@@ -51,7 +52,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    appCache: AppCache
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -62,7 +64,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     new JSAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache = appCache).createAndApply()
 
@@ -70,7 +72,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new GraphqlQueryParserPass(cpg, ruleCache, taggerCache).createAndApply()
 
-    new JSDBConfigTagger(cpg).createAndApply()
+    new JSDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 

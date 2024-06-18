@@ -22,6 +22,7 @@
 
 package ai.privado.entrypoint
 
+import ai.privado.entrypoint
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language
 import ai.privado.utility.StatsRecorder
@@ -64,10 +65,16 @@ case class PrivadoInput(
   forceLanguage: Language.Language = Language.UNKNOWN,
   threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
   threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT
+  rubyParserTimeout: Long = 120
 )
 
 object CommandConstants {
-  val SCAN                                         = "scan"
+  val SCAN        = "scan"
+  val VALIDATE    = "validate"
+  val UPLOAD      = "upload"
+  val UPLOAD_ABBR = "u"
+  val METADATA    = "metadata"
+
   val INTERNAL_CONFIG                              = "internal-config"
   val INTERNAL_CONFIG_ABBR                         = "ic"
   val EXTERNAL_CONFIG                              = "external-config"
@@ -96,11 +103,8 @@ object CommandConstants {
   val ENABLE_API_BY_PARAMETER_ABBR                 = "eabyp"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
-  val UPLOAD                                       = "upload"
-  val UPLOAD_ABBR                                  = "u"
   val SKIP_UPLOAD                                  = "skip-upload"
   val SKIP_UPLOAD_ABBR                             = "su"
-  val VALIDATE                                     = "validate"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
   val TEST_OUTPUT                                  = "test-output"
@@ -124,6 +128,8 @@ object CommandConstants {
   val THREAD_DUMP_FREQ_ABBR                        = "tdf"
   val THREAD_DUMP_AVG_CPU_LIMIT                    = "thread-dump-avg-cpu-limit"
   val THREAD_DUMP_AVG_CPU_LIMIT_ABBR               = "tdacl"
+  val RUBY_PARSER_TIMEOUT                          = "ruby-parser-timeout"
+  val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
 }
 
 object CommandParser {
@@ -131,7 +137,8 @@ object CommandParser {
     Map(
       CommandConstants.SCAN     -> ScanProcessor,
       CommandConstants.UPLOAD   -> UploadProcessor,
-      CommandConstants.VALIDATE -> RuleValidator
+      CommandConstants.VALIDATE -> RuleValidator,
+      CommandConstants.METADATA -> MetadataProcessor
     )
   def parse(args: Array[String], statsRecorder: StatsRecorder): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
@@ -297,6 +304,11 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(threadDumpFreq = x))
               .text("Thread dump only if avg CPU utilsation % of a stage is below this value. Default is set to 50%"),
+            opt[Long](CommandConstants.RUBY_PARSER_TIMEOUT)
+              .abbr(CommandConstants.RUBY_PARSER_TIMEOUT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(rubyParserTimeout = x))
+              .text("Ruby Parser Timeout in seconds. By default set to 2 mins i.e. 120 seconds"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
@@ -326,6 +338,20 @@ object CommandParser {
           .required()
           .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.UPLOAD))
           .text("Uploads the result file to Privado.ai UI dashboard.")
+          .children(
+            arg[String]("<Source directory>")
+              .required()
+              .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
+              .text("Source code location"),
+            checkConfig(c =>
+              if (c.cmd.isEmpty) failure("")
+              else success
+            )
+          ),
+        cmd(CommandConstants.METADATA)
+          .required()
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.METADATA))
+          .text("Generate metadata for the repository")
           .children(
             arg[String]("<Source directory>")
               .required()

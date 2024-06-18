@@ -1,6 +1,6 @@
 package ai.privado.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.languageEngine.javascript.tagger.sink.RegularSinkTagger
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import org.scalatest.flatspec.AnyFlatSpec
@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream}
 import ai.privado.tagger.sink.SinkArgumentUtility
 import better.files.File
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
@@ -269,7 +269,7 @@ def code(code: String): Cpg = {
   ruleCache.setRule(rule)
   val config = Config().withInputPath(inputDir.toString()).withOutputPath(outputFile.toString())
   val cpg    = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
-  new RegularSinkTagger(cpg, ruleCache).createAndApply()
+  new RegularSinkTagger(cpg, ruleCache, DatabaseDetailsCache()).createAndApply()
   cpg
 }
 

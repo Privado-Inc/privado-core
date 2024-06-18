@@ -22,19 +22,36 @@
 
 package ai.privado.cache
 
-import ai.privado.model.DatabaseDetails
+import ai.privado.model.{DatabaseDetails, DatabaseSchema}
 
 import scala.collection.mutable
 
 /** Cache to store Rules specific things
   */
-object DatabaseDetailsCache {
+class DatabaseDetailsCache {
 
   private val databaseDetailsMap = mutable.HashMap[String, DatabaseDetails]()
 
-  def addDatabaseDetails(databaseDetails: DatabaseDetails, ruleId: String): Unit =
-    databaseDetailsMap.addOne(ruleId -> databaseDetails)
+  def addDatabaseDetails(databaseDetails: DatabaseDetails, ruleId: String): Unit = {
+
+    if (databaseDetailsMap.contains(ruleId) && databaseDetailsMap(ruleId).schema.isDefined) {
+      // rule already exists and schema is also present, append new schema tables
+
+      val oldSchema = databaseDetailsMap(ruleId).schema.get
+      val newSchema = databaseDetails.schema
+      if (newSchema.isDefined)
+        databaseDetailsMap.addOne(
+          ruleId -> databaseDetails
+            .copy(schema = Option(newSchema.get.copy(tables = oldSchema.tables ++ newSchema.get.tables)))
+        )
+      else
+        databaseDetailsMap.addOne(ruleId -> databaseDetails.copy(schema = Option(oldSchema)))
+    } else databaseDetailsMap.addOne(ruleId -> databaseDetails)
+  }
+
   def getDatabaseDetails(ruleId: String): Option[DatabaseDetails] = databaseDetailsMap.get(ruleId)
+
+  def getAllDatabaseDetails: List[DatabaseDetails] = databaseDetailsMap.values.toList
 
   def removeDatabaseDetails(ruleId: String): Unit = {
     databaseDetailsMap.remove(ruleId)

@@ -135,17 +135,14 @@ object SQLParser {
           Some(List(SQLQuery(SQLQueryType.CREATE, sqlTable, columnList)))
         case _ =>
           logger.debug("Something wrong: ", sqlQuery)
-          logger.error("Something wrong: ", sqlQuery)
           None
       }
     } catch {
       case e: JSQLParserException =>
         logger.debug(s"Failed to parse the SQL query '$sqlQuery'. Error: ${e.getMessage}")
-        logger.error(s"Failed to parse the SQL query '$sqlQuery'. Error: ${e.getMessage}")
         None
       case e: Exception =>
         logger.debug(s"Failed to parse the SQL query '$sqlQuery'. Error: ${e.getMessage}")
-        logger.error(s"Failed to parse the SQL query '$sqlQuery'. Error: ${e.getMessage}")
         None
     }
   }
@@ -272,11 +269,10 @@ object SQLNodeBuilder {
           }
         case None =>
           logger.debug("Failed to parse query ", query)
-          logger.error("Failed to parse query ", query)
       }
     } catch {
       case ex: Exception =>
-        logger.error(s"Error while parsing SQL query: ${query}")
+        logger.debug(s"Error while parsing SQL query: ${query}")
         None
     }
   }

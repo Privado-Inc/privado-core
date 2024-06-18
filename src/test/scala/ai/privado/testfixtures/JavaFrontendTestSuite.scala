@@ -15,7 +15,8 @@ class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) exte
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): BaseProcessor = {
     new JavaProcessor(
       ruleCache,
@@ -25,9 +26,10 @@ class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) exte
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      StatsRecorder(),
       returnClosedCpg = false,
-      propertyFilterCache,
-      StatsRecorder()
+      databaseDetailsCache,
+      propertyFilterCache
     )
   }
 }

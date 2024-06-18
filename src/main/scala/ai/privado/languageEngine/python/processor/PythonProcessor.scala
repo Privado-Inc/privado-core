@@ -5,7 +5,6 @@ import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.javascript.passes.config.JsConfigPropertyPass
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
@@ -57,7 +56,8 @@ class PythonProcessor(
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -89,6 +89,7 @@ class PythonProcessor(
           statsRecorder.endLastStage()
           statsRecorder.setSupressSubstagesFlag(false)
 
+<<<<<<< stats-logging
           statsRecorder.initiateNewStage("Privado source passes")
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
             .createAndApply()
@@ -105,6 +106,21 @@ class PythonProcessor(
 //          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 //          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
 //          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+=======
+          if (privadoInput.assetDiscovery) {
+            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+              .createAndApply()
+            new PythonConfigPropertyPass(cpg).createAndApply()
+          } else
+            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.PYTHON, propertyFilterCache)
+              .createAndApply()
+
+          new PythonPropertyLinkerPass(cpg).createAndApply()
+
+          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache).createAndApply()
+>>>>>>> dev
 
           // Unresolved function report
           if (privadoInput.showUnresolvedFunctionsReport) {
@@ -115,10 +131,24 @@ class PythonProcessor(
           // Run tagger
           statsRecorder.initiateNewStage("Tagger ...")
           val taggerCache = new TaggerCache
+<<<<<<< stats-logging
           cpg.runTagger(ruleCache, taggerCache, privadoInputConfig = privadoInput, dataFlowCache, appCache)
+=======
+          cpg.runTagger(
+            ruleCache,
+            taggerCache,
+            privadoInputConfig = privadoInput,
+            dataFlowCache,
+            appCache,
+            databaseDetailsCache
+          )
+          println(
+            s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
+          )
+>>>>>>> dev
 
           // we run S3 buckets detection after tagging
-          new PythonS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+          new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
           statsRecorder.endLastStage()
 
@@ -143,7 +173,8 @@ class PythonProcessor(
             List(),
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache
+            propertyFilterCache,
+            databaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -160,7 +191,15 @@ class PythonProcessor(
           if (privadoInput.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg, ruleCache),
+              AuditReportEntryPoint
+                .getAuditWorkbookForLanguage(
+                  xtocpg,
+                  taggerCache,
+                  sourceRepoLocation,
+                  auditCache,
+                  ruleCache,
+                  Language.PYTHON
+                ),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -234,9 +273,26 @@ class PythonProcessor(
     * @param lang
     * @return
     */
+<<<<<<< stats-logging
   def createPythonCpg(): Either[String, Unit] = {
     statsRecorder.justLogMessage("Processing source code using Python engine")
     statsRecorder.initiateNewStage("Base source processing")
+=======
+  def createPythonCpg(
+    ruleCache: RuleCache,
+    privadoInput: PrivadoInput,
+    sourceRepoLocation: String,
+    dataFlowCache: DataFlowCache,
+    auditCache: AuditCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
+  ): Either[String, Unit] = {
+
+    println(s"${Calendar.getInstance().getTime} - Processing source code using Python engine")
+    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
+>>>>>>> dev
 
     // Converting path to absolute path, we may need that same as JS
     val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath
@@ -265,7 +321,8 @@ class PythonProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
 

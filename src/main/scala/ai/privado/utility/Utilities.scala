@@ -217,6 +217,7 @@ object Utilities {
     allowedCharLimit: Option[Int] = None
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
+
     try {
       if (!filename.equals("<empty>")) {
         val lines = File(filename).lines.toList
@@ -559,29 +560,30 @@ object Utilities {
     dbUrl: JavaProperty,
     dbName: String,
     dbLocation: String,
-    dbVendor: String
+    dbVendor: String,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Unit = {
     rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+      if (databaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
         val fileName = dbUrl.file.name.headOption.getOrElse("")
         if (
           databaseURLPriority(
-            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
-            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
+            databaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
+            databaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
           ) < databaseURLPriority(
             dbUrl.value,
             fileName
           ) // Compare the priority of the database url with already present url in the database cache
         ) {
 
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-          DatabaseDetailsCache.addDatabaseDetails(
+          databaseDetailsCache.removeDatabaseDetails(rule._2)
+          databaseDetailsCache.addDatabaseDetails(
             DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, fileName),
             rule._2
           ) // Remove if current url has higher priority
         }
       } else {
-        DatabaseDetailsCache.addDatabaseDetails(
+        databaseDetailsCache.addDatabaseDetails(
           DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
           rule._2
         )

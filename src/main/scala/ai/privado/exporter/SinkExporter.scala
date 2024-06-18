@@ -45,7 +45,8 @@ class SinkExporter(
   privadoInput: PrivadoInput,
   repoItemTagName: Option[String] = None,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-  appCache: AppCache
+  appCache: AppCache,
+  databaseDetailsCache: DatabaseDetailsCache
 ) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
@@ -183,7 +184,7 @@ class SinkExporter(
               )
             })
           } else {
-            val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
+            val databaseDetails = databaseDetailsCache.getDatabaseDetails(rule.id)
             Some(
               SinkModel(
                 rule.catLevelOne.label,

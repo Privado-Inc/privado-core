@@ -53,7 +53,8 @@ class GoProcessor(
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) => {
@@ -102,7 +103,8 @@ class GoProcessor(
             taggerCache,
             privadoInputConfig = ScanProcessor.config.copy(),
             dataFlowCache,
-            appCache
+            appCache,
+            databaseDetailsCache
           )
           statsRecorder.endLastStage()
 
@@ -127,7 +129,8 @@ class GoProcessor(
             List(),
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache
+            propertyFilterCache,
+            databaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -144,7 +147,15 @@ class GoProcessor(
           if (ScanProcessor.config.generateAuditReport) {
             ExcelExporter.auditExport(
               outputAuditFileName,
-              AuditReportEntryPoint.getAuditWorkbookPy(auditCache, xtocpg, ruleCache),
+              AuditReportEntryPoint
+                .getAuditWorkbookForLanguage(
+                  xtocpg,
+                  taggerCache,
+                  sourceRepoLocation,
+                  auditCache,
+                  ruleCache,
+                  Language.GO
+                ),
               sourceRepoLocation
             ) match {
               case Left(err) =>
@@ -251,7 +262,8 @@ class GoProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
   }
 

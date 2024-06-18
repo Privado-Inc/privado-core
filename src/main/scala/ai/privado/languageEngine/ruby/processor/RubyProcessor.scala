@@ -23,18 +23,19 @@
 
 package ai.privado.languageEngine.ruby.processor
 
+import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.exporter.JSONExporter
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.exporter.monolith.MonolithExporter
+import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputAuditFileName}
 import ai.privado.model.{CatLevelOne, Constants, Language}
 import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, JsonPropertyParserPass, SQLParser}
 import ai.privado.semantic.Language.*
@@ -49,11 +50,9 @@ import io.joern.rubysrc2cpg.deprecated.passes.*
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.passes.ConfigFileCreationPass
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
-import io.joern.x2cpg.X2Cpg.{newEmptyCpg, withNewEmptyCpg}
-import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.layers.*
 import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.controlflow.CfgCreationPass
 import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
@@ -65,14 +64,18 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
+import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import scopt.Validation
 
+import java.util
 import java.util.Calendar
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import java.util.concurrent.{Callable, Executors}
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.*
+import scala.concurrent.duration.DurationLong
 import scala.util.{Failure, Success, Try, Using}
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class RubyProcessor(
   ruleCache: RuleCache,
@@ -98,7 +101,8 @@ class RubyProcessor(
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
   ): Either[String, Unit] = {
     xtocpg match {
       case Success(cpg) =>
@@ -158,7 +162,7 @@ class RubyProcessor(
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
 
           new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new DBTParserPass(cpg, sourceRepoLocation, ruleCache).createAndApply()
+          new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache).createAndApply()
 
           // Unresolved function report
           if (config.showUnresolvedFunctionsReport) {
@@ -175,7 +179,8 @@ class RubyProcessor(
             taggerCache,
             privadoInputConfig = ScanProcessor.config.copy(),
             dataFlowCache,
-            appCache
+            appCache,
+            databaseDetailsCache
           )
           statsRecorder.endLastStage()
           statsRecorder.initiateNewStage("Finding data flows ...")
@@ -196,8 +201,35 @@ class RubyProcessor(
             dataFlowCache,
             privadoInput,
             s3DatabaseDetailsCache,
-            appCache
+            appCache,
+            databaseDetailsCache
           )
+
+          val errorMsg = new ListBuffer[String]()
+          // Exporting the Audit report
+          if (ScanProcessor.config.generateAuditReport) {
+            ExcelExporter.auditExport(
+              outputAuditFileName,
+              AuditReportEntryPoint
+                .getAuditWorkbookForLanguage(
+                  xtocpg,
+                  taggerCache,
+                  sourceRepoLocation,
+                  auditCache,
+                  ruleCache,
+                  Language.RUBY
+                ),
+              sourceRepoLocation
+            ) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
+          }
 
           val result = JSONExporter.fileExport(
             cpg,
@@ -211,18 +243,17 @@ class RubyProcessor(
             monolithPrivadoJsonPaths = monolithPrivadoJsonPaths,
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache
+            propertyFilterCache,
+            databaseDetailsCache
           ) match {
             case Left(err) =>
               MetricHandler.otherErrorsOrWarnings.addOne(err)
-              Left(err)
+              errorMsg += err
             case Right(_) =>
               println(s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder")
               logger.debug(
                 s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
               )
-
-              Right(())
           }
           statsRecorder.endLastStage()
           result
@@ -271,11 +302,11 @@ class RubyProcessor(
 
   class RubyControlFlow extends ControlFlow {
 
-    override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
+    override def create(context: LayerCreatorContext): Unit = {
       val cpg    = context.cpg
       val passes = Iterator(new RubyCfgCreationPass(cpg), new CfgDominatorPass(cpg), new CdgPass(cpg))
       passes.zipWithIndex.foreach { case (pass, index) =>
-        runPass(pass, context, storeUndoInfo, index)
+        runPass(pass, context, index)
       }
     }
 
@@ -352,7 +383,6 @@ class RubyProcessor(
       new ConfigFileCreationPass(cpg).createAndApply()
       // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
       Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-
         val parsedFiles: List[(String, ProgramContext)] = {
           val tasks = SourceFiles
             .determine(
@@ -361,15 +391,32 @@ class RubyProcessor(
               ignoredFilesRegex = Option(config.ignoredFilesRegex),
               ignoredFilesPath = Option(config.ignoredFiles)
             )
-            .map(x =>
-              () =>
-                parser.parse(x) match
-                  case Failure(exception) =>
-                    logger.warn(s"Could not parse file: $x, skipping", exception); throw exception
-                  case Success(ast) => x -> ast
-            )
-            .iterator
-          ConcurrentTaskUtil.runUsingThreadPool(tasks).flatMap(_.toOption)
+            .map { x =>
+              ParserTask(x, parser)
+            }
+          val results = tasks.map(task =>
+            Future {
+              task.call()
+            }
+          )
+          var errorFileCount   = 0
+          var timeoutFileCount = 0
+          val finalResult      = ListBuffer[(String, ProgramContext)]()
+          results.zip(tasks).foreach { case (result, task) =>
+            try {
+              finalResult += Await.result(result, privadoInput.rubyParserTimeout.seconds)
+            } catch {
+              case ex: TimeoutException =>
+                println(s"${TimeMetric.getNewTime()} - Parser timed out for file -> '${task.file}'")
+                timeoutFileCount += 1
+              case ex: Exception =>
+                println(s"${TimeMetric.getNewTime()} - Error while parsing file -> '${task.file}'")
+                errorFileCount += 1
+            }
+          }
+          println(s"${TimeMetric.getNewTime()} - No of files skipped because of timeout - '$timeoutFileCount'")
+          println(s"${TimeMetric.getNewTime()} - No of files that are skipped because of error - '$errorFileCount'")
+          finalResult.toList
         }
 
         new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
@@ -390,8 +437,18 @@ class RubyProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     )
+  }
+  private class ParserTask(val file: String, val parser: ResourceManagedParser) {
+
+    def call(): (String, ProgramContext) = {
+      parser.parse(file) match
+        case Failure(exception) =>
+          logger.error(s"Could not parse file: $file, skipping", exception); throw exception
+        case Success(ast) => file -> ast
+    }
   }
 
   def withNewEmptyCpg[T <: X2CpgConfig[_]](outPath: String, config: T)(applyPasses: (Cpg, T) => Unit): Try[Cpg] = {

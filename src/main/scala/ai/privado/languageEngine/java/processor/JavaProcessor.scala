@@ -69,9 +69,10 @@ class JavaProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  statsRecorder: StatsRecorder
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -81,9 +82,10 @@ class JavaProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
-      propertyFilterCache,
-      statsRecorder
+      databaseDetailsCache,
+      propertyFilterCache
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -100,14 +102,22 @@ class JavaProcessor(
         new JavaPropertyLinkerPass(cpg),
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
-        new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+        new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
         new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache),
         new JavaYamlLinkerPass(cpg)
       )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, s3DatabaseDetailsCache, appCache)
+    cpg.runTagger(
+      ruleCache,
+      taggerCache,
+      privadoInput,
+      dataFlowCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      databaseDetailsCache
+    )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
     val excludeFileRegex = ruleCache.getExclusionRegex

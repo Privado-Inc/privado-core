@@ -1,6 +1,6 @@
 package ai.privado.policyEngine
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.CollectionExporter
@@ -717,10 +717,11 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       ConfigAndRules(sourceRule, sinkRule, collectionRule, List(), List(), List(), List(), List(), systemConfig, List())
     val ruleCache = new RuleCache()
     ruleCache.setRule(configAndRules)
-    val cpg           = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
-    val auditCache    = new AuditCache
-    val dataFlowCache = new DataFlowCache(privadoInput, auditCache)
-    val appCache      = new AppCache()
+    val cpg                  = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
+    val auditCache           = new AuditCache
+    val dataFlowCache        = new DataFlowCache(privadoInput, auditCache)
+    val appCache             = new AppCache()
+    val databaseDetailsCache = new DatabaseDetailsCache()
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -728,7 +729,7 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new OssDataFlow(options).run(context)
     new IdentifierTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
     new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, new TaggerCache()).createAndApply()

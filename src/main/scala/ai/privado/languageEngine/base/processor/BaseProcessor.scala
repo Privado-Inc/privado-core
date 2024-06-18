@@ -38,9 +38,10 @@ abstract class BaseProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  statsRecorder: StatsRecorder
+  databaseDetailsCache: DatabaseDetailsCache,
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -185,7 +186,8 @@ abstract class BaseProcessor(
       List(),
       s3DatabaseDetailsCache,
       appCache,
-      propertyFilterCache
+      propertyFilterCache,
+      databaseDetailsCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)
@@ -210,7 +212,7 @@ abstract class BaseProcessor(
       ExcelExporter.auditExport(
         outputAuditFileName,
         AuditReportEntryPoint
-          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache),
+          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache, lang),
         sourceRepoLocation
       ) match {
         case Left(err) =>

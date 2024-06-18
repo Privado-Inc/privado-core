@@ -33,6 +33,7 @@ import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
 import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
+import ai.privado.metadata.SystemInfo
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.{Language, UNKNOWN}
@@ -108,7 +109,7 @@ object ScanProcessor extends CommandProcessor {
               case Right(json) =>
                 import ai.privado.model.CirceEnDe.*
                 json.as[ConfigAndRules] match {
-                  case Right(configAndRules) =>
+                  case Right(configAndRules: ConfigAndRules) =>
                     configAndRules.copy(
                       exclusions = configAndRules.exclusions
                         .map(x =>
@@ -331,6 +332,7 @@ object ScanProcessor extends CommandProcessor {
     if (!File(config.sourceLocation.head).isWritable) {
       println(s"Warning: Privado doesn't have write permission on give repo location - ${config.sourceLocation.head}")
     }
+    SystemInfo.getInfo
     processCpg(appCache)
   }
 
@@ -345,7 +347,8 @@ object ScanProcessor extends CommandProcessor {
   private val auditCache             = new AuditCache
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache
   private val propertyFilterCache    = new PropertyFilterCache()
-  private def getDataflowCache: DataFlowCache = {
+  private val databaseDetailsCache   = new DatabaseDetailsCache()
+  def getDataflowCache: DataFlowCache = {
     new DataFlowCache(config, auditCache)
   }
 
@@ -396,8 +399,9 @@ object ScanProcessor extends CommandProcessor {
             auditCache,
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache = propertyFilterCache,
-            statsRecorder = statsRecorder
+            statsRecorder = statsRecorder,
+            databaseDetailsCache = databaseDetailsCache,
+            propertyFilterCache = propertyFilterCache
           ).processCpg()
         else
           KotlinProcessor(
@@ -408,12 +412,13 @@ object ScanProcessor extends CommandProcessor {
             auditCache,
             s3DatabaseDetailsCache,
             appCache,
-            propertyFilterCache = propertyFilterCache,
-            statsRecorder = statsRecorder
+            statsRecorder = statsRecorder,
+            databaseDetailsCache = databaseDetailsCache,
+            propertyFilterCache = propertyFilterCache
           ).processCpg()
       case Language.JAVASCRIPT =>
         statsRecorder.justLogMessage("Detected language 'JavaScript'")
-        JavascriptProcessor(
+        new JavascriptProcessor(
           getProcessedRule(Set(Language.JAVASCRIPT), appCache),
           this.config,
           sourceRepoLocation,
@@ -421,9 +426,10 @@ object ScanProcessor extends CommandProcessor {
           auditCache,
           s3DatabaseDetailsCache,
           appCache,
-          propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
-        ).createJavaScriptCpg()
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache,
+          propertyFilterCache = propertyFilterCache
+        ).processCpg()
       case Language.PYTHON =>
         statsRecorder.justLogMessage("Detected language 'Python'")
         PythonProcessor(
@@ -473,8 +479,9 @@ object ScanProcessor extends CommandProcessor {
           auditCache,
           s3DatabaseDetailsCache,
           appCache,
-          propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache,
+          propertyFilterCache = propertyFilterCache
         ).processCpg()
       case Language.CSHARP =>
         statsRecorder.justLogMessage("Detected language 'C#'")
@@ -486,8 +493,9 @@ object ScanProcessor extends CommandProcessor {
           auditCache,
           s3DatabaseDetailsCache,
           appCache,
-          propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache,
+          propertyFilterCache = propertyFilterCache
         ).processCpg()
       case Language.PHP =>
         statsRecorder.justLogMessage("Detected language 'PHP'")
@@ -499,8 +507,9 @@ object ScanProcessor extends CommandProcessor {
           auditCache,
           s3DatabaseDetailsCache,
           appCache,
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
         )
           .processCpg()
       case _ =>
@@ -529,8 +538,9 @@ object ScanProcessor extends CommandProcessor {
       getAuditCache,
       getS3DatabaseDetailsCache,
       appCache,
+      statsRecorder = statsRecorder,
+      databaseDetailsCache = databaseDetailsCache,
       propertyFilterCache = propertyFilterCache,
-      statsRecorder = statsRecorder
     ).processCpg()
   }
 

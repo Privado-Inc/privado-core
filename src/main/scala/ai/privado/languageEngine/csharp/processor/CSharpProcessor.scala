@@ -28,6 +28,7 @@ import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.*
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.semantic.Language.tagger
@@ -65,9 +66,10 @@ class CSharpProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
   statsRecorder: StatsRecorder
+  returnClosedCpg: Boolean = true,
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -77,9 +79,10 @@ class CSharpProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
-      propertyFilterCache,
-      statsRecorder
+      databaseDetailsCache,
+      propertyFilterCache
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -88,7 +91,7 @@ class CSharpProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {

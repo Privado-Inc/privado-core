@@ -53,9 +53,10 @@ class DefaultProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  statsRecorder: StatsRecorder
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -65,9 +66,10 @@ class DefaultProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
-      propertyFilterCache,
-      statsRecorder
+      databaseDetailsCache,
+      propertyFilterCache
     ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -76,14 +78,14 @@ class DefaultProcessor(
     List[CpgPassBase](
       new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
-      new DBTParserPass(cpg, sourceRepoLocation, ruleCache),
+      new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
       new HighTouchPass(cpg, sourceRepoLocation, ruleCache),
       new PropertyVerificationPass(cpg)
     )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

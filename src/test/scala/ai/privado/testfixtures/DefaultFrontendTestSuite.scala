@@ -1,6 +1,14 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
@@ -15,7 +23,8 @@ class TestCpgWithDefaultLanguage(val fileSuffix: String, val language: Language.
     auditCache: AuditCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): BaseProcessor = {
     new DefaultProcessor(
       ruleCache,
@@ -25,9 +34,10 @@ class TestCpgWithDefaultLanguage(val fileSuffix: String, val language: Language.
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      StatsRecorder(),
       returnClosedCpg = false,
-      propertyFilterCache,
-      StatsRecorder()
+      databaseDetailsCache,
+      propertyFilterCache
     )
   }
 }

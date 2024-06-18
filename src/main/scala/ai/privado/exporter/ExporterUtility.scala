@@ -27,6 +27,7 @@ import ai.privado.cache
 import ai.privado.cache.{
   AppCache,
   DataFlowCache,
+  DatabaseDetailsCache,
   Environment,
   FileSkippedBySizeListModel,
   PropertyFilterCache,
@@ -83,7 +84,7 @@ import scala.collection.concurrent.TrieMap
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 import privado_core.BuildInfo
 
 object ExporterUtility {
@@ -240,7 +241,15 @@ object ExporterUtility {
         else
           messageInExcerpt
       }
-      val excerpt = dump(absoluteFileName, node.lineNumber, message, allowedCharLimit = allowedCharLimit)
+      val _lineNumber: Option[Integer] =
+        if (node.lineNumber.isDefined) then
+          if (fileName.endsWith(".cs")) Option(node.lineNumber.get + 1) else Option(node.lineNumber.get)
+        else None
+      val _columnNumber: Option[Int] =
+        if (node.columnNumber.isDefined) then
+          if (fileName.endsWith(".cs")) Option(node.columnNumber.get + 1) else Option(node.columnNumber.get)
+        else None
+      val excerpt = dump(absoluteFileName, _lineNumber, message, allowedCharLimit = allowedCharLimit)
       // Get the actual filename
       val actualFileName = {
         if (appCache.isLombokPresent)
@@ -255,15 +264,23 @@ object ExporterUtility {
           Some(
             DataFlowSubCategoryPathExcerptModel(
               sample,
-              lineNumber,
-              columnNumber,
+              _lineNumber.getOrElse(-1).asInstanceOf[Int],
+              _columnNumber.getOrElse(-1),
               actualFileName,
               excerpt,
               Some(argumentList)
             )
           )
         case None =>
-          Some(DataFlowSubCategoryPathExcerptModel(sample, lineNumber, columnNumber, actualFileName, excerpt))
+          Some(
+            DataFlowSubCategoryPathExcerptModel(
+              sample,
+              _lineNumber.getOrElse(-1).asInstanceOf[Int],
+              _columnNumber.getOrElse(-1),
+              actualFileName,
+              excerpt
+            )
+          )
       }
     }
   }
@@ -360,6 +377,7 @@ object ExporterUtility {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
     propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
@@ -379,9 +397,10 @@ object ExporterUtility {
         privadoInput,
         repoItemTagName = repoItemTagName,
         s3DatabaseDetailsCache,
-        appCache
+        appCache,
+        databaseDetailsCache
       )
-    val dataflowExporter = new DataflowExporter(dataflows, taggerCache)
+    val dataflowExporter = new DataflowExporter(dataflows, taggerCache, databaseDetailsCache)
     val collectionExporter =
       new CollectionExporter(cpg, ruleCache, repoItemTagName = repoItemTagName, appCache = appCache)
     val httpConnectionMetadataExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
@@ -445,7 +464,9 @@ object ExporterUtility {
     val finalCollections = Await.result(collections, Duration.Inf)
     logger.debug("Done with exporting Collections")
     val violationResult =
-      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache)).getOrElse(List[ViolationModel]())
+      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
+        .getOrElse(List[ViolationModel]())
+
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
 
@@ -518,12 +539,20 @@ object ExporterUtility {
                 s"${appCache.scanPath}/$fileName"
             }
 
+            val _lineNumber: Option[Integer] =
+              if (node.lineNumber.isDefined) then
+                if (fileName.endsWith(".cs")) Option(node.lineNumber.get + 1) else Option(node.lineNumber.get)
+              else None
+            val _columnNumber: Option[Int] =
+              if (node.columnNumber.isDefined) then
+                if (fileName.endsWith(".cs")) Option(node.columnNumber.get + 1) else Option(node.columnNumber.get)
+              else None
             DataFlowSubCategoryPathExcerptModel(
               node.code,
-              node.lineNumber.get,
-              node.columnNumber.get,
+              _lineNumber.getOrElse(-1).asInstanceOf[Int],
+              _columnNumber.getOrElse(-1),
               fileName,
-              Utilities.dump(absoluteFileName, node.lineNumber, excerptStartLine = -1, excerptEndLine = 1)
+              Utilities.dump(absoluteFileName, _lineNumber, excerptStartLine = -1, excerptEndLine = 1)
             )
           })
           .asJson
