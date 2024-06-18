@@ -509,7 +509,7 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache,
+          propertyFilterCache = propertyFilterCache
         )
           .processCpg()
       case _ =>
@@ -540,7 +540,7 @@ object ScanProcessor extends CommandProcessor {
       appCache,
       statsRecorder = statsRecorder,
       databaseDetailsCache = databaseDetailsCache,
-      propertyFilterCache = propertyFilterCache,
+      propertyFilterCache = propertyFilterCache
     ).processCpg()
   }
 
