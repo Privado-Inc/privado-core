@@ -13,6 +13,7 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.kotlin.processor.KotlinProcessor
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
 
 class TestCpgWithKotlin(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
@@ -33,9 +34,10 @@ class TestCpgWithKotlin(val fileSuffix: String, val language: Language.Value) ex
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      StatsRecorder(),
       returnClosedCpg = false,
-      propertyFilterCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      propertyFilterCache
     )
   }
 }

@@ -26,29 +26,29 @@ package ai.privado.dataflow
 import ai.privado.audit.UnresolvedFlowReport
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.dataflow.Dataflow.getExpendedFlowInfo
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.javascript.JavascriptSemanticGenerator
 import ai.privado.languageEngine.python.semantic.PythonSemanticGenerator
+import ai.privado.model.exporter.DataFlowPathIntermediateModel
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
+import ai.privado.utility.{StatsRecorder, Utilities}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
+import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, HightouchSink}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.model.exporter.DataFlowPathIntermediateModel
-import ai.privado.utility.Utilities
-import io.joern.dataflowengineoss.semanticsloader.Semantics
 
 import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
 
-class Dataflow(cpg: Cpg) {
+class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -77,18 +77,17 @@ class Dataflow(cpg: Cpg) {
 
     val sources = Dataflow.getSources(cpg)
     var sinks   = Dataflow.getSinks(cpg)
-
-    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of source nodes - ${sources.size}")
-    println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes - ${sinks.size}")
+    statsRecorder.justLogMessage(s"no of source nodes - ${sources.size}")
+    statsRecorder.justLogMessage(s"no of sinks nodes - ${sinks.size}")
 
     if (privadoScanConfig.limitNoSinksForDataflows > -1) {
       sinks = sinks.take(privadoScanConfig.limitNoSinksForDataflows)
-      println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --no of sinks nodes post limit - ${sinks.size}")
+      statsRecorder.justLogMessage(s"no of sinks nodes post limit - ${sinks.size}")
     }
 
     if (sources.isEmpty || sinks.isEmpty) Map[String, Path]()
     else {
-      println(s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --Finding flows invoked...")
+      statsRecorder.initiateNewStage("Finding flows")
       val dataflowPathsUnfiltered = {
         if (privadoScanConfig.disable2ndLevelClosure) sinks.reachableByFlows(sources).l
         else {
@@ -134,10 +133,9 @@ class Dataflow(cpg: Cpg) {
       if (privadoScanConfig.testOutput || privadoScanConfig.generateAuditReport) {
         dataFlowCache.intermediateDataFlow = getExpendedFlowInfo(dataflowPathsUnfiltered, appCache, ruleCache)
       }
-
-      println(s"${TimeMetric.getNewTime()} - --Finding flows is done in \t\t\t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPathsUnfiltered.size}")
-      println(s"${Calendar.getInstance().getTime} - --Filtering flows 1 invoked...")
+      statsRecorder.endLastStage()
+      statsRecorder.justLogMessage(s"Unique flows - ${dataflowPathsUnfiltered.size}")
+      statsRecorder.initiateNewStage("Filtering flows 1")
       appCache.totalFlowFromReachableBy = dataflowPathsUnfiltered.size
 
       // Apply `this` filtering for JS, JAVA
@@ -152,8 +150,8 @@ class Dataflow(cpg: Cpg) {
             .filter(DuplicateFlowProcessor.filterFlowsByContext)
             .filter(DuplicateFlowProcessor.flowNotTaintedByThis)
       }
-      println(s"${TimeMetric.getNewTime()} - --Filtering flows 1 is done in \t\t\t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowPaths.size}")
+      statsRecorder.endLastStage()
+      statsRecorder.justLogMessage(s"Unique flows - ${dataflowPaths.size}")
       appCache.totalFlowAfterThisFiltering = dataflowPaths.size
       // Stores key -> PathID, value -> Path
       val dataflowMapByPathId = dataflowPaths
@@ -172,7 +170,7 @@ class Dataflow(cpg: Cpg) {
         dataFlowCache.dataflowsMapByType.put(item._1, item._2)
       })
 
-      println(s"${Calendar.getInstance().getTime} - --Filtering flows 2 is invoked...")
+      statsRecorder.initiateNewStage("Filtering flows 2")
       DuplicateFlowProcessor.filterIrrelevantFlowsAndStoreInCache(
         dataflowMapByPathId,
         privadoScanConfig,
@@ -181,14 +179,14 @@ class Dataflow(cpg: Cpg) {
         auditCache,
         appCache
       )
-      println(s"${TimeMetric.getNewTime()} - --Filtering flows 2 is done in \t\t\t- ${TimeMetric
-          .setNewTimeToStageLastAndGetTimeDiff()} - Final flows - ${dataFlowCache.getDataflowBeforeDedup.size}")
+      statsRecorder.endLastStage()
+      statsRecorder.justLogMessage(s"Final flows - ${dataFlowCache.getDataflowBeforeDedup.size}")
     }
     // Need to return the filtered result
-    println(s"${Calendar.getInstance().getTime} - --Deduplicating flows invoked...")
+    statsRecorder.initiateNewStage("Deduplicating flows")
     val dataflowFromCache = dataFlowCache.getDataflowAfterDedup
-    println(s"${TimeMetric.getNewTime()} - --Deduplicating flows is done in \t\t- ${TimeMetric
-        .setNewTimeToStageLastAndGetTimeDiff()} - Unique flows - ${dataflowFromCache.size}")
+    statsRecorder.endLastStage()
+    statsRecorder.justLogMessage(s"Unique flows - ${dataflowFromCache.size}")
     auditCache.addIntoFinalPath(dataflowFromCache)
     dataflowFromCache
       .map(_.pathId)

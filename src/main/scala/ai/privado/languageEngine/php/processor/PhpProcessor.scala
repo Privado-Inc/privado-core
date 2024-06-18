@@ -25,12 +25,14 @@ package ai.privado.languageEngine.php.processor
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
 import ai.privado.model.Constants.*
 import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
+import ai.privado.model.{CpgWithOutputMap, Language}
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
@@ -52,9 +54,10 @@ class PhpProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -64,6 +67,7 @@ class PhpProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache
@@ -74,7 +78,7 @@ class PhpProcessor(
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List[CpgPassBase]()
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
@@ -82,8 +86,8 @@ class PhpProcessor(
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Php engine")
-
+    statsRecorder.justLogMessage("Processing source code using Php engine")
+    statsRecorder.initiateNewStage("Base source processing")
     createCpgFolder(sourceRepoLocation)
 
     val cpgOutput = Paths.get(sourceRepoLocation, outputDirectoryName, cpgOutputFileName)
@@ -95,11 +99,11 @@ class PhpProcessor(
       .withDownloadDependencies(!privadoInput.skipDownloadDependencies)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
-      println(
-        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
-
+      statsRecorder.endLastStage()
+      statsRecorder.initiateNewStage("Default overlays")
       applyDefaultOverlays(cpg)
+      statsRecorder.endLastStage()
+      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
 
@@ -127,7 +131,7 @@ object PhpProcessor {
       case None    => Paths.get(fixedDir, "bin", "php-parser", "php-parser.php")
     }
 
-    println(s"${TimeMetric.getNewTime()} - Using PHP logger from $parserPath")
+    println(s"${Calendar.getInstance().getTime} - Using PHP logger from $parserPath")
     parserPath.toAbsolutePath.toString
 
   }

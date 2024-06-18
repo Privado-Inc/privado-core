@@ -2,26 +2,20 @@ package ai.privado.languageEngine.base.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
 import ai.privado.cache.*
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.dataflow.Dataflow
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.cache.ModuleCache
+import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  outputUnresolvedFilename
-}
-import ai.privado.model.{CpgWithOutputMap, Language}
+import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
+import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
 import ai.privado.semantic.Language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import io.circe.Json
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -44,6 +38,7 @@ abstract class BaseProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean,
   databaseDetailsCache: DatabaseDetailsCache,
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
@@ -65,8 +60,9 @@ abstract class BaseProcessor(
     xtocpg match {
       case Success(cpg) =>
         try {
+          statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
-
+          statsRecorder.endLastStage()
           applyDataflowAndPostProcessingPasses(cpg)
 
           applyTaggingAndExport(cpg) match
@@ -79,7 +75,9 @@ abstract class BaseProcessor(
           import java.io.File
           val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
           val cpgFile       = new File(cpgOutputPath)
-          println(s"\n\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n")
+          statsRecorder.justLogMessage(
+            s"Binary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n"
+          )
         }
       case Failure(exception) =>
         logger.error("Error while parsing the source code!")
@@ -100,15 +98,14 @@ abstract class BaseProcessor(
     */
   def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     logger.info("Applying data flow overlay")
+    statsRecorder.initiateNewStage("Run oss data flow")
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     if (privadoInput.enableLambdaFlows)
       new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
     logger.info("=====================")
-    println(
-      s"${TimeMetric.getNewTime()} - Run oss data flow is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-    )
+    statsRecorder.endLastStage()
   }
 
   /** Wrapper method which takes care of applying tagging and export
@@ -116,23 +113,24 @@ abstract class BaseProcessor(
     * @return
     */
   def applyTaggingAndExport(cpg: Cpg): Either[String, CpgWithOutputMap] = {
-
-    println(s"${Calendar.getInstance().getTime} - Tagging source code with rules...")
+    statsRecorder.initiateNewStage("Tagging ...")
     val taggerCache = new TaggerCache()
     runPrivadoTagger(cpg, taggerCache)
-    println(
-      s"${TimeMetric.getNewTime()} - Tagging source code is done in \t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-    )
+    statsRecorder.endLastStage()
 
-    println(s"${Calendar.getInstance().getTime} - Finding source to sink flow of data...")
-    val dataflowMap = cpg.dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
-    println(s"${TimeMetric.getNewTime()} - Finding source to sink flow is done in \t\t- ${TimeMetric
-        .setNewTimeToLastAndGetTimeDiff()} - Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
-    println(s"\n\n${TimeMetric.getNewTime()} - Code scanning is done in \t\t\t- ${TimeMetric.getTheTotalTime()}\n\n")
+    statsRecorder.initiateNewStage("Finding data flows ...")
+    val dataflowMap =
+      Dataflow(cpg, statsRecorder).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
+    statsRecorder.endLastStage()
+    statsRecorder.justLogMessage(s"Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
 
-    applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match
+    statsRecorder.initiateNewStage("Brewing result")
+    val result = applyFinalExport(cpg, taggerCache, dataflowMap, s3DatabaseDetailsCache, appCache) match {
       case Left(err)        => Left(err)
       case Right(outputMap) => Right(CpgWithOutputMap(cpg, outputMap))
+    }
+    statsRecorder.endLastStage()
+    result
   }
 
   def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = ???
@@ -174,7 +172,6 @@ abstract class BaseProcessor(
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache
   ): Either[String, Map[String, Json]] = {
-    println(s"${Calendar.getInstance().getTime} - Brewing result...")
     MetricHandler.setScanStatus(true)
     // Exporting Results
     JSONExporter.fileExport(
@@ -196,8 +193,8 @@ abstract class BaseProcessor(
         MetricHandler.otherErrorsOrWarnings.addOne(err)
         Left(err)
       case Right(outputJson) =>
-        println(
-          s"${Calendar.getInstance().getTime} - Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+        statsRecorder.justLogMessage(
+          s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
         Right(outputJson)
     }
@@ -222,8 +219,8 @@ abstract class BaseProcessor(
           MetricHandler.otherErrorsOrWarnings.addOne(err)
           Left(err)
         case Right(_) =>
-          println(
-            s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+          statsRecorder.justLogMessage(
+            s"Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
           Right(())
       }
@@ -243,8 +240,8 @@ abstract class BaseProcessor(
         MetricHandler.otherErrorsOrWarnings.addOne(err)
         Left(err)
       case Right(_) =>
-        println(
-          s"${Calendar.getInstance().getTime} - Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+        statsRecorder.justLogMessage(
+          s"Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
         )
         Right(())
     }
@@ -262,8 +259,8 @@ abstract class BaseProcessor(
           MetricHandler.otherErrorsOrWarnings.addOne(err)
           Left(err)
         case Right(_) =>
-          println(
-            s"${Calendar.getInstance().getTime} - Successfully exported intermediate output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+          statsRecorder.justLogMessage(
+            s"Successfully exported intermediate output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
           Right(())
       }

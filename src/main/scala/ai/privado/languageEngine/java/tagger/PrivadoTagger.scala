@@ -48,6 +48,7 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollectionTagger}
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -67,7 +68,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     dataFlowCache: DataFlowCache,
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -85,7 +87,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new JavaS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
-    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
     // Custom Rule tagging
     if (!privadoInputConfig.ignoreInternalRules) {
@@ -96,7 +98,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache, privadoInputConfig, appCache).createAndApply()
     }
 
-    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
     new DatabaseQueryReadPass(
       cpg,

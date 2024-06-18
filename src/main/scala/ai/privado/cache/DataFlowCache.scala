@@ -116,7 +116,6 @@ object DataFlowCache {
     dataflow: Map[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]
   ) = {
 
-    println(s"${Calendar.getInstance().getTime} - Deduplicating data flows...")
     val dataflowAfterDedup = mutable.HashMap[String, mutable.HashMap[String, ListBuffer[DataFlowPathModel]]]()
 
     def addToMap(dataFlowPathModel: DataFlowPathModel): Unit = {

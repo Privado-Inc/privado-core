@@ -24,9 +24,13 @@
 package ai.privado.languageEngine.ruby.tagger
 
 import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
+import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
+import ai.privado.languageEngine.ruby.feeder.{LeakageRule, StorageInheritRule}
+import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
+import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.languageEngine.ruby.tagger.source.{
   IdentifierDerivedTagger,
   IdentifierTagger,
@@ -39,6 +43,8 @@ import ai.privado.languageEngine.ruby.tagger.schema.{RubyMongoSchemaMapper, Ruby
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.StatsRecorder
+import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -46,7 +52,6 @@ import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
 
 import java.util.Calendar
-import ai.privado.utility.Utilities.ingressUrls
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -57,7 +62,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
     logger.info("Starting tagging")
     new LiteralTagger(cpg, ruleCache).createAndApply()
@@ -67,7 +73,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new IdentifierDerivedTagger(cpg, ruleCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
-    new APITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache).createAndApply()
+    new APITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache, statsRecorder).createAndApply()
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
