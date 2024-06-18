@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.go.processor
 
-import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery}
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{ScanProcessor, TimeMetric}
@@ -104,6 +104,21 @@ object GoProcessor {
           println(s"${Calendar.getInstance().getTime} - Brewing result...")
           MetricHandler.setScanStatus(true)
           val errorMsg = new ListBuffer[String]()
+
+          // Exporting the DED Sources report
+          val privadoInput = ScanProcessor.config.copy()
+          if (privadoInput.dedSourceReport) {
+            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, Language.GO) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported DED Source report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
+          }
+
           // Exporting Results
           JSONExporter.fileExport(
             cpg,

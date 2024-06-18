@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.base.processor
 
-import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
+import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery, DependencyReport}
 import ai.privado.cache.*
 import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
@@ -149,6 +149,10 @@ abstract class BaseProcessor(
 
     val errorMsgs = ListBuffer[String]()
     reportUnresolvedMethods(cpg, lang)
+    dedSourceReportExport(cpg) match
+      case Left(err) => errorMsgs.addOne(err)
+      case Right(_)  =>
+
     auditReportExport(cpg, taggerCache) match
       case Left(err) => errorMsgs.addOne(err)
       case Right(_)  =>
@@ -242,6 +246,22 @@ abstract class BaseProcessor(
       }
     } else Right(())
 
+  }
+
+  protected def dedSourceReportExport(cpg: Cpg): Either[String, Unit] = {
+    // Exporting the DED Sources report
+    if (privadoInput.dedSourceReport) {
+      DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, lang) match {
+        case Left(err) =>
+          MetricHandler.otherErrorsOrWarnings.addOne(err)
+          Left(err)
+        case Right(_) =>
+          println(
+            s"${Calendar.getInstance().getTime} - Successfully exported DED Source report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+          )
+          Right(())
+      }
+    } else Right(())
   }
 
   protected def unresolvedReportExport(cpg: Cpg): Either[String, Unit] = {

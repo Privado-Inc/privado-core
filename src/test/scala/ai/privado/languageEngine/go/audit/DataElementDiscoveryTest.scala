@@ -30,6 +30,16 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
   }
 
   "DataElementDiscovery" should {
+    "Test discovery of class name in codebase" in {
+      val classNameList = DataElementDiscoveryUtils.getSourceUsingRules(Try(cpg))
+
+      classNameList.size shouldBe 4
+      classNameList should contain("entity.User")
+      classNameList should contain("entity.Account")
+      classNameList should contain("entity.Address")
+      classNameList should not contain ("nonExistent.Type")
+    }
+
     "Test class member variable" in {
       val classList = List("entity.User", "entity.Account")
 
@@ -79,9 +89,9 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       })
 
       memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "5", "Member")
-      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "12", "Method Parameter")
+      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "13", "Identifier")
       memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "5", "Member")
-      memberLineNumberAndTypeMapping("accNo") shouldBe (/* line number */ "8", "Method Parameter")
+      memberLineNumberAndTypeMapping("accNo") shouldBe (/* line number */ "9", "Identifier")
       memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "5", "Member")
       memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
 
@@ -100,6 +110,10 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
       // validate source Rule ID in result
       sourceRuleIdMap("firstName") should equal("Data.Sensitive.FirstName")
+    }
+
+    "Test file score " in {
+      DataElementDiscovery.getFileScoreJS("User.go", Try(cpg)) shouldBe "1.5"
     }
 
     "filter the class having no member" in {

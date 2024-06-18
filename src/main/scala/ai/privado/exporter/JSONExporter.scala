@@ -24,6 +24,7 @@
 package ai.privado.exporter
 
 import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
+import ai.privado.audit.DEDSourceDiscovery.DEDSourceAudit
 import ai.privado.cache.{
   AppCache,
   DataFlowCache,
@@ -69,8 +70,6 @@ import java.math.BigInteger
 import java.util.Calendar
 import scala.collection.mutable
 import scala.concurrent.*
-import ExecutionContext.Implicits.global
-import duration.*
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language.*
@@ -208,6 +207,30 @@ object JSONExporter {
     val output = dataElementDiscoveryData.asJson
     try {
       logger.info("Completed Intermediate Data-Element Discovery Exporting")
+
+      val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down Intermediate Exporter engine")
+      Right(())
+
+    } catch {
+      case ex: Exception =>
+        println("Failed to export intermediate output")
+        logger.debug(ex.getStackTrace.mkString("\n"))
+        logger.debug("Failed to export intermediate output", ex)
+        Left(ex.toString)
+    }
+  }
+
+  def dedSourceDiscoveryAuditFileExport(
+    outputFileName: String,
+    repoPath: String,
+    dedSourceData: List[DEDSourceAudit]
+  ): Either[String, Unit] = {
+    logger.info("Initiated the Intermediate exporter engine")
+    val output = dedSourceData.asJson
+    try {
+      logger.info("Completed Intermediate DED Source Discovery Exporting")
 
       val f = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())

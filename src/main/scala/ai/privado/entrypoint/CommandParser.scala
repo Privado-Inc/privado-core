@@ -53,6 +53,7 @@ case class PrivadoInput(
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
+  dedSourceReport: Boolean = false,
   enableAuditSemanticsFilter: Boolean = false,
   limitNoSinksForDataflows: Int = -1,
   limitArgExpansionDataflows: Int = -1,
@@ -107,6 +108,8 @@ object CommandConstants {
   val TEST_OUTPUT_ABBR                             = "tout"
   val GENERATE_AUDIT_REPORT                        = "generate-audit-report"
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
+  val DED_SOURCE_REPORT                            = "ded-source-report"
+  val DED_SOURCE_REPORT_ABBR                       = "dsr"
   val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
   val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
   val LIMIT_NO_SINKS_FOR_DATAFLOWS                 = "limit-no-sinks-for-dataflows"
@@ -264,6 +267,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(generateAuditReport = true))
               .text("Export the audit report"),
+            opt[Unit](CommandConstants.DED_SOURCE_REPORT)
+              .abbr(CommandConstants.DED_SOURCE_REPORT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(dedSourceReport = true))
+              .text("Export the ded source report"),
             opt[Unit](CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER)
               .abbr(CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER_ABBR)
               .optional()

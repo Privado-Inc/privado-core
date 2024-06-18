@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery}
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor, TimeMetric}
@@ -239,6 +239,19 @@ object RubyProcessor {
               case Right(_) =>
                 println(
                   s"${Calendar.getInstance().getTime} - Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+                )
+            }
+          }
+
+          // Exporting the DED Sources report
+          if (privadoInput.dedSourceReport) {
+            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, Language.RUBY) match {
+              case Left(err) =>
+                MetricHandler.otherErrorsOrWarnings.addOne(err)
+                errorMsg += err
+              case Right(_) =>
+                println(
+                  s"${Calendar.getInstance().getTime} - Successfully exported DED Source report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
                 )
             }
           }

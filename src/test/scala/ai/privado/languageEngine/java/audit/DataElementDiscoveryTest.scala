@@ -1,5 +1,5 @@
 package ai.privado.languageEngine.java.audit
-import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryUtils}
+import ai.privado.audit.{DataElementDiscoveryJava, DataElementDiscoveryUtils}
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.java.tagger.source.*
@@ -34,6 +34,35 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
   }
 
   "DataElementDiscovery" should {
+    "Test discovery of class name in codebase" in {
+      val classNameList = DataElementDiscoveryJava.getSourceUsingRules(Try(cpg))
+
+      classNameList.size shouldBe 4
+      classNameList should contain("com.test.privado.Entity.User")
+      classNameList should contain("com.test.privado.Entity.Account")
+      classNameList should contain("com.test.privado.Entity.Salary")
+      classNameList should contain("com.test.privado.Entity.Invoice")
+      classNameList should not contain ("com.test.privado.Controller.AddressController")
+      classNameList should not contain ("com.test.privado.Controller.UserController")
+      classNameList should not contain ("com.test.privado.Entity.Address")
+      classNameList should not contain ("com.test.privado.Dao.AdminDao")
+    }
+
+    "Test discovery of class Name in package from class name" in {
+      val classList = List("com.test.privado.Entity.User", "com.test.privado.Entity.Account")
+
+      val discoveryList = DataElementDiscoveryJava.extractClassFromPackage(Try(cpg), classList.toSet)
+      discoveryList.size shouldBe 5
+      discoveryList should contain("com.test.privado.Entity.User")
+      discoveryList should contain("com.test.privado.Entity.Account")
+      discoveryList should contain("com.test.privado.Entity.Salary")
+      discoveryList should contain("com.test.privado.Entity.Invoice")
+      discoveryList should contain("com.test.privado.Entity.Address")
+      discoveryList should not contain ("com.test.privado.Controller.AddressController")
+      discoveryList should not contain ("com.test.privado.Controller.UserController")
+      discoveryList should not contain ("com.test.privado.Dao.AdminDao")
+    }
+
     "Test class member variable" in {
       val classList = List("com.test.privado.Entity.User", "com.test.privado.Entity.Account")
 
@@ -54,6 +83,18 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classMemberMap("com.test.privado.Entity.Account").head.name should equal("accountNo")
     }
 
+    "Test Collection discovery" in {
+      val collectionList = DataElementDiscoveryJava.getCollectionInputList(Try(cpg))
+      collectionList should contain("com.test.privado.Entity.User")
+      collectionList should not contain ("com.test.privado.Entity.Account")
+      collectionList should not contain ("com.test.privado.Entity.Salary")
+      collectionList should not contain ("com.test.privado.Entity.Invoice")
+      collectionList should not contain ("com.test.privado.Entity.Address")
+      collectionList should not contain ("com.test.privado.Controller.AddressController")
+      collectionList should not contain ("com.test.privado.Controller.UserController")
+      collectionList should not contain ("com.test.privado.Dao.AdminDao")
+    }
+
     "Test final discovery result" in {
       val classNameList                  = new mutable.HashSet[String]()
       val fileScoreList                  = new mutable.HashSet[String]()
@@ -64,7 +105,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       val methodNameMap                  = new mutable.HashMap[String, String]()
       val memberLineNumberAndTypeMapping = mutable.HashMap[String, (String, String)]()
       val uniqueIdentifiers              = mutable.ArrayBuffer[String]()
-      val workbookList = DataElementDiscovery.processDataElementDiscovery(Try(cpg), taggerCache, Language.JAVA)
+      val workbookList                   = DataElementDiscoveryJava.processDataElementDiscovery(Try(cpg), taggerCache)
 
       workbookList.foreach(row => {
         classNameList += row.head
@@ -76,18 +117,18 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
         // Bind entity's name to its line number for testing.
         memberLineNumberAndTypeMapping += (row(3) -> (row(10), row.last))
-//        memberLineNumberAndTypeMapping += s"${row(3)}+${row(10)}+${row.last}"
+        //        memberLineNumberAndTypeMapping += s"${row(3)}+${row(10)}+${row.last}"
         uniqueIdentifiers += row(11)
       })
 
-      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "8", "Identifier")
-      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "7", "Identifier")
+      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "5", "Member")
+      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "5", "Member")
       memberLineNumberAndTypeMapping("invoiceNo") shouldBe (/* line number */ "6", "Member")
       memberLineNumberAndTypeMapping("payment") shouldBe (/* line number */ "11", "Member")
       memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
 
       // All identifiers generated via MD5 should be unique
-      // uniqueIdentifiers.size shouldBe uniqueIdentifiers.distinct.size
+      uniqueIdentifiers.size shouldBe uniqueIdentifiers.distinct.size
 
       // Validate class name in result
       classNameList should contain("com.test.privado.Entity.User")
@@ -95,6 +136,9 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       classNameList should contain("com.test.privado.Entity.Salary")
       classNameList should contain("com.test.privado.Entity.Invoice")
       classNameList should contain("com.test.privado.Entity.Address")
+      classNameList should not contain ("com.test.privado.Controller.UserController")
+      classNameList should not contain ("com.test.privado.Controller.AddressController")
+      classNameList should not contain ("com.test.privado.Dao.AdminDao")
 
       // Validate class member in result
       memberList should contain("houseNo")
@@ -102,10 +146,32 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
       memberList should contain("invoiceNo")
       memberList should contain("payment")
       memberList should contain("accountNo")
-      memberList should contain("addressInfo")
+      memberList should not contain ("addressInfo")
+
+      fileScoreList should contain("2.0")
+      fileScoreList should contain("0.0")
 
       // validate source Rule ID in result
       sourceRuleIdMap("firstName").toString should equal("Data.Sensitive.FirstName")
+
+      // validate collection Tag in result
+      // collectionTagMap("com.test.privado.Entity.User").toString should equal("YES")
+
+      // validate collection endpoint in result
+      // endpointMap("com.test.privado.Entity.User").toString should equal("/user/add")
+
+      // validate collection method name in result
+      // methodNameMap("com.test.privado.Entity.User").toString should equal(
+      //   "public String userHandler(@RequestBody User user)"
+      // )
+    }
+
+    "Test file score " in {
+      var score = DataElementDiscoveryJava.getFileScore("User.java", Try(cpg))
+      score shouldBe "2.0"
+
+      score = DataElementDiscoveryJava.getFileScore("Salary.java", Try(cpg))
+      score shouldBe "0.0"
 
     }
 

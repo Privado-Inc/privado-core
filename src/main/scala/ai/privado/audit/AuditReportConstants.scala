@@ -133,6 +133,8 @@ object AuditReportConstants {
 
   val AUDIT_SOURCE_FILE_NAME = "audit-sources.json"
 
+  val DED_SOURCE_FILE_NAME = "ded-sources.json"
+
   // Not used for the time being
   val JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX =
     ".*(types|dto(s)?|data|constants|components|model(s)?).*|.*(types.ts|constants.ts|models.ts)"

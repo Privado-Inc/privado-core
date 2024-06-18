@@ -116,15 +116,14 @@ object AuditReportEntryPoint {
     println(s"${Calendar.getInstance().getTime} - Audit report generation started...")
     val dataElementDiscoveryData = lang match {
       case Language.JAVA | Language.KOTLIN =>
-        DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
+        DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
       case Language.RUBY =>
         DataElementDiscovery.processDataElementDiscoveryForIdentifierAndFieldIdentfier(xtocpg, lang)
       case _ =>
         DataElementDiscovery.processDataElementDiscovery(xtocpg, taggerCache, lang)
     }
-    println(s"No of sources after dedup: ${dataElementDiscoveryData.size}")
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
-    println(s"${Calendar.getInstance().getTime} - Audit Sources COMPLETED...")
+
     try {
       createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
