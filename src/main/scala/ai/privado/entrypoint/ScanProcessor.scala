@@ -441,9 +441,8 @@ object ScanProcessor extends CommandProcessor {
           s3DatabaseDetailsCache,
           appCache,
           propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache
+          statsRecorder = statsRecorder
         ).processCpg()
       case Language.RUBY =>
         statsRecorder.justLogMessage("Detected language 'Ruby'")
