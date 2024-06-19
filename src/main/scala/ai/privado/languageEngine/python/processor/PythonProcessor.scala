@@ -146,7 +146,7 @@ class PythonProcessor(
 
           // Exporting the DED Sources report
           if (privadoInput.dedSourceReport) {
-            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, Language.PYTHON) match {
+            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, statsRecorder, Language.PYTHON) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err

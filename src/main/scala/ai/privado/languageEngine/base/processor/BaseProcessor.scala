@@ -147,7 +147,7 @@ abstract class BaseProcessor(
 
     val errorMsgs = ListBuffer[String]()
     reportUnresolvedMethods(cpg, lang)
-    dedSourceReportExport(cpg) match
+    dedSourceReportExport(cpg, statsRecorder) match
       case Left(err) => errorMsgs.addOne(err)
       case Right(_)  =>
 
@@ -245,10 +245,10 @@ abstract class BaseProcessor(
 
   }
 
-  protected def dedSourceReportExport(cpg: Cpg): Either[String, Unit] = {
+  protected def dedSourceReportExport(cpg: Cpg, statsRecorder: StatsRecorder): Either[String, Unit] = {
     // Exporting the DED Sources report
     if (privadoInput.dedSourceReport) {
-      DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, lang) match {
+      DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, statsRecorder, lang) match {
         case Left(err) =>
           MetricHandler.otherErrorsOrWarnings.addOne(err)
           Left(err)

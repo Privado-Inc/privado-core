@@ -122,7 +122,7 @@ class GoProcessor(
           // Exporting the DED Sources report
           val privadoInput = ScanProcessor.config.copy()
           if (privadoInput.dedSourceReport) {
-            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, Language.GO) match {
+            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, statsRecorder, Language.GO) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err

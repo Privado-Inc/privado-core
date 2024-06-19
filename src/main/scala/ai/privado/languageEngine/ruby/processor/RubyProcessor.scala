@@ -236,7 +236,7 @@ class RubyProcessor(
 
           // Exporting the DED Sources report
           if (privadoInput.dedSourceReport) {
-            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, Language.RUBY) match {
+            DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, statsRecorder, Language.RUBY) match {
               case Left(err) =>
                 MetricHandler.otherErrorsOrWarnings.addOne(err)
                 errorMsg += err

@@ -17,223 +17,6 @@ import scala.util.{Failure, Success, Try}
 object DataElementDiscoveryUtils {
 
   private val logger = LoggerFactory.getLogger(getClass)
-  // Not used for security-purposes. Only to generate a unique identifier.
-  private lazy val md5 = java.security.MessageDigest.getInstance("MD5")
-
-  // Regular expression pattern to filter common language types
-  private val filterCommonLangTypes =
-    "(?i)(class|window|str|list|dict|bool|chr|icon|boolean|number|bigdecimal|let|define|enum|asttype|nil|null|none|java|undefined|nan|empty|objectid|_id|tostring|valueof|json|mime|true|false|before|after|arr|typeof|match|to_dict|toarray|todate|case|<global>|<fakeNew>|(buf|array|int|num|type|float|byte|string|blob).{0,1}|set|map|hashmap|vector|deque|function|method|property|char|short|long|double|decimal|datetime|date|time|timestamp|enum|flag|void|interface|trait|package|namespace|record|tuple|struct|component|hook|hoc|service)"
-  // Regular expression pattern to filter common variable names
-  private val filterCommonVars =
-    "(?i)(cls|self|ctx|constructor|prototype|main|use|foreach|copy|skip|replace|slice|fill|some|every|concat|contains|apply|merge|stmt|format|name|data|regexp|.{0,1}(sort|in|slug|match|ne|regex|or|sum|and)|session|status|event|env|cmd|push|join|split|splice|filter|reduce|shift|unshift|retry|start|buffer|thread|length|staticmethod|app|next|end|req|console|push|pop|handler|server|catch|then|uri|split|exp|other|info|debug|warning|critical|exception|size|max|text|http|query|href|write|(sql|row|len|err|res|ret|obj|msg|val|key|item|url|tmp|col|file|img|test|result|path|module|import|export|log|key|value|include|load|dump).{0,1})"
-
-  // List of prefixes to filter out common variables that start with these values
-  private val filterCommonVarsStartsWith =
-    "$obj|$group|$set|__|_tmp_|tmp|$iterLocal|_result|file|is|sha_|this|get|set|post|put|update|create|clear|check|find|insert|assert|parse|generate|validate|process|download|upload|delete|handle|param|attr|arg|_iterator|{|log|error|iterator|logger|<tmp-|iter_tmp|toLocale|indexOf"
-  private val filterCommonVarsStartsWithArr = filterCommonVarsStartsWith.split("\\|")
-
-  // Additional Language specific filters
-  def getLanguageSpecificFilters(lang: Language): String = {
-    lang match {
-      case Language.JAVASCRIPT =>
-        "(?i)(i18n|ajv|axios|require|express|moment|document|hasOwnProperty|date|usestate|useeffect|dispatch|ngif|ngforof|inject|component|router|validators|formgroup|formcontrol|subscribe|observable|jquery|vue|react|angular)"
-      case Language.PYTHON =>
-        "(?i)(print|boto.{0,1}|s3|requests|append|extend|list_objects.{0,6}|pytest|datetime|pandas|numpy|scipy|sklearn|matplotlib|flask|django|argparse|os|sys)"
-      case Language.JAVA | Language.KOTLIN =>
-        "(?i)(system|out|buf|(com|io|org|net|androidx|software|io)[.]{1}.*|printstream|scanner|stringbuilder|thread|exception|bufferedreader|inputstream|outputstream|integer|character)"
-      case Language.GO =>
-        "(?i)(context|block|nonce|syscall|buf|fmt|http|log|os|io|error|http|httpclient|httprequest|httpresponse)"
-      case Language.PHP =>
-        "(?i)(_post|_get|_session|_files|_server|_cookie|uid|mysqli|pdo|print_r|var_dump|echo|header|session_start|session_destroy)"
-      case Language.RUBY =>
-        "(?i)(node|tree|raise|object|gem|rails|sinatra|rake|erb|haml)"
-      case Language.CSHARP =>
-        "(?i)(table|migrationBuilder|modelBuilder|program|yaml|context|cts|instance|idx|system|console|io|collections|generic|threading|tasks|linq|xml|entity|configuration|component|service)"
-    }
-  }
-
-  def nodeIdentifier(filePath: String, name: String, nodeType: String, lineNumber: String): String =
-    md5
-      .digest(s"$filePath-$name".getBytes)
-      .map(0xff & _)
-      .map("%02x".format(_))
-      .foldLeft("")(_ + _)
-
-  def nodeOffset(node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier): String =
-    node.lineNumber match {
-      case Some(offset) => offset.toString
-      case _            => ""
-    }
-
-  def getSourceRuleId(
-    node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier | Call
-  ): String = {
-    // Extract the source rule ID, defaulting to AUDIT_EMPTY_CELL_VALUE if not found
-    val sourceRuleId =
-      node.tag.nameExact(Constants.id).value.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
-
-    // Determine if tagging is disabled by DED
-    val taggingDisabledByDED = node.tag.nameExact(InternalTag.TAGGING_DISABLED_BY_DED.toString).nonEmpty
-
-    if (taggingDisabledByDED) {
-      AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
-    } else {
-      sourceRuleId
-    }
-  }
-
-  def getNodeLocationAndUniqueId(
-    node: TypeDecl | Member | MethodParameterIn | Identifier | Local | FieldIdentifier,
-    name: String,
-    nodeType: String
-  ): (String, String, String) = {
-    val path         = node.file.name.headOption.getOrElse(Constants.EMPTY)
-    val lineNumber   = DataElementDiscoveryUtils.nodeOffset(node)
-    val nodeUniqueId = DataElementDiscoveryUtils.nodeIdentifier(path, name, nodeType, lineNumber)
-
-    (path, lineNumber, nodeUniqueId)
-  }
-
-  // Add Identifiers in workbookResult
-  def getIdentifiers(
-    xtocpg: Try[Cpg],
-    workbookResult: ListBuffer[List[String]],
-    lang: Language
-  ): ListBuffer[List[String]] = {
-    val identifiers = xtocpg match {
-      case Success(cpg) => {
-        cpg.identifier
-          // Filter out identifiers with length <= 2
-          .filter(i => i.name.length > 2)
-          // Filter out identifiers that start with any of the specified prefixes
-          .filter(i => !filterCommonVarsStartsWithArr.exists(xx => i.name.toLowerCase.startsWith(xx.toLowerCase)))
-          // Filter out identifiers matching common language types pattern
-          .filter(i => !i.name.matches(filterCommonLangTypes))
-          // Filter out identifiers matching common variable names pattern
-          .filter(i => !i.name.matches(filterCommonVars))
-          // Filter out identifiers matching language-specific filters
-          .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
-          // Filter out identifier which are potentially function calls
-          .filter(i => !i.typeFullName.matches("\\(.*\\).=>.*"))
-          .l
-      }
-      case Failure(ex) => {
-        logger.debug(f"Error while getting Identifier ", ex)
-        List[Identifier]()
-      }
-    }
-
-    val addedIdentifiers = mutable.Set[String]()
-    identifiers.foreach(identifier => {
-      val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER
-      val (path, lineNumber, nodeUniqueId) =
-        DataElementDiscoveryUtils.getNodeLocationAndUniqueId(identifier, identifier.name, nodeType)
-      val identifierUniqueKey = s"${identifier.typeFullName}$path${identifier.name}"
-      val sourceRuleId        = DataElementDiscoveryUtils.getSourceRuleId(identifier)
-
-      if (
-        identifier.name.matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
-        && !identifier.name.matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
-        && !identifier.name.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-        && !addedIdentifiers.contains(identifierUniqueKey)
-      )
-        addedIdentifiers.add(identifierUniqueKey)
-      workbookResult += List(
-        identifier.typeFullName,
-        identifier.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE),
-        "0.0",
-        identifier.name,
-        identifier.typeFullName,
-        sourceRuleId.startsWith("Data.Sensitive.").toString,
-        sourceRuleId,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        lineNumber,
-        nodeUniqueId,
-        nodeType
-      )
-    })
-
-    workbookResult
-  }
-
-  // Add FieldIdentifiers in workbookResult
-  def getFieldAccessIdentifier(
-    xtocpg: Try[Cpg],
-    workbookResult: ListBuffer[List[String]],
-    lang: Language
-  ): ListBuffer[List[String]] = {
-    val identifierSourceRuleIdMap = new mutable.HashMap[Long, String]()
-    val fieldIdentifiers = xtocpg match {
-      case Success(cpg) => {
-        cpg.fieldAccess.fieldIdentifier
-          .groupBy(i => (i.canonicalName, i.file.name.head))
-          .map { case (_, identifiers) => identifiers.head }
-          // Filter out identifiers with length <= 2
-          .filter(i => i.canonicalName.length > 2)
-          // Filter out identifiers that start with any of the specified prefixes
-          .filter(i =>
-            !filterCommonVarsStartsWithArr.exists(xx => i.canonicalName.toLowerCase.startsWith(xx.toLowerCase))
-          )
-          // Filter out identifiers matching common language types pattern
-          .filter(i => !i.canonicalName.matches(filterCommonLangTypes))
-          // Filter out identifiers matching common variable names pattern
-          .filter(i => !i.canonicalName.matches(filterCommonVars))
-          // Filter out identifiers matching language-specific filters
-          .filter(i => !i.canonicalName.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
-          // Filter out fieldIdentifiers like `session` of format `res.session.XXX`
-          .whereNot(_.astParent.astParent.isCall.name("<operator>.fieldAccess"))
-          .map((i: FieldIdentifier) => {
-            if (i.astParent.isCall) {
-              identifierSourceRuleIdMap
-                .addOne(i.id, DataElementDiscoveryUtils.getSourceRuleId(i.astParent.asInstanceOf[Call]))
-            }
-            i
-          })
-          .l
-      }
-      case Failure(ex) => {
-        logger.debug(f"Error while getting FieldIdentifier ", ex)
-        List[FieldIdentifier]()
-      }
-    }
-
-    val addedFieldIdentifiers = mutable.Set[String]()
-    fieldIdentifiers.foreach(fIdentifier => {
-      val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_FIELD_IDENTIFIER
-      val (path, lineNumber, nodeUniqueId) =
-        DataElementDiscoveryUtils.getNodeLocationAndUniqueId(fIdentifier, fIdentifier.canonicalName, nodeType)
-      val localsUniqueKey = s"NA$path${fIdentifier.canonicalName}"
-      val sourceRuleId =
-        identifierSourceRuleIdMap.get(fIdentifier.id).getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
-
-      if (
-        !fIdentifier.canonicalName.matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_TYPE_EXCLUDE_REGEX)
-        && !fIdentifier.canonicalName.matches(AuditReportConstants.JS_ELEMENT_DISCOVERY_EXCLUDE_PARAMS_REGEX)
-        && !fIdentifier.canonicalName.matches(AuditReportConstants.JS_ELEMENTS_TO_BE_EXCLUDED)
-        && !addedFieldIdentifiers.contains(localsUniqueKey)
-      )
-        addedFieldIdentifiers.add(localsUniqueKey)
-      workbookResult += List(
-        "NA",
-        fIdentifier.file.head.name,
-        "0.0",
-        fIdentifier.canonicalName,
-        "NA",
-        sourceRuleId.startsWith("Data.Sensitive.").toString,
-        sourceRuleId,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-        lineNumber,
-        nodeUniqueId,
-        nodeType
-      )
-    })
-
-    workbookResult
-  }
 
   // Add Members in workbookResult for given className set
   def getMemberUsingClassName(
@@ -258,14 +41,16 @@ object DataElementDiscoveryUtils {
                       .filter(i => i.name.length > 2)
                       // Filter out members that start with any of the specified prefixes
                       .filter(i =>
-                        !filterCommonVarsStartsWithArr.exists(xx => i.name.toLowerCase.startsWith(xx.toLowerCase))
+                        !DEDSourceDiscoveryUtils.filterCommonVarsStartsWithArr.exists(xx =>
+                          i.name.toLowerCase.startsWith(xx.toLowerCase)
+                        )
                       )
                       // Filter out members matching common language types pattern
-                      .filter(i => !i.name.matches(filterCommonLangTypes))
+                      .filter(i => !i.name.matches(DEDSourceDiscoveryUtils.filterCommonLangTypes))
                       // Filter out members matching common variable names pattern
-                      .filter(i => !i.name.matches(filterCommonVars))
+                      .filter(i => !i.name.matches(DEDSourceDiscoveryUtils.filterCommonVars))
                       // Filter out members matching language-specific filters
-                      .filter(i => !i.name.matches(DataElementDiscoveryUtils.getLanguageSpecificFilters(lang)))
+                      .filter(i => !i.name.matches(DEDSourceDiscoveryUtils.getLanguageSpecificFilters(lang)))
                       .dedup
                       .l
                   memberInfoMap.put(typeDeclNode, members)
@@ -348,24 +133,6 @@ object DataElementDiscoveryUtils {
       }
     }
     methodParameterMap.toMap
-  }
-
-  def getHeaderList(): List[String] = {
-    List(
-      AuditReportConstants.ELEMENT_DISCOVERY_CLASS_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_FILE_NAME,
-      AuditReportConstants.FILE_PRIORITY_SCORE,
-      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_MEMBER_TYPE,
-      AuditReportConstants.ELEMENT_DISCOVERY_TAGGED_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_RULE_ID,
-      AuditReportConstants.ELEMENT_DISCOVERY_INPUT_COLLECTION,
-      AuditReportConstants.ELEMENT_DISCOVERY_COLLECTION_ENDPOINT,
-      AuditReportConstants.ELEMENT_DISCOVERY_METHOD_NAME,
-      AuditReportConstants.ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER,
-      AuditReportConstants.ELEMENT_DISCOVERY_VARIABLE_ID,
-      AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE
-    )
   }
 
   def updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult: List[List[String]]): List[List[String]] = {
@@ -581,7 +348,7 @@ object DataElementDiscoveryJava {
           if (taggedMemberInfo.contains(key.fullName)) {
             val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
             val (path, lineNumber, nodeUniqueId) =
-              DataElementDiscoveryUtils.getNodeLocationAndUniqueId(key, key.fullName, nodeType)
+              DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(key, key.fullName, nodeType)
 
             if (collectionMethodInfo.contains(key.fullName)) {
               collectionMethodInfo(key.fullName).foreach(info => {
@@ -623,7 +390,7 @@ object DataElementDiscoveryJava {
               case (member: Member) => {
                 val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
                 val (_, lineNumber, nodeUniqueId) =
-                  DataElementDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
+                  DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
 
                 if (ruleMemberInfo.contains(member.name)) {
                   workbookResult += List(
@@ -663,7 +430,7 @@ object DataElementDiscoveryJava {
           } else {
             val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
             val (path, lineNumber, nodeUniqueId) =
-              DataElementDiscoveryUtils.getNodeLocationAndUniqueId(key, key.fullName, nodeType)
+              DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(key, key.fullName, nodeType)
 
             if (collectionMethodInfo.contains(key.fullName)) {
               collectionMethodInfo(key.fullName).foreach(info => {
@@ -704,7 +471,7 @@ object DataElementDiscoveryJava {
               case (member: Member) => {
                 val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
                 val (_, lineNumber, nodeUniqueId) =
-                  DataElementDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
+                  DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
 
                 workbookResult += List(
                   key.fullName,
@@ -728,14 +495,14 @@ object DataElementDiscoveryJava {
       }
 
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
+      workbookResult = DEDSourceDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
 
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
-    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils
+    DEDSourceDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils
       .updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
 
@@ -797,11 +564,11 @@ object DataElementDiscovery {
     var workbookResult = new ListBuffer[List[String]]()
     try {
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
+      workbookResult = DEDSourceDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
 
       // Adding FieldIdentifiers
       if (lang != Language.GO) {
-        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
+        workbookResult = DEDSourceDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
       }
     } catch {
       case ex: Exception =>
@@ -883,7 +650,7 @@ object DataElementDiscovery {
       elementInfo.foreach {
         case (key, value) => {
           val (_, offset, nodeUniqueId) =
-            DataElementDiscoveryUtils.getNodeLocationAndUniqueId(key, key.name, "")
+            DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(key, key.name, "")
 
           workbookResult += List(
             key.name,
@@ -908,7 +675,7 @@ object DataElementDiscovery {
             case (member: Member) => {
               val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_MEMBER
               val (_, lineNumber, nodeUniqueId) =
-                DataElementDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
+                DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(member, member.name, nodeType)
 
               val memberUniqueKey =
                 s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${member.name}"
@@ -953,7 +720,7 @@ object DataElementDiscovery {
             case (param: MethodParameterIn) => {
               val nodeType = AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_METHOD_PARAM
               val (_, lineNumber, nodeUniqueId) =
-                DataElementDiscoveryUtils.getNodeLocationAndUniqueId(param, param.name, nodeType)
+                DEDSourceDiscoveryUtils.getNodeLocationAndUniqueId(param, param.name, nodeType)
               val paramUniqueKey = s"${key.fullName}${key.file.name.headOption.getOrElse(Constants.EMPTY)}${param.name}"
 
               if (!addedParams.contains(paramUniqueKey) && param.name.length > 2) {
@@ -999,11 +766,11 @@ object DataElementDiscovery {
       }
 
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
+      workbookResult = DEDSourceDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
 
       // Adding FieldIdentifiers
       if (lang != Language.GO) {
-        workbookResult = DataElementDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
+        workbookResult = DEDSourceDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
       }
 
       logger.info("Shutting down audit engine")
@@ -1011,7 +778,7 @@ object DataElementDiscovery {
       case ex: Exception =>
         logger.debug("Failed to process Data Element Discovery report", ex)
     }
-    DataElementDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils
+    DEDSourceDiscoveryUtils.getHeaderList() +: DataElementDiscoveryUtils
       .updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
 }
