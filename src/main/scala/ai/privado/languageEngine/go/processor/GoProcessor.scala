@@ -77,6 +77,7 @@ class GoProcessor(
           statsRecorder.endLastStage()
           statsRecorder.setSupressSubstagesFlag(true)
 
+          statsRecorder.setSupressSubstagesFlag(false)
           statsRecorder.initiateNewStage("Privado source passes")
           if (config.assetDiscovery)
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")

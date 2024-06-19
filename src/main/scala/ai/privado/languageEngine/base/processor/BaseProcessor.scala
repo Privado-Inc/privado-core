@@ -63,8 +63,12 @@ abstract class BaseProcessor(
           statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
           statsRecorder.endLastStage()
-          applyDataflowAndPostProcessingPasses(cpg)
 
+          statsRecorder.initiateNewStage("Run oss data flow")
+          applyDataflowAndPostProcessingPasses(cpg)
+          statsRecorder.endLastStage()
+
+          statsRecorder.setSupressSubstagesFlag(false)
           applyTaggingAndExport(cpg) match
             case Left(err) =>
               logger.debug(s"Errors captured in scanning : $err")

@@ -90,6 +90,7 @@ class PythonProcessor(
           statsRecorder.endLastStage()
           statsRecorder.setSupressSubstagesFlag(true)
 
+          statsRecorder.setSupressSubstagesFlag(false)
           statsRecorder.initiateNewStage("Privado source passes")
 
           new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
