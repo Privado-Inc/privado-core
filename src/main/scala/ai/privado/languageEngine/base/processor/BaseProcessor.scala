@@ -6,27 +6,22 @@ import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
-import ai.privado.semantic.Language.*
-import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import io.circe.Json
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.Config
-import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 abstract class BaseProcessor(
@@ -63,8 +58,10 @@ abstract class BaseProcessor(
           statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
           statsRecorder.endLastStage()
+          statsRecorder.initiateNewStage("Run oss data flow")
           applyDataflowAndPostProcessingPasses(cpg)
-
+          statsRecorder.endLastStage()
+          statsRecorder.setSupressSubstagesFlag(false)
           applyTaggingAndExport(cpg) match
             case Left(err) =>
               logger.debug(s"Errors captured in scanning : $err")
@@ -98,14 +95,12 @@ abstract class BaseProcessor(
     */
   def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     logger.info("Applying data flow overlay")
-    statsRecorder.initiateNewStage("Run oss data flow")
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     if (privadoInput.enableLambdaFlows)
       new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
     logger.info("=====================")
-    statsRecorder.endLastStage()
   }
 
   /** Wrapper method which takes care of applying tagging and export
