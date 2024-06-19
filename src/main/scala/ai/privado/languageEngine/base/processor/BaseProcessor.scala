@@ -64,10 +64,10 @@ abstract class BaseProcessor(
           statsRecorder.initiateNewStage("overriden overlay Processing")
           applyOverridenPasses(cpg).foreach(_.createAndApply())
           statsRecorder.endLastStage()
-          applyDataflowAndPostProcessingPasses(cpg)
           statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
           statsRecorder.endLastStage()
+          applyDataflowAndPostProcessingPasses(cpg)
 
           applyTaggingAndExport(cpg) match
             case Left(err) =>

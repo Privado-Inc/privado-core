@@ -79,13 +79,7 @@ class PythonProcessor(
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache),
       new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache)
-    ) ++ {
-      if (privadoInput.enableLambdaFlows) {
-        List(new ExperimentalLambdaDataFlowSupportPass(cpg))
-      } else {
-        List()
-      }
-    }
+    )
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
@@ -129,6 +123,7 @@ class PythonProcessor(
       .withIgnoredFilesRegex(excludeFileRegex)
     val xtocpg = new Py2CpgOnFileSystem().createCpg(cpgconfig).map { cpg =>
       statsRecorder.endLastStage()
+      statsRecorder.justLogMessage(s"Total no of graph nodes -> ${cpg.graph.nodeCount()}")
       statsRecorder.initiateNewStage("Applying default overlays")
       applyDefaultOverlays(cpg)
       statsRecorder.endLastStage()
