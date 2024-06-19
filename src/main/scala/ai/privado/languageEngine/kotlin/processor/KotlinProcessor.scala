@@ -11,49 +11,33 @@ import ai.privado.cache.{
   S3DatabaseDetailsCache,
   TaggerCache
 }
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
-import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{
-  cpgOutputFileName,
-  outputAuditFileName,
-  outputDirectoryName,
-  outputFileName,
-  outputIntermediateFileName,
-  outputUnresolvedFilename
-}
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
-import ai.privado.passes.{
-  AndroidXmlParserPass,
-  DBTParserPass,
-  ExperimentalLambdaDataFlowSupportPass,
-  HTMLParserPass,
-  JsonPropertyParserPass,
-  SQLParser,
-  SQLPropertyPass
-}
-import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.kotlin.semantic.Language.*
+import ai.privado.metric.MetricHandler
+import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.passes.*
+import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
+import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.circe.Json
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.kotlin2cpg.Kotlin2Cpg
-import io.joern.kotlin2cpg.Config
+import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -68,9 +52,10 @@ class KotlinProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -80,6 +65,7 @@ class KotlinProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache
@@ -105,7 +91,9 @@ class KotlinProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
+    statsRecorder.initiateNewStage("Kotlin post processing passes")
     Kotlin2Cpg.postProcessingPass(cpg)
+    statsRecorder.endLastStage()
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
@@ -115,14 +103,14 @@ class KotlinProcessor(
       privadoInputConfig = privadoInput,
       dataFlowCache,
       appCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      statsRecorder
     )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
 
-    println(s"${Calendar.getInstance().getTime} - Processing source code using Kotlin engine")
-    println(s"${Calendar.getInstance().getTime} - Parsing source code...")
-
+    statsRecorder.justLogMessage("Processing source code using Kotlin engine")
+    statsRecorder.initiateNewStage("Base source processing")
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
 
     // Create the .privado folder if not present
@@ -135,11 +123,12 @@ class KotlinProcessor(
       .withIgnoredFilesRegex(excludeFileRegex)
 
     val xtocpg = new Kotlin2Cpg().createCpg(cpgconfig).map { cpg =>
-      println(
-        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
+      statsRecorder.endLastStage()
+      statsRecorder.initiateNewStage("Default overlays")
       // Apply default overlays
       X2Cpg.applyDefaultOverlays(cpg)
+      statsRecorder.endLastStage()
+      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
     tagAndExport(xtocpg) match {

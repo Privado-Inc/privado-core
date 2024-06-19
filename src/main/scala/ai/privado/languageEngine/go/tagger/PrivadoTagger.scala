@@ -14,6 +14,7 @@ import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.go.tagger.config.GoDBConfigTagger
 import ai.privado.languageEngine.go.tagger.sink.{GoAPISinkTagger, GoAPITagger}
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.{databaseURLPriority, ingressUrls}
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
@@ -25,7 +26,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -40,7 +42,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new GoDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
-    GoAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache)
+    GoAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
     new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 

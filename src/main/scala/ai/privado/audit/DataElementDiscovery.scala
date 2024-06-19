@@ -1,11 +1,5 @@
 package ai.privado.audit
 
-import ai.privado.audit.DEDSourceDiscoveryUtils.{
-  filterCommonLangTypes,
-  filterCommonVars,
-  filterCommonVarsStartsWithArr,
-  logger
-}
 import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}

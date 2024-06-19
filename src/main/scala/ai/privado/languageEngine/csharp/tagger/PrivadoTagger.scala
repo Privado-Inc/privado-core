@@ -31,6 +31,7 @@ import ai.privado.languageEngine.csharp.tagger.source.IdentifierTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{DEDTagger, LiteralTagger, SqlQueryTagger}
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import org.slf4j.LoggerFactory
@@ -46,7 +47,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 
@@ -55,7 +57,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
     new SqlQueryTagger(cpg, rules).createAndApply()
 
-    CSharpAPISinkTagger.applyTagger(cpg, rules, privadoInputConfig, appCache)
+    CSharpAPISinkTagger.applyTagger(cpg, rules, privadoInputConfig, appCache, statsRecorder)
 
     new RegularSinkTagger(cpg, rules, databaseDetailsCache).createAndApply()
     new CollectionTagger(cpg, rules).createAndApply()

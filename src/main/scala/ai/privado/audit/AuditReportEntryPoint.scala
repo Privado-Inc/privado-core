@@ -1,7 +1,6 @@
 package ai.privado.audit
 
 import ai.privado.cache.{AuditCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.TimeMetric
 import ai.privado.exporter.JSONExporter
 import ai.privado.model.Language
 import ai.privado.model.Language.Language
@@ -12,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
 
-import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
@@ -113,7 +111,6 @@ object AuditReportEntryPoint {
     dependencies: Set[ModuleDependency] = Set()
   ): Workbook = {
     val workbook: Workbook = new XSSFWorkbook()
-    println(s"${Calendar.getInstance().getTime} - Audit report generation started...")
     val dataElementDiscoveryData = lang match {
       case Language.JAVA | Language.KOTLIN =>
         DataElementDiscoveryJava.processDataElementDiscovery(xtocpg, taggerCache)
@@ -160,10 +157,6 @@ object AuditReportEntryPoint {
       case ex: Exception =>
         println(f"Failed to create excel sheets: ${ex}")
     }
-
-    println(
-      s"${TimeMetric.getNewTime()} - Audit report generation is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-    )
     workbook
   }
 

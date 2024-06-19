@@ -25,6 +25,8 @@ package ai.privado.entrypoint
 import ai.privado.entrypoint
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
+import ai.privado.utility.StatsRecorder.*
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
@@ -62,6 +64,8 @@ case class PrivadoInput(
   enableIngressAndEgressUrls: Boolean = false,
   assetDiscovery: Boolean = false,
   forceLanguage: Language.Language = Language.UNKNOWN,
+  threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
+  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
   rubyParserTimeout: Long = 120
 )
 
@@ -123,6 +127,10 @@ object CommandConstants {
   val ASSEST_DISCOVERY                             = "asset-discovery"
   val FORCE_LANGUAGE                               = "force-language"
   val FORCE_LANGUAGE_ABBR                          = "fl"
+  val THREAD_DUMP_FREQ                             = "thread-dump-freq"
+  val THREAD_DUMP_FREQ_ABBR                        = "tdf"
+  val THREAD_DUMP_AVG_CPU_LIMIT                    = "thread-dump-avg-cpu-limit"
+  val THREAD_DUMP_AVG_CPU_LIMIT_ABBR               = "tdacl"
   val RUBY_PARSER_TIMEOUT                          = "ruby-parser-timeout"
   val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
 }
@@ -135,7 +143,7 @@ object CommandParser {
       CommandConstants.VALIDATE -> RuleValidator,
       CommandConstants.METADATA -> MetadataProcessor
     )
-  def parse(args: Array[String]): Option[CommandProcessor] = {
+  def parse(args: Array[String], statsRecorder: StatsRecorder): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
     val parser = {
@@ -294,6 +302,16 @@ object CommandParser {
               .text(
                 "Force scan with the given language java, javascript, go, csharp, python, php, kotlin, ruby, and default"
               ),
+            opt[Int](CommandConstants.THREAD_DUMP_FREQ)
+              .abbr(CommandConstants.THREAD_DUMP_FREQ_ABBR)
+              .optional()
+              .action((x, c) => c.copy(threadDumpFreq = x))
+              .text("Thread dump frequency default is set to 10 mins."),
+            opt[Int](CommandConstants.THREAD_DUMP_AVG_CPU_LIMIT)
+              .abbr(CommandConstants.THREAD_DUMP_AVG_CPU_LIMIT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(threadDumpFreq = x))
+              .text("Thread dump only if avg CPU utilsation % of a stage is below this value. Default is set to 50%"),
             opt[Long](CommandConstants.RUBY_PARSER_TIMEOUT)
               .abbr(CommandConstants.RUBY_PARSER_TIMEOUT_ABBR)
               .optional()
@@ -366,8 +384,7 @@ object CommandParser {
             println(OParser.usage(parser))
             exit(1)
         }
-        commandProcessor.withConfig(config)
-        Some(commandProcessor)
+        Some(commandProcessor.withConfig(config).withStatsRecorder(statsRecorder))
       case _ =>
         println(OParser.usage(parser))
         exit(1)

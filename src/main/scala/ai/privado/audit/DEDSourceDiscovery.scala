@@ -432,6 +432,7 @@ object DEDSourceDiscoveryUtils {
         val uniqueByName = entries.groupBy(entry => entry(3)).values.map(_.head)
         uniqueByName
       }.toList
+      println(s"${Calendar.getInstance().getTime} - No of sources after dedup: ${filteredResults.size}")
       filteredResults
     } catch {
       case e: Exception =>
@@ -485,36 +486,30 @@ object DEDSourceDiscovery {
     // Construct the excel sheet and fill the data
     try {
       // Adding Members
-      println(s"${Calendar.getInstance().getTime} - Member Sources Query Started...")
       workbookResult = DEDSourceDiscoveryUtils.getNewMembers(xtocpg, workbookResult, lang)
-      println(s"${Calendar.getInstance().getTime} - New Member Sources COMPLETED...")
-      println(s"${Calendar.getInstance().getTime} - new Member size: ${workbookResult.size}")
+      println(s"${Calendar.getInstance().getTime} - Member size: ${workbookResult.size}")
 
       if (lang != Language.JAVA && lang != Language.KOTLIN) {
         // Adding MethodParameters
         workbookResult = DEDSourceDiscoveryUtils.getNewMethodParametersFromTypes(xtocpg, workbookResult, lang)
-        println(s"${Calendar.getInstance().getTime} - New Method Param Sources COMPLETED...")
-        println(s"${Calendar.getInstance().getTime} - new Method Param size: ${workbookResult.size}")
+        println(s"${Calendar.getInstance().getTime} - Method Param size: ${workbookResult.size}")
       }
 
       // Adding Identifiers
       workbookResult = DEDSourceDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
-      println(s"${Calendar.getInstance().getTime} - Identifier Sources COMPLETED...")
-      println(s"${Calendar.getInstance().getTime} - new Identifier size: ${workbookResult.size}")
+      println(s"${Calendar.getInstance().getTime} - Identifier size: ${workbookResult.size}")
 
       // Adding FieldIdentifiers
       if (lang != Language.GO && lang != Language.JAVA && lang != Language.KOTLIN) {
         workbookResult = DEDSourceDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
-        println(s"${Calendar.getInstance().getTime} - Field Identifier Sources COMPLETED...")
-        println(s"${Calendar.getInstance().getTime} - new Field Identifier size: ${workbookResult.size}")
+        println(s"${Calendar.getInstance().getTime} - Field Identifier size: ${workbookResult.size}")
       }
 
-      logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
         println(s"Failed to process Data Element Discovery report ${ex}")
     }
-    println(s"No of sources: ${workbookResult.size}")
+    println(s"${Calendar.getInstance().getTime} - No of sources: ${workbookResult.size}")
     DEDSourceDiscoveryUtils.getHeaderList() +: DEDSourceDiscoveryUtils
       .updateWorkbookResultsToGetUniqueSourcePerFile(workbookResult.toList)
   }
@@ -558,7 +553,7 @@ object DEDSourceDiscovery {
 
   def generateReport(xtocpg: Try[Cpg], repoPath: String, lang: Language = Language.JAVA): Either[String, Unit] = {
     try {
-      logger.info(s"${Calendar.getInstance().getTime} - Initiated the DED Source Report generation ...")
+      println(s"${Calendar.getInstance().getTime} - Initiated the DED Source Report generation ...")
 
       val dedSourceDiscoveryData = lang match {
         case Language.JAVASCRIPT | Language.PHP | Language.CSHARP | Language.PYTHON | Language.GO | Language.JAVA |
@@ -571,7 +566,7 @@ object DEDSourceDiscovery {
       }
       createDEDSourceReportJson(dedSourceDiscoveryData, repoPath)
 
-      logger.info(s"${Calendar.getInstance().getTime} - Completed DED source report generation")
+      println(s"${Calendar.getInstance().getTime} - Completed DED source report generation")
       Right(())
     } catch {
       case ex: Exception =>

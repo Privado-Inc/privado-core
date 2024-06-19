@@ -41,8 +41,7 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object Language {
 
-  implicit val finder: NodeExtensionFinder         = DefaultNodeExtensionFinder
-  implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
+  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
   implicit class NodeStarterForSqlQueryNode(cpg: Cpg) {
     def sqlQuery: Traversal[SqlQueryNode] =
