@@ -119,7 +119,7 @@ class CSharpProcessor(
       // Apply default overlays
       X2Cpg.applyDefaultOverlays(cpg)
       statsRecorder.endLastStage()
-      statsRecorder.setSupressSubstagesFlag(false)
+      statsRecorder.setSupressSubstagesFlag(true)
       cpg
     }
     tagAndExport(xtocpg)

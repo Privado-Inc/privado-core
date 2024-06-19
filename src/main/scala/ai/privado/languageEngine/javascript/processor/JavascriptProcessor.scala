@@ -133,7 +133,7 @@ class JavascriptProcessor(
       statsRecorder.initiateNewStage("Applying default overlays")
       applyDefaultOverlays(cpg)
       statsRecorder.endLastStage()
-      statsRecorder.setSupressSubstagesFlag(false)
+      statsRecorder.setSupressSubstagesFlag(true)
       cpg
     }
 

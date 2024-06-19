@@ -88,7 +88,7 @@ class PythonProcessor(
           if (privadoInput.enableLambdaFlows)
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           statsRecorder.endLastStage()
-          statsRecorder.setSupressSubstagesFlag(false)
+          statsRecorder.setSupressSubstagesFlag(true)
 
           statsRecorder.initiateNewStage("Privado source passes")
 
