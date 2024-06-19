@@ -1,5 +1,6 @@
 #!/bin/bash -xv
-# to run the script: sudo bash custom_build.sh <branch_name>
+# to run the script:
+# sudo bash build_privado_core.sh stats-logging && sudo cp imagebuilder/privado-core/custom-build/Dockerfile imagebuilder/privado-core/Dockerfile && bash build_image_and_push.sh stats-logging 638117407428
 BRANCH_NAME=$1
 
 BASE_DIRECTORY=$(pwd)
@@ -78,12 +79,3 @@ head -n 15 "build.sbt"
 sbt universal:packageBin
 echo "script ended successfully"
 echo "----------Privado-Core End-----------"
-
-echo "----------Build docker image: start-----------"
-cd BASE_DIRECTORY
-
-docker build -t privado-core:$BRANCH_NAME .
-
-echo "----------Build docker image: end-----------"
-
-#rm -rf $BASE_DIRECTORY/imagebuilder

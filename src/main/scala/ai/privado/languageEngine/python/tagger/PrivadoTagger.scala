@@ -12,6 +12,7 @@ import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
 import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -28,7 +29,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -39,7 +41,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache).createAndApply()
+    new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache, statsRecorder).createAndApply()
 
     new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 

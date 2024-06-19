@@ -8,6 +8,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.languageEngine.java.JavaTestBase.*
 import ai.privado.model.{ConfigAndRules, Constants, InternalTag, Language, SourceCodeModel, SystemConfig}
 import ai.privado.rule.RuleInfoTestData
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.semanticcpg.language.*
 
 class JavaAPISinkByMethodFullNameTaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
@@ -63,7 +64,13 @@ class JavaAPISinkByMethodFullNameTaggerTest extends AnyWordSpec with Matchers wi
           )
         )
       )
-      JavaAPISinkTagger.applyTagger(cpg, ruleCache = ruleCache, privadoInput = PrivadoInput(), appCache = AppCache())
+      JavaAPISinkTagger.applyTagger(
+        cpg,
+        ruleCache = ruleCache,
+        privadoInput = PrivadoInput(),
+        appCache = AppCache(),
+        StatsRecorder()
+      )
 
       val apiSinks = cpg.call("getResponseCode").l
 

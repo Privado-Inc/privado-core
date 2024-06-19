@@ -25,7 +25,8 @@ package ai.privado.languageEngine.javascript.processor
 
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.dataflow.Dataflow
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
@@ -36,7 +37,7 @@ import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -61,9 +62,10 @@ class JavascriptProcessor(
   auditCache: AuditCache,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
+  statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
+  databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -73,6 +75,7 @@ class JavascriptProcessor(
       auditCache,
       s3DatabaseDetailsCache,
       appCache,
+      statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache
@@ -105,7 +108,7 @@ class JavascriptProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache)
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
@@ -113,7 +116,8 @@ class JavascriptProcessor(
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
-    println(s"${Calendar.getInstance().getTime} - Processing source code using JavaScript engine")
+    statsRecorder.justLogMessage("Processing source code using Javascript engine")
+    statsRecorder.initiateNewStage("Base source processing")
 
     createCpgFolder(sourceRepoLocation)
 
@@ -125,11 +129,11 @@ class JavascriptProcessor(
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
 
     val xtocpg = new JsSrc2Cpg().createCpg(cpgConfig).map { cpg =>
-      println(
-        s"${TimeMetric.getNewTime()} - Base processing done in \t\t\t\t- ${TimeMetric.setNewTimeToLastAndGetTimeDiff()}"
-      )
-
+      statsRecorder.endLastStage()
+      statsRecorder.initiateNewStage("Applying default overlays")
       applyDefaultOverlays(cpg)
+      statsRecorder.endLastStage()
+      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
 

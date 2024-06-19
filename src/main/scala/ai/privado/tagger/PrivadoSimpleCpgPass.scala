@@ -23,7 +23,6 @@
 
 package ai.privado.tagger
 
-import ai.privado.entrypoint.TimeMetric
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPass
 import org.slf4j.LoggerFactory
@@ -34,19 +33,9 @@ abstract class PrivadoSimpleCpgPass(cpg: Cpg) extends CpgPass(cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   override def createAndApply() = {
-    beforeExecution
     Try(super.createAndApply()) match
       case Failure(exception) =>
-        logger.error(s"Exception when executing the pass : ${exception.getStackTrace.mkString("\n")}")
+        logger.error(s"Exception when executing the pass : ", exception)
       case Success(value) => logger.debug("Pass executed successfully")
-    afterExecution
   }
-
-  private def beforeExecution = println(
-    s"${TimeMetric.getNewTimeAndSetItToStageLast()} - --${getClass.getSimpleName} invoked..."
-  )
-
-  private def afterExecution = println(
-    s"${TimeMetric.getNewTime()} - --${getClass.getSimpleName} is done in \t\t\t- ${TimeMetric.setNewTimeToStageLastAndGetTimeDiff()}"
-  )
 }
