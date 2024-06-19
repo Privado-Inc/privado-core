@@ -22,14 +22,276 @@
  */
 package ai.privado.languageEngine.go.tagger.sink
 
+import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.*
+import ai.privado.testfixtures.GoFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class GoAPITaggerTestCase1 extends GoTestBase {
+class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
+
+  val ruleCache = new RuleCache()
+
+  val sourceRule = List(
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.FirstName",
+      "FirstName",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.LastName",
+      "LastName",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*lastName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.PersonalIdentification.DateofBirth",
+      "Date of Birth",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*dob.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.ContactData.EmailAddress",
+      "EmailAddress",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*email.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.ContactData.PhoneNumber",
+      "Phone",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*phone.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.FinancialData.Salary",
+      "Salary",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*salary.*"),
+      true,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    )
+  )
+
+  val sinkRule = List(
+    RuleInfo(
+      Constants.thirdPartiesAPIRuleId,
+      "Third Party API",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(
+        "((?i)((?:http:|https:|ftp:|ssh:|udp:|wss:){0,1}(\\/){0,2}[a-zA-Z0-9_-][^)\\/(#|,!>\\s]{1,50}\\.(?:com|net|org|de|in|uk|us|io|gov|cn|ml|ai|ly|dev|cloud|me|icu|ru|info|top|tk|tr|cn|ga|cf|nl)).*(?<!png|jpeg|jpg|txt|blob|css|html|js|svg))"
+      ),
+      false,
+      "",
+      Map(),
+      NodeType.API,
+      "",
+      CatLevelOne.SINKS,
+      catLevelTwo = Constants.third_parties,
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.GormFramework.Read",
+      "Gorm (Read)",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array("gorm.io"),
+      List("(?i).*(github.com)(/)(go-gorm|jinzhu)(/)(gorm).*(Find).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.GormFramework.Write",
+      "Gorm (Write)",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array("gorm.io"),
+      List("(?i).*(github.com)(/)(go-gorm|jinzhu)(/)(gorm).*(Create|Update|Delete|Save).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.GorpFramework.Read",
+      "Gorp (Read)",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array("pkg.go.dev/github.com/go-gorp/gorp"),
+      List("(?i).*(github.com|gopkg.in)(/)(gorp|go-gorp/gorp).*(Select).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.GormFramework.Write",
+      "Gorp (Write)",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array("pkg.go.dev/github.com/go-gorp/gorp"),
+      List("(?i).*(github.com)(/)(go-gorm|jinzhu)(/)(gorm).*(Create|Update|Delete|Save).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.MongoDB.Read",
+      "MongoDB(Read)",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array("mongodb.com"),
+      List("(?i)(go.mongodb.org/mongo-driver/mongo).*(Find)"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.MongoDB.Write",
+      "MongoDB(Write)",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array("mongodb.com"),
+      List("(?i)(go.mongodb.org/mongo-driver/mongo).*(InsertOne|DeleteOne|UpdateOne)"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.GO,
+      Array()
+    )
+  )
+
+  val systemConfig = List(
+    SystemConfig(
+      "apiHttpLibraries",
+      "^(?i)(net/http|github.com/parnurzeal/gorequest|(gopkg.in|github.com/go-resty)/resty|valyala/fasthttp|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
+      Language.GO,
+      "",
+      Array()
+    ),
+    SystemConfig(
+      "apiSinks",
+      "(?i)(?:url|client|open|request|execute|newCall|load|host|access|list|set|put|post|proceed|trace|patch|Path|send|remove|delete|write|read|postForEntity|call|createCall|createEndpoint|dispatch|invoke|getInput|getOutput|getResponse|do)",
+      Language.GO,
+      "",
+      Array()
+    ),
+    SystemConfig(
+      "apiIdentifier",
+      "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
+      Language.GO,
+      "",
+      Array()
+    )
+  )
+
+  val configAndRules: ConfigAndRules =
+    ConfigAndRules(sources = sourceRule, sinks = sinkRule, systemConfig = systemConfig)
+
+  ruleCache.setRule(configAndRules)
 
   "Tagging api sink: When nothing is matching(identifier or url) it should tagged with API" should {
-    val (cpg, _) = code("""
+    val cpg = code("""
         | package main
         |
         |import (
@@ -88,6 +350,8 @@ class GoAPITaggerTestCase1 extends GoTestBase {
         |}
         |
         |""".stripMargin)
+      .withRuleCache(ruleCache)
+
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
@@ -105,12 +369,8 @@ class GoAPITaggerTestCase1 extends GoTestBase {
 
   }
 
-}
-
-class GoAPITaggerTestCase2 extends GoTestBase {
-
-  "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
-    val (cpg, _) = code("""
+  "Tagging api sink: When Identifier is matching with apiIdentifier pattern 1" should {
+    val cpg = code("""
         | package main
         |
         |import (
@@ -169,6 +429,8 @@ class GoAPITaggerTestCase2 extends GoTestBase {
         |}
         |
         |""".stripMargin)
+      .withRuleCache(ruleCache)
+
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
@@ -186,12 +448,8 @@ class GoAPITaggerTestCase2 extends GoTestBase {
 
   }
 
-}
-
-class GoAPITaggerTestCase3 extends GoTestBase {
-
-  "Tagging api sink: When Identifier is matching with apiIdentifier pattern" should {
-    val (cpg, _) = code("""
+  "Tagging api sink: When Identifier is matching with apiIdentifier pattern 2" should {
+    val cpg = code("""
         | package main
         |
         |import (
@@ -250,6 +508,7 @@ class GoAPITaggerTestCase3 extends GoTestBase {
         |}
         |
         |""".stripMargin)
+      .withRuleCache(ruleCache)
 
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
@@ -272,12 +531,8 @@ class GoAPITaggerTestCase3 extends GoTestBase {
 
   }
 
-}
-
-class GoAPITaggerTestCase4 extends GoTestBase {
   "Tagging api sink: using go-resty" should {
-    val (cpg, _) = code(
-      """
+    val cpg = code("""
         |package main
         |
         |import (
@@ -325,9 +580,7 @@ class GoAPITaggerTestCase4 extends GoTestBase {
         |   fmt.Printf("Error sending user: %s\n", err.Error())
         | }
         |}
-        |""".stripMargin,
-      downloadDependency = true
-    )
+        |""".stripMargin).withRuleCache(ruleCache)
 
     "check tag of api sink" in {
       val identifierNode = cpg.member("FirstName").tag.nameExact(Constants.id).l
@@ -348,11 +601,9 @@ class GoAPITaggerTestCase4 extends GoTestBase {
       thirdPartyTags should contain("Sinks.ThirdParties.API.api.example.com")
     }
   }
-}
 
-class GoAPITaggerForSOAPAPI extends GoTestBase {
   "Tagging api sink: having SOAP API" should {
-    val (cpg, _) = code("""
+    val cpg = code("""
         |package main
         |
         |import (
@@ -427,6 +678,7 @@ class GoAPITaggerForSOAPAPI extends GoTestBase {
         |	SoapCall(http_url, GetCitiesRequest{})
         |}
         |""".stripMargin)
+      .withRuleCache(ruleCache)
 
     "check tag of api sink" in {
       val List(postCallNode) = cpg.call("Post").l
