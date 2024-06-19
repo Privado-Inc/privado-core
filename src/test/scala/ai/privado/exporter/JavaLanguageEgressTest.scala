@@ -27,7 +27,7 @@ import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.model.Language
+import ai.privado.model.{Constants, Language}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -38,8 +38,7 @@ import scala.collection.mutable
 
 class JavaLanguageEgressTest extends JavaFrontendTestSuite {
 
-  val appCache = new AppCache()
-  appCache.repoLanguage = Language.JAVA
+  val privadoInput = PrivadoInput(enableIngressAndEgressUrls = true)
 
   "Java code egresses" should {
 
@@ -76,20 +75,18 @@ class JavaLanguageEgressTest extends JavaFrontendTestSuite {
       |}
       |""".stripMargin,
       "generalFile.java"
-    )
+    ).withPrivadoInput(privadoInput)
 
     "collect egress url for java code" in {
-      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, new RuleCache(), appCache)
-      val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
-      egressesFromLanguageFiles.size shouldBe 5
-      egressesFromLanguageFiles shouldBe List(
-        "api/v1/login",
-        "api/v1/user/meta",
-        "https://vineet%s/hellow",
-        "api/hellow",
-        "https://abc.com/planetary/apod?api_key=apiKey"
+      val jsonOutput = cpg.getPrivadoJson()
+
+      val k = jsonOutput(Constants.egressUrlsFromCode).asArray.get.map(_.noSpaces).toList shouldBe List(
+        "\"api/v1/login\"",
+        "\"api/v1/user/meta\"",
+        "\"https://vineet%s/hellow\"",
+        "\"api/hellow\"",
+        "\"https://abc.com/planetary/apod?api_key=apiKey\""
       )
     }
   }
-
 }

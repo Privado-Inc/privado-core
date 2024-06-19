@@ -23,102 +23,173 @@
 
 package ai.privado.languageEngine.java.tagger.collection
 
+import ai.privado.cache.RuleCache
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import ai.privado.utility.Utilities.ingressUrls
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.testfixtures.JavaFrontendTestSuite
 
-class CollectionUtilityTest extends JavaTaggingTestBase {
+class CollectionUtilityTest extends JavaFrontendTestSuite {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
+  val privadoInput = PrivadoInput(enableIngressAndEgressUrls = true)
+  val ruleCache    = new RuleCache()
 
-  }
+  val sourceRule = List(
+    RuleInfo(
+      "Data.Sensitive.FirstName",
+      "FirstName",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*firstName.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
 
-  override val javaFileContents: String =
-    """
-      |
-      |@RequestMapping("/api/public/user")
-      |public class AuthenticationService {
-      |
-      |
-      | @PostMapping("/signup")
-      |	public UserProfileD signup(@RequestBody String firstName) {
-      | }
-      |
-      | @PostMapping(value = "/signin")
-      |	public UserProfileD signin(@RequestBody String firstName) {
-      | }
-      |
-      | @PostMapping
-      |	public UserProfileD sample3(@RequestBody String firstName) {
-      | }
-      |
-      | @GetMapping(value = "/login")
-      |	public Token login(@RequestBody String somestring) {
-      | }
-      |
-      | @RequestMapping(method = RequestMethod.GET, value = "/products", produces = "application/json")
-      | public List<Product> getProducts() {
-      |    }
-      |
-      | @PostMapping(produces = "application/json")
-      | public List<Product> createProducts() {
-      |    }
-      |
-      | @PutMapping(path = "/account/{uuid}")
-      |	public Token updateAccount(@RequestBody String uuid) {
-      | }
-      |
-      |}
-      |
-      |
-      |""".stripMargin
+  val collectionRule = List(
+    RuleInfo(
+      "Collections.Annotation.Spring",
+      "Spring Web Interface Annotation",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      Constants.annotations,
+      Language.JAVA,
+      Array()
+    )
+  )
 
-  "Get Url for annotation" should {
-    "give url for sample1" in {
+  private val sinkRule = List(
+    RuleInfo(
+      "Storages.AmazonS3.Read",
+      "Amazon S3",
+      "Storage",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*GetObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.AmazonS3.Write",
+      "Amazon S3",
+      "Storage",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*PutObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
+
+  val rule: ConfigAndRules = ConfigAndRules(sources = sourceRule, sinks = sinkRule, collections = collectionRule)
+  ruleCache.setRule(rule)
+
+  "Collection utility annotation" should {
+
+    val cpg = code("""
+        |
+        |@RequestMapping("/api/public/user")
+        |public class AuthenticationService {
+        |
+        |
+        | @PostMapping("/signup")
+        |	public UserProfileD signup(@RequestBody String firstName) {
+        | }
+        |
+        | @PostMapping(value = "/signin")
+        |	public UserProfileD signin(@RequestBody String firstName) {
+        | }
+        |
+        | @PostMapping
+        |	public UserProfileD sample3(@RequestBody String firstName) {
+        | }
+        |
+        | @GetMapping(value = "/login")
+        |	public Token login(@RequestBody String somestring) {
+        | }
+        |
+        | @RequestMapping(method = RequestMethod.GET, value = "/products", produces = "application/json")
+        | public List<Product> getProducts() {
+        |    }
+        |
+        | @PostMapping(produces = "application/json")
+        | public List<Product> createProducts() {
+        |    }
+        |
+        | @PutMapping(path = "/account/{uuid}")
+        |	public Token updateAccount(@RequestBody String uuid) {
+        | }
+        |
+        |}
+        |
+        |
+        |""".stripMargin)
+      .withPrivadoInput(privadoInput)
+      .withRuleCache(ruleCache)
+
+    "Get Url for annotation for sample1" in {
       CollectionUtility.getUrlFromAnnotation(cpg.typeDecl.annotation.head) shouldBe "/api/public/user"
     }
-  }
 
-  "Get Url for annotation" should {
-    "give url for sample2" in {
+    "Get Url for annotation for sample2" in {
       CollectionUtility.getUrlFromAnnotation(cpg.method("signup").annotation.head) shouldBe "/signup"
     }
-  }
 
-  "Get Url for annotation where first parameter is other than 'value'" should {
-    "give url for getProducts" in {
+    "Get Url for annotation where first parameter is other than 'value' for getProducts" in {
       CollectionUtility.getUrlFromAnnotation(cpg.method("getProducts").annotation.head) shouldBe "/products"
     }
-  }
 
-  "Get Url for annotation where value parameter or direct url is not defined" should {
-    "give url for createProducts" in {
+    "gGet Url for annotation where value parameter or direct url is not defined for createProducts" in {
       CollectionUtility.getUrlFromAnnotation(cpg.method("createProducts").annotation.head) shouldBe ""
     }
-  }
 
-  "Get Url for annotation" should {
-    "give url for sample3" in {
+    "Get Url for annotation for sample3" in {
       CollectionUtility.getUrlFromAnnotation(cpg.method("sample3").annotation.head) shouldBe ""
     }
-  }
 
-  "Get Url for annotation" should {
-    "give url for updateAccount using path variable name" in {
+    "Get Url for annotation for updateAccount using path variable name" in {
       CollectionUtility.getUrlFromAnnotation(cpg.method("updateAccount").annotation.head) shouldBe "/account/{uuid}"
     }
-  }
 
-  "Get Url for annotation without having PII" should {
-    "check ingress url" in {
-      val collectionTagger = new CollectionTagger(cpg, ruleCache)
-      collectionTagger.createAndApply()
-      ingressUrls.addAll(collectionTagger.getIngressUrls())
+    "Get Url for annotation without having PII and check ingress url" in {
+      val jsonOutput  = cpg.getPrivadoJson()
+      val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList
 
       ingressUrls.size shouldBe 7
-      true shouldBe ingressUrls.contains("/api/public/user/login")
+      ingressUrls.map(_.noSpaces).contains("\"/api/public/user/login\"") shouldBe true
     }
   }
 }

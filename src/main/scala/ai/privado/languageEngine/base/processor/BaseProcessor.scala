@@ -62,7 +62,7 @@ abstract class BaseProcessor(
       case Success(cpg) =>
         try {
           statsRecorder.initiateNewStage("overriden overlay Processing")
-          applyOverridenPasses(cpg).foreach(_.createAndApply())
+          applyOverridenPasses(cpg)
           statsRecorder.endLastStage()
           statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
@@ -101,7 +101,7 @@ abstract class BaseProcessor(
     * @param cpg
     */
 
-  def applyOverridenPasses(cpg: Cpg): List[CpgPassBase] = List()
+  def applyOverridenPasses(cpg: Cpg): Unit = List()
 
   def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     logger.info("Applying data flow overlay")

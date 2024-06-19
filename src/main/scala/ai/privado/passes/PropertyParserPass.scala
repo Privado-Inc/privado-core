@@ -67,8 +67,7 @@ class PropertyParserPass(
             FileExtensions.YAML,
             FileExtensions.YML,
             FileExtensions.XML,
-            FileExtensions.CONF,
-            FileExtensions.JSON
+            FileExtensions.CONF
           )
         ).toArray
       }

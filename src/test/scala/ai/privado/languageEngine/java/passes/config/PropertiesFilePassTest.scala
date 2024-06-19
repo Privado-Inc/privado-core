@@ -24,6 +24,7 @@
 package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
@@ -38,6 +39,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.model.Constants
 
 class AnnotationTests extends JavaFrontendTestSuite {
   "ConfigFilePass" should {
@@ -106,35 +108,6 @@ class AnnotationTests extends JavaFrontendTestSuite {
   }
 }
 
-class JsonPropertyTests extends JavaFrontendTestSuite {
-
-  "JSON file having array nodes" should {
-
-    val cpg = code(
-      """
-        |{
-        |    "databases": [
-        |      {
-        |        "name": "MySQL Database",
-        |        "uri": "mysql://username:password@hostname:port/database_name"
-        |      }
-        |     ],
-        |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
-        |}
-        |""".stripMargin,
-      "test.json"
-    )
-
-    "get parsed and property nodes should be generated" in {
-      cpg.property.map(p => (p.name, p.value)).l shouldBe List(
-        ("databases[0].name", "MySQL Database"),
-        ("databases[0].uri", "mysql://username:password@hostname:port/database_name"),
-        ("mongoUri", "mongodb://username:password@hostname:port/database_name")
-      )
-    }
-  }
-}
-
 class GetPropertyTests extends JavaFrontendTestSuite {
 
   "ConfigFilePass" should {
@@ -193,8 +166,8 @@ class GetPropertyTests extends JavaFrontendTestSuite {
 }
 
 class EgressPropertyTests extends JavaFrontendTestSuite {
-  val appCache = new AppCache()
-  appCache.repoLanguage = Language.JAVA
+  val appCache     = new AppCache()
+  val privadoInput = PrivadoInput(enableIngressAndEgressUrls = true)
 
   "Fetch egress urls from property files" should {
     val cpg = code(
@@ -250,27 +223,27 @@ class EgressPropertyTests extends JavaFrontendTestSuite {
           |""".stripMargin,
         "GeneralConfig.java"
       )
+      .withPrivadoInput(privadoInput)
 
     "Check egress urls" in {
-      val egressExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
-      println("size --- " + cpg.property.size)
-      println("------- " + egressExporter.getEgressUrls.size)
-      val List(url1, url2, url3, url4) = egressExporter.getEgressUrls
-      url1 shouldBe "/v1/student/{id}"
-      url2 shouldBe "v1/student/{id}"
-      url3 shouldBe "https://code.privado.ai/repositories"
-      url4 shouldBe "code.privado.ai/repositories"
+      val jsonOutput = cpg.getPrivadoJson()
+      jsonOutput(Constants.egressUrls).asArray.get.size shouldBe 4
+      jsonOutput(Constants.egressUrls).asArray.get.map(_.noSpaces).toList shouldBe List(
+        "\"/v1/student/{id}\"",
+        "\"v1/student/{id}\"",
+        "\"https://code.privado.ai/repositories\"",
+        "\"code.privado.ai/repositories\""
+      )
     }
 
     "Check egress urls with single char" in {
-      val egressExporter       = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
-      val egressWithSingleChar = egressExporter.getEgressUrls.filter(x => x.size == 1)
-      egressWithSingleChar.size shouldBe 0
+      val jsonOutput = cpg.getPrivadoJson()
+      jsonOutput(Constants.egressUrls).asArray.get.filter(_.noSpaces.size == 1).toList.size shouldBe 0
     }
     "Check application base path" in {
-      val httpConnectionMetadataExporter = HttpConnectionMetadataExporter(cpg, new RuleCache, appCache)
-      val List(basePath)                 = httpConnectionMetadataExporter.getEndPointBasePath
-      basePath shouldBe "basepath"
+      val outputJson = cpg.getPrivadoJson()
+      outputJson(Constants.httpEndPointBasePaths).asArray.size shouldBe 1
+      outputJson(Constants.httpEndPointBasePaths).asArray.get.headOption.get.toString shouldBe "\"basepath\""
     }
   }
 }

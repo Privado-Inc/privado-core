@@ -24,6 +24,7 @@
 package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
@@ -35,9 +36,9 @@ import scala.collection.mutable
 
 class FeignEgressExportTest extends JavaFrontendTestSuite {
 
-  val ruleCache = new RuleCache()
-  val appCache  = new AppCache()
-  appCache.repoLanguage = Language.JAVA
+  val ruleCache    = new RuleCache()
+  val appCache     = new AppCache()
+  val privadoInput = new PrivadoInput(enableIngressAndEgressUrls = true)
 
   val collectionRule = List(
     RuleInfo(
@@ -81,12 +82,13 @@ class FeignEgressExportTest extends JavaFrontendTestSuite {
       |}
       |
       |""".stripMargin)
+      .withRuleCache(ruleCache)
+      .withPrivadoInput(privadoInput)
 
     "collect egress url from feign client" in {
-      val propertyExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
-      val egresses         = propertyExporter.getEgressUrls
-      egresses.size shouldBe 1
-      egresses.head shouldBe "address-service/address/{id}"
+      val outputJson = cpg.getPrivadoJson()
+      outputJson.contains(Constants.egressUrls) shouldBe true
+      outputJson(Constants.egressUrls).asArray.get.headOption.get.toString shouldBe "\"address-service/address/{id}\""
     }
   }
 

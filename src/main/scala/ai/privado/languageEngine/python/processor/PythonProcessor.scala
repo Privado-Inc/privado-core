@@ -95,15 +95,16 @@ class PythonProcessor(
     )
   }
 
-  override def applyOverridenPasses(cpg: Cpg): List[CpgPassBase] = {
-    List(
-      new ImportsPass(cpg),
-      new PythonImportResolverPass(cpg),
-      new PythonInheritanceNamePass(cpg),
-      new DynamicTypeHintFullNamePass(cpg)
-    ) ++
-      new PythonTypeRecoveryPassGenerator(cpg).generate() ++
-      List(new PrivadoPythonTypeHintCallLinker(cpg), new NaiveCallLinker(cpg), new AstLinkerPass(cpg))
+  override def applyOverridenPasses(cpg: Cpg): Unit = {
+    new ImportsPass(cpg).createAndApply()
+    new PythonImportResolverPass(cpg).createAndApply()
+    new PythonInheritanceNamePass(cpg).createAndApply()
+    new DynamicTypeHintFullNamePass(cpg).createAndApply()
+
+    new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
+    new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
+    new NaiveCallLinker(cpg).createAndApply()
+    new AstLinkerPass(cpg).createAndApply()
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
