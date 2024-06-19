@@ -160,7 +160,6 @@ class RubyProcessor(
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           }
           statsRecorder.endLastStage()
-          statsRecorder.setSupressSubstagesFlag(true)
 
           statsRecorder.initiateNewStage("Privado source passes")
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()

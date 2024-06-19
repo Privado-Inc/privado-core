@@ -75,7 +75,6 @@ class GoProcessor(
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           }
           statsRecorder.endLastStage()
-          statsRecorder.setSupressSubstagesFlag(true)
 
           statsRecorder.setSupressSubstagesFlag(false)
           statsRecorder.initiateNewStage("Privado source passes")
