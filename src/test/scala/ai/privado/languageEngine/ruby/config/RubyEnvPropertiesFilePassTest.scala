@@ -5,6 +5,7 @@ import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.model.Language
+import ai.privado.testfixtures.RubyFrontendTestSuite
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
@@ -15,23 +16,27 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class RubyEnvPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".env") {
+class RubyEnvPropertiesFilePassTest extends RubyFrontendTestSuite {
 
   val mongourl = "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
 
-  override val configFileContents: String =
-    """
-      |MONGO_URL=mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority
-      |DB_NAME=mydb
-      |""".stripMargin
+  "EnvConfigFilePass" should {
 
-  override val codeFileContents: String =
-    """
+    val cpg = code(
+      """
+        |MONGO_URL=mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority
+        |DB_NAME=mydb
+        |""".stripMargin,
+      "config.env"
+    )
+      .moreCode(
+        """
       |mongo_url = ENV["MONGO_URL"]
       |db_name = ENV.fetch["DB_NAME"]
-      |""".stripMargin
+      |""".stripMargin,
+        "code.rb"
+      )
 
-  "EnvConfigFilePass" should {
     "create a file node for config file" in {
       val files = cpg.file.name.l
       files.filter(_.endsWith(".env")).head.endsWith("config.env") shouldBe true
