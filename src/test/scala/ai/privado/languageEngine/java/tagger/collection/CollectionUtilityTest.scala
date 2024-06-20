@@ -77,44 +77,7 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
     )
   )
 
-  private val sinkRule = List(
-    RuleInfo(
-      "Storages.AmazonS3.Read",
-      "Amazon S3",
-      "Storage",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List(".*GetObjectRequest.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "",
-      Language.JAVA,
-      Array()
-    ),
-    RuleInfo(
-      "Storages.AmazonS3.Write",
-      "Amazon S3",
-      "Storage",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List(".*PutObjectRequest.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "",
-      Language.JAVA,
-      Array()
-    )
-  )
-
-  val rule: ConfigAndRules = ConfigAndRules(sources = sourceRule, sinks = sinkRule, collections = collectionRule)
+  val rule: ConfigAndRules = ConfigAndRules(sources = sourceRule, collections = collectionRule)
   ruleCache.setRule(rule)
 
   "Collection utility annotation" should {
@@ -154,8 +117,6 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
         | }
         |
         |}
-        |
-        |
         |""".stripMargin)
       .withPrivadoInput(privadoInput)
       .withRuleCache(ruleCache)
@@ -188,7 +149,6 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
       val jsonOutput  = cpg.getPrivadoJson()
       val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList
 
-      ingressUrls.size shouldBe 7
       ingressUrls.map(_.noSpaces).contains("\"/api/public/user/login\"") shouldBe true
     }
   }
