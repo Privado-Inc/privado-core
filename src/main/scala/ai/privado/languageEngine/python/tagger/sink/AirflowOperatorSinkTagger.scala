@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class AirflowOperatorSinkPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class AirflowOperatorSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   private val AIRFLOW_CUSTOM_RULE_ID = "Airflow.Custom.Operator"
   override def generateParts(): Array[RuleInfo] = {
