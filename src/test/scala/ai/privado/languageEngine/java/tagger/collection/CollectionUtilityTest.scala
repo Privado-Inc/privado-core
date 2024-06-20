@@ -27,7 +27,6 @@ import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.utility.Utilities.ingressUrls
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.testfixtures.JavaFrontendTestSuite
@@ -128,11 +127,11 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
 
     "Get Url for annotation without having PII and check ingress url" in {
       val jsonOutput  = cpg.getPrivadoJson()
-      val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList.distinct
+      val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList
 
       ingressUrls.size shouldBe 7
-      ingressUrls.map(_.noSpaces).toList shouldBe List(
-        "\"/address/{id}\"",
+      ingressUrls.distinct.size shouldBe 6
+      ingressUrls.distinct.map(_.noSpaces).toList shouldBe List(
         "\"/api/public/user\"",
         "\"/api/public/user/signin\"",
         "\"/api/public/user/products\"",

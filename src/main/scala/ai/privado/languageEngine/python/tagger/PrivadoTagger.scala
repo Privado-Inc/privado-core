@@ -13,7 +13,6 @@ import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.sink.{LogShareSinkTagger, RegularSinkTagger}
 import ai.privado.tagger.source.SqlQueryTagger
 import ai.privado.utility.StatsRecorder
-import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -58,7 +57,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, appCache).createAndApply()
 
