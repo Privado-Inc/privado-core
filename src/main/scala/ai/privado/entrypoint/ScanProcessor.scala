@@ -468,7 +468,8 @@ object ScanProcessor extends CommandProcessor {
           s3DatabaseDetailsCache,
           appCache,
           propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache
         ).processCpg()
       case Language.KOTLIN =>
         statsRecorder.justLogMessage("Detected language 'Kotlin'")

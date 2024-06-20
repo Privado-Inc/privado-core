@@ -31,31 +31,12 @@ import ai.privado.utility.Utilities.ingressUrls
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.rule.RuleInfoTestData
 
 class CollectionUtilityTest extends JavaFrontendTestSuite {
 
   val privadoInput = PrivadoInput(enableIngressAndEgressUrls = true)
   val ruleCache    = new RuleCache()
-
-  val sourceRule = List(
-    RuleInfo(
-      "Data.Sensitive.FirstName",
-      "FirstName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*firstName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.JAVA,
-      Array()
-    )
-  )
 
   val collectionRule = List(
     RuleInfo(
@@ -77,7 +58,7 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
     )
   )
 
-  val rule: ConfigAndRules = ConfigAndRules(sources = sourceRule, collections = collectionRule)
+  val rule: ConfigAndRules = ConfigAndRules(sources = RuleInfoTestData.sourceRule, collections = collectionRule)
   ruleCache.setRule(rule)
 
   "Collection utility annotation" should {
@@ -147,9 +128,18 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
 
     "Get Url for annotation without having PII and check ingress url" in {
       val jsonOutput  = cpg.getPrivadoJson()
-      val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList
+      val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList.distinct
 
-      ingressUrls.map(_.noSpaces).contains("\"/api/public/user/login\"") shouldBe true
+      ingressUrls.size shouldBe 7
+      ingressUrls.map(_.noSpaces).toList shouldBe List(
+        "\"/address/{id}\"",
+        "\"/api/public/user\"",
+        "\"/api/public/user/signin\"",
+        "\"/api/public/user/products\"",
+        "\"/api/public/user/signup\"",
+        "\"/api/public/user/login\"",
+        "\"/api/public/user/account/{uuid}\""
+      )
     }
   }
 }

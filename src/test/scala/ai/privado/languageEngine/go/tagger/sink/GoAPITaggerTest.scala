@@ -27,115 +27,11 @@ import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.*
 import ai.privado.testfixtures.GoFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.rule.RuleInfoTestData
 
 class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
 
   val ruleCache = new RuleCache()
-
-  val sourceRule = List(
-    RuleInfo(
-      "Data.Sensitive.PersonalIdentification.FirstName",
-      "FirstName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*firstName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.UNKNOWN,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.PersonalIdentification.LastName",
-      "LastName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*lastName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.UNKNOWN,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.PersonalIdentification.DateofBirth",
-      "Date of Birth",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*dob.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.UNKNOWN,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.ContactData.EmailAddress",
-      "EmailAddress",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*email.*"),
-      true,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.UNKNOWN,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.ContactData.PhoneNumber",
-      "Phone",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*phone.*"),
-      true,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.UNKNOWN,
-      Array()
-    ),
-    RuleInfo(
-      "Data.Sensitive.FinancialData.Salary",
-      "Salary",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*salary.*"),
-      true,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.UNKNOWN,
-      Array()
-    )
-  )
 
   val sinkRule = List(
     RuleInfo(
@@ -286,7 +182,7 @@ class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
   )
 
   val configAndRules: ConfigAndRules =
-    ConfigAndRules(sources = sourceRule, sinks = sinkRule, systemConfig = systemConfig)
+    ConfigAndRules(sources = RuleInfoTestData.sourceRule, sinks = sinkRule, systemConfig = systemConfig)
 
   ruleCache.setRule(configAndRules)
 
@@ -355,7 +251,7 @@ class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -434,7 +330,7 @@ class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -513,7 +409,7 @@ class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
     "check tag of api sink" in {
       val identifierNodes = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNodes.size shouldBe 1
-      identifierNodes.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+      identifierNodes.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 
@@ -585,7 +481,7 @@ class GoAPITaggerTestCase1 extends GoFrontendTestSuite {
     "check tag of api sink" in {
       val identifierNode = cpg.member("FirstName").tag.nameExact(Constants.id).l
       identifierNode.size shouldBe 1
-      identifierNode.value.head shouldBe "Data.Sensitive.PersonalIdentification.FirstName"
+      identifierNode.value.head shouldBe "Data.Sensitive.FirstName"
 
       val List(postCallNode) = cpg.call("Post").l
 

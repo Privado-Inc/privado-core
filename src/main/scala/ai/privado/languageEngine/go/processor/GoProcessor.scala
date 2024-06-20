@@ -88,12 +88,13 @@ class GoProcessor(
 
     createCpgFolder(sourceRepoLocation)
 
-    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+    val cpgOutputPath    = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+    val excludeFileRegex = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
 
     val cpgconfig = Config()
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
-      .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
+      .withIgnoredFilesRegex(excludeFileRegex)
       .withFetchDependencies(false)
     val xtocpg = new GoSrc2Cpg()
       .createCpg(cpgconfig)
