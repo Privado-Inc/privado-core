@@ -1,12 +1,12 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.python.passes.read.DatabaseReadPass
 import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.python.tagger.sink.{AirflowOperatorSinkPass, InheritMethodTagger, PythonAPITagger}
+import ai.privado.languageEngine.python.tagger.sink.{AirflowOperatorSinkTagger, InheritMethodTagger, PythonAPITagger}
 import ai.privado.languageEngine.python.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
@@ -28,6 +28,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder
@@ -63,7 +64,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
-    new AirflowOperatorSinkPass(cpg, ruleCache).createAndApply()
+    new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
+
+    new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
     logger.info("Done with tagging")
     cpg.tag

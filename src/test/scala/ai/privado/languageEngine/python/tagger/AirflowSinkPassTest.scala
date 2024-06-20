@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.python.tagger.sink.AirflowOperatorSinkPass
+import ai.privado.languageEngine.python.tagger.sink.AirflowOperatorSinkTagger
 import ai.privado.languageEngine.python.{PrivadoPySrc2CpgFixture, PrivadoPySrcTestCpg}
 import ai.privado.model.*
 import better.files.File
@@ -121,7 +121,7 @@ abstract class PythonAirflowOperatorTestBase extends AnyWordSpec with Matchers w
     X2Cpg.applyDefaultOverlays(cpg)
     ruleCache.setRule(rule)
 
-    new AirflowOperatorSinkPass(cpg, ruleCache).createAndApply()
+    new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
     super.beforeAll()
   }
 
