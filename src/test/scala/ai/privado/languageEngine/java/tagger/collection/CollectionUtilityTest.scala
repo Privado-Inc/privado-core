@@ -27,35 +27,15 @@ import ai.privado.cache.RuleCache
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.utility.Utilities.ingressUrls
 import ai.privado.languageEngine.java.tagger.collection.CollectionTagger
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.rule.RuleInfoTestData
 
 class CollectionUtilityTest extends JavaFrontendTestSuite {
 
   val privadoInput = PrivadoInput(enableIngressAndEgressUrls = true)
   val ruleCache    = new RuleCache()
-
-  val sourceRule = List(
-    RuleInfo(
-      "Data.Sensitive.FirstName",
-      "FirstName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*firstName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.JAVA,
-      Array()
-    )
-  )
 
   val collectionRule = List(
     RuleInfo(
@@ -77,44 +57,7 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
     )
   )
 
-  private val sinkRule = List(
-    RuleInfo(
-      "Storages.AmazonS3.Read",
-      "Amazon S3",
-      "Storage",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List(".*GetObjectRequest.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "",
-      Language.JAVA,
-      Array()
-    ),
-    RuleInfo(
-      "Storages.AmazonS3.Write",
-      "Amazon S3",
-      "Storage",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List(".*PutObjectRequest.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "",
-      Language.JAVA,
-      Array()
-    )
-  )
-
-  val rule: ConfigAndRules = ConfigAndRules(sources = sourceRule, sinks = sinkRule, collections = collectionRule)
+  val rule: ConfigAndRules = ConfigAndRules(sources = RuleInfoTestData.sourceRule, collections = collectionRule)
   ruleCache.setRule(rule)
 
   "Collection utility annotation" should {
@@ -154,8 +97,6 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
         | }
         |
         |}
-        |
-        |
         |""".stripMargin)
       .withPrivadoInput(privadoInput)
       .withRuleCache(ruleCache)
@@ -189,7 +130,15 @@ class CollectionUtilityTest extends JavaFrontendTestSuite {
       val ingressUrls = jsonOutput(Constants.ingressUrls).asArray.get.toList
 
       ingressUrls.size shouldBe 7
-      ingressUrls.map(_.noSpaces).contains("\"/api/public/user/login\"") shouldBe true
+      ingressUrls.distinct.size shouldBe 6
+      ingressUrls.distinct.map(_.noSpaces).toList shouldBe List(
+        "\"/api/public/user\"",
+        "\"/api/public/user/signin\"",
+        "\"/api/public/user/products\"",
+        "\"/api/public/user/signup\"",
+        "\"/api/public/user/login\"",
+        "\"/api/public/user/account/{uuid}\""
+      )
     }
   }
 }

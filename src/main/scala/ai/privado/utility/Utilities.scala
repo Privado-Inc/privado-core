@@ -73,8 +73,6 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  var ingressUrls = mutable.ListBuffer.empty[String]
-
   def checkIfGTMOrSegment(ruleId: String): Boolean = {
     List(
       Constants.segmentPixelRuleId,

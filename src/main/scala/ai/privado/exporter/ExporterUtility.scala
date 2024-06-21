@@ -419,7 +419,7 @@ object ExporterUtility {
     output.addOne(Constants.createdAt                    -> Calendar.getInstance().getTimeInMillis.asJson)
 
     if (privadoInput.enableIngressAndEgressUrls) {
-      output.addOne(Constants.ingressUrls -> Utilities.ingressUrls.toArray.asJson)
+      output.addOne(Constants.ingressUrls -> appCache.ingressUrls.toArray.asJson)
       output.addOne(Constants.egressUrls  -> httpConnectionMetadataExporter.getEgressUrls.toArray.asJson)
       output.addOne(
         Constants.egressUrlsFromCode -> httpConnectionMetadataExporter.getEgressUrlsFromCodeFiles.toArray.asJson
