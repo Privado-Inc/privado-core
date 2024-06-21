@@ -23,22 +23,48 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 
 import scala.collection.mutable
 
-class FeignEgressExportTest extends JavaTaggingTestBase {
+class FeignEgressExportTest extends JavaFrontendTestSuite {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-  }
+  val ruleCache    = new RuleCache()
+  val appCache     = new AppCache()
+  val privadoInput = new PrivadoInput(enableIngressAndEgressUrls = true)
 
-  override val javaFileContents: String =
-    """
+  val collectionRule = List(
+    RuleInfo(
+      "Collections.Annotation.Spring",
+      "Spring Web Interface Annotation",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("RequestMapping|PostMapping|PutMapping|GetMapping|DeleteMapping"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      Constants.annotations,
+      Language.JAVA,
+      Array()
+    )
+  )
+
+  val rule: ConfigAndRules = ConfigAndRules(collections = collectionRule)
+  ruleCache.setRule(rule)
+
+  "Java code for Feign Client" should {
+    val cpg = code("""
       |package com.gfg.employeaap.feignclient;
       |
       |import com.gfg.employeaap.response.AddressResponse;
@@ -55,14 +81,14 @@ class FeignEgressExportTest extends JavaTaggingTestBase {
       |
       |}
       |
-      |""".stripMargin
+      |""".stripMargin)
+      .withRuleCache(ruleCache)
+      .withPrivadoInput(privadoInput)
 
-  "Java code for Feign Client" should {
     "collect egress url from feign client" in {
-      val propertyExporter = new HttpConnectionMetadataExporter(cpg, ruleCache, new AppCache())
-      val egresses         = propertyExporter.getEgressUrls
-      egresses.size shouldBe 1
-      egresses.head shouldBe "address-service/address/{id}"
+      val outputJson = cpg.getPrivadoJson()
+      outputJson.contains(Constants.egressUrls) shouldBe true
+      outputJson(Constants.egressUrls).asArray.get.headOption.get.toString shouldBe "\"address-service/address/{id}\""
     }
   }
 
