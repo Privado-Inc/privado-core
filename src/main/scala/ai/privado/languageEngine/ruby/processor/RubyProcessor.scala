@@ -122,6 +122,8 @@ class RubyProcessor(
           }
           new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
           statsRecorder.endLastStage()
+
+          statsRecorder.setSupressSubstagesFlag(false)
           statsRecorder.initiateNewStage("Privado source passes")
           if (privadoInput.assetDiscovery)
             new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
@@ -158,7 +160,6 @@ class RubyProcessor(
             new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
           }
           statsRecorder.endLastStage()
-          statsRecorder.setSupressSubstagesFlag(false)
 
           statsRecorder.initiateNewStage("Privado source passes")
           new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()

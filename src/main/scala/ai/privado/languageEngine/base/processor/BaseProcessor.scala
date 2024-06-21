@@ -56,15 +56,23 @@ abstract class BaseProcessor(
     * @param xtocpg
     * @return
     */
+
   def tagAndExport(xtocpg: Try[Cpg]): Either[String, CpgWithOutputMap] = {
     xtocpg match {
       case Success(cpg) =>
         try {
+          statsRecorder.initiateNewStage("overriden overlay Processing")
+          applyOverridenPasses(cpg)
+          statsRecorder.endLastStage()
           statsRecorder.initiateNewStage("Privado source passes")
           applyPrivadoPasses(cpg).foreach(_.createAndApply())
           statsRecorder.endLastStage()
-          applyDataflowAndPostProcessingPasses(cpg)
 
+          statsRecorder.initiateNewStage("Run oss data flow")
+          applyDataflowAndPostProcessingPasses(cpg)
+          statsRecorder.endLastStage()
+
+          statsRecorder.setSupressSubstagesFlag(false)
           applyTaggingAndExport(cpg) match
             case Left(err) =>
               logger.debug(s"Errors captured in scanning : $err")
@@ -96,6 +104,9 @@ abstract class BaseProcessor(
   /** Method to apply Dataflow pass
     * @param cpg
     */
+
+  def applyOverridenPasses(cpg: Cpg): Unit = List()
+
   def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     logger.info("Applying data flow overlay")
     statsRecorder.initiateNewStage("Run oss data flow")

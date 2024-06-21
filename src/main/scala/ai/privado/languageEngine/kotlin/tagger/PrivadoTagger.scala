@@ -17,7 +17,6 @@ import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
 import ai.privado.utility.StatsRecorder
-import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -76,12 +75,12 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     // Tag by finding annotations that declare endpoints
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     // Tag by finding methods that are declaring endpoints
     val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
     methodFullNameTagger.createAndApply()
-    ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
 
     logger.info("Done with tagging")
     cpg.tag

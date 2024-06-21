@@ -49,7 +49,6 @@ import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollection
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
 import ai.privado.utility.StatsRecorder
-import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -114,11 +113,11 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
     methodFullNameTagger.createAndApply()
-    ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
 
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 
