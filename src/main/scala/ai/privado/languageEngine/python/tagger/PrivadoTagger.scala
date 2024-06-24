@@ -39,7 +39,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
 
-    new SqlQueryTagger(cpg, ruleCache).createAndApply()
+//    new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
     new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache, statsRecorder).createAndApply()
 
