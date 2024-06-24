@@ -1,39 +1,24 @@
 package ai.privado.languageEngine.go.processor
 
-import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
-import ai.privado.languageEngine.java.language.*
-import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
-import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-
-import java.util.Calendar
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 
 class GoProcessor(
   ruleCache: RuleCache,
@@ -95,7 +80,7 @@ class GoProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
-      .withFetchDependencies(false)
+      .withFetchDependencies(!privadoInput.skipDownloadDependencies)
     val xtocpg = new GoSrc2Cpg()
       .createCpg(cpgconfig)
       .map { cpg =>

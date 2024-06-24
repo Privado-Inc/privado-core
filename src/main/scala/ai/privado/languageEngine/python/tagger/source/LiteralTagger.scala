@@ -57,7 +57,7 @@ class GeneralAndSqlLiteralTagger(cpg: Cpg, ruleCache: RuleCache)
 
   override def generateParts(): Array[List[Literal]] = {
     val nodes = (generalLiteralCached ::: sqlQueryLiteralCached).dedup.l
-    nodes.grouped(getBatchSize(nodes.size)).toArray
+    nodes.grouped(MAX_BATCH_SIZE).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, literals: List[Literal]): Unit = {
@@ -78,7 +78,7 @@ class BigSQLLiteralTagger(cpg: Cpg, ruleCache: RuleCache)
       .where(_.code(".*(?i)(CREATE|DELETE|ALTER|INSERT|SELECT|UPDATE).*"))
       .where(_.inCall.name(Operators.assignment))
       .l
-    nodes.grouped(getBatchSize(nodes.size)).toArray
+    nodes.grouped(MAX_BATCH_SIZE).toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, literals: List[Literal]): Unit = {
