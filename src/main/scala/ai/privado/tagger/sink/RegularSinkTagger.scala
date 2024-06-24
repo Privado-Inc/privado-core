@@ -57,10 +57,19 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache, databaseDetailsCache: Da
 
     if (sinks != null & ruleInfo.id.matches("Storages.SpringFramework.Jdbc.*")) {
       val databaseDetails = databaseDetailsCache.getDatabaseDetails(ruleInfo.id)
+      println("JDBC Tags match here.....")
       if (databaseDetails.isDefined) {
+        println("database details defined for JDBC")
+        println(databaseDetails)
         sinks.foreach(sink => addDatabaseDetailTags(builder, sink, databaseDetails.get, ruleCache))
       }
     }
-    sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
+
+    println("All sinks")
+    println(sinks.size)
+    sinks.foreach(sink => {
+      println(sink.methodFullName)
+      addRuleTags(builder, sink, ruleInfo, ruleCache)
+    })
   }
 }
