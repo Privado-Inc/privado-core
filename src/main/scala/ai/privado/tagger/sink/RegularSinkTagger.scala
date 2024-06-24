@@ -65,10 +65,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache, databaseDetailsCache: Da
       }
     }
 
-    println("All sinks")
-    println(sinks.size)
     sinks.foreach(sink => {
-      println(sink.methodFullName)
       addRuleTags(builder, sink, ruleInfo, ruleCache)
     })
   }

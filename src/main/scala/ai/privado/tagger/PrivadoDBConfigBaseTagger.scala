@@ -65,6 +65,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
   }
 
   def parsePropForJdbcAndJpaOracle(dbUrl: JavaProperty, rules: List[(String, String)]): Unit = {
+    println("Start parsing JDBC JPA Oracle")
 
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1).toString
@@ -78,12 +79,14 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
       dbLocation = tokens(3).split("@")(1).toString + ":" + tokens(4).split("/")(0)
       dbName = tokens(5)
     }
+    println("Parsed JDBC JPA Oracle")
 
     addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 
   def parsePropForJdbcAndJpaH2(dbUrl: JavaProperty, rules: List[(String, String)]): Unit = {
+    println("Start parsing JDBC JPA h2")
 
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1)
@@ -105,15 +108,20 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
       }
     }
 
+    println("Parsed JDBC JPA h2")
     addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 
   def parsePropForJDBCAndJPA(dbUrl: JavaProperty, rules: List[(String, String)]): Unit = {
+    println("Start parsing JDBC JPA")
+
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1)
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
+
+    println("Parsed JDBC JPA")
 
     addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 

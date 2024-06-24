@@ -19,7 +19,9 @@ class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
       .filter(prop => prop.name.nonEmpty && prop.value.nonEmpty)
       .foreach(dbUrl => {
         try {
+          println(dbUrl)
           if (dbUrl.value.contains("jdbc:h2")) {
+            println("JDBC H2")
             parsePropForJdbcAndJpaH2(
               dbUrl,
               List(
@@ -31,6 +33,7 @@ class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
               )
             )
           } else if (dbUrl.value.contains("jdbc:oracle")) {
+            println("JDBC Oracle")
             parsePropForJdbcAndJpaOracle(
               dbUrl,
               List(
@@ -42,6 +45,7 @@ class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
               )
             )
           } else if (dbUrl.value.contains("jdbc:")) {
+            println("JDBC Onlyyy")
             parsePropForJDBCAndJPA(
               dbUrl,
               List(
