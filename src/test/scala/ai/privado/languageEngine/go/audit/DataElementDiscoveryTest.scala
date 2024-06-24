@@ -90,8 +90,6 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
       })
 
-      println(workbookList)
-
       memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "5", "Member")
       memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "13", "Identifier")
       memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "5", "Member")
