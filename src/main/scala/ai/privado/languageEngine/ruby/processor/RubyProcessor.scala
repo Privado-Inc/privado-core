@@ -35,8 +35,8 @@ import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName, outputFileName, outputAuditFileName}
-import ai.privado.model.{CatLevelOne, Constants, Language}
+import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName}
+import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, JsonPropertyParserPass, SQLParser}
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
@@ -68,6 +68,8 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ai.privado.dataflow.Dataflow
+import ai.privado.languageEngine.base.processor.BaseProcessor
+import io.shiftleft.passes.CpgPassBase
 
 import java.util
 import java.util.Calendar
@@ -90,200 +92,130 @@ class RubyProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
-) {
+) extends BaseProcessor(
+      ruleCache,
+      privadoInput,
+      sourceRepoLocation,
+      Language.RUBY,
+      dataFlowCache,
+      auditCache,
+      s3DatabaseDetailsCache,
+      appCache,
+      statsRecorder,
+      returnClosedCpg,
+      databaseDetailsCache,
+      propertyFilterCache
+    ) {
 
-  private val logger    = LoggerFactory.getLogger(getClass)
-  private var cpgconfig = Config()
-  private def processCPG(
-    xtocpg: Try[codepropertygraph.Cpg],
-    ruleCache: RuleCache,
-    privadoInput: PrivadoInput,
-    sourceRepoLocation: String,
-    dataFlowCache: DataFlowCache,
-    auditCache: AuditCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
-    appCache: AppCache,
-    propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-    databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache()
-  ): Either[String, Unit] = {
-    xtocpg match {
-      case Success(cpg) =>
-        try {
-          logger.info("Applying default overlays")
-          statsRecorder.initiateNewStage("Default overlays")
-          applyDefaultOverlays(cpg)
-          statsRecorder.endLastStage()
-          statsRecorder.initiateNewStage("Additional base passes")
-          logger.info("Enhancing Ruby graph")
-          if (!config.skipDownloadDependencies) {
-            val packageTable =
-              new DownloadDependenciesPass(new PackageTable(), sourceRepoLocation, ruleCache).createAndApply()
-            RubySrc2Cpg.packageTableInfo.set(packageTable)
-          }
-          new MethodFullNamePassForRORBuiltIn(cpg).createAndApply()
-          statsRecorder.endLastStage()
+  override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
+    val passesList = List(
+      new MethodFullNamePassForRORBuiltIn(cpg), {
+        if (privadoInput.assetDiscovery)
+          new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
+        else
+          new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY, propertyFilterCache)
+      },
+      new RubyPropertyLinkerPass(cpg),
+      new RubyExternalTypesPass(cpg, RubySrc2Cpg.packageTableInfo)
+    )
+    // Using our own pass by overriding languageEngine's pass
+    // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
+    val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+    passesList ++ List(new GlobalImportPass(cpg, globalSymbolTable)) ++
+      new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate() ++
+      List(
+        new RubyTypeHintCallLinker(cpg),
+        new AstLinkerPass(cpg),
+        new SchemaParser(cpg, sourceRepoLocation, ruleCache),
+        new SQLParser(cpg, sourceRepoLocation, ruleCache),
+        new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache)
+      )
+    passesList
+  }
 
-          statsRecorder.setSupressSubstagesFlag(false)
-          statsRecorder.initiateNewStage("Privado source passes")
-          if (privadoInput.assetDiscovery)
-            new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
-              .createAndApply()
-          else
-            new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY, propertyFilterCache)
-              .createAndApply()
-          new RubyPropertyLinkerPass(cpg).createAndApply()
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
+  }
 
-          logger.info("Enhancing Ruby graph by post processing pass")
+  override def processCpg(): Either[String, CpgWithOutputMap] = {
+    statsRecorder.justLogMessage("Processing source code using Ruby engine")
+    statsRecorder.initiateNewStage("Base source processing")
 
-          new RubyExternalTypesPass(cpg, RubySrc2Cpg.packageTableInfo).createAndApply()
+    createCpgFolder(sourceRepoLocation)
 
-          // Using our own pass by overriding languageEngine's pass
-          // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
-          val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-          new GlobalImportPass(cpg, globalSymbolTable).createAndApply()
-          // We are clearing up the packageTableInfo as it is not needed afterwards
-          RubySrc2Cpg.packageTableInfo.clear()
-          new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate().foreach(_.createAndApply())
-          new RubyTypeHintCallLinker(cpg).createAndApply()
-          // Some of passes above create new methods, so, we
-          // need to run the ASTLinkerPass one more time
-          new AstLinkerPass(cpg).createAndApply()
-          statsRecorder.endLastStage()
-          // Not using languageEngine's passes
-          // RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    val cpgOutputPath          = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
+    val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
+    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
+    val RubySourceFileExtensions: Set[String] = Set(".rb")
 
-          statsRecorder.initiateNewStage("Oss data flow")
-          val context = new LayerCreatorContext(cpg)
-          val options = new OssDataFlowOptions()
-          new OssDataFlow(options).run(context)
-          if (ScanProcessor.config.enableLambdaFlows) {
-            new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
-          }
-          statsRecorder.endLastStage()
+    val cpgconfig = Config()
+      .withInputPath(absoluteSourceLocation)
+      .withOutputPath(cpgOutputPath)
+      .withIgnoredFilesRegex(excludeFileRegex)
+      .withSchemaValidation(ValidationMode.Enabled)
+      // TODO: Remove old ruby frontend this once we have the new frontend ready upstream
+      .withUseDeprecatedFrontend(true)
 
-          statsRecorder.initiateNewStage("Privado source passes")
-          new SchemaParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-
-          new SQLParser(cpg, sourceRepoLocation, ruleCache).createAndApply()
-          new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache).createAndApply()
-
-          // Unresolved function report
-          if (config.showUnresolvedFunctionsReport) {
-            val path = s"${config.sourceLocation.head}/${Constants.outputDirectoryName}"
-            UnresolvedReportUtility.reportUnresolvedMethods(xtocpg, path, Language.RUBY)
-          }
-          statsRecorder.endLastStage()
-
-          // Run tagger
-          statsRecorder.initiateNewStage("Tagger ...")
-          val taggerCache = new TaggerCache
-          cpg.runTagger(
-            ruleCache,
-            taggerCache,
-            privadoInputConfig = ScanProcessor.config.copy(),
-            dataFlowCache,
-            appCache,
-            databaseDetailsCache,
-            statsRecorder
+    val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
+      new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
+      new ConfigFileCreationPass(cpg).createAndApply()
+      // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
+      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+        val parsedFiles: List[(String, ProgramContext)] = {
+          val tasks = SourceFiles
+            .determine(
+              config.inputPath,
+              RubySourceFileExtensions,
+              ignoredFilesRegex = Option(config.ignoredFilesRegex),
+              ignoredFilesPath = Option(config.ignoredFiles)
+            )
+            .map { x =>
+              ParserTask(x, parser)
+            }
+          val results = tasks.map(task =>
+            Future {
+              task.call()
+            }
           )
-          statsRecorder.endLastStage()
-          statsRecorder.initiateNewStage("Finding data flows ...")
-          val dataflowMap =
-            Dataflow(cpg, statsRecorder).dataflow(ScanProcessor.config, ruleCache, dataFlowCache, auditCache, appCache)
-          statsRecorder.endLastStage()
-          statsRecorder.justLogMessage(s"Processed final flows - ${dataflowMap.size}")
-          statsRecorder.initiateNewStage("Brewing result")
-          MetricHandler.setScanStatus(true)
-          // Check if monolith flag is enabled, if yes export monolith results
-          val monolithPrivadoJsonPaths: List[String] = MonolithExporter.checkIfMonolithFlagEnabledAndExport(
-            cpg,
-            outputFileName,
-            sourceRepoLocation,
-            dataflowMap,
-            ruleCache,
-            taggerCache,
-            dataFlowCache,
-            privadoInput,
-            s3DatabaseDetailsCache,
-            appCache,
-            databaseDetailsCache
-          )
-
-          val errorMsg = new ListBuffer[String]()
-          // Exporting the Audit report
-          if (ScanProcessor.config.generateAuditReport) {
-            ExcelExporter.auditExport(
-              outputAuditFileName,
-              AuditReportEntryPoint
-                .getAuditWorkbookForLanguage(
-                  xtocpg,
-                  taggerCache,
-                  sourceRepoLocation,
-                  auditCache,
-                  ruleCache,
-                  Language.RUBY
-                ),
-              sourceRepoLocation
-            ) match {
-              case Left(err) =>
-                MetricHandler.otherErrorsOrWarnings.addOne(err)
-                errorMsg += err
-              case Right(_) =>
-                statsRecorder.justLogMessage(
-                  s" Successfully exported Audit report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
-                )
+          var errorFileCount   = 0
+          var timeoutFileCount = 0
+          val finalResult      = ListBuffer[(String, ProgramContext)]()
+          results.zip(tasks).foreach { case (result, task) =>
+            try {
+              finalResult += Await.result(result, privadoInput.rubyParserTimeout.seconds)
+            } catch {
+              case ex: TimeoutException =>
+                statsRecorder.justLogMessage(s"Parser timed out for file -> '${task.file}'")
+                timeoutFileCount += 1
+              case ex: Exception =>
+                statsRecorder.justLogMessage(s"Error while parsing file -> '${task.file}'")
+                errorFileCount += 1
             }
           }
-
-          JSONExporter.fileExport(
-            cpg,
-            outputFileName,
-            sourceRepoLocation,
-            dataflowMap,
-            ruleCache,
-            taggerCache,
-            dataFlowCache.getDataflowAfterDedup,
-            privadoInput,
-            monolithPrivadoJsonPaths = monolithPrivadoJsonPaths,
-            s3DatabaseDetailsCache,
-            appCache,
-            propertyFilterCache,
-            databaseDetailsCache
-          ) match {
-            case Left(err) =>
-              MetricHandler.otherErrorsOrWarnings.addOne(err)
-              errorMsg += err
-            case Right(_) =>
-              println(s"Successfully exported output to '${appCache.localScanPath}/$outputDirectoryName' folder")
-              logger.debug(
-                s"Total Sinks identified : ${cpg.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)).call.tag.nameExact(Constants.id).value.toSet}"
-              )
-          }
-
-          // Check if any of the export failed
-          if (errorMsg.toList.isEmpty)
-            Right(())
-          else
-            Left(errorMsg.toList.mkString("\n"))
-
-        } catch {
-          case ex: Exception =>
-            logger.error("Error while processing the CPG after source code parsing ", ex)
-            MetricHandler.setScanStatus(false)
-            Left("Error while parsing the source code: " + ex.toString)
-        } finally {
-          cpg.close()
-          import java.io.File
-          val cpgFile = new File(cpgconfig.outputPath)
-          println(s"\n\n\nBinary file size -- ${cpgFile.length()} in Bytes - ${cpgFile.length() * 0.000001} MB\n\n\n")
+          statsRecorder.justLogMessage(s"No of files skipped because of timeout - '$timeoutFileCount'")
+          statsRecorder.justLogMessage(s"No of files that are skipped because of error - '$errorFileCount'")
+          finalResult.toList
         }
 
-      case Failure(exception) =>
-        logger.error("Error while parsing the source code!", exception)
-        logger.debug("Error : ", exception)
-        MetricHandler.setScanStatus(false)
-        Left("Error while parsing the source code: " + exception.toString)
+        new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
+          .populatePackageTable()
+        val astCreationPass =
+          new AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
+        astCreationPass.createAndApply()
+        statsRecorder.initiateNewStage("Default overlays")
+        applyDefaultOverlays(cpg)
+      }
     }
+    statsRecorder.endLastStage()
+    RubySrc2Cpg.packageTableInfo.clear()
+    if (!privadoInput.skipDownloadDependencies) {
+      statsRecorder.initiateNewStage("Download Dependency")
+      val packageTable =
+        new DownloadDependenciesPass(new PackageTable(), sourceRepoLocation, ruleCache).createAndApply()
+      RubySrc2Cpg.packageTableInfo.set(packageTable)
+      statsRecorder.endLastStage()
+    }
+    tagAndExport(xtocpg)
   }
 
   // Start: Here be dragons
@@ -366,90 +298,6 @@ class RubyProcessor(
 
   // End: Here be dragons
 
-  def createRubyCpg(): Either[String, Unit] = {
-    statsRecorder.justLogMessage("Processing source code using ruby engine")
-    statsRecorder.initiateNewStage("Base source processing")
-
-    val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
-    // Create the .privado folder if not present
-    createCpgFolder(sourceRepoLocation);
-
-    // Need to convert path to absolute path as ruby cpg needs abolute path of repo
-    val absoluteSourceLocation = File(sourceRepoLocation).path.toAbsolutePath.normalize().toString
-    val excludeFileRegex       = ruleCache.getRule.exclusions.flatMap(rule => rule.patterns).mkString("|")
-    val RubySourceFileExtensions: Set[String] = Set(".rb")
-
-    cpgconfig = Config()
-      .withInputPath(absoluteSourceLocation)
-      .withOutputPath(cpgOutputPath)
-      .withIgnoredFilesRegex(excludeFileRegex)
-      .withSchemaValidation(ValidationMode.Enabled)
-      // TODO: Remove old ruby frontend this once we have the new frontend ready upstream
-      .withUseDeprecatedFrontend(true)
-
-    val xtocpg = withNewEmptyCpg(cpgconfig.outputPath, cpgconfig: Config) { (cpg, config) =>
-      new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigFileCreationPass(cpg).createAndApply()
-      // TODO: Either get rid of the second timeout parameter or take this one as an input parameter
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-        val parsedFiles: List[(String, ProgramContext)] = {
-          val tasks = SourceFiles
-            .determine(
-              config.inputPath,
-              RubySourceFileExtensions,
-              ignoredFilesRegex = Option(config.ignoredFilesRegex),
-              ignoredFilesPath = Option(config.ignoredFiles)
-            )
-            .map { x =>
-              ParserTask(x, parser)
-            }
-          val results = tasks.map(task =>
-            Future {
-              task.call()
-            }
-          )
-          var errorFileCount   = 0
-          var timeoutFileCount = 0
-          val finalResult      = ListBuffer[(String, ProgramContext)]()
-          results.zip(tasks).foreach { case (result, task) =>
-            try {
-              finalResult += Await.result(result, privadoInput.rubyParserTimeout.seconds)
-            } catch {
-              case ex: TimeoutException =>
-                statsRecorder.justLogMessage(s"Parser timed out for file -> '${task.file}'")
-                timeoutFileCount += 1
-              case ex: Exception =>
-                statsRecorder.justLogMessage(s"Error while parsing file -> '${task.file}'")
-                errorFileCount += 1
-            }
-          }
-          statsRecorder.justLogMessage(s"No of files skipped because of timeout - '$timeoutFileCount'")
-          statsRecorder.justLogMessage(s"No of files that are skipped because of error - '$errorFileCount'")
-          finalResult.toList
-        }
-
-        new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
-          .populatePackageTable()
-        val astCreationPass =
-          new AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
-        astCreationPass.createAndApply()
-      }
-    }
-    statsRecorder.endLastStage()
-    RubySrc2Cpg.packageTableInfo.clear()
-    processCPG(
-      xtocpg,
-      ruleCache,
-      privadoInput,
-      sourceRepoLocation,
-      dataFlowCache,
-      auditCache,
-      s3DatabaseDetailsCache,
-      appCache,
-      propertyFilterCache,
-      databaseDetailsCache
-    )
-  }
   private class ParserTask(val file: String, val parser: ResourceManagedParser) {
 
     def call(): (String, ProgramContext) = {

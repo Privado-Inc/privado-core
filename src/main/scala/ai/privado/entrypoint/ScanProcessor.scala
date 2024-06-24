@@ -446,7 +446,7 @@ object ScanProcessor extends CommandProcessor {
         ).processCpg()
       case Language.RUBY =>
         statsRecorder.justLogMessage("Detected language 'Ruby'")
-        RubyProcessor(
+        new RubyProcessor(
           getProcessedRule(Set(Language.RUBY), appCache),
           this.config,
           sourceRepoLocation,
@@ -456,7 +456,7 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder
-        ).createRubyCpg()
+        ).processCpg()
       case Language.GO =>
         statsRecorder.justLogMessage("Detected language 'Go'")
         new GoProcessor(
