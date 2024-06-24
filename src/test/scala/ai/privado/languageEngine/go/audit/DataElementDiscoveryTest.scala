@@ -4,8 +4,8 @@ import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryUtils}
 import ai.privado.languageEngine.go.audit.TestData.AuditTestClassData
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
-import io.shiftleft.codepropertygraph.generated.nodes.Member
 import ai.privado.model.Language
+import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 import scala.collection.mutable
 import scala.util.Try
@@ -26,6 +26,7 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     testClassMap.put("User", AuditTestClassData.user)
     testClassMap.put("Account", AuditTestClassData.account)
     testClassMap.put("Address", AuditTestClassData.address)
+    testClassMap.put("UserCreation", AuditTestClassData.userCreation)
     testClassMap.toMap
   }
 
@@ -33,10 +34,11 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
     "Test discovery of class name in codebase" in {
       val classNameList = DataElementDiscoveryUtils.getSourceUsingRules(Try(cpg))
 
-      classNameList.size shouldBe 4
+      classNameList.size shouldBe 5
       classNameList should contain("entity.User")
       classNameList should contain("entity.Account")
       classNameList should contain("entity.Address")
+      classNameList should contain("UserTableCreation")
       classNameList should not contain ("nonExistent.Type")
     }
 
@@ -88,12 +90,19 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
       })
 
+      println(workbookList)
+
       memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "5", "Member")
       memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "13", "Identifier")
       memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "5", "Member")
       memberLineNumberAndTypeMapping("accNo") shouldBe (/* line number */ "9", "Identifier")
       memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "5", "Member")
       memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
+
+      memberLineNumberAndTypeMapping("tb_firstName") shouldBe (/* line number */ "2", "SqlNode")
+      memberLineNumberAndTypeMapping("tb_lastName") shouldBe (/* line number */ "3", "SqlNode")
+      memberLineNumberAndTypeMapping("tb_emailId") shouldBe (/* line number */ "4", "SqlNode")
+      memberLineNumberAndTypeMapping("tb_password") shouldBe (/* line number */ "5", "SqlNode")
 
       // Validate class name in result
       classNameList should contain("entity.User")

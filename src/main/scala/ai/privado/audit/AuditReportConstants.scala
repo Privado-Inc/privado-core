@@ -63,6 +63,8 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_NODE_TYPE_FIELD_IDENTIFIER = "FieldIdentifier"
 
+  val ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE = "SqlNode"
+
   val ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX = "^(.*)(Controller|Service|Impl|Helper|Util|Processor|Dao)$"
 
   val ELEMENT_DISCOVERY_GET_SET_METHOD_REGEX = "^(get|set).*"
