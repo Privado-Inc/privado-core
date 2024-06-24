@@ -570,7 +570,6 @@ object DEDSourceDiscovery {
           List[List[String]]()
       }
       createDEDSourceReportJson(dedSourceDiscoveryData, repoPath)
-      println(dedSourceDiscoveryData.map(_(3)))
       statsRecorder.endLastStage()
       Right(())
     } catch {
