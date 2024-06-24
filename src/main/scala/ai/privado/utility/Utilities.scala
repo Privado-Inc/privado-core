@@ -544,13 +544,16 @@ object Utilities {
     val cloudDomainRegexProd = ".*(prd|prod).*(amazonaws\\.com|orcalecloud\\.com|azure\\.com|mongodb\\.net).*"
 
     val prodFileRegex = ".*(prd|prod).*\\.(properties|yaml|yml|xml|conf)$"
-
     // Priority - URLs in Prod files > PROD URLS w/ cloud > Cloud URLS > IP Urls > localhost or test urls
-    if (file.matches(prodFileRegex)) Priority.MAX
-    else if (url.matches(cloudDomainRegexProd)) Priority.HIGHEST
-    else if (url.matches(cloudDomainRegex)) Priority.HIGH
-    else if (url.matches(ipPortRegex)) Priority.MEDIUM
-    else Priority.LOW
+    val priority =
+      if (file.matches(prodFileRegex)) Priority.MAX
+      else if (url.matches(cloudDomainRegexProd)) Priority.HIGHEST
+      else if (url.matches(cloudDomainRegex)) Priority.HIGH
+      else if (url.matches(ipPortRegex)) Priority.MEDIUM
+      else Priority.LOW
+
+    println(s"Matched url in ${file}: ${url} with priority: ${priority}")
+    priority
   }
 
   def addDatabaseDetailsMultiple(
