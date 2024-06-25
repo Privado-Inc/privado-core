@@ -23,29 +23,27 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.HttpConnectionMetadataExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.model.Language
+import ai.privado.model.{Constants, Language}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.testfixtures.JavaFrontendTestSuite
 
 import scala.collection.mutable
 
-class JavaLanguageEgressTest extends JavaTaggingTestBase {
+class JavaLanguageEgressTest extends JavaFrontendTestSuite {
 
-  val appCache = new AppCache()
+  val privadoInput = PrivadoInput(enableIngressAndEgressUrls = true)
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    appCache.repoLanguage = Language.JAVA
-  }
+  "Java code egresses" should {
 
-  override val javaFileContents: String =
-    """
+    val cpg = code(
+      """
       |package com.twilio;
       |
       |import org.springframework.beans.factory.annotation.Autowired;
@@ -75,21 +73,20 @@ class JavaLanguageEgressTest extends JavaTaggingTestBase {
       |        return responseEntity.getBody();
       |    }
       |}
-      |""".stripMargin
+      |""".stripMargin,
+      "generalFile.java"
+    ).withPrivadoInput(privadoInput)
 
-  "Java code egresses" should {
     "collect egress url for java code" in {
-      val httpConnectionExporter    = new HttpConnectionMetadataExporter(cpg, ruleCache, appCache)
-      val egressesFromLanguageFiles = httpConnectionExporter.getEgressUrlsFromCodeFiles
-      egressesFromLanguageFiles.size shouldBe 5
-      egressesFromLanguageFiles shouldBe List(
-        "api/v1/login",
-        "api/v1/user/meta",
-        "https://vineet%s/hellow",
-        "api/hellow",
-        "https://abc.com/planetary/apod?api_key=apiKey"
+      val jsonOutput = cpg.getPrivadoJson()
+
+      val k = jsonOutput(Constants.egressUrlsFromCode).asArray.get.map(_.noSpaces).toList shouldBe List(
+        "\"api/v1/login\"",
+        "\"api/v1/user/meta\"",
+        "\"https://vineet%s/hellow\"",
+        "\"api/hellow\"",
+        "\"https://abc.com/planetary/apod?api_key=apiKey\""
       )
     }
   }
-
 }

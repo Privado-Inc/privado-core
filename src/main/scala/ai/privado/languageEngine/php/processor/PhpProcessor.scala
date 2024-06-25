@@ -103,7 +103,6 @@ class PhpProcessor(
       statsRecorder.initiateNewStage("Default overlays")
       applyDefaultOverlays(cpg)
       statsRecorder.endLastStage()
-      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
 

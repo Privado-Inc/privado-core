@@ -44,7 +44,6 @@ import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagge
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.source.{DEDTagger, LiteralTagger, SqlQueryTagger}
 import ai.privado.utility.StatsRecorder
-import ai.privado.utility.Utilities.ingressUrls
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -78,7 +77,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     new RubyDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
     if (!privadoInputConfig.ignoreInternalRules) {

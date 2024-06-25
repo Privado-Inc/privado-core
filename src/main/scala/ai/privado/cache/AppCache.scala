@@ -40,7 +40,8 @@ class AppCache(
   var totalFlowFromReachableBy: Int = 0,
   var totalFlowAfterThisFiltering: Int = 0,
   var fpMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int](),
-  var totalMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int]()
+  var totalMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int](),
+  var ingressUrls: mutable.ListBuffer[String] = mutable.ListBuffer[String]()
 ) {
 
   def init(path: String): Unit = {

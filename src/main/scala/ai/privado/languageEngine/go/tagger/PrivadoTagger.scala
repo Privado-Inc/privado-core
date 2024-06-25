@@ -15,7 +15,7 @@ import ai.privado.languageEngine.go.tagger.config.GoDBConfigTagger
 import ai.privado.languageEngine.go.tagger.sink.{GoAPISinkTagger, GoAPITagger}
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.utility.StatsRecorder
-import ai.privado.utility.Utilities.{databaseURLPriority, ingressUrls}
+import ai.privado.utility.Utilities.{databaseURLPriority}
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -48,7 +48,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     logger.info("Done with tagging")
 

@@ -458,7 +458,7 @@ object ScanProcessor extends CommandProcessor {
         ).processCpg()
       case Language.PYTHON =>
         statsRecorder.justLogMessage("Detected language 'Python'")
-        PythonProcessor(
+        new PythonProcessor(
           getProcessedRule(Set(Language.PYTHON), appCache),
           this.config,
           sourceRepoLocation,
@@ -467,11 +467,12 @@ object ScanProcessor extends CommandProcessor {
           s3DatabaseDetailsCache,
           appCache,
           propertyFilterCache = propertyFilterCache,
+          databaseDetailsCache = databaseDetailsCache,
           statsRecorder = statsRecorder
-        ).createPythonCpg()
+        ).processCpg()
       case Language.RUBY =>
         statsRecorder.justLogMessage("Detected language 'Ruby'")
-        RubyProcessor(
+        new RubyProcessor(
           getProcessedRule(Set(Language.RUBY), appCache),
           this.config,
           sourceRepoLocation,
@@ -481,10 +482,10 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder
-        ).createRubyCpg()
+        ).processCpg()
       case Language.GO =>
         statsRecorder.justLogMessage("Detected language 'Go'")
-        GoProcessor(
+        new GoProcessor(
           getProcessedRule(Set(Language.GO), appCache),
           this.config,
           sourceRepoLocation,
@@ -493,8 +494,9 @@ object ScanProcessor extends CommandProcessor {
           s3DatabaseDetailsCache,
           appCache,
           propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
-        ).createGoCpg()
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache
+        ).processCpg()
       case Language.KOTLIN =>
         statsRecorder.justLogMessage("Detected language 'Kotlin'")
         KotlinProcessor(
