@@ -71,7 +71,6 @@ abstract class BaseProcessor(
           statsRecorder.initiateNewStage("Run oss data flow")
           applyDataflowAndPostProcessingPasses(cpg)
           statsRecorder.endLastStage()
-
           statsRecorder.setSupressSubstagesFlag(false)
           applyTaggingAndExport(cpg) match
             case Left(err) =>
@@ -109,14 +108,12 @@ abstract class BaseProcessor(
 
   def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     logger.info("Applying data flow overlay")
-    statsRecorder.initiateNewStage("Run oss data flow")
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     if (privadoInput.enableLambdaFlows)
       new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
     logger.info("=====================")
-    statsRecorder.endLastStage()
   }
 
   /** Wrapper method which takes care of applying tagging and export
