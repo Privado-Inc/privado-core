@@ -433,8 +433,16 @@ object DEDSourceDiscoveryUtils {
         val uniqueByName = entries.groupBy(entry => entry(3)).values.map(_.head)
         uniqueByName
       }.toList
-      println(s"${Calendar.getInstance().getTime} - No of sources after dedup: ${filteredResults.size}")
-      filteredResults
+      // Update MemberType if it contains "\n"
+      val updatedMemberTypeResults = filteredResults.map(entry => {
+        val row = entry.toArray
+        if (row(4).contains("\n")) {
+          row(4) = "NA"
+        }
+        row.toList
+      })
+      println(s"${Calendar.getInstance().getTime} - No of sources after dedup: ${updatedMemberTypeResults.size}")
+      updatedMemberTypeResults
     } catch {
       case e: Exception =>
         logger.debug(s"An error occurred while filtering the workbook result: ${e.getMessage}")
