@@ -54,8 +54,8 @@ if [ ! -d "${JOERN_INSTALL}" ]; then
 
   # Fetch installer
 
-  echo "https://github.com/joernio/joern/releases/download/v$JOERN_VERSION/joern-install.sh"
-  curl -L "https://github.com/joernio/joern/releases/download/v$JOERN_VERSION/joern-install.sh" -o "$SCRIPT_ABS_DIR/joern-install.sh"
+  echo "https://github.com/Privado-Inc/joern/releases/download/v$JOERN_VERSION/joern-install.sh"
+  curl -L "https://github.com/Privado-Inc/joern/releases/download/v$JOERN_VERSION/joern-install.sh" -o "$SCRIPT_ABS_DIR/joern-install.sh"
 
   # Install into `joern-inst`
   chmod +x $SCRIPT_ABS_DIR/joern-install.sh
