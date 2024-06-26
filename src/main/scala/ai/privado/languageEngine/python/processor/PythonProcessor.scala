@@ -128,7 +128,6 @@ class PythonProcessor(
       statsRecorder.initiateNewStage("Applying default overlays")
       applyDefaultOverlays(cpg)
       statsRecorder.endLastStage()
-      statsRecorder.setSupressSubstagesFlag(false)
       cpg
     }
 

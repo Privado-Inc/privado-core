@@ -37,6 +37,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import scala.util.Try
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -106,16 +107,10 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     cpg.typeDecl
       .where(_.annotation.name(FEIGN_CLIENT))
       .foreach(typeDecl => {
-        val classAnnotations = typeDecl.annotation.name(FEIGN_CLIENT).l
-        val annotationCode = classAnnotations.code.headOption
-          .getOrElse("")
         // Logic to exact the value present in `url = "value"`
-        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*(,)?".r
-        val apiLiteral = annotationCode match {
-          case urlParameterPattern(urlParameter) =>
-            urlParameter
-          case _ => ""
-        }
+        val apiLiteral = Try(
+          typeDecl.annotation.name(FEIGN_CLIENT).parameterAssign.where(_.parameter.code("url")).value.code.head
+        ).toOption.getOrElse("")
         if (apiLiteral.isEmpty)
           typeDeclWithoutUrl.append(typeDecl)
         else
