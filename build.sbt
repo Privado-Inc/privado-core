@@ -8,7 +8,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "0.1.6"
-val joernVersion      = "0.1.13"
+val joernVersion      = "0.0.0+3263-ec67ba7f"
 val overflowdbVersion = "0.1.5"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -35,6 +35,8 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
+  "io.joern"             %% "jssrc2cpg"     % Versions.joern,
+  "io.joern"             %% "php2cpg"       % Versions.joern,
   "io.joern"             %% "kotlin2cpg"    % Versions.joern exclude ("com.squareup.okhttp3", "okhttp") exclude("com.squareup.okio", "okio"),
   "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "csharpsrc2cpg" % Versions.joern,
