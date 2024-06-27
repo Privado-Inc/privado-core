@@ -24,12 +24,11 @@
 package ai.privado.languageEngine.php.processor
 
 import ai.privado.cache.*
-import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
 import ai.privado.model.Constants.*
-import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.model.Language.Language
 import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.utility.StatsRecorder
@@ -37,6 +36,7 @@ import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, newEmptyCpg}
+import io.joern.x2cpg.frontendspecific.php2cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.{Logger, LoggerFactory}
@@ -82,7 +82,7 @@ class PhpProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
-    Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    php2cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

@@ -47,6 +47,8 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
+import io.joern.x2cpg.frontendspecific.jssrc2cpg
+import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 
 import java.nio.file.Paths
 import java.util.Calendar
@@ -112,7 +114,7 @@ class JavascriptProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
-    JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    jssrc2cpg.postProcessingPasses(cpg, XTypeRecoveryConfig()).foreach(_.createAndApply())
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

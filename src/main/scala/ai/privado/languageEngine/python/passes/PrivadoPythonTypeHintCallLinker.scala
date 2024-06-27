@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.passes
 
-import io.joern.pysrc2cpg.PythonTypeHintCallLinker
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.PythonTypeHintCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
