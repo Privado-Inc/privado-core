@@ -83,7 +83,7 @@ class PhpProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
-    Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    php2cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
