@@ -1,17 +1,21 @@
 package ai.privado.languageEngine.csharp.source
 
-import ai.privado.languageEngine.csharp.CSharpTestBase
+import ai.privado.cache.RuleCache
 import ai.privado.model.*
+import ai.privado.testfixtures.CSharpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.rule.RuleInfoTestData
 
-class IdentifierTaggingTests extends CSharpTestBase {
+class IdentifierTaggingTests extends CSharpFrontendTestSuite {
+
+  val configAnndRules: ConfigAndRules =
+    ConfigAndRules(sources = RuleInfoTestData.sourceRule)
+
+  val ruleCache = new RuleCache().setRule(configAnndRules)
 
   "Basic assignment nodes" should {
-    "be tagged as part of identifier tagger" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
           |namespace Foo {
           | public class Bar {
           |   public static void Main(string[] args) {
@@ -20,10 +24,10 @@ class IdentifierTaggingTests extends CSharpTestBase {
           | }
           |}
           |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as part of identifier tagger" in {
 
       val List(phoneNumber) = cpg.identifier.nameExact("phoneNumber").l
       phoneNumber.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
@@ -31,10 +35,8 @@ class IdentifierTaggingTests extends CSharpTestBase {
   }
 
   "Derived sources" should {
-    val (cpg, _) = code(
-      List(
-        SourceCodeModel(
-          """
+    val cpg = code(
+      """
         |namespace Foo {
         | public class Bar {
         |   public int PhoneNumber {get; set;}
@@ -46,10 +48,8 @@ class IdentifierTaggingTests extends CSharpTestBase {
         | }
         |}
         |""".stripMargin,
-          "Test.cs"
-        )
-      )
-    )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
 
     "tag the member inside a class" in {
       cpg.member("PhoneNumber").tag.nameExact(Constants.id).value.l shouldBe List(
@@ -67,5 +67,4 @@ class IdentifierTaggingTests extends CSharpTestBase {
       barId.tag.where(_.nameExact(Constants.catLevelOne)).value.l shouldBe List(CatLevelOne.DERIVED_SOURCES.name)
     }
   }
-
 }
