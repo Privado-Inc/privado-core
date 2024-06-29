@@ -8,9 +8,8 @@ import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
-import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, CpgWithOutputMap, Constants, Language}
+import ai.privado.model.{CpgWithOutputMap, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
