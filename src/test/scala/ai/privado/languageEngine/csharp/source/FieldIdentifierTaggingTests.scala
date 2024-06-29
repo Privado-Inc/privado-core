@@ -1,16 +1,21 @@
 package ai.privado.languageEngine.csharp.source
 
-import ai.privado.languageEngine.csharp.CSharpTestBase
-import ai.privado.model.{CatLevelOne, Constants, SourceCodeModel}
+import ai.privado.cache.RuleCache
+import ai.privado.model.{CatLevelOne, Constants, ConfigAndRules, SourceCodeModel}
+import ai.privado.testfixtures.CSharpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.rule.RuleInfoTestData
 
-class FieldIdentifierTaggingTests extends CSharpTestBase {
+class FieldIdentifierTaggingTests extends CSharpFrontendTestSuite {
+
+  val configAnndRules: ConfigAndRules =
+    ConfigAndRules(sources = RuleInfoTestData.sourceRule)
+
+  val ruleCache = new RuleCache().setRule(configAnndRules)
+
   "field access in code" should {
-    "be tagged as part of identifier tagger" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
             |namespace Foo {
             | public class Bar {
             |   val firstName = "Alice";
@@ -20,10 +25,10 @@ class FieldIdentifierTaggingTests extends CSharpTestBase {
             | }
             |}
             |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as part of identifier tagger" in {
 
       val List(firstNameField) = cpg.fieldAccess.l
       firstNameField.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)

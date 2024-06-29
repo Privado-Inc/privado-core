@@ -1,17 +1,69 @@
 package ai.privado.languageEngine.csharp.tagger.collection
 
-import ai.privado.languageEngine.csharp.CSharpTestBase
-import ai.privado.model.{CatLevelOne, Constants, SourceCodeModel}
+import ai.privado.cache.RuleCache
+import ai.privado.model.{
+  CatLevelOne,
+  ConfigAndRules,
+  Constants,
+  FilterProperty,
+  Language,
+  NodeType,
+  RuleInfo,
+  SourceCodeModel
+}
+import ai.privado.rule.RuleInfoTestData
+import ai.privado.testfixtures.CSharpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class CollectionTaggerTest extends CSharpTestBase {
+class CollectionTaggerTests extends CSharpFrontendTestSuite {
+
+  var sinkRules: List[RuleInfo] = List(
+    RuleInfo(
+      "Loggers.Console",
+      "WriteLine",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*WriteLine.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.CSHARP,
+      Array()
+    )
+  )
+
+  var collectionRules = List(
+    RuleInfo(
+      "Collections.Mvc",
+      "ASPNet MVC Endpoints",
+      "",
+      FilterProperty.CODE,
+      Array(),
+      List("(?i).*(Route|HttpGet|HttpPost|HttpPut).*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.COLLECTIONS,
+      catLevelTwo = Constants.annotations,
+      Language.CSHARP,
+      Array()
+    )
+  )
+
+  val ruleCache = new RuleCache().setRule(
+    RuleInfoTestData.rule.copy(sources = RuleInfoTestData.sourceRule, sinks = sinkRules, collections = collectionRules)
+  )
 
   "Types with Route annotations having [controller]" should {
-    "be tagged as part of Collection tagger" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
                 |using System;
                 |
                 |namespace Foo {
@@ -35,10 +87,10 @@ class CollectionTaggerTest extends CSharpTestBase {
                 |  }
                 |}
                 |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as part of Collection tagger" in {
 
       val List(emailMethod) = cpg.method.nameExact("GetEmail").l
       emailMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
@@ -51,11 +103,8 @@ class CollectionTaggerTest extends CSharpTestBase {
   }
 
   "Methods having [controller] annotations" should {
-    "be tagged as part of Collection tagger" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
                 |using System;
                 |
                 |namespace Foo {
@@ -70,10 +119,10 @@ class CollectionTaggerTest extends CSharpTestBase {
                 |  }
                 |}
                 |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as part of Collection tagger" in {
 
       val List(copyMethod) = cpg.method.nameExact("Copy").l
       copyMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
@@ -82,11 +131,8 @@ class CollectionTaggerTest extends CSharpTestBase {
   }
 
   "Methods having implicit routes" should {
-    "be tagged as part of Collection tagger" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
                 |using System;
                 |
                 |namespace Foo {
@@ -120,10 +166,10 @@ class CollectionTaggerTest extends CSharpTestBase {
                 |
                 |}
                 |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as part of Collection tagger" in {
 
       val List(copyMethod) = cpg.method.nameExact("Copy").l
       copyMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
@@ -140,11 +186,8 @@ class CollectionTaggerTest extends CSharpTestBase {
   }
 
   "Different order of annotations and/or extra annotations" should {
-    "have only relevant annotations tagged as collections" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
                 |namespace Foo.Bar;
                 |
                 |[ApiController]
@@ -161,10 +204,10 @@ class CollectionTaggerTest extends CSharpTestBase {
                 |    }
                 |}
                 |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "have only relevant annotations tagged as collections" in {
 
       val List(createMethod) = cpg.method.nameExact("Job").l
       createMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
@@ -173,11 +216,8 @@ class CollectionTaggerTest extends CSharpTestBase {
   }
 
   "Route annotations with more than one arguments" should {
-    "be tagged as collections correctly" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
                 |namespace Foo.Bar;
                 |[Route("api/v{version:apiVersion}/[controller]")]
                 |[ApiVersion("1.0")]
@@ -200,10 +240,10 @@ class CollectionTaggerTest extends CSharpTestBase {
                 |    }
                 |}
                 |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as collections correctly" in {
 
       val List(fetchMethod) = cpg.method.nameExact("Fetch").l
       fetchMethod.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.COLLECTIONS.name)
@@ -214,5 +254,4 @@ class CollectionTaggerTest extends CSharpTestBase {
       createMethod.tag.name("COLLECTION_METHOD_ENDPOINT").value.l shouldBe List("/api/v{version:apiVersion}/my/create")
     }
   }
-
 }
