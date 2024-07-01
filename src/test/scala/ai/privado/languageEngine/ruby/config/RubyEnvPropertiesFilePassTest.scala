@@ -3,7 +3,8 @@ package ai.privado.languageEngine.ruby.config
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.languageEngine.java.language.*
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
+import ai.privado.languageEngine.ruby.passes.config.RubyEnvPropertyLinkerPass
+import ai.privado.model.{Constants, Language}
 import ai.privado.model.Language
 import ai.privado.testfixtures.RubyFrontendTestSuite
 import ai.privado.utility.PropertyParserPass
@@ -71,4 +72,62 @@ class RubyEnvPropertiesFilePassTest extends RubyFrontendTestSuite {
       lit.originalPropertyValue.head shouldBe mongourl
     }
   }
+}
+
+//TODO Having issue in detection of API call, need to fix that before
+class RubyEnvPropertyLinkerPassTest extends RubyFrontendTestSuite {
+
+  "Http client execute API Sample" ignore {
+
+    val cpg = code(
+      """
+      |config:
+      |  default:
+      |    API_URL: http://exampleKubernetesService
+      |""".stripMargin,
+      "test.yaml"
+    )
+      .moreCode(
+        """
+        |require 'net/http'
+        |
+        |api_url = ENV["API"]
+        |url = URI.parse(api_url)
+        |response = Net::HTTP.get_response(url)
+        |""".stripMargin,
+        "config.rb"
+      )
+
+    "Http Client execute should be tagged" in {
+      val callNode = cpg.call.name("get_response").head
+      callNode.tag.size shouldBe 6
+      callNode.tag
+        .nameExact(Constants.id)
+        .head
+        .value shouldBe (Constants.thirdPartiesAPIRuleId) + ".exampleKubernetesService"
+      callNode.tag.nameExact(Constants.catLevelOne).head.value shouldBe Constants.sinks
+      callNode.tag.nameExact(Constants.catLevelTwo).head.value shouldBe Constants.third_parties
+      callNode.tag.nameExact(Constants.nodeType).head.value shouldBe "api"
+      callNode.tag
+        .nameExact("third_partiesapi")
+        .head
+        .value shouldBe (Constants.thirdPartiesAPIRuleId + ".exampleKubernetesService")
+      callNode.tag.nameExact("apiUrlSinks.ThirdParties.API.exampleKubernetesService")
+    }
+
+    "create a `property` node for each property" in {
+      val properties = cpg.property.map(x => (x.name, x.value)).toMap
+      properties
+        .get("config.default.API_URL")
+        .contains("http://exampleKubernetesService")
+    }
+
+    "Two way edge between member and propertyNode" in {
+      val properties = cpg.property.usedAt.originalProperty.l.map(property => (property.name, property.value)).toMap
+      properties
+        .get("config.default.API_URL")
+        .contains("http://exampleKubernetesService") shouldBe true
+    }
+  }
+
 }

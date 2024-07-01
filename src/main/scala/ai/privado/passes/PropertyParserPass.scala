@@ -1,13 +1,12 @@
 package ai.privado.utility
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
+import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, NewFile, NewJavaProperty}
 import overflowdb.BatchedUpdate
 import ai.privado.cache.{PropertyFilterCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 

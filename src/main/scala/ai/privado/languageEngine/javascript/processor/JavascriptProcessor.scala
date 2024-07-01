@@ -29,7 +29,7 @@ import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
-import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
+import ai.privado.languageEngine.javascript.passes.config.{JSEnvPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName}
@@ -100,7 +100,7 @@ class JavascriptProcessor(
           privadoInput
         )
     }) ++ List(
-      new JSPropertyLinkerPass(cpg),
+      new JSEnvPropertyLinkerPass(cpg),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
       new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)

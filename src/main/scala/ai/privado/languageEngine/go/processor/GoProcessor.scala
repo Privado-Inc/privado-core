@@ -8,7 +8,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.passes.SQLQueryParser
-import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
+import ai.privado.languageEngine.go.passes.config.GoEnvPropertyLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
 import ai.privado.languageEngine.java.language.*
@@ -71,7 +71,7 @@ class GoProcessor(
         else
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.GO, propertyFilterCache)
       },
-      new GoYamlLinkerPass(cpg),
+      new GoEnvPropertyLinkerPass(cpg),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new SQLQueryParser(cpg),
       new ORMParserPass(cpg, ruleCache)

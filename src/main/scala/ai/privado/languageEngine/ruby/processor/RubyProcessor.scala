@@ -29,8 +29,7 @@ import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.exporter.monolith.MonolithExporter
-import ai.privado.languageEngine.ruby.passes.*
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
+import ai.privado.languageEngine.ruby.passes.config.RubyEnvPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.semantic.Language.*
@@ -115,7 +114,7 @@ class RubyProcessor(
         else
           new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.RUBY, propertyFilterCache)
       },
-      new RubyPropertyLinkerPass(cpg),
+      new RubyEnvPropertyLinkerPass(cpg),
       new RubyExternalTypesPass(cpg, RubySrc2Cpg.packageTableInfo)
     )
     // Using our own pass by overriding languageEngine's pass

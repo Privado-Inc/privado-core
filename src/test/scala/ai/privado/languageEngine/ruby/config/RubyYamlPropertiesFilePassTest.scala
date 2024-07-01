@@ -3,8 +3,8 @@ package ai.privado.languageEngine.ruby.config
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.languageEngine.java.language.*
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.model.Language
+import ai.privado.testfixtures.RubyFrontendTestSuite
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
@@ -15,20 +15,26 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class RubyYamlPropertiesFilePassTest extends RubyPropertiesFilePassTestBase(".yml") {
-  val base_url = "https://example.com/api/v1"
-  override val configFileContents: String =
-    """
-      |foo:
-      |  api_base_url: "https://example.com/api/v1"
-      |""".stripMargin
+class RubyYamlPropertiesFilePassTest extends RubyFrontendTestSuite {
 
-  override val codeFileContents: String =
-    """
-      |COMPANIES_URL = "#{Settings.foo.api_base_url}/bar".freeze
-      |""".stripMargin
+  val base_url = "https://example.com/api/v1"
 
   "YamlConfigFilePass" should {
+
+    val cpg = code(
+      """
+      |foo:
+      |  api_base_url: "https://example.com/api/v1"
+      |""".stripMargin,
+      "config.yml"
+    )
+      .moreCode(
+        """
+        |COMPANIES_URL = "#{Settings.foo.api_base_url}/bar".freeze
+        |""".stripMargin,
+        "code.rb"
+      )
+
     "create a file node for config file" in {
       val files = cpg.file.name.l
       files.filter(_.endsWith(".yml")).head.endsWith("config.yml") shouldBe true

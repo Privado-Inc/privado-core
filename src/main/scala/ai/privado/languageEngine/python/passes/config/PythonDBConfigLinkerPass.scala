@@ -1,39 +1,25 @@
 package ai.privado.languageEngine.python.passes.config
 
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal, Member}
-import io.shiftleft.passes.ForkJoinParallelCpgPass
-import overflowdb.BatchedUpdate
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoParallelCpgPass
+import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Member}
 import io.shiftleft.semanticcpg.language.*
 
-class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
+class PythonDBConfigLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty](cpg) {
+
+  private val matchingDBKey: String = "(?i).*(host|url|uri|database|db|port|password|username).*"
+
   override def generateParts(): Array[_ <: AnyRef] = {
-    // TODO Filter out property nodes not created from config files, Remove in future
     cpg.property.l
-      .filter(pair => pair.name.nonEmpty && pair.value.nonEmpty)
+      .filter(pair => pair.name.nonEmpty && pair.value.nonEmpty && pair.name.matches(matchingDBKey))
       .whereNot(_.tag.name(InternalTag.SOURCE_PROPERTY.toString))
       .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
-    connectProperties(property, builder)
-  }
-
-  private def connectProperties(property: JavaProperty, builder: DiffGraphBuilder): Unit = {
-    connectGetEnvironLiterals(property, builder)
     connectDBConfigMembers(property, builder)
-  }
-
-  /** Matches the exact key of the propertyNode to its corresponding os.environ.get() calls.
-    */
-  private def matchEnvironGetCalls(propertyName: String): List[Literal] = {
-    cpg.literal
-      .codeExact("\"" + propertyName + "\"")
-      .where(_.inCall.methodFullName(".*\\(?environ\\)?\\.get"))
-      .l
   }
 
   /** This method works for a specific implementation where a datbabase configuration class is created and configs are
@@ -59,17 +45,6 @@ class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProp
     }
   }
 
-  /** Create an edge between the literals in the environ.get calls and the property nodes.
-    */
-  private def connectGetEnvironLiterals(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    matchEnvironGetCalls(propertyNode.name.strip()).foreach(lit => {
-      builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
-      builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)
-    })
-  }
-
-  /** Create an edge between the literals in the db config members and the property nodes.
-    */
   private def connectDBConfigMembers(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
     matchDBConfigCalls(propertyNode.name.strip()).foreach(member => {
       builder.addEdge(propertyNode, member, EdgeTypes.IS_USED_AT)

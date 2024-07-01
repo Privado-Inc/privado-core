@@ -15,7 +15,11 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.{
+  JavaAnnotationPropertyLinkerPass,
+  JavaEnvPropertyLinkerPass,
+  ModuleFilePass
+}
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.languageEngine.kotlin.semantic.Language.*
 import ai.privado.metric.MetricHandler
@@ -81,7 +85,8 @@ class KotlinProcessor(
         new PropertyParserPass(cpg, sourceRepoLocation, ruleCache, Language.JAVA, propertyFilterCache)
     }) ++
       List(
-        new JavaPropertyLinkerPass(cpg),
+        new JavaEnvPropertyLinkerPass(cpg),
+        new JavaAnnotationPropertyLinkerPass(cpg),
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
         new SQLPropertyPass(cpg, sourceRepoLocation, ruleCache),

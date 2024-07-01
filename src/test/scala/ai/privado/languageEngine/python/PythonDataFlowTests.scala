@@ -1,7 +1,6 @@
 package ai.privado.languageEngine.python
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.passes.*
 import ai.privado.utility.PropertyParserPass
 import io.joern.pysrc2cpg.PySrc2CpgFixture
