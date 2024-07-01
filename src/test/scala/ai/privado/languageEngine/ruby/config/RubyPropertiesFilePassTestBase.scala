@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.ruby.config
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.ruby.passes.config.RubyEnvPropertyLinkerPass
 import ai.privado.languageEngine.ruby.tagger.sink.APITagger
@@ -15,7 +15,7 @@ import ai.privado.model.{
   RuleInfo,
   SystemConfig
 }
-import ai.privado.utility.PropertyParserPass
+import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import better.files.File
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -57,7 +57,7 @@ abstract class RubyPropertiesFilePassTestBase(fileExtension: String)
     new PropertyParserPass(cpg, inputDir.pathAsString, new RuleCache(), Language.RUBY).createAndApply()
     new RubyEnvPropertyLinkerPass(cpg).createAndApply()
     new IdentifierTagger(cpg, ruleCache).createAndApply()
-    new APITagger(cpg, ruleCache, PrivadoInput()).createAndApply()
+    new APITagger(cpg, ruleCache, PrivadoInput(), AppCache(), StatsRecorder()).createAndApply()
     super.beforeAll()
   }
 

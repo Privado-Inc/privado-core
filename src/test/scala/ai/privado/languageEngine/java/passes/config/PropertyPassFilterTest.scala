@@ -100,67 +100,19 @@ class PropertyPassSizeFilterTest extends PropertiesFilePassFilterTestBase {
   }
 }
 
-class PropertyPassFirstLevelFiltering extends PropertiesFilePassFilterTestBase {
-  override val configFileContents: Map[String, String] = getContent()
-
-  override val javaFileContent: Map[String, String] = get
-    """
-      |package com.filter.test
-      |
-      |public void main() {
-      |   String apiValue = System.getenv("dev.key")
-      |}
-      |""".stripMargin
-
-  def getContent(): Map[String, String] = {
-    val testJsonFiles = mutable.HashMap[String, String]()
-
-    testJsonFiles.put(
-      "project/pro1.yaml",
-      """
-        |dev:
-        | key: value1
-        |""".stripMargin
-    )
-
-    testJsonFiles.put(
-      "project/pro2.yaml",
-      """
-        |dev:
-        | key: value2
-        |""".stripMargin
-    )
-
-    testJsonFiles.toMap
-  }
-
-  "Test property node creation" should {
-    "Test property node should be generated" in {
-      cpg.property.size shouldBe 2
-      cpg.property.map(p => (p.name, p.value)).l shouldBe List(
-        ("key1", "value1"),
-        ("key2", "value2")
-      )
-    }
-  }
-}
-
 abstract class PropertiesFilePassFilterTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var cpg: Cpg = _
   val configFileContents: Map[String, String]
   var inputDir: File   = _
   var outputFile: File = _
-  val javaFileContent: Map[String, String]
-  val ruleCache        = new RuleCache()
+  val javaFileContent: String
+  val ruleCache = new RuleCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
     (inputDir / "project/config").createDirectoryIfNotExists()
     for ((key, content) <- configFileContents) {
-      (inputDir / key).write(content)
-    }
-    for ((key, content) <- javaFileContent) {
       (inputDir / key).write(content)
     }
     // (inputDir / "javaFile.java").write("")

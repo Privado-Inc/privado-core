@@ -117,7 +117,7 @@ abstract class JavaEnvPropertyLinkerPassTestBase
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
-    new JavaPropertyLinkerPass(cpg).createAndApply()
+    new JavaEnvPropertyLinkerPass(cpg).createAndApply()
     val taggerCache = TaggerCache()
     SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache, statsRecorder = StatsRecorder())

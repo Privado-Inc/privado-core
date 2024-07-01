@@ -108,8 +108,7 @@ class JavaProcessor(
         new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput),
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
         new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
-        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache),
-        new JavaYamlLinkerPass(cpg)
+        new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)
       )
   }
 

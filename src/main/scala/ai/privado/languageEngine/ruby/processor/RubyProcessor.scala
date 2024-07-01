@@ -30,8 +30,6 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.exporter.monolith.MonolithExporter
 import ai.privado.languageEngine.ruby.passes.config.RubyEnvPropertyLinkerPass
-import ai.privado.languageEngine.ruby.passes.*
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.semantic.Language.*

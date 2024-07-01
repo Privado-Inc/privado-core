@@ -100,7 +100,7 @@ class JavascriptProcessor(
           privadoInput
         )
     }) ++ List(
-      new JSEnvPropertyLinkerPass(cpg).createAndApply()
+      new JSEnvPropertyLinkerPass(cpg),
       new SQLParser(cpg, sourceRepoLocation, ruleCache),
       new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache),
       new AndroidXmlParserPass(cpg, sourceRepoLocation, ruleCache)

@@ -4,16 +4,21 @@ import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 
 object PropertyFilterUtility {
 
-  def filter(properties: List[JavaProperty], enableProjectLevel: Boolean = false, enableDirLevel: Boolean = false, enableFileLevel: Boolean = false): List[JavaProperty] = {
-   // propertyProjectLevelFiltering(properties)
-   properties
+  def filter(
+    properties: List[JavaProperty],
+    enableProjectLevel: Boolean = false,
+    enableDirLevel: Boolean = false,
+    enableFileLevel: Boolean = false
+  ): List[JavaProperty] = {
+    // propertyProjectLevelFiltering(properties)
+    properties
   }
 
   // Here we do filtering from to down approach, first will we do the filtering
   // on project level, after that we will do on Dir level and then at file level
   // if after doing so we didn't get the single instance then will wil show the
   // dataflow for both of them.
-  // Following are the Level filtering level explained: 
+  // Following are the Level filtering level explained:
   // Level 1 (Project level filtering) => check which property file is more
   // closer to call node.
   // Level 2 (Directory level Filtering) => check which property file name is

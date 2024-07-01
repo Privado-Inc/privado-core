@@ -32,7 +32,6 @@ import ai.privado.entrypoint.ScanProcessor
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.semantic.Language.tagger
-import ai.privado.languageEngine.java.passes.config.JavaPropertyLinkerPass
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language

@@ -5,7 +5,6 @@ import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.ruby.passes.config.RubyEnvPropertyLinkerPass
 import ai.privado.model.{Constants, Language}
-import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.model.Language
 import ai.privado.testfixtures.RubyFrontendTestSuite
 import ai.privado.utility.PropertyParserPass
