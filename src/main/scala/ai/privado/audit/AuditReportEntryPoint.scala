@@ -10,11 +10,13 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 object AuditReportEntryPoint {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   case class DataElementDiscoveryAudit(
     className: String,
@@ -76,7 +78,7 @@ object AuditReportEntryPoint {
       )
     } catch {
       case ex: Exception =>
-        println(f"Failed to create Data Element Discovery json ${ex}")
+        logger.debug(f"Failed to create Data Element Discovery json ${ex}")
     }
 
   }
@@ -155,7 +157,7 @@ object AuditReportEntryPoint {
       }
     } catch {
       case ex: Exception =>
-        println(f"Failed to create excel sheets: ${ex}")
+        logger.debug(f"Failed to create excel sheets: ${ex}")
     }
     workbook
   }

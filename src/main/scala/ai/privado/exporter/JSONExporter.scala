@@ -239,7 +239,6 @@ object JSONExporter {
 
     } catch {
       case ex: Exception =>
-        println("Failed to export intermediate output")
         logger.debug(ex.getStackTrace.mkString("\n"))
         logger.debug("Failed to export intermediate output", ex)
         Left(ex.toString)

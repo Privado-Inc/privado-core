@@ -217,7 +217,7 @@ abstract class BaseProcessor(
   protected def auditReportExport(cpg: Cpg, taggerCache: TaggerCache): Either[String, Unit] = {
     // Exporting the Audit report
     if (privadoInput.generateAuditReport) {
-      var dependencies = new mutable.HashSet[ModuleDependency]()
+      var dependencies = Set[ModuleDependency]()
       if (lang == Language.JAVA || lang == Language.KOTLIN) {
         val moduleCache: ModuleCache = new ModuleCache()
         new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
@@ -229,15 +229,7 @@ abstract class BaseProcessor(
       ExcelExporter.auditExport(
         outputAuditFileName,
         AuditReportEntryPoint
-          .getAuditWorkbook(
-            Success(cpg),
-            taggerCache,
-            dependencies.toSet,
-            sourceRepoLocation,
-            auditCache,
-            ruleCache,
-            lang
-          ),
+          .getAuditWorkbook(Success(cpg), taggerCache, dependencies, sourceRepoLocation, auditCache, ruleCache, lang),
         sourceRepoLocation
       ) match {
         case Left(err) =>
@@ -261,8 +253,8 @@ abstract class BaseProcessor(
           MetricHandler.otherErrorsOrWarnings.addOne(err)
           Left(err)
         case Right(_) =>
-          println(
-            s"${Calendar.getInstance().getTime} - Successfully exported DED Source report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+          statsRecorder.justLogMessage(
+            s"Successfully exported DED Source report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
           )
           Right(())
       }

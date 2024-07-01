@@ -291,7 +291,7 @@ object ScanProcessor extends CommandProcessor {
     }
     var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
-      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang, true)
+      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang, isExternal = true)
     }
     /*
      * NOTE: We want to override the external rules over internal in case of duplicates by id.
