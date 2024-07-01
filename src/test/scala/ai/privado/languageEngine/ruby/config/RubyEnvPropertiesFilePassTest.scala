@@ -75,25 +75,29 @@ class RubyEnvPropertiesFilePassTest extends RubyFrontendTestSuite {
 }
 
 //TODO Having issue in detection of API call, need to fix that before
-class RubyEnvPropertyLinkerPassTest extends RubyPropertiesFilePassTestBase(".yaml") {
+class RubyEnvPropertyLinkerPassTest extends RubyFrontendTestSuite {
 
-  override val configFileContents: String =
-    """
+  "Http client execute API Sample" ignore {
+
+    val cpg = code(
+      """
       |config:
       |  default:
       |    API_URL: http://exampleKubernetesService
-      |""".stripMargin
+      |""".stripMargin,
+      "test.yaml"
+    )
+      .moreCode(
+        """
+        |require 'net/http'
+        |
+        |api_url = ENV["API"]
+        |url = URI.parse(api_url)
+        |response = Net::HTTP.get_response(url)
+        |""".stripMargin,
+        "config.rb"
+      )
 
-  override val codeFileContents: String =
-    """
-      |require 'net/http'
-      |
-      |api_url = ENV["API"]
-      |url = URI.parse(api_url)
-      |response = Net::HTTP.get_response(url)
-      |""".stripMargin
-
-  "Http client execute API Sample" ignore {
     "Http Client execute should be tagged" in {
       val callNode = cpg.call.name("get_response").head
       callNode.tag.size shouldBe 6

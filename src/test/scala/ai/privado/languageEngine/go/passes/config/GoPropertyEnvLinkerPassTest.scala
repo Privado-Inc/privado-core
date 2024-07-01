@@ -1,55 +1,56 @@
-package ai.privado.languageEngine.java.passes.config
+package ai.privado.languageEngine.go.passes.config
 
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.language.*
-import ai.privado.languageEngine.java.tagger.sink.api.JavaAPITagger
-import ai.privado.languageEngine.java.tagger.source.*
-import ai.privado.model.*
-import ai.privado.testfixtures.JavaFrontendTestSuite
-import ai.privado.utility.{PropertyParserPass, StatsRecorder}
+import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
+import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
+import ai.privado.model.{
+  CatLevelOne,
+  ConfigAndRules,
+  Constants,
+  FilterProperty,
+  Language,
+  NodeType,
+  RuleInfo,
+  SystemConfig
+}
+import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.matchers.should.Matchers.should
-import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.semanticcpg.language.*
+import ai.privado.languageEngine.java.language.*
+import ai.privado.testfixtures.GoFrontendTestSuite
 
-class JavaEnvPropertyLinkerPassTest extends JavaFrontendTestSuite {
+class GoPropertyEnvLinkerPassTest extends GoFrontendTestSuite {
 
   val ruleCache = new RuleCache()
 
   val systemConfig = List(
     SystemConfig(
       "apiHttpLibraries",
-      "(?i)(org.apache.http|okhttp|org.glassfish.jersey|com.mashape.unirest|java.net.http|java.net.URL|org.springframework.(web|core.io)|groovyx.net.http|org.asynchttpclient|kong.unirest.java|org.concordion.cubano.driver.http|javax.net.ssl|javax.xml.soap|org.apache.axis2|com.sun.xml.messaging.saaj|org.springframework.ws.client|com.eviware.soapui|org.apache.cxf|org.jboss.ws|com.ibm.websphere.sca.extensions.soap|com.sun.xml.ws|org.apache.camel.component.cxf|org.codehaus.xfire|org.apache.synapse|org.apache.wink.client|com.oracle.webservices.internal.api.databinding.Databinding|com.sap.engine.interfaces.webservices.runtime.client).*",
-      Language.JAVA,
+      "^(?i)(net/http|github.com/parnurzeal/gorequest|(gopkg.in|github.com/go-resty)/resty|valyala/fasthttp|github.com/gojektech/heimdall/v\\\\d/httpclient|github.com/levigross/grequests|github.com/PuerkitoBio/rehttp|github.com/machinebox/graphql).*",
+      Language.GO,
       "",
       Array()
     ),
     SystemConfig(
       "apiSinks",
-      "(?i)(?:url|client|openConnection|request|execute|newCall|load|host|access|fetch|get|getInputStream|getApod|getForObject|getForEntity|list|set|put|post|proceed|trace|patch|Path|send|sendAsync|remove|delete|write|read|assignment|provider|exchange|postForEntity|postForObject|call|createCall|createEndpoint|dispatch|invoke|newMessage|getInput|getOutput|getResponse|marshall|unmarshall|send|asyncSend)",
-      Language.JAVA,
+      "(?i)(?:url|client|open|request|execute|newCall|load|host|access|list|set|put|post|proceed|trace|patch|Path|send|remove|delete|write|read|postForEntity|call|createCall|createEndpoint|dispatch|invoke|getInput|getOutput|getResponse|do)",
+      Language.GO,
       "",
       Array()
     ),
     SystemConfig(
       "apiIdentifier",
       "(?i).*((hook|base|auth|prov|endp|install|request|service|gateway|route|resource)(.){0,12}url|(slack|web)(.){0,4}hook|(rest|api|request|service)(.){0,4}(endpoint|gateway|route)).*",
-      Language.JAVA,
-      "",
-      Array()
-    ),
-    SystemConfig(
-      "ignoredSinks",
-      "(?i).*(?<=map|list|jsonobject|json|array|arrays|jsonnode|objectmapper|objectnode).*(put:|get:).*",
-      Language.JAVA,
+      Language.GO,
       "",
       Array()
     )
@@ -73,37 +74,33 @@ class JavaEnvPropertyLinkerPassTest extends JavaFrontendTestSuite {
       "",
       CatLevelOne.SINKS,
       catLevelTwo = Constants.third_parties,
-      Language.JAVA,
+      Language.GO,
       Array()
     )
   )
 
   val rule: ConfigAndRules =
     ConfigAndRules(List(), sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
+
   ruleCache.setRule(rule)
 
-  "Http client execute API Sample" should {
+  "Http client get API Sample" should {
 
     val cpg = code(
       """
-      |import org.apache.http.HttpResponse;
-      |import org.apache.http.client.HttpClient;
-      |import org.apache.http.client.methods.HttpGet;
-      |import org.apache.http.impl.client.HttpClients;
+      |package main
       |
-      |public class APICaller {
-      |  private String apiUrl;
+      |import (
+      | "os"
+      | "net/http"
+      |)
       |
-      |  public makeCall() {
-      |    apiUrl = System.getenv("config.default.API_URL");
-      |
-      |    HttpClient httpClient = HttpClients.createDefault();
-      |    HttpGet getRequest = new HttpGet(apiUrl);
-      |    HttpResponse response = httpClient.execute(getRequest);
-      |  }
+      |func main() {
+      | api_url := os.getEnv("config.default.API_URL")
+      | resp, err := http.Post(api_url)
       |}
       |""".stripMargin,
-      "config.java"
+      "config.go"
     )
       .moreCode(
         """
@@ -115,8 +112,8 @@ class JavaEnvPropertyLinkerPassTest extends JavaFrontendTestSuite {
       )
       .withRuleCache(ruleCache)
 
-    "Http Client execute should be tagged" in {
-      val callNode = cpg.call.name("execute").head
+    "Http client should be tagged" in {
+      val callNode = cpg.call.name("Post").head
       callNode.tag.size shouldBe 6
       callNode.tag
         .nameExact(Constants.id)

@@ -1,8 +1,9 @@
 package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language._
+import ai.privado.languageEngine.java.language.*
 import ai.privado.model.Language
+import ai.privado.testfixtures.JavaScriptFrontendTestSuite
 import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -10,28 +11,33 @@ import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.jssrc2cpg.passes.ImportsPass
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class GetEnvironmentTest1 extends JSPropertiesFilePassTestBase(".env") {
-
-  val db_url = "https://mydb.dbname.in/secret"
-
-  override val configFileContents: String =
-    s"""
-      |DB_URL=https://mydb.dbname.in/secret
-      |DB_NAME=mydb
-    """.stripMargin
-  override val codeFileContents: String =
-    """
-      |const dbUrl = process.env['DB_URL']
-      |const dbName = process.env.DB_NAME
-      |""".stripMargin
+class JSPropertiesFilePassTest extends JavaScriptFrontendTestSuite {
 
   "JS Config File pass should" should {
+
+    val db_url = "https://mydb.dbname.in/secret"
+
+    val cpg = code(
+      """
+      |DB_URL=https://mydb.dbname.in/secret
+      |DB_NAME=mydb
+      |""".stripMargin,
+      "test.env"
+    )
+      .moreCode(
+        """
+        |const dbUrl = process.env['DB_URL']
+        |const dbName = process.env.DB_NAME
+        |""".stripMargin,
+        "config.js"
+      )
+
     "create a file node for the property file" in {
       val files = cpg.file.name.l
       files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
@@ -67,20 +73,22 @@ class GetEnvironmentTest1 extends JSPropertiesFilePassTestBase(".env") {
       lit.originalPropertyValue.head shouldBe db_url
     }
   }
-}
-
-class GetEnvironmentTest2 extends JSPropertiesFilePassTestBase(".env") {
-
-  override val configFileContents: String =
-    s"""
-       |BASE_URL=http://www.example.com
-    """.stripMargin
-  override val codeFileContents: String =
-    """
-      |const dbUrlString = `${config.BASE_URL}/post`
-      |""".stripMargin
 
   "JS Config File pass should" should {
+
+    val cpg = code(
+      """
+        |BASE_URL=http://www.example.com
+        |""".stripMargin,
+      "test.env"
+    )
+      .moreCode(
+        """
+          |const dbUrlString = `${config.BASE_URL}/post`
+          |""".stripMargin,
+        "config.js"
+      )
+
     "create a file node for the property file" in {
       val files = cpg.file.name.l
       files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
@@ -116,45 +124,4 @@ class GetEnvironmentTest2 extends JSPropertiesFilePassTestBase(".env") {
       lit.originalPropertyValue.head shouldBe "http://www.example.com"
     }
   }
-}
-
-abstract class JSPropertiesFilePassTestBase(fileExtension: String)
-    extends AnyWordSpec
-    with Matchers
-    with BeforeAndAfterAll {
-
-  var cpg: Cpg = _
-  val configFileContents: String
-  val codeFileContents: String
-  var inputDir: File   = _
-  var outputFile: File = _
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / s"test$fileExtension").write(configFileContents)
-
-    (inputDir / "unrelated.file").write("foo")
-    outputFile = File.newTemporaryFile()
-
-    (inputDir / "GeneralConfig.js").write(codeFileContents)
-
-    val cpgconfig = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
-    cpg = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig).get
-
-    X2Cpg.applyDefaultOverlays(cpg)
-    new ImportsPass(cpg).createAndApply()
-    new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-
-    new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVASCRIPT).createAndApply()
-    new JSEnvPropertyLinkerPass(cpg).createAndApply()
-
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    cpg.close()
-    outputFile.delete()
-    super.afterAll()
-  }
-
 }
