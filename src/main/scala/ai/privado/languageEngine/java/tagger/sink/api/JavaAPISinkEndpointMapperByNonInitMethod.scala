@@ -10,7 +10,7 @@ import ai.privado.languageEngine.java.tagger.sink.api.Utility.tagAPICallByItsUrl
 import ai.privado.tagger.utility.APITaggerUtility.{
   getLiteralCode,
   resolveDomainFromSource,
-  tagAPIWithDomainAndUpdateRuleCache
+  tagThirdPartyAPIWithDomainAndUpdateRuleCache
 }
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}
@@ -23,7 +23,6 @@ class JavaAPISinkEndpointMapperByNonInitMethod(cpg: Cpg, ruleCache: RuleCache)
   private val apiMatchingRegex =
     ruleCache.getAllRuleInfo.filter(_.nodeType == NodeType.API).map(_.combinedRulePattern).mkString("(", "|", ")")
 
-  private val thirdPartyRuleInfo = ruleCache.getRuleInfo(Constants.thirdPartiesAPIRuleId)
   override def generateParts(): Array[String] = {
 
     /* General assumption - there is a function which creates a client, and the usage of the client and binding
@@ -32,20 +31,17 @@ class JavaAPISinkEndpointMapperByNonInitMethod(cpg: Cpg, ruleCache: RuleCache)
      we can say the client uses the following endpoint
      */
 
-    if (thirdPartyRuleInfo.isDefined) {
-      cpg.call
-        .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
-        .methodFullName
-        .map(_.split(methodFullNameSplitter).headOption.getOrElse(""))
-        .filter(_.nonEmpty)
-        .map { methodNamespace =>
-          val parts = methodNamespace.split("[.]")
-          if parts.nonEmpty then parts.dropRight(1).mkString(".") else ""
-        }
-        .dedup
-        .toArray
-    } else
-      Array[String]()
+    cpg.call
+      .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
+      .methodFullName
+      .map(_.split(methodFullNameSplitter).headOption.getOrElse(""))
+      .filter(_.nonEmpty)
+      .map { methodNamespace =>
+        val parts = methodNamespace.split("[.]")
+        if parts.nonEmpty then parts.dropRight(1).mkString(".") else ""
+      }
+      .dedup
+      .toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, typeFullName: String): Unit = {
@@ -57,15 +53,7 @@ class JavaAPISinkEndpointMapperByNonInitMethod(cpg: Cpg, ruleCache: RuleCache)
         .where(_.tag.nameExact(InternalTag.API_SINK_MARKED.toString))
         .l
 
-      tagAPICallByItsUrlMethod(
-        cpg,
-        builder,
-        clientReturningMethod,
-        impactedApiCalls,
-        apiMatchingRegex,
-        thirdPartyRuleInfo,
-        ruleCache
-      )
+      tagAPICallByItsUrlMethod(cpg, builder, clientReturningMethod, impactedApiCalls, apiMatchingRegex, ruleCache)
     }
   }
 }

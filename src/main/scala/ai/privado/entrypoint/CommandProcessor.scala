@@ -22,14 +22,22 @@
 
 package ai.privado.entrypoint
 
-trait CommandProcessor {
+import ai.privado.cache.AppCache
+import ai.privado.utility.StatsRecorder
 
-  var config: PrivadoInput = null
+trait CommandProcessor {
+  var statsRecorder: StatsRecorder = null
+  var config: PrivadoInput         = null
+
+  def withStatsRecorder(statsRecorder: StatsRecorder): CommandProcessor = {
+    this.statsRecorder = statsRecorder
+    this
+  }
 
   def withConfig(value: PrivadoInput): CommandProcessor = {
     this.config = value
     this
   }
 
-  def process(): Either[String, Unit]
+  def process(appCache: AppCache): Either[String, Unit]
 }

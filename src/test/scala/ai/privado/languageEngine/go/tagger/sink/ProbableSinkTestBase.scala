@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.go.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
@@ -14,9 +14,10 @@ abstract class ProbableSinkTestBase extends AnyWordSpec with Matchers with Befor
 
   var cpg: Cpg = _
   val goFileContentMap: Map[String, String]
-  var inputDir: File  = _
-  var outputDir: File = _
-  val ruleCache       = new RuleCache()
+  var inputDir: File       = _
+  var outputDir: File      = _
+  val ruleCache            = new RuleCache()
+  val databaseDetailsCache = new DatabaseDetailsCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -33,7 +34,6 @@ abstract class ProbableSinkTestBase extends AnyWordSpec with Matchers with Befor
     }
 
     cpg = xtocpg.get
-    AppCache.repoLanguage = Language.GO
 
     ruleCache.setRule(rule)
     super.beforeAll()

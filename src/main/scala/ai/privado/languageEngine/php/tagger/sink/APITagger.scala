@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.php.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import java.util.Calendar
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger                = LoggerFactory.getLogger(this.getClass)
   val cacheCall: List[Call]         = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
@@ -32,7 +32,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     constructNameCall.where(_.methodFullName("(?i).*" + APISINKS_REGEX + "(->)__construct")).l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
-  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, 4)
+  implicit val engineContext: EngineContext = Utilities.getEngineContext(privadoInput, appCache, 4)
   val commonHttpPackages: String            = ruleCache.getSystemConfigByKey(Constants.apiHttpLibraries)
 
   val httpApis: List[Call] = (apis ++ constructors)
@@ -61,6 +61,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
 
     logger.debug("Using Enhanced API tagger to find API sinks")
     sinkTagger(
+      cpg,
       apiInternalSources ++ propertySources ++ identifierSource,
       httpApis.distinct,
       builder,

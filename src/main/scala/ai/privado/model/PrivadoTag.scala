@@ -22,7 +22,14 @@
 
 package ai.privado.model
 
+import ai.privado.entrypoint.ScanProcessor.logger
+import ai.privado.model
 import ai.privado.model.Language.{JAVA, Language}
+import io.shiftleft.codepropertygraph.generated.Languages
+import org.slf4j.LoggerFactory
+
+import scala.sys.exit
+import scala.util.{Failure, Success, Try}
 
 object InternalTag extends Enumeration {
 
@@ -48,6 +55,14 @@ object InternalTag extends Enumeration {
   // API Tags
   val API_SINK_MARKED = Value("API_SINK_MARKED")
   val API_URL_MARKED  = Value("API_URL_MARKED")
+
+  // Apache Flink Tag
+  val FLINK_INITIALISATION_LOCAL_NODE = Value("FLINK_INITIALISATION_LOCAL_NODE")
+
+  // Ruby Mongo Repository
+  val RUBY_MONGO_CLASS_CLIENT    = Value("RUBY_MONGO_CLASS_CLIENT")
+  val RUBY_MONGO_COLUMN          = Value("RUBY_MONGO_COLUMN")
+  val RUBY_MONGO_COLUMN_DATATYPE = Value("RUBY_MONGO_COLUMN_DATATYPE")
 
   lazy val valuesAsString = InternalTag.values.map(value => value.toString())
 
@@ -80,6 +95,7 @@ object CatLevelOne extends Enumeration {
   val COLLECTIONS = CatLevelOneIn("collections", "Collections")
   val POLICIES    = CatLevelOneIn("policies", "Policies")
   val THREATS     = CatLevelOneIn("threats", "Threats")
+  val INFERENCES  = CatLevelOneIn("inferences", "Inferences")
   val UNKNOWN     = CatLevelOneIn("unknown", "Unknown")
 
   // internal CatLevelOne
@@ -95,6 +111,7 @@ object CatLevelOne extends Enumeration {
 }
 
 object Language extends Enumeration {
+  private val logger = LoggerFactory.getLogger(this.getClass)
   type Language = Value
 
   val JAVA       = Value("java")
@@ -107,6 +124,29 @@ object Language extends Enumeration {
   val CSHARP     = Value("csharp")
   val DEFAULT    = Value("default")
   val UNKNOWN    = Value("unknown")
+
+  def withJoernLangName(name: Try[Option[String]]): Value = {
+    name match {
+      case Success(guessedLang) =>
+        guessedLang match {
+          case Some(language) if language == Languages.JAVASRC || language == Languages.JAVA     => JAVA
+          case Some(language) if language == Languages.JSSRC || language == Languages.JAVASCRIPT => JAVASCRIPT
+          case Some(language) if language == Languages.PYTHONSRC || language == Languages.PYTHON => PYTHON
+          case Some(language) if language == Languages.RUBYSRC                                   => RUBY
+          case Some(language) if language == Languages.GOLANG                                    => GO
+          case Some(language) if language == Languages.KOTLIN                                    => KOTLIN
+          case Some(language) if language == Languages.CSHARPSRC || language == Languages.CSHARP => CSHARP
+          case Some(language) if language == Languages.PHP                                       => PHP
+          case _                                                                                 => UNKNOWN
+        }
+      case Failure(exc) =>
+        logger.debug("Error while guessing language", exc)
+        println(s"Error Occurred: ${exc.getMessage}")
+        exit(1)
+    }
+
+  }
+
   def withNameWithDefault(name: String): Value = {
     try {
       withName(name)
@@ -209,8 +249,14 @@ object ConfigRuleType extends Enumeration {
 
 object FilterProperty extends Enumeration {
   type FilterProperty = Value
-  val METHOD_FULL_NAME = Value("method_full_name")
-  val CODE             = Value("code")
+  val METHOD_FULL_NAME: model.FilterProperty.Value = Value("method_full_name")
+  val CODE: model.FilterProperty.Value             = Value("code")
+
+  // For Inference API Endpoint mapping
+  val METHOD_FULL_NAME_WITH_LITERAL: model.FilterProperty.Value       = Value("method_full_name_with_literal")
+  val METHOD_FULL_NAME_WITH_PROPERTY_NAME: model.FilterProperty.Value = Value("method_full_name_with_property_name")
+  val ENDPOINT_DOMAIN_WITH_LITERAL: model.FilterProperty.Value        = Value("endpoint_domain_with_literal")
+  val ENDPOINT_DOMAIN_WITH_PROPERTY_NAME: model.FilterProperty.Value  = Value("endpoint_domain_with_property_name")
 
   def withNameWithDefault(name: String): Value = {
     try {

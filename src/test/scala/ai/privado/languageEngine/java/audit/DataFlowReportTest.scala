@@ -1,14 +1,13 @@
 package ai.privado.languageEngine.java.audit
 
 import ai.privado.audit.DataFlowReport
-import ai.privado.cache.{AuditCache, DataFlowCache}
-import ai.privado.cache.SourcePathInfo
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, SourcePathInfo}
 import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.audit.TestData.AuditTestClassData
-import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
-import ai.privado.entrypoint.ScanProcessor
+import ai.privado.languageEngine.java.tagger.source.*
+import ai.privado.model.Language
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.utility.StatsRecorder
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -20,14 +19,17 @@ class DataFlowReportTest extends DataFlowReportTestBase {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    val appCache             = new AppCache()
+    val databaseDetailsCache = new DatabaseDetailsCache()
+    appCache.repoLanguage = Language.JAVA
 
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+    new Dataflow(cpg, StatsRecorder()).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
   }
 
   def getContent(): Map[String, String] = {

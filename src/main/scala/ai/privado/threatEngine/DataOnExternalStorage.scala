@@ -24,10 +24,11 @@
 package ai.privado.threatEngine
 
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
-import ThreatUtility._
+import ThreatUtility.*
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.exporter.ExporterUtility
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
@@ -48,7 +49,12 @@ object DataOnExternalStorage {
     *   source filepath of manifest file
     * @return
     */
-  def getViolations(cpg: Cpg, androidManifestFile: String): Try[(Boolean, List[ViolationProcessingModel])] = Try {
+  def getViolations(
+    cpg: Cpg,
+    androidManifestFile: String,
+    appCache: AppCache,
+    ruleCache: RuleCache
+  ): Try[(Boolean, List[ViolationProcessingModel])] = Try {
     val occurrenceList  = ListBuffer[DataFlowSubCategoryPathExcerptModel]()
     val xml: Elem       = XML.loadFile(androidManifestFile)
     val permissionNodes = xml \\ USE_PERM_KEY
@@ -76,7 +82,8 @@ object DataOnExternalStorage {
         .inCall
         .whereNot(_.methodFullName(".*<operator>.*"))
       if (worldReadableCalls.nonEmpty) {
-        val occurrences = ExporterUtility.convertPathElements(worldReadableCalls.toList)
+        val occurrences =
+          ExporterUtility.convertPathElements(worldReadableCalls.toList, appCache = appCache, ruleCache = ruleCache)
         occurrenceList.addAll(occurrences)
       }
     }

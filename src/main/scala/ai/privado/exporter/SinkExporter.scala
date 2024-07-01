@@ -23,8 +23,9 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.semantic.Language.*
@@ -43,7 +44,9 @@ class SinkExporter(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   repoItemTagName: Option[String] = None,
-  s3DatabaseDetailsCache: S3DatabaseDetailsCache
+  s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+  appCache: AppCache,
+  databaseDetailsCache: DatabaseDetailsCache
 ) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
@@ -81,19 +84,28 @@ class SinkExporter(
         SinkProcessingModel(
           entrySet._1,
           ExporterUtility
-            .convertPathElements({
-              if (privadoInput.disableDeDuplication)
-                entrySet._2.toList
-              else
-                entrySet._2.toList
-                  .distinctBy(_.code)
-                  .distinctBy(_.lineNumber)
-                  .distinctBy(Utilities.getFileNameForNode)
-            })
+            .convertPathElements(
+              {
+                if (privadoInput.disableDeDuplication)
+                  entrySet._2.toList
+                else
+                  entrySet._2.toList
+                    .distinctBy(_.code)
+                    .distinctBy(_.lineNumber)
+                    .distinctBy(Utilities.getFileNameForNode)
+              },
+              appCache = appCache,
+              ruleCache = ruleCache
+            )
         )
       )
       .toList ++ processingMapDisableDedup
-      .map(entrySet => SinkProcessingModel(entrySet._1, ExporterUtility.convertPathElements(entrySet._2.toList)))
+      .map(entrySet =>
+        SinkProcessingModel(
+          entrySet._1,
+          ExporterUtility.convertPathElements(entrySet._2.toList, appCache = appCache, ruleCache = ruleCache)
+        )
+      )
       .toList
   }
 
@@ -124,7 +136,7 @@ class SinkExporter(
           .where(filterSink)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
           .where(filterSink)
-          .l
+          .l ++ cpg.highTouchSink.where(filterSink).l
     ExporterUtility.filterNodeBasedOnRepoItemTagName(sinks, repoItemTagName)
   }
 
@@ -172,7 +184,7 @@ class SinkExporter(
               )
             })
           } else {
-            val databaseDetails = DatabaseDetailsCache.getDatabaseDetails(rule.id)
+            val databaseDetails = databaseDetailsCache.getDatabaseDetails(rule.id)
             Some(
               SinkModel(
                 rule.catLevelOne.label,

@@ -41,18 +41,21 @@ class PolicyAndThreatExporter(
   ruleCache: RuleCache,
   taggerCache: TaggerCache,
   dataFlowModel: List[DataFlowPathModel],
-  privadoInput: PrivadoInput
+  privadoInput: PrivadoInput,
+  appCache: AppCache
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   def getViolations(
     repoPath: String,
-    collections: List[CollectionModel] = List[CollectionModel]()
+    collections: List[CollectionModel] = List[CollectionModel](),
+    appCache: AppCache
   ): List[ViolationModel] = {
-    val policyExecutor = new PolicyExecutor(cpg, dataFlowModel, AppCache.repoName, ruleCache, privadoInput, collections)
+    val policyExecutor =
+      new PolicyExecutor(cpg, dataFlowModel, appCache.repoName, ruleCache, privadoInput, collections, appCache)
     val threatExecutor =
-      new ThreatEngineExecutor(cpg, repoPath, ruleCache, taggerCache, dataFlowModel, privadoInput)
+      new ThreatEngineExecutor(cpg, repoPath, ruleCache, taggerCache, dataFlowModel, privadoInput, appCache)
 
     try {
       threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations
@@ -97,7 +100,11 @@ class PolicyAndThreatExporter(
   }
 
   private def convertProcessingSources(sourceNode: (String, CfgNode)) =
-    ViolationProcessingModel(sourceNode._1, ExporterUtility.convertIndividualPathElement(sourceNode._2), None)
+    ViolationProcessingModel(
+      sourceNode._1,
+      ExporterUtility.convertIndividualPathElement(sourceNode._2, appCache = appCache, ruleCache = ruleCache),
+      None
+    )
 
   private def convertDataflowPolicyViolation(
     policyId: String,

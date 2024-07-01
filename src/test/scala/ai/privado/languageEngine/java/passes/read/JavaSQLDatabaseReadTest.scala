@@ -23,9 +23,9 @@
 
 package ai.privado.languageEngine.java.passes.read
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.*
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -301,8 +301,15 @@ abstract class DatabaseReadPassTestBase extends AnyWordSpec with Matchers with B
     val rule: ConfigAndRules =
       ConfigAndRules(sourceRule, List(), collectionRule, List(), List(), List(), List(), List(), List(), List())
     ruleCache.setRule(rule)
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, PrivadoInput(), EntityMapper.getClassTableMapping(cpg))
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
+    new DatabaseQueryReadPass(
+      cpg,
+      ruleCache,
+      taggerCache,
+      PrivadoInput(),
+      EntityMapper.getClassTableMapping(cpg),
+      appCache = new AppCache()
+    )
       .createAndApply()
     super.beforeAll()
   }

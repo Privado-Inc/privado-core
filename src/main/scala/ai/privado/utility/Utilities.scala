@@ -25,6 +25,7 @@ package ai.privado.utility
 import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
+import ai.privado.tagger.sink.SinkArgumentUtility
 import ai.privado.model.CatLevelOne.CatLevelOne
 import ai.privado.model.Constants.outputDirectoryName
 import ai.privado.model.*
@@ -32,12 +33,12 @@ import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 
 import scala.collection.mutable
-//import java.io.File
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Call}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils
@@ -45,6 +46,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
 
 import java.io.PrintWriter
+import scala.collection.mutable.ListBuffer
 import java.math.BigInteger
 import java.net.URL
 import java.nio.file.Paths
@@ -71,9 +73,16 @@ object Utilities {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  var ingressUrls = mutable.ListBuffer.empty[String]
+  def checkIfGTMOrSegment(ruleId: String): Boolean = {
+    List(
+      Constants.segmentPixelRuleId,
+      Constants.segmentAnalyticsRuleId,
+      Constants.googleTagManagerRuleId,
+      Constants.googleTagManagerPixelRuleId
+    ).contains(ruleId)
+  }
 
-  def getEngineContext(config: PrivadoInput, maxCallDepthP: Int = 4)(implicit
+  def getEngineContext(config: PrivadoInput, appCache: AppCache, maxCallDepthP: Int = 4)(implicit
     semanticsP: Semantics = DefaultSemantics()
   ): EngineContext = {
     val expanLimit =
@@ -83,7 +92,7 @@ object Utilities {
     EngineContext(
       semantics = semanticsP,
       config =
-        if (AppCache.repoLanguage == Language.RUBY || config.limitArgExpansionDataflows > -1) then
+        if (appCache.repoLanguage == Language.RUBY || config.limitArgExpansionDataflows > -1) then
           EngineConfig(maxCallDepth = maxCallDepthP, maxArgsToAllow = expanLimit, maxOutputArgsExpansion = expanLimit)
         else EngineConfig(maxCallDepth = maxCallDepthP)
     )
@@ -151,6 +160,43 @@ object Utilities {
     }
   }
 
+  def addRuleTagsForGA(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    node: AstNode,
+    ruleInfo: RuleInfo,
+    ruleCache: RuleCache,
+    cpg: Cpg,
+    ruleId: Option[String] = None
+  ): Unit = {
+    // Generate Arguments for the GTM & Segment Pixels
+    if (checkIfGTMOrSegment(ruleInfo.id)) {
+      if (node.isInstanceOf[Call]) {
+        try {
+          val storeForTagHelper = storeForTag(builder, node, ruleCache) _
+          val callNode          = node.asInstanceOf[Call]
+          val argumentList: List[(String, String)] =
+            try {
+              SinkArgumentUtility.addArgumentsForGAPixelNode(callNode, cpg)
+            } catch {
+              case ex: Exception =>
+                logger.debug(
+                  s"Exception while processing for arguments - ruleId: ${ruleInfo.id}, Call Node: ${callNode.name}, FileName: ${getFileNameForNode(callNode)} Error: ${ex.getMessage}"
+                )
+                List.empty[(String, String)] // Returning an empty list as a default value
+            }
+          storeForTagHelper(Constants.arguments, SinkArgumentUtility.serializedArgumentString(argumentList))
+        } catch {
+          case ex: Exception =>
+            logger.debug(
+              s"An error while tagging - ruleId: ${ruleInfo.id}, FileName: ${getFileNameForNode(node)} error: ${ex.getMessage}"
+            )
+        }
+      }
+    }
+    addRuleTags(builder, node, ruleInfo, ruleCache, ruleId)
+
+  }
+
   /** Utility to filter rules by catLevelOne
     */
   def getRulesByCatLevelOne(rules: List[RuleInfo], catLevelOne: CatLevelOne): Seq[RuleInfo] =
@@ -165,9 +211,11 @@ object Utilities {
     lineToHighlight: Option[Integer],
     message: String = "",
     excerptStartLine: Int = -5,
-    excerptEndLine: Int = 5
+    excerptEndLine: Int = 5,
+    allowedCharLimit: Option[Int] = None
   ): String = {
     val arrow: CharSequence = "/* <=== " + message + " */ "
+
     try {
       if (!filename.equals("<empty>")) {
         val lines = File(filename).lines.toList
@@ -187,10 +235,12 @@ object Utilities {
           .slice(startLine - 1, endLine)
           .zipWithIndex
           .map { case (line, lineNo) =>
+            val modifiedTruncatedLine = getTruncatedText(line, allowedCharLimit)
+
             if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-              line + " " + arrow
+              modifiedTruncatedLine + " " + arrow
             } else {
-              line
+              modifiedTruncatedLine
             }
           }
           .mkString("\n")
@@ -199,6 +249,13 @@ object Utilities {
       case e: Exception =>
         logger.debug("Error : ", e)
         ""
+    }
+  }
+
+  def getTruncatedText(text: String, allowedCharLimit: Option[Int]): String = {
+    allowedCharLimit match {
+      case Some(limit) if text.length > limit => text.take(limit) + "..."
+      case _                                  => text
     }
   }
 
@@ -501,29 +558,30 @@ object Utilities {
     dbUrl: JavaProperty,
     dbName: String,
     dbLocation: String,
-    dbVendor: String
+    dbVendor: String,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Unit = {
     rules.foreach(rule => {
-      if (DatabaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
+      if (databaseDetailsCache.getDatabaseDetails(rule._2).isDefined) {
         val fileName = dbUrl.file.name.headOption.getOrElse("")
         if (
           databaseURLPriority(
-            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
-            DatabaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
+            databaseDetailsCache.getDatabaseDetails(rule._1).get.dbLocation,
+            databaseDetailsCache.getDatabaseDetails(rule._1).get.configFile
           ) < databaseURLPriority(
             dbUrl.value,
             fileName
           ) // Compare the priority of the database url with already present url in the database cache
         ) {
 
-          DatabaseDetailsCache.removeDatabaseDetails(rule._2)
-          DatabaseDetailsCache.addDatabaseDetails(
+          databaseDetailsCache.removeDatabaseDetails(rule._2)
+          databaseDetailsCache.addDatabaseDetails(
             DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, fileName),
             rule._2
           ) // Remove if current url has higher priority
         }
       } else {
-        DatabaseDetailsCache.addDatabaseDetails(
+        databaseDetailsCache.addDatabaseDetails(
           DatabaseDetails(dbName, dbVendor, dbLocation, rule._1, dbUrl.sourceFileOut.head.name),
           rule._2
         )

@@ -36,7 +36,7 @@ class SqlQueryTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgP
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
     cpg.sqlColumn
-      .name(ruleInfo.combinedRulePattern)
+      .filter(_.name.split("[ .]").exists(_.matches(ruleInfo.combinedRulePattern)))
       .foreach(columnNode => {
         storeForTag(builder, columnNode, ruleCache)(InternalTag.VARIABLE_REGEX_LITERAL.toString)
         addRuleTags(builder, columnNode, ruleInfo, ruleCache)

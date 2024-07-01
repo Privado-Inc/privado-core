@@ -23,22 +23,41 @@
 package ai.privado.entrypoint
 
 import ai.privado.auth.AuthenticationHandler
+import ai.privado.cache.AppCache
 import ai.privado.metric.MetricHandler
+import ai.privado.utility.{StatsRecorder, TimeMetricRecordConfig}
+import io.shiftleft.utils.StatsLogger
 import org.slf4j.LoggerFactory
 
 import scala.sys.exit
 
 /** Privado Core main entry point
   */
-object Main {
+object Main extends GeneralMetadataLoggers {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def main(args: Array[String]): Unit = {
-
-    CommandParser.parse(args) match {
+    val statsRecorder = StatsRecorder(fullName = true, printToConsole = true, supressSubstages = true)
+    StatsLogger.initialise(Option(statsRecorder))
+    val appCache = new AppCache()
+    CommandParser.parse(args, statsRecorder) match {
       case Some(processor) =>
         try {
-          MetricHandler.timeMetric(processor.process(), "Complete") match {
+          processor match {
+            case ScanProcessor =>
+              logRepositoryFiledata(ScanProcessor.config.sourceLocation.head, statsRecorder)
+              statsRecorder.startRecordingWithGivenFrequency(
+                Some(
+                  TimeMetricRecordConfig(
+                    basePath = s"${ScanProcessor.config.sourceLocation.head}/.privado",
+                    threadDumpFreq = ScanProcessor.config.threadDumpFreq,
+                    threadDumpAvgCPULimit = ScanProcessor.config.threadDumpAvgCPULimit
+                  )
+                )
+              )
+            case _ =>
+          }
+          MetricHandler.timeMetric(processor.process(appCache), "Complete") match {
             case Right(_) =>
               processor match {
                 case ScanProcessor =>
@@ -48,7 +67,7 @@ object Main {
                     AuthenticationHandler.authenticate(sourceRepoLocation)
                 case _ => ()
               }
-              MetricHandler.compileAndSend()
+              MetricHandler.compileAndSend(appCache)
             // raise error in case of failure, and collect
             // all handled & unhandled exceptions in catch
             case Left(err) =>
@@ -62,7 +81,7 @@ object Main {
             logger.debug("Failure from scan process:", e)
             logger.debug("Skipping auth flow due to scan failure")
             logger.error("Error in scanning, skipping auth flow : " + e.getMessage)
-            MetricHandler.compileAndSend()
+            MetricHandler.compileAndSend(appCache)
             // NOTE: Removed the finally as it will not be invoked after exit(1) is called in exeption.
             // exit(1) is important to indicate scan failure to outer process.
             exit(1)
@@ -70,6 +89,6 @@ object Main {
       case _ =>
       // arguments are bad, error message should get displayed from inside CommandParser.parse
     }
-
+    statsRecorder.endTheTotalProcessing("All processing done")
   }
 }

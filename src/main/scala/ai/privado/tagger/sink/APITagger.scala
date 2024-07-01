@@ -27,7 +27,7 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{CatLevelOne, Constants, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.{SERVICE_URL_REGEX_PATTERN, sinkTagger}
 import ai.privado.utility.Utilities
@@ -36,7 +36,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.DefaultSemantics
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
+class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
@@ -50,10 +50,13 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .methodFullName(commonHttpPackages)
+    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   implicit val engineContext: EngineContext =
-    Utilities.getEngineContext(PrivadoInput(disableDeDuplication = true), 4)(JavaSemanticGenerator.getDefaultSemantics)
+    Utilities.getEngineContext(PrivadoInput(disableDeDuplication = true), appCache = appCache, 4)(
+      JavaSemanticGenerator.getDefaultSemantics
+    )
 
   override def generateParts(): Array[_ <: AnyRef] = {
     ruleCache.getRule.sinks
@@ -75,6 +78,7 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput)
         List()
     }
     sinkTagger(
+      cpg,
       apiInternalSources ++ propertySources ++ identifierSource ++ serviceSource,
       apis,
       builder,

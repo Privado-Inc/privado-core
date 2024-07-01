@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.javascript.passes.config
 
+import ai.privado.entrypoint.PrivadoInput
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
@@ -7,14 +8,17 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import ai.privado.languageEngine.java.language.NodeStarters
-import io.shiftleft.semanticcpg.language._
+import ai.privado.testfixtures.JavaScriptFrontendTestSuite
+import io.shiftleft.semanticcpg.language.*
 
-class JsConfigPropertyPassTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class JsConfigPropertyPassTest extends JavaScriptFrontendTestSuite {
+
+  val privadoInput = PrivadoInput(assetDiscovery = true)
 
   "Javascript config property pass" should {
-    "able to create property node" in {
 
-      val cpg = code("""
+    val cpg = code(
+      """
           |
           |window.CONFIG = {
           |    auth0: {
@@ -43,28 +47,43 @@ class JsConfigPropertyPassTest extends AnyWordSpec with Matchers with BeforeAndA
           |    // Other configuration options...
           |  };
           |
-          |""".stripMargin)
+          |""".stripMargin,
+      "config.js"
+    ).withPrivadoInput(privadoInput)
 
+    "able to create property node" in {
       cpg.property.size shouldBe 14
       cpg.property.nameExact("module.exports.database.host").value.l shouldBe List("mongodb://5.3.34.3:27017")
       cpg.property.nameExact("window.CONFIG.auth0.cookieConfig.domain").value.l shouldBe List(".mydomain.com")
-
     }
   }
-
 }
 
-def code(code: String) = {
-  val inputDir   = File.newTemporaryDirectory()
-  val outputFile = File.newTemporaryFile()
+class JsonPropertyTests extends JavaScriptFrontendTestSuite {
 
-  (inputDir / "config.js").write(code)
+  "JSON file having array nodes" should {
 
-  val cpgconfig = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
-  val cpg       = new JsSrc2Cpg().createCpgWithAllOverlays(cpgconfig).get
+    val cpg = code(
+      """
+        |{
+        |    "databases": [
+        |      {
+        |        "name": "MySQL Database",
+        |        "uri": "mysql://username:password@hostname:port/database_name"
+        |      }
+        |     ],
+        |     "mongoUri" : "mongodb://username:password@hostname:port/database_name"
+        |}
+        |""".stripMargin,
+      "test.json"
+    )
 
-  X2Cpg.applyDefaultOverlays(cpg)
-
-  new JsConfigPropertyPass(cpg).createAndApply()
-  cpg
+    "get parsed and property nodes should be generated" in {
+      cpg.property.map(p => (p.name, p.value)).l shouldBe List(
+        ("databases[0].name", "MySQL Database"),
+        ("databases[0].uri", "mysql://username:password@hostname:port/database_name"),
+        ("mongoUri", "mongodb://username:password@hostname:port/database_name")
+      )
+    }
+  }
 }

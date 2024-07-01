@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.java.tagger.config
 
+import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.tagger.PrivadoDBConfigBaseTagger
 import ai.privado.utility.Utilities.addDatabaseDetailsMultiple
@@ -8,7 +9,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.*
 
-class JavaDBConfigTagger(cpg: Cpg) extends PrivadoDBConfigBaseTagger(cpg) {
+class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoDBConfigBaseTagger(cpg, databaseDetailsCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -78,7 +80,7 @@ class JavaDBConfigTagger(cpg: Cpg) extends PrivadoDBConfigBaseTagger(cpg) {
     val dbLocation = dbUrl.value.split("/")(2)
     val dbName     = dbUrl.value.split("/")(3).split("\\?")(0)
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
   }
 
   private def parsePropForNeo4jSpringBootDriver(dbUrl: JavaProperty): Unit = {
@@ -94,7 +96,7 @@ class JavaDBConfigTagger(cpg: Cpg) extends PrivadoDBConfigBaseTagger(cpg) {
     // The uri for Neo4j driver does not require a dbName, usually Neo4j is deployed with just one db
     val dbName = "Neo4j Graph Database"
 
-    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor)
+    addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
 
   }
 }

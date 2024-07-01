@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger.sink
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
@@ -37,6 +37,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import scala.util.Try
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -59,11 +60,13 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     builder: DiffGraphBuilder,
     ruleInfo: RuleInfo,
     httpSources: List[AstNode],
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    appCache: AppCache
   ): List[Call] = {
     val (typeDeclWithoutUrl, typeDeclWithUrl) = getTypeDeclUsingFeignClient
     val feignRequestLineTypeDecl              = getFeignClientTypeDeclUsingRequestLine
-    val (feingAPIBeanTypeDecl, beanUrl)       = getFeignClientTypeDeclUsingBean(httpSources, privadoInputConfig)
+    val (feingAPIBeanTypeDecl, beanUrl) =
+      getFeignClientTypeDeclUsingBean(httpSources, privadoInputConfig, appCache = appCache)
 
     val feignClientTypeDeclWithUrl    = mutable.HashMap[String, String]()
     val feignClientTypeDeclWithoutUrl = mutable.Set[TypeDecl]()
@@ -104,16 +107,10 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     cpg.typeDecl
       .where(_.annotation.name(FEIGN_CLIENT))
       .foreach(typeDecl => {
-        val classAnnotations = typeDecl.annotation.name(FEIGN_CLIENT).l
-        val annotationCode = classAnnotations.code.headOption
-          .getOrElse("")
         // Logic to exact the value present in `url = "value"`
-        val urlParameterPattern = ".*url\\s{0,3}=\\s{0,3}(\".*\").*(,)?".r
-        val apiLiteral = annotationCode match {
-          case urlParameterPattern(urlParameter) =>
-            urlParameter
-          case _ => ""
-        }
+        val apiLiteral = Try(
+          typeDecl.annotation.name(FEIGN_CLIENT).parameterAssign.where(_.parameter.code("url")).value.code.head
+        ).toOption.getOrElse("")
         if (apiLiteral.isEmpty)
           typeDeclWithoutUrl.append(typeDecl)
         else
@@ -135,7 +132,8 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
     */
   private def getFeignClientTypeDeclUsingBean(
     httpSources: List[AstNode],
-    privadoInputConfig: PrivadoInput
+    privadoInputConfig: PrivadoInput,
+    appCache: AppCache
   ): (List[TypeDecl], String) = {
     val feignTargetCalls = cpg.method
       .where(_.annotation.name("Bean"))
@@ -151,7 +149,7 @@ class FeignAPI(cpg: Cpg, ruleCache: RuleCache) {
       val feignFlows = {
         val flows = feignTargetCalls
           .reachableByFlows(httpSources)(
-            Utilities.getEngineContext(privadoInputConfig, 4)(JavaSemanticGenerator.getDefaultSemantics)
+            Utilities.getEngineContext(privadoInputConfig, appCache, 4)(JavaSemanticGenerator.getDefaultSemantics)
           )
           .l
         if (privadoInputConfig.disableDeDuplication)

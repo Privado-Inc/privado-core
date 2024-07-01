@@ -26,14 +26,15 @@ package ai.privado.languageEngine.javascript.tagger.sink
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import ai.privado.model.{Constants, DatabaseDetails, FilterProperty, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities.addRuleTags
+import ai.privado.utility.Utilities.{addRuleTags, addRuleTagsForGA, checkIfGTMOrSegment}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   val cacheCall: List[Call] = cpg.call
     .or(_.nameNot(Operators.ALL.asScala.toSeq: _*))
     .whereNot(_.method.name(".*<meta.*>$"))
@@ -92,7 +93,7 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
             ruleInfo.copy(id = newRuleIdToUse, name = ruleInfo.name + " " + cookieName, isGenerated = true)
           )
           addRuleTags(builder, sink, ruleInfo, ruleCache, Some(newRuleIdToUse))
-          DatabaseDetailsCache.addDatabaseDetails(
+          databaseDetailsCache.addDatabaseDetails(
             DatabaseDetails(
               cookieName,
               "cookie",
@@ -107,6 +108,12 @@ class RegularSinkTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelC
         }
       })
     } else
-      sinks.foreach(sink => addRuleTags(builder, sink, ruleInfo, ruleCache))
+      sinks.foreach(sink => {
+        if (checkIfGTMOrSegment(ruleInfo.id)) {
+          addRuleTagsForGA(builder, sink, ruleInfo, ruleCache, cpg = cpg)
+        } else {
+          addRuleTags(builder, sink, ruleInfo, ruleCache)
+        }
+      })
   }
 }

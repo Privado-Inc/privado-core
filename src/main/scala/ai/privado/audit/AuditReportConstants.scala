@@ -45,6 +45,24 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_METHOD_NAME = "Collection Method Full Name"
 
+  val ELEMENT_DISCOVERY_SOURCE_LINE_NUMBER = "Variable Declaration Line Number"
+
+  val ELEMENT_DISCOVERY_VARIABLE_ID = "Variable Id"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE = "Variable Node Type"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE_MEMBER = "Member"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE_METHOD = "Method"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE_METHOD_PARAM = "Method Parameter"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER = "Identifier"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE_LOCAL = "Local"
+
+  val ELEMENT_DISCOVERY_NODE_TYPE_FIELD_IDENTIFIER = "FieldIdentifier"
+
   val ELEMENT_DISCOVERY_EXCLUDE_CLASS_NAME_REGEX = "^(.*)(Controller|Service|Impl|Helper|Util|Processor|Dao)$"
 
   val ELEMENT_DISCOVERY_GET_SET_METHOD_REGEX = "^(get|set).*"

@@ -3,7 +3,7 @@ package ai.privado.utility
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, NewFile, NewJavaProperty}
 import overflowdb.BatchedUpdate
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{PropertyFilterCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -50,6 +50,7 @@ class PropertyParserPass(
   projectRoot: String,
   ruleCache: RuleCache,
   language: Language.Value,
+  propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
   privadoInput: PrivadoInput = PrivadoInput()
 ) extends PrivadoParallelCpgPass[String](cpg) {
   val PLACEHOLDER_TOKEN_START_END = "@@"
@@ -110,7 +111,7 @@ class PropertyParserPass(
     // Function return (key, value, lineNumber), for most parser we have not got the linenumber so returning -1 as default
     if (file.matches(""".*\.(?:yml|yaml)""")) {
       // the Yaml parser returns a line number
-      loadAndConvertYMLtoProperties(file)
+      ConfigParserUtility.parseYaml(file)
     } else if (file.endsWith(".xml")) {
       loadAndConvertXMLtoProperties(file, builder).map(item => (item._1, item._2, -1))
     } else if (file.endsWith(".ini")) {
@@ -189,50 +190,6 @@ class PropertyParserPass(
     envProps.asScala
       .map(prop => (prop._1, prop._2))
       .toList
-  }
-
-  private def loadAndConvertYMLtoProperties(file: String): List[(String, String, Int)] = {
-    try {
-      val yamlContent = better.files
-        .File(file)
-        .contentAsString
-        .replaceAll(PLACEHOLDER_TOKEN_START_END, "") // Read the YAML file content as a string
-
-      val yaml                                = new Yaml(new SafeConstructor(LoaderOptions()))
-      val rootNode                            = yaml.compose(new StringReader(yamlContent))
-      var result: List[(String, String, Int)] = List[(String, String, Int)]()
-      processNode(rootNode, "")
-
-      def processNode(node: Node, path: String): Unit = {
-        node match {
-          case mappingNode: MappingNode =>
-            mappingNode.getValue.asScala.foreach { (nodeTuple: NodeTuple) =>
-              val keyNode   = nodeTuple.getKeyNode.asInstanceOf[ScalarNode]
-              val valueNode = nodeTuple.getValueNode
-              val fullPath  = if (path.isEmpty) keyNode.getValue else s"$path.${keyNode.getValue}"
-              processNode(valueNode, fullPath)
-            }
-          case sequenceNode: SequenceNode =>
-            sequenceNode.getValue.asScala.zipWithIndex.foreach { case (valueNode, index) =>
-              val fullPath = s"$path[$index]"
-              processNode(valueNode, fullPath)
-            }
-          case scalarNode: ScalarNode =>
-            val line   = scalarNode.getStartMark.getLine + 1
-            val column = scalarNode.getStartMark.getColumn + 1
-            val value  = scalarNode.getValue
-            result = result.appended((path, value, line))
-        }
-      }
-
-      result
-    } catch {
-      case e: Throwable => {
-        logger.debug(s"Could not parse YAML file. Please double check the syntax. ${e.getMessage}")
-        List[(String, String, Int)]()
-      }
-    }
-
   }
 
   private def propertiesToKeyValuePairs(properties: Properties): List[(String, String)] = {
@@ -433,7 +390,13 @@ class PropertyParserPass(
     if (fileLimit.nonEmpty) {
       val file               = new File(filePath)
       val fileSizeInKiloByte = file.length() / 1024 // Get the size in KB
-      fileSizeInKiloByte <= fileLimit.toInt
+      if (fileSizeInKiloByte > fileLimit.toInt) {
+        // Adding the filtered file into the property cache
+        propertyFilterCache.addIntoFileSkippedBySize(file.getAbsolutePath, fileSizeInKiloByte.toInt)
+        false
+      } else {
+        true
+      }
     } else {
       true
     }
@@ -443,8 +406,14 @@ class PropertyParserPass(
     val countLimit = ruleCache.getSystemConfigByKey(Constants.PropertyFileDirCountLimit, true)
     if (countLimit.nonEmpty) {
       val groupedByDirectory = filePaths.groupBy(filePath => new File(filePath).getParent)
-      val filteredDirectories = groupedByDirectory.filter { case (_, filesInDirectory) =>
-        filesInDirectory.length <= countLimit.toInt
+      val filteredDirectories = groupedByDirectory.filter { case (path, filesInDirectory) =>
+        if (filesInDirectory.length > countLimit.toInt) {
+          // Adding the filtered files into the property cache
+          propertyFilterCache.addIntoFileSkippedByDirCount(path, filesInDirectory)
+          false
+        } else {
+          true
+        }
       }
       filteredDirectories.values.flatten.toList
     } else {

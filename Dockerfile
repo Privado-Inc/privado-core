@@ -13,6 +13,7 @@ ARG VERSION
 ARG JAR_VERSION
 ARG CODE_ARTIFACT_URL
 ARG CODEARTIFACT_AUTH_TOKEN
+ARG GITHUB_TOKEN
 
 RUN mkdir -p src/main/resources && echo $VERSION >> src/main/resources/version.txt
 # packagebin creates a zip file and BUILD_NUMBER is used for versioing the jar file
@@ -154,6 +155,7 @@ RUN export BUILD_VERSION=$JAR_VERSION && sbt test universal:packageBin
 
 FROM alpine:3.16
 RUN apk add --no-cache bash
+RUN apk update && apk add busybox --upgrade
 #The SHELL instruction allows the default shell used for the shell form of commands to be overridden
 SHELL [ "/bin/bash", "-c" ]
 WORKDIR /home
@@ -162,4 +164,5 @@ COPY --from=build /home/privado-core/target/universal/privado-core*.zip /home/pr
 COPY --from=build /home/privado-core/target/universal/stage/bin /home/privado-core-build/
 COPY --from=build /home/privado-core/log4j2.xml /home/privado-core-build/
 RUN echo $VERSION >> /home/privado-core-build/version.txt
+RUN apk del bash
 

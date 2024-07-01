@@ -23,8 +23,8 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
-import ai.privado.entrypoint.{PrivadoInput, TimeMetric}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
@@ -34,12 +34,13 @@ import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, Lit
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, SqlQueryTagger}
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.utility.Utilities.ingressUrls
+import ai.privado.utility.Utilities.{databaseURLPriority}
 
 import java.util.Calendar
 
@@ -50,7 +51,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -61,21 +65,21 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
-    new JSAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache = appCache).createAndApply()
 
     new GraphqlAPITagger(cpg, ruleCache).createAndApply()
 
     new GraphqlQueryParserPass(cpg, ruleCache, taggerCache).createAndApply()
 
-    new JSDBConfigTagger(cpg).createAndApply()
+    new JSDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 

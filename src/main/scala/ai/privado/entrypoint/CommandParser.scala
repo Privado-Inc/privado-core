@@ -22,7 +22,11 @@
 
 package ai.privado.entrypoint
 
+import ai.privado.entrypoint
 import ai.privado.metric.MetricHandler
+import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
+import ai.privado.utility.StatsRecorder.*
 import io.circe.syntax.EncoderOps
 import scopt.OParser
 
@@ -57,11 +61,20 @@ case class PrivadoInput(
   offlineMode: Boolean = false,
   isMonolith: Boolean = false,
   enableIngressAndEgressUrls: Boolean = false,
-  assetDiscovery: Boolean = false
+  assetDiscovery: Boolean = false,
+  forceLanguage: Language.Language = Language.UNKNOWN,
+  threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
+  threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
+  rubyParserTimeout: Long = 120
 )
 
 object CommandConstants {
-  val SCAN                                         = "scan"
+  val SCAN        = "scan"
+  val VALIDATE    = "validate"
+  val UPLOAD      = "upload"
+  val UPLOAD_ABBR = "u"
+  val METADATA    = "metadata"
+
   val INTERNAL_CONFIG                              = "internal-config"
   val INTERNAL_CONFIG_ABBR                         = "ic"
   val EXTERNAL_CONFIG                              = "external-config"
@@ -90,11 +103,8 @@ object CommandConstants {
   val ENABLE_API_BY_PARAMETER_ABBR                 = "eabyp"
   val IGNORE_EXCLUDE_RULES                         = "ignore-exclude-rules"
   val IGNORE_EXCLUDE_RULES_ABBR                    = "ier"
-  val UPLOAD                                       = "upload"
-  val UPLOAD_ABBR                                  = "u"
   val SKIP_UPLOAD                                  = "skip-upload"
   val SKIP_UPLOAD_ABBR                             = "su"
-  val VALIDATE                                     = "validate"
   val UNRESOLVED_REPORT                            = "unresolved_report"
   val UNRESOLVED_REPORT_ABBR                       = "ur"
   val TEST_OUTPUT                                  = "test-output"
@@ -112,6 +122,14 @@ object CommandConstants {
   val IS_MONOLITH                                  = "monolith"
   val ENABLE_INGRESS_AND_EGRESS_URLS               = "enableIngressAndEgressUrls"
   val ASSEST_DISCOVERY                             = "asset-discovery"
+  val FORCE_LANGUAGE                               = "force-language"
+  val FORCE_LANGUAGE_ABBR                          = "fl"
+  val THREAD_DUMP_FREQ                             = "thread-dump-freq"
+  val THREAD_DUMP_FREQ_ABBR                        = "tdf"
+  val THREAD_DUMP_AVG_CPU_LIMIT                    = "thread-dump-avg-cpu-limit"
+  val THREAD_DUMP_AVG_CPU_LIMIT_ABBR               = "tdacl"
+  val RUBY_PARSER_TIMEOUT                          = "ruby-parser-timeout"
+  val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
 }
 
 object CommandParser {
@@ -119,13 +137,14 @@ object CommandParser {
     Map(
       CommandConstants.SCAN     -> ScanProcessor,
       CommandConstants.UPLOAD   -> UploadProcessor,
-      CommandConstants.VALIDATE -> RuleValidator
+      CommandConstants.VALIDATE -> RuleValidator,
+      CommandConstants.METADATA -> MetadataProcessor
     )
-  def parse(args: Array[String]): Option[CommandProcessor] = {
+  def parse(args: Array[String], statsRecorder: StatsRecorder): Option[CommandProcessor] = {
     val builder = OParser.builder[PrivadoInput]
 
     val parser = {
-      import builder._
+      import builder.*
       OParser.sequence(
         programName("privado-core"),
         head("privado-core", "*** TODO: Add version details***"),
@@ -268,6 +287,28 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(limitArgExpansionDataflows = x))
               .text("Max Limit for argument expansion being done while finding dataflows"),
+            opt[String](CommandConstants.FORCE_LANGUAGE)
+              .abbr(CommandConstants.FORCE_LANGUAGE_ABBR)
+              .optional()
+              .action((x, c) => c.copy(forceLanguage = Language.withNameWithDefault(x)))
+              .text(
+                "Force scan with the given language java, javascript, go, csharp, python, php, kotlin, ruby, and default"
+              ),
+            opt[Int](CommandConstants.THREAD_DUMP_FREQ)
+              .abbr(CommandConstants.THREAD_DUMP_FREQ_ABBR)
+              .optional()
+              .action((x, c) => c.copy(threadDumpFreq = x))
+              .text("Thread dump frequency default is set to 10 mins."),
+            opt[Int](CommandConstants.THREAD_DUMP_AVG_CPU_LIMIT)
+              .abbr(CommandConstants.THREAD_DUMP_AVG_CPU_LIMIT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(threadDumpFreq = x))
+              .text("Thread dump only if avg CPU utilsation % of a stage is below this value. Default is set to 50%"),
+            opt[Long](CommandConstants.RUBY_PARSER_TIMEOUT)
+              .abbr(CommandConstants.RUBY_PARSER_TIMEOUT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(rubyParserTimeout = x))
+              .text("Ruby Parser Timeout in seconds. By default set to 2 mins i.e. 120 seconds"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
@@ -306,6 +347,20 @@ object CommandParser {
               if (c.cmd.isEmpty) failure("")
               else success
             )
+          ),
+        cmd(CommandConstants.METADATA)
+          .required()
+          .action((_, c) => c.copy(cmd = c.cmd + CommandConstants.METADATA))
+          .text("Generate metadata for the repository")
+          .children(
+            arg[String]("<Source directory>")
+              .required()
+              .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
+              .text("Source code location"),
+            checkConfig(c =>
+              if (c.cmd.isEmpty) failure("")
+              else success
+            )
           )
       )
     }
@@ -321,8 +376,7 @@ object CommandParser {
             println(OParser.usage(parser))
             exit(1)
         }
-        commandProcessor.withConfig(config)
-        Some(commandProcessor)
+        Some(commandProcessor.withConfig(config).withStatsRecorder(statsRecorder))
       case _ =>
         println(OParser.usage(parser))
         exit(1)

@@ -51,7 +51,8 @@ object FileExtensions {
   val YML  = ".yml"
 }
 
-class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends PrivadoParallelCpgPass[String](cpg) {
+class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoParallelCpgPass[String](cpg) {
 
   val logger          = LoggerFactory.getLogger(getClass)
   val DEFAULT_DB_NAME = "DBT"
@@ -178,7 +179,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
     val dbDetails = DatabaseDetails(dbName, dbPlatform, dbHost, "", "", Some(schema))
 
     ruleCache.setRuleInfo(customDatabaseSinkRule)
-    DatabaseDetailsCache.addDatabaseDetails(dbDetails, ruleId)
+    databaseDetailsCache.addDatabaseDetails(dbDetails, ruleId)
 
     customDatabaseSinkRule
   }

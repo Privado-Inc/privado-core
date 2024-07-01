@@ -23,6 +23,7 @@
 
 package ai.privado.threatEngine
 
+import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, ViolationProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants}
@@ -106,9 +107,10 @@ object ThreatUtility {
     excerptPostfix: String = ""
   ): DataFlowSubCategoryPathExcerptModel = {
 
-    val lineNumber = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
-    val excerpt    = Utilities.dump(filename, Some(lineNumber), "") + "\n" + excerptPostfix + "\n"
-    DataFlowSubCategoryPathExcerptModel(sample, lineNumber, -1, filename, excerpt)
+    val lineNumber        = getLineNumberOfMatchingEditText(filename, matchingTextForLine)
+    val _lineNumberToDump = if (filename.endsWith(".cs")) lineNumber + 1 else lineNumber
+    val excerpt           = Utilities.dump(filename, Some(_lineNumberToDump), "") + "\n" + excerptPostfix + "\n"
+    DataFlowSubCategoryPathExcerptModel(sample, _lineNumberToDump, -1, filename, excerpt)
   }
 
   def getOccurrenceObjectWithCustomExcerpt(
@@ -117,8 +119,9 @@ object ThreatUtility {
     filename: String,
     excerptPostfix: String = ""
   ): DataFlowSubCategoryPathExcerptModel = {
-    val lineNumber = getLineNumberOfMatchingEditText(filename, sample)
-    DataFlowSubCategoryPathExcerptModel(sample, lineNumber, -1, filename, excerpt + "\n" + excerptPostfix + "\n")
+    val lineNumber        = getLineNumberOfMatchingEditText(filename, sample)
+    val _lineNumberToDump = if (filename.endsWith(".cs")) lineNumber + 1 else lineNumber
+    DataFlowSubCategoryPathExcerptModel(sample, _lineNumberToDump, -1, filename, excerpt + "\n" + excerptPostfix + "\n")
   }
 
   def getSourceNode(cpg: Cpg, sourceId: String): Option[(String, CfgNode)] = {
@@ -149,9 +152,11 @@ object ThreatUtility {
     node: AstNode,
     violatingFlows: ListBuffer[ViolationProcessingModel],
     sourceId: String,
-    details: Option[String]
+    details: Option[String],
+    appCache: AppCache,
+    ruleCache: RuleCache
   ) = {
-    val occurrence = ExporterUtility.convertIndividualPathElement(node)
+    val occurrence = ExporterUtility.convertIndividualPathElement(node, appCache = appCache, ruleCache = ruleCache)
     if (occurrence.isDefined) {
       val newOccurrence = DataFlowSubCategoryPathExcerptModel(
         if sample.isDefined then sample.get else occurrence.get.sample,

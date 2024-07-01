@@ -57,7 +57,7 @@ class ExperimentalLambdaDataFlowSupportPass(cpg: Cpg, maxNumberOfDefinitions: In
       }
     }
     val globalIdentifiers =
-      method.ast.isLiteral.flatMap(globalFromLiteral).collectAll[Identifier].l
+      method.ast.isLiteral.flatMap(globalFromLiteral(_, true)).collectAll[Identifier].l
     globalIdentifiers
       .foreach { global =>
         identifierToFirstUsages(global).map { identifier =>

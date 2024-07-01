@@ -3,22 +3,23 @@ import better.files.File
 
 name                     := "privado-core"
 ThisBuild / organization := "ai.privado"
-ThisBuild / scalaVersion := "3.3.1"
+ThisBuild / scalaVersion := "3.4.1"
 ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
-val cpgVersion        = "1.6.6"
-val joernVersion      = "2.0.290"
-val overflowdbVersion = "1.187"
+val cpgVersion        = "0.1.6"
+val joernVersion      = "0.1.13"
+val overflowdbVersion = "0.1.5"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
 
 //External dependency versions
-val circeVersion        = "0.14.2"
-val jacksonVersion      = "2.15.2"
+val circeYamlVersion    = "1.15.0"
+val circeGenericVersion = "0.14.7"
+val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
-val goAstGenVersion     = "0.12.0"
-val dotnetAstGenVersion = "0.18.0"
+val goAstGenVersion     = "0.14.0"
+val dotnetAstGenVersion = "0.34.0"
 
 lazy val schema         = Projects.schema
 lazy val domainClasses  = Projects.domainClasses
@@ -34,43 +35,48 @@ libraryDependencies ++= Seq(
   "io.joern"             %% "pysrc2cpg"     % Versions.joern,
   "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
   "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "kotlin2cpg"    % Versions.joern,
+  "io.joern"             %% "kotlin2cpg"    % Versions.joern exclude ("com.squareup.okhttp3", "okhttp") exclude("com.squareup.okio", "okio"),
   "io.joern"             %% "gosrc2cpg"     % Versions.joern,
   "io.joern"             %% "csharpsrc2cpg" % Versions.joern,
-  "io.joern"             %% "joern-cli"     % Versions.joern,
+  "io.joern"             %% "joern-cli"     % Versions.joern exclude ("io.undertow", "undertow-core"),
   "io.joern"             %% "semanticcpg"   % Versions.joern,
   "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
   "org.scalatest"        %% "scalatest"     % "3.2.16"       % Test,
-  "io.circe"             %% "circe-core"    % circeVersion,
-  "io.circe"             %% "circe-generic" % circeVersion,
-  "io.circe"             %% "circe-parser"  % circeVersion,
+  "io.circe"             %% "circe-core"    % circeGenericVersion,
+  "io.circe"             %% "circe-generic" % circeGenericVersion,
+  "io.circe"             %% "circe-parser"  % circeGenericVersion,
   // NOTE: circe-yaml currently only goes until 0.14.2 (Last checked 06/07/2023)
-  "io.circe"                        %% "circe-yaml"                 % circeVersion exclude ("org.yaml", "snakeyaml"),
-  "com.lihaoyi"                     %% "upickle"                    % Versions.upickle,
-  "com.lihaoyi"                     %% "requests"                   % Versions.requests,
-  "org.scala-lang.modules"          %% "scala-xml"                  % "2.1.0",
-  "org.scala-lang.modules"          %% "scala-parallel-collections" % "1.0.4",
-  "commons-io"                       % "commons-io"                 % "2.11.0",
-  "com.networknt"                    % "json-schema-validator"      % "1.0.72",
-  "com.fasterxml.jackson.module"    %% "jackson-module-scala"       % jacksonVersion,
-  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml"    % jacksonVersion exclude ("org.yaml", "snakeyaml"),
-  "com.github.wnameless.json"        % "json-flattener"             % "0.14.0",
-  "org.apache.logging.log4j"         % "log4j-core"                 % "2.19.0",
-  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"          % "2.19.0",
-  "org.apache.poi"                   % "poi-ooxml"                  % "5.2.2",
-  "com.github.jsqlparser"            % "jsqlparser"                 % "4.6",
-  "org.apache.maven"                 % "maven-model"                % "3.9.0",
-  "net.sourceforge.htmlunit"         % "htmlunit"                   % "2.70.0",
-  "org.yaml"                         % "snakeyaml"                  % "1.33",
-  "org.scala-lang"                   % "scala-reflect"              % "2.13.8",
-  "org.scala-lang"                   % "scala-compiler"             % "2.13.8",
-  "com.iheart"                      %% "ficus"                      % "1.5.2" exclude ("com.typesafe", "config"),
-  "org.jruby"                        % "jruby-base"                 % "9.4.3.0",
-  "org.zeromq"                       % "jeromq"                     % "0.5.4",
-  "org.sangria-graphql"             %% "sangria"                    % "4.0.0",
-  "com.michaelpollmeier"             % "versionsort"                % "1.0.11",
-  "io.joern"                        %% "dataflowengineoss"          % Versions.joern % Test classifier "tests",
-  scalaOrganization.value           %% "scala3-compiler"            % scalaVersion.value
+  "io.circe"                     %% "circe-yaml"                 % circeYamlVersion exclude ("org.yaml", "snakeyaml"),
+  "com.lihaoyi"                  %% "upickle"                    % Versions.upickle,
+  "com.lihaoyi"                  %% "requests"                   % Versions.requests,
+  "org.scala-lang.modules"       %% "scala-xml"                  % "2.1.0",
+  "org.scala-lang.modules"       %% "scala-parallel-collections" % "1.0.4",
+  "commons-io"                    % "commons-io"                 % "2.11.0",
+  "com.networknt"                 % "json-schema-validator"      % "1.0.72",
+  "com.fasterxml.jackson.module" %% "jackson-module-scala"       % jacksonVersion,
+  "com.fasterxml.jackson.dataformat" % "jackson-dataformat-yaml" % jacksonVersion exclude ("org.yaml", "snakeyaml"),
+  "com.github.wnameless.json"        % "json-flattener"          % "0.14.0",
+  "org.apache.logging.log4j"         % "log4j-core"              % "2.19.0",
+  "org.apache.logging.log4j"         % "log4j-slf4j2-impl"       % "2.19.0",
+  "org.apache.poi"                   % "poi-ooxml"               % "5.2.2",
+  "com.github.jsqlparser"            % "jsqlparser"              % "4.9",
+  "org.apache.maven"                 % "maven-model"             % "3.9.0",
+  "org.htmlunit"                     % "htmlunit"                % "4.0.0",
+  "org.yaml"                         % "snakeyaml"               % "2.2",
+  "org.scala-lang"                   % "scala-reflect"           % "2.13.8",
+  "org.scala-lang"                   % "scala-compiler"          % "2.13.8",
+  "com.iheart"                      %% "ficus"                   % "1.5.2" exclude ("com.typesafe", "config"),
+  "org.jruby"                        % "jruby-base"              % "9.4.3.0",
+  "org.zeromq"                       % "jeromq"                  % "0.5.4",
+  "org.sangria-graphql"             %% "sangria"                 % "4.0.0",
+  "com.michaelpollmeier"             % "versionsort"             % "1.0.11",
+  "io.joern" %% "dataflowengineoss" % Versions.joern % Test classifier "tests" exclude ("com.google.protobuf", "protobuf-java"),
+  "com.google.protobuf"    % "protobuf-java"   % "3.19.6",
+  "io.undertow"            % "undertow-core"   % "2.3.14.Final" exclude ("org.jboss.xnio", "xnio-api"),
+  "org.jboss.xnio"         % "xnio-api"        % "3.8.14.Final",
+  "com.squareup.okhttp3"   % "okhttp"          % "4.9.2",
+  "com.squareup.okio"   % "okio"          % "3.4.0",
+  scalaOrganization.value %% "scala3-compiler" % scalaVersion.value
 )
 
 ThisBuild / Compile / scalacOptions ++= Seq("-feature", "-deprecation", "-language:implicitConversions")
@@ -82,6 +88,7 @@ ThisBuild / licenses := List("Apache-2.0" -> url("http://www.apache.org/licenses
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 ThisBuild / resolvers ++= Seq(
+  "Github Package Registry Joern" at "https://maven.pkg.github.com/Privado-Inc/joern",
   Resolver.mavenLocal,
   "Sonatype OSS" at "https://oss.sonatype.org/content/repositories/public",
   "Gradle Releases" at "https://repo.gradle.org/gradle/libs-releases"
@@ -159,9 +166,8 @@ Compile / compile := ((Compile / compile) dependsOn goAstGenDlTask).value
 
 // download dotnetastgen: start
 lazy val DotNetAstgenWin      = "dotnetastgen-win.exe"
-lazy val DotNetAstgenWinArm   = "dotnetastgen-win-arm.exe"
 lazy val DotNetAstgenLinux    = "dotnetastgen-linux"
-lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm"
+lazy val DotNetAstgenLinuxArm = "dotnetastgen-linux-arm64"
 lazy val DotNetAstgenMac      = "dotnetastgen-macos"
 
 lazy val dotnetAstGenDownloadUrl = settingKey[String]("dotnetastgen download url")
@@ -169,7 +175,7 @@ dotnetAstGenDownloadUrl := s"https://github.com/joernio/DotNetAstGen/releases/do
 
 lazy val dotnetAstGenBinaryNames = taskKey[Seq[String]]("dotnetastgen binary names")
 dotnetAstGenBinaryNames := {
-  Seq(DotNetAstgenWin, DotNetAstgenWinArm, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
+  Seq(DotNetAstgenWin, DotNetAstgenLinux, DotNetAstgenLinuxArm, DotNetAstgenMac)
 }
 
 lazy val dotnetAstGenDlTask = taskKey[Unit](s"Download dotnetastgen binaries")
@@ -258,3 +264,11 @@ ThisBuild / publishTo := Some(
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(buildInfoKeys := Seq[BuildInfoKey]("joernVersion" -> joernVersion), buildInfoPackage := "privado_core")
+
+credentials +=
+  Credentials(
+    "GitHub Package Registry",
+    "maven.pkg.github.com",
+    "Privado-Inc",
+    sys.env.getOrElse("GITHUB_TOKEN", "N/A")
+  )

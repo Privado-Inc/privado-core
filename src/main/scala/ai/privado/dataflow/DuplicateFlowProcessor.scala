@@ -166,7 +166,8 @@ object DuplicateFlowProcessor {
     privadoScanConfig: PrivadoInput,
     ruleCache: RuleCache,
     dataFlowCache: DataFlowCache,
-    auditCache: AuditCache
+    auditCache: AuditCache,
+    appCache: AppCache
   ): Unit = {
 
     val expendedSourceSinkInfo = processExpendedSourceSinkData(dataflowMapByPathId, privadoScanConfig, ruleCache)
@@ -176,7 +177,8 @@ object DuplicateFlowProcessor {
         auditCache.addIntoBeforeSecondFiltering(SourcePathInfo(flow.pathSourceId, flow.sinkId, flow.sinkPathId))
       }
       if (
-        privadoScanConfig.disableFlowSeparationByDataElement || (AppCache.repoLanguage != Language.JAVA && AppCache.repoLanguage != Language.JAVASCRIPT)
+        privadoScanConfig.disableFlowSeparationByDataElement || (!List(Language.JAVA, Language.JAVASCRIPT)
+          .contains(appCache.repoLanguage))
       ) {
         // Filter out flows where source is cookie and sink is cookie read
         if (
@@ -202,7 +204,8 @@ object DuplicateFlowProcessor {
           ruleCache,
           flow.sinkId,
           flow.sinkPathId,
-          dataFlowCache
+          dataFlowCache,
+          appCache
         )
       }
     })
@@ -356,7 +359,8 @@ object DuplicateFlowProcessor {
     ruleCache: RuleCache,
     sinkId: String,
     sinkPathId: String,
-    dataFlowCache: DataFlowCache
+    dataFlowCache: DataFlowCache,
+    appCache: AppCache
   ) = {
     // Logic to filter flows which are interfering with the current source item
     // Ex - If traversing flow for email, discard flow which uses password
@@ -423,8 +427,8 @@ object DuplicateFlowProcessor {
       )
       logger.debug(s"${dataflowsMapByType(sinkPathId).elements.code.mkString("|||")}")
       logger.debug("----------------------------")
-      AppCache.fpByOverlappingDE += 1
-      AppCache.fpMap.put(dataflowSinkType, AppCache.fpMap.getOrElse(dataflowSinkType, 0) + 1)
+      appCache.fpByOverlappingDE += 1
+      appCache.fpMap.put(dataflowSinkType, appCache.fpMap.getOrElse(dataflowSinkType, 0) + 1)
     } // Add this to Cache
     else if (
       isCorrectDataSourceConsumedInSink(

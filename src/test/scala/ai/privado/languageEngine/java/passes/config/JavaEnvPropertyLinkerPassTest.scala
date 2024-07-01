@@ -1,33 +1,23 @@
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.tagger.sink.JavaAPITagger
-import ai.privado.languageEngine.java.tagger.source.IdentifierTagger
-import ai.privado.model.{
-  CatLevelOne,
-  ConfigAndRules,
-  Constants,
-  FilterProperty,
-  Language,
-  NodeType,
-  RuleInfo,
-  SystemConfig
-}
-import ai.privado.utility.PropertyParserPass
+import ai.privado.languageEngine.java.language.*
+import ai.privado.languageEngine.java.tagger.sink.api.JavaAPITagger
+import ai.privado.languageEngine.java.tagger.source.*
+import ai.privado.model.*
+import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.Config
-import io.joern.javasrc2cpg.JavaSrc2Cpg
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.should.Matchers.should
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.*
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 class JavaPropertyEnvLinkerPassTest extends JavaEnvPropertyLinkerPassTestBase {
   override val yamlFileContents =
@@ -109,7 +99,9 @@ abstract class JavaEnvPropertyLinkerPassTestBase
     (inputDir / "GeneralConfig.java").write(codeFileContents)
 
     outputFile = File.newTemporaryFile()
-    val config = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+    val config   = Config().withInputPath(inputDir.pathAsString).withOutputPath(outputFile.pathAsString)
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.JAVA
 
     cpg = new JavaSrc2Cpg()
       .createCpg(config)
@@ -125,9 +117,11 @@ abstract class JavaEnvPropertyLinkerPassTestBase
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.JAVA).createAndApply()
-    new JavaEnvPropertyLinkerPass(cpg).createAndApply()
-    new IdentifierTagger(cpg, ruleCache, TaggerCache()).createAndApply()
-    new JavaAPITagger(cpg, ruleCache, PrivadoInput()).createAndApply()
+    new JavaPropertyLinkerPass(cpg).createAndApply()
+    val taggerCache = TaggerCache()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
+    new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache, statsRecorder = StatsRecorder())
+      .createAndApply()
 
     super.beforeAll()
   }

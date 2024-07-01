@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java
 
-import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{AppCache, RuleCache, S3DatabaseDetailsCache, TaggerCache, DatabaseDetailsCache}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
@@ -41,6 +41,7 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
   var outputFile: File       = _
   val ruleCache              = new RuleCache()
   val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
+  val databaseDetailsCache   = new DatabaseDetailsCache()
 
   override def beforeAll(): Unit = {
     inputDir = File.newTemporaryDirectory()
@@ -53,7 +54,6 @@ abstract class JavaTaggingTestBase extends AnyWordSpec with Matchers with Before
 
     // Caching Rule
     ruleCache.setRule(rule)
-    AppCache.repoLanguage = Language.JAVA
     super.beforeAll()
   }
 

@@ -36,28 +36,30 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
 import overflowdb.traversal._
 import scala.util.Try
-
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 object Language {
 
-  implicit val finder: NodeExtensionFinder         = DefaultNodeExtensionFinder
-  implicit def privadoDataflow(cpg: Cpg): Dataflow = new Dataflow(cpg)
+  implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
   implicit class NodeStarterForSqlQueryNode(cpg: Cpg) {
     def sqlQuery: Traversal[SqlQueryNode] =
-      cpg.graph.nodes(NodeTypes.SQL_QUERY_NODE).asScala.cast[SqlQueryNode]
+      Try(cpg.graph.nodes(NodeTypes.SQL_QUERY_NODE).asScala.cast[SqlQueryNode]).toOption
+        .getOrElse(Iterator.empty[SqlQueryNode])
 
     def sqlTable: Traversal[SqlTableNode] =
-      cpg.graph.nodes(NodeTypes.SQL_TABLE_NODE).asScala.cast[SqlTableNode]
+      Try(cpg.graph.nodes(NodeTypes.SQL_TABLE_NODE).asScala.cast[SqlTableNode]).toOption
+        .getOrElse(Iterator.empty[SqlTableNode])
 
     def sqlColumn: Traversal[SqlColumnNode] =
-      cpg.graph.nodes(NodeTypes.SQL_COLUMN_NODE).asScala.cast[SqlColumnNode]
+      Try(cpg.graph.nodes(NodeTypes.SQL_COLUMN_NODE).asScala.cast[SqlColumnNode]).toOption
+        .getOrElse(Iterator.empty[SqlColumnNode])
+
   }
 
   implicit class NodeStarterForDBNode(cpg: Cpg) {
     def dbNode: Traversal[DbNode] =
-      cpg.graph.nodes(NodeTypes.DB_NODE).asScala.cast[DbNode]
+      Try(cpg.graph.nodes(NodeTypes.DB_NODE).asScala.cast[DbNode]).getOrElse(Iterator.empty[DbNode])
   }
 
   implicit class StepsForPropertyForDbNode(val trav: Traversal[DbNode]) extends AnyVal {

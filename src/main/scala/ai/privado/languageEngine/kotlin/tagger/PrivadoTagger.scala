@@ -1,20 +1,22 @@
 package ai.privado.languageEngine.kotlin.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
 import ai.privado.languageEngine.java.tagger.collection.{CollectionTagger, MethodFullNameCollectionTagger}
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
-import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger}
-import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
+import ai.privado.languageEngine.java.tagger.sink.api.{JavaAPISinkTagger, JavaAPITagger}
+import ai.privado.languageEngine.java.tagger.sink.InheritMethodTagger
+import ai.privado.languageEngine.java.tagger.sink.framework.flink.FlinkTagger
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.languageEngine.kotlin.feeder.StorageAnnotationRule
 import ai.privado.languageEngine.kotlin.tagger.sink.StorageAnnotationTagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.sink.{APITagger, RegularSinkTagger}
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
-import ai.privado.utility.Utilities.ingressUrls
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -29,7 +31,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     ruleCache: RuleCache,
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
-    dataflowCache: DataFlowCache
+    dataflowCache: DataFlowCache,
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -38,15 +43,15 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
 
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
-    new JavaDBConfigTagger(cpg).createAndApply()
+    new JavaDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
     // Custom Rule tagging
     if (!privadoInputConfig.ignoreInternalRules) {
@@ -57,7 +62,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
     }
 
-    new APITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
     new AndroidCollectionTagger(
       cpg,
@@ -68,12 +75,12 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     // Tag by finding annotations that declare endpoints
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     // Tag by finding methods that are declaring endpoints
     val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
     methodFullNameTagger.createAndApply()
-    ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
 
     logger.info("Done with tagging")
     cpg.tag

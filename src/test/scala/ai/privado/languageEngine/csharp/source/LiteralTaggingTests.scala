@@ -1,17 +1,21 @@
 package ai.privado.languageEngine.csharp.source
 
-import ai.privado.languageEngine.csharp.CSharpTestBase
-import ai.privado.model.{CatLevelOne, Constants, SourceCodeModel}
+import ai.privado.cache.RuleCache
+import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, SourceCodeModel}
+import ai.privado.rule.RuleInfoTestData
+import ai.privado.testfixtures.CSharpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class LiteralTaggingTests extends CSharpTestBase {
+class LiteralTaggingTests extends CSharpFrontendTestSuite {
+
+  val configAnndRules: ConfigAndRules =
+    ConfigAndRules(sources = RuleInfoTestData.sourceRule)
+
+  val ruleCache = new RuleCache().setRule(configAnndRules)
 
   "Literals in code" should {
-    "be tagged as part of Literal tagger" in {
-      val (cpg, _) = code(
-        List(
-          SourceCodeModel(
-            """
+    val cpg = code(
+      """
             |namespace Foo {
             | public class Bar {
             |   public static void Main() {
@@ -22,14 +26,13 @@ class LiteralTaggingTests extends CSharpTestBase {
             | }
             |}
             |""".stripMargin,
-            "Test.cs"
-          )
-        )
-      )
+      "Test.cs"
+    ).withRuleCache(ruleCache)
+
+    "be tagged as part of Literal tagger" in {
 
       val List(phoneNumber) = cpg.literal.l
       phoneNumber.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
     }
   }
-
 }

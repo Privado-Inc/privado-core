@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.java.tagger
 
-import ai.privado.cache.{DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
@@ -40,14 +40,15 @@ import ai.privado.languageEngine.java.tagger.collection.{
   SOAPCollectionTagger
 }
 import ai.privado.languageEngine.java.tagger.config.JavaDBConfigTagger
-import ai.privado.languageEngine.java.tagger.sink.api.JavaAPISinkTagger
-import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, JavaAPITagger, MessagingConsumerCustomTagger}
-import ai.privado.languageEngine.java.tagger.source.{IdentifierTagger, InSensitiveCallTagger}
+import ai.privado.languageEngine.java.tagger.sink.api.{JavaAPISinkTagger, JavaAPITagger}
+import ai.privado.languageEngine.java.tagger.sink.framework.flink.FlinkTagger
+import ai.privado.languageEngine.java.tagger.sink.{InheritMethodTagger, MessagingConsumerCustomTagger}
+import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.{AndroidCollectionTagger, WebFormsCollectionTagger}
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.tagger.source.{AndroidXmlPermissionTagger, LiteralTagger, SqlQueryTagger}
-import ai.privado.utility.Utilities.ingressUrls
+import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
@@ -64,7 +65,10 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     taggerCache: TaggerCache,
     privadoInputConfig: PrivadoInput,
     dataFlowCache: DataFlowCache,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache,
+    statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -73,40 +77,47 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-
+    SourceTagger.runTagger(cpg, ruleCache, taggerCache)
     new InSensitiveCallTagger(cpg, ruleCache, taggerCache).createAndApply()
 
-    new JavaDBConfigTagger(cpg).createAndApply()
+    new JavaDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 
-    new RegularSinkTagger(cpg, ruleCache).createAndApply()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
-    new JavaS3Tagger(cpg, s3DatabaseDetailsCache).createAndApply()
+    new JavaS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
-    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig)
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
-    new JavaAPITagger(cpg, ruleCache, privadoInputConfig).createAndApply()
     // Custom Rule tagging
     if (!privadoInputConfig.ignoreInternalRules) {
       // Adding custom rule to cache
       StorageInheritRule.rules.foreach(ruleCache.setRuleInfo)
       new InheritMethodTagger(cpg, ruleCache).createAndApply()
       new MessagingConsumerCustomTagger(cpg, ruleCache).createAndApply()
-      new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache, privadoInputConfig).createAndApply()
+      new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache, privadoInputConfig, appCache).createAndApply()
     }
 
-    new DatabaseQueryReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, EntityMapper.getClassTableMapping(cpg))
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+
+    new DatabaseQueryReadPass(
+      cpg,
+      ruleCache,
+      taggerCache,
+      privadoInputConfig,
+      EntityMapper.getClassTableMapping(cpg),
+      appCache
+    )
       .createAndApply()
 
     new DatabaseRepositoryReadPass(cpg, taggerCache, dataFlowCache).createAndApply()
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
-    ingressUrls.addAll(collectionTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     val methodFullNameTagger = new MethodFullNameCollectionTagger(cpg, ruleCache)
     methodFullNameTagger.createAndApply()
-    ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
+    appCache.ingressUrls.addAll(methodFullNameTagger.getIngressUrls())
 
     new SOAPCollectionTagger(cpg, ruleCache).createAndApply()
 
@@ -116,11 +127,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new AndroidXmlPermissionTagger(cpg, ruleCache, PermissionSourceRule.miniatureRuleList).createAndApply()
 
-    new AndroidCollectionTagger(
-      cpg,
-      Paths.get(privadoInputConfig.sourceLocation.head).toAbsolutePath.toString,
-      ruleCache
-    ).createAndApply()
+    new AndroidCollectionTagger(cpg, Paths.get(appCache.scanPath).toAbsolutePath.toString, ruleCache).createAndApply()
 
     logger.info("Done with tagging")
 

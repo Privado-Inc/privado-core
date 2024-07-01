@@ -23,6 +23,7 @@
 
 package ai.privado.languageEngine.go.tagger.config
 
+import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.tagger.PrivadoDBConfigBaseTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -30,7 +31,8 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 import overflowdb.traversal.*
 
-class GoDBConfigTagger(cpg: Cpg) extends PrivadoDBConfigBaseTagger(cpg) {
+class GoDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
+    extends PrivadoDBConfigBaseTagger(cpg, databaseDetailsCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

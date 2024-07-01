@@ -24,8 +24,18 @@
 package ai.privado.exporter
 
 import ai.privado.audit.AuditReportEntryPoint.DataElementDiscoveryAudit
-import ai.privado.cache.{AppCache, DataFlowCache, Environment, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  Environment,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{outputDirectoryName, value}
 import ai.privado.model.exporter.{
@@ -39,7 +49,7 @@ import ai.privado.model.exporter.{
   SourceProcessingModel,
   ViolationModel
 }
-import ai.privado.model.{Constants, DataFlowPathModel, PolicyThreatType}
+import ai.privado.model.{Constants, DataFlowPathModel, InternalTag, PolicyThreatType}
 import ai.privado.model.exporter.SourceEncoderDecoder.*
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.model.exporter.ViolationEncoderDecoder.*
@@ -79,8 +89,11 @@ object JSONExporter {
     dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
     monolithPrivadoJsonPaths: List[String] = List(),
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
-  ): Either[String, Unit] = {
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    propertyFilterCache: PropertyFilterCache,
+    databaseDetailsCache: DatabaseDetailsCache
+  ): Either[String, Map[String, Json]] = {
 
     try {
       val (
@@ -100,7 +113,10 @@ object JSONExporter {
         taggerCache,
         dataFlowModel,
         privadoInput,
-        s3DatabaseDetailsCache
+        s3DatabaseDetailsCache,
+        appCache = appCache,
+        databaseDetailsCache = databaseDetailsCache,
+        propertyFilterCache = propertyFilterCache
       )
 
       // Add the privado json path of each monolith repository item
@@ -117,18 +133,19 @@ object JSONExporter {
 
       logger.debug(
         s"Total False positive flows removed : \n" +
-          s"Total flows before FP: ${AppCache.totalFlowFromReachableBy}\n" +
-          s"Total flows after this filtering: ${AppCache.totalFlowAfterThisFiltering}\n" +
-          s"FP by overlapping Data element : ${AppCache.fpByOverlappingDE}\n" +
+          s"Total flows before FP: ${appCache.totalFlowFromReachableBy}\n" +
+          s"Total flows after this filtering: ${appCache.totalFlowAfterThisFiltering}\n" +
+          s"FP by overlapping Data element : ${appCache.fpByOverlappingDE}\n" +
           s"Total flows after complete computation : ${dataFlowModel.size}"
       )
 
-      logger.debug(s"Final statistics for FP : ${AppCache.fpMap}, for total ${AppCache.totalMap}")
+      logger.debug(s"Final statistics for FP : ${appCache.fpMap}, for total ${appCache.totalMap}")
 
       // Post export Trigger
       ExternalScalaScriptRunner
         .postExportTrigger(cpg, ruleCache, output)
 
+      DataflowExporter.limitDataflowsInExport(ruleCache, output, repoPath)
       val jsonFile = ExporterUtility.writeJsonToFile(cpg, outputFileName, repoPath, ruleCache, output.toMap)
 
       logger.info("Shutting down Exporter engine")
@@ -144,7 +161,7 @@ object JSONExporter {
           logger.debug("Error in getting size of repo ", e)
       }
       MetricHandler.metricsData("fileSizeInKB") = Json.fromLong(jsonFile.size / 1024)
-      Right(())
+      Right(output.toMap)
 
     } catch {
       case ex: Exception =>

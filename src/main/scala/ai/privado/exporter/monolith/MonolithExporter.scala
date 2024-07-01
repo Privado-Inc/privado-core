@@ -1,6 +1,14 @@
 package ai.privado.exporter.monolith
 
-import ai.privado.cache.{AuditCache, DataFlowCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.model.{Constants, DataFlowPathModel}
@@ -46,7 +54,9 @@ object MonolithExporter {
     taggerCache: TaggerCache = new TaggerCache(),
     dataFlowCache: DataFlowCache,
     privadoInput: PrivadoInput,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): List[String] = {
     if (privadoInput.isMonolith) {
       // Export privado json for individual subProject/Repository Item
@@ -67,7 +77,9 @@ object MonolithExporter {
             taggerCache,
             dataFlowCache,
             privadoInput,
-            s3DatabaseDetailsCache
+            s3DatabaseDetailsCache,
+            appCache = appCache,
+            databaseDetailsCache = databaseDetailsCache
           )
         )
         .l
@@ -84,7 +96,9 @@ object MonolithExporter {
     taggerCache: TaggerCache = new TaggerCache(),
     dataFlowCache: DataFlowCache,
     privadoInput: PrivadoInput,
-    s3DatabaseDetailsCache: S3DatabaseDetailsCache
+    s3DatabaseDetailsCache: S3DatabaseDetailsCache,
+    appCache: AppCache,
+    databaseDetailsCache: DatabaseDetailsCache
   ): Option[String] = {
 
     try {
@@ -106,7 +120,9 @@ object MonolithExporter {
         filterRepoItemDataflows(dataFlowCache, dataflows, repoItemTagName, privadoInput),
         privadoInput,
         s3DatabaseDetailsCache,
-        repoItemTagName = Option(repoItemTagName)
+        repoItemTagName = Option(repoItemTagName),
+        appCache = appCache,
+        databaseDetailsCache
       )
 
       output.addOne(

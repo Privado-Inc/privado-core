@@ -34,6 +34,7 @@ import ai.privado.model.*
 import ai.privado.passes.SQLParser
 import ai.privado.tagger.source.SqlQueryTagger
 import ai.privado.threatEngine.ThreatEngineExecutor
+import ai.privado.utility.StatsRecorder
 import better.files.File
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
@@ -44,7 +45,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.{BeforeAndAfterEach, BeforeAndAfterAll}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.collection.mutable
 
@@ -334,8 +335,9 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       .withFetchDependencies(downloadDependency)
 
     ruleCache.setRule(configAndRules)
-    val cpg = new GoSrc2Cpg().createCpg(config).get
-    AppCache.repoLanguage = Language.GO
+    val cpg      = new GoSrc2Cpg().createCpg(config).get
+    val appCache = new AppCache()
+    appCache.repoLanguage = Language.GO
 
     X2Cpg.applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
@@ -346,8 +348,8 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     new SQLParser(cpg, inputDir.pathAsString, ruleCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new GoAPITagger(cpg, ruleCache, privadoInput).createAndApply()
-    new Dataflow(cpg).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache)
+    new GoAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
+    new Dataflow(cpg, StatsRecorder()).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache = appCache)
     cpgs.addOne(cpg)
     val threatEngine =
       new ThreatEngineExecutor(
@@ -356,7 +358,8 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
         ruleCache,
         null,
         dataFlowCache.getDataflowAfterDedup,
-        privadoInput
+        privadoInput,
+        appCache = appCache
       )
     (cpg, threatEngine)
   }
