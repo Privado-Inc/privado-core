@@ -19,7 +19,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class JSPropertiesFilePassTest extends JavaScriptFrontendTestSuite {
 
-  "JS Config File pass should" should {
+  "JS Config File pass 1" should {
 
     val db_url = "https://mydb.dbname.in/secret"
 
@@ -74,7 +74,7 @@ class JSPropertiesFilePassTest extends JavaScriptFrontendTestSuite {
     }
   }
 
-  "JS Config File pass should" should {
+  "JS Config File pass 2" should {
 
     val cpg = code(
       """
