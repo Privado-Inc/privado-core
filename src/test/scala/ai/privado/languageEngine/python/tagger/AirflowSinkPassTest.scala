@@ -6,6 +6,7 @@ import ai.privado.model.*
 import ai.privado.testfixtures.PythonFrontendTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 
 object AirflowRules {
   private val sinks = List(
@@ -72,6 +73,7 @@ class AirflowSinkPassTest extends PythonFrontendTestSuite {
   )
     .withRuleCache(ruleCache)
 
+  applyDefaultOverlays(cpg)
   new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
 
   "Python airflow core operator" should {
@@ -118,6 +120,7 @@ class AirflowCustomOperatorSinkTest extends PythonFrontendTestSuite {
     "code.py"
   ).withRuleCache(ruleCache)
 
+  applyDefaultOverlays(cpg)
   new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
 
   "python airflow custom operator" should {

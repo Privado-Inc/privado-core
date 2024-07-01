@@ -93,7 +93,7 @@ class DBConfigImplementationTests extends PythonFrontendTestSuite {
       |POSTGRES_HOSTNAME=db
       |POSTGRES_PORT=5432
       |""".stripMargin,
-    "config.env"
+    "test.env"
   ).moreCode(
     """
       |from functools import cached_property
