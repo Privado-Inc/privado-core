@@ -309,7 +309,7 @@ abstract class BaseProcessor(
         UnresolvedReportUtility.reportUnresolvedMethods(Success(cpg), path, lang)
       } catch {
         case ex: Exception =>
-          println(f"Failed to unresolved methods report: ${ex}")
+          logger.debug(f"Failed to unresolved methods report: ${ex}")
       }
     }
   }
