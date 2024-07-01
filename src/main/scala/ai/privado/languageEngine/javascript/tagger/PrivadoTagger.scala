@@ -33,16 +33,13 @@ import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPI
 import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
-import ai.privado.tagger.source.{AndroidXmlPermissionTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{AndroidXmlPermissionTagger, DEDTagger, SqlQueryTagger}
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
-import ai.privado.utility.Utilities.{databaseURLPriority}
-
-import java.util.Calendar
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -58,6 +55,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
+
+    new DEDTagger(cpg, ruleCache).createAndApply()
 
     new LiteralTagger(cpg, ruleCache).createAndApply()
 

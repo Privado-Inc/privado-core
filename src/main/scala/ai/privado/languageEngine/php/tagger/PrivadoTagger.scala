@@ -32,7 +32,7 @@ import ai.privado.languageEngine.php.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.php.tagger.sink.APITagger
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.sink.RegularSinkTagger
-import ai.privado.tagger.source.LiteralTagger
+import ai.privado.tagger.source.{DEDTagger, LiteralTagger}
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -54,6 +54,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 
+    new DEDTagger(cpg, rules).createAndApply()
     new LiteralTagger(cpg, rules).createAndApply()
     new IdentifierTagger(cpg, rules, taggerCache).createAndApply()
     new RegularSinkTagger(cpg, rules, databaseDetailsCache).createAndApply()

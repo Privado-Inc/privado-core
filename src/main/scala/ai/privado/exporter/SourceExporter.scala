@@ -27,6 +27,7 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
+import ai.privado.tagger.utility.SourceTaggerUtility.{getFilteredSourcesByTaggingDisabled}
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
@@ -128,7 +129,12 @@ class SourceExporter(
           .l ++ cpg.sqlColumn
           .where(filterSource)
           .l ++ cpg.androidXmlPermissionNode.where(filterSource).l
-    ExporterUtility.filterNodeBasedOnRepoItemTagName(sources, repoItemTagName)
+
+    ExporterUtility.filterNodeBasedOnRepoItemTagName(
+      // Remove TAGGING_DISABLED_BY_DED sources from list
+      getFilteredSourcesByTaggingDisabled(sources),
+      repoItemTagName
+    )
   }
 
   private def convertSourcesList(sources: List[List[Tag]]): List[SourceModel] = {

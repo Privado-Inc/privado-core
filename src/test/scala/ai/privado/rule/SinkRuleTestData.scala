@@ -24,4 +24,58 @@ object SinkRuleTestData {
     Array()
   )
 
+  val leakageRule: RuleInfo = RuleInfo(
+    "Leakages.Log.Console",
+    "Log Console",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List("(?i).*(?:console|logger|bunyan|winston|log4js|pino|kax).*(log)|process.stdout.*write"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.leakages,
+    Language.JAVASCRIPT,
+    Array()
+  )
+
+  val leakageKotlinRule: RuleInfo = RuleInfo(
+    "Leakages.Log.Console",
+    "Log Console",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List("(?i)(java.io.PrintStream|kotlin.io|android.util.(?:Log){0,1}Printer).(?:print|println|write).*"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.leakages,
+    Language.JAVA,
+    Array()
+  )
+
+  val leakageCSharpRule: RuleInfo = RuleInfo(
+    "Leakages.Log.Console",
+    "Log Console",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List("(?i)(System.Console).(?:print|println|WriteLine).*"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.leakages,
+    Language.CSHARP,
+    Array()
+  )
+
 }

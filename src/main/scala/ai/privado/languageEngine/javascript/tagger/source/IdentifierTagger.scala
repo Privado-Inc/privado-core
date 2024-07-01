@@ -25,6 +25,7 @@ package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
+import ai.privado.tagger.utility.SourceTaggerUtility.{getTypeDeclWithMemberNameHavingMemberName}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -101,12 +102,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     rulePattern: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
-      .where(_.member.name(rulePattern).filterNot(item => item.name.equals(item.name.toUpperCase)))
-      .map(typeDeclNode => {
-        (typeDeclNode, typeDeclNode.member.name(rulePattern))
-      })
-      .l
+    val typeDeclWithMemberNameHavingMemberName = getTypeDeclWithMemberNameHavingMemberName(cpg, ruleInfo)
 
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)

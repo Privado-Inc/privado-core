@@ -28,7 +28,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, FilterProperty, RuleInfo}
+import ai.privado.model.{Constants, FilterProperty, RuleInfo, InternalTag}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
@@ -38,7 +38,7 @@ import ai.privado.utility.Utilities.{
 }
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member, Identifier}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.Cpg

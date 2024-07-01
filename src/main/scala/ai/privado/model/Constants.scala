@@ -44,6 +44,7 @@ object Constants {
   val monolithRepoReachingFileList = "monolithRepoReachingFileList"
   val monolithJsonPath             = "monolithJsonPath"
   val monolithRepoDepth            = "monolithRepoDepth"
+  val externalRule                 = "externalRule"
 
   // semantic
   val signature = "signature"
@@ -144,6 +145,11 @@ object Constants {
   val propertyFileSkippedBySize     = "PropertyFileSkippedBySize"
   val propertyFileSkippedByDirCount = "PropertyFileSkippedByDirCount"
   val arguments                     = "arguments"
+  val variables                     = "variables"
+  val classificationData            = "classificationData"
+  val DED                           = "ded"
+  val typeInSrc                     = "typeInSrc"
+  val lineNumber                    = "lineNumber"
 
   // database details
   val dbName      = "dbName"
@@ -155,6 +161,7 @@ object Constants {
   // Other commonly used constants
   val RULES_DIR_IN_CONFIG           = "rules"
   val CONFIG_DIR_IN_CONFIG          = "config"
+  val AI_INFERENCE_DIR_IN_CONFIG    = "ai_inference"
   val PRETTY_LINE_SEPARATOR: String = "-" * 100
   val EMPTY                         = "<empty>"
   val READ_WITH_BRACKETS            = " (Read)"
@@ -182,6 +189,7 @@ object Constants {
   val googleTagManagerRuleId      = "ThirdParties.SDK.Google.TagManager"
   val cookieSourceRuleId          = "Data.Sensitive.OnlineIdentifiers.Cookies"
   val flinkCustomProducerRuleId   = "ThirdParties.SDK.Flink.Producer"
+  val disabledByDEDId             = "DISABLED_BY_DED"
 
   // External script keys
   val postExportTrigger = "postExportTrigger"

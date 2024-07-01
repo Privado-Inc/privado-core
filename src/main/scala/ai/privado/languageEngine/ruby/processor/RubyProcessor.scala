@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.audit.AuditReportEntryPoint
+import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery}
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
@@ -68,6 +68,7 @@ import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ai.privado.dataflow.Dataflow
+import ai.privado.cache.*
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import io.shiftleft.passes.CpgPassBase
 
@@ -192,6 +193,7 @@ class RubyProcessor(
                 errorFileCount += 1
             }
           }
+
           statsRecorder.justLogMessage(s"No of files skipped because of timeout - '$timeoutFileCount'")
           statsRecorder.justLogMessage(s"No of files that are skipped because of error - '$errorFileCount'")
           finalResult.toList

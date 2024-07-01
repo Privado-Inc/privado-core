@@ -1,25 +1,20 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.audit.AuditReportEntryPoint
-import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.cache.*
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
-import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.model.{CpgWithOutputMap, Constants, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg.*
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -28,13 +23,9 @@ import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
-import java.util.Calendar
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 
 class PythonProcessor(
   ruleCache: RuleCache,
