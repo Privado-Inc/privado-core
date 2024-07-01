@@ -8,7 +8,7 @@ import scala.util.Try
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class ChsarpDEDSourceDiscoveryTest extends CSharpFrontendTestSuite  {
+class ChsarpDEDSourceDiscoveryTest extends CSharpFrontendTestSuite {
   "Check ded source discovery results" in {
     val sourceCode =
       """
@@ -50,14 +50,10 @@ class ChsarpDEDSourceDiscoveryTest extends CSharpFrontendTestSuite  {
         |    }
         |}
         |""".stripMargin
-    val cpg = code(sourceCode, "Test0.cs")
+    val cpg        = code(sourceCode, "Test0.cs")
     val dedSources = DEDSourceDiscovery.processDEDSourceDiscovery(Try(cpg), Language.CSHARP).drop(1)
-    val expectedResult = List(
-      "emailId,Member,User",
-      "firstName,Member,User",
-      "passwd,Member,User",
-      "user,Identifier,User"
-    )
+    val expectedResult =
+      List("emailId,Member,User", "firstName,Member,User", "passwd,Member,User", "user,Identifier,User")
     val res: List[String] = dedSources.map(i => {
       s"${i(3)},${i(12)},${i(0)}"
     })

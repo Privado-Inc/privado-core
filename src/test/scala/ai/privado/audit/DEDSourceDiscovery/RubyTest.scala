@@ -10,7 +10,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class RubyDEDSourceDiscoveryTest extends AnyWordSpec with Matchers  {
+class RubyDEDSourceDiscoveryTest extends AnyWordSpec with Matchers {
   "Check ded source discovery results" in {
     val (cpg, _) = code(
       List(

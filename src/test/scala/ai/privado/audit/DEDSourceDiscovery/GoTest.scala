@@ -8,10 +8,9 @@ import scala.util.Try
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class GoDEDSourceDiscoveryTest extends GoTestBase  {
+class GoDEDSourceDiscoveryTest extends GoTestBase {
   "Check ded source discovery results" in {
-    val (cpg, _) = code(
-      """
+    val (cpg, _) = code("""
         package main
         |
         |import "fmt"

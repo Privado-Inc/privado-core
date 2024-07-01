@@ -10,8 +10,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class PhpDEDSourceDiscoveryTest extends PhpTestBase {
   "Check ded source discovery results" in {
-    val (cpg, _) = code(
-      """
+    val (cpg, _) = code("""
         |<?php
         |
         |  class User {

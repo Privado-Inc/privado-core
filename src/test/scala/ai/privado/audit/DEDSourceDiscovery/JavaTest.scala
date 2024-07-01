@@ -9,8 +9,9 @@ import io.shiftleft.semanticcpg.language.*
 
 class JavaDEDSourceDiscoveryTest extends JavaFrontendTestSuite {
   "Check ded source discovery results" in {
-    val cpg = Try(code(
-      """
+    val cpg = Try(
+      code(
+        """
         |public class User {
         |   public String userName;
         |   public String passwd;
@@ -20,15 +21,12 @@ class JavaDEDSourceDiscoveryTest extends JavaFrontendTestSuite {
         |   public void setUserName(String firstName) {this.userName = userName;}
         |}
         |""".stripMargin,
-      "User.java"
-    ).asInstanceOf[Cpg])
-
-    val dedSources = DEDSourceDiscovery.processDEDSourceDiscovery(cpg, Language.JAVA).drop(1)
-    val expectedResult = List(
-      "emailId,Member,User",
-      "passwd,Member,User",
-      "userName,Member,User"
+        "User.java"
+      ).asInstanceOf[Cpg]
     )
+
+    val dedSources     = DEDSourceDiscovery.processDEDSourceDiscovery(cpg, Language.JAVA).drop(1)
+    val expectedResult = List("emailId,Member,User", "passwd,Member,User", "userName,Member,User")
     val res: List[String] = dedSources.map(i => {
       s"${i(3)},${i(12)},${i(0)}"
     })

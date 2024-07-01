@@ -8,10 +8,9 @@ import scala.util.Try
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class PythonDEDSourceDiscoveryTest extends PrivadoPySrc2CpgFixture  {
+class PythonDEDSourceDiscoveryTest extends PrivadoPySrc2CpgFixture {
   "Check ded source discovery results" in {
-    val cpg = code(
-      """import boto
+    val cpg = code("""import boto
         |import requests
         |
         |class EventbriteOAuth2Adapter(OAuth2Adapter):
