@@ -2,22 +2,44 @@ package ai.privado.languageEngine.python.tagger
 
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.python.tagger.sink.AirflowOperatorSinkTagger
-import ai.privado.languageEngine.python.{PrivadoPySrc2CpgFixture, PrivadoPySrcTestCpg}
 import ai.privado.model.*
-import better.files.File
-import io.joern.pysrc2cpg
-import io.joern.pysrc2cpg.{Py2CpgOnFileSystem, Py2CpgOnFileSystemConfig}
-import io.joern.x2cpg.X2Cpg
-import io.shiftleft.codepropertygraph.generated.Cpg
+import ai.privado.testfixtures.PythonFrontendTestSuite
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-class AirflowSinkPassTest extends PythonAirflowOperatorTestBase {
+object AirflowRules {
+  private val sinks = List(
+    RuleInfo(
+      "ThirdParties.Operator.Email",
+      "Email Operator",
+      "third parties",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*EmailOperator.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.PYTHON,
+      Array()
+    )
+  )
 
-  override val codeFileContents: String =
+  def getRuleCache: RuleCache = {
+    val rule                 = ConfigAndRules(sinks = sinks)
+    val ruleCache: RuleCache = new RuleCache()
+    ruleCache.setRule(rule)
+
+    ruleCache
+  }
+}
+
+class AirflowSinkPassTest extends PythonFrontendTestSuite {
+  val ruleCache = AirflowRules.getRuleCache
+  val cpg = code(
     """
       |from airflow import DAG
       |from airflow.operators import EmailOperator
@@ -45,7 +67,12 @@ class AirflowSinkPassTest extends PythonAirflowOperatorTestBase {
       |   html_content=email_content,
       |   dag=dag
       | )
-      |""".stripMargin
+      |""".stripMargin,
+    "code.py"
+  )
+    .withRuleCache(ruleCache)
+
+  new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
 
   "Python airflow core operator" should {
     "should correct tagging" in {
@@ -58,9 +85,9 @@ class AirflowSinkPassTest extends PythonAirflowOperatorTestBase {
   }
 }
 
-class AirflowCustomOperatorSinkTest extends PythonAirflowOperatorTestBase {
-
-  override val codeFileContents: String =
+class AirflowCustomOperatorSinkTest extends PythonFrontendTestSuite {
+  val ruleCache = AirflowRules.getRuleCache
+  val cpg = code(
     """
       |from airflow.models import BaseOperator
       |from airflow.utils.decorators import apply_defaults
@@ -87,7 +114,11 @@ class AirflowCustomOperatorSinkTest extends PythonAirflowOperatorTestBase {
       |   html_content=firstName,
       |   dag=dag,
       |  )
-      |""".stripMargin
+      |""".stripMargin,
+    "code.py"
+  ).withRuleCache(ruleCache)
+
+  new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
 
   "python airflow custom operator" should {
     "should correct tagging" in {
@@ -98,53 +129,4 @@ class AirflowCustomOperatorSinkTest extends PythonAirflowOperatorTestBase {
       callNode.tag.nameExact("catLevelOne").value.head shouldBe "sinks"
     }
   }
-}
-
-abstract class PythonAirflowOperatorTestBase extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-  var cpg: Cpg = _
-  val codeFileContents: String
-  var inputDir: File       = _
-  var outputFile: File     = _
-  var ruleCache: RuleCache = new RuleCache()
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / "test.py").write(codeFileContents)
-
-    outputFile = File.newTemporaryDirectory()
-
-    val pythonConfig = Py2CpgOnFileSystemConfig()
-      .withInputPath(inputDir.pathAsString)
-      .withOutputPath(outputFile.pathAsString)
-    cpg = new Py2CpgOnFileSystem().createCpg(pythonConfig).get
-
-    X2Cpg.applyDefaultOverlays(cpg)
-    ruleCache.setRule(rule)
-
-    new AirflowOperatorSinkTagger(cpg, ruleCache).createAndApply()
-    super.beforeAll()
-  }
-
-  val sinks = List(
-    RuleInfo(
-      "ThirdParties.Operator.Email",
-      "Email Operator",
-      "third parties",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List(".*EmailOperator.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SINKS,
-      "",
-      Language.PYTHON,
-      Array()
-    )
-  )
-
-  val rule = ConfigAndRules(sinks = sinks)
-
 }

@@ -1,17 +1,15 @@
 package ai.privado.languageEngine.python
 
-import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
-import ai.privado.passes.*
-import ai.privado.utility.PropertyParserPass
-import io.joern.pysrc2cpg.PySrc2CpgFixture
-import io.shiftleft.semanticcpg.language.*
+import ai.privado.testfixtures.PythonFrontendTestSuite
 import io.joern.dataflowengineoss.language.*
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.shiftleft.semanticcpg.language.*
 
-class PythonDataFlowTests extends PrivadoPySrc2CpgFixture {
+class PythonDataFlowTests extends PythonFrontendTestSuite {
 
   "Flows within an OAuth adapter" should {
-    val cpg = code("""import boto
+    val cpg = code(
+      """import boto
         |import requests
         |
         |class EventbriteOAuth2Adapter(OAuth2Adapter):
@@ -26,8 +24,11 @@ class PythonDataFlowTests extends PrivadoPySrc2CpgFixture {
         |        boto.client("First Name: " + self.getFirstName)
         |        return self.get_provider().sociallogin_from_response(request,
         |                                                             extra_data)
-        |""".stripMargin)
+        |""".stripMargin,
+      "code.py"
+    )
 
+    implicit val context: EngineContext = EngineContext()
     "find a flow between a parameter identifier and a call" in {
       val source = cpg.identifier("accountId").lineNumber(9)
       val sink   = cpg.call("get").lineNumber(10)
@@ -40,5 +41,4 @@ class PythonDataFlowTests extends PrivadoPySrc2CpgFixture {
       sink.reachableByFlows(source).size shouldBe 1
     }
   }
-
 }

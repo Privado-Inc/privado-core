@@ -23,38 +23,18 @@
 
 package ai.privado.languageEngine.python
 
-import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
-import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.model.*
 import ai.privado.tagger.sink.RegularSinkTagger
-import better.files.File
-import io.joern.pysrc2cpg.{
-  ImportsPass,
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonInheritanceNamePass,
-  PythonTypeRecoveryPassGenerator
-}
-import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import ai.privado.testfixtures.PythonFrontendTestSuite
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
-import scala.collection.mutable
-
-class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
-  private val cpgs                   = mutable.ArrayBuffer.empty[Cpg]
-  private val outPutFiles            = mutable.ArrayBuffer.empty[File]
-  private val inputDirs              = mutable.ArrayBuffer.empty[File]
+class PythonS3TaggerTest extends PythonFrontendTestSuite with Matchers with BeforeAndAfterAll {
   private val ruleCache              = new RuleCache()
   private val privadoInput           = PrivadoInput()
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
@@ -80,6 +60,8 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
     )
   )
 
+  ruleCache.setRule(ConfigAndRules(List(), sinks, List(), List(), List(), List(), List(), List(), List(), List()))
+
   "Python code using boto client for S3 buckets with simple assignment" should {
     val cpg = code("""
         |import boto3
@@ -95,6 +77,12 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
         |
         |bucket = get_s3().Bucket(OPTIMIZELY_EVENTS_BUCKET)
         |""".stripMargin)
+      .withRuleCache(ruleCache)
+
+    val databaseDetailsCache = DatabaseDetailsCache()
+    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
+    new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
+    new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
     "have bucket name" in {
       val sinkExporter =
@@ -145,50 +133,4 @@ class PythonS3TaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAl
       sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "meri-prod-bucket"
     }
   }
-
-  def code(code: String): Cpg = {
-    val inputDir = File.newTemporaryDirectory()
-    inputDirs.addOne(inputDir)
-    (inputDir / "sample.py").write(code)
-    val outputFile = File.newTemporaryFile()
-    outPutFiles.addOne(outputFile)
-    val rule: ConfigAndRules =
-      ConfigAndRules(List(), sinks, List(), List(), List(), List(), List(), List(), List(), List())
-    ruleCache.setRule(rule)
-    val taggerCache = new TaggerCache
-    appCache.repoLanguage = Language.PYTHON
-    val databaseDetailsCache = DatabaseDetailsCache()
-
-    // Generate CPG and run overlays for S3 tagger prep
-    val cpgconfig = Py2CpgOnFileSystemConfig(Option(File(".venv").path), ignoreVenvDir = true)
-      .withInputPath(inputDir.pathAsString)
-      .withOutputPath(outputFile.pathAsString)
-    new Py2CpgOnFileSystem()
-      .createCpg(cpgconfig)
-      .map { cpg =>
-        X2Cpg.applyDefaultOverlays(cpg)
-        new ImportsPass(cpg).createAndApply()
-        new PythonInheritanceNamePass(cpg).createAndApply()
-        new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
-        new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
-        new NaiveCallLinker(cpg).createAndApply()
-        new AstLinkerPass(cpg).createAndApply()
-        new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
-        new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
-
-        // Run S3 tagger - needs sink tagging to be run before
-        new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
-        cpgs.addOne(cpg)
-        cpg
-      }
-      .get
-  }
-
-  override def afterAll(): Unit = {
-    cpgs.foreach(_.close())
-    outPutFiles.foreach(_.delete())
-    inputDirs.foreach(_.delete())
-    super.afterAll()
-  }
-
 }

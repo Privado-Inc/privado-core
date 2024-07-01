@@ -1,43 +1,26 @@
 package ai.privado.languageEngine.python.passes.config
 
-import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language._
-import ai.privado.model.Language
-import ai.privado.utility.PropertyParserPass
-import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.pysrc2cpg.{
-  ImportsPass,
-  Py2CpgOnFileSystem,
-  Py2CpgOnFileSystemConfig,
-  PythonTypeHintCallLinker,
-  PythonTypeRecoveryPassGenerator
-}
-import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import ai.privado.languageEngine.java.language.*
+import ai.privado.testfixtures.PythonFrontendTestSuite
+import io.shiftleft.semanticcpg.language.*
 
-import java.nio.file.Paths
-
-class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
-
+class GetEnvironmentTest extends PythonFrontendTestSuite {
   val mongourl = "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
-  override val configFileContents: String =
-    """
-       |MONGO_URL=mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority
-       |""".stripMargin
-  override val codeFileContents: String =
-    """
-      |import os
-      |
-      |mongourl = os.environ.get("MONGO_URL")""".stripMargin
 
   "ConfigFilePass" should {
+    val cpg = code(
+      """
+       |MONGO_URL=mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority
+       |""".stripMargin,
+      "test.env"
+    ).moreCode(
+      """
+                |import os
+                |
+                |mongourl = os.environ.get("MONGO_URL")""".stripMargin,
+      "code.py"
+    )
+
     "create a file node for the property file" in {
       val files = cpg.file.name.l
       files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
@@ -69,12 +52,12 @@ class GetEnvironmentTest extends PythonPropertiesFilePassTestBase(".env") {
   }
 }
 
-class ConnectionMethodResolution extends PythonPropertiesFilePassTestBase(".env") {
+class ConnectionMethodResolution extends PythonFrontendTestSuite {
 
   val mongo_url = "mongodb+srv://myuser:mypassword@mycluster.abc123.mongodb.net/mydatabase?retryWrites=true&w=majority"
-  override val configFileContents: String = ""
-  override val codeFileContents: String =
-    """
+  val cpg = code("", "config.env")
+    .moreCode(
+      """
       |import pymongo
       |import sqlalchemy
       |import pyscopg2
@@ -86,7 +69,9 @@ class ConnectionMethodResolution extends PythonPropertiesFilePassTestBase(".env"
       |
       |postgre_connection = pyscopg2.connect("postgresql://myuser:mypassword@10.0.0.1:5432/mydatabase")
       |
-      |odbc_connection = pyodbc.connect("postgresql://myuser:mypassword@10.0.0.1:5432/mydatabase")""".stripMargin
+      |odbc_connection = pyodbc.connect("postgresql://myuser:mypassword@10.0.0.1:5432/mydatabase")""".stripMargin,
+      "code.py"
+    )
 
   "create a `property` node for each property" in {
     val properties = cpg.property.map(x => (x.name, x.value)).toList
@@ -99,16 +84,17 @@ class ConnectionMethodResolution extends PythonPropertiesFilePassTestBase(".env"
   }
 }
 
-class DBConfigImplementationTests extends PythonPropertiesFilePassTestBase(".env") {
-  override val configFileContents: String =
+class DBConfigImplementationTests extends PythonFrontendTestSuite {
+  val cpg = code(
     """
       |POSTGRES_DB=finance
       |POSTGRES_USER=postgres
       |POSTGRES_PASSWORD=password
       |POSTGRES_HOSTNAME=db
       |POSTGRES_PORT=5432
-      |""".stripMargin
-  override val codeFileContents: String =
+      |""".stripMargin,
+    "config.env"
+  ).moreCode(
     """
       |from functools import cached_property
       |from typing import Dict, List, Optional
@@ -224,7 +210,9 @@ class DBConfigImplementationTests extends PythonPropertiesFilePassTestBase(".env
       |
       |
       |configuration = Configuration.parse_obj(load("finance", key_separator="__"))
-      |launchdarkly = LDClient(configuration.launchdarkly.client_config())""".stripMargin
+      |launchdarkly = LDClient(configuration.launchdarkly.client_config())""".stripMargin,
+    "code.py"
+  )
 
   "ConfigFilePass" should {
     "create a file node for the property file" in {
@@ -254,21 +242,24 @@ class DBConfigImplementationTests extends PythonPropertiesFilePassTestBase(".env
 
 }
 
-class INIFileTest extends PythonPropertiesFilePassTestBase(".ini") {
-  override val configFileContents: String =
+class INIFileTest extends PythonFrontendTestSuite {
+  val cpg = code(
     """
       |[mysql]
       |host = localhost
       |user = user7
       |passwd = s$cret
-      |db = ydb""".stripMargin
-  override val codeFileContents: String =
+      |db = ydb""".stripMargin,
+    "test.ini"
+  ).moreCode(
     """
       |import configparser
       |
       |config = configparser.ConfigParser()
       |db_host = config['mysql']['host']
-      |""".stripMargin
+      |""".stripMargin,
+    "code.py"
+  )
 
   "create a file node for the property file" in {
     val files = cpg.file.name.l
@@ -286,52 +277,4 @@ class INIFileTest extends PythonPropertiesFilePassTestBase(".ini") {
     val List(filename: String) = cpg.property.file.name.dedup.l
     filename.endsWith("/test.ini") shouldBe true
   }
-
-}
-abstract class PythonPropertiesFilePassTestBase(fileExtension: String)
-    extends AnyWordSpec
-    with Matchers
-    with BeforeAndAfterAll {
-
-  var cpg: Cpg = _
-  val configFileContents: String
-  val codeFileContents: String
-  var inputDir: File   = _
-  var outputFile: File = _
-
-  override def beforeAll(): Unit = {
-    inputDir = File.newTemporaryDirectory()
-    (inputDir / s"test$fileExtension").write(configFileContents)
-
-    (inputDir / "unrelated.file").write("foo")
-    outputFile = File.newTemporaryFile()
-
-    (inputDir / "GeneralConfig.py").write(codeFileContents)
-    val pythonConfig = Py2CpgOnFileSystemConfig()
-      .withInputPath(inputDir.pathAsString)
-      .withOutputPath(outputFile.pathAsString)
-    cpg = new Py2CpgOnFileSystem().createCpg(pythonConfig).get
-
-    // Apply default overlays
-    X2Cpg.applyDefaultOverlays(cpg)
-    new ImportsPass(cpg).createAndApply()
-    new PythonTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
-    new PythonTypeHintCallLinker(cpg).createAndApply()
-    new NaiveCallLinker(cpg).createAndApply()
-
-    // Apply OSS Dataflow overlay
-    new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
-
-    new PropertyParserPass(cpg, inputDir.toString(), new RuleCache, Language.PYTHON).createAndApply()
-    new PythonPropertyLinkerPass(cpg).createAndApply()
-    super.beforeAll()
-  }
-
-  override def afterAll(): Unit = {
-    inputDir.delete()
-    cpg.close()
-    outputFile.delete()
-    super.afterAll()
-  }
-
 }
