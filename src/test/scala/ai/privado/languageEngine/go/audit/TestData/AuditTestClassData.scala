@@ -40,4 +40,28 @@ object AuditTestClassData {
         |	return a.houseNo;
         |}
         |""".stripMargin
+
+  val userCreation: String =
+    """
+      |package UserTableCreation
+      |
+      |import "database/sql"
+      |
+      |func createUserTable(db *sql.DB) error {
+      |	createUserProfile := `CREATE TABLE IF NOT EXISTS user (
+      |		tb_firstName VARCHAR(32) NOT NULL,
+      |		tb_lastName VARCHAR(32) NOT NULL,
+      |		tb_emailId VARCHAR(64) NOT NULL,
+      |		tb_password VARCHAR(6) NOT NULL,
+      |		PRIMARY KEY (emailId)
+      |	);`
+      |	_, err := db.Exec(createUserProfile)
+      |	return err
+      |}
+      |
+      |func main() {
+      |	//
+      |}
+      |
+      |""".stripMargin
 }
