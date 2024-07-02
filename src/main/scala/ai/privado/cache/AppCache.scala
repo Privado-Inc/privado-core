@@ -27,7 +27,7 @@ import ai.privado.utility.Utilities.*
 
 import java.util.regex.PatternSyntaxException
 import scala.collection.mutable
-import scala.util.matching.Regex
+import java.util.regex.*
 
 /** Cache Used to store Application/Scan specific information
   */
@@ -54,7 +54,6 @@ class AppCache(
     this.excludeFileRegex = isValidRegex(excludeFileRegex) match
       case true => Option(excludeFileRegex)
       case false =>
-        println(s"The entered exclusion regex is invalid: $excludeFileRegex")
         None
 
   }
@@ -65,10 +64,12 @@ class AppCache(
     */
   private def isValidRegex(regex: String) = {
     try {
-      new Regex(regex)
+      Pattern.compile(regex)
       true
     } catch {
-      case _: PatternSyntaxException => false
+      case e: PatternSyntaxException =>
+        println(s"The entered exclusion regex is invalid: $regex with exception : ${e.getMessage}")
+        false
     }
   }
 }
