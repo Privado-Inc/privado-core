@@ -22,13 +22,19 @@
  */
 package ai.privado.languageEngine.php.tagger.source
 
-import ai.privado.languageEngine.php.PhpTestBase
+import ai.privado.cache.RuleCache
 import ai.privado.model.*
+import ai.privado.rule.RuleInfoTestData
+import ai.privado.testfixtures.PhpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class IdentifierTaggingTest extends PhpTestBase {
+class IdentifierTaggingTest extends PhpFrontendTestSuite {
+  val configAndRules: ConfigAndRules = ConfigAndRules(sources = RuleInfoTestData.sourceRule)
+  val ruleCache: RuleCache           = new RuleCache().setRule(configAndRules)
+
   "Tagging derived sources" should {
-    val (cpg, _) = code("""
+    val cpg = code(
+      """
         |<?php
         |
         |  class User {
@@ -51,7 +57,10 @@ class IdentifierTaggingTest extends PhpTestBase {
         |  echo $user->firstName;
         |?>
         |
-        |""".stripMargin)
+        |""".stripMargin,
+      "Test.php"
+    )
+      .withRuleCache(ruleCache)
 
     "tag member in a structure" in {
       cpg.member("firstName").tag.nameExact(Constants.id).value.l shouldBe List("Data.Sensitive.FirstName")

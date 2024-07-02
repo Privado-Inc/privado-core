@@ -22,14 +22,19 @@
  */
 package ai.privado.languageEngine.php.tagger.source
 
-import ai.privado.languageEngine.php.PhpTestBase
+import ai.privado.cache.RuleCache
 import ai.privado.model.*
+import ai.privado.rule.RuleInfoTestData
+import ai.privado.testfixtures.PhpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class LiteralTaggingTests extends PhpTestBase {
+class LiteralTaggingTests extends PhpFrontendTestSuite {
+  val configAndRules: ConfigAndRules = ConfigAndRules(sources = RuleInfoTestData.sourceRule)
+  val ruleCache: RuleCache           = new RuleCache().setRule(configAndRules)
+
   "Literals in code" should {
-    "be tagged as part of LiteralTagger" in {
-      val (cpg, _) = code("""
+    val cpg = code(
+      """
           |<?php
           |class Person {
           |  function initialize() {
@@ -40,8 +45,11 @@ class LiteralTaggingTests extends PhpTestBase {
           |  }
           |}
           |?>
-          |""".stripMargin)
+          |""".stripMargin,
+      "Test.php"
+    )
 
+    "be tagged as part of LiteralTagger" in {
       val literals = cpg.literal.l
       literals.last.code shouldBe "\"phone\""
       literals.last.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)
