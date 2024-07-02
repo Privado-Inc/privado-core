@@ -21,6 +21,7 @@ import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUt
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.pysrc2cpg.*
+import io.joern.x2cpg.frontendspecific.pysrc2cpg.*
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker

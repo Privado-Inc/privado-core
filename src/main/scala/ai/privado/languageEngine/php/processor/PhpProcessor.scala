@@ -36,6 +36,7 @@ import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
 import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
+import io.joern.x2cpg.frontendspecific.php2cpg
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, newEmptyCpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
@@ -82,7 +83,7 @@ class PhpProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
-    Php2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    php2cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
