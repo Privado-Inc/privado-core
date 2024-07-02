@@ -8,7 +8,7 @@ ThisBuild / version      := sys.env.getOrElse("BUILD_VERSION", "dev-SNAPSHOT")
 // parsed by project/Versions.scala, updated by updateDependencies.sh
 
 val cpgVersion        = "0.1.6"
-val joernVersion      = "0.1.13"
+val joernVersion      = "0.1.14"
 val overflowdbVersion = "0.1.5"
 val requests          = "0.8.0"
 val upickle           = "3.1.2"
@@ -27,24 +27,24 @@ lazy val schemaExtender = Projects.schemaExtender
 
 dependsOn(domainClasses)
 libraryDependencies ++= Seq(
-  "com.github.pathikrit" %% "better-files"  % "3.9.2",
-  "com.github.scopt"     %% "scopt"         % "4.1.0",
-  "io.joern"             %% "x2cpg"         % Versions.joern,
-  "io.joern"             %% "x2cpg"         % Versions.joern % Test classifier "tests",
-  "io.joern"             %% "javasrc2cpg"   % Versions.joern,
-  "io.joern"             %% "pysrc2cpg"     % Versions.joern,
-  "io.joern"             %% "pysrc2cpg"     % Versions.joern % Test classifier "tests",
-  "io.joern"             %% "rubysrc2cpg"   % Versions.joern,
-  "io.joern"             %% "kotlin2cpg"    % Versions.joern exclude ("com.squareup.okhttp3", "okhttp") exclude("com.squareup.okio", "okio"),
-  "io.joern"             %% "gosrc2cpg"     % Versions.joern,
-  "io.joern"             %% "csharpsrc2cpg" % Versions.joern,
-  "io.joern"             %% "joern-cli"     % Versions.joern exclude ("io.undertow", "undertow-core"),
-  "io.joern"             %% "semanticcpg"   % Versions.joern,
-  "io.joern"             %% "semanticcpg"   % Versions.joern % Test classifier "tests",
-  "org.scalatest"        %% "scalatest"     % "3.2.16"       % Test,
-  "io.circe"             %% "circe-core"    % circeGenericVersion,
-  "io.circe"             %% "circe-generic" % circeGenericVersion,
-  "io.circe"             %% "circe-parser"  % circeGenericVersion,
+  "com.github.pathikrit" %% "better-files" % "3.9.2",
+  "com.github.scopt"     %% "scopt"        % "4.1.0",
+  "io.joern"             %% "x2cpg"        % Versions.joern,
+  "io.joern"             %% "x2cpg"        % Versions.joern % Test classifier "tests",
+  "io.joern"             %% "javasrc2cpg"  % Versions.joern,
+  "io.joern"             %% "pysrc2cpg"    % Versions.joern,
+  "io.joern"             %% "pysrc2cpg"    % Versions.joern % Test classifier "tests",
+  "io.joern"             %% "rubysrc2cpg"  % Versions.joern,
+  "io.joern" %% "kotlin2cpg" % Versions.joern exclude ("com.squareup.okhttp3", "okhttp") exclude ("com.squareup.okio", "okio"),
+  "io.joern"      %% "gosrc2cpg"     % Versions.joern,
+  "io.joern"      %% "csharpsrc2cpg" % Versions.joern,
+  "io.joern"      %% "joern-cli"     % Versions.joern exclude ("io.undertow", "undertow-core"),
+  "io.joern"      %% "semanticcpg"   % Versions.joern,
+  "io.joern"      %% "semanticcpg"   % Versions.joern % Test classifier "tests",
+  "org.scalatest" %% "scalatest"     % "3.2.16"       % Test,
+  "io.circe"      %% "circe-core"    % circeGenericVersion,
+  "io.circe"      %% "circe-generic" % circeGenericVersion,
+  "io.circe"      %% "circe-parser"  % circeGenericVersion,
   // NOTE: circe-yaml currently only goes until 0.14.2 (Last checked 06/07/2023)
   "io.circe"                     %% "circe-yaml"                 % circeYamlVersion exclude ("org.yaml", "snakeyaml"),
   "com.lihaoyi"                  %% "upickle"                    % Versions.upickle,
@@ -75,7 +75,7 @@ libraryDependencies ++= Seq(
   "io.undertow"            % "undertow-core"   % "2.3.14.Final" exclude ("org.jboss.xnio", "xnio-api"),
   "org.jboss.xnio"         % "xnio-api"        % "3.8.14.Final",
   "com.squareup.okhttp3"   % "okhttp"          % "4.9.2",
-  "com.squareup.okio"   % "okio"          % "3.4.0",
+  "com.squareup.okio"      % "okio"            % "3.4.0",
   scalaOrganization.value %% "scala3-compiler" % scalaVersion.value
 )
 
