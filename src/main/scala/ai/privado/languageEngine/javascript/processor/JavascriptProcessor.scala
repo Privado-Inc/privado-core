@@ -39,7 +39,10 @@ import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import better.files.File
+import io.joern.x2cpg.X2CpgConfig
+import io.joern.x2cpg.frontendspecific.jssrc2cpg
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
+import io.joern.x2cpg.passes.frontend.{XTypeRecoveryConfig, TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
@@ -112,7 +115,9 @@ class JavascriptProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
-    JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    // TODO: When type recovery config is implemented, we take it from Config
+    val typeRecoveryConfig = XTypeRecoveryConfig();
+    jssrc2cpg.postProcessingPasses(cpg, typeRecoveryConfig).foreach(_.createAndApply())
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
