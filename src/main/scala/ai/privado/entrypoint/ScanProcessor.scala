@@ -270,7 +270,7 @@ object ScanProcessor extends CommandProcessor {
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head, lang)
     }
-    if (appCache.excludeFileRegex.isDefined) {
+    if (appCache.excludeFileRegex.isDefined && appCache.excludeFileRegex.get.nonEmpty) {
       val excludeFileRegexRule = RuleInfo(
         "PrivadoInput.Exclusion",
         "Command Line Exclusion Rule",
