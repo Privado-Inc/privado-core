@@ -22,16 +22,11 @@
  */
 package ai.privado.languageEngine.php.tagger.source
 
-import ai.privado.cache.RuleCache
 import ai.privado.model.*
-import ai.privado.rule.RuleInfoTestData
 import ai.privado.testfixtures.PhpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
 class FieldIdentifierTaggingTests extends PhpFrontendTestSuite {
-  val configAndRules: ConfigAndRules = ConfigAndRules(sources = RuleInfoTestData.sourceRule)
-  val ruleCache: RuleCache           = new RuleCache().setRule(configAndRules)
-
   "Field access in code" should {
     val cpg = code(
       """
@@ -52,7 +47,6 @@ class FieldIdentifierTaggingTests extends PhpFrontendTestSuite {
           |""".stripMargin,
       "Test.php"
     )
-      .withRuleCache(ruleCache)
 
     "be tagged as part of identifier tagger" in {
       val List(firstNameField) = cpg.fieldAccess.l
