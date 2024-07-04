@@ -23,9 +23,11 @@
 package ai.privado.cache
 import ai.privado.model.Language
 import ai.privado.model.Language.Language
-import ai.privado.utility.Utilities._
+import ai.privado.utility.Utilities.*
 
+import java.util.regex.PatternSyntaxException
 import scala.collection.mutable
+import java.util.regex.*
 
 /** Cache Used to store Application/Scan specific information
   */
@@ -41,12 +43,33 @@ class AppCache(
   var totalFlowAfterThisFiltering: Int = 0,
   var fpMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int](),
   var totalMap: mutable.HashMap[String, Int] = mutable.HashMap[String, Int](),
-  var ingressUrls: mutable.ListBuffer[String] = mutable.ListBuffer[String]()
+  var ingressUrls: mutable.ListBuffer[String] = mutable.ListBuffer[String](),
+  var excludeFileRegex: Option[String] = None
 ) {
 
-  def init(path: String): Unit = {
+  def init(path: String, excludeFileRegex: String = ""): Unit = {
     this.scanPath = path.stripSuffix("/")      // Scan Path of the repo on the host machine
     this.localScanPath = getRepoScanPath(path) // scan path perceived by the binary (can be different inside docker)
     this.repoName = this.localScanPath.split("[/\\\\]").lastOption.getOrElse("")
+    this.excludeFileRegex = isValidRegex(excludeFileRegex) match
+      case true => Option(excludeFileRegex)
+      case false =>
+        None
+
+  }
+
+  /** Checks if the regex string is a valid one
+    * @param regex
+    * @return
+    */
+  private def isValidRegex(regex: String) = {
+    try {
+      Pattern.compile(regex)
+      true
+    } catch {
+      case e: PatternSyntaxException =>
+        println(s"The entered exclusion regex is invalid: $regex with exception : ${e.getMessage}")
+        false
+    }
   }
 }
