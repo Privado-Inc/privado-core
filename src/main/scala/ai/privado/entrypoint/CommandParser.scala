@@ -66,7 +66,8 @@ case class PrivadoInput(
   forceLanguage: Language.Language = Language.UNKNOWN,
   threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
   threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
-  rubyParserTimeout: Long = 120
+  rubyParserTimeout: Long = 120,
+  excludeFileRegex: String = ""
 )
 
 object CommandConstants {
@@ -133,6 +134,8 @@ object CommandConstants {
   val THREAD_DUMP_AVG_CPU_LIMIT_ABBR               = "tdacl"
   val RUBY_PARSER_TIMEOUT                          = "ruby-parser-timeout"
   val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
+  val EXCLUDE_FILE_REGEX                           = "exclude-file-regex"
+  val EXCLUDE_FILE_REGEX_ABBR                      = "efr"
 }
 
 object CommandParser {
@@ -317,6 +320,11 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(rubyParserTimeout = x))
               .text("Ruby Parser Timeout in seconds. By default set to 2 mins i.e. 120 seconds"),
+            opt[String](CommandConstants.EXCLUDE_FILE_REGEX)
+              .abbr(CommandConstants.EXCLUDE_FILE_REGEX_ABBR)
+              .optional()
+              .action((x, c) => c.copy(excludeFileRegex = x))
+              .text("Exclude files regex, which can be used to exclude files while processing"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

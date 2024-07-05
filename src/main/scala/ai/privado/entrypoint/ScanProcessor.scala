@@ -293,6 +293,18 @@ object ScanProcessor extends CommandProcessor {
     if (config.externalConfigPath.nonEmpty) {
       externalConfigAndRules = parseRules(config.externalConfigPath.head, lang, isExternal = true)
     }
+    if (appCache.excludeFileRegex.isDefined && appCache.excludeFileRegex.get.nonEmpty) {
+      val excludeFileRegexRule = RuleInfo(
+        "PrivadoInput.Exclusion",
+        "Command Line Exclusion Rule",
+        "",
+        FilterProperty.CODE,
+        Array.empty,
+        List(appCache.excludeFileRegex.get)
+      )
+      externalConfigAndRules =
+        externalConfigAndRules.copy(exclusions = externalConfigAndRules.exclusions.appended(excludeFileRegexRule))
+    }
     /*
      * NOTE: We want to override the external rules over internal in case of duplicates by id.
      * While concatenating two lists (internal and external) and get the distinct list of elements.
@@ -394,8 +406,9 @@ object ScanProcessor extends CommandProcessor {
 
   private def processCpg(appCache: AppCache): Either[String, Unit] = {
     val sourceRepoLocation = File(config.sourceLocation.head).path.toAbsolutePath.toString.stripSuffix("/")
+    val excludeFileRegex   = config.excludeFileRegex
     // Setting up the application cache
-    appCache.init(sourceRepoLocation)
+    appCache.init(sourceRepoLocation, excludeFileRegex = excludeFileRegex)
     statsRecorder.initiateNewStage("Language detection")
     val languageDetected = if (config.forceLanguage == UNKNOWN) {
       val langDect = Try(guessLanguage(sourceRepoLocation))
