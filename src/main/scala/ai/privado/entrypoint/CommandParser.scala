@@ -67,7 +67,8 @@ case class PrivadoInput(
   threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
   threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
   rubyParserTimeout: Long = 120,
-  excludeFileRegex: String = ""
+  excludeFileRegex: String = "",
+  extensionsForPhp: String = ""
 )
 
 object CommandConstants {
@@ -136,6 +137,8 @@ object CommandConstants {
   val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
   val EXCLUDE_FILE_REGEX                           = "exclude-file-regex"
   val EXCLUDE_FILE_REGEX_ABBR                      = "efr"
+  val EXTENSIONS_FOR_PHP                           = "extensions-for-php"
+  val EXTENSIONS_FOR_PHP_ABBR                      = "exphp"
 }
 
 object CommandParser {
@@ -325,6 +328,13 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(excludeFileRegex = x))
               .text("Exclude files regex, which can be used to exclude files while processing"),
+            opt[String](CommandConstants.EXTENSIONS_FOR_PHP)
+              .abbr(CommandConstants.EXTENSIONS_FOR_PHP_ABBR)
+              .optional()
+              .action((x, c) => c.copy(extensionsForPhp = x))
+              .text(
+                "File extensions that are considered valid for PHP scanner. Eg \".php,.cls,.ent\" Default is \".php\""
+              ),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
