@@ -32,7 +32,8 @@ import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.model.*
 import ai.privado.passes.SQLParser
-import ai.privado.tagger.source.SqlQueryTagger
+import ai.privado.rule.DEDRuleTestData
+import ai.privado.tagger.source.{DEDTagger, SqlQueryTagger}
 import ai.privado.threatEngine.ThreatEngineExecutor
 import ai.privado.utility.StatsRecorder
 import better.files.File
@@ -97,6 +98,23 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
       FilterProperty.METHOD_FULL_NAME,
       Array(),
       List("(?i).*dob.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SOURCES,
+      "",
+      Language.UNKNOWN,
+      Array()
+    ),
+    RuleInfo(
+      "Data.Sensitive.AccountData.AccountPassword",
+      "AccountPassword",
+      "",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List("(?i).*password.*"),
       false,
       "",
       Map(),
@@ -309,7 +327,20 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
   )
 
   val configAndRules: ConfigAndRules =
-    ConfigAndRules(sourceRule, sinkRule, List(), List(), List(), List(), List(), List(), systemConfig, List())
+    ConfigAndRules(
+      sourceRule,
+      sinkRule,
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      List(),
+      systemConfig,
+      List(),
+      List(),
+      List(DEDRuleTestData.dedRuleTestGolang)
+    )
 
   val taggerCache = new TaggerCache()
 
@@ -347,6 +378,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     new SQLQueryParser(cpg).createAndApply()
     new SQLParser(cpg, inputDir.pathAsString, ruleCache).createAndApply()
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
+    new DEDTagger(cpg, ruleCache).createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
     new GoAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
     new Dataflow(cpg, StatsRecorder()).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache = appCache)
