@@ -144,7 +144,6 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   private def matchingLiteralsInGetPropertyCalls(propertyName: String): List[Literal] = cpg.literal
     .codeExact("\"" + propertyName + "\"")
-    .filter(_.inCall.name(".*getProperty").nonEmpty)
     .toList
 
 }
