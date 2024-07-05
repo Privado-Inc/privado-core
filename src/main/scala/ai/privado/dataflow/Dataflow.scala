@@ -43,8 +43,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, H
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
+import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTaggingDisabled
 
-import java.util.Calendar
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
 
@@ -228,13 +228,17 @@ object Dataflow {
         .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))
     }
 
-    cpg.literal
-      .where(filterSources)
-      .l ++ cpg.identifier
-      .where(filterSources)
-      .l ++ cpg.call
-      .where(filterSources)
-      .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
+    val sources: List[AstNode] =
+      cpg.literal
+        .where(filterSources)
+        .l ++ cpg.identifier
+        .where(filterSources)
+        .l ++ cpg.call
+        .where(filterSources)
+        .l ++ cpg.argument.isFieldIdentifier.where(filterSources).l ++ cpg.member.where(filterSources).l
+
+    // Remove TAGGING_DISABLED_BY_DED sources from list
+    getFilteredSourcesByTaggingDisabled(sources)
   }
 
   def getSinks(cpg: Cpg): List[CfgNode] = {

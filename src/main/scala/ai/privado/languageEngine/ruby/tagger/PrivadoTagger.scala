@@ -42,7 +42,7 @@ import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.languageEngine.ruby.tagger.schema.{RubyMongoSchemaMapper, RubyMongoSchemaTagger}
 import ai.privado.languageEngine.ruby.tagger.sink.{APITagger, InheritMethodTagger, LeakageTagger, RegularSinkTagger}
 import ai.privado.tagger.PrivadoBaseTagger
-import ai.privado.tagger.source.{LiteralTagger, SqlQueryTagger}
+import ai.privado.tagger.source.{DEDTagger, LiteralTagger, SqlQueryTagger}
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -65,6 +65,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     statsRecorder: StatsRecorder
   ): Traversal[Tag] = {
     logger.info("Starting tagging")
+    new DEDTagger(cpg, ruleCache).createAndApply()
     new LiteralTagger(cpg, ruleCache).createAndApply()
     new RubyLiteralTagger(cpg, ruleCache).createAndApply()
     new RubyLiteralDerivedTagger(cpg, ruleCache).createAndApply()

@@ -91,12 +91,11 @@ class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
         if (!methodNameMap.contains(row.head)) methodNameMap.put(row.head, row(9))
       })
 
-      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "10", "FieldIdentifier")
-      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "9", "Identifier")
-      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "7", "FieldIdentifier")
-      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "9", "Identifier")
-      memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "7", "FieldIdentifier")
-      memberLineNumberAndTypeMapping("hNo") shouldBe (/* line number */ "6", "Identifier")
+      memberLineNumberAndTypeMapping("firstName") shouldBe (/* line number */ "4", "Member")
+      memberLineNumberAndTypeMapping("accountNo") shouldBe (/* line number */ "4", "Member")
+      memberLineNumberAndTypeMapping("fName") shouldBe (/* line number */ "3", "Method Parameter")
+      memberLineNumberAndTypeMapping("houseNo") shouldBe (/* line number */ "4", "Member")
+      memberLineNumberAndTypeMapping("hNo") shouldBe (/* line number */ "6", "Method Parameter")
       memberLineNumberAndTypeMapping.contains("nonExistentField") shouldBe false
 
       // Validate class name in result

@@ -38,8 +38,8 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.{Language, UNKNOWN}
 import ai.privado.rulevalidator.YamlFileValidator
+import ai.privado.utility.Utilities.{isValidRule, isValidDEDRule}
 import ai.privado.utility.StatsRecorder
-import ai.privado.utility.Utilities.isValidRule
 import better.files.File
 import io.circe.Json
 import io.circe.yaml.parser
@@ -68,10 +68,12 @@ object ScanProcessor extends CommandProcessor {
       List[Semantic](),
       List[RuleInfo](),
       List[SystemConfig](),
-      List[RuleInfo]()
+      List[RuleInfo](),
+      List[RuleInfo](),
+      List[DEDRuleInfo]()
     )
 
-  def parseRules(rulesPath: String, lang: Set[Language]): ConfigAndRules = {
+  def parseRules(rulesPath: String, lang: Set[Language], isExternal: Boolean = false): ConfigAndRules = {
     logger.trace(s"parsing rules from -> '$rulesPath'")
     val ir: File = {
       // e.g. rulesPath = /home/pandurang/projects/rules-home/
@@ -85,6 +87,8 @@ object ScanProcessor extends CommandProcessor {
     }
 
     def filterByLang(rule: RuleInfo): Boolean =
+      lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
+    def filterDEDByLang(rule: DEDRuleInfo): Boolean =
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
     def filterSemanticByLang(rule: Semantic): Boolean =
       lang.contains(rule.language) || rule.language == Language.DEFAULT || rule.language == Language.UNKNOWN
@@ -128,7 +132,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
-                            nodeType = NodeType.REGULAR
+                            nodeType = NodeType.REGULAR,
+                            isExternal = isExternal
                           )
                         )
                         .filter(filterByLang),
@@ -141,7 +146,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
-                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3)),
+                            isExternal = isExternal
                           )
                         )
                         .filter(filterByLang),
@@ -153,7 +159,8 @@ object ScanProcessor extends CommandProcessor {
                             catLevelOne = CatLevelOne.withNameWithDefault(pathTree.apply(1)),
                             catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
-                            nodeType = NodeType.REGULAR
+                            nodeType = NodeType.REGULAR,
+                            isExternal = isExternal
                           )
                         )
                         .filter(filterByLang),
@@ -204,10 +211,25 @@ object ScanProcessor extends CommandProcessor {
                             catLevelTwo = pathTree.apply(2),
                             categoryTree = pathTree,
                             language = Language.withNameWithDefault(pathTree.last),
-                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3))
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(3)),
+                            isExternal = isExternal
                           )
                         )
-                        .filter(filterByLang)
+                        .filter(filterByLang),
+                      dedRules = configAndRules.dedRules
+                        .filter(rule => isValidDEDRule(rule))
+                        .map(x =>
+                          x.copy(
+                            file = fullPath,
+                            catLevelOne = CatLevelOne.DED,
+                            catLevelTwo = pathTree.apply(1),
+                            categoryTree = pathTree,
+                            language = Language.withNameWithDefault(pathTree.last),
+                            nodeType = NodeType.withNameWithDefault(pathTree.apply(2)),
+                            isExternal = isExternal
+                          )
+                        )
+                        .filter(filterDEDByLang)
                     )
                   case Left(error) =>
                     logger.error("Error while parsing this file -> '" + fullPath)
@@ -232,12 +254,13 @@ object ScanProcessor extends CommandProcessor {
               sinkSkipList = a.sinkSkipList ++ b.sinkSkipList,
               systemConfig = a.systemConfig ++ b.systemConfig,
               auditConfig = a.auditConfig ++ b.auditConfig,
-              inferences = a.inferences ++ b.inferences
+              inferences = a.inferences ++ b.inferences,
+              dedRules = a.dedRules ++ b.dedRules
             )
           )
       catch {
         case ex: Throwable =>
-          logger.debug("File error: ", ex)
+          logger.error("File error: ", ex)
           logger.error(s"Rules path $rulesPath is not accessible")
           exit(1)
       }
@@ -268,7 +291,7 @@ object ScanProcessor extends CommandProcessor {
     }
     var externalConfigAndRules = getEmptyConfigAndRule
     if (config.externalConfigPath.nonEmpty) {
-      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang)
+      externalConfigAndRules = parseRules(config.externalConfigPath.head, lang, isExternal = true)
     }
     if (appCache.excludeFileRegex.isDefined && appCache.excludeFileRegex.get.nonEmpty) {
       val excludeFileRegexRule = RuleInfo(
@@ -304,6 +327,7 @@ object ScanProcessor extends CommandProcessor {
     val systemConfig = externalConfigAndRules.systemConfig ++ internalConfigAndRules.systemConfig
     val auditConfig  = externalConfigAndRules.auditConfig ++ internalConfigAndRules.auditConfig
     val inferences   = externalConfigAndRules.inferences ++ internalConfigAndRules.inferences
+    val dedRules     = externalConfigAndRules.dedRules ++ internalConfigAndRules.dedRules
     val mergedRules =
       ConfigAndRules(
         sources = mergePatterns(sources),
@@ -316,7 +340,8 @@ object ScanProcessor extends CommandProcessor {
         sinkSkipList = sinkSkipList.distinctBy(_.id),
         systemConfig = systemConfig,
         auditConfig = auditConfig.distinctBy(_.id),
-        inferences = mergePatterns(inferences)
+        inferences = mergePatterns(inferences),
+        dedRules = dedRules
       )
     logger.trace(mergedRules.toString)
     statsRecorder.justLogMessage(s"- Configuration parsed...")
@@ -331,7 +356,8 @@ object ScanProcessor extends CommandProcessor {
           mergedRules.policies.size +
           mergedRules.exclusions.size +
           mergedRules.auditConfig.size +
-          mergedRules.inferences.size
+          mergedRules.inferences.size +
+          mergedRules.dedRules.size
       )
     }
     statsRecorder.endLastStage()

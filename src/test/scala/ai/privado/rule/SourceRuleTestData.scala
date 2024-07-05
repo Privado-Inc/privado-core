@@ -145,4 +145,24 @@ object SourceRuleTestData {
     Language.UNKNOWN,
     Array()
   )
+
+  val externalEmailSourceRule = RuleInfo(
+    "Data.Sensitive.ContactData.EmailAddress",
+    "EmailAddress",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List("(?i).*email.*"),
+    true,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SOURCES,
+    "",
+    Language.UNKNOWN,
+    Array(),
+    false,
+    true
+  )
 }
