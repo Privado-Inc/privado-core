@@ -153,8 +153,9 @@ ENV PATH $GOPATH/bin:$PATH
 
 RUN export BUILD_VERSION=$JAR_VERSION && sbt universal:packageBin
 
-FROM alpine:latest
+FROM alpine:3.16
 RUN apk add --no-cache bash
+RUN apk update && apk add busybox --upgrade
 #The SHELL instruction allows the default shell used for the shell form of commands to be overridden
 SHELL [ "/bin/bash", "-c" ]
 WORKDIR /home
@@ -163,4 +164,5 @@ COPY --from=build /home/privado-core/target/universal/privado-core*.zip /home/pr
 COPY --from=build /home/privado-core/target/universal/stage/bin /home/privado-core-build/
 COPY --from=build /home/privado-core/log4j2.xml /home/privado-core-build/
 RUN echo $VERSION >> /home/privado-core-build/version.txt
+RUN apk del bash
 
