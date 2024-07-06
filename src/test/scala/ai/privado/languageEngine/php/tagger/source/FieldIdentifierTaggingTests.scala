@@ -22,14 +22,14 @@
  */
 package ai.privado.languageEngine.php.tagger.source
 
-import ai.privado.languageEngine.php.PhpTestBase
 import ai.privado.model.*
+import ai.privado.testfixtures.PhpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class FieldIdentifierTaggingTests extends PhpTestBase {
+class FieldIdentifierTaggingTests extends PhpFrontendTestSuite {
   "Field access in code" should {
-    "be tagged as part of identifier tagger" in {
-      val (cpg, _) = code("""
+    val cpg = code(
+      """
           |<?php
           |class Person {
           |  public $firstName;
@@ -44,8 +44,11 @@ class FieldIdentifierTaggingTests extends PhpTestBase {
           |  }
           |}
           |?>
-          |""".stripMargin)
+          |""".stripMargin,
+      "Test.php"
+    )
 
+    "be tagged as part of identifier tagger" in {
       val List(firstNameField) = cpg.fieldAccess.l
       firstNameField.code shouldBe "$this->firstName"
       firstNameField.tag.nameExact(Constants.catLevelOne).value.l shouldBe List(CatLevelOne.SOURCES.name)

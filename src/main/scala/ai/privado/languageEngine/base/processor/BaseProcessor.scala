@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.base.processor
 
-import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
+import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery, DependencyReport}
 import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
@@ -22,11 +22,13 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.javasrc2cpg.Config
 import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.Calendar
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 abstract class BaseProcessor(
@@ -153,6 +155,10 @@ abstract class BaseProcessor(
 
     val errorMsgs = ListBuffer[String]()
     reportUnresolvedMethods(cpg, lang)
+    dedSourceReportExport(cpg, statsRecorder) match
+      case Left(err) => errorMsgs.addOne(err)
+      case Right(_)  =>
+
     auditReportExport(cpg, taggerCache) match
       case Left(err) => errorMsgs.addOne(err)
       case Right(_)  =>
@@ -211,12 +217,15 @@ abstract class BaseProcessor(
   protected def auditReportExport(cpg: Cpg, taggerCache: TaggerCache): Either[String, Unit] = {
     // Exporting the Audit report
     if (privadoInput.generateAuditReport) {
-      val moduleCache: ModuleCache = new ModuleCache()
-      new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
-      new DependenciesNodePass(cpg, moduleCache).createAndApply()
-      // Fetch all dependency after pass
-      val dependencies = DependencyReport.getDependencyList(Success(cpg))
-      new DependenciesCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
+      var dependencies = Set[ModuleDependency]()
+      if (lang == Language.JAVA || lang == Language.KOTLIN) {
+        val moduleCache: ModuleCache = new ModuleCache()
+        new ModuleFilePass(cpg, sourceRepoLocation, moduleCache, ruleCache).createAndApply()
+        new DependenciesNodePass(cpg, moduleCache).createAndApply()
+        // Fetch all dependency after pass
+        dependencies = DependencyReport.getDependencyList(Success(cpg))
+        new DependenciesCategoryPass(cpg, ruleCache, dependencies.toList).createAndApply()
+      }
       ExcelExporter.auditExport(
         outputAuditFileName,
         AuditReportEntryPoint
@@ -234,6 +243,22 @@ abstract class BaseProcessor(
       }
     } else Right(())
 
+  }
+
+  protected def dedSourceReportExport(cpg: Cpg, statsRecorder: StatsRecorder): Either[String, Unit] = {
+    // Exporting the DED Sources report
+    if (privadoInput.dedSourceReport) {
+      DEDSourceDiscovery.generateReport(Success(cpg), sourceRepoLocation, statsRecorder, lang) match {
+        case Left(err) =>
+          MetricHandler.otherErrorsOrWarnings.addOne(err)
+          Left(err)
+        case Right(_) =>
+          statsRecorder.justLogMessage(
+            s"Successfully exported DED Source report to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+          )
+          Right(())
+      }
+    } else Right(())
   }
 
   protected def unresolvedReportExport(cpg: Cpg): Either[String, Unit] = {
@@ -279,8 +304,13 @@ abstract class BaseProcessor(
   protected def reportUnresolvedMethods(cpg: Cpg, lang: Language): Unit = {
     // Unresolved function report
     if (privadoInput.showUnresolvedFunctionsReport) {
-      val path = s"${privadoInput.sourceLocation.head}/$outputDirectoryName"
-      UnresolvedReportUtility.reportUnresolvedMethods(Success(cpg), path, lang)
+      try {
+        val path = s"${privadoInput.sourceLocation.head}/$outputDirectoryName"
+        UnresolvedReportUtility.reportUnresolvedMethods(Success(cpg), path, lang)
+      } catch {
+        case ex: Exception =>
+          logger.debug(f"Failed to unresolved methods report: ${ex}")
+      }
     }
   }
 
