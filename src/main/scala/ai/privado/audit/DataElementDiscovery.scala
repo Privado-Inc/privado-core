@@ -159,14 +159,14 @@ object DataElementDiscoveryUtils {
       sqlNodes.foreach { sqlNode =>
         val tableName = sqlNode.code
         val shouldFilterNode = tableName.length <= 2
-          || filterCommonVarsStartsWithArr.exists(commonVar => tableName.startsWith(commonVar))
-          || tableName.matches(filterCommonLangTypes)
-          || tableName.matches(filterCommonVars)
+          || DEDSourceDiscoveryUtils.filterCommonVarsStartsWithArr.exists(commonVar => tableName.startsWith(commonVar))
+          || tableName.matches(DEDSourceDiscoveryUtils.filterCommonLangTypes)
+          || tableName.matches(DEDSourceDiscoveryUtils.filterCommonVars)
 
         if (!shouldFilterNode) {
           val path       = sqlNode.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
           val lineNumber = sqlNode.lineNumber.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE).toString
-          val nodeUniqueId = DataElementDiscoveryUtils.nodeIdentifier(
+          val nodeUniqueId = DEDSourceDiscoveryUtils.nodeIdentifier(
             path,
             sqlNode.code,
             AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE,
@@ -544,7 +544,7 @@ object DataElementDiscoveryJava {
       }
 
       // Adding Identifiers
-      workbookResult = DataElementDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
+      workbookResult = DEDSourceDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
       DataElementDiscoveryUtils.appendSqlNodesToWorkbook(xtocpg, workbookResult)
 
       logger.info("Shutting down audit engine")
