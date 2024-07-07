@@ -55,6 +55,8 @@ object AuditReportConstants {
 
   val ELEMENT_DISCOVERY_NODE_TYPE_METHOD = "Method"
 
+  val ELEMENT_DISCOVERY_NODE_TYPE_TYPEDECL = "TypeDecl"
+
   val ELEMENT_DISCOVERY_NODE_TYPE_METHOD_PARAM = "Method Parameter"
 
   val ELEMENT_DISCOVERY_NODE_TYPE_IDENTIFIER = "Identifier"
@@ -132,6 +134,8 @@ object AuditReportConstants {
   val DEPENDENCY_UNRESOLVED_CODE_SNIPPET_NAME = "Code Snippet"
 
   val AUDIT_SOURCE_FILE_NAME = "audit-sources.json"
+
+  val DED_SOURCE_FILE_NAME = "ded-sources.json"
 
   // Not used for the time being
   val JS_ELEMENT_DISCOVERY_CLASS_INCLUDE_REGEX =

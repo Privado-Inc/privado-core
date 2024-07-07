@@ -82,7 +82,7 @@ trait LanguageFrontend {
     val privadoInput =
       this.privadoInput.getOrElse(PrivadoInput()).copy(sourceLocation = Set(sourceCodePath.getAbsolutePath))
     val appCache = this.appCache.getOrElse(AppCache())
-    appCache.init(sourceCodePath.getAbsolutePath)
+    appCache.init(sourceCodePath.getAbsolutePath, privadoInput.excludeFileRegex)
     appCache.repoLanguage = language
     val auditCache = this.auditCache.getOrElse(AuditCache())
     getLanguageProcessor(

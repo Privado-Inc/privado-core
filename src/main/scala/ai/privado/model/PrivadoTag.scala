@@ -51,6 +51,8 @@ object InternalTag extends Enumeration {
   val SENSITIVE_SETTER                         = Value("SENSITIVE_SETTER")
   val PROBABLE_ASSET                           = Value("PROBABLE_ASSET")
   val SOURCE_PROPERTY                          = Value("SOURCE_PROPERTY")
+  val TAGGED_BY_DED                            = Value("TAGGED_BY_DED")
+  val TAGGING_DISABLED_BY_DED                  = Value("TAGGING_DISABLED_BY_DED")
 
   // API Tags
   val API_SINK_MARKED = Value("API_SINK_MARKED")
@@ -96,6 +98,7 @@ object CatLevelOne extends Enumeration {
   val POLICIES    = CatLevelOneIn("policies", "Policies")
   val THREATS     = CatLevelOneIn("threats", "Threats")
   val INFERENCES  = CatLevelOneIn("inferences", "Inferences")
+  val DED         = CatLevelOneIn("ded", "Ded")
   val UNKNOWN     = CatLevelOneIn("unknown", "Unknown")
 
   // internal CatLevelOne

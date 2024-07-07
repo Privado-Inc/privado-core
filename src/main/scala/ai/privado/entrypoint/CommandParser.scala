@@ -55,6 +55,7 @@ case class PrivadoInput(
   testOutput: Boolean = false,
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
+  dedSourceReport: Boolean = false,
   enableAuditSemanticsFilter: Boolean = false,
   limitNoSinksForDataflows: Int = -1,
   limitArgExpansionDataflows: Int = -1,
@@ -65,7 +66,9 @@ case class PrivadoInput(
   forceLanguage: Language.Language = Language.UNKNOWN,
   threadDumpFreq: Int = DEFAULT_THREAD_DUMP_FREQ,
   threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
-  rubyParserTimeout: Long = 120
+  rubyParserTimeout: Long = 120,
+  excludeFileRegex: String = "",
+  extensionsForPhp: String = ""
 )
 
 object CommandConstants {
@@ -111,6 +114,8 @@ object CommandConstants {
   val TEST_OUTPUT_ABBR                             = "tout"
   val GENERATE_AUDIT_REPORT                        = "generate-audit-report"
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
+  val DED_SOURCE_REPORT                            = "ded-source-report"
+  val DED_SOURCE_REPORT_ABBR                       = "dsr"
   val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
   val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
   val LIMIT_NO_SINKS_FOR_DATAFLOWS                 = "limit-no-sinks-for-dataflows"
@@ -130,6 +135,10 @@ object CommandConstants {
   val THREAD_DUMP_AVG_CPU_LIMIT_ABBR               = "tdacl"
   val RUBY_PARSER_TIMEOUT                          = "ruby-parser-timeout"
   val RUBY_PARSER_TIMEOUT_ABBR                     = "rpt"
+  val EXCLUDE_FILE_REGEX                           = "exclude-file-regex"
+  val EXCLUDE_FILE_REGEX_ABBR                      = "efr"
+  val EXTENSIONS_FOR_PHP                           = "extensions-for-php"
+  val EXTENSIONS_FOR_PHP_ABBR                      = "exphp"
 }
 
 object CommandParser {
@@ -272,6 +281,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(generateAuditReport = true))
               .text("Export the audit report"),
+            opt[Unit](CommandConstants.DED_SOURCE_REPORT)
+              .abbr(CommandConstants.DED_SOURCE_REPORT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(dedSourceReport = true))
+              .text("Export the ded source report"),
             opt[Unit](CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER)
               .abbr(CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER_ABBR)
               .optional()
@@ -309,6 +323,18 @@ object CommandParser {
               .optional()
               .action((x, c) => c.copy(rubyParserTimeout = x))
               .text("Ruby Parser Timeout in seconds. By default set to 2 mins i.e. 120 seconds"),
+            opt[String](CommandConstants.EXCLUDE_FILE_REGEX)
+              .abbr(CommandConstants.EXCLUDE_FILE_REGEX_ABBR)
+              .optional()
+              .action((x, c) => c.copy(excludeFileRegex = x))
+              .text("Exclude files regex, which can be used to exclude files while processing"),
+            opt[String](CommandConstants.EXTENSIONS_FOR_PHP)
+              .abbr(CommandConstants.EXTENSIONS_FOR_PHP_ABBR)
+              .optional()
+              .action((x, c) => c.copy(extensionsForPhp = x))
+              .text(
+                "File extensions that are considered valid for PHP scanner. Eg \".php,.cls,.ent\" Default is \".php\""
+              ),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

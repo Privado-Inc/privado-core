@@ -32,6 +32,7 @@ import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate
 import ai.privado.languageEngine.java.tagger.source.Utility.*
 import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.tagger.utility.SourceTaggerUtility.getTypeDeclWithMemberNameHavingMemberName
 
 import java.util.UUID
 import scala.collection.concurrent.TrieMap
@@ -91,10 +92,8 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     memberNameRegex: String,
     ruleInfo: RuleInfo
   ): Unit = {
-    val typeDeclWithMemberNameHavingMemberName = cpg.typeDecl
-      .where(_.member.name(memberNameRegex).filterNot(item => item.name.equals(item.name.toUpperCase)))
-      .map(typeDeclNode => (typeDeclNode, typeDeclNode.member.name(memberNameRegex).l))
-      .l
+    val typeDeclWithMemberNameHavingMemberName = getTypeDeclWithMemberNameHavingMemberName(cpg, ruleInfo)
+
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
