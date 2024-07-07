@@ -26,15 +26,10 @@ package ai.privado.languageEngine.python
 import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
-import ai.privado.languageEngine.python.config.PythonDBConfigTagger
-import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.model.*
-import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.testfixtures.PythonFrontendTestSuite
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
 
-class PythonS3TaggerTest extends PythonFrontendTestSuite with Matchers with BeforeAndAfterAll {
+class PythonS3TaggerTest extends PythonFrontendTestSuite {
   private val ruleCache              = new RuleCache()
   private val privadoInput           = PrivadoInput()
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache()
@@ -79,23 +74,13 @@ class PythonS3TaggerTest extends PythonFrontendTestSuite with Matchers with Befo
         |""".stripMargin)
       .withRuleCache(ruleCache)
 
-    val databaseDetailsCache = DatabaseDetailsCache()
-    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
-    new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
-    new PythonS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
-
     "have bucket name" in {
-      val sinkExporter =
-        new SinkExporter(
-          cpg,
-          ruleCache,
-          privadoInput,
-          None,
-          s3DatabaseDetailsCache,
-          appCache = appCache,
-          databaseDetailsCache = DatabaseDetailsCache()
-        )
-      sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "mera-bucket"
+      val List(dbName) = cpg
+        .getPrivadoJson()(Constants.sinks)
+        .\\("databaseDetails")
+        .head
+        .\\(Constants.dbName)
+      dbName.asString.get shouldBe "mera-bucket"
     }
   }
 
