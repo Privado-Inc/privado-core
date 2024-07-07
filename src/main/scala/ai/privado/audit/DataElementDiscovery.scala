@@ -350,39 +350,49 @@ object DataElementDiscoveryUtils {
   def appendSqlNodesToWorkbook(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): Unit = xtocpg match {
     case Success(cpg) =>
       val sqlNodes = cpg.sqlColumn.l
-      for (sqlNode <- sqlNodes) {
-        val path       = sqlNode.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
-        val lineNumber = sqlNode.lineNumber.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE).toString
-        val nodeUniqueId = DataElementDiscoveryUtils.nodeIdentifier(
-          path,
-          sqlNode.code,
-          AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE,
-          lineNumber
-        )
-        val sourceRuleId = sqlNode.tag
-          .nameExact(Constants.id)
-          .value
-          .headOption
-          .getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+      sqlNodes.foreach { sqlNode =>
+        val tableName = sqlNode.code
+        val shouldFilterNode = tableName.length <= 2
+          || filterCommonVarsStartsWithArr.exists(commonVar => tableName.startsWith(commonVar))
+          || tableName.matches(filterCommonLangTypes)
+          || tableName.matches(filterCommonVars)
 
-        workbookResult += List(
-          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-          path,
-          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-          sqlNode.code,
-          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-          sourceRuleId.startsWith("Data.Sensitive.").toString,
-          sourceRuleId,
-          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-          AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-          lineNumber,
-          nodeUniqueId,
-          AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE
-        )
+        if (!shouldFilterNode) {
+          val path       = sqlNode.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+          val lineNumber = sqlNode.lineNumber.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE).toString
+          val nodeUniqueId = DataElementDiscoveryUtils.nodeIdentifier(
+            path,
+            sqlNode.code,
+            AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE,
+            lineNumber
+          )
 
-        logger.info("Appended SQL nodes to the workbook")
+          val sourceRuleId = sqlNode.tag
+            .nameExact(Constants.id)
+            .value
+            .headOption
+            .getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+
+          workbookResult += List(
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            path,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            sqlNode.code,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            sourceRuleId.startsWith("Data.Sensitive.").toString,
+            sourceRuleId,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            lineNumber,
+            nodeUniqueId,
+            AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE
+          )
+        }
       }
+
+      logger.info("Appended SQL nodes to the workbook")
+
     case _ => logger.debug("Did not receive a valid cpg")
   }
 }
