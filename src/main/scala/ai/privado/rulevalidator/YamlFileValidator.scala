@@ -1,7 +1,12 @@
 package ai.privado.rulevalidator
 
 import ai.privado.entrypoint.CommandConstants
-import ai.privado.model.Constants.{CONFIG_DIR_IN_CONFIG, PRETTY_LINE_SEPARATOR, RULES_DIR_IN_CONFIG}
+import ai.privado.model.Constants.{
+  CONFIG_DIR_IN_CONFIG,
+  PRETTY_LINE_SEPARATOR,
+  RULES_DIR_IN_CONFIG,
+  AI_INFERENCE_DIR_IN_CONFIG
+}
 import ai.privado.model.{CatLevelOne, ConfigRuleType}
 import better.files.File
 import com.fasterxml.jackson.databind.{JsonNode, ObjectMapper}
@@ -25,7 +30,8 @@ object YamlFileValidator {
       CatLevelOne.THREATS.name,
       CatLevelOne.POLICIES.name,
       ConfigRuleType.SEMANTICS.toString,
-      ConfigRuleType.SYSTEM_CONFIG.toString
+      ConfigRuleType.SYSTEM_CONFIG.toString,
+      CatLevelOne.DED.name
     )
   private val SOURCES = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sources.json")).mkString
   private val SINKS   = Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}sinks.json")).mkString
@@ -102,8 +108,9 @@ object YamlFileValidator {
     */
   def isValidRuleFile(ruleFile: File, configDirectory: File): Boolean = {
     if (
-      !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG") || ruleFile.pathAsString
-        .contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG"))
+      !(ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$RULES_DIR_IN_CONFIG")
+        || ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$CONFIG_DIR_IN_CONFIG")
+        || ruleFile.pathAsString.contains(s"${configDirectory.pathAsString}/$AI_INFERENCE_DIR_IN_CONFIG"))
     ) {
       return false
     }
@@ -169,10 +176,8 @@ object YamlFileValidator {
     ruleJsonTree: JsonNode,
     callerCommand: String = ""
   ): Either[Unit, (String, String)] = {
-
     val catLevelOneKey =
       if (ruleJsonTree.fieldNames().hasNext) ruleJsonTree.fieldNames().next() else CatLevelOne.UNKNOWN.name
-    logger.trace(s"Found CatLevelOne key '$catLevelOneKey' in file : ${ruleFile.pathAsString}")
     CatLevelOne
       .withNameWithDefault(catLevelOneKey) match {
       case CatLevelOne.SOURCES     => Right(CatLevelOne.SOURCES.name, SOURCES)
@@ -181,6 +186,11 @@ object YamlFileValidator {
       case CatLevelOne.COLLECTIONS => Right(CatLevelOne.COLLECTIONS.name, COLLECTIONS)
       case CatLevelOne.SINKS       => Right(CatLevelOne.SINKS.name, SINKS)
       case CatLevelOne.INFERENCES  => Right(CatLevelOne.INFERENCES.name, INFERENCES)
+      case CatLevelOne.DED =>
+        Right(
+          CatLevelOne.DED.name,
+          Source.fromInputStream(getClass.getResourceAsStream(s"${SCHEMA_DIR_PATH}ded.json")).mkString
+        )
       case _ =>
         matchSchemaConfigFile(ruleFile, ruleJsonTree, callerCommand)
     }

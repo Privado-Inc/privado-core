@@ -10,11 +10,13 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import org.apache.poi.ss.usermodel.*
 import org.apache.poi.xssf.usermodel.{XSSFCellStyle, XSSFColor, XSSFWorkbook}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 object AuditReportEntryPoint {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   case class DataElementDiscoveryAudit(
     className: String,
@@ -41,37 +43,43 @@ object AuditReportEntryPoint {
     if (str == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) "" else str
 
   def createDataElementDiscoveryJson(dataElementDiscoveryData: List[List[String]], repoPath: String) = {
+    try {
+      val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
 
-    val auditDataList = new ListBuffer[DataElementDiscoveryAudit]()
+      for (item <- dataElementDiscoveryData.drop(1)) {
+        auditDataList += DataElementDiscoveryAudit(
+          eliminateEmptyCellValueIfExist(item(0)),
+          eliminateEmptyCellValueIfExist(item(1)),
+          if (item(2) == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) 0.0 else item(2).toDouble,
+          eliminateEmptyCellValueIfExist(item(3)),
+          eliminateEmptyCellValueIfExist(item(4)),
+          if (item(5) == "YES") true else false,
+          eliminateEmptyCellValueIfExist(item(6)),
+          if (item(5) == "YES") true else false,
+          eliminateEmptyCellValueIfExist(item(8)),
+          if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
 
-    for (item <- dataElementDiscoveryData.drop(1)) {
-      auditDataList += DataElementDiscoveryAudit(
-        eliminateEmptyCellValueIfExist(item(0)),
-        eliminateEmptyCellValueIfExist(item(1)),
-        if (item(2) == AuditReportConstants.AUDIT_EMPTY_CELL_VALUE) 0.0 else item(2).toDouble,
-        eliminateEmptyCellValueIfExist(item(3)),
-        eliminateEmptyCellValueIfExist(item(4)),
-        if (item(5) == "YES") true else false,
-        eliminateEmptyCellValueIfExist(item(6)),
-        if (item(5) == "YES") true else false,
-        eliminateEmptyCellValueIfExist(item(8)),
-        if (item.size >= 10) eliminateEmptyCellValueIfExist(item(9)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+          // Line number
+          if (item.size >= 11) eliminateEmptyCellValueIfExist(item(10))
+          else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
 
-        // Line number
-        if (item.size >= 11) eliminateEmptyCellValueIfExist(item(10)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+          // variable identifier
+          if (item.size >= 12) eliminateEmptyCellValueIfExist(item(11))
+          else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
 
-        // variable identifier
-        if (item.size >= 12) eliminateEmptyCellValueIfExist(item(11)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
-
-        // variable type
-        if (item.size >= 13) eliminateEmptyCellValueIfExist(item(12)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+          // variable type
+          if (item.size >= 13) eliminateEmptyCellValueIfExist(item(12)) else AuditReportConstants.AUDIT_EMPTY_CELL_VALUE
+        )
+      }
+      JSONExporter.dataElementDiscoveryAuditFileExport(
+        AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
+        repoPath,
+        auditDataList.toList
       )
+    } catch {
+      case ex: Exception =>
+        logger.debug(f"Failed to create Data Element Discovery json ${ex}")
     }
-    JSONExporter.dataElementDiscoveryAuditFileExport(
-      AuditReportConstants.AUDIT_SOURCE_FILE_NAME,
-      repoPath,
-      auditDataList.toList
-    )
 
   }
 
@@ -115,38 +123,42 @@ object AuditReportEntryPoint {
     }
     createDataElementDiscoveryJson(dataElementDiscoveryData, repoPath = repoPath)
 
-    createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
+    try {
+      createSheet(workbook, AuditReportConstants.AUDIT_ELEMENT_DISCOVERY_SHEET_NAME, dataElementDiscoveryData)
 
-    // Changed Background colour when tagged
-    changeTaggedBackgroundColour(workbook, List(4, 6))
-    createSheet(
-      workbook,
-      AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
-      DataFlowReport.processDataFlowAudit(auditCache)
-    )
-
-    createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
-
-    createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
-
-    if (lang == Language.JAVA || lang == Language.KOTLIN) {
-      // Set Unresolved flow into Sheet
+      // Changed Background colour when tagged
+      changeTaggedBackgroundColour(workbook, List(4, 6))
       createSheet(
         workbook,
-        AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
-        UnresolvedFlowReport.processUnresolvedFlow(auditCache)
+        AuditReportConstants.AUDIT_DATA_FLOW_SHEET_NAME,
+        DataFlowReport.processDataFlowAudit(auditCache)
       )
 
-      // Set Dependency Report data into Sheet
-      createSheet(
-        workbook,
-        AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
-        DependencyReport.processDependencyAudit(dependencies)
-      )
+      createSheet(workbook, AuditReportConstants.AUDIT_URL_SHEET_NAME, LiteralReport.processURLAudit(xtocpg))
+
+      createSheet(workbook, AuditReportConstants.AUDIT_HTTP_SHEET_NAME, LiteralReport.processHTTPAudit(xtocpg))
+
+      createSheet(workbook, AuditReportConstants.AUDIT_API_SHEET_NAME, APIReport.processAPIAudit(xtocpg, ruleCache))
+
+      if (lang == Language.JAVA || lang == Language.KOTLIN) {
+        // Set Unresolved flow into Sheet
+        createSheet(
+          workbook,
+          AuditReportConstants.AUDIT_UNRESOLVED_SHEET_NAME,
+          UnresolvedFlowReport.processUnresolvedFlow(auditCache)
+        )
+
+        // Set Dependency Report data into Sheet
+        createSheet(
+          workbook,
+          AuditReportConstants.AUDIT_DEPENDENCY_SHEET_NAME,
+          DependencyReport.processDependencyAudit(dependencies)
+        )
+      }
+    } catch {
+      case ex: Exception =>
+        logger.debug(f"Failed to create excel sheets: ${ex}")
     }
-
     workbook
   }
 

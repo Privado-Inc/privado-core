@@ -1,0 +1,118 @@
+{
+  "definitions": {},
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/Privado-Inc/privado-core/tree/main/src/main/resources/ai/privado/rulevalidator/schema/ded.json",
+  "title": "Root",
+  "type": "object",
+  "required": [
+    "ded"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "ded": {
+      "$id": "#root/ded",
+      "title": "DED",
+      "type": "array",
+      "default": [],
+      "items":{
+        "$id": "#root/ded/items",
+        "title": "Items",
+        "type": "object",
+        "required": [
+          "filePath",
+          "classificationData"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "filePath": {
+            "$id": "#root/ded/items/filePath",
+            "title": "filePath",
+            "type": "string",
+            "default": "",
+            "examples": [
+              "/home/ubuntu/install/repositories/FDFDERFS232DC/njs_accounts/sample/index.js"
+            ],
+            "pattern": "^.*$"
+          },
+          "classificationData": {
+            "$id": "#root/ded/items/classificationData",
+            "title": "classificationData",
+            "type": "array",
+            "default": [],
+            "items":{
+              "$id": "#root/ded/items/classificationData/items",
+              "title": "Items",
+              "type": "object",
+              "required": [
+                "id",
+                "variables"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "$id": "#root/ded/items/classificationData/items/id",
+                  "title": "id",
+                  "type": "string",
+                  "default": "",
+                  "examples": [
+                    "Data.Sensitive.AccountData.AccountId"
+                  ],
+                  "pattern": "^.*$"
+                },
+                "variables": {
+                  "$id": "#root/ded/items/classificationData/items/variables",
+                  "title": "variables",
+                  "type": "array",
+                  "default": [],
+                  "items": {
+                    "$id": "#root/ded/items/classificationData/items/variables/items",
+                    "title": "Items",
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "typeInSrc"
+                    ],
+                    "additionalProperties": true,
+                    "properties": {
+                      "name": {
+                        "$id": "#root/ded/items/classificationData/items/variables/items/name",
+                        "title": "name",
+                        "type": "string",
+                        "default": "",
+                        "examples": [
+                          "userId"
+                        ],
+                        "pattern": "^.*$"
+                      },
+                      "typeInSrc": {
+                        "$id": "#root/ded/items/classificationData/items/variables/items/typeInSrc",
+                        "title": "typeInSrc",
+                        "type": "string",
+                        "default": "",
+                        "examples": [
+                          "String"
+                        ],
+                        "pattern": "^.*$"
+                      },
+                      "lineNumber": {
+                        "$id": "#root/ded/items/classificationData/items/variables/items/lineNumber",
+                        "title": "lineNumber",
+                        "type": "int",
+                        "default": -1,
+                        "examples": [
+                          10
+                        ],
+                        "pattern": "^.*$"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+    }
+  }
+}
