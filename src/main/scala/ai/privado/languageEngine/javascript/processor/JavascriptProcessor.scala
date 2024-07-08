@@ -118,7 +118,7 @@ class JavascriptProcessor(
   override def processCpg(): Either[String, CpgWithOutputMap] = {
     statsRecorder.justLogMessage("Processing source code using Javascript engine")
     statsRecorder.initiateNewStage("Base source processing")
-
+    statsRecorder.setSupressSubstagesFlag(false)
     createCpgFolder(sourceRepoLocation)
 
     val cpgOutputPath = s"$sourceRepoLocation/$outputDirectoryName/$cpgOutputFileName"
