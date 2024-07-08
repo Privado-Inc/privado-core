@@ -29,7 +29,12 @@ import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
 import ai.privado.languageEngine.javascript.passes.read.GraphqlQueryParserPass
 import ai.privado.languageEngine.javascript.tagger.collection.CollectionTagger
-import ai.privado.languageEngine.javascript.tagger.sink.{GraphqlAPITagger, JSAPITagger, RegularSinkTagger}
+import ai.privado.languageEngine.javascript.tagger.sink.{
+  GraphqlAPITagger,
+  JSAPISinkTagger,
+  JSAPITagger,
+  RegularSinkTagger
+}
 import ai.privado.languageEngine.javascript.tagger.source.{IdentifierTagger, LiteralTagger}
 import ai.privado.tagger.PrivadoBaseTagger
 import ai.privado.tagger.collection.WebFormsCollectionTagger
@@ -66,9 +71,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
-    new JSAPITagger(cpg, ruleCache, privadoInput = privadoInputConfig, appCache = appCache).createAndApply()
-
-    new GraphqlAPITagger(cpg, ruleCache).createAndApply()
+    JSAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
 
     new GraphqlQueryParserPass(cpg, ruleCache, taggerCache).createAndApply()
 
