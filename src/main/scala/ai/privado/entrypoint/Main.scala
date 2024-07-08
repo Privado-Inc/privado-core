@@ -37,7 +37,7 @@ object Main extends GeneralMetadataLoggers {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   def main(args: Array[String]): Unit = {
-    val statsRecorder = StatsRecorder(fullName = true, printToConsole = true, supressSubstages = true)
+    val statsRecorder = StatsRecorder(fullName = true, printToConsole = true, supressSubstages = false)
     StatsLogger.initialise(Option(statsRecorder))
     val appCache = new AppCache()
     CommandParser.parse(args, statsRecorder) match {
