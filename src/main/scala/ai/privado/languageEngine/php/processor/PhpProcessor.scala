@@ -90,6 +90,10 @@ class PhpProcessor(
     statsRecorder.initiateNewStage("Base source processing")
     createCpgFolder(sourceRepoLocation)
 
+    // we should have CSV input for the --extensions-for-php flag. eg ".php,.cls"
+    val phpExtensions =
+      if privadoInput.extensionsForPhp.nonEmpty then privadoInput.extensionsForPhp.split(",").toSet else Set()
+
     val cpgOutput = Paths.get(sourceRepoLocation, outputDirectoryName, cpgOutputFileName)
     val cpgConfig = Config()
       .withInputPath(sourceRepoLocation)
@@ -97,6 +101,7 @@ class PhpProcessor(
       .withIgnoredFilesRegex(ruleCache.getExclusionRegex)
       .withPhpParserBin(PhpProcessor.parserBinPath)
       .withDownloadDependencies(!privadoInput.skipDownloadDependencies)
+      .withExtensions(phpExtensions)
 
     val xtocpg = new Php2Cpg().createCpg(cpgConfig).map { cpg =>
       statsRecorder.endLastStage()
