@@ -18,7 +18,7 @@ val circeYamlVersion    = "1.15.0"
 val circeGenericVersion = "0.14.7"
 val jacksonVersion      = "2.17.0"
 val mockitoVersion      = "1.17.14"
-val goAstGenVersion     = "0.14.0"
+val goAstGenVersion     = "0.18.0"
 val dotnetAstGenVersion = "0.34.0"
 
 lazy val schema         = Projects.schema
