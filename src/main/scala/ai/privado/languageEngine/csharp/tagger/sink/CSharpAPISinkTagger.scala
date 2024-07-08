@@ -2,7 +2,7 @@ package ai.privado.languageEngine.csharp.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.tagger.sink.api.APISinkTagger
+import ai.privado.tagger.sink.api.{APISinkByMethodFullNameTagger, APISinkTagger}
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 
@@ -17,7 +17,7 @@ object CSharpAPISinkTagger extends APISinkTagger {
   ): Unit = {
 
     super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder)
-
+    new APISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
     new CSharpAPITagger(cpg, ruleCache, privadoInput, appCache).createAndApply()
   }
 
