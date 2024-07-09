@@ -38,6 +38,7 @@ object CollectionUtility {
         }
       })
     })
+
     tagMethodEndpoints(
       builder,
       collectionPoints.l,
