@@ -5,7 +5,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.{StatsRecorder, Utilities}
@@ -39,11 +39,15 @@ class APITagger(
 
   val httpApis: List[Call] = apis
     .or(_.methodFullName(commonHttpPackages), _.filter(_.dynamicTypeHintFullName.exists(_.matches(commonHttpPackages))))
+    .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   val clientLikeApis: List[Call] = cacheCall
     .code("(?i).*(client|connection).*[.](get|post|delete|put|patch).*")
     .name("get|post|post_json|delete|put|patch")
+    .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   // Support to use `identifier` in API's
