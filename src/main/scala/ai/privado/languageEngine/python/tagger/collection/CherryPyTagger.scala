@@ -14,6 +14,7 @@ import scala.collection.mutable
 class CherryPyTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
   protected val methodUrlMap: mutable.HashMap[Long, String] = mutable.HashMap[Long, String]()
   private val logger                                        = LoggerFactory.getLogger(this.getClass)
+  private val CHERRY_PY_CONNECT_METHOD_FULL_NAME            = "cherrypy.py:<module>.dispatch.RoutesDispatcher.connect"
 
   val cherryPyRule = RuleInfo(
     "Collections.CherryPy",
@@ -21,7 +22,7 @@ class CherryPyTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPas
     "",
     FilterProperty.METHOD_FULL_NAME,
     Array(),
-    List("cherrypy.py:<module>.dispatch.RoutesDispatcher.connect"),
+    List(CHERRY_PY_CONNECT_METHOD_FULL_NAME),
     false,
     "high",
     Map(),
@@ -35,7 +36,7 @@ class CherryPyTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPas
 
   override def run(builder: DiffGraphBuilder): Unit = {
     val methodToUrlCache = cpg.call
-      .methodFullName("cherrypy.py:<module>.dispatch.RoutesDispatcher.connect")
+      .methodFullName(CHERRY_PY_CONNECT_METHOD_FULL_NAME)
       .map(call => {
         val (path, action)   = getRelevantDataFromCallArgs(call)
         val pertainingMethod = getActionMethod(action)
