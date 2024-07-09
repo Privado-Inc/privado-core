@@ -28,7 +28,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, FilterProperty, RuleInfo, InternalTag}
+import ai.privado.model.{Constants, FilterProperty, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
@@ -38,12 +38,13 @@ import ai.privado.utility.Utilities.{
 }
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identifier, JavaProperty, Member}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.languageEngine.java.language._
-import io.shiftleft.semanticcpg.language._
+import ai.privado.languageEngine.java.language.*
+import io.shiftleft.semanticcpg.language.*
+import ai.privado.model.*
 
 object APITaggerUtility {
 
@@ -63,7 +64,7 @@ object APITaggerUtility {
   def sinkTagger(
     cpg: Cpg,
     apiInternalSinkPattern: List[AstNode],
-    apis: List[CfgNode],
+    unfilteredApis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
@@ -72,6 +73,10 @@ object APITaggerUtility {
   )(implicit engineContext: EngineContext): Unit = {
     val filteredSourceNode =
       apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
+    val apis = unfilteredApis
+      .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+      .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
+      .l
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList

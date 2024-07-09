@@ -34,7 +34,6 @@ import ai.privado.utility.Utilities
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
-import io.joern.dataflowengineoss.DefaultSemantics
 
 class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {
@@ -50,8 +49,6 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .methodFullName(commonHttpPackages)
-    .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   implicit val engineContext: EngineContext =

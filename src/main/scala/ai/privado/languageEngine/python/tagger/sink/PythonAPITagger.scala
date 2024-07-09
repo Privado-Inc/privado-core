@@ -53,8 +53,6 @@ class PythonAPITagger(
 
   val apis = cacheCall
     .name(APISINKS_REGEX)
-    .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
