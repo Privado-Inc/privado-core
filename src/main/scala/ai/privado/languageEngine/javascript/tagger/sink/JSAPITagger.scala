@@ -56,8 +56,6 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, ap
     .name(APISINKS_REGEX)
     .methodFullNameNot(COMMON_IGNORED_SINKS_REGEX)
     .where(_.or(_.code(commonHttpPackages), _.methodFullName(commonHttpPackages)))
-    .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
-    .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
     .l
 
   override def runOnPart(builder: DiffGraphBuilder, ruleInfo: RuleInfo): Unit = {
