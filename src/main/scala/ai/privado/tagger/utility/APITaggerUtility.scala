@@ -153,19 +153,6 @@ object APITaggerUtility {
     apiUrlNode: Any
   ): Unit = {
     // TODO Optimise this by adding a cache mechanism
-    val flatMapList = ruleCache.getRule.inferences
-      .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
-      .filter(_.domains.nonEmpty)
-      .flatMap { ruleInfo =>
-        ruleInfo.filterProperty match {
-          case FilterProperty.ENDPOINT_DOMAIN_WITH_LITERAL if domain.matches(ruleInfo.combinedRulePattern) =>
-            Some(ruleInfo.domains.head)
-          case FilterProperty.ENDPOINT_DOMAIN_WITH_PROPERTY_NAME
-              if domain.matches(ruleInfo.combinedRulePattern) && cpg.property.name(ruleInfo.domains.head).nonEmpty =>
-            Some(cpg.property.name(ruleInfo.domains.head).value.head)
-          case _ => None
-        }
-      }
     ruleCache.getRule.inferences
       .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
       .filter(_.domains.nonEmpty)

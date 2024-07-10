@@ -22,6 +22,7 @@ class InferenceAPIEndpointTaggerTest extends JavaFrontendTestSuite with APIValid
         catLevelTwo = Constants.apiEndpoint
       )
     )
+
     val ruleCache = RuleCache().setRule(RuleInfoTestData.rule.copy(inferences = inferences))
 
     val cpg = code("""
@@ -194,4 +195,71 @@ class InferenceAPIEndpointTaggerTest extends JavaFrontendTestSuite with APIValid
     }
   }
 
+  "Inference tagger overlapping with Api tagger" should {
+
+    val inferences = List(
+      RuleInfo(
+        id = "Inferences.API.UserServiceClient.ByLiteral",
+        name = "User service client",
+        category = "",
+        filterProperty = FilterProperty.METHOD_FULL_NAME_WITH_LITERAL,
+        domains = Array("http://user-service.com"),
+        patterns = List(".*UserServiceClient[.]\\w+[:].*"),
+        catLevelOne = CatLevelOne.INFERENCES,
+        catLevelTwo = Constants.apiEndpoint
+      )
+    )
+
+    val systemConfig = List(
+      SystemConfig(Constants.apiHttpLibraries, ".*UserServiceClient.*"),
+      SystemConfig(Constants.apiSinks, "getUsers")
+    )
+
+    "tag the api sink once without inference rule" in {
+
+      val ruleCache = RuleCache().setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
+      val cpg = code("""
+          |import com.privado.clients.UserServiceClient;
+          |public class Main {
+          |    public static void main(String[] args) {
+          |        try {
+          |            UserServiceClient client = new UserServiceClient();
+          |            String usersResponse = client.getUsers();
+          |            System.out.println(usersResponse);
+          |        } catch (Exception e) {
+          |            e.printStackTrace();
+          |        }
+          |    }
+          |}
+          |""".stripMargin).withRuleCache(ruleCache)
+
+      val List(getUsersCall) = cpg.call("getUsers").l
+      assertAPISinkCall(getUsersCall)
+      assertCallByTag(getUsersCall, values = List("Sinks.ThirdParties.API"))
+    }
+
+    "tag the api sink once with inference rule" in {
+
+      val ruleCache =
+        RuleCache().setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig, inferences = inferences))
+      val cpg = code("""
+          |import com.privado.clients.UserServiceClient;
+          |public class Main {
+          |    public static void main(String[] args) {
+          |        try {
+          |            UserServiceClient client = new UserServiceClient();
+          |            String usersResponse = client.getUsers();
+          |            System.out.println(usersResponse);
+          |        } catch (Exception e) {
+          |            e.printStackTrace();
+          |        }
+          |    }
+          |}
+          |""".stripMargin).withRuleCache(ruleCache)
+
+      val List(getUsersCall) = cpg.call("getUsers").l
+      assertAPISinkCall(getUsersCall)
+      assertCallByTag(getUsersCall, values = List("Sinks.ThirdParties.API.user-service.com"))
+    }
+  }
 }
