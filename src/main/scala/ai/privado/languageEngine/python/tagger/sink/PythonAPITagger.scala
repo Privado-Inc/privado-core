@@ -27,7 +27,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, Language, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.{StatsRecorder, Utilities}
@@ -51,7 +51,9 @@ class PythonAPITagger(
 
   lazy val APISINKS_REGEX = ruleCache.getSystemConfigByKey(Constants.apiSinks)
 
-  val apis = cacheCall.name(APISINKS_REGEX).l
+  val apis = cacheCall
+    .name(APISINKS_REGEX)
+    .l
 
   MetricHandler.metricsData("apiTaggerVersion") = Json.fromString("Common HTTP Libraries Used")
 

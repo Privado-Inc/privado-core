@@ -5,7 +5,7 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
 import ai.privado.languageEngine.python.passes.read.DatabaseReadPass
-import ai.privado.languageEngine.python.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.python.tagger.collection.{CherryPyTagger, CollectionTagger}
 import ai.privado.languageEngine.python.tagger.sink.{
   AirflowOperatorSinkTagger,
   InheritMethodTagger,
@@ -63,6 +63,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()
+    new CherryPyTagger(cpg, ruleCache).createAndApply()
     appCache.ingressUrls.addAll(collectionTagger.getIngressUrls())
 
     new DatabaseReadPass(cpg, ruleCache, taggerCache, privadoInputConfig, appCache).createAndApply()
