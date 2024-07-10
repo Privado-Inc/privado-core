@@ -3,9 +3,8 @@ package ai.privado.languageEngine.php.tagger.sink
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
-import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.Utilities
@@ -17,7 +16,6 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import java.util.Calendar
 
 class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
     extends PrivadoParallelCpgPass[RuleInfo](cpg) {

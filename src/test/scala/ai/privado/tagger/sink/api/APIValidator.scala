@@ -1,12 +1,15 @@
 package ai.privado.tagger.sink.api
 
 import ai.privado.model.{CatLevelOne, Constants, NodeType, SystemConfig}
+import ai.privado.tagger.TaggerValidator
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.Assertion
 
-trait APIValidator extends Matchers {
+/** Use this trait for all the API related validation
+  */
+trait APIValidator extends Matchers with TaggerValidator {
 
   // Keeping these rules here as there are mostly used with API Validation
   val apiIdentifier    = SystemConfig(Constants.apiIdentifier, "(?i).*url")
