@@ -28,7 +28,7 @@ import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import ai.privado.model.{Constants, FilterProperty, RuleInfo, InternalTag}
+import ai.privado.model.{Constants, FilterProperty, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{
   addRuleTags,
   getDomainFromString,
@@ -38,12 +38,13 @@ import ai.privado.utility.Utilities.{
 }
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, JavaProperty, Member, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identifier, JavaProperty, Member}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.languageEngine.java.language._
-import io.shiftleft.semanticcpg.language._
+import ai.privado.languageEngine.java.language.*
+import io.shiftleft.semanticcpg.language.*
+import ai.privado.model.*
 
 object APITaggerUtility {
 
@@ -63,7 +64,7 @@ object APITaggerUtility {
   def sinkTagger(
     cpg: Cpg,
     apiInternalSinkPattern: List[AstNode],
-    apis: List[CfgNode],
+    unfilteredApis: List[CfgNode],
     builder: BatchedUpdate.DiffGraphBuilder,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
@@ -72,6 +73,10 @@ object APITaggerUtility {
   )(implicit engineContext: EngineContext): Unit = {
     val filteredSourceNode =
       apiInternalSinkPattern.filter(node => isFileProcessable(getFileNameForNode(node), ruleCache))
+    val apis = unfilteredApis
+      .whereNot(_.tag.nameExact(InternalTag.API_URL_MARKED.toString))
+      .whereNot(_.tag.nameExact(Constants.nodeType).valueExact(NodeType.API.toString))
+      .l
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
@@ -148,19 +153,6 @@ object APITaggerUtility {
     apiUrlNode: Any
   ): Unit = {
     // TODO Optimise this by adding a cache mechanism
-    val flatMapList = ruleCache.getRule.inferences
-      .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
-      .filter(_.domains.nonEmpty)
-      .flatMap { ruleInfo =>
-        ruleInfo.filterProperty match {
-          case FilterProperty.ENDPOINT_DOMAIN_WITH_LITERAL if domain.matches(ruleInfo.combinedRulePattern) =>
-            Some(ruleInfo.domains.head)
-          case FilterProperty.ENDPOINT_DOMAIN_WITH_PROPERTY_NAME
-              if domain.matches(ruleInfo.combinedRulePattern) && cpg.property.name(ruleInfo.domains.head).nonEmpty =>
-            Some(cpg.property.name(ruleInfo.domains.head).value.head)
-          case _ => None
-        }
-      }
     ruleCache.getRule.inferences
       .filter(_.catLevelTwo.equals(Constants.apiEndpoint))
       .filter(_.domains.nonEmpty)

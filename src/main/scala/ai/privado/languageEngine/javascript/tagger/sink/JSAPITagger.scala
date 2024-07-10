@@ -26,7 +26,7 @@ package ai.privado.languageEngine.javascript.tagger.sink
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.model.{Constants, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.sink.APITagger
 
 import scala.collection.mutable.ListBuffer
