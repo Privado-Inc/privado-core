@@ -1,51 +1,34 @@
 package ai.privado.languageEngine.go.audit
 
 import ai.privado.audit.{DataElementDiscovery, DataElementDiscoveryUtils}
-import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.go.audit.TestData.AuditTestClassData
-import ai.privado.model.*
-import ai.privado.testfixtures.GoFrontendTestSuite
-import io.shiftleft.codepropertygraph.generated.Cpg
+import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
+import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
+import ai.privado.model.Language
 import io.shiftleft.codepropertygraph.generated.nodes.Member
 
 import scala.collection.mutable
 import scala.util.Try
 
-class DataElementDiscoveryTest extends GoFrontendTestSuite {
+class DataElementDiscoveryTest extends DataElementDiscoveryTestBase {
 
-  private val taggerCache = new TaggerCache()
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
+    new CollectionTagger(cpg, ruleCache).createAndApply()
+  }
 
-  val sourceRule: List[RuleInfo] = List(
-    RuleInfo(
-      "Data.Sensitive.FirstName",
-      "FirstName",
-      "",
-      FilterProperty.METHOD_FULL_NAME,
-      Array(),
-      List("(?i).*firstName.*"),
-      false,
-      "",
-      Map(),
-      NodeType.REGULAR,
-      "",
-      CatLevelOne.SOURCES,
-      "",
-      Language.GO,
-      Array()
-    )
-  )
+  override val goFileContentMap: Map[String, String] = getContent()
 
-  val rule: ConfigAndRules =
-    ConfigAndRules(sourceRule, List(), List(), List(), List(), List(), List(), List(), List(), List())
+  def getContent(): Map[String, String] = {
+    val testClassMap = mutable.Map[String, String]()
 
-  val ruleCache = new RuleCache()
-  ruleCache.setRule(rule)
-
-  private val cpg: Cpg = code(AuditTestClassData.user, "User.go")
-    .moreCode(AuditTestClassData.account, "Account.go")
-    .moreCode(AuditTestClassData.address, "Address.go")
-    .moreCode(AuditTestClassData.userCreation, "UserCreation.go")
-    .withRuleCache(ruleCache)
+    testClassMap.put("User", AuditTestClassData.user)
+    testClassMap.put("Account", AuditTestClassData.account)
+    testClassMap.put("Address", AuditTestClassData.address)
+    testClassMap.put("UserCreation", AuditTestClassData.userCreation)
+    testClassMap.toMap
+  }
 
   "DataElementDiscovery" should {
     "Test discovery of class name in codebase" in {
