@@ -11,11 +11,11 @@ import ai.privado.cache.{
 }
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
-import ai.privado.languageEngine.csharp.processor.CSharpProcessor
+import ai.privado.languageEngine.c.processor.CProcessor
 import ai.privado.model.Language
 import ai.privado.utility.StatsRecorder
 
-class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) extends TestCpg {
+class TestCpgWithC(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
@@ -26,7 +26,7 @@ class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) ex
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache
   ): BaseProcessor = {
-    new CSharpProcessor(
+    new CProcessor(
       ruleCache,
       privadoInput,
       privadoInput.sourceLocation.head,
@@ -42,5 +42,5 @@ class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) ex
   }
 }
 
-class CSharpFrontendTestSuite(fileSuffix: String = ".cs", language: Language.Value = Language.CSHARP)
+class CFrontendTestSuite(fileSuffix: String = ".cpp", language: Language.Value = Language.C)
     extends PrivadoBaseTestFixture(() => new TestCpgWithC(fileSuffix, language)) {}
