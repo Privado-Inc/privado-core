@@ -141,7 +141,7 @@ object Language extends Enumeration {
           case Some(language) if language == Languages.KOTLIN                                    => KOTLIN
           case Some(language) if language == Languages.CSHARPSRC || language == Languages.CSHARP => CSHARP
           case Some(language) if language == Languages.PHP                                       => PHP
-          case Some(language) if language == Languages.C                                         => C
+          case Some(language) if language == Languages.C || language == Languages.NEWC           => C
           case _                                                                                 => UNKNOWN
         }
       case Failure(exc) =>
