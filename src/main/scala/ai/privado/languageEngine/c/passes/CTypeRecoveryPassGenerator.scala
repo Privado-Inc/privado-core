@@ -55,7 +55,7 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
     !name.isBlank && (name.equals("new") || name.equals("<init>"))
 
   override protected def importNodes: Iterator[Import] = cu match {
-    case x: File => cpg.imports.where(_.file.nameExact(s"${x.name}"))
+    case x: File => cu._importViaAstOut
     case _       => super.importNodes
   }
 

@@ -39,13 +39,14 @@ class CImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       case x              => x.mkString("/").concat("/")
     }).concat(s"$importedEntity")
 
-    resolveEntity(headerFileName).foreach(x => evaluatedImportNodeToTag(x, importNode, diffGraph))
+    resolveEntity(headerFileName, importNode).foreach(x => evaluatedImportNodeToTag(x, importNode, diffGraph))
   }
 
-  private def resolveEntity(headerFileName: String) = {
-    val methods = cpg.method.where(_.file.nameExact(headerFileName)).map(m => ResolvedMethod(m.fullName, m.name)).l
+  private def resolveEntity(headerFileName: String, importNode: Import) = {
+    val methods =
+      importNode.file.method.where(_.file.nameExact(headerFileName)).map(m => ResolvedMethod(m.fullName, m.name)).l
 
-    val typeDecls = cpg.typeDecl
+    val typeDecls = importNode.file.typeDecl
       .where(_.file.nameExact(headerFileName))
       .map(typeDecl => ResolvedTypeDecl(typeDecl.fullName))
       .l
