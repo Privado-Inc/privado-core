@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory
 import io.joern.c2cpg.*
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
+import ai.privado.languageEngine.c.semantic.Language.tagger
 
 class CProcessor(
   ruleCache: RuleCache,
@@ -52,7 +53,7 @@ class CProcessor(
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    println("Will be adding this shortly")
+    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
