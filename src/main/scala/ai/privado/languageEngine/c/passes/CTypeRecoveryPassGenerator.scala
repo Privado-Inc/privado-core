@@ -63,26 +63,29 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
     resolvedImport <- i.tag
     alias          <- i.importedAs
   } {
-    EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
-      case ResolvedMethod(fullName, alias, receiver, _) =>
-        symbolTable.append(CallAlias(alias, receiver), fullName)
-      case ResolvedTypeDecl(fullName, _) =>
-        symbolTable.append(LocalVar(alias), fullName)
-      case ResolvedMember(basePath, memberName, _) =>
-        val matchingIdentifiers = cpg.method.fullNameExact(basePath).local
-        val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
-        val memberTypes = (matchingMembers ++ matchingIdentifiers)
-          .nameExact(memberName)
-          .getKnownTypes
-        symbolTable.append(LocalVar(alias), memberTypes)
-      case UnknownMethod(fullName, alias, receiver, _) =>
-        symbolTable.append(CallAlias(alias, receiver), fullName)
-      case UnknownTypeDecl(fullName, _) =>
-        symbolTable.append(LocalVar(alias), fullName)
-      case UnknownImport(path, _) =>
-        symbolTable.append(CallAlias(alias), path)
-        symbolTable.append(LocalVar(alias), path)
-    }
+    import scala.util.Try
+    Try(EvaluatedImport.tagToEvaluatedImport(resolvedImport)).toOption
+      .getOrElse(Option(UnknownMethod("random", "random", Option("random"))))
+      .foreach {
+        case ResolvedMethod(fullName, alias, receiver, _) =>
+          symbolTable.append(CallAlias(alias, receiver), fullName)
+        case ResolvedTypeDecl(fullName, _) =>
+          symbolTable.append(LocalVar(alias), fullName)
+        case ResolvedMember(basePath, memberName, _) =>
+          val matchingIdentifiers = cpg.method.fullNameExact(basePath).local
+          val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
+          val memberTypes = (matchingMembers ++ matchingIdentifiers)
+            .nameExact(memberName)
+            .getKnownTypes
+          symbolTable.append(LocalVar(alias), memberTypes)
+        case UnknownMethod(fullName, alias, receiver, _) =>
+          symbolTable.append(CallAlias(alias, receiver), fullName)
+        case UnknownTypeDecl(fullName, _) =>
+          symbolTable.append(LocalVar(alias), fullName)
+        case UnknownImport(path, _) =>
+          symbolTable.append(CallAlias(alias), path)
+          symbolTable.append(LocalVar(alias), path)
+      }
   }
 
   override protected def hasTypes(node: AstNode): Boolean = node match {
@@ -94,7 +97,10 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
   override protected def setCallMethodFullNameFromBase(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
       .map {
-        case ifa: Call if ifa.name.equals("<operator>.indirectFieldAccess") =>
+        case ifa: Call
+            if (ifa.name.equals("<operator>.indirectFieldAccess") || ifa.name.equals(
+              "<operator>.fieldAccess"
+            )) && ifa.argument.headOption.exists(symbolTable.contains) =>
           getTypeFromArgument(ifa.argument.headOption, c)
         case x => getTypeFromArgument(Some(x), c)
       }
@@ -155,8 +161,8 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call
-            if x.argument.headOption.isCall.exists(
-              _.name.equals("<operator>.indirectFieldAccess")
+            if x.argument.headOption.isCall.exists(c =>
+              c.name.equals("<operator>.indirectFieldAccess") || c.name.equals("<operator>.fieldAccess")
             ) && x.argument.headOption.isCall.argument.headOption.exists(c => symbolTable.contains(c)) =>
           setCallMethodFullNameFromBase(x)
           val typs =
