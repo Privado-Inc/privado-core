@@ -43,11 +43,11 @@ class CImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   }
 
   private def resolveEntity(headerFileName: String, importNode: Import) = {
-    val methods =
-      importNode.file.method.where(_.file.nameExact(headerFileName)).map(m => ResolvedMethod(m.fullName, m.name)).l
+    val methods = cpg.file.nameExact(headerFileName).method.map(m => ResolvedMethod(m.fullName, m.name)).l
 
-    val typeDecls = importNode.file.typeDecl
-      .where(_.file.nameExact(headerFileName))
+    val typeDecls = cpg.file
+      .nameExact(headerFileName)
+      .typeDecl
       .map(typeDecl => ResolvedTypeDecl(typeDecl.fullName))
       .l
     val tmp = (typeDecls ++ methods).collectAll[EvaluatedImport].toSet

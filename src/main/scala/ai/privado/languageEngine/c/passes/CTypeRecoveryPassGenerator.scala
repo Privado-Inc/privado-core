@@ -55,7 +55,7 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
     !name.isBlank && (name.equals("new") || name.equals("<init>"))
 
   override protected def importNodes: Iterator[Import] = cu match {
-    case x: File => cu._importViaAstOut
+    case x: File => cpg.imports.where(_.file.name(x.name))
     case _       => super.importNodes
   }
 
@@ -100,6 +100,7 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
       }
       .getOrElse(Set.empty[String])
     val callTypes = recTypes.map(_.stripSuffix("*").concat(s"$pathSep${c.name}"))
+    println(s"Resolving call from Base : callName : ${c.name}, ${c.argument.head.code}")
     symbolTable.append(c, callTypes)
   }
 
@@ -153,7 +154,10 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
           storeCallTypeInfo(x, typs)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
-        case x: Call if x.argument.headOption.isCall.exists(_.name.equals("<operator>.indirectFieldAccess")) =>
+        case x: Call
+            if x.argument.headOption.isCall.exists(
+              _.name.equals("<operator>.indirectFieldAccess")
+            ) && x.argument.headOption.isCall.argument.headOption.exists(c => symbolTable.contains(c)) =>
           setCallMethodFullNameFromBase(x)
           val typs =
             if (state.enableDummyTypesForThisIteration) symbolTable.get(x).toSeq
