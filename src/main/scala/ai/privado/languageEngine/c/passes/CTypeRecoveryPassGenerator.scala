@@ -106,7 +106,6 @@ private class RecoverForCFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, sta
       }
       .getOrElse(Set.empty[String])
     val callTypes = recTypes.map(_.stripSuffix("*").concat(s"$pathSep${c.name}"))
-    println(s"Resolving call from Base : callName : ${c.name}, ${c.argument.head.code}")
     symbolTable.append(c, callTypes)
   }
 
