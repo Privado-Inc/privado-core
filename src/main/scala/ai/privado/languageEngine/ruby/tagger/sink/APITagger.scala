@@ -5,7 +5,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.metric.MetricHandler
-import ai.privado.model.{Constants, NodeType, RuleInfo}
+import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.APITaggerUtility.sinkTagger
 import ai.privado.utility.{StatsRecorder, Utilities}

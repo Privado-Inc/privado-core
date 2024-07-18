@@ -1,4 +1,4 @@
-package ai.privado.languageEngine.java.tagger.sink.api
+package ai.privado.languageEngine.javascript.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
@@ -6,12 +6,8 @@ import ai.privado.tagger.sink.api.{APISinkByMethodFullNameTagger, APISinkTagger}
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 
-object JavaAPISinkTagger extends APISinkTagger {
+object JSAPISinkTagger extends APISinkTagger {
 
-  /** Wrapper method to tag all the api taggers
-    * @param cpg
-    * @param ruleCache
-    */
   override def applyTagger(
     cpg: Cpg,
     ruleCache: RuleCache,
@@ -21,16 +17,13 @@ object JavaAPISinkTagger extends APISinkTagger {
   ): Unit = {
 
     super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder)
-    new JavaAPIRetrofitTagger(cpg, ruleCache).createAndApply()
-
-    if (privadoInput.enableAPIByParameter) {
-      new JavaAPISinkByParameterMarkByAnnotationTagger(cpg, ruleCache).createAndApply()
-      new JavaAPISinkByParameterTagger(cpg, ruleCache).createAndApply()
-    }
 
     new APISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
 
-    new JavaAPITagger(cpg, ruleCache, privadoInput, appCache, statsRecorder).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput = privadoInput, appCache = appCache).createAndApply()
+
+    new GraphqlAPITagger(cpg, ruleCache).createAndApply()
+
   }
 
 }
