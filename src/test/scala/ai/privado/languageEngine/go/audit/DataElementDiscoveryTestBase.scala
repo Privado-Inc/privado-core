@@ -1,7 +1,10 @@
 package ai.privado.languageEngine.go.audit
 
 import ai.privado.cache.{RuleCache, TaggerCache}
+import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.model.*
+import ai.privado.passes.SQLParser
+import ai.privado.tagger.source.SqlQueryTagger
 import better.files.File
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -33,6 +36,9 @@ abstract class DataElementDiscoveryTestBase extends AnyWordSpec with Matchers wi
       .withOutputPath(outputDir.pathAsString)
     val goSrc2Cpg = new GoSrc2Cpg(None)
     val xtocpg = goSrc2Cpg.createCpg(config).map { cpg =>
+      new SQLQueryParser(cpg).createAndApply()
+      new SQLParser(cpg, inputDir.pathAsString, ruleCache).createAndApply()
+      new SqlQueryTagger(cpg, ruleCache).createAndApply()
       applyDefaultOverlays(cpg)
       cpg
     }

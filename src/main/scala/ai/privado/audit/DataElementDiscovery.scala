@@ -2,9 +2,9 @@ package ai.privado.audit
 
 import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.Dataflow
-import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import ai.privado.model.Language
 import ai.privado.model.Language.Language
+import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
+import ai.privado.semantic.Language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -151,6 +151,55 @@ object DataElementDiscoveryUtils {
         logger.debug(s"An error occurred while filtering the workbook result: ${e.getMessage}")
         workbookResult
     }
+  }
+
+  def appendSqlNodesToWorkbook(xtocpg: Try[Cpg], workbookResult: ListBuffer[List[String]]): Unit = xtocpg match {
+    case Success(cpg) =>
+      val sqlNodes = cpg.sqlColumn.l
+      sqlNodes.foreach { sqlNode =>
+        val tableName = sqlNode.code
+        val shouldFilterNode = tableName.length <= 2
+          || DEDSourceDiscoveryUtils.filterCommonVarsStartsWithArr.exists(commonVar => tableName.startsWith(commonVar))
+          || tableName.matches(DEDSourceDiscoveryUtils.filterCommonLangTypes)
+          || tableName.matches(DEDSourceDiscoveryUtils.filterCommonVars)
+
+        if (!shouldFilterNode) {
+          val path       = sqlNode.file.name.headOption.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+          val lineNumber = sqlNode.lineNumber.getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE).toString
+          val nodeUniqueId = DEDSourceDiscoveryUtils.nodeIdentifier(
+            path,
+            sqlNode.code,
+            AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE,
+            lineNumber
+          )
+
+          val sourceRuleId = sqlNode.tag
+            .nameExact(Constants.id)
+            .value
+            .headOption
+            .getOrElse(AuditReportConstants.AUDIT_EMPTY_CELL_VALUE)
+
+          workbookResult += List(
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            path,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            sqlNode.code,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            sourceRuleId.startsWith("Data.Sensitive.").toString,
+            sourceRuleId,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            AuditReportConstants.AUDIT_EMPTY_CELL_VALUE,
+            lineNumber,
+            nodeUniqueId,
+            AuditReportConstants.ELEMENT_DISCOVERY_NODE_TYPE_SQL_NODE
+          )
+        }
+      }
+
+      logger.info("Appended SQL nodes to the workbook")
+
+    case _ => logger.debug("Did not receive a valid cpg")
   }
 }
 
@@ -496,6 +545,7 @@ object DataElementDiscoveryJava {
 
       // Adding Identifiers
       workbookResult = DEDSourceDiscoveryUtils.getIdentifiers(xtocpg, workbookResult, lang)
+      DataElementDiscoveryUtils.appendSqlNodesToWorkbook(xtocpg, workbookResult)
 
       logger.info("Shutting down audit engine")
     } catch {
@@ -773,6 +823,7 @@ object DataElementDiscovery {
         workbookResult = DEDSourceDiscoveryUtils.getFieldAccessIdentifier(xtocpg, workbookResult, lang)
       }
 
+      DataElementDiscoveryUtils.appendSqlNodesToWorkbook(xtocpg, workbookResult)
       logger.info("Shutting down audit engine")
     } catch {
       case ex: Exception =>
