@@ -1,16 +1,14 @@
 package ai.privado.languageEngine.python.passes.config
 
-import ai.privado.languageEngine.python.PrivadoPySrc2CpgFixture
 import ai.privado.languageEngine.java.language.NodeStarters
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
+import ai.privado.testfixtures.PythonFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
-class PythonConfigPropertyPassTest extends PrivadoPySrc2CpgFixture {
-
+class PythonConfigPropertyPassTest extends PythonFrontendTestSuite {
   "Python config property pass" should {
-    "able to create property node" in {
 
-      val cpg = code("""
+    val cpg = code("""
           |DATABASES = {
           |    'default': {
           |        'ENGINE': 'django.db.backends.postgresql',
@@ -39,13 +37,12 @@ class PythonConfigPropertyPassTest extends PrivadoPySrc2CpgFixture {
           |}
           |""".stripMargin)
 
-      new PythonConfigPropertyPass(cpg).createAndApply()
+    new PythonConfigPropertyPass(cpg).createAndApply()
 
+    "able to create property node" in {
       cpg.property.size shouldBe 13
       cpg.property.nameExact("DATABASES.default.ENGINE").value.l shouldBe List("django.db.backends.postgresql")
       cpg.property.nameExact("config.server.host").value.l shouldBe List("localhost")
     }
-
   }
-
 }
