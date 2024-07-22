@@ -25,7 +25,7 @@ package ai.privado.dataflow
 
 import ai.privado.audit.UnresolvedFlowReport
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
-import ai.privado.dataflow.Dataflow.getExpendedFlowInfo
+import ai.privado.dataflow.Dataflow.{addOriginalSourceToDataflowPath, getExpendedFlowInfo}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.default.NodeStarters
@@ -96,7 +96,30 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
               _.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name),
               _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
             )
-          sinks.reachableByFlows(firstLevelSources).l
+
+          val derivedSources =
+            sources.where(_.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
+
+          derivedSources.foreach(ds =>
+            println(s"${ds.code} <-> ${ds.originalSourceOut.head.asInstanceOf[AstNode].code}")
+          )
+
+//          firstLevelSources.foreach(fs => fs.originalSourceOut.foreach(c => println(c.asInstanceOf[AstNode].code)))
+//
+//          println(
+//            sinks
+//              .reachableByFlows(firstLevelSources)
+//              .foreach(p => {
+//                p.elements.foreach(e => println(e.code))
+//                println("-----")
+//              })
+//          )
+//          println("===============")
+          val dataflows: List[Path] = sinks
+            .reachableByFlows(firstLevelSources)
+            .l
+            .map(addOriginalSourceToDataflowPath)
+          dataflows
         }
         // Commented the below piece of code as we still need to test out and fix few open Issues which are
         // resulting in FP in 2nd level derivation for Storages
@@ -288,5 +311,18 @@ object Dataflow {
       expendedFlow += DataFlowPathIntermediateModel(sourceId, sinkId, pathId.getOrElse(""), paths)
     })
     expendedFlow.toList
+  }
+
+  def addOriginalSourceToDataflowPath(dataflow: Path): Path = {
+//    dataflow.elements.foreach(e => println(e.code))
+    val dataflowIterator = dataflow.elements
+    if (dataflowIterator.nonEmpty) {
+      val originalSourceForFirstElement = dataflowIterator.head.originalSourceOut.l
+      if (originalSourceForFirstElement.nonEmpty) {
+        val paths = Path(originalSourceForFirstElement.head.asInstanceOf[AstNode] +: dataflowIterator)
+        return paths
+      }
+    }
+    dataflow
   }
 }
