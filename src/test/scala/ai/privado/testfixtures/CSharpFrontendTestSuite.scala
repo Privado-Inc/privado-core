@@ -43,4 +43,4 @@ class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) ex
 }
 
 class CSharpFrontendTestSuite(fileSuffix: String = ".cs", language: Language.Value = Language.CSHARP)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithC(fileSuffix, language)) {}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithCSharp(fileSuffix, language)) {}
