@@ -69,6 +69,7 @@ class CProcessor(
       .withInputPath(sourceRepoLocation)
       .withOutputPath(cpgOutputPath)
       .withIgnoredFilesRegex(excludeFileRegex)
+      .withSkipHeaderFileContext(privadoInput.isSkipHeaderFileContext)
 
     val xtocpg = new C2Cpg().createCpg(cpgconfig).map { cpg =>
       statsRecorder.endLastStage()
