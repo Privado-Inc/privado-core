@@ -378,7 +378,8 @@ object ExporterUtility {
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
+    propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
+    dataFlowCache: DataFlowCache
   ): (
     mutable.LinkedHashMap[String, Json],
     List[SourceModel],
@@ -389,7 +390,15 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
-    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
+    val sourceExporter = new SourceExporter(
+      cpg,
+      ruleCache,
+      privadoInput,
+      repoItemTagName = repoItemTagName,
+      appCache,
+      dataFlowCache,
+      dataflows
+    )
     val sinkExporter =
       new SinkExporter(
         cpg,
@@ -409,7 +418,16 @@ object ExporterUtility {
     val probableSinkExporter =
       new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName, appCache)
     val policyAndThreatExporter =
-      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput, appCache)
+      new PolicyAndThreatExporter(
+        cpg,
+        ruleCache,
+        taggerCache,
+        dataFlowModel,
+        privadoInput,
+        appCache,
+        dataFlowCache,
+        dataflows
+      )
     val output = mutable.LinkedHashMap[String, Json]()
 
     output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)

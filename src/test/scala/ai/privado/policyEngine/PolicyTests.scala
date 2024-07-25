@@ -19,6 +19,9 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import io.joern.dataflowengineoss.language.Path
+
+import scala.collection.mutable
 
 class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   val sourceRule: List[RuleInfo] = List(
@@ -762,7 +765,9 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         ruleCache,
         privadoInput,
         collectionExporter,
-        appCache = appCache
+        appCache = appCache,
+        dataFlowCache = dataFlowCache,
+        new mutable.HashMap[String, Path]().toMap
       )
     policyExecutor
   }

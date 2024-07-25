@@ -42,7 +42,9 @@ class ThreatEngineExecutor(
   taggerCache: TaggerCache,
   dataFlowModel: List[DataFlowPathModel],
   privadoInput: PrivadoInput,
-  appCache: AppCache
+  appCache: AppCache,
+  dataFlowCache: DataFlowCache,
+  dataflows: Map[String, Path]
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -130,7 +132,16 @@ class ThreatEngineExecutor(
         }
 
       case "PrivadoPolicy.CookieConsent.IsCookieConsentMgmtModuleImplemented" =>
-        CookieConsentMgmtModule.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput, appCache) match {
+        CookieConsentMgmtModule.getViolations(
+          threat,
+          cpg,
+          ruleCache,
+          dataFlowModel,
+          privadoInput,
+          appCache,
+          dataFlowCache,
+          dataflows
+        ) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -269,7 +280,16 @@ class ThreatEngineExecutor(
 
     val violationResponse = threatId match {
       case "Threats.Sharing.isDataExposedToThirdPartiesViaNotification" if isAndroidRepo =>
-        DataLeakageToNotifications.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput, appCache) match {
+        DataLeakageToNotifications.getViolations(
+          threat,
+          cpg,
+          ruleCache,
+          dataFlowModel,
+          privadoInput,
+          appCache,
+          dataFlowCache,
+          dataflows
+        ) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")
@@ -277,7 +297,16 @@ class ThreatEngineExecutor(
           }
         }
       case "Threats.Leakage.isDataLeakingToLog" =>
-        DataLeakageToLogs.getViolations(threat, cpg, ruleCache, dataFlowModel, privadoInput, appCache) match {
+        DataLeakageToLogs.getViolations(
+          threat,
+          cpg,
+          ruleCache,
+          dataFlowModel,
+          privadoInput,
+          appCache,
+          dataFlowCache,
+          dataflows
+        ) match {
           case Success(res) => Some(res)
           case Failure(e) => {
             logger.debug(s"Error for ${threatId}: ${e}")

@@ -22,7 +22,7 @@
 
 package ai.privado.policyEngine
 
-import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.threatEngine.ThreatUtility.getSourceNode
@@ -54,7 +54,9 @@ class PolicyExecutor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   collections: List[CollectionModel] = List[CollectionModel](),
-  appCache: AppCache
+  appCache: AppCache,
+  dataFlowCache: DataFlowCache,
+  dataflows: Map[String, Path]
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -69,7 +71,14 @@ class PolicyExecutor(
   // Map to contain sinkId -> List(pathIds)
   lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
-  val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, appCache = appCache)
+  val sourceExporter = new SourceExporter(
+    cpg,
+    ruleCache,
+    privadoInput,
+    appCache = appCache,
+    dataFlowCache = dataFlowCache,
+    dataflows = dataflows.toMap
+  )
 
   lazy val sourceExporterModel = sourceExporter.getSources
 

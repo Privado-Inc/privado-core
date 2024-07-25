@@ -42,7 +42,9 @@ class PolicyAndThreatExporter(
   taggerCache: TaggerCache,
   dataFlowModel: List[DataFlowPathModel],
   privadoInput: PrivadoInput,
-  appCache: AppCache
+  appCache: AppCache,
+  dataFlowCache: DataFlowCache,
+  dataflows: Map[String, Path]
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -53,9 +55,29 @@ class PolicyAndThreatExporter(
     appCache: AppCache
   ): List[ViolationModel] = {
     val policyExecutor =
-      new PolicyExecutor(cpg, dataFlowModel, appCache.repoName, ruleCache, privadoInput, collections, appCache)
+      new PolicyExecutor(
+        cpg,
+        dataFlowModel,
+        appCache.repoName,
+        ruleCache,
+        privadoInput,
+        collections,
+        appCache,
+        dataFlowCache,
+        dataflows
+      )
     val threatExecutor =
-      new ThreatEngineExecutor(cpg, repoPath, ruleCache, taggerCache, dataFlowModel, privadoInput, appCache)
+      new ThreatEngineExecutor(
+        cpg,
+        repoPath,
+        ruleCache,
+        taggerCache,
+        dataFlowModel,
+        privadoInput,
+        appCache,
+        dataFlowCache,
+        dataflows
+      )
 
     try {
       threatExecutor.getProcessingViolations(ruleCache.getAllThreat) ++ policyExecutor.getProcessingViolations

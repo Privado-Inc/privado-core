@@ -23,17 +23,18 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import ai.privado.tagger.utility.SourceTaggerUtility.{getFilteredSourcesByTaggingDisabled}
+import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTaggingDisabled
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
 import ai.privado.semantic.Language.*
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
+import io.joern.dataflowengineoss.language.Path
 
 import scala.collection.mutable
 
@@ -42,7 +43,9 @@ class SourceExporter(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   repoItemTagName: Option[String] = None,
-  appCache: AppCache
+  appCache: AppCache,
+  dataFlowCache: DataFlowCache,
+  dataflows: Map[String, Path]
 ) {
 
   lazy val sourcesList: List[AstNode]      = getSourcesList
@@ -70,19 +73,28 @@ class SourceExporter(
     })
     processingMap
       .map(entrySet =>
+        val taggedSourcesList = {
+          if (privadoInput.disableDeDuplication)
+            entrySet._2.toList
+          else
+            entrySet._2.toList
+              .distinctBy(_.code)
+              .distinctBy(_.lineNumber)
+              .distinctBy(Utilities.getFileNameForNode)
+        }
+        // Fetch first node of every dataflow
+        val dataflowSourceNode = dataFlowCache.getDataflowAfterDedup
+          .filter(_.sourceId.equals(entrySet._1))
+          .map(pathModel => dataflows(pathModel.pathId).elements.head)
+        val finalSourceNodesBeforeDedup = taggedSourcesList ++ dataflowSourceNode
         SourceProcessingModel(
           entrySet._1,
           ExporterUtility
             .convertPathElements(
-              {
-                if (privadoInput.disableDeDuplication)
-                  entrySet._2.toList
-                else
-                  entrySet._2.toList
-                    .distinctBy(_.code)
-                    .distinctBy(_.lineNumber)
-                    .distinctBy(Utilities.getFileNameForNode)
-              },
+              finalSourceNodesBeforeDedup
+                .distinctBy(_.code)
+                .distinctBy(_.lineNumber)
+                .distinctBy(Utilities.getFileNameForNode),
               appCache = appCache,
               ruleCache = ruleCache
             )
