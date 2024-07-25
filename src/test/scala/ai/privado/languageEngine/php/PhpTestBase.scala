@@ -32,6 +32,7 @@ import ai.privado.model.*
 import ai.privado.tagger.source.LiteralTagger
 import ai.privado.threatEngine.ThreatEngineExecutor
 import better.files.File
+import io.joern.dataflowengineoss.language.Path
 import io.joern.php2cpg.{Config, Php2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -87,7 +88,9 @@ abstract class PhpTestBase extends AnyWordSpec with Matchers with BeforeAndAfter
         null,
         dataFlowCache.getDataflowAfterDedup,
         privadoInput,
-        appCache
+        appCache,
+        dataFlowCache = dataFlowCache,
+        dataflows = mutable.HashMap[String, Path]().toMap
       )
     (cpg, threatEngine)
   }
