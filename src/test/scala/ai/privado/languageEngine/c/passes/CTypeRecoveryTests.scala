@@ -1,5 +1,6 @@
 package ai.privado.languageEngine.c.passes
 
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.testfixtures.CFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
@@ -32,6 +33,7 @@ class CTypeRecoveryTests extends CFrontendTestSuite {
         |     GetLinkingManager()->LoggedOut();
         |};
         |""".stripMargin)
+      .withPrivadoInput(privadoInput = PrivadoInput(isSkipHeaderFileContext = true))
     "resolve types via method name placed with assignment" in {
       val List(loggedIn) = cpg.call("LoggedIn").l
       loggedIn.methodFullName shouldBe ("LoggedIn")
