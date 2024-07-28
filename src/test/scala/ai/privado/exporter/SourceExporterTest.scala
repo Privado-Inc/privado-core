@@ -66,11 +66,55 @@ class SourceExporterTest extends JavaFrontendTestSuite {
           dataflows = dataflowMap
         )
       !sourceExporter.getProcessing.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
-      sourceExporter.getProcessing.map(_.sourceId).headOption.get shouldBe "Data.Sensitive.FirstName"
-      sourceExporter.getProcessing
-        .flatMap(_.occurrences)
-        .map(_.sample)
-        .exists(_.equals("java.lang.String firstName")) shouldBe true
+    }
+  }
+
+  "Processing source export" should {
+    val cpg = code("""
+        |class User {
+        |   public String firstName;
+        |   public String getName() {return firstName;}
+        |}
+        |
+        |class Main {
+        |  public void printValue() {
+        |  User user = new User();
+        |  System.out.println(user);}
+        |}
+        |""".stripMargin)
+      .withRuleCache(ruleCache)
+      .withPrivadoInput(privadoInput)
+      .withAuditCache(auditCache)
+      .withAppCache(appCache)
+
+    "tag a derived source" in {
+      val derivedSource = cpg.identifier("user").lineNumber(9).l
+      derivedSource.tag
+        .nameExact(Constants.catLevelOne)
+        .valueExact(CatLevelOne.DERIVED_SOURCES.name)
+        .nonEmpty shouldBe true
+    }
+
+    "Processing section should have firstNode of every dataflow" in {
+      val dataflowMap =
+        Dataflow(cpg, new StatsRecorder()).dataflow(privadoInput, ruleCache, dataflowCache, auditCache, appCache)
+      val sourceExporter =
+        SourceExporter(
+          cpg,
+          ruleCache,
+          privadoInput,
+          appCache = appCache,
+          dataFlowCache = dataflowCache,
+          dataflows = dataflowMap
+        )
+
+      val sourceProcessingModelList = sourceExporter.getProcessing
+      sourceProcessingModelList.headOption.get.occurrences.size shouldBe 2
+
+      sourceProcessingModelList.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
+      sourceProcessingModelList.flatMap(_.occurrences).map(_.sample).exists(_.equals("this.firstName")) shouldBe true
+
+      sourceProcessingModelList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
     }
   }
 }
