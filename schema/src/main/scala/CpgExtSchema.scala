@@ -225,7 +225,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Edge from derived source to the original source
   private val originalSourceEdge = builder.addEdgeType(CpgSchemaConstants.ORIGINAL_SOURCE_EDGE_NAME)
-  astNode.addOutEdge(edge = originalSourceEdge, inNode = member)
+  astNode.addOutEdge(edge = originalSourceEdge, inNode = astNode)
 }
 
 object CpgExtSchema {
