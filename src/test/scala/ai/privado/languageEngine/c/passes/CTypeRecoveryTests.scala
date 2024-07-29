@@ -36,14 +36,12 @@ class CTypeRecoveryTests extends CFrontendTestSuite {
       .withPrivadoInput(privadoInput = PrivadoInput(isSkipHeaderFileContext = true))
     "resolve types via method name placed with assignment" in {
       val List(loggedIn) = cpg.call("LoggedIn").l
-      loggedIn.methodFullName shouldBe ("LoggedIn")
-      loggedIn.dynamicTypeHintFullName.l shouldBe List("LinkingManager.LoggedIn")
+      loggedIn.methodFullName shouldBe "LinkingManager.LoggedIn"
     }
 
     "resolve types via method name placed without assignment" in {
       val List(loggedIn) = cpg.call("LoggedOut").l
-      loggedIn.methodFullName shouldBe ("LoggedOut")
-      loggedIn.dynamicTypeHintFullName.l shouldBe List("LinkingManager.LoggedOut")
+      loggedIn.methodFullName shouldBe "LinkingManager.LoggedOut"
     }
   }
 
