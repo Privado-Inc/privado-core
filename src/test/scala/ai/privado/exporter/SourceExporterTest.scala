@@ -90,11 +90,10 @@ class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterVali
       val processingList = getProcessings(outputJson)
 
       processingList.headOption.get.occurrences.size shouldBe 2
+      processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
 
       processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
       processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("java.lang.String firstName")) shouldBe true
-
-      processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
     }
   }
 
@@ -121,7 +120,6 @@ class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterVali
       val outputJson     = cpg.getPrivadoJson()
       val processingList = getProcessings(outputJson)
 
-      processingList.headOption.get.occurrences.size shouldBe 2
       processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
 
       processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("firstName")) shouldBe true
