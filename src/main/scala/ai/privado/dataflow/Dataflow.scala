@@ -106,29 +106,10 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
               _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
             )
 
-          val derivedSources =
-            sources.where(_.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString))
-
-          derivedSources.foreach(ds =>
-            println(s"${ds.code} <-> ${ds.originalSourceOut.head.asInstanceOf[AstNode].code}")
-          )
-
-//          firstLevelSources.foreach(fs => fs.originalSourceOut.foreach(c => println(c.asInstanceOf[AstNode].code)))
-//
-//          println(
-//            sinks
-//              .reachableByFlows(firstLevelSources)
-//              .foreach(p => {
-//                p.elements.foreach(e => println(e.code))
-//                println("-----")
-//              })
-//          )
-//          println("===============")
-          val dataflows: List[Path] = sinks
+          sinks
             .reachableByFlows(firstLevelSources)
             .l
             .flatMap(addOriginalSourceToDataflowPath)
-          dataflows
         }
         // Commented the below piece of code as we still need to test out and fix few open Issues which are
         // resulting in FP in 2nd level derivation for Storages
@@ -241,45 +222,22 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
   }
 
   private def addOriginalSourceToDataflowPath(dataflow: Path): List[Path] = {
-    //    dataflow.elements.foreach(e => println(e.code))
     val dataflowIterator = dataflow.elements
 
     val originalSourcesForHeadElement =
-      dataflowIterator.head.originalSourceOut.map(c => c.asInstanceOf[AstNode]).toList
+      if (dataflowIterator.nonEmpty)
+        dataflowIterator.head.originalSourceOut
+          .map(c => c.asInstanceOf[AstNode])
+          .toList
+      else List.empty[AstNode]
 
-    val dataflowAddedForTags: Set[String] = Set.empty[String]
-
-    originalSourcesForHeadElement.map(originalSource => {
-      Path(originalSource +: dataflowIterator)
-    })
-
-//    def getDerivedSourceValue: List[String] = {
-//      val startingPointTags =
-//        dataflowIterator.head.tag.name("privadoDerived_.*").l
-//      val isDerivedSource = dataflowIterator.nonEmpty && startingPointTags.nonEmpty
-//
-//      if (isDerivedSource) {
-//        return startingPointTags.value.toList
-//      }
-//      List.empty[String]
-//    }
-//
-//    if (getDerivedSourceValue.nonEmpty) {
-//      val derivedSourceStartingPoint = dataflowIterator.head
-//
-//      val derivedSourceTagValue = derivedSourceStartingPoint.tag.value
-//      val startingPoint         = derivedSourceStartingPoint.asInstanceOf[Identifier]
-//
-//      val correspondingClass = cpg.typeDecl.fullName(s"${startingPoint.typeFullName}.*").l
-//      correspondingClass.member.foreach(member => println((member.tag.name.l, member.tag.value.l)))
-//
-//      println(s"Derived source tag value:  ${derivedSourceTagValue.l}")
-//
-//      //      if (originalSourceForFirstElement.nonEmpty) {
-//      //      val paths = Path(originalSourceForFirstElement.head.asInstanceOf[AstNode] +: dataflowIterator)
-//      //      return paths
-//      //      }
-//    }
+    if (originalSourcesForHeadElement.nonEmpty) {
+      originalSourcesForHeadElement.map(originalSource => {
+        Path(originalSource +: dataflowIterator)
+      })
+    } else {
+      List(dataflow)
+    }
   }
 
 }

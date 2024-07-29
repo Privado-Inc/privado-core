@@ -62,10 +62,8 @@ class SourceExporter(
         val sourceIterator = source.originalSourceOut.l
         val sourceNode     = if (sourceIterator.nonEmpty) sourceIterator.head.asInstanceOf[AstNode] else source
         if (processingMap.contains(sourceId)) {
-          println(s"Original source for ${sourceId}: ${sourceNode.code}")
           processingMap(sourceId) = processingMap(sourceId).addOne(sourceNode)
         } else {
-          println(s"Original source for ${sourceId}: ${sourceNode.code}")
           processingMap.addOne(sourceId -> mutable.Set(sourceNode))
         }
       }
