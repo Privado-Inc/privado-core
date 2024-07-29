@@ -16,6 +16,8 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
     "^(db|database|jdbc|mysql|postgres|oracle|sqlserver)_(connection_)?(host|port|name|user|password|uri|driver|ssl|pool_size|timeout|connection_string)$"
   val apiConnectionRegex = ".*/(api|external)?(_|\\.)?(url|base(_|\\.)?path)/i"
 
+  val cachedArguments: List[AstNode] = cpg.call("<operator>.(assignment|fieldAccess)").astChildren.l
+
   override def generateParts(): Array[_ <: AnyRef] = {
     // TODO Filter out property nodes not created from config files, remove in future
     cpg.property.l
@@ -49,7 +51,7 @@ class JSPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProperty
     } else {
       val pattern =
         s".*process\\.env(\\.${propertyName}|\\[('|`|\")${propertyName}('|`|\")]).*|.*(conf|Conf).*${propertyName}.*"
-      cpg.call("<operator>.(assignment|fieldAccess)").astChildren.code(pattern).l
+      cachedArguments.code(pattern).l
     }
   }
 
