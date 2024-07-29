@@ -120,7 +120,9 @@ class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterVali
     "Processing section should have firstNode of every dataflow" in {
       val outputJson     = cpg.getPrivadoJson()
       val processingList = getProcessings(outputJson)
-
+      processingList.head.occurrences.foreach(p => {
+        println("-----------y " + p.sample + "  " + p.lineNumber)
+      })
       processingList.headOption.get.occurrences.size shouldBe 2
       processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
 
