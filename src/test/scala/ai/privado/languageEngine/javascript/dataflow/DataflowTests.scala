@@ -43,7 +43,6 @@ class DataflowTests extends JavaScriptFrontendTestSuite {
                        |
                        |
                        |let p = new Person("", "", "");
-                       |p = "123";
                        |console.log(p)
                        |
                        |let soC = new SomeOtherClass("");

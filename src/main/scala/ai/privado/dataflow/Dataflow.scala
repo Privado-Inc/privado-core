@@ -25,7 +25,7 @@ package ai.privado.dataflow
 
 import ai.privado.audit.UnresolvedFlowReport
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
-import ai.privado.dataflow.Dataflow.{addOriginalSourceToDataflowPath, getExpendedFlowInfo}
+import ai.privado.dataflow.Dataflow.getExpendedFlowInfo
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.ExporterUtility
 import ai.privado.languageEngine.default.NodeStarters
@@ -39,7 +39,14 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, HightouchSink}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNode,
+  Call,
+  CfgNode,
+  HightouchSink,
+  Identifier,
+  MethodParameterIn
+}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -47,6 +54,8 @@ import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTagging
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
+
+import ai.privado.languageEngine.java.language.NodeToOriginalSource
 
 class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
 
@@ -118,7 +127,7 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
           val dataflows: List[Path] = sinks
             .reachableByFlows(firstLevelSources)
             .l
-            .map(addOriginalSourceToDataflowPath)
+            .flatMap(addOriginalSourceToDataflowPath)
           dataflows
         }
         // Commented the below piece of code as we still need to test out and fix few open Issues which are
@@ -231,6 +240,48 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
     }
   }
 
+  private def addOriginalSourceToDataflowPath(dataflow: Path): List[Path] = {
+    //    dataflow.elements.foreach(e => println(e.code))
+    val dataflowIterator = dataflow.elements
+
+    val originalSourcesForHeadElement =
+      dataflowIterator.head.originalSourceOut.map(c => c.asInstanceOf[AstNode]).toList
+
+    val dataflowAddedForTags: Set[String] = Set.empty[String]
+
+    originalSourcesForHeadElement.map(originalSource => {
+      Path(originalSource +: dataflowIterator)
+    })
+
+//    def getDerivedSourceValue: List[String] = {
+//      val startingPointTags =
+//        dataflowIterator.head.tag.name("privadoDerived_.*").l
+//      val isDerivedSource = dataflowIterator.nonEmpty && startingPointTags.nonEmpty
+//
+//      if (isDerivedSource) {
+//        return startingPointTags.value.toList
+//      }
+//      List.empty[String]
+//    }
+//
+//    if (getDerivedSourceValue.nonEmpty) {
+//      val derivedSourceStartingPoint = dataflowIterator.head
+//
+//      val derivedSourceTagValue = derivedSourceStartingPoint.tag.value
+//      val startingPoint         = derivedSourceStartingPoint.asInstanceOf[Identifier]
+//
+//      val correspondingClass = cpg.typeDecl.fullName(s"${startingPoint.typeFullName}.*").l
+//      correspondingClass.member.foreach(member => println((member.tag.name.l, member.tag.value.l)))
+//
+//      println(s"Derived source tag value:  ${derivedSourceTagValue.l}")
+//
+//      //      if (originalSourceForFirstElement.nonEmpty) {
+//      //      val paths = Path(originalSourceForFirstElement.head.asInstanceOf[AstNode] +: dataflowIterator)
+//      //      return paths
+//      //      }
+//    }
+  }
+
 }
 
 object Dataflow {
@@ -311,18 +362,5 @@ object Dataflow {
       expendedFlow += DataFlowPathIntermediateModel(sourceId, sinkId, pathId.getOrElse(""), paths)
     })
     expendedFlow.toList
-  }
-
-  def addOriginalSourceToDataflowPath(dataflow: Path): Path = {
-//    dataflow.elements.foreach(e => println(e.code))
-    val dataflowIterator = dataflow.elements
-    if (dataflowIterator.nonEmpty) {
-      val originalSourceForFirstElement = dataflowIterator.head.originalSourceOut.l
-      if (originalSourceForFirstElement.nonEmpty) {
-        val paths = Path(originalSourceForFirstElement.head.asInstanceOf[AstNode] +: dataflowIterator)
-        return paths
-      }
-    }
-    dataflow
   }
 }

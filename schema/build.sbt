@@ -1,7 +1,6 @@
 name := "standalone-schema"
 
 libraryDependencies += "io.shiftleft" %% "overflowdb-codegen"       % "2.98"
-libraryDependencies += "io.shiftleft" %% "semanticcpg"              % "2.98"
 libraryDependencies += "io.shiftleft" %% "codepropertygraph-schema" % Versions.cpg
 
 ThisBuild / resolvers ++= Seq("Github Package Registry" at "https://maven.pkg.github.com/Privado-Inc/codepropertygraph")
