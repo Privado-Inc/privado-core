@@ -10,20 +10,17 @@ import io.shiftleft.semanticcpg.language.*
 import ai.privado.rule.{RuleInfoTestData, SinkRuleTestData}
 import ai.privado.dataflow.Dataflow
 import ai.privado.utility.StatsRecorder
+import ai.privado.exporter.{DataflowExporterValidator, SourceExporterValidator}
 
-class SourceExporterTest extends JavaFrontendTestSuite {
+class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterValidator with SourceExporterValidator {
 
   val ruleCache = RuleCache().setRule(
     RuleInfoTestData.rule
       .copy(sources = RuleInfoTestData.sourceRule, sinks = List(SinkRuleTestData.leakageKotlinRule))
   )
 
-  val auditCache    = AuditCache()
-  val privadoInput  = PrivadoInput(disableDeDuplication = true)
-  var dataflowCache = new DataFlowCache(privadoInput = privadoInput, auditCache = auditCache)
-  var appCache      = AppCache()
-
   "Identifier Tagger" should {
+    val privadoInput = PrivadoInput(disableDeDuplication = true)
     val cpg = code(
       """
         |class User {
@@ -41,8 +38,6 @@ class SourceExporterTest extends JavaFrontendTestSuite {
     )
       .withRuleCache(ruleCache)
       .withPrivadoInput(privadoInput)
-      .withAuditCache(auditCache)
-      .withAppCache(appCache)
 
     "tag a derived source" in {
       val identifierNodes = cpg.identifier("user").l
@@ -53,42 +48,37 @@ class SourceExporterTest extends JavaFrontendTestSuite {
         .nonEmpty shouldBe true
     }
 
-    "not export derived source under processing" in {
-      val dataflowMap =
-        Dataflow(cpg, new StatsRecorder()).dataflow(privadoInput, ruleCache, dataflowCache, auditCache, appCache)
-      val sourceExporter =
-        SourceExporter(
-          cpg,
-          ruleCache,
-          privadoInput,
-          appCache = appCache,
-          dataFlowCache = dataflowCache,
-          dataflows = dataflowMap
-        )
-      !sourceExporter.getProcessing.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
+    "export derived source under processing" in {
+      val outputJson     = cpg.getPrivadoJson()
+      val processingList = getProcessings(outputJson)
+
+      // should be present inside processing section because "user" is the first node of dataflow
+      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
     }
   }
 
-  "Processing source export" should {
-    val cpg = code("""
+  "when derived node is start node" should {
+    val privadoInput = PrivadoInput()
+    val cpg = code(
+      """
         |class User {
         |   public String firstName;
-        |   public String getName() {return firstName;}
         |}
         |
         |class Main {
         |  public void printValue() {
         |  User user = new User();
-        |  System.out.println(user);}
+        |  System.out.println(user);
+        |  }
         |}
-        |""".stripMargin)
+        |""".stripMargin,
+      "index.java"
+    )
       .withRuleCache(ruleCache)
       .withPrivadoInput(privadoInput)
-      .withAuditCache(auditCache)
-      .withAppCache(appCache)
 
     "tag a derived source" in {
-      val derivedSource = cpg.identifier("user").lineNumber(9).l
+      val derivedSource = cpg.identifier("user").lineNumber(8).l
       derivedSource.tag
         .nameExact(Constants.catLevelOne)
         .valueExact(CatLevelOne.DERIVED_SOURCES.name)
@@ -96,25 +86,47 @@ class SourceExporterTest extends JavaFrontendTestSuite {
     }
 
     "Processing section should have firstNode of every dataflow" in {
-      val dataflowMap =
-        Dataflow(cpg, new StatsRecorder()).dataflow(privadoInput, ruleCache, dataflowCache, auditCache, appCache)
-      val sourceExporter =
-        SourceExporter(
-          cpg,
-          ruleCache,
-          privadoInput,
-          appCache = appCache,
-          dataFlowCache = dataflowCache,
-          dataflows = dataflowMap
-        )
+      val outputJson     = cpg.getPrivadoJson()
+      val processingList = getProcessings(outputJson)
 
-      val sourceProcessingModelList = sourceExporter.getProcessing
-      sourceProcessingModelList.headOption.get.occurrences.size shouldBe 2
+      processingList.headOption.get.occurrences.size shouldBe 2
 
-      sourceProcessingModelList.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
-      sourceProcessingModelList.flatMap(_.occurrences).map(_.sample).exists(_.equals("this.firstName")) shouldBe true
+      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
+      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("java.lang.String firstName")) shouldBe true
 
-      sourceProcessingModelList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
+      processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
+    }
+  }
+
+  "when having multiple node tagged with same rule" should {
+    val privadoInput = PrivadoInput()
+    val cpg = code(
+      """
+        |class Main {
+        |
+        |   public void printValues() {
+        |     String firstName = "first";
+        |     String first_name = "first";
+        |     System.out.println(firstName);
+        |     System.out.println(first_name);
+        |   }
+        |}
+        |""".stripMargin,
+      "index.java"
+    )
+      .withRuleCache(ruleCache)
+      .withPrivadoInput(privadoInput)
+
+    "Processing section should have firstNode of every dataflow" in {
+      val outputJson     = cpg.getPrivadoJson()
+      val processingList = getProcessings(outputJson)
+
+      processingList.headOption.get.occurrences.size shouldBe 2
+      processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
+
+      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("firstName")) shouldBe true
+      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("first_name")) shouldBe true
+
     }
   }
 }
