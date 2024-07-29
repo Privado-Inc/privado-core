@@ -43,4 +43,22 @@ class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) exten
 }
 
 class PhpFrontendTestSuite(fileSuffix: String = ".php", language: Language.Value = Language.PHP)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithPhp(fileSuffix, language)) {}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithPhp(fileSuffix, language)) {
+  val leakageRule = RuleInfo(
+    "Log console",
+    "Leakage",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List(".*log->info.*"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.leakages,
+    Language.UNKNOWN,
+    Array()
+  )
+}

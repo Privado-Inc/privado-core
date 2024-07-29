@@ -12,7 +12,7 @@ import ai.privado.cache.{
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.processor.GoProcessor
-import ai.privado.model.Language
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.utility.StatsRecorder
 
 class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extends TestCpg {
@@ -44,4 +44,24 @@ class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extend
 }
 
 class GoFrontendTestSuite(fileSuffix: String = ".go", language: Language.Value = Language.GO)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithGo(fileSuffix, language)) {}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithGo(fileSuffix, language)) {
+
+  val leakageRule = RuleInfo(
+    "Log console",
+    "Leakage",
+    "",
+    FilterProperty.METHOD_FULL_NAME,
+    Array(),
+    List("(?i).*println.*"),
+    false,
+    "",
+    Map(),
+    NodeType.REGULAR,
+    "",
+    CatLevelOne.SINKS,
+    catLevelTwo = Constants.leakages,
+    Language.UNKNOWN,
+    Array()
+  )
+
+}

@@ -1,17 +1,16 @@
-package ai.privado.languageEngine.javascript.dataflow
+package ai.privado.languageEngine.go.dataflow
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.testfixtures.GoFrontendTestSuite
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.rule.RuleInfoTestData
-import ai.privado.testfixtures.JavaScriptFrontendTestSuite
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
+import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 
-class DataflowTests extends JavaScriptFrontendTestSuite {
-
+class DataflowTests extends GoFrontendTestSuite {
   private val ruleCache =
     RuleCache().setRule(RuleInfoTestData.rule.copy(sources = RuleInfoTestData.sourceRule, sinks = List(leakageRule)))
   private val auditCache    = AuditCache()
@@ -20,19 +19,23 @@ class DataflowTests extends JavaScriptFrontendTestSuite {
   private val appCache      = AppCache()
 
   "dataflow for derived sources tagged using member name" should {
-    val cpg = code("""class Person {
-        |    constructor(firstName, lastName) {
-        |        this.firstName = firstName;
-        |        this.lastName = lastName;
-        |    }
-        |}
-        |
-        |val userPassword = "123";
-        |console.log(userPassword);
-        |
-        |let p = new Person("", "", "");
-        |console.log(p)
-        |""".stripMargin)
+    val cpg = code("""
+                     |package main
+                     |import "fmt"
+                     |
+                     |type Person struct {
+                     |    firstName string
+                     |    lastName  string
+                     |}
+                     |
+                     |func main() {
+                     |    person := Person{firstName: "", lastName:""}
+                     |    fmt.Println(person)
+                     |
+                     |    userPassword := 123
+                     |    fmt.Println(userPassword)
+                     |}
+                     |""".stripMargin)
       .withRuleCache(ruleCache)
       .withPrivadoInput(privadoInput)
       .withAuditCache(auditCache)
@@ -48,11 +51,11 @@ class DataflowTests extends JavaScriptFrontendTestSuite {
           .map((_, path) => path.elements.head)
           .toList
 
-      firstName.code shouldBe "this.firstName = firstName;"
-      firstName.lineNumber shouldBe Some(3)
+      firstName.code shouldBe "firstName"
+      firstName.lineNumber shouldBe Some(6)
 
-      lastName.code shouldBe "this.lastName = lastName;"
-      lastName.lineNumber shouldBe Some(4)
+      lastName.code shouldBe "lastName"
+      lastName.lineNumber shouldBe Some(7)
     }
 
     "not impact dataflows not starting from derived sources" in {
@@ -64,7 +67,7 @@ class DataflowTests extends JavaScriptFrontendTestSuite {
           .toList
 
       userPassword.code shouldBe "userPassword";
-      userPassword.lineNumber shouldBe Some(8)
+      userPassword.lineNumber shouldBe Some(14)
     }
   }
 }
