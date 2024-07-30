@@ -38,6 +38,7 @@ libraryDependencies ++= Seq(
   "io.joern" %% "kotlin2cpg" % Versions.joern exclude ("com.squareup.okhttp3", "okhttp") exclude ("com.squareup.okio", "okio"),
   "io.joern"      %% "gosrc2cpg"     % Versions.joern,
   "io.joern"      %% "csharpsrc2cpg" % Versions.joern,
+  "io.joern"      %% "c2cpg"         % Versions.joern,
   "io.joern"      %% "joern-cli"     % Versions.joern exclude ("io.undertow", "undertow-core"),
   "io.joern"      %% "semanticcpg"   % Versions.joern,
   "io.joern"      %% "semanticcpg"   % Versions.joern % Test classifier "tests",
