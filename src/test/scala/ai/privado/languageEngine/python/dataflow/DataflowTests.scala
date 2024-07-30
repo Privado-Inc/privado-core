@@ -58,8 +58,10 @@ class DataflowTests extends PythonFrontendTestSuite with DataflowExporterValidat
       val List(firstNameSourceId) = firstName.tag.name("id").value.l
       val List(lastNameSourceId)  = lastName.tag.name("id").value.l
 
-      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
-      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
+      val headDataflowForFirstName =
+        getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
+      val headDataflowForLastName =
+        getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
 
       validateLineNumberForDataflowStep(headDataflowForFirstName, 4)
       validateLineNumberForDataflowStep(headDataflowForLastName, 5)

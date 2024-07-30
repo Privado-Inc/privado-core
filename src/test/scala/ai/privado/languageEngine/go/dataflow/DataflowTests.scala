@@ -57,8 +57,10 @@ class DataflowTests extends GoFrontendTestSuite with DataflowExporterValidator w
       val List(firstNameSourceId) = firstName.tag.name("id").value.l
       val List(lastNameSourceId)  = lastName.tag.name("id").value.l
 
-      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
-      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
+      val headDataflowForFirstName =
+        getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
+      val headDataflowForLastName =
+        getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
 
       validateLineNumberForDataflowStep(headDataflowForFirstName, 6)
       validateLineNumberForDataflowStep(headDataflowForLastName, 7)
