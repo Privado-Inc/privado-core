@@ -417,6 +417,7 @@ object ScanProcessor extends CommandProcessor {
       Language.withJoernLangName(langDect)
     } else {
       statsRecorder.justLogMessage("Language forced ...")
+      statsRecorder.endLastStage()
       config.forceLanguage
     }
     MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
