@@ -27,7 +27,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
 import ai.privado.tagger.sink.SinkArgumentUtility
 import ai.privado.model.CatLevelOne.CatLevelOne
-import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.Constants.{originalSource, outputDirectoryName}
 import ai.privado.model.*
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
@@ -617,6 +617,7 @@ object Utilities {
     randomSlug: String
   ): Unit = {
     builder.addEdge(impactedObject, originalSourceNode, EdgeTypes.ORIGINAL_SOURCE)
+    builder.addEdge(originalSourceNode, impactedObject, EdgeTypes.DERIVED_SOURCE)
     storeForTag(builder, originalSourceNode, ruleCache)(
       InternalTag.ORIGINAL_SOURCE_FOR_DERIVED_NODE.toString,
       Constants.originalSource + Constants.underScore + randomSlug

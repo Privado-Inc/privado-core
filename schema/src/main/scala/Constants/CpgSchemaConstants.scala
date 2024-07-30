@@ -64,4 +64,6 @@ object CpgSchemaConstants {
 
   val ORIGINAL_SOURCE_EDGE_NAME = "ORIGINAL_SOURCE"
 
+  val DERIVED_SOURCE_EDGE_NAME = "DERIVED_SOURCE"
+
 }

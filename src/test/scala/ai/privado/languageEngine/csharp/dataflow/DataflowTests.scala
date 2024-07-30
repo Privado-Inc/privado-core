@@ -8,13 +8,15 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.exporter.DataflowExporterValidator
+import ai.privado.languageEngine.csharp.tagger.sink.CSharpLeakageValidator
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.rule.RuleInfoTestData
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 
-class DataflowTests extends CSharpFrontendTestSuite {
+class DataflowTests extends CSharpFrontendTestSuite with DataflowExporterValidator with CSharpLeakageValidator {
   implicit val engineContext: EngineContext = new EngineContext()
 
   private val ruleCache =
@@ -74,6 +76,8 @@ class DataflowTests extends CSharpFrontendTestSuite {
     val dataflowMap =
       Dataflow(cpg, new StatsRecorder()).dataflow(privadoInput, ruleCache, dataflowCache, auditCache, appCache)
 
+    val leakageFlows = getLeakageFlows(cpg.getPrivadoJson())
+
     "contain the original source as the first step" in {
       val List(lastName, firstName) =
         dataflowMap
@@ -82,11 +86,14 @@ class DataflowTests extends CSharpFrontendTestSuite {
           .dedup
           .toList
 
-      firstName.code shouldBe "public String firstName"
-      firstName.lineNumber shouldBe Some(4)
+      val List(firstNameSourceId) = firstName.tag.name("id").value.l
+      val List(lastNameSourceId)  = lastName.tag.name("id").value.l
 
-      lastName.code shouldBe "public String lastName"
-      lastName.lineNumber shouldBe Some(5)
+      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows))
+      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows))
+
+      validateLineNumberForDataflowStep(headDataflowForFirstName, 5)
+      validateLineNumberForDataflowStep(headDataflowForLastName, 6)
     }
 
     "not impact dataflows not starting from derived sources" in {
@@ -97,8 +104,11 @@ class DataflowTests extends CSharpFrontendTestSuite {
           .dedup
           .toList
 
-      userPassword.code shouldBe "userPassword = 123";
-      userPassword.lineNumber shouldBe Some(13)
+      val List(userPasswordSourceId) = userPassword.tag.name("id").value.l
+
+      val headDataflowForUserPassword =
+        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows))
+      validateLineNumberForDataflowStep(headDataflowForUserPassword, 14)
     }
   }
 

@@ -43,22 +43,4 @@ class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) ex
 
 }
 class PythonFrontendTestSuite(fileSuffix: String = ".py", language: Language.Value = Language.PYTHON)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithPython(fileSuffix, language)) {
-  val leakageRule = RuleInfo(
-    "Log console",
-    "Leakage",
-    "",
-    FilterProperty.METHOD_FULL_NAME,
-    Array(),
-    List(".*print.*"),
-    false,
-    "",
-    Map(),
-    NodeType.REGULAR,
-    "",
-    CatLevelOne.SINKS,
-    catLevelTwo = Constants.leakages,
-    Language.UNKNOWN,
-    Array()
-  )
-}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithPython(fileSuffix, language)) {}

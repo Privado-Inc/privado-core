@@ -71,6 +71,10 @@ package object language {
   }
 
   implicit class NodeToOriginalSource(val trav: Traversal[AstNode]) extends AnyVal {
-    def originalSource: Traversal[AstNode] = trav.out(EdgeTypes.ORIGINAL_SOURCE).cast[AstNode]
+    def originalSource: Traversal[AstNode] = trav.out(EdgeTypes.ORIGINAL_SOURCE).collectAll[AstNode]
+  }
+
+  implicit class OriginalToDerivedSource(val trav: Traversal[AstNode]) extends AnyVal {
+    def derivedSource: Traversal[AstNode] = trav.out(EdgeTypes.DERIVED_SOURCE).collectAll[AstNode]
   }
 }

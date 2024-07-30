@@ -14,7 +14,6 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.model.Language
 import ai.privado.utility.StatsRecorder
-import ai.privado.model.{CatLevelOne, Constants, FilterProperty, NodeType, RuleInfo}
 
 class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
@@ -44,24 +43,4 @@ class TestCpgWithCSharp(val fileSuffix: String, val language: Language.Value) ex
 }
 
 class CSharpFrontendTestSuite(fileSuffix: String = ".cs", language: Language.Value = Language.CSHARP)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithCSharp(fileSuffix, language)) {
-
-  val leakageRule = RuleInfo(
-    "Log console",
-    "Leakage",
-    "",
-    FilterProperty.METHOD_FULL_NAME,
-    Array(),
-    List(".*WriteLine.*"),
-    false,
-    "",
-    Map(),
-    NodeType.REGULAR,
-    "",
-    CatLevelOne.SINKS,
-    catLevelTwo = Constants.leakages,
-    Language.UNKNOWN,
-    Array()
-  )
-
-}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithCSharp(fileSuffix, language)) {}

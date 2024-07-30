@@ -4,13 +4,15 @@ import ai.privado.testfixtures.PhpFrontendTestSuite
 import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.exporter.DataflowExporterValidator
+import ai.privado.languageEngine.php.tagger.sink.PhpLeakageValidator
 import ai.privado.model.{Constants, RuleInfo}
 import ai.privado.rule.RuleInfoTestData
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 
-class DataflowTests extends PhpFrontendTestSuite {
+class DataflowTests extends PhpFrontendTestSuite with DataflowExporterValidator with PhpLeakageValidator {
 
   private val ruleCache =
     RuleCache().setRule(RuleInfoTestData.rule.copy(sources = RuleInfoTestData.sourceRule, sinks = List(leakageRule)))
@@ -46,6 +48,7 @@ class DataflowTests extends PhpFrontendTestSuite {
 
     val dataflowMap =
       Dataflow(cpg, new StatsRecorder()).dataflow(privadoInput, ruleCache, dataflowCache, auditCache, appCache)
+    val leakageFlows = getLeakageFlows(cpg.getPrivadoJson())
 
     "contain the original source as the first step" in {
       val List(firstName, lastName) =
@@ -55,11 +58,14 @@ class DataflowTests extends PhpFrontendTestSuite {
           .dedup
           .toList
 
-      firstName.code shouldBe "$firstName"
-      firstName.lineNumber shouldBe Some(4)
+      val List(firstNameSourceId) = firstName.tag.name("id").value.l
+      val List(lastNameSourceId)  = lastName.tag.name("id").value.l
 
-      lastName.code shouldBe "$lastName"
-      lastName.lineNumber shouldBe Some(5)
+      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows))
+      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows))
+
+      validateLineNumberForDataflowStep(headDataflowForFirstName, 4)
+      validateLineNumberForDataflowStep(headDataflowForLastName, 5)
     }
 
     "not impact dataflows not starting from derived sources" in {
@@ -70,8 +76,11 @@ class DataflowTests extends PhpFrontendTestSuite {
           .dedup
           .toList
 
-      userPassword.code shouldBe "$userPassword";
-      userPassword.lineNumber shouldBe Some(16)
+      val List(userPasswordSourceId) = userPassword.tag.name("id").value.l
+
+      val headDataflowForUserPassword =
+        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows))
+      validateLineNumberForDataflowStep(headDataflowForUserPassword, 16)
     }
   }
 

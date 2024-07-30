@@ -35,23 +35,4 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
 }
 
 class JavaScriptFrontendTestSuite(fileSuffix: String = ".js", language: Language.Value = Language.JAVASCRIPT)
-    extends PrivadoBaseTestFixture(() => new TestCpgWithJavaScript(fileSuffix, language)) {
-  val leakageRule = RuleInfo(
-    "Log console",
-    "Leakage",
-    "",
-    FilterProperty.METHOD_FULL_NAME,
-    Array(),
-    List(".*console.*"),
-    false,
-    "",
-    Map(),
-    NodeType.REGULAR,
-    "",
-    CatLevelOne.SINKS,
-    catLevelTwo = Constants.leakages,
-    Language.UNKNOWN,
-    Array()
-  )
-
-}
+    extends PrivadoBaseTestFixture(() => new TestCpgWithJavaScript(fileSuffix, language)) {}
