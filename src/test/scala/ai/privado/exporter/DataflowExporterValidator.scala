@@ -32,8 +32,16 @@ trait DataflowExporterValidator extends Matchers {
     step.lineNumber shouldBe expectedLineNumber
   }
 
-  def getHeadStepOfDataflow(dataflow: DataFlowSubCategoryModel): DataFlowSubCategoryPathExcerptModel = {
-    dataflow.sinks.head.paths.head.path.head
+  def getHeadStepOfDataflow(dataflow: DataFlowSubCategoryModel, sinkId: String): DataFlowSubCategoryPathExcerptModel = {
+    val dataflowForSink = dataflow.sinks.find(sink => sink.id.equals(sinkId))
+    if (dataflowForSink.nonEmpty) {
+      dataflowForSink.get.paths.headOption
+        .getOrElse(DataFlowSubCategoryPathModel("", List.empty[DataFlowSubCategoryPathExcerptModel]))
+        .path
+        .head
+    } else {
+      DataFlowSubCategoryPathExcerptModel("", -1, -1, "", "")
+    }
   }
 
   def getDataflowForSourceId(sourceId: String, dataflows: List[DataFlowSubCategoryModel]): DataFlowSubCategoryModel = {

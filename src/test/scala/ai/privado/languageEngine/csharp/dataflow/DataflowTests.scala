@@ -88,9 +88,10 @@ class DataflowTests extends CSharpFrontendTestSuite with DataflowExporterValidat
 
       val List(firstNameSourceId) = firstName.tag.name("id").value.l
       val List(lastNameSourceId)  = lastName.tag.name("id").value.l
-
-      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows))
-      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows))
+      val headDataflowForFirstName =
+        getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
+      val headDataflowForLastName =
+        getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
 
       validateLineNumberForDataflowStep(headDataflowForFirstName, 5)
       validateLineNumberForDataflowStep(headDataflowForLastName, 6)
@@ -107,7 +108,7 @@ class DataflowTests extends CSharpFrontendTestSuite with DataflowExporterValidat
       val List(userPasswordSourceId) = userPassword.tag.name("id").value.l
 
       val headDataflowForUserPassword =
-        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows))
+        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows), leakageRule.id)
       validateLineNumberForDataflowStep(headDataflowForUserPassword, 14)
     }
   }

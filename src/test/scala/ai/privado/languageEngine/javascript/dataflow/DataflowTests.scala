@@ -54,8 +54,8 @@ class DataflowTests extends JavaScriptFrontendTestSuite with DataflowExporterVal
       val List(firstNameSourceId) = firstName.tag.name("id").value.l
       val List(lastNameSourceId)  = lastName.tag.name("id").value.l
 
-      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows))
-      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows))
+      val headDataflowForFirstName = getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
+      val headDataflowForLastName  = getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
 
       validateLineNumberForDataflowStep(headDataflowForFirstName, 3)
       validateLineNumberForDataflowStep(headDataflowForLastName, 4)
@@ -72,7 +72,7 @@ class DataflowTests extends JavaScriptFrontendTestSuite with DataflowExporterVal
       val List(userPasswordSourceId) = userPassword.tag.name("id").value.l
 
       val headDataflowForUserPassword =
-        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows))
+        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows), leakageRule.id)
       validateLineNumberForDataflowStep(headDataflowForUserPassword, 8)
     }
   }
