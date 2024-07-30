@@ -45,11 +45,8 @@ class DataflowTests extends JavaScriptFrontendTestSuite with DataflowExporterVal
     val leakageFlows = getLeakageFlows(cpg.getPrivadoJson())
 
     "contain the original source as the first step" in {
-      val List(firstName, lastName) =
-        dataflowMap
-          .filter((_, path) => path.elements.head.tag.value(s"${Constants.originalSource}_.*").nonEmpty)
-          .map((_, path) => path.elements.head)
-          .toList
+      val List(firstName) = cpg.member.nameExact("firstName").l
+      val List(lastName)  = cpg.member.nameExact("lastName").l
 
       val List(firstNameSourceId) = firstName.tag.name("id").value.l
       val List(lastNameSourceId)  = lastName.tag.name("id").value.l
@@ -64,12 +61,7 @@ class DataflowTests extends JavaScriptFrontendTestSuite with DataflowExporterVal
     }
 
     "not impact dataflows not starting from derived sources" in {
-      val List(userPassword) =
-        dataflowMap
-          .filterNot((_, path) => path.elements.head.tag.value(s"${Constants.originalSource}_.*").nonEmpty)
-          .map((_, path) => path.elements.head)
-          .dedup
-          .toList
+      val List(userPassword, _) = cpg.identifier.nameExact("userPassword").l
 
       val List(userPasswordSourceId) = userPassword.tag.name("id").value.l
 

@@ -39,14 +39,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNode,
-  Call,
-  CfgNode,
-  HightouchSink,
-  Identifier,
-  MethodParameterIn
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -54,8 +47,6 @@ import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTagging
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success}
-
-import ai.privado.languageEngine.java.language.NodeToOriginalSource
 
 class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
 
@@ -109,7 +100,6 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
           sinks
             .reachableByFlows(firstLevelSources)
             .l
-            .flatMap(addOriginalSourceToDataflowPath)
         }
         // Commented the below piece of code as we still need to test out and fix few open Issues which are
         // resulting in FP in 2nd level derivation for Storages
@@ -220,26 +210,6 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
       case _ => JavaSemanticGenerator.getDefaultSemantics
     }
   }
-
-  private def addOriginalSourceToDataflowPath(dataflow: Path): List[Path] = {
-    val dataflowIterator = dataflow.elements
-
-    val originalSourcesForHeadElement =
-      if (dataflowIterator.nonEmpty)
-        dataflowIterator.head.originalSourceOut
-          .map(c => c.asInstanceOf[AstNode])
-          .toList
-      else List.empty[AstNode]
-
-    if (originalSourcesForHeadElement.nonEmpty) {
-      originalSourcesForHeadElement.map(originalSource => {
-        Path(originalSource +: dataflowIterator)
-      })
-    } else {
-      List(dataflow)
-    }
-  }
-
 }
 
 object Dataflow {
