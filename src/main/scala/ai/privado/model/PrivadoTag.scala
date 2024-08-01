@@ -126,6 +126,7 @@ object Language extends Enumeration {
   val GO         = Value("go")
   val PHP        = Value("php")
   val CSHARP     = Value("csharp")
+  val C          = Value("c")
   val DEFAULT    = Value("default")
   val UNKNOWN    = Value("unknown")
 
@@ -141,6 +142,7 @@ object Language extends Enumeration {
           case Some(language) if language == Languages.KOTLIN                                    => KOTLIN
           case Some(language) if language == Languages.CSHARPSRC || language == Languages.CSHARP => CSHARP
           case Some(language) if language == Languages.PHP                                       => PHP
+          case Some(language) if language == Languages.C || language == Languages.NEWC           => C
           case _                                                                                 => UNKNOWN
         }
       case Failure(exc) =>
