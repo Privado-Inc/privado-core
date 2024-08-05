@@ -378,7 +378,8 @@ object ExporterUtility {
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
+    propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
+    dataflowCache: DataFlowCache
   ): (
     mutable.LinkedHashMap[String, Json],
     List[SourceModel],
@@ -398,7 +399,9 @@ object ExporterUtility {
         repoItemTagName = repoItemTagName,
         s3DatabaseDetailsCache,
         appCache,
-        databaseDetailsCache
+        databaseDetailsCache,
+        dataflowCache,
+        dataflows
       )
     val dataflowExporter = new DataflowExporter(dataflows, taggerCache, databaseDetailsCache)
     val collectionExporter =

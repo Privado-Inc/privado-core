@@ -201,7 +201,8 @@ abstract class BaseProcessor(
       s3DatabaseDetailsCache,
       appCache,
       propertyFilterCache,
-      databaseDetailsCache
+      databaseDetailsCache,
+      dataFlowCache
     ) match {
       case Left(err) =>
         MetricHandler.otherErrorsOrWarnings.addOne(err)

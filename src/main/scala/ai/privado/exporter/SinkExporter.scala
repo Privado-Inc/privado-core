@@ -23,7 +23,7 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
@@ -36,6 +36,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
 import org.slf4j.LoggerFactory
+import io.joern.dataflowengineoss.language.Path
 
 import scala.collection.mutable
 
@@ -46,7 +47,9 @@ class SinkExporter(
   repoItemTagName: Option[String] = None,
   s3DatabaseDetailsCache: S3DatabaseDetailsCache,
   appCache: AppCache,
-  databaseDetailsCache: DatabaseDetailsCache
+  databaseDetailsCache: DatabaseDetailsCache,
+  dataflowCache: DataFlowCache,
+  dataflows: Map[String, Path]
 ) {
 
   lazy val sinkList: List[AstNode]      = getSinkList
@@ -81,22 +84,14 @@ class SinkExporter(
     })
     processingMap
       .map(entrySet =>
+        // list of last node of every dataflow
+        val dataflowSinkList = dataflowCache.getDataflowAfterDedup
+          .filter(_.sinkId.equals(entrySet._1))
+          .map(pathModel => dataflows(pathModel.pathId).elements.last)
         SinkProcessingModel(
           entrySet._1,
           ExporterUtility
-            .convertPathElements(
-              {
-                if (privadoInput.disableDeDuplication)
-                  entrySet._2.toList
-                else
-                  entrySet._2.toList
-                    .distinctBy(_.code)
-                    .distinctBy(_.lineNumber)
-                    .distinctBy(Utilities.getFileNameForNode)
-              },
-              appCache = appCache,
-              ruleCache = ruleCache
-            )
+            .convertPathElements(dataflowSinkList, appCache = appCache, ruleCache = ruleCache)
         )
       )
       .toList ++ processingMapDisableDedup
