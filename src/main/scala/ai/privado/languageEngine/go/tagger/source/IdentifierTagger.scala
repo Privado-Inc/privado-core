@@ -110,12 +110,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
           impactedObjects
             .foreach(impactedObject => {
               // Add edge between derived source node and the original source
-              addOriginalSourceEdgeAndTag(
-                builder,
-                impactedObject,
-                typeDeclMember,
-                ruleCache
-              )
+              addOriginalSourceEdgeAndTag(builder, impactedObject, typeDeclMember, ruleCache)
 
               if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
                 storeForTag(builder, impactedObject, ruleCache)(
