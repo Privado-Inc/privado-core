@@ -13,6 +13,9 @@ import ai.privado.utility.StatsRecorder
 import ai.privado.exporter.{DataflowExporterValidator, SourceExporterValidator}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+
+import scala.collection.mutable
 
 class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterValidator with SourceExporterValidator {
 
@@ -55,20 +58,21 @@ class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterVali
     }
 
     "export derived source under processing" in {
-      val outputJson     = cpg.getPrivadoJson()
-      val processingList = getProcessings(outputJson)
+      // Only have leakages dataflow
+      val outputJson      = cpg.getPrivadoJson()
+      val processingList  = getProcessings(outputJson).flatMap(_.occurrences)
+      val leakageDataflow = getLeakageFlows(outputJson)
+      // List of First Element of every dataflow
+      val dataflowSourceElements = leakageDataflow.flatMap(_.sinks).flatMap(_.paths).map(_.path.headOption.get)
 
-      // checking dataflow
-      val source = cpg.identifier("user").l
-      val sink   = cpg.call("println").lineNumber(11).l
-      sink.reachableByFlows(source).size shouldBe 1
+      dataflowSourceElements.size shouldBe 1
 
-      // should be present inside processing section because "user" is the first node of dataflow
-      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals(source.headOption.get.name)) shouldBe true
-      processingList
-        .flatMap(_.occurrences)
-        .map(_.lineNumber)
-        .exists(_.equals(source.headOption.get.lineNumber.get)) shouldBe true
+      // Check first element of every dataflow must have present inside the processing section
+      dataflowSourceElements.foreach(headElement => {
+        processingList.exists(element => {
+          element.sample.equals(headElement.sample) && element.lineNumber.equals(headElement.lineNumber)
+        }) shouldBe true
+      })
     }
   }
 
@@ -99,20 +103,18 @@ class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterVali
     }
 
     "Processing section should have first Node of every dataflow" in {
-      val outputJson     = cpg.getPrivadoJson()
-      val processingList = getProcessings(outputJson)
+      val outputJson             = cpg.getPrivadoJson()
+      val processingList         = getProcessings(outputJson).flatMap(_.occurrences)
+      val leakageDataflow        = getLeakageFlows(outputJson)
+      val dataflowSourceElements = leakageDataflow.flatMap(_.sinks).flatMap(_.paths).map(_.path.headOption.get)
 
-      processingList.headOption.get.occurrences.size shouldBe 2
-      processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
+      dataflowSourceElements.size shouldBe 1
 
-      // checking dataflow
-      val source = cpg.identifier("user").lineNumber(8).l
-      val sink   = cpg.call("println").lineNumber(9).l
-      sink.reachableByFlows(source).size shouldBe 2
-
-      // Check the first element
-      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("user")) shouldBe true
-      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("java.lang.String firstName")) shouldBe true
+      dataflowSourceElements.foreach(headElement => {
+        processingList.exists(element => {
+          element.sample.equals(headElement.sample) && element.lineNumber.equals(headElement.lineNumber)
+        }) shouldBe true
+      })
     }
   }
 
@@ -136,24 +138,23 @@ class SourceExporterTest extends JavaFrontendTestSuite with DataflowExporterVali
     val outputJson     = cpg.getPrivadoJson()
     val processingList = getProcessings(outputJson)
 
-    "Processing section have correct Data element Name" in {
+    "Processing section should have correct Data element Name" in {
       processingList.map(_.sourceId).exists(_.equals("Data.Sensitive.FirstName")) shouldBe true
     }
 
-    "Processing section should have firstNode of dataflow for firstName" in {
-      val source = cpg.identifier("firstName").lineNumber(5).l
-      val sink   = cpg.call("println").lineNumber(7).l
-      sink.reachableByFlows(source).size shouldBe 1
+    "Processing section should have firstNode of dataflow" in {
+      val outputJson             = cpg.getPrivadoJson()
+      val processingList         = getProcessings(outputJson).flatMap(_.occurrences)
+      val leakageDataflow        = getLeakageFlows(outputJson)
+      val dataflowSourceElements = leakageDataflow.flatMap(_.sinks).flatMap(_.paths).map(_.path.headOption.get)
 
-      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("firstName")) shouldBe true
-    }
+      dataflowSourceElements.size shouldBe 2
 
-    "Processing section should have first Node of dataflow for first_name" in {
-      val source = cpg.identifier("first_name").lineNumber(6).l
-      val sink   = cpg.call("println").lineNumber(8).l
-      sink.reachableByFlows(source).size shouldBe 1
-
-      processingList.flatMap(_.occurrences).map(_.sample).exists(_.equals("first_name")) shouldBe true
+      dataflowSourceElements.foreach(headElement => {
+        processingList.exists(element => {
+          element.sample.equals(headElement.sample) && element.lineNumber.equals(headElement.lineNumber)
+        }) shouldBe true
+      })
     }
   }
 }
