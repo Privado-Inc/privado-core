@@ -114,8 +114,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
                 builder,
                 impactedObject,
                 typeDeclMember,
-                ruleCache,
-                RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
+                ruleCache
               )
 
               if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {

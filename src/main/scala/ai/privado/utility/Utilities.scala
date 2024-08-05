@@ -613,14 +613,10 @@ object Utilities {
     builder: BatchedUpdate.DiffGraphBuilder,
     impactedObject: AstNode,
     originalSourceNode: AstNode,
-    ruleCache: RuleCache,
-    randomSlug: String
+    ruleCache: RuleCache
   ): Unit = {
     builder.addEdge(impactedObject, originalSourceNode, EdgeTypes.ORIGINAL_SOURCE)
     builder.addEdge(originalSourceNode, impactedObject, EdgeTypes.DERIVED_SOURCE)
-    storeForTag(builder, originalSourceNode, ruleCache)(
-      InternalTag.ORIGINAL_SOURCE_FOR_DERIVED_NODE.toString,
-      Constants.originalSource + Constants.underScore + randomSlug
-    )
+    storeForTag(builder, originalSourceNode, ruleCache)(InternalTag.ORIGINAL_SOURCE_FOR_DERIVED_NODE.toString)
   }
 }

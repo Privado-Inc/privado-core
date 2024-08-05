@@ -24,9 +24,10 @@ package ai.privado.languageEngine.php.tagger.source
 
 import ai.privado.model.*
 import ai.privado.testfixtures.PhpFrontendTestSuite
+import ai.privado.traversal.TraversalValidator
 import io.shiftleft.semanticcpg.language.*
 
-class IdentifierTaggingTest extends PhpFrontendTestSuite {
+class IdentifierTaggingTest extends PhpFrontendTestSuite with TraversalValidator {
   "Tagging derived sources" should {
     val cpg = code(
       """
@@ -73,5 +74,13 @@ class IdentifierTaggingTest extends PhpFrontendTestSuite {
       userObj.tag.where(_.nameExact(Constants.id)).size shouldBe 1
       userObj.tag.where(_.nameExact(Constants.catLevelOne)).value.l shouldBe List(CatLevelOne.DERIVED_SOURCES.name)
     }
+
+    "build correct edges between derived and original sources" in {
+      val List(userIdentifier)  = cpg.identifier("user").lineNumber(20).l
+      val List(firstNameMember) = cpg.member("firstName").l
+      originalSourceTraversalValidator(userIdentifier, "Data.Sensitive.FirstName")
+      derivedSourceTraversalValidator(firstNameMember)
+    }
+
   }
 }

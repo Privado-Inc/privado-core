@@ -14,6 +14,7 @@ import org.scalatest.matchers.should.Matchers
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 
 import scala.collection.mutable
+import scala.util.Try
 
 trait DataflowExporterValidator extends Matchers {
 
@@ -32,21 +33,24 @@ trait DataflowExporterValidator extends Matchers {
     step.lineNumber shouldBe expectedLineNumber
   }
 
-  def getHeadStepOfDataflow(dataflow: DataFlowSubCategoryModel, sinkId: String): DataFlowSubCategoryPathExcerptModel = {
+  def getHeadStepOfDataflow(
+    dataflow: DataFlowSubCategoryModel,
+    sinkId: String
+  ): Option[DataFlowSubCategoryPathExcerptModel] = {
     val dataflowForSink = dataflow.sinks.find(sink => sink.id.equals(sinkId))
-    if (dataflowForSink.nonEmpty) {
+    Try(
       dataflowForSink.get.paths.headOption
         .getOrElse(DataFlowSubCategoryPathModel("", List.empty[DataFlowSubCategoryPathExcerptModel]))
         .path
         .head
-    } else {
-      DataFlowSubCategoryPathExcerptModel("", -1, -1, "", "")
-    }
+    ).toOption
   }
 
-  def getDataflowForSourceId(sourceId: String, dataflows: List[DataFlowSubCategoryModel]): DataFlowSubCategoryModel = {
+  def getDataflowForSourceId(
+    sourceId: String,
+    dataflows: List[DataFlowSubCategoryModel]
+  ): Option[DataFlowSubCategoryModel] = {
     dataflows
       .find(flow => flow.sourceId.equals(sourceId))
-      .getOrElse(DataFlowSubCategoryModel("", List.empty[DataFlowSubCategorySinkModel]))
   }
 }

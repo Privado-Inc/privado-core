@@ -45,16 +45,16 @@ class DataflowTests extends JavaScriptFrontendTestSuite with DataflowExporterVal
     val leakageFlows = getLeakageFlows(cpg.getPrivadoJson())
 
     "contain the original source as the first step" in {
-      val List(firstName) = cpg.member.nameExact("firstName").l
-      val List(lastName)  = cpg.member.nameExact("lastName").l
+      val List(firstName) = cpg.member.nameExact("firstName").lineNumber(3).l
+      val List(lastName)  = cpg.member.nameExact("lastName").lineNumber(4).l
 
-      val List(firstNameSourceId) = firstName.tag.name("id").value.l
-      val List(lastNameSourceId)  = lastName.tag.name("id").value.l
+      val List(firstNameSourceId) = firstName.tag.name(Constants.id).value.l
+      val List(lastNameSourceId)  = lastName.tag.name(Constants.id).value.l
 
       val headDataflowForFirstName =
-        getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows), leakageRule.id)
+        getHeadStepOfDataflow(getDataflowForSourceId(firstNameSourceId, leakageFlows).get, leakageRule.id).get
       val headDataflowForLastName =
-        getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows), leakageRule.id)
+        getHeadStepOfDataflow(getDataflowForSourceId(lastNameSourceId, leakageFlows).get, leakageRule.id).get
 
       validateLineNumberForDataflowStep(headDataflowForFirstName, 3)
       validateLineNumberForDataflowStep(headDataflowForLastName, 4)
@@ -63,10 +63,10 @@ class DataflowTests extends JavaScriptFrontendTestSuite with DataflowExporterVal
     "not impact dataflows not starting from derived sources" in {
       val List(userPassword, _) = cpg.identifier.nameExact("userPassword").l
 
-      val List(userPasswordSourceId) = userPassword.tag.name("id").value.l
+      val List(userPasswordSourceId) = userPassword.tag.name(Constants.id).value.l
 
       val headDataflowForUserPassword =
-        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows), leakageRule.id)
+        getHeadStepOfDataflow(getDataflowForSourceId(userPasswordSourceId, leakageFlows).get, leakageRule.id).get
       validateLineNumberForDataflowStep(headDataflowForUserPassword, 8)
     }
   }

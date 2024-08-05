@@ -23,10 +23,10 @@
 
 package ai.privado.languageEngine.java
 
+import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, File, JavaProperty, Literal, MethodParameterIn}
-import overflowdb.traversal._
-
+import overflowdb.traversal.*
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -85,7 +85,7 @@ package object language {
       val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
       if (_originalSource.nonEmpty && _originalSource.hasNext) {
         return _originalSource
-          .find(node => node.asInstanceOf[AstNode].tag.nameExact("id").value(sourceId).nonEmpty)
+          .find(node => node.asInstanceOf[AstNode].tag.nameExact(Constants.id).value(sourceId).nonEmpty)
           .asInstanceOf[Option[AstNode]]
       }
       None
@@ -100,10 +100,5 @@ package object language {
       }
       None
     }
-  }
-
-  implicit class StepsForAstNode(val trav: Traversal[AstNode]) extends AnyVal {
-    def originalSource: Traversal[AstNode] = trav.out(EdgeTypes.ORIGINAL_SOURCE).collectAll[AstNode]
-    def derivedSource: Traversal[AstNode]  = trav.out(EdgeTypes.DERIVED_SOURCE).collectAll[AstNode]
   }
 }

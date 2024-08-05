@@ -61,13 +61,7 @@ class IdentifierDerivedTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
                   .l).dedup
                 .foreach { impactedObject =>
                   // Add edge between derived source node and the original source
-                  addOriginalSourceEdgeAndTag(
-                    builder,
-                    impactedObject,
-                    sqlColumn,
-                    ruleCache,
-                    RANDOM_ID_OBJECT_OF_TYPE_DECL_HAVING_MEMBER_NAME
-                  )
+                  addOriginalSourceEdgeAndTag(builder, impactedObject, sqlColumn, ruleCache)
 
                   storeForTag(builder, impactedObject, ruleCache)(
                     InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
