@@ -162,6 +162,7 @@ class FirstLevelDerivedSourceTagger(
       .where(_.typeFullName(typeDeclVal))
       .l ::: cpgNodeCache.cachedParameter.where(_.typeFullName(typeDeclVal)).l)
       .foreach(impactedObject => {
+        addOriginalSourceEdgeAndTag(builder, impactedObject, typeDeclMember, ruleCache)
         addFirstLevelDerivedSourceTags(
           builder,
           impactedObject,

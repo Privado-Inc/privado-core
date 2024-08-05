@@ -222,6 +222,12 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   highTouchSinkNode.addOutEdge(edge = taggedBy, inNode = tag)
 
   // HighTouch sink node - End
+
+  // Edge from derived source to the original source
+  private val originalSourceEdge = builder.addEdgeType(CpgSchemaConstants.ORIGINAL_SOURCE_EDGE_NAME)
+  private val derivedSourceEdge  = builder.addEdgeType(CpgSchemaConstants.DERIVED_SOURCE_EDGE_NAME)
+  astNode.addOutEdge(edge = originalSourceEdge, inNode = astNode)
+  astNode.addOutEdge(edge = derivedSourceEdge, inNode = astNode)
 }
 
 object CpgExtSchema {

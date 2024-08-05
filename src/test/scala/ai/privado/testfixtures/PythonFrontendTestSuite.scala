@@ -14,6 +14,7 @@ import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.python.processor.PythonProcessor
 import ai.privado.model.Language
 import ai.privado.utility.StatsRecorder
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, NodeType, RuleInfo}
 
 class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) extends TestCpg {
 

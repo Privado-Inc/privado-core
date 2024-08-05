@@ -39,7 +39,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, HightouchSink}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.traversal.Traversal
@@ -96,7 +96,10 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
               _.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SOURCES.name),
               _.tag.nameExact(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
             )
-          sinks.reachableByFlows(firstLevelSources).l
+
+          sinks
+            .reachableByFlows(firstLevelSources)
+            .l
         }
         // Commented the below piece of code as we still need to test out and fix few open Issues which are
         // resulting in FP in 2nd level derivation for Storages
@@ -207,7 +210,6 @@ class Dataflow(cpg: Cpg, statsRecorder: StatsRecorder) {
       case _ => JavaSemanticGenerator.getDefaultSemantics
     }
   }
-
 }
 
 object Dataflow {

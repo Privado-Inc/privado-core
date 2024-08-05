@@ -4,7 +4,7 @@ import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
-import ai.privado.model.Language
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.utility.StatsRecorder
 
 class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value) extends TestCpg {

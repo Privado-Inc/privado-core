@@ -27,7 +27,7 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.SourceTaggerUtility.getTypeDeclWithMemberNameHavingMemberName
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
+import ai.privado.utility.Utilities.{addOriginalSourceEdgeAndTag, addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.semanticcpg.language.*
@@ -149,6 +149,9 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
 
             impactedObjects
               .foreach(impactedObject => {
+                // Add edge between derived source node and the original source
+                addOriginalSourceEdgeAndTag(builder, impactedObject, typeDeclMember, ruleCache)
+
                 if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
                   storeForTag(builder, impactedObject, ruleCache)(
                     InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,

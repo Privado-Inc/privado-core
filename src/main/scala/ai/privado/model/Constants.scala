@@ -36,6 +36,7 @@ object Constants {
   val isSensitive                  = "isSensitive"
   val patterns                     = "patterns"
   val privadoDerived               = "privadoDerived"
+  val originalSource               = "originalSource"
   val underScore                   = "_"
   val apiUrl                       = "apiUrl"
   val collectionSource             = "collectionSource"
