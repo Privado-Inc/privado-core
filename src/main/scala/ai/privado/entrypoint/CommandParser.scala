@@ -68,7 +68,8 @@ case class PrivadoInput(
   threadDumpAvgCPULimit: Int = DEFAULT_THREAD_DUMP_AVG_CPU_LIMIT,
   rubyParserTimeout: Long = 120,
   excludeFileRegex: String = "",
-  extensionsForPhp: String = ""
+  extensionsForPhp: String = "",
+  isSkipHeaderFileContext: Boolean = false
 )
 
 object CommandConstants {
@@ -139,6 +140,8 @@ object CommandConstants {
   val EXCLUDE_FILE_REGEX_ABBR                      = "efr"
   val EXTENSIONS_FOR_PHP                           = "extensions-for-php"
   val EXTENSIONS_FOR_PHP_ABBR                      = "exphp"
+  val IS_SKIP_HEADER_FILE_CONTEXT                  = "skip-header-file-context"
+  val IS_SKIP_HEADER_FILE_CONTEXT_ABBR             = "shfc"
 }
 
 object CommandParser {
@@ -335,6 +338,11 @@ object CommandParser {
               .text(
                 "File extensions that are considered valid for PHP scanner. Eg \".php,.cls,.ent\" Default is \".php\""
               ),
+            opt[Unit](CommandConstants.IS_SKIP_HEADER_FILE_CONTEXT)
+              .abbr(CommandConstants.IS_SKIP_HEADER_FILE_CONTEXT_ABBR)
+              .optional()
+              .action((x, c) => c.copy(isSkipHeaderFileContext = true))
+              .text("Skip header file context when processing code file"),
             arg[String]("<Source directory>")
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))

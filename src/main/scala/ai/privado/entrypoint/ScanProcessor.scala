@@ -24,6 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.statsRecorder
+import ai.privado.languageEngine.c.processor.CProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
 import ai.privado.languageEngine.go.processor.GoProcessor
@@ -38,7 +39,7 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.{Language, UNKNOWN}
 import ai.privado.rulevalidator.YamlFileValidator
-import ai.privado.utility.Utilities.{isValidRule, isValidDEDRule}
+import ai.privado.utility.Utilities.{isValidDEDRule, isValidRule}
 import ai.privado.utility.StatsRecorder
 import better.files.File
 import io.circe.Json
@@ -416,6 +417,7 @@ object ScanProcessor extends CommandProcessor {
       Language.withJoernLangName(langDect)
     } else {
       statsRecorder.justLogMessage("Language forced ...")
+      statsRecorder.endLastStage()
       config.forceLanguage
     }
     MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
@@ -542,6 +544,21 @@ object ScanProcessor extends CommandProcessor {
         statsRecorder.justLogMessage("Detected language 'PHP'")
         PhpProcessor(
           getProcessedRule(Set(Language.PHP), appCache),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          auditCache,
+          s3DatabaseDetailsCache,
+          appCache,
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache,
+          propertyFilterCache = propertyFilterCache
+        )
+          .processCpg()
+      case Language.C =>
+        statsRecorder.justLogMessage("Detected language 'C'")
+        CProcessor(
+          getProcessedRule(Set(Language.C), appCache),
           this.config,
           sourceRepoLocation,
           dataFlowCache = getDataflowCache,
