@@ -22,7 +22,7 @@
 
 package ai.privado.policyEngine
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.ExporterUtility
 import ai.privado.threatEngine.ThreatUtility.getSourceNode
