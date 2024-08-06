@@ -95,7 +95,7 @@ class SourceExporter(
           .flatMap(_.sinks)
           .flatMap(_.paths)
           .map(_.path.head)
-        val finalProcessingResultSet = taggedSourcesList.toSet ++ dataflowSourceList.toSet
+        val finalProcessingResultSet = (taggedSourcesList ++ dataflowSourceList).toSet
         SourceProcessingModel(entrySet._1, finalProcessingResultSet.toList)
       )
       .toList
