@@ -63,21 +63,23 @@ object Language {
   }
 
   implicit class StepsForPropertyForDbNode(val trav: Traversal[DbNode]) extends AnyVal {
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
 
   }
   implicit class StepsForPropertyForSqlQueryNode(val trav: Traversal[SqlQueryNode]) extends AnyVal {
-    def file: Traversal[File]             = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
-    def sqlTable: Traversal[SqlTableNode] = trav.out(EdgeTypes.AST).cast[SqlTableNode]
+    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+    def sqlTable: Traversal[SqlTableNode] =
+      Try(trav.out(EdgeTypes.AST).cast[SqlTableNode]).toOption.getOrElse(Iterator.empty[SqlTableNode])
   }
 
   implicit class StepsForPropertyForSqlTableNode(val trav: Traversal[SqlTableNode]) extends AnyVal {
-    def file: Traversal[File]               = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
-    def sqlColumn: Traversal[SqlColumnNode] = trav.out(EdgeTypes.AST).cast[SqlColumnNode]
+    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+    def sqlColumn: Traversal[SqlColumnNode] =
+      Try(trav.out(EdgeTypes.AST).cast[SqlColumnNode]).toOption.getOrElse(Iterator.empty[SqlColumnNode])
   }
 
   implicit class StepsForPropertyForSqlColumnNode(val trav: Traversal[SqlColumnNode]) extends AnyVal {
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
 
   }
 
@@ -97,12 +99,14 @@ object Language {
 
   implicit class NodeStarterForAndroidXmlLayoutNode(cpg: Cpg) {
     def androidXmlLayoutNode: Traversal[AndroidXmlLayoutNode] =
-      cpg.graph.nodes(NodeTypes.ANDROID_XML_LAYOUT_NODE).asScala.cast[AndroidXmlLayoutNode]
+      Try(cpg.graph.nodes(NodeTypes.ANDROID_XML_LAYOUT_NODE).asScala.cast[AndroidXmlLayoutNode]).toOption
+        .getOrElse(Iterator.empty[AndroidXmlLayoutNode])
   }
 
   implicit class NodeStarterForAndroidXmlPermissionNode(cpg: Cpg) {
     def androidXmlPermissionNode: Traversal[AndroidXmlPermissionNode] =
-      cpg.graph.nodes(NodeTypes.ANDROID_XML_PERMISSION_NODE).asScala.cast[AndroidXmlPermissionNode]
+      Try(cpg.graph.nodes(NodeTypes.ANDROID_XML_PERMISSION_NODE).asScala.cast[AndroidXmlPermissionNode]).toOption
+        .getOrElse(Iterator.empty[AndroidXmlPermissionNode])
   }
 
 }
