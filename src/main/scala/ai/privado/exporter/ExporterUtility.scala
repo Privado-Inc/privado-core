@@ -465,9 +465,6 @@ object ExporterUtility {
     val sources = Future {
       Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
     }
-    val processing = Future {
-      Try(sourceExporter.getProcessing(dataflowsOutput, dataflows)).getOrElse(List[SourceProcessingModel]())
-    }
     val sinks = Future {
       Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
     }
@@ -579,7 +576,8 @@ object ExporterUtility {
 
     val _sources = Await.result(sources, Duration.Inf)
     logger.debug("Done with exporting Sources")
-    val _processing = Await.result(processing, Duration.Inf)
+    val _processing =
+      Try(sourceExporter.getProcessing(dataflowsOutput, dataflows)).getOrElse(List[SourceProcessingModel]())
     logger.debug("Done with exporting Processing sources")
     val _sinks = Await.result(sinks, Duration.Inf)
     logger.debug("Done with exporting Sinks")

@@ -75,28 +75,28 @@ class SourceExporter(
     processingMap
       .map(entrySet =>
         // list of tagged source node
-        val taggedSourcesList = {
-          if (privadoInput.disableDeDuplication)
-            entrySet._2.toList
-          else
-            entrySet._2.toList
-              .distinctBy(_.code)
-              .distinctBy(_.lineNumber)
-              .distinctBy(Utilities.getFileNameForNode)
-        }
+        val taggedSourcesList = ExporterUtility.convertPathElements(
+          {
+            if (privadoInput.disableDeDuplication)
+              entrySet._2.toList
+            else
+              entrySet._2.toList
+                .distinctBy(_.code)
+                .distinctBy(_.lineNumber)
+                .distinctBy(Utilities.getFileNameForNode)
+          },
+          appCache = appCache,
+          ruleCache = ruleCache
+        )
         // list first element of every dataflow
         val dataflowSourceList = dataflowsOutput
           .flatMap(_._2)
           .filter(_.sourceId.equals(entrySet._1))
           .flatMap(_.sinks)
           .flatMap(_.paths)
-          .map(path => dataflows(path.pathId).elements.head)
+          .map(_.path.head)
         val finalProcessingResultSet = taggedSourcesList.toSet ++ dataflowSourceList.toSet
-        SourceProcessingModel(
-          entrySet._1,
-          ExporterUtility
-            .convertPathElements(finalProcessingResultSet.toList, appCache = appCache, ruleCache = ruleCache)
-        )
+        SourceProcessingModel(entrySet._1, finalProcessingResultSet.toList)
       )
       .toList
   }
