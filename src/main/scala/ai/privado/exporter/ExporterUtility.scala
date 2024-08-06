@@ -378,8 +378,7 @@ object ExporterUtility {
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
-    dataFlowCache: DataFlowCache
+    propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
     List[SourceModel],
@@ -390,15 +389,6 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
-    val sourceExporter = new SourceExporter(
-      cpg,
-      ruleCache,
-      privadoInput,
-      repoItemTagName = repoItemTagName,
-      appCache,
-      dataFlowCache,
-      dataflows
-    )
     val sinkExporter =
       new SinkExporter(
         cpg,
@@ -418,16 +408,7 @@ object ExporterUtility {
     val probableSinkExporter =
       new ProbableSinkExporter(cpg, ruleCache, repoPath, repoItemTagName = repoItemTagName, appCache)
     val policyAndThreatExporter =
-      new PolicyAndThreatExporter(
-        cpg,
-        ruleCache,
-        taggerCache,
-        dataFlowModel,
-        privadoInput,
-        appCache,
-        dataFlowCache,
-        dataflows
-      )
+      new PolicyAndThreatExporter(cpg, ruleCache, taggerCache, dataFlowModel, privadoInput, appCache)
     val output = mutable.LinkedHashMap[String, Json]()
 
     output.addOne(Constants.coreVersion -> Environment.privadoVersionCore.asJson)
@@ -462,12 +443,30 @@ object ExporterUtility {
       Constants.propertyFileSkippedByDirCount -> propertyFilterCache.getFileSkippedDirCountData(ruleCache).asJson
     )
 
+    val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
+    ruleCache.getRule.sinks.foreach(sinkRule => {
+      if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
+        sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
+      sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
+    })
+
+    val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
+    sinkSubCategories.foreach(sinkSubTypeEntry => {
+      dataflowsOutput.addOne(
+        sinkSubTypeEntry._1 -> dataflowExporter
+          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowModel, appCache)
+          .toList
+      )
+    })
+
+    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
+
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {
       Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
     }
     val processing = Future {
-      Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
+      Try(sourceExporter.getProcessing(dataflowsOutput, dataflows)).getOrElse(List[SourceProcessingModel]())
     }
     val sinks = Future {
       Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
@@ -487,22 +486,6 @@ object ExporterUtility {
 
     output.addOne(Constants.violations -> violationResult.asJson)
     logger.debug("Done with exporting Violations")
-
-    val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
-    ruleCache.getRule.sinks.foreach(sinkRule => {
-      if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
-        sinkSubCategories.addOne(sinkRule.catLevelTwo -> mutable.Set())
-      sinkSubCategories(sinkRule.catLevelTwo).add(sinkRule.nodeType.toString)
-    })
-
-    val dataflowsOutput = mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]()
-    sinkSubCategories.foreach(sinkSubTypeEntry => {
-      dataflowsOutput.addOne(
-        sinkSubTypeEntry._1 -> dataflowExporter
-          .getFlowByType(sinkSubTypeEntry._1, sinkSubTypeEntry._2.toSet, ruleCache, dataFlowModel, appCache)
-          .toList
-      )
-    })
 
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
 

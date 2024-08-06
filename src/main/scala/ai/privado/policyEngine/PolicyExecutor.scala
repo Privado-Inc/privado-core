@@ -54,9 +54,7 @@ class PolicyExecutor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   collections: List[CollectionModel] = List[CollectionModel](),
-  appCache: AppCache,
-  dataFlowCache: DataFlowCache,
-  dataflows: Map[String, Path]
+  appCache: AppCache
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -71,14 +69,7 @@ class PolicyExecutor(
   // Map to contain sinkId -> List(pathIds)
   lazy val dataflowSinkIdMap: Map[String, List[String]] = getDataflowBySinkIdMapping
 
-  val sourceExporter = new SourceExporter(
-    cpg,
-    ruleCache,
-    privadoInput,
-    appCache = appCache,
-    dataFlowCache = dataFlowCache,
-    dataflows = dataflows.toMap
-  )
+  val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, appCache = appCache)
 
   lazy val sourceExporterModel = sourceExporter.getSources
 

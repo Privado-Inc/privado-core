@@ -122,8 +122,7 @@ object MonolithExporter {
         s3DatabaseDetailsCache,
         repoItemTagName = Option(repoItemTagName),
         appCache = appCache,
-        databaseDetailsCache,
-        dataFlowCache = dataFlowCache
+        databaseDetailsCache
       )
 
       output.addOne(

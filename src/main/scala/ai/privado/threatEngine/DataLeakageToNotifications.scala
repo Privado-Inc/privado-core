@@ -50,25 +50,14 @@ object DataLeakageToNotifications {
     ruleCache: RuleCache,
     dataFlowModel: List[DataFlowPathModel],
     privadoInput: PrivadoInput,
-    appCache: AppCache,
-    dataFlowCache: DataFlowCache,
-    dataflows: Map[String, Path]
+    appCache: AppCache
   ): Try[(Boolean, List[ViolationDataFlowModel])] = Try {
     // use policy executor to directly process existing flows (we have rule for notifications)
     // we already have this implementation as part of policy enforcement
     // threat being type of suggestive policy
     // might restructure this in future and have central utilities consumed by both
     val policyExecutor =
-      new PolicyExecutor(
-        cpg,
-        dataFlowModel,
-        appCache.repoName,
-        ruleCache,
-        privadoInput,
-        appCache = appCache,
-        dataFlowCache = dataFlowCache,
-        dataflows = dataflows
-      )
+      new PolicyExecutor(cpg, dataFlowModel, appCache.repoName, ruleCache, privadoInput, appCache = appCache)
     val violatingFlows = policyExecutor.getViolatingFlowsForPolicy(threat)
 
     // violation if empty

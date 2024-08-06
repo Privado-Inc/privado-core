@@ -25,7 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{DataFlowSubCategoryModel, SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTaggingDisabled
 import ai.privado.utility.Utilities
@@ -43,9 +43,7 @@ class SourceExporter(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   repoItemTagName: Option[String] = None,
-  appCache: AppCache,
-  dataFlowCache: DataFlowCache,
-  dataflows: Map[String, Path]
+  appCache: AppCache
 ) {
 
   lazy val sourcesList: List[AstNode]      = getSourcesList
@@ -57,7 +55,10 @@ class SourceExporter(
     convertSourcesList(sourcesTagList)
   }
 
-  def getProcessing: List[SourceProcessingModel] = {
+  def getProcessing(
+    dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]],
+    dataflows: Map[String, Path]
+  ): List[SourceProcessingModel] = {
 
     val processingMap = mutable.HashMap[String, mutable.Set[AstNode]]()
     sourcesList.foreach(source => {
@@ -83,10 +84,13 @@ class SourceExporter(
               .distinctBy(_.lineNumber)
               .distinctBy(Utilities.getFileNameForNode)
         }
-        // list of first node of every dataflow
-        val dataflowSourceList = dataFlowCache.getDataflowAfterDedup
+        // list first element of every dataflow
+        val dataflowSourceList = dataflowsOutput
+          .flatMap(_._2)
           .filter(_.sourceId.equals(entrySet._1))
-          .map(pathModel => dataflows(pathModel.pathId).elements.head)
+          .flatMap(_.sinks)
+          .flatMap(_.paths)
+          .map(path => dataflows(path.pathId).elements.head)
         val finalProcessingResultSet = taggedSourcesList.toSet ++ dataflowSourceList.toSet
         SourceProcessingModel(
           entrySet._1,

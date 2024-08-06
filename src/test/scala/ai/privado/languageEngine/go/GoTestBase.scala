@@ -350,7 +350,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     fileExtension: String = ".go"
   ): (Cpg, ThreatEngineExecutor) = {
     val ruleCache                    = new RuleCache()
-    var dataFlows: Map[String, Path] = Map()
+    val dataFlows: Map[String, Path] = Map()
     val auditCache                   = new AuditCache
     val privadoInput                 = PrivadoInput()
     val dataFlowCache                = new DataFlowCache(privadoInput, auditCache)
@@ -391,9 +391,7 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
         null,
         dataFlowCache.getDataflowAfterDedup,
         privadoInput,
-        appCache = appCache,
-        dataFlowCache = dataFlowCache,
-        dataflows = mutable.HashMap[String, Path]().toMap
+        appCache = appCache
       )
     (cpg, threatEngine)
   }
