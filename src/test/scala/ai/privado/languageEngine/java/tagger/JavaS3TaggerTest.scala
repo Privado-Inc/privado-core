@@ -27,17 +27,61 @@ import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.languageEngine.java.JavaTaggingTestBase
-import ai.privado.model.Constants
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.model.exporter.SinkModel
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.tagger.sink.RegularSinkTagger
 import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.cache.RuleCache
+import ai.privado.rule.RuleInfoTestData
 
 import scala.collection.mutable
 
 class JavaS3TaggerTest extends JavaFrontendTestSuite {
 
+  private val sinkRule = List(
+    RuleInfo(
+      "Storages.AmazonS3.Read",
+      "Amazon S3",
+      "Storage",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*GetObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.AmazonS3.Write",
+      "Amazon S3",
+      "Storage",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*PutObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
+
   "Java code reading and writing from S3 bucket" should {
+
+    val ruleCache = RuleCache().setRule(
+      RuleInfoTestData.rule
+        .copy(sources = RuleInfoTestData.sourceRule, sinks = sinkRule)
+    )
 
     val cpg = code("""
         |import software.amazon.awssdk.core.sync.RequestBody;
@@ -76,6 +120,7 @@ class JavaS3TaggerTest extends JavaFrontendTestSuite {
         |    }
         |}
         |""".stripMargin)
+      .withRuleCache(ruleCache)
 
     "have bucket name" in {
       val outputMap = cpg.getPrivadoJson()
