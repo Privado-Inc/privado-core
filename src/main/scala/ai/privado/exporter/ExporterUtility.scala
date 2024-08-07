@@ -390,6 +390,7 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
+    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
     val sinkExporter =
       new SinkExporter(
         cpg,
@@ -459,8 +460,6 @@ object ExporterUtility {
           .toList
       )
     })
-
-    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
 
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {
