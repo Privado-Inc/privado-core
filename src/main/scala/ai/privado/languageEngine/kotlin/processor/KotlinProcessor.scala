@@ -107,7 +107,8 @@ class KotlinProcessor(
       dataFlowCache,
       appCache,
       databaseDetailsCache,
-      statsRecorder
+      statsRecorder,
+      fileLinkingMetadata
     )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

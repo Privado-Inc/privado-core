@@ -196,6 +196,12 @@ class JSAPITagger(
     val domains = ListBuffer[String]()
     if (apis.nonEmpty && apiInternalSources.nonEmpty) {
       val apiFlows = apis.reachableByFlows(apiInternalSources)(engineContext).toList
+
+      if (privadoInput.fileLinkingReport) {
+        val dataflowFiles = apiFlows.map(_.elements.flatMap(_.file.name).dedup.l).l
+        fileLinkingMetadata.addToDataflowMap(dataflowFiles)
+      }
+
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
         val apiNode     = flow.elements.last

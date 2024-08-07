@@ -315,7 +315,7 @@ abstract class BaseProcessor(
 
   protected def fileLinkingReportExport(cpg: Cpg): Either[String, Unit] = {
     if (privadoInput.fileLinkingReport) {
-      JSONExporter.fileLinkingExport(outputFileLinkingFileName, sourceRepoLocation, fileLinkingMetadata) match
+      JSONExporter.fileLinkingExport(cpg, outputFileLinkingFileName, sourceRepoLocation, fileLinkingMetadata) match
         case Left(err) =>
           MetricHandler.otherErrorsOrWarnings.addOne(err)
           Left(err)

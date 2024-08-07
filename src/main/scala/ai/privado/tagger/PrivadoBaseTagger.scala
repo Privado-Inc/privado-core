@@ -26,16 +26,6 @@ abstract class PrivadoBaseTagger {
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
-  ): Traversal[Tag] = ???
-
-  def runTagger(
-    rules: RuleCache,
-    taggerCache: TaggerCache,
-    privadoInputConfig: PrivadoInput,
-    dataFlowCache: DataFlowCache,
-    appCache: AppCache,
-    databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = ???

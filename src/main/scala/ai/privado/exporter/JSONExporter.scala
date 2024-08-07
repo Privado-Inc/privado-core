@@ -74,7 +74,7 @@ import scala.concurrent.*
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language.*
-
+import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -200,6 +200,7 @@ object JSONExporter {
   }
 
   def fileLinkingExport(
+    cpg: Cpg,
     outputFileName: String,
     repoPath: String,
     fileLinkingMetadata: FileLinkingMetadata
@@ -208,7 +209,13 @@ object JSONExporter {
     val output = mutable.LinkedHashMap[String, Json]()
     try {
       output.addOne(Constants.dataflowDependency -> fileLinkingMetadata.getDataflowMap.asJson)
+      val propertyAndUsedAt = cpg.property
+        .map(p => (p.file.name.headOption.getOrElse(""), p.start.usedAt.file.name.dedup.l))
+        .groupBy(_._1)
+        .map(entry => (entry._1, entry._2.flatMap(_._2).distinct))
+        .filter(entrySet => entrySet._2.nonEmpty)
 
+      output.addOne("propertyDependency" -> propertyAndUsedAt.asJson)
       val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())
