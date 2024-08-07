@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.php.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.metric.MetricHandler
@@ -17,8 +17,13 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
-    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class APITagger(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  appCache: AppCache,
+  fileLinkingMetadata: FileLinkingMetadata
+) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger                = LoggerFactory.getLogger(this.getClass)
   val cacheCall: List[Call]         = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
   val constructNameCall: List[Call] = cacheCall.where(_.name("__construct")).l
@@ -65,7 +70,8 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
       builder,
       ruleInfo,
       ruleCache,
-      privadoInput
+      privadoInput,
+      fileLinkingMetadata
     )
   }
 }

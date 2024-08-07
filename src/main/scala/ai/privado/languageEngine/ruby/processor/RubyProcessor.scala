@@ -92,7 +92,8 @@ class RubyProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -105,7 +106,8 @@ class RubyProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {

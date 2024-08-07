@@ -30,6 +30,7 @@ import ai.privado.cache.{
   DataFlowCache,
   DatabaseDetailsCache,
   Environment,
+  FileLinkingMetadata,
   PropertyFilterCache,
   RuleCache,
   S3DatabaseDetailsCache,
@@ -194,6 +195,31 @@ object JSONExporter {
         println("Failed to export intermediate output")
         logger.debug(ex.getStackTrace.mkString("\n"))
         logger.debug("Failed to export intermediate output", ex)
+        Left(ex.toString)
+    }
+  }
+
+  def fileLinkingExport(
+    outputFileName: String,
+    repoPath: String,
+    fileLinkingMetadata: FileLinkingMetadata
+  ): Either[String, Unit] = {
+    logger.info("Initiated the file linking metadata exporter engine")
+    val output = mutable.LinkedHashMap[String, Json]()
+    try {
+      output.addOne(Constants.dataflowDependency -> fileLinkingMetadata.getDataflowMap.asJson)
+
+      val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down file linking metadata exporter engine")
+      Right(())
+
+    } catch {
+      case ex: Exception =>
+        println("Failed to export file linking metadata output")
+        logger.debug(ex.getStackTrace.mkString("\n"))
+        logger.debug("Failed to export file linking metadata output", ex)
         Left(ex.toString)
     }
   }

@@ -6,6 +6,7 @@ import ai.privado.cache.{
   AuditCache,
   DataFlowCache,
   DatabaseDetailsCache,
+  FileLinkingMetadata,
   PropertyFilterCache,
   RuleCache,
   S3DatabaseDetailsCache,
@@ -55,7 +56,8 @@ class KotlinProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -68,7 +70,8 @@ class KotlinProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()

@@ -387,6 +387,7 @@ object ScanProcessor extends CommandProcessor {
   private val s3DatabaseDetailsCache = new S3DatabaseDetailsCache
   private val propertyFilterCache    = new PropertyFilterCache()
   private val databaseDetailsCache   = new DatabaseDetailsCache()
+  private val fileLinkingMetadata    = new FileLinkingMetadata()
   def getDataflowCache: DataFlowCache = {
     new DataFlowCache(config, auditCache)
   }
@@ -442,7 +443,8 @@ object ScanProcessor extends CommandProcessor {
             appCache,
             statsRecorder = statsRecorder,
             databaseDetailsCache = databaseDetailsCache,
-            propertyFilterCache = propertyFilterCache
+            propertyFilterCache = propertyFilterCache,
+            fileLinkingMetadata = fileLinkingMetadata
           ).processCpg()
         else
           KotlinProcessor(
@@ -455,7 +457,8 @@ object ScanProcessor extends CommandProcessor {
             appCache,
             statsRecorder = statsRecorder,
             databaseDetailsCache = databaseDetailsCache,
-            propertyFilterCache = propertyFilterCache
+            propertyFilterCache = propertyFilterCache,
+            fileLinkingMetadata = fileLinkingMetadata
           ).processCpg()
       case Language.JAVASCRIPT =>
         statsRecorder.justLogMessage("Detected language 'JavaScript'")
@@ -469,7 +472,8 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache
+          propertyFilterCache = propertyFilterCache,
+          fileLinkingMetadata = fileLinkingMetadata
         ).processCpg()
       case Language.PYTHON =>
         statsRecorder.justLogMessage("Detected language 'Python'")
@@ -483,7 +487,8 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache,
           databaseDetailsCache = databaseDetailsCache,
-          statsRecorder = statsRecorder
+          statsRecorder = statsRecorder,
+          fileLinkingMetadata = fileLinkingMetadata
         ).processCpg()
       case Language.RUBY =>
         statsRecorder.justLogMessage("Detected language 'Ruby'")
@@ -496,7 +501,8 @@ object ScanProcessor extends CommandProcessor {
           s3DatabaseDetailsCache,
           appCache,
           propertyFilterCache = propertyFilterCache,
-          statsRecorder = statsRecorder
+          statsRecorder = statsRecorder,
+          fileLinkingMetadata = fileLinkingMetadata
         ).processCpg()
       case Language.GO =>
         statsRecorder.justLogMessage("Detected language 'Go'")
@@ -510,7 +516,8 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder,
-          databaseDetailsCache = databaseDetailsCache
+          databaseDetailsCache = databaseDetailsCache,
+          fileLinkingMetadata = fileLinkingMetadata
         ).processCpg()
       case Language.KOTLIN =>
         statsRecorder.justLogMessage("Detected language 'Kotlin'")
@@ -524,7 +531,8 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache
+          propertyFilterCache = propertyFilterCache,
+          fileLinkingMetadata = fileLinkingMetadata
         ).processCpg()
       case Language.CSHARP =>
         statsRecorder.justLogMessage("Detected language 'C#'")
@@ -538,7 +546,8 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache
+          propertyFilterCache = propertyFilterCache,
+          fileLinkingMetadata = fileLinkingMetadata
         ).processCpg()
       case Language.PHP =>
         statsRecorder.justLogMessage("Detected language 'PHP'")
@@ -552,7 +561,8 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache
+          propertyFilterCache = propertyFilterCache,
+          fileLinkingMetadata = fileLinkingMetadata
         )
           .processCpg()
       case Language.C =>
@@ -567,11 +577,12 @@ object ScanProcessor extends CommandProcessor {
           appCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          propertyFilterCache = propertyFilterCache
+          propertyFilterCache = propertyFilterCache,
+          fileLinkingMetadata = fileLinkingMetadata
         )
           .processCpg()
       case _ =>
-        processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder)
+        processCpgWithDefaultProcessor(sourceRepoLocation, appCache, statsRecorder, fileLinkingMetadata)
     } match {
       case Left(err: String) => Left(err)
       case _ =>
@@ -584,7 +595,8 @@ object ScanProcessor extends CommandProcessor {
   private def processCpgWithDefaultProcessor(
     sourceRepoLocation: String,
     appCache: AppCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ) = {
     MetricHandler.metricsData("language") = Json.fromString("default")
     statsRecorder.justLogMessage("Running scan with default processor.")
@@ -598,7 +610,8 @@ object ScanProcessor extends CommandProcessor {
       appCache,
       statsRecorder = statsRecorder,
       databaseDetailsCache = databaseDetailsCache,
-      propertyFilterCache = propertyFilterCache
+      propertyFilterCache = propertyFilterCache,
+      fileLinkingMetadata = fileLinkingMetadata
     ).processCpg()
   }
 

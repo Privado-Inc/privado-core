@@ -56,7 +56,8 @@ class DefaultProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -69,7 +70,8 @@ class DefaultProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
 
   private val logger = LoggerFactory.getLogger(getClass)

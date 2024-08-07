@@ -22,7 +22,7 @@
  */
 package ai.privado.languageEngine.java.tagger.sink.api
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -61,7 +61,8 @@ class JavaAPITagger(
   ruleCache: RuleCache,
   privadoInputConfig: PrivadoInput,
   appCache: AppCache,
-  statsRecorder: StatsRecorder
+  statsRecorder: StatsRecorder,
+  fileLinkingMetadata: FileLinkingMetadata
 ) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   implicit val engineContext: EngineContext =
@@ -164,6 +165,7 @@ class JavaAPITagger(
           ruleInfo,
           ruleCache,
           privadoInputConfig,
+          fileLinkingMetadata,
           privadoInputConfig.enableAPIDisplay
         )
         sinkTagger(
@@ -173,7 +175,8 @@ class JavaAPITagger(
           builder,
           ruleInfo,
           ruleCache,
-          privadoInputConfig
+          privadoInputConfig,
+          fileLinkingMetadata
         )
       case APITaggerVersionJava.V2Tagger =>
         logger.debug("Using Enhanced API tagger to find API sinks")
@@ -185,7 +188,8 @@ class JavaAPITagger(
           builder,
           ruleInfo,
           ruleCache,
-          privadoInputConfig
+          privadoInputConfig,
+          fileLinkingMetadata
         )
       case _ =>
         logger.debug("Skipping API Tagger because valid match not found, only applying Feign client")
@@ -197,7 +201,8 @@ class JavaAPITagger(
           builder,
           ruleInfo,
           ruleCache,
-          privadoInputConfig
+          privadoInputConfig,
+          fileLinkingMetadata
         )
     }
   }

@@ -24,6 +24,7 @@ import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.passes.CpgPassBase
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -43,7 +44,8 @@ abstract class BaseProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean,
   databaseDetailsCache: DatabaseDetailsCache,
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -132,6 +134,12 @@ abstract class BaseProcessor(
     val dataflowMap =
       Dataflow(cpg, statsRecorder).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache)
     statsRecorder.endLastStage()
+
+    if (privadoInput.fileLinkingReport) {
+      // Add dataflow data to FileLinkingMetadata
+      val dataflowFiles = dataflowMap.values.map(path => path.elements.flatMap(_.file.name).dedup.l).l
+      fileLinkingMetadata.addToDataflowMap(dataflowFiles)
+    }
     statsRecorder.justLogMessage(s"Processed final flows - ${dataFlowCache.getDataflowAfterDedup.size}")
 
     statsRecorder.initiateNewStage("Brewing result")
@@ -168,6 +176,10 @@ abstract class BaseProcessor(
       case Right(_)  =>
 
     intermediateReportExport(cpg) match
+      case Left(err) => errorMsgs.addOne(err)
+      case Right(_)  =>
+
+    fileLinkingReportExport(cpg) match
       case Left(err) => errorMsgs.addOne(err)
       case Right(_)  =>
 
@@ -297,6 +309,21 @@ abstract class BaseProcessor(
           )
           Right(())
       }
+    } else
+      Right(())
+  }
+
+  protected def fileLinkingReportExport(cpg: Cpg): Either[String, Unit] = {
+    if (privadoInput.fileLinkingReport) {
+      JSONExporter.fileLinkingExport(outputFileLinkingFileName, sourceRepoLocation, fileLinkingMetadata) match
+        case Left(err) =>
+          MetricHandler.otherErrorsOrWarnings.addOne(err)
+          Left(err)
+        case Right(_) =>
+          statsRecorder.justLogMessage(
+            s"Successfully exported file linking output to '${appCache.localScanPath}/$outputDirectoryName/$outputFileLinkingFileName' folder..."
+          )
+          Right(())
     } else
       Right(())
   }
