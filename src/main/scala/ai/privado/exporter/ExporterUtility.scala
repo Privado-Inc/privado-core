@@ -399,9 +399,7 @@ object ExporterUtility {
         repoItemTagName = repoItemTagName,
         s3DatabaseDetailsCache,
         appCache,
-        databaseDetailsCache,
-        dataflowCache,
-        dataflows
+        databaseDetailsCache
       )
     val dataflowExporter = new DataflowExporter(dataflows, taggerCache, databaseDetailsCache)
     val collectionExporter =
@@ -456,9 +454,6 @@ object ExporterUtility {
     }
     val sinks = Future {
       Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
-    }
-    val processingSinks = Future {
-      Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
     }
     val collections = Future {
       Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
@@ -585,7 +580,7 @@ object ExporterUtility {
     logger.debug("Done with exporting Processing sources")
     val _sinks = Await.result(sinks, Duration.Inf)
     logger.debug("Done with exporting Sinks")
-    val _processingSinks = Await.result(processingSinks, Duration.Inf)
+    val _processingSinks = Try(sinkExporter.getProcessing(dataflowsOutput)).getOrElse(List[SinkProcessingModel]())
     logger.debug("Done with exporting Processing Sinks")
     val _permissions = Await.result(androidPermissions, Duration.Inf)
     logger.debug("Done with exporting android permissions")
