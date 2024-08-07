@@ -378,8 +378,7 @@ object ExporterUtility {
     repoItemTagName: Option[String] = None,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
-    dataflowCache: DataFlowCache
+    propertyFilterCache: PropertyFilterCache = PropertyFilterCache()
   ): (
     mutable.LinkedHashMap[String, Json],
     List[SourceModel],

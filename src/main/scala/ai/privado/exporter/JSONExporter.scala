@@ -91,8 +91,7 @@ object JSONExporter {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache,
-    dataflowCache: DataFlowCache
+    databaseDetailsCache: DatabaseDetailsCache
   ): Either[String, Map[String, Json]] = {
 
     try {
@@ -116,8 +115,7 @@ object JSONExporter {
         s3DatabaseDetailsCache,
         appCache = appCache,
         databaseDetailsCache = databaseDetailsCache,
-        propertyFilterCache = propertyFilterCache,
-        dataflowCache = dataflowCache
+        propertyFilterCache = propertyFilterCache
       )
 
       // Add the privado json path of each monolith repository item

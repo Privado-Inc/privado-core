@@ -15,15 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.Assertion
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  PropertyFilterCache,
-  S3DatabaseDetailsCache,
-  TaggerCache
-}
+import ai.privado.cache.{AppCache, DatabaseDetailsCache, PropertyFilterCache, S3DatabaseDetailsCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.Constants.outputFileName
 import ai.privado.rule.RuleInfoTestData
@@ -79,8 +71,7 @@ trait CollectionValidator extends Matchers {
       None,
       appCache,
       new DatabaseDetailsCache(),
-      new PropertyFilterCache(),
-      new DataFlowCache(privadoInput, new AuditCache())
+      new PropertyFilterCache()
     )
 
     collections.size shouldBe 1
