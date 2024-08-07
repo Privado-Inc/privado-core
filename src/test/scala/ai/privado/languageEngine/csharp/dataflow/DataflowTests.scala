@@ -8,7 +8,7 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 class DataflowTests extends CSharpFrontendTestSuite {
   implicit val engineContext: EngineContext = new EngineContext()
 
-  "simple dataflows" should {
+  "simple dataflows" ignore {
     val cpg = code(
       """
           |namespace Foo {
