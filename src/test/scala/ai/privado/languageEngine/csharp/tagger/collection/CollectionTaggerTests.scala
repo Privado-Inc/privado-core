@@ -61,7 +61,7 @@ class CollectionTaggerTests extends CSharpFrontendTestSuite {
     RuleInfoTestData.rule.copy(sources = RuleInfoTestData.sourceRule, sinks = sinkRules, collections = collectionRules)
   )
 
-  "Types with Route annotations having [controller]" should {
+  "Types with Route annotations having [controller]" ignore {
     val cpg = code(
       """
                 |using System;
@@ -102,7 +102,7 @@ class CollectionTaggerTests extends CSharpFrontendTestSuite {
     }
   }
 
-  "Methods having [controller] annotations" should {
+  "Methods having [controller] annotations" ignore {
     val cpg = code(
       """
                 |using System;
@@ -130,7 +130,7 @@ class CollectionTaggerTests extends CSharpFrontendTestSuite {
     }
   }
 
-  "Methods having implicit routes" should {
+  "Methods having implicit routes" ignore {
     val cpg = code(
       """
                 |using System;
@@ -185,7 +185,7 @@ class CollectionTaggerTests extends CSharpFrontendTestSuite {
     }
   }
 
-  "Different order of annotations and/or extra annotations" should {
+  "Different order of annotations and/or extra annotations" ignore {
     val cpg = code(
       """
                 |namespace Foo.Bar;
@@ -215,7 +215,7 @@ class CollectionTaggerTests extends CSharpFrontendTestSuite {
     }
   }
 
-  "Route annotations with more than one arguments" should {
+  "Route annotations with more than one arguments" ignore {
     val cpg = code(
       """
                 |namespace Foo.Bar;

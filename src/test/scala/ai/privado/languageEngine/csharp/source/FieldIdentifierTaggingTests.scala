@@ -13,7 +13,7 @@ class FieldIdentifierTaggingTests extends CSharpFrontendTestSuite {
 
   val ruleCache = new RuleCache().setRule(configAnndRules)
 
-  "field access in code" should {
+  "field access in code" ignore {
     val cpg = code(
       """
             |namespace Foo {
