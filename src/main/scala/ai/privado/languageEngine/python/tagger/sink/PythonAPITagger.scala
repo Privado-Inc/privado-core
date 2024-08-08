@@ -84,7 +84,12 @@ class PythonAPITagger(
     sinkTagger(
       cpg,
       apiInternalSources ++ propertySources ++ identifierSource,
-      apis.methodFullName(commonHttpPackages).l,
+      apis
+        .or(
+          _.methodFullName(commonHttpPackages),
+          _.filter(_.dynamicTypeHintFullName.exists(_.matches(commonHttpPackages)))
+        )
+        .l,
       builder,
       ruleInfo,
       ruleCache,
