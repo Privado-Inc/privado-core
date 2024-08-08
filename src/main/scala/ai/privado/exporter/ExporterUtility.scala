@@ -389,6 +389,7 @@ object ExporterUtility {
     Int
   ) = {
     logger.info("Initiated exporter engine")
+    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
     val sinkExporter =
       new SinkExporter(
         cpg,
@@ -459,17 +460,12 @@ object ExporterUtility {
       )
     })
 
-    val sourceExporter = new SourceExporter(cpg, ruleCache, privadoInput, repoItemTagName = repoItemTagName, appCache)
-
     // Future creates a thread and starts resolving the function call asynchronously
     val sources = Future {
       Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
     }
     val sinks = Future {
       Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
-    }
-    val processingSinks = Future {
-      Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
     }
     val collections = Future {
       Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
@@ -581,7 +577,7 @@ object ExporterUtility {
     logger.debug("Done with exporting Processing sources")
     val _sinks = Await.result(sinks, Duration.Inf)
     logger.debug("Done with exporting Sinks")
-    val _processingSinks = Await.result(processingSinks, Duration.Inf)
+    val _processingSinks = Try(sinkExporter.getProcessing(dataflowsOutput)).getOrElse(List[SinkProcessingModel]())
     logger.debug("Done with exporting Processing Sinks")
     val _permissions = Await.result(androidPermissions, Duration.Inf)
     logger.debug("Done with exporting android permissions")
