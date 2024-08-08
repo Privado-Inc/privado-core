@@ -39,7 +39,7 @@ import ai.privado.cache.{
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, value}
+import ai.privado.model.Constants.{namespaceDependency, outputDirectoryName, value}
 import ai.privado.model.exporter.{
   AndroidPermissionModel,
   CollectionModel,
@@ -215,7 +215,21 @@ object JSONExporter {
         .map(entry => (entry._1, entry._2.flatMap(_._2).distinct))
         .filter(entrySet => entrySet._2.nonEmpty)
 
-      output.addOne("propertyDependency" -> propertyAndUsedAt.asJson)
+      output.addOne(Constants.propertyDependency -> propertyAndUsedAt.asJson)
+
+      /** For Java the namespace is working as expected, for languages like JS, Python we are getting the namespace as
+        * <`global`> for nearly all files
+        *
+        * Which reflects that the idea of namespace doesn't exist in these languages the files placed under same folder
+        * are not available by default, we need to relatively import them
+        */
+      val namespaceToFileMapping = cpg.namespace
+        .map(n => (n.name, n.file.name.l))
+        .groupBy(_._1)
+        .map(entrySet => (entrySet._1, entrySet._2.flatMap(_._2).distinct))
+
+      output.addOne(Constants.namespaceDependency -> namespaceToFileMapping.asJson)
+
       val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
       f.write(output.asJson.toString())

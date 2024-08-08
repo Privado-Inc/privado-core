@@ -154,6 +154,8 @@ object Constants {
   // file linking metadata
   val outputFileLinkingFileName = "fileLinkingMetadata.json"
   val dataflowDependency        = "dataflowDependency"
+  val propertyDependency        = "propertyDependency"
+  val namespaceDependency       = "namespaceDependency"
 
   // database details
   val dbName      = "dbName"
