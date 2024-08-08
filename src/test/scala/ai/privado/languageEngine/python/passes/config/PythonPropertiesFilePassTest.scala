@@ -23,7 +23,7 @@ class GetEnvironmentTest extends PythonFrontendTestSuite {
 
     "create a file node for the property file" in {
       val files = cpg.file.name.l
-      files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
+      files.filter(_.endsWith(".env")).head shouldBe ("test.env")
     }
 
     "create a `property` node for each property" in {
@@ -35,7 +35,7 @@ class GetEnvironmentTest extends PythonFrontendTestSuite {
 
     "connect property nodes to file" in {
       val List(filename: String) = cpg.property.file.name.dedup.l
-      filename.endsWith("/test.env") shouldBe true
+      filename shouldBe ("test.env")
     }
     "connect property node to literal via `IS_USED_AT` edge" in {
       val lit = cpg.property.usedAt.l.head
@@ -217,7 +217,7 @@ class DBConfigImplementationTests extends PythonFrontendTestSuite {
   "ConfigFilePass" should {
     "create a file node for the property file" in {
       val files = cpg.file.name.l
-      files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
+      files.filter(_.endsWith(".env")).head shouldBe ("test.env")
     }
 
     "create a `property` node for each property" in {
@@ -229,7 +229,7 @@ class DBConfigImplementationTests extends PythonFrontendTestSuite {
 
     "connect property nodes to file" in {
       val List(filename: String) = cpg.property.file.name.dedup.l
-      filename.endsWith("/test.env") shouldBe true
+      filename shouldBe ("test.env")
     }
 
     "Two way edge between member and propertyNode" in {
@@ -263,7 +263,7 @@ class INIFileTest extends PythonFrontendTestSuite {
 
   "create a file node for the property file" in {
     val files = cpg.file.name.l
-    files.filter(_.endsWith(".ini")).head.endsWith("/test.ini") shouldBe true
+    files.filter(_.endsWith(".ini")).head shouldBe ("test.ini")
   }
 
   "create a `property` node for each property" in {
@@ -275,6 +275,6 @@ class INIFileTest extends PythonFrontendTestSuite {
 
   "connect property nodes to file" in {
     val List(filename: String) = cpg.property.file.name.dedup.l
-    filename.endsWith("/test.ini") shouldBe true
+    filename shouldBe ("test.ini")
   }
 }
