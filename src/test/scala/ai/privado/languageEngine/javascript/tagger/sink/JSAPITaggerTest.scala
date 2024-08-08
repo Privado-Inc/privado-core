@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
@@ -273,7 +273,8 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val cpg         = new JsSrc2Cpg().createCpgWithAllOverlays(config).get
     val taggerCache = new TaggerCache()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache, fileLinkingMetadata = FileLinkingMetadata())
+      .createAndApply()
     cpgs.addOne(cpg)
     cpg
   }
@@ -299,7 +300,8 @@ class JSAPITaggerTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     new HTMLParserPass(cpg, projectRoot = inputDir.toString(), ruleCache, privadoInputConfig = privadoInput.copy())
       .createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache, fileLinkingMetadata = FileLinkingMetadata())
+      .createAndApply()
     cpgs.addOne(cpg)
     cpg
   }
