@@ -33,6 +33,7 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import better.files.File.VisitOptions
 
+import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
 
 object FileExtensions {
@@ -354,7 +355,8 @@ class PropertyParserPass(
   }
 
   private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
-    val fileNode = NewFile().name(name)
+    val relativeFileName = Path.of(projectRoot).relativize(Path.of(name)).toString
+    val fileNode         = NewFile().name(relativeFileName)
     builder.addNode(fileNode)
     fileNode
   }

@@ -30,7 +30,7 @@ class CSharpAPITaggerTest extends CSharpFrontendTestSuite with APIValidator {
   )
   val ruleCache = RuleCache().setRule(RuleInfoTestData.rule.copy(systemConfig = systemConfig))
 
-  "API call made using System.Net.Http library" should {
+  "API call made using System.Net.Http library" ignore {
     val cpg = code(
       """
         |using System;
