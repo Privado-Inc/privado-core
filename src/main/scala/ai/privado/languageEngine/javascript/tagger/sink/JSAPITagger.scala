@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
@@ -49,8 +49,13 @@ import ai.privado.utility.Utilities.{
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import overflowdb.BatchedUpdate
 
-class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
-    extends APITagger(cpg, ruleCache, privadoInput, appCache) {
+class JSAPITagger(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  appCache: AppCache,
+  fileLinkingMetadata: FileLinkingMetadata
+) extends APITagger(cpg, ruleCache, privadoInput, appCache, fileLinkingMetadata) {
 
   override val apis = cacheCall
     .name(APISINKS_REGEX)
@@ -191,6 +196,12 @@ class JSAPITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, ap
     val domains = ListBuffer[String]()
     if (apis.nonEmpty && apiInternalSources.nonEmpty) {
       val apiFlows = apis.reachableByFlows(apiInternalSources)(engineContext).toList
+
+      if (privadoInput.fileLinkingReport) {
+        val dataflowFiles = apiFlows.map(_.elements.flatMap(_.file.name).dedup.l).l
+        fileLinkingMetadata.addToDataflowMap(dataflowFiles)
+      }
+
       apiFlows.foreach(flow => {
         val literalCode = flow.elements.head.originalPropertyValue.getOrElse(flow.elements.head.code.split(" ").last)
         val apiNode     = flow.elements.last

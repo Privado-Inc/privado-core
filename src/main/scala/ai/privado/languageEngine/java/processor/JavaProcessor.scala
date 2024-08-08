@@ -72,7 +72,8 @@ class JavaProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -85,7 +86,8 @@ class JavaProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -117,7 +119,8 @@ class JavaProcessor(
       s3DatabaseDetailsCache,
       appCache,
       databaseDetailsCache,
-      statsRecorder
+      statsRecorder,
+      fileLinkingMetadata
     )
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

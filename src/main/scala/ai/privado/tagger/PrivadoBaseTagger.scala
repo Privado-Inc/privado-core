@@ -1,6 +1,14 @@
 package ai.privado.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  FileLinkingMetadata,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
@@ -18,7 +26,8 @@ abstract class PrivadoBaseTagger {
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = ???
 
   def runTagger(
@@ -29,7 +38,8 @@ abstract class PrivadoBaseTagger {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = ???
 
 }

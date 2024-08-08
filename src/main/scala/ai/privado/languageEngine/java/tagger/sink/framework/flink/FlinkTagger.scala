@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.tagger.sink.framework.flink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.{Constants, FilterProperty, Language, RuleInfo}
 import ai.privado.tagger.Tagger
@@ -15,7 +15,8 @@ object FlinkTagger extends Tagger with TaggerHelper {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     appCache: AppCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Unit = {
     // Run flink only if detected
     if (cpg.imports.importedEntity("org.apache.flink.*").nonEmpty) {

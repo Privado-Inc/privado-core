@@ -38,7 +38,8 @@ class PythonProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -51,7 +52,8 @@ class PythonProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
 
   override val logger = LoggerFactory.getLogger(getClass)
@@ -82,7 +84,8 @@ class PythonProcessor(
       s3DatabaseDetailsCache,
       appCache,
       databaseDetailsCache,
-      statsRecorder
+      statsRecorder,
+      fileLinkingMetadata
     )
   }
 

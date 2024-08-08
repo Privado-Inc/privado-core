@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.kotlin.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.java.feeder.StorageInheritRule
@@ -34,7 +34,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     dataflowCache: DataFlowCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -64,9 +65,9 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new StorageAnnotationTagger(cpg, ruleCache).createAndApply()
     }
 
-    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
-    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     new AndroidCollectionTagger(
       cpg,

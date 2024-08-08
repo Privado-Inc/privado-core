@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.ruby.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.ruby.tagger.collection.CollectionTagger
 import ai.privado.languageEngine.ruby.config.RubyDBConfigTagger
@@ -61,7 +61,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = {
     logger.info("Starting tagging")
     new DEDTagger(cpg, ruleCache).createAndApply()
@@ -73,7 +74,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new IdentifierDerivedTagger(cpg, ruleCache).createAndApply()
     new RegularSinkTagger(cpg, ruleCache).createAndApply()
 
-    RubyAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    RubyAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     val collectionTagger = new CollectionTagger(cpg, ruleCache)
     collectionTagger.createAndApply()

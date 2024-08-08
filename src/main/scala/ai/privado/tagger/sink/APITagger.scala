@@ -23,7 +23,7 @@
 
 package ai.privado.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -35,8 +35,13 @@ import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 
-class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appCache: AppCache)
-    extends PrivadoParallelCpgPass[RuleInfo](cpg) {
+class APITagger(
+  cpg: Cpg,
+  ruleCache: RuleCache,
+  privadoInput: PrivadoInput,
+  appCache: AppCache,
+  fileLinkingMetadata: FileLinkingMetadata
+) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
 
   val cacheCall = cpg.call.where(_.nameNot("(<operator|<init).*")).l
 
@@ -82,7 +87,8 @@ class APITagger(cpg: Cpg, ruleCache: RuleCache, privadoInput: PrivadoInput, appC
       builder,
       ruleInfo,
       ruleCache,
-      privadoInput
+      privadoInput,
+      fileLinkingMetadata
     )
   }
 }

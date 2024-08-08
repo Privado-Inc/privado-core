@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.tagger.sink.api
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.tagger.sink.api.{APISinkByMethodFullNameTagger, APISinkTagger}
 import ai.privado.utility.StatsRecorder
@@ -17,10 +17,11 @@ object JavaAPISinkTagger extends APISinkTagger {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     appCache: AppCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Unit = {
 
-    super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder)
+    super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder, fileLinkingMetadata)
     new JavaAPIRetrofitTagger(cpg, ruleCache).createAndApply()
 
     if (privadoInput.enableAPIByParameter) {
@@ -30,7 +31,7 @@ object JavaAPISinkTagger extends APISinkTagger {
 
     new APISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
 
-    new JavaAPITagger(cpg, ruleCache, privadoInput, appCache, statsRecorder).createAndApply()
+    new JavaAPITagger(cpg, ruleCache, privadoInput, appCache, statsRecorder, fileLinkingMetadata).createAndApply()
   }
 
 }

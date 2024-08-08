@@ -380,7 +380,8 @@ abstract class GoTestBase extends AnyWordSpec with Matchers with BeforeAndAfterA
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
     new DEDTagger(cpg, ruleCache).createAndApply()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new GoAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
+    new GoAPITagger(cpg, ruleCache, privadoInput, appCache = appCache, fileLinkingMetadata = FileLinkingMetadata())
+      .createAndApply()
     new Dataflow(cpg, StatsRecorder()).dataflow(privadoInput, ruleCache, dataFlowCache, auditCache, appCache = appCache)
     cpgs.addOne(cpg)
     val threatEngine =

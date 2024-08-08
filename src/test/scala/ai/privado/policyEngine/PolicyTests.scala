@@ -1,6 +1,14 @@
 package ai.privado.policyEngine
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  FileLinkingMetadata,
+  RuleCache,
+  TaggerCache
+}
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.exporter.CollectionExporter
@@ -747,7 +755,8 @@ class PolicyTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)
     new IdentifierTagger(cpg, ruleCache, new TaggerCache()).createAndApply()
-    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache).createAndApply()
+    new JSAPITagger(cpg, ruleCache, privadoInput, appCache = appCache, fileLinkingMetadata = FileLinkingMetadata())
+      .createAndApply()
     new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
     new WebFormsCollectionTagger(cpg, ruleCache).createAndApply()
     new CollectionTagger(cpg, ruleCache).createAndApply()

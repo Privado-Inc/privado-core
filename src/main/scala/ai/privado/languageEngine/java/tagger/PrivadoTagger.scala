@@ -68,7 +68,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -88,7 +89,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new JavaS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
 
-    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    JavaAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     // Custom Rule tagging
     if (!privadoInputConfig.ignoreInternalRules) {
@@ -99,7 +100,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
       new MessagingConsumerReadPass(cpg, taggerCache, dataFlowCache, privadoInputConfig, appCache).createAndApply()
     }
 
-    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    FlinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     new DatabaseQueryReadPass(
       cpg,

@@ -1,6 +1,6 @@
 package ai.privado.tagger
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -12,7 +12,8 @@ trait Tagger {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     appCache: AppCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Unit = ???
 
 }

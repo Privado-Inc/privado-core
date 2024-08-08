@@ -69,7 +69,8 @@ class CSharpProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -82,7 +83,8 @@ class CSharpProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -91,7 +93,16 @@ class CSharpProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
+    cpg.runTagger(
+      ruleCache,
+      taggerCache,
+      privadoInput,
+      dataFlowCache,
+      appCache,
+      databaseDetailsCache,
+      statsRecorder,
+      fileLinkingMetadata
+    )
   }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
