@@ -97,12 +97,14 @@ object Language {
 
   implicit class NodeStarterForAndroidXmlLayoutNode(cpg: Cpg) {
     def androidXmlLayoutNode: Traversal[AndroidXmlLayoutNode] =
-      cpg.graph.nodes(NodeTypes.ANDROID_XML_LAYOUT_NODE).asScala.cast[AndroidXmlLayoutNode]
+      Try(cpg.graph.nodes(NodeTypes.ANDROID_XML_LAYOUT_NODE).asScala.cast[AndroidXmlLayoutNode]).toOption
+        .getOrElse(Iterator.empty[AndroidXmlLayoutNode])
   }
 
   implicit class NodeStarterForAndroidXmlPermissionNode(cpg: Cpg) {
     def androidXmlPermissionNode: Traversal[AndroidXmlPermissionNode] =
-      cpg.graph.nodes(NodeTypes.ANDROID_XML_PERMISSION_NODE).asScala.cast[AndroidXmlPermissionNode]
+      Try(cpg.graph.nodes(NodeTypes.ANDROID_XML_PERMISSION_NODE).asScala.cast[AndroidXmlPermissionNode]).toOption
+        .getOrElse(Iterator.empty[AndroidXmlPermissionNode])
   }
 
 }

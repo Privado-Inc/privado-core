@@ -102,12 +102,38 @@ object ExporterUtility {
     val lang     = appCache.repoLanguage
     val isPython = lang == Language.PYTHON
 
-    val _nodes     = addOriginalSourceToDataflowNodes(nodes, sourceId)
-    val sizeOfList = _nodes.size
+    val sizeOfList     = nodes.size
+    val originalSource = getOriginalSourceForDerivedNode(nodes.headOption, sourceId)
 
-    _nodes.zipWithIndex.flatMap { case (node, index) =>
+    val pathElements = nodes.zipWithIndex.flatMap { case (node, index) =>
       convertIndividualPathElement(node, index, sizeOfList, appCache = appCache, ruleCache = ruleCache)
     }
+
+    if (originalSource.isDefined) {
+      val sourceNode = originalSource.get
+      return convertIndividualPathElement(
+        sourceNode,
+        0,
+        sizeOfList + 1,
+        generateExcerptMessageForMemberNode(sourceNode),
+        appCache = appCache,
+        ruleCache = ruleCache
+      ).get +: pathElements
+    }
+
+    pathElements
+  }
+
+  private def generateExcerptMessageForMemberNode(sourceNode: AstNode): String = {
+    sourceNode match
+      case member: Member => generateDSMemberMsg(member.name, getSurroundingTypeDeclFullName(member))
+      case _              => ""
+  }
+
+  private def getSurroundingTypeDeclFullName(node: AstNode): String = {
+    node match
+      case node: Member => node.typeDecl.fullName
+      case _            => ""
   }
 
   /** Retrieves the original source node for a derived node if the node has the tag indicating it is a derived source.
@@ -119,32 +145,8 @@ object ExporterUtility {
     * @return
     *   an Option containing the original source node if found, or None otherwise
     */
-  private def getOriginalSourceForDerivedNode(node: AstNode, sourceId: String): Option[AstNode] = {
-    if (node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty) {
-      return node.originalSource(sourceId)
-    }
-    None
-  }
-
-  /** Adds the original source node to the list of dataflow nodes if the first node in the list is a derived node with
-    * an original source.
-    *
-    * @param nodes
-    *   the list of AST nodes
-    * @param sourceId
-    *   the identifier of the source
-    * @return
-    *   a new list of AST nodes with the original source node prepended if applicable
-    */
-  private def addOriginalSourceToDataflowNodes(nodes: List[AstNode], sourceId: String): List[AstNode] = {
-    if (nodes.nonEmpty) {
-      val _originalSource = getOriginalSourceForDerivedNode(nodes.head, sourceId)
-      if (_originalSource.isDefined) {
-        return _originalSource.get +: nodes
-      }
-    }
-
-    nodes
+  private def getOriginalSourceForDerivedNode(node: Option[AstNode], sourceId: String): Option[AstNode] = {
+    node.get.originalSource(sourceId)
   }
 
   /** Convert Individual path element

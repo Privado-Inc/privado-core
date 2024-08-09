@@ -30,12 +30,14 @@ import overflowdb.traversal.*
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.util.Try
 
 package object language {
 
   implicit class NodeStarters(cpg: Cpg) {
     def property: Traversal[JavaProperty] =
-      cpg.graph.nodes(NodeTypes.JAVA_PROPERTY).asScala.cast[JavaProperty]
+      Try(cpg.graph.nodes(NodeTypes.JAVA_PROPERTY).asScala.cast[JavaProperty]).toOption
+        .getOrElse(Iterator.empty[JavaProperty])
   }
 
   implicit class StepsForProperty(val trav: Traversal[JavaProperty]) extends AnyVal {
