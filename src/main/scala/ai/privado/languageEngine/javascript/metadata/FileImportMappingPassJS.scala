@@ -34,16 +34,32 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
     //  this tries to recover the string but does not perform string constant propagation
     val entity = if (matcher.find()) matcher.group(1) else rawEntity
-    val resolvedPath = Try(
-      better.files
-        .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(pathSep).head)
-        .pathAsString
-        .stripPrefix(root)
-    ).getOrElse(entity)
 
     val isImportingModule = !entity.contains(pathSep)
-    if (isLocalImport)
+    if (isLocalImport) {
+      val resolvedPath = Try(
+        better.files
+          .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(pathSep).head)
+          .pathAsString
+          .stripPrefix(root)
+      ).getOrElse(entity)
       fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
+    } else {
+      val seperatedFilePathList = fileName.split(sep).toList
+      val startingModule        = entity.split(sep).head
+      val moduleIndex           = seperatedFilePathList.indexOf(startingModule)
+      if (moduleIndex != -1) {
+        Try {
+          val resolvedPath = better.files
+            .File(root, seperatedFilePathList.take(moduleIndex).mkString(sep), entity.split(pathSep).head)
+            .pathAsString
+            .stripPrefix(root)
+          fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
+        }
+      }
+
+    }
+
   }
 
 }
