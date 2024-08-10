@@ -28,6 +28,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val sep         = Matcher.quoteReplacement(JFile.separator)
     val root        = s"$codeRootDir${JFile.separator}"
     val currentFile = s"$root$fileName"
+    val extension   = better.files.File(currentFile).`extension`.getOrElse(".ts")
     // We want to know if the import is local since if an external name is used to match internal methods we may have
     // false paths.
     val isLocalImport = importedEntity.matches("^[.]+/?.*")
@@ -43,7 +44,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
           .pathAsString
           .stripPrefix(root)
       ).getOrElse(entity)
-      fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
+      fileLinkingMetadata.addToFileImportMap(fileName, s"$resolvedPath$extension")
     } else {
       val seperatedFilePathList = fileName.split(sep).toList
       val startingModule        = entity.split(sep).head
@@ -54,7 +55,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
             .File(root, seperatedFilePathList.take(moduleIndex).mkString(sep), entity.split(pathSep).head)
             .pathAsString
             .stripPrefix(root)
-          fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
+          fileLinkingMetadata.addToFileImportMap(fileName, s"$resolvedPath$extension")
         }
       }
 
