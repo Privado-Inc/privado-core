@@ -216,6 +216,7 @@ object JSONExporter {
         .filter(entrySet => entrySet._2.nonEmpty)
 
       output.addOne(Constants.propertyDependency -> propertyAndUsedAt.asJson)
+      output.addOne("propertyFiles"              -> cpg.property.file.name.dedup.l.asJson)
 
       /** For Java the namespace is working as expected, for languages like JS, Python we are getting the namespace as
         * <`global`> for nearly all files
@@ -229,6 +230,8 @@ object JSONExporter {
         .map(entrySet => (entrySet._1, entrySet._2.flatMap(_._2).distinct))
 
       output.addOne(Constants.namespaceDependency -> namespaceToFileMapping.asJson)
+
+      output.addOne("importDependency" -> fileLinkingMetadata.getFileImportMap.asJson)
 
       val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
       val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")

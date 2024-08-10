@@ -1,9 +1,12 @@
 package ai.privado.cache
 
+import sourcecode.FileName
+
 import scala.collection.mutable
 class FileLinkingMetadata {
 
-  private val dataflowMap = mutable.HashMap[String, mutable.HashSet[String]]()
+  private val dataflowMap   = mutable.HashMap[String, mutable.HashSet[String]]()
+  private val fileImportMap = mutable.HashMap[String, mutable.HashSet[String]]()
 
   /** Given dataflow file paths, the function calculate all permutations and stores it in dataflowMap
     *
@@ -46,6 +49,26 @@ class FileLinkingMetadata {
      */
   }
 
+  /** Get dataflowMapping of files
+    * @return
+    */
   def getDataflowMap: Map[String, mutable.HashSet[String]] = this.dataflowMap.toMap
 
+  /** Add a mapping of fileName -> List(importedFile1, importedFile2)
+    *
+    * This basically corresponds to `importedFile1`, `importedFile2` being imported in fileName`
+    * @param fileName
+    * @param importFiles
+    */
+  def addToFileImportMap(fileName: String, importedFile: String): Unit = synchronized {
+
+    if (!fileImportMap.contains(fileName))
+      fileImportMap(fileName) = mutable.HashSet[String]()
+    fileImportMap(fileName).addOne(importedFile)
+  }
+
+  /** Get File to importedFiles mapping
+    * @return
+    */
+  def getFileImportMap: Map[String, mutable.HashSet[String]] = this.fileImportMap.toMap
 }
