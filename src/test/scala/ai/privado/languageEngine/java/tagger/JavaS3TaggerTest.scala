@@ -25,7 +25,7 @@ package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.exporter.SinkExporter
+import ai.privado.exporter.{SinkExporter, SinkExporterValidator}
 import ai.privado.languageEngine.java.JavaTaggingTestBase
 import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.model.exporter.SinkModel
@@ -37,7 +37,7 @@ import ai.privado.rule.RuleInfoTestData
 
 import scala.collection.mutable
 
-class JavaS3TaggerTest extends JavaFrontendTestSuite {
+class JavaS3TaggerTest extends JavaFrontendTestSuite with SinkExporterValidator {
 
   private val sinkRule = List(
     RuleInfo(
@@ -124,9 +124,7 @@ class JavaS3TaggerTest extends JavaFrontendTestSuite {
 
     "have bucket name" in {
       val outputMap = cpg.getPrivadoJson()
-      val sinks = outputMap(Constants.sinks)
-        .as[List[SinkModel]]
-        .getOrElse(List())
+      val sinks     = getSinks(outputMap)
 
       sinks.map(_.databaseDetails.dbName) shouldBe List("my-write-bucket", "my-read-bucket")
     }
