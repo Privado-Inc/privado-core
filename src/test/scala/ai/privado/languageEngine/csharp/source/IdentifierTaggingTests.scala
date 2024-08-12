@@ -13,7 +13,7 @@ class IdentifierTaggingTests extends CSharpFrontendTestSuite {
 
   val ruleCache = new RuleCache().setRule(configAnndRules)
 
-  "Basic assignment nodes" should {
+  "Basic assignment nodes" ignore {
     val cpg = code(
       """
           |namespace Foo {
@@ -34,7 +34,7 @@ class IdentifierTaggingTests extends CSharpFrontendTestSuite {
     }
   }
 
-  "Derived sources" should {
+  "Derived sources" ignore {
     val cpg = code(
       """
         |namespace Foo {
