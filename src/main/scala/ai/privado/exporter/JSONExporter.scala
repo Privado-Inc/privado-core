@@ -30,6 +30,7 @@ import ai.privado.cache.{
   DataFlowCache,
   DatabaseDetailsCache,
   Environment,
+  FileLinkingMetadata,
   PropertyFilterCache,
   RuleCache,
   S3DatabaseDetailsCache,
@@ -38,7 +39,7 @@ import ai.privado.cache.{
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{outputDirectoryName, value}
+import ai.privado.model.Constants.{namespaceDependency, outputDirectoryName, value}
 import ai.privado.model.exporter.{
   AndroidPermissionModel,
   CollectionModel,
@@ -73,7 +74,7 @@ import scala.concurrent.*
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language.*
-
+import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -194,6 +195,55 @@ object JSONExporter {
         println("Failed to export intermediate output")
         logger.debug(ex.getStackTrace.mkString("\n"))
         logger.debug("Failed to export intermediate output", ex)
+        Left(ex.toString)
+    }
+  }
+
+  def fileLinkingExport(
+    cpg: Cpg,
+    outputFileName: String,
+    repoPath: String,
+    fileLinkingMetadata: FileLinkingMetadata
+  ): Either[String, Unit] = {
+    logger.info("Initiated the file linking metadata exporter engine")
+    val output = mutable.LinkedHashMap[String, Json]()
+    try {
+      output.addOne(Constants.dataflowDependency -> fileLinkingMetadata.getDataflowMap.asJson)
+      val propertyAndUsedAt = cpg.property
+        .map(p => (p.file.name.headOption.getOrElse(""), p.start.usedAt.file.name.dedup.l))
+        .groupBy(_._1)
+        .map(entry => (entry._1, entry._2.flatMap(_._2).distinct))
+        .filter(entrySet => entrySet._2.nonEmpty)
+
+      output.addOne(Constants.propertyDependency -> propertyAndUsedAt.asJson)
+      output.addOne(Constants.propertyFiles      -> cpg.property.file.name.dedup.l.asJson)
+
+      /** For Java the namespace is working as expected, for languages like JS, Python we are getting the namespace as
+        * <`global`> for nearly all files
+        *
+        * Which reflects that the idea of namespace doesn't exist in these languages the files placed under same folder
+        * are not available by default, we need to relatively import them
+        */
+      val namespaceToFileMapping = cpg.namespace
+        .map(n => (n.name, n.file.name.l))
+        .groupBy(_._1)
+        .map(entrySet => (entrySet._1, entrySet._2.flatMap(_._2).distinct))
+
+      output.addOne(Constants.namespaceDependency -> namespaceToFileMapping.asJson)
+
+      output.addOne(Constants.importDependency -> fileLinkingMetadata.getFileImportMap.asJson)
+
+      val outputDir = File(s"$repoPath/$outputDirectoryName").createDirectoryIfNotExists()
+      val f         = File(s"$repoPath/$outputDirectoryName/$outputFileName")
+      f.write(output.asJson.toString())
+      logger.info("Shutting down file linking metadata exporter engine")
+      Right(())
+
+    } catch {
+      case ex: Exception =>
+        println("Failed to export file linking metadata output")
+        logger.debug(ex.getStackTrace.mkString("\n"))
+        logger.debug("Failed to export file linking metadata output", ex)
         Left(ex.toString)
     }
   }

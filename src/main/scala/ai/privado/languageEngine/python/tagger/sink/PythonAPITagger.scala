@@ -22,7 +22,7 @@
  */
 package ai.privado.languageEngine.python.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -44,7 +44,8 @@ class PythonAPITagger(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   appCache: AppCache,
-  statsRecorder: StatsRecorder
+  statsRecorder: StatsRecorder,
+  fileLinkingMetadata: FileLinkingMetadata
 ) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger = LoggerFactory.getLogger(this.getClass)
   val cacheCall      = cpg.call.where(_.nameNot("(<operator|<init).*")).l
@@ -93,7 +94,8 @@ class PythonAPITagger(
       builder,
       ruleInfo,
       ruleCache,
-      privadoInput
+      privadoInput,
+      fileLinkingMetadata
     )
   }
 
