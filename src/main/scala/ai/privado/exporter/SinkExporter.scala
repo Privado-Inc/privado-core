@@ -23,10 +23,10 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.default.NodeStarters
-import ai.privado.model.exporter.{SinkModel, SinkProcessingModel}
+import ai.privado.model.exporter.{DataFlowSubCategoryModel, SinkModel, SinkProcessingModel}
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
 import ai.privado.semantic.Language.*
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag, NodeType}
@@ -36,6 +36,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
 import org.slf4j.LoggerFactory
+import io.joern.dataflowengineoss.language.Path
 
 import scala.collection.mutable
 
@@ -60,7 +61,9 @@ class SinkExporter(
     convertSinkList(sinkTagList)
   }
 
-  def getProcessing: List[SinkProcessingModel] = {
+  def getProcessing(
+    dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]
+  ): List[SinkProcessingModel] = {
     val processingMap = mutable.HashMap[String, mutable.Set[AstNode]]()
     // special map to store sink processing which should never be deduplicated
     val processingMapDisableDedup = mutable.HashMap[String, mutable.Set[AstNode]]()
@@ -81,23 +84,29 @@ class SinkExporter(
     })
     processingMap
       .map(entrySet =>
-        SinkProcessingModel(
-          entrySet._1,
-          ExporterUtility
-            .convertPathElements(
-              {
-                if (privadoInput.disableDeDuplication)
-                  entrySet._2.toList
-                else
-                  entrySet._2.toList
-                    .distinctBy(_.code)
-                    .distinctBy(_.lineNumber)
-                    .distinctBy(Utilities.getFileNameForNode)
-              },
-              appCache = appCache,
-              ruleCache = ruleCache
-            )
+        // List of Tagged sinks
+        val taggedSinkList = ExporterUtility.convertPathElements(
+          {
+            if (privadoInput.disableDeDuplication)
+              entrySet._2.toList
+            else
+              entrySet._2.toList
+                .distinctBy(_.code)
+                .distinctBy(_.lineNumber)
+                .distinctBy(Utilities.getFileNameForNode)
+          },
+          appCache = appCache,
+          ruleCache = ruleCache
         )
+        // list of last node of every dataflow
+        val dataflowSinkList = dataflowsOutput
+          .flatMap(_._2)
+          .flatMap(_.sinks)
+          .filter(_.id.equals(entrySet._1))
+          .flatMap(_.paths)
+          .map(_.path.last)
+        val finalProcessingResultList = (taggedSinkList ++ dataflowSinkList).toSet
+        SinkProcessingModel(entrySet._1, finalProcessingResultList.toList)
       )
       .toList ++ processingMapDisableDedup
       .map(entrySet =>

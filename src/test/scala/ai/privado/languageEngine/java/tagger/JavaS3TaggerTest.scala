@@ -25,74 +25,108 @@ package ai.privado.languageEngine.java.tagger
 
 import ai.privado.cache.{AppCache, S3DatabaseDetailsCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.exporter.SinkExporter
+import ai.privado.exporter.{SinkExporter, SinkExporterValidator}
 import ai.privado.languageEngine.java.JavaTaggingTestBase
+import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.model.exporter.SinkModel
+import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.tagger.sink.RegularSinkTagger
+import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.cache.RuleCache
+import ai.privado.rule.RuleInfoTestData
 
 import scala.collection.mutable
 
-class JavaS3TaggerTest extends JavaTaggingTestBase {
-  private val privadoInput = PrivadoInput()
+class JavaS3TaggerTest extends JavaFrontendTestSuite with SinkExporterValidator {
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
-    new JavaS3Tagger(cpg, s3DatabaseDetailsCache, databaseDetailsCache).createAndApply()
-  }
-
-  override val javaFileContents: String =
-    """
-      |import software.amazon.awssdk.core.sync.RequestBody;
-      |import software.amazon.awssdk.services.s3.S3Client;
-      |import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-      |import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-      |
-      |public class AWS {
-      |    public static void main(String[] args) {
-      |        S3Client s3Client = S3Client.builder().build();
-      |        String objectKey = "your-object-key";
-      |        String filePath = "path/to/your/file.txt";
-      |
-      |        PutObjectRequest request = PutObjectRequest.builder()
-      |            .bucket("my-write-bucket")
-      |            .key(objectKey)
-      |            .build();
-      |
-      |        GetObjectRequest request2 = GetObjectRequest.builder()
-      |                .key(objectKey)
-      |                .bucket("my-read-bucket")
-      |                .build();
-      |
-      |        ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(request2);
-      |            byte[] data = objectBytes.asByteArray();
-      |
-      |            // Write the data to a local file.
-      |            File myFile = new File(filePath);
-      |            OutputStream os = new FileOutputStream(myFile);
-      |            os.write(data);
-      |            System.out.println("Successfully obtained bytes from an S3 object");
-      |            os.close();
-      |
-      |        s3Client.putObject(request, RequestBody.fromFile(new File(filePath));
-      |        s3Client.close();
-      |    }
-      |}
-      |""".stripMargin
+  private val sinkRule = List(
+    RuleInfo(
+      "Storages.AmazonS3.Read",
+      "Amazon S3",
+      "Storage",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*GetObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    ),
+    RuleInfo(
+      "Storages.AmazonS3.Write",
+      "Amazon S3",
+      "Storage",
+      FilterProperty.METHOD_FULL_NAME,
+      Array(),
+      List(".*PutObjectRequest.*"),
+      false,
+      "",
+      Map(),
+      NodeType.REGULAR,
+      "",
+      CatLevelOne.SINKS,
+      "",
+      Language.JAVA,
+      Array()
+    )
+  )
 
   "Java code reading and writing from S3 bucket" should {
+
+    val ruleCache = RuleCache().setRule(
+      RuleInfoTestData.rule
+        .copy(sources = RuleInfoTestData.sourceRule, sinks = sinkRule)
+    )
+
+    val cpg = code("""
+        |import software.amazon.awssdk.core.sync.RequestBody;
+        |import software.amazon.awssdk.services.s3.S3Client;
+        |import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+        |import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+        |
+        |public class AWS {
+        |    public static void main(String[] args) {
+        |        S3Client s3Client = S3Client.builder().build();
+        |        String objectKey = "your-object-key";
+        |        String filePath = "path/to/your/file.txt";
+        |
+        |        PutObjectRequest request = PutObjectRequest.builder()
+        |            .bucket("my-write-bucket")
+        |            .key(objectKey)
+        |            .build();
+        |
+        |        GetObjectRequest request2 = GetObjectRequest.builder()
+        |                .key(objectKey)
+        |                .bucket("my-read-bucket")
+        |                .build();
+        |
+        |        ResponseBytes<GetObjectResponse> objectBytes = s3Client.getObjectAsBytes(request2);
+        |            byte[] data = objectBytes.asByteArray();
+        |
+        |            // Write the data to a local file.
+        |            File myFile = new File(filePath);
+        |            OutputStream os = new FileOutputStream(myFile);
+        |            os.write(data);
+        |            System.out.println("Successfully obtained bytes from an S3 object");
+        |            os.close();
+        |
+        |        s3Client.putObject(request, RequestBody.fromFile(new File(filePath));
+        |        s3Client.close();
+        |    }
+        |}
+        |""".stripMargin)
+      .withRuleCache(ruleCache)
+
     "have bucket name" in {
-      val sinkExporter =
-        new SinkExporter(
-          cpg,
-          ruleCache,
-          privadoInput,
-          None,
-          s3DatabaseDetailsCache,
-          appCache = new AppCache(),
-          databaseDetailsCache = databaseDetailsCache
-        )
-      sinkExporter.getSinks.map(_.databaseDetails.dbName) shouldBe List("my-write-bucket", "my-read-bucket")
+      val outputMap = cpg.getPrivadoJson()
+      val sinks     = getSinks(outputMap)
+
+      sinks.map(_.databaseDetails.dbName) shouldBe List("my-write-bucket", "my-read-bucket")
     }
   }
-
 }

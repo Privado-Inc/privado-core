@@ -27,6 +27,8 @@ import ai.privado.cache.{AppCache, DatabaseDetailsCache, RuleCache, S3DatabaseDe
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.SinkExporter
 import ai.privado.model.*
+import ai.privado.model.exporter.{SinkModel, SourceProcessingModel}
+import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.testfixtures.PythonFrontendTestSuite
 
 class PythonS3TaggerTest extends PythonFrontendTestSuite {
@@ -105,17 +107,13 @@ class PythonS3TaggerTest extends PythonFrontendTestSuite {
         |""".stripMargin)
 
     "have bucket name" in {
-      val sinkExporter =
-        new SinkExporter(
-          cpg,
-          ruleCache,
-          privadoInput,
-          None,
-          s3DatabaseDetailsCache,
-          appCache = appCache,
-          databaseDetailsCache = DatabaseDetailsCache()
-        )
-      sinkExporter.getSinks.head.databaseDetails.dbName shouldBe "meri-prod-bucket"
+      val outputMap = cpg.getPrivadoJson()
+      val sinks = outputMap(Constants.sinks)
+        .as[List[SinkModel]]
+        .getOrElse(List())
+
+      sinks.headOption.get.databaseDetails.dbName shouldBe "meri-prod-bucket"
+
     }
   }
 }
