@@ -134,7 +134,7 @@ class GetPropertyTests extends JavaFrontendTestSuite {
 
     "create a file node for the property file" in {
       val List(_, _, name: String) = cpg.file.name.l // The default overlays add a new file to cpg.file
-      name.endsWith("/test.properties") shouldBe true
+      name shouldBe ("test.properties")
     }
 
     "create a `property` node for each property" in {
@@ -147,7 +147,7 @@ class GetPropertyTests extends JavaFrontendTestSuite {
 
     "connect property nodes to file" in {
       val List(filename: String) = cpg.property.file.name.dedup.l
-      filename.endsWith("/test.properties") shouldBe true
+      filename shouldBe ("test.properties")
     }
 
     "connect property node to literal via `IS_USED_AT` edge" in {
@@ -281,7 +281,7 @@ class XMLPropertyTests extends JavaFrontendTestSuite {
 
     "create a file node for the property file" in {
       val List(name: String) = cpg.file.name.l.filter(file => file.endsWith(".xml"))
-      name.endsWith("/test.xml") shouldBe true
+      name shouldBe ("test.xml")
     }
 
     "create a `property` node for each property" in {

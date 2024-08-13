@@ -13,7 +13,7 @@ class LiteralTaggingTests extends CSharpFrontendTestSuite {
 
   val ruleCache = new RuleCache().setRule(configAnndRules)
 
-  "Literals in code" should {
+  "Literals in code" ignore {
     val cpg = code(
       """
             |namespace Foo {

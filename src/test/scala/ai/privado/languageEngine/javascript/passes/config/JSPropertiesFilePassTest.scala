@@ -34,7 +34,7 @@ class GetEnvironmentTest extends JSPropertiesFilePassTestBase(".env") {
   "JS Config File pass should" should {
     "create a file node for the property file" in {
       val files = cpg.file.name.l
-      files.filter(_.endsWith(".env")).head.endsWith("/test.env") shouldBe true
+      files.filter(_.endsWith(".env")).head shouldBe ("test.env")
     }
 
     "create a `property` node for each property" in {
@@ -46,7 +46,7 @@ class GetEnvironmentTest extends JSPropertiesFilePassTestBase(".env") {
 
     "connect property nodes to file" in {
       val List(filename: String) = cpg.property.file.name.dedup.l
-      filename.endsWith("/test.env") shouldBe true
+      filename shouldBe ("test.env")
     }
 
     "process another way to connect literals" in {

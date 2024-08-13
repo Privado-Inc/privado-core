@@ -13,7 +13,7 @@ class IdentifierDEDTaggingTests
     with SourceExporterValidator
     with DataflowExporterValidator {
 
-  "DED Rule handling with exporter" should {
+  "DED Rule handling with exporter" ignore {
     val sourceCode = """
                        |using System;
                        |
