@@ -90,7 +90,7 @@ object Main extends GeneralMetadataLoggers {
             // any user-facing non-debug logging to be done internally
             logger.debug("Failure from scan process:", e)
             logger.debug("Skipping auth flow due to scan failure")
-            logger.error("Error in scanning, skipping auth flow : ", e)
+            logger.error("Error in scanning, skipping auth flow : ", e.getMessage)
             MetricHandler.compileAndSend(appCache)
             // NOTE: Removed the finally as it will not be invoked after exit(1) is called in exeption.
             // exit(1) is important to indicate scan failure to outer process.

@@ -104,6 +104,20 @@ object MetadataProcessor extends CommandProcessor with RuleProcessor {
         ).processCpg()
       case _ =>
         println("language not supported yet..")
+        statsRecorder.justLogMessage("Language not detected, force scanning using Javascript engine")
+        new JavascriptBaseCPGProcessor(
+          getProcessedRule(Set(Language.JAVASCRIPT), appCache, statsRecorder, config),
+          this.config,
+          sourceRepoLocation,
+          dataFlowCache = getDataflowCache,
+          AuditCache(),
+          S3DatabaseDetailsCache(),
+          appCache,
+          statsRecorder = statsRecorder,
+          databaseDetailsCache = databaseDetailsCache,
+          propertyFilterCache = propertyFilterCache,
+          fileLinkingMetadata = fileLinkingMetadata
+        ).processCpg()
     } match {
       case Left(err: String) => Left(err)
       case _ =>

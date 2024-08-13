@@ -156,6 +156,8 @@ object Constants {
   val dataflowDependency        = "dataflowDependency"
   val propertyDependency        = "propertyDependency"
   val namespaceDependency       = "namespaceDependency"
+  val propertyFiles             = "propertyFiles"
+  val importDependency          = "importDependency"
 
   // database details
   val dbName      = "dbName"
