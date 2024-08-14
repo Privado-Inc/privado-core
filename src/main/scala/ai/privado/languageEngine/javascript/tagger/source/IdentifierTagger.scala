@@ -25,11 +25,11 @@ package ai.privado.languageEngine.javascript.tagger.source
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
-import ai.privado.tagger.utility.SourceTaggerUtility.{getTypeDeclWithMemberNameHavingMemberName}
+import ai.privado.tagger.utility.SourceTaggerUtility.getTypeDeclWithMemberNameHavingMemberName
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
+import ai.privado.utility.Utilities.{addOriginalSourceEdgeAndTag, addRuleTags, storeForTag}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate
 
@@ -107,6 +107,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     typeDeclWithMemberNameHavingMemberName
       .distinctBy(_._1.fullName)
       .foreach(typeDeclValEntry => {
+        val typeDeclToTag = typeDeclValEntry._1
         typeDeclValEntry._2
           .foreach(typeDeclMember => {
             // Example: sample/inheritance/Musician.js::program:Musician
@@ -132,6 +133,9 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
             impactedObjects
               .whereNot(_.code("this|self|cls"))
               .foreach(impactedObject => {
+                // Add edge between derived source node and the original source
+                addOriginalSourceEdgeAndTag(builder, impactedObject, typeDeclMember, ruleCache)
+
                 if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
                   storeForTag(builder, impactedObject, ruleCache)(
                     InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,

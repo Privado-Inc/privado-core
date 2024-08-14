@@ -39,7 +39,7 @@ import ai.privado.cache.PropertyFilterCacheEncoderDecoder.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.Constants.{catLevelOne, outputDirectoryName}
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, Language, NodeType, PolicyThreatType}
 import ai.privado.model.exporter.{
   AndroidPermissionModel,
@@ -68,10 +68,7 @@ import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import ai.privado.tagger.sink.SinkArgumentUtility
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import overflowdb.traversal.Traversal
-import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.java.language.*
-import ai.privado.tagger.AssetTagger
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps
@@ -86,6 +83,8 @@ import scala.concurrent.duration.Duration
 import ExecutionContext.Implicits.global
 import scala.util.{Failure, Success, Try}
 import privado_core.BuildInfo
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
+import io.shiftleft.semanticcpg.language.*
 
 object ExporterUtility {
 
@@ -103,89 +102,51 @@ object ExporterUtility {
     val lang     = appCache.repoLanguage
     val isPython = lang == Language.PYTHON
 
-    val sizeOfList = nodes.size
-    nodes.zipWithIndex.flatMap { case (node, index) =>
-      val currentNodeModel =
-        convertIndividualPathElement(node, index, sizeOfList, appCache = appCache, ruleCache = ruleCache)
-      if (
-        index == 0 && node.tag.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.DERIVED_SOURCES.name).nonEmpty
-      ) {
-        var typeFullName = Iterator(node).isIdentifier.typeFullName.headOption.getOrElse("")
+    val sizeOfList     = nodes.size
+    val originalSource = getOriginalSourceForDerivedNode(nodes.headOption, sourceId)
 
-        // Temporary fix for python to match the typeFullName
-        typeFullName = updateTypeFullNameForPython(typeFullName, isPython)
-
-        // Going 1 level deep for derived sources to add extra nodes
-        taggerCache.typeDeclMemberCache
-          .getOrElse(typeFullName, TrieMap[String, mutable.Set[Member]]())
-          .get(sourceId) match {
-          case Some(members: mutable.HashSet[Member]) =>
-            // Picking up only the head as any path to base is sufficient
-            val member: Member     = members.head
-            var typeFullNameLevel2 = member.typeFullName // java.lang.string
-            // Temporary fix for python to match the typeFullName
-            typeFullNameLevel2 = updateTypeFullNameForPython(typeFullNameLevel2, isPython)
-
-            taggerCache.typeDeclMemberCache
-              .getOrElse(typeFullNameLevel2, TrieMap[String, mutable.Set[Member]]())
-              .get(sourceId) match {
-              case Some(member2Set: mutable.HashSet[Member]) =>
-                // Picking up only the head as any path to base is sufficient
-                val member2 = member2Set.head
-                // Going 2 level deep for derived sources to add extra nodes
-                convertIndividualPathElement(
-                  member2,
-                  messageInExcerpt = generateDSMemberMsg(member2.name, typeFullNameLevel2),
-                  appCache = appCache,
-                  ruleCache = ruleCache
-                ) ++ convertIndividualPathElement(
-                  member,
-                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName),
-                  appCache = appCache,
-                  ruleCache = ruleCache
-                ) ++ currentNodeModel
-              case _ =>
-                convertIndividualPathElement(
-                  member,
-                  messageInExcerpt = generateDSMemberMsg(member.name, typeFullName),
-                  appCache = appCache,
-                  ruleCache = ruleCache
-                ) ++ currentNodeModel
-            }
-
-          case _ => // Checking if 2nd level is of Extends type
-            taggerCache
-              .getTypeDeclExtendingTypeDeclCacheItem(typeFullName)
-              .get(sourceId) match {
-              case Some(typeDecl: TypeDecl) => // Fetching information for the 2nd level member node
-                taggerCache.typeDeclMemberCache
-                  .getOrElse(typeDecl.fullName, TrieMap[String, mutable.Set[Member]]())
-                  .get(sourceId) match {
-                  case Some(members: mutable.HashSet[Member]) =>
-                    // Picking up only the head as any path to base is sufficient
-                    val member = members.head
-                    val currentTypeDeclNode = // Fetching the current TypeDecl node
-                      taggerCache.typeDeclDerivedByExtendsCache.get(typeFullName)
-                    convertIndividualPathElement(
-                      member,
-                      messageInExcerpt = generateDSMemberMsg(member.name, typeDecl.fullName),
-                      appCache = appCache,
-                      ruleCache = ruleCache
-                    ) ++ convertIndividualPathElement(
-                      currentTypeDeclNode.get,
-                      messageInExcerpt = generateDSExtendsMsg(typeDecl.name, typeFullName),
-                      appCache = appCache,
-                      ruleCache = ruleCache
-                    ) ++ currentNodeModel
-                  case _ =>
-                    currentNodeModel
-                }
-              case _ =>
-                currentNodeModel
-            }
-        }
-      } else currentNodeModel
+    val pathElements = nodes.zipWithIndex.flatMap { case (node, index) =>
+      convertIndividualPathElement(node, index, sizeOfList, appCache = appCache, ruleCache = ruleCache)
     }
+
+    if (originalSource.isDefined) {
+      val sourceNode = originalSource.get
+      return convertIndividualPathElement(
+        sourceNode,
+        0,
+        sizeOfList + 1,
+        generateExcerptMessageForMemberNode(sourceNode),
+        appCache = appCache,
+        ruleCache = ruleCache
+      ).get +: pathElements
+    }
+
+    pathElements
+  }
+
+  private def generateExcerptMessageForMemberNode(sourceNode: AstNode): String = {
+    sourceNode match
+      case member: Member => generateDSMemberMsg(member.name, getSurroundingTypeDeclFullName(member))
+      case _              => ""
+  }
+
+  private def getSurroundingTypeDeclFullName(node: AstNode): String = {
+    node match
+      case node: Member => node.typeDecl.fullName
+      case _            => ""
+  }
+
+  /** Retrieves the original source node for a derived node if the node has the tag indicating it is a derived source.
+    *
+    * @param node
+    *   the AST node to check
+    * @param sourceId
+    *   the identifier of the source
+    * @return
+    *   an Option containing the original source node if found, or None otherwise
+    */
+  private def getOriginalSourceForDerivedNode(node: Option[AstNode], sourceId: String): Option[AstNode] = {
+    node.get.originalSource(sourceId)
   }
 
   /** Convert Individual path element

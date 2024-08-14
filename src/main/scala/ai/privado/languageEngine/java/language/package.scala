@@ -23,9 +23,11 @@
 
 package ai.privado.languageEngine.java
 
+import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, File, JavaProperty, Literal, MethodParameterIn}
 import overflowdb.traversal.*
+import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Try
@@ -69,6 +71,36 @@ package object language {
         if (prop.isInstanceOf[JavaProperty]) {
           return Some(prop.asInstanceOf[JavaProperty].value)
         }
+      }
+      None
+    }
+  }
+
+  implicit class NodeToOriginalSource(val node: AstNode) extends AnyVal {
+    def originalSource: Option[AstNode] = {
+      val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
+      if (_originalSource.nonEmpty && _originalSource.hasNext) {
+        return Option(_originalSource.next().asInstanceOf[AstNode])
+      }
+      None
+    }
+
+    def originalSource(sourceId: String): Option[AstNode] = {
+      val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
+      if (_originalSource.nonEmpty && _originalSource.hasNext) {
+        return _originalSource
+          .find(node => node.asInstanceOf[AstNode].tag.nameExact(Constants.id).value(sourceId).nonEmpty)
+          .asInstanceOf[Option[AstNode]]
+      }
+      None
+    }
+  }
+
+  implicit class OriginalToDerivedSource(val node: AstNode) extends AnyVal {
+    def derivedSource: Option[AstNode] = {
+      val _derivedSource = node.out(EdgeTypes.DERIVED_SOURCE)
+      if (_derivedSource.nonEmpty && _derivedSource.hasNext) {
+        return Option(_derivedSource.next().asInstanceOf[AstNode])
       }
       None
     }

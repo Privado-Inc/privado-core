@@ -109,6 +109,9 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
               .l ::: cpg.parameter.where(_.typeFullName(typeDeclFullName)).l
           impactedObjects
             .foreach(impactedObject => {
+              // Add edge between derived source node and the original source
+              addOriginalSourceEdgeAndTag(builder, impactedObject, typeDeclMember, ruleCache)
+
               if (impactedObject.tag.nameExact(Constants.id).l.isEmpty) {
                 storeForTag(builder, impactedObject, ruleCache)(
                   InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,
