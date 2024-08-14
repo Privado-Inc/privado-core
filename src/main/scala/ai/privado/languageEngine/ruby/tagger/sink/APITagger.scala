@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.ruby.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
@@ -24,7 +24,8 @@ class APITagger(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
   appCache: AppCache,
-  statsRecorder: StatsRecorder
+  statsRecorder: StatsRecorder,
+  fileLinkingMetadata: FileLinkingMetadata
 ) extends PrivadoParallelCpgPass[RuleInfo](cpg) {
   private val logger        = LoggerFactory.getLogger(this.getClass)
   val cacheCall: List[Call] = cpg.call.where(_.nameNot(Operators.ALL.asScala.toSeq: _*)).l
@@ -76,7 +77,8 @@ class APITagger(
       builder,
       ruleInfo,
       ruleCache,
-      privadoInput
+      privadoInput,
+      fileLinkingMetadata
     )
   }
 }

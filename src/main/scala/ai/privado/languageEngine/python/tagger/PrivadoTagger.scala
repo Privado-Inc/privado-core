@@ -1,6 +1,14 @@
 package ai.privado.languageEngine.python.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, S3DatabaseDetailsCache, TaggerCache}
+import ai.privado.cache.{
+  AppCache,
+  DataFlowCache,
+  DatabaseDetailsCache,
+  FileLinkingMetadata,
+  RuleCache,
+  S3DatabaseDetailsCache,
+  TaggerCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.python.config.PythonDBConfigTagger
 import ai.privado.languageEngine.python.feeder.StorageInheritRule
@@ -35,7 +43,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -47,7 +56,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new SqlQueryTagger(cpg, ruleCache).createAndApply()
 
-    PythonAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    PythonAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     new PythonDBConfigTagger(cpg, databaseDetailsCache).createAndApply()
 

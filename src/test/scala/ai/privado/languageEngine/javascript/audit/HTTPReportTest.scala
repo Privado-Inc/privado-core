@@ -3,7 +3,7 @@ package ai.privado.languageEngine.javascript.audit
 import ai.privado.audit.APIReport
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.audit.LiteralReport
-import ai.privado.cache.AppCache
+import ai.privado.cache.{AppCache, FileLinkingMetadata}
 import ai.privado.languageEngine.javascript.tagger.sink.JSAPITagger
 import ai.privado.languageEngine.javascript.tagger.source.IdentifierTagger
 
@@ -17,7 +17,7 @@ class HTTPReportTest extends HTTPReportTestBase {
   override def beforeAll(): Unit = {
     super.beforeAll()
     new IdentifierTagger(cpg, ruleCache, taggerCache).createAndApply()
-    new JSAPITagger(cpg, ruleCache, PrivadoInput(), new AppCache())
+    new JSAPITagger(cpg, ruleCache, PrivadoInput(), new AppCache(), fileLinkingMetadata = FileLinkingMetadata())
   }
 
   def getContent(): Map[String, String] = {

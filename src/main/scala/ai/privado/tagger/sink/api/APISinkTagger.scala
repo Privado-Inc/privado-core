@@ -1,6 +1,6 @@
 package ai.privado.tagger.sink.api
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.tagger.Tagger
 import ai.privado.utility.StatsRecorder
@@ -13,7 +13,8 @@ trait APISinkTagger extends Tagger {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     appCache: AppCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Unit = {
     new InferenceAPIEndpointTagger(cpg, ruleCache).createAndApply()
   }

@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.tagger.sink
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.tagger.sink.api.{APISinkByMethodFullNameTagger, APISinkTagger}
 import ai.privado.utility.StatsRecorder
@@ -13,13 +13,15 @@ object PythonAPISinkTagger extends APISinkTagger {
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
     appCache: AppCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Unit = {
 
-    super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder)
+    super.applyTagger(cpg, ruleCache, privadoInput, appCache, statsRecorder, fileLinkingMetadata)
 
     new APISinkByMethodFullNameTagger(cpg, ruleCache).createAndApply()
-    new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInput, appCache, statsRecorder).createAndApply()
+    new PythonAPITagger(cpg, ruleCache, privadoInput = privadoInput, appCache, statsRecorder, fileLinkingMetadata)
+      .createAndApply()
   }
 
 }

@@ -4,12 +4,13 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.cache.*
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
+import ai.privado.languageEngine.python.metadata.FileLinkingMetadataPassPython
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
 import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.model.Constants.*
-import ai.privado.model.{CpgWithOutputMap, Constants, Language}
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.Language.*
 import ai.privado.utility.Utilities.createCpgFolder
@@ -38,7 +39,8 @@ class PythonProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -51,7 +53,8 @@ class PythonProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
 
   override val logger = LoggerFactory.getLogger(getClass)
@@ -82,7 +85,8 @@ class PythonProcessor(
       s3DatabaseDetailsCache,
       appCache,
       databaseDetailsCache,
-      statsRecorder
+      statsRecorder,
+      fileLinkingMetadata
     )
   }
 
@@ -96,6 +100,10 @@ class PythonProcessor(
     new PrivadoPythonTypeHintCallLinker(cpg).createAndApply()
     new NaiveCallLinker(cpg).createAndApply()
     new AstLinkerPass(cpg).createAndApply()
+
+    if (privadoInput.fileLinkingReport) {
+      new FileLinkingMetadataPassPython(cpg, fileLinkingMetadata).createAndApply()
+    }
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

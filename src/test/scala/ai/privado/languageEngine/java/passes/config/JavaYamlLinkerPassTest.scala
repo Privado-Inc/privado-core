@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.java.passes.config
 
-import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.language.*
 import ai.privado.languageEngine.java.tagger.sink.api.JavaAPITagger
@@ -121,7 +121,14 @@ abstract class JavaYamlLinkerPassTestBase
     new JavaYamlLinkerPass(cpg).createAndApply()
     val taggerCache = TaggerCache()
     SourceTagger.runTagger(cpg, ruleCache, taggerCache)
-    new JavaAPITagger(cpg, ruleCache, PrivadoInput(), appCache = appCache, statsRecorder = StatsRecorder())
+    new JavaAPITagger(
+      cpg,
+      ruleCache,
+      PrivadoInput(),
+      appCache = appCache,
+      statsRecorder = StatsRecorder(),
+      fileLinkingMetadata = FileLinkingMetadata()
+    )
       .createAndApply()
 
     super.beforeAll()

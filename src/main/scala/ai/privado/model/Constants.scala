@@ -151,6 +151,14 @@ object Constants {
   val typeInSrc                     = "typeInSrc"
   val lineNumber                    = "lineNumber"
 
+  // file linking metadata
+  val outputFileLinkingFileName = "fileLinkingMetadata.json"
+  val dataflowDependency        = "dataflowDependency"
+  val propertyDependency        = "propertyDependency"
+  val namespaceDependency       = "namespaceDependency"
+  val propertyFiles             = "propertyFiles"
+  val importDependency          = "importDependency"
+
   // database details
   val dbName      = "dbName"
   val dbVendor    = "dbVendor"

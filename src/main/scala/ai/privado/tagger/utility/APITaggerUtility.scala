@@ -23,7 +23,7 @@
 
 package ai.privado.tagger.utility
 
-import ai.privado.cache.RuleCache
+import ai.privado.cache.{FileLinkingMetadata, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.java.language.NodeToProperty
@@ -69,6 +69,7 @@ object APITaggerUtility {
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,
+    fileLinkingMetadata: FileLinkingMetadata,
     showAPI: Boolean = true
   )(implicit engineContext: EngineContext): Unit = {
     val filteredSourceNode =
@@ -80,6 +81,10 @@ object APITaggerUtility {
     if (apis.nonEmpty && filteredSourceNode.nonEmpty) {
       val apiFlows = {
         val flows = apis.reachableByFlows(filteredSourceNode)(engineContext).toList
+        if (privadoInput.fileLinkingReport) {
+          val dataflowFiles = flows.map(_.elements.flatMap(_.file.name).dedup.l).l
+          fileLinkingMetadata.addToDataflowMap(dataflowFiles)
+        }
         if (privadoInput.disableDeDuplication)
           flows
         else
