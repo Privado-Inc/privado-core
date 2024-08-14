@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.php.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.php.tagger.collection.MethodFullNameCollectionTagger
 import ai.privado.languageEngine.php.tagger.collection.AnnotationsCollectionTagger
@@ -50,7 +50,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = {
     logger.info("Beginning tagging")
 
@@ -62,7 +63,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     new ConfigCollectionTagger(cpg, rules, privadoInputConfig.sourceLocation.headOption.getOrElse("")).createAndApply()
     new MethodFullNameCollectionTagger(cpg, rules).createAndApply()
 
-    PhpAPISinkTagger.applyTagger(cpg, rules, privadoInputConfig, appCache, statsRecorder)
+    PhpAPISinkTagger.applyTagger(cpg, rules, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     logger.info("Finished tagging")
     cpg.tag

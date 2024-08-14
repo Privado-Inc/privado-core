@@ -29,6 +29,7 @@ import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
+import ai.privado.languageEngine.javascript.metadata.FileImportMappingPassJS
 import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
 import ai.privado.metric.MetricHandler
@@ -65,7 +66,8 @@ class JavascriptProcessor(
   statsRecorder: StatsRecorder,
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
-  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache()
+  propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -78,7 +80,8 @@ class JavascriptProcessor(
       statsRecorder,
       returnClosedCpg,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      fileLinkingMetadata
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
@@ -108,11 +111,23 @@ class JavascriptProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
-    cpg.runTagger(ruleCache, taggerCache, privadoInput, dataFlowCache, appCache, databaseDetailsCache, statsRecorder)
+    cpg.runTagger(
+      ruleCache,
+      taggerCache,
+      privadoInput,
+      dataFlowCache,
+      appCache,
+      databaseDetailsCache,
+      statsRecorder,
+      fileLinkingMetadata
+    )
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
     JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    if (privadoInput.fileLinkingReport) {
+      new FileImportMappingPassJS(cpg, fileLinkingMetadata).createAndApply()
+    }
   }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {

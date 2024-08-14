@@ -405,32 +405,6 @@ object ExporterUtility {
       Constants.propertyFileSkippedByDirCount -> propertyFilterCache.getFileSkippedDirCountData(ruleCache).asJson
     )
 
-    // Future creates a thread and starts resolving the function call asynchronously
-    val sources = Future {
-      Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
-    }
-    val processing = Future {
-      Try(sourceExporter.getProcessing).getOrElse(List[SourceProcessingModel]())
-    }
-    val sinks = Future {
-      Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
-    }
-    val processingSinks = Future {
-      Try(sinkExporter.getProcessing).getOrElse(List[SinkProcessingModel]())
-    }
-    val collections = Future {
-      Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
-    }
-
-    val finalCollections = Await.result(collections, Duration.Inf)
-    logger.debug("Done with exporting Collections")
-    val violationResult =
-      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
-        .getOrElse(List[ViolationModel]())
-
-    output.addOne(Constants.violations -> violationResult.asJson)
-    logger.debug("Done with exporting Violations")
-
     val sinkSubCategories = mutable.HashMap[String, mutable.Set[String]]()
     ruleCache.getRule.sinks.foreach(sinkRule => {
       if (!sinkSubCategories.contains(sinkRule.catLevelTwo))
@@ -446,6 +420,26 @@ object ExporterUtility {
           .toList
       )
     })
+
+    // Future creates a thread and starts resolving the function call asynchronously
+    val sources = Future {
+      Try(sourceExporter.getSources).getOrElse(List[SourceModel]())
+    }
+    val sinks = Future {
+      Try(sinkExporter.getSinks).getOrElse(List[SinkModel]())
+    }
+    val collections = Future {
+      Try(collectionExporter.getCollections).getOrElse(List[CollectionModel]())
+    }
+
+    val finalCollections = Await.result(collections, Duration.Inf)
+    logger.debug("Done with exporting Collections")
+    val violationResult =
+      Try(policyAndThreatExporter.getViolations(repoPath, finalCollections, appCache))
+        .getOrElse(List[ViolationModel]())
+
+    output.addOne(Constants.violations -> violationResult.asJson)
+    logger.debug("Done with exporting Violations")
 
     output.addOne(Constants.dataFlow -> dataflowsOutput.asJson)
 
@@ -539,11 +533,12 @@ object ExporterUtility {
 
     val _sources = Await.result(sources, Duration.Inf)
     logger.debug("Done with exporting Sources")
-    val _processing = Await.result(processing, Duration.Inf)
+    val _processing =
+      Try(sourceExporter.getProcessing(dataflowsOutput, dataflows)).getOrElse(List[SourceProcessingModel]())
     logger.debug("Done with exporting Processing sources")
     val _sinks = Await.result(sinks, Duration.Inf)
     logger.debug("Done with exporting Sinks")
-    val _processingSinks = Await.result(processingSinks, Duration.Inf)
+    val _processingSinks = Try(sinkExporter.getProcessing(dataflowsOutput)).getOrElse(List[SinkProcessingModel]())
     logger.debug("Done with exporting Processing Sinks")
     val _permissions = Await.result(androidPermissions, Duration.Inf)
     logger.debug("Done with exporting android permissions")

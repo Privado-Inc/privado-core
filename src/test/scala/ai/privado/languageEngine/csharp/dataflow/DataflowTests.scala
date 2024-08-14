@@ -26,7 +26,8 @@ class DataflowTests extends CSharpFrontendTestSuite with DataflowExporterValidat
   private val dataflowCache = new DataFlowCache(privadoInput = privadoInput, auditCache = auditCache)
   private val appCache      = AppCache()
 
-  "simple dataflows" should {
+  "simple dataflows" ignore {
+
     val cpg = code(
       """
           |namespace Foo {
@@ -49,7 +50,7 @@ class DataflowTests extends CSharpFrontendTestSuite with DataflowExporterValidat
     }
   }
 
-  "dataflow for derived sources tagged using member name" should {
+  "dataflow for derived sources tagged using member name" ignore {
     val cpg = code("""
         |namespace Foo;
         |

@@ -52,5 +52,11 @@ trait DataflowExporterValidator extends Matchers {
   ): Option[DataFlowSubCategoryModel] = {
     dataflows
       .find(flow => flow.sourceId.equals(sourceId))
+  def getStorageFlows(outputMap: Map[String, Json]): List[DataFlowSubCategoryModel] = {
+    val allDataflows = outputMap(Constants.dataFlow)
+      .as[mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]]]
+      .getOrElse(Map.empty[String, List[DataFlowSubCategoryModel]])
+
+    allDataflows(Constants.storages)
   }
 }

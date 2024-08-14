@@ -23,17 +23,18 @@
 
 package ai.privado.exporter
 
-import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.cache.{AppCache, DataFlowCache, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.model.exporter.{SourceModel, SourceProcessingModel}
+import ai.privado.model.exporter.{DataFlowSubCategoryModel, SourceModel, SourceProcessingModel}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
-import ai.privado.tagger.utility.SourceTaggerUtility.{getFilteredSourcesByTaggingDisabled}
+import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTaggingDisabled
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
 import ai.privado.semantic.Language.*
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
+import io.joern.dataflowengineoss.language.Path
 
 import scala.collection.mutable
 
@@ -54,7 +55,10 @@ class SourceExporter(
     convertSourcesList(sourcesTagList)
   }
 
-  def getProcessing: List[SourceProcessingModel] = {
+  def getProcessing(
+    dataflowsOutput: mutable.LinkedHashMap[String, List[DataFlowSubCategoryModel]],
+    dataflows: Map[String, Path]
+  ): List[SourceProcessingModel] = {
 
     val processingMap = mutable.HashMap[String, mutable.Set[AstNode]]()
     sourcesList.foreach(source => {
@@ -72,23 +76,29 @@ class SourceExporter(
     })
     processingMap
       .map(entrySet =>
-        SourceProcessingModel(
-          entrySet._1,
-          ExporterUtility
-            .convertPathElements(
-              {
-                if (privadoInput.disableDeDuplication)
-                  entrySet._2.toList
-                else
-                  entrySet._2.toList
-                    .distinctBy(_.code)
-                    .distinctBy(_.lineNumber)
-                    .distinctBy(Utilities.getFileNameForNode)
-              },
-              appCache = appCache,
-              ruleCache = ruleCache
-            )
+        // list of tagged source node
+        val taggedSourcesList = ExporterUtility.convertPathElements(
+          {
+            if (privadoInput.disableDeDuplication)
+              entrySet._2.toList
+            else
+              entrySet._2.toList
+                .distinctBy(_.code)
+                .distinctBy(_.lineNumber)
+                .distinctBy(Utilities.getFileNameForNode)
+          },
+          appCache = appCache,
+          ruleCache = ruleCache
         )
+        // list first element of every dataflow
+        val dataflowSourceList = dataflowsOutput
+          .flatMap(_._2)
+          .filter(_.sourceId.equals(entrySet._1))
+          .flatMap(_.sinks)
+          .flatMap(_.paths)
+          .map(_.path.head)
+        val finalProcessingResultSet = (taggedSourcesList ++ dataflowSourceList).toSet
+        SourceProcessingModel(entrySet._1, finalProcessingResultSet.toList)
       )
       .toList
   }

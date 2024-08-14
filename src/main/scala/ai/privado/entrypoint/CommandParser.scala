@@ -56,6 +56,7 @@ case class PrivadoInput(
   showUnresolvedFunctionsReport: Boolean = false,
   generateAuditReport: Boolean = false,
   dedSourceReport: Boolean = false,
+  fileLinkingReport: Boolean = false,
   enableAuditSemanticsFilter: Boolean = false,
   limitNoSinksForDataflows: Int = -1,
   limitArgExpansionDataflows: Int = -1,
@@ -69,7 +70,10 @@ case class PrivadoInput(
   rubyParserTimeout: Long = 120,
   excludeFileRegex: String = "",
   extensionsForPhp: String = "",
-  isSkipHeaderFileContext: Boolean = false
+  isSkipHeaderFileContext: Boolean = false,
+
+  // Metadata flags
+  isDeltaFileScan: Boolean = false
 )
 
 object CommandConstants {
@@ -117,6 +121,8 @@ object CommandConstants {
   val GENERATE_AUDIT_REPORT_ABBR                   = "gar"
   val DED_SOURCE_REPORT                            = "ded-source-report"
   val DED_SOURCE_REPORT_ABBR                       = "dsr"
+  val FILE_LINKING_REPORT                          = "file-linking-report"
+  val FILE_LINKING_REPORT_ABBR                     = "flr"
   val ENABLE_AUDIT_SEMANTIC_FILTER                 = "enable-audit-semantic"
   val ENABLE_AUDIT_SEMANTIC_FILTER_ABBR            = "eas"
   val LIMIT_NO_SINKS_FOR_DATAFLOWS                 = "limit-no-sinks-for-dataflows"
@@ -142,6 +148,9 @@ object CommandConstants {
   val EXTENSIONS_FOR_PHP_ABBR                      = "exphp"
   val IS_SKIP_HEADER_FILE_CONTEXT                  = "skip-header-file-context"
   val IS_SKIP_HEADER_FILE_CONTEXT_ABBR             = "shfc"
+
+  // Metadata flags
+  val IS_DELTA_FILE_SCAN = "delta-file-scan"
 }
 
 object CommandParser {
@@ -289,6 +298,11 @@ object CommandParser {
               .optional()
               .action((_, c) => c.copy(dedSourceReport = true))
               .text("Export the ded source report"),
+            opt[Unit](CommandConstants.FILE_LINKING_REPORT)
+              .abbr(CommandConstants.FILE_LINKING_REPORT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(fileLinkingReport = true))
+              .text("Export the file linking report"),
             opt[Unit](CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER)
               .abbr(CommandConstants.ENABLE_AUDIT_SEMANTIC_FILTER_ABBR)
               .optional()
@@ -391,6 +405,25 @@ object CommandParser {
               .required()
               .action((x, c) => c.copy(sourceLocation = c.sourceLocation + x))
               .text("Source code location"),
+            opt[String](CommandConstants.INTERNAL_CONFIG)
+              .abbr(CommandConstants.INTERNAL_CONFIG_ABBR)
+              .required()
+              .action((x, c) => c.copy(internalConfigPath = c.internalConfigPath + x))
+              .text("Internal config and rule files location"),
+            opt[String](CommandConstants.EXTERNAL_CONFIG)
+              .abbr(CommandConstants.EXTERNAL_CONFIG_ABBR)
+              .optional()
+              .action((x, c) => c.copy(externalConfigPath = c.externalConfigPath + x))
+              .text("External config and rule files location"),
+            opt[Unit](CommandConstants.FILE_LINKING_REPORT)
+              .abbr(CommandConstants.FILE_LINKING_REPORT_ABBR)
+              .optional()
+              .action((_, c) => c.copy(fileLinkingReport = true))
+              .text("Export the file linking report"),
+            opt[Unit](CommandConstants.IS_DELTA_FILE_SCAN)
+              .optional()
+              .action((_, c) => c.copy(isDeltaFileScan = true))
+              .text("Generate metadata for delta scan"),
             checkConfig(c =>
               if (c.cmd.isEmpty) failure("")
               else success

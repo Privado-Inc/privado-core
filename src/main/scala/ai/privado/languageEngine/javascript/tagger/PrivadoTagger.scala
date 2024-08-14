@@ -23,7 +23,7 @@
 
 package ai.privado.languageEngine.javascript.tagger
 
-import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, RuleCache, TaggerCache}
+import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.feeder.PermissionSourceRule
 import ai.privado.languageEngine.javascript.config.JSDBConfigTagger
@@ -56,7 +56,8 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     dataFlowCache: DataFlowCache,
     appCache: AppCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    statsRecorder: StatsRecorder
+    statsRecorder: StatsRecorder,
+    fileLinkingMetadata: FileLinkingMetadata
   ): Traversal[Tag] = {
 
     logger.info("Starting tagging")
@@ -71,7 +72,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
 
     new RegularSinkTagger(cpg, ruleCache, databaseDetailsCache).createAndApply()
 
-    JSAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder)
+    JSAPISinkTagger.applyTagger(cpg, ruleCache, privadoInputConfig, appCache, statsRecorder, fileLinkingMetadata)
 
     new GraphqlQueryParserPass(cpg, ruleCache, taggerCache).createAndApply()
 
