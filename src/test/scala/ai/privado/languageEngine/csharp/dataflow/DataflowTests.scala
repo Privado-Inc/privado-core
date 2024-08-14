@@ -16,7 +16,11 @@ import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 
-class DataflowTests extends CSharpFrontendTestSuite with DataflowExporterValidator with CSharpLeakageValidator with TraversalValidator {
+class DataflowTests
+    extends CSharpFrontendTestSuite
+    with DataflowExporterValidator
+    with CSharpLeakageValidator
+    with TraversalValidator {
   implicit val engineContext: EngineContext = new EngineContext()
 
   private val ruleCache =
