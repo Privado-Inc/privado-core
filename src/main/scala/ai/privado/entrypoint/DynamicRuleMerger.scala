@@ -1,6 +1,6 @@
 package ai.privado.entrypoint
 
-import ai.privado.model.{ConfigAndRules, RuleInfo}
+import ai.privado.model.{ConfigAndRules, FilterProperty, RuleInfo}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable.ListBuffer
@@ -23,7 +23,7 @@ object DynamicRuleMerger {
         updatedRules.indexWhere { rule =>
           (rule.domains.contains(externalDomain) || rule.name == externalRuleName) && rule.id.contains(
             "ThirdParties.SDK"
-          )
+          ) && rule.filterProperty != FilterProperty.CODE
         } match {
           case index if index >= 0 =>
             val matchingRuleInfo = updatedRules(index)

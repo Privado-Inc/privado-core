@@ -69,7 +69,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
         |""".stripMargin)
       .withRuleCache(ruleCache)
 
-    "Test sink tagging" in {
+    "correct sink detection" in {
       val sink = cpg.call("put").l
       sink.tag.nameExact(Constants.id).value.l shouldBe List("ThirdParties.SDK.AmazonS3")
     }
@@ -105,7 +105,6 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
     )
 
     val finalSinkRule = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
-
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
     val ruleCache     = RuleCache().setRule(configAndRule)
 
@@ -123,7 +122,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
         |""".stripMargin)
       .withRuleCache(ruleCache)
 
-    "Test sink tagging" in {
+    "correct sink detection" in {
       val sink = cpg.call("put").l
       sink.tag.nameExact(Constants.id).value.l shouldBe List("ThirdParties.SDK.AmazonS3")
     }
@@ -160,7 +159,6 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
     )
 
     val finalSinkRule = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
-
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
     val ruleCache     = RuleCache().setRule(configAndRule)
 
@@ -178,7 +176,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
         |""".stripMargin)
       .withRuleCache(ruleCache)
 
-    "Test sink tagging" in {
+    "correct sink tagging" in {
       val sink = cpg.call("put").l
       sink.tag.nameExact(Constants.id).value.l shouldBe List("ThirdParties.SDK.AmazonS3")
     }
@@ -189,4 +187,74 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
     }
   }
 
+  "No merging when have filterProperty as code" should {
+    val existingCodeRule = List(
+      RuleInfo(
+        "ThirdParties.SDK.AmazonS3",
+        "Amazon S3",
+        "Third Parties",
+        FilterProperty.CODE,
+        Array("amazon.com"),
+        List(".*(aws).*"),
+        false,
+        "",
+        Map(),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.SINKS,
+        "",
+        Language.JAVA,
+        Array()
+      )
+    )
+
+    val dynamicFilterPropertyRule = List(
+      RuleInfo(
+        "ThirdParties.SDK.AmazonS3",
+        "Amazon S3",
+        "Third Parties",
+        FilterProperty.METHOD_FULL_NAME,
+        Array("amazon.com"),
+        List(".*(software.amazon.awssdk.services.s3).*"),
+        false,
+        "",
+        Map(),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.SINKS,
+        "",
+        Language.JAVA,
+        Array()
+      )
+    )
+
+    val finalSinkRule =
+      DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicFilterPropertyRule, existingCodeRule)
+    val configAndRule = ConfigAndRules(sinks = finalSinkRule)
+    val ruleCache     = RuleCache().setRule(configAndRule)
+
+    val cpg = code("""
+        |import software.amazon.awssdk.services.s3.S3Client;
+        |
+        |public class AWS {
+        |   public static void main(String[] args) {
+        |     String firstName = "anything";
+        |     S3Client s3client = S3Client.builder.build();
+        |
+        |     s3client.put(firstName);
+        |   }
+        |}
+        |""".stripMargin)
+      .withRuleCache(ruleCache)
+
+    "correct sink detection" in {
+      val sink = cpg.call("put").l
+      sink.tag.nameExact(Constants.id).value.l shouldBe List("ThirdParties.SDK.AmazonS3")
+    }
+
+    "check ruleCache info" in {
+      val sinkRule = ruleCache.getRule.sinks.filter(_.id.contains("ThirdParties"))
+      sinkRule.size shouldBe 2
+    }
+  }
 }
