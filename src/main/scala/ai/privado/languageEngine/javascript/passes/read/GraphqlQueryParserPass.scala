@@ -34,7 +34,7 @@ class GraphqlQueryParserPass(cpg: Cpg, ruleCache: RuleCache, taggerCache: Tagger
     // CPG query to fetch the Literal with GQL string
     // + Identify the arguments getting passed to GQL method calls.
     cpg.literal.code(selectRegexPattern).toArray ++
-      cpg.call("(?i)(buildSchema|gql)").argument.isLiteral.toArray
+      cpg.call("(?i)(buildSchema|gql|gqlV1|gqlV2)").argument.isLiteral.toArray
   }
 
   override def runOnPart(builder: DiffGraphBuilder, node: Expression): Unit = {
