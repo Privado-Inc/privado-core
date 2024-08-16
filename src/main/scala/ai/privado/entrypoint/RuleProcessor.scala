@@ -310,9 +310,12 @@ trait RuleProcessor {
      * In case of duplicates it will keep the elements from "externalRules.sources".
      * We don't know the internal logic. We came to this conclusion based on testing few samples.
      */
-    val exclusions   = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
-    val sources      = externalConfigAndRules.sources ++ internalConfigAndRules.sources
-    val sinks        = externalConfigAndRules.sinks ++ internalConfigAndRules.sinks
+    val exclusions = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
+    val sources    = externalConfigAndRules.sources ++ internalConfigAndRules.sources
+    val sinks = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(
+      externalConfigAndRules.sinks,
+      internalConfigAndRules.sinks
+    )
     val collections  = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies     = externalConfigAndRules.policies ++ internalConfigAndRules.policies
     val threats      = externalConfigAndRules.threats ++ internalConfigAndRules.threats
