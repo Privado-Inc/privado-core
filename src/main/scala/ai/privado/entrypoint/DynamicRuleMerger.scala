@@ -3,9 +3,11 @@ package ai.privado.entrypoint
 import ai.privado.model.{ConfigAndRules, FilterProperty, RuleInfo}
 import org.slf4j.LoggerFactory
 
+import scala.collection.mutable
+import scala.collection.mutable.Map
 import scala.collection.mutable.ListBuffer
 
-object DynamicRuleMerger {
+trait DynamicRuleMerger {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -14,26 +16,34 @@ object DynamicRuleMerger {
     internalSinkRules: List[RuleInfo]
   ): List[RuleInfo] = {
     try {
-      val updatedRules = ListBuffer.from(internalSinkRules)
+
+      val internalRuleMap = mutable.Map(
+        internalSinkRules.map(rule => ((rule.domains.headOption.get, rule.name, rule.filterProperty), rule))*
+      )
 
       externalSinkRules.foreach { externalRule =>
-        val externalDomain   = externalRule.domains.headOption.get
-        val externalRuleName = externalRule.name
+        val externalDomain         = externalRule.domains.headOption.get
+        val externalRuleName       = externalRule.name
+        val externalFilterProperty = externalRule.filterProperty
 
-        updatedRules.indexWhere { rule =>
-          (rule.domains.contains(externalDomain) || rule.name == externalRuleName) && rule.id.contains(
-            "ThirdParties.SDK"
-          ) && rule.filterProperty != FilterProperty.CODE
-        } match {
-          case index if index >= 0 =>
-            val matchingRuleInfo = updatedRules(index)
-            val updatedRule      = matchingRuleInfo.copy(patterns = matchingRuleInfo.patterns ++ externalRule.patterns)
-            updatedRules.update(index, updatedRule)
+        internalRuleMap.collectFirst {
+          case ((domain, name, filterProperty), rule)
+              if (domain == externalDomain || name == externalRuleName) && rule.id.contains(
+                "ThirdParties.SDK"
+              ) && filterProperty != FilterProperty.CODE =>
+            (domain, name, filterProperty, rule)
+        } match
+          case Some(_, _, _, matchingRule: RuleInfo) =>
+            val updatedRule = matchingRule.copy(patterns = matchingRule.patterns ++ externalRule.patterns)
+            internalRuleMap.update(
+              (matchingRule.domains.headOption.get, matchingRule.name, matchingRule.filterProperty),
+              updatedRule
+            )
           case _ =>
-            updatedRules += externalRule
-        }
+            internalRuleMap((externalDomain, externalRuleName, externalFilterProperty)) = externalRule
       }
-      updatedRules.toList
+
+      internalRuleMap.values.toList
     } catch {
       case e: Exception =>
         logger.error("Error while merging dynamic rules")

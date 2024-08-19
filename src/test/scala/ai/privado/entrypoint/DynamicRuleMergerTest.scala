@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 import ai.privado.semantic.Language.*
 import ai.privado.languageEngine.java.language.module.NodeStarters
 
-class DynamicRuleMergerTest extends JavaFrontendTestSuite {
+class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
 
   private val existingRule = List(
     RuleInfo(
@@ -51,7 +51,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
       )
     )
 
-    val finalSinkRule = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
     val ruleCache     = RuleCache().setRule(configAndRule)
 
@@ -104,7 +104,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
       )
     )
 
-    val finalSinkRule = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
     val ruleCache     = RuleCache().setRule(configAndRule)
 
@@ -158,7 +158,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
       )
     )
 
-    val finalSinkRule = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
     val ruleCache     = RuleCache().setRule(configAndRule)
 
@@ -228,8 +228,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite {
       )
     )
 
-    val finalSinkRule =
-      DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(dynamicFilterPropertyRule, existingCodeRule)
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicFilterPropertyRule, existingCodeRule)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
     val ruleCache     = RuleCache().setRule(configAndRule)
 

@@ -15,7 +15,7 @@ import io.circe.yaml.parser
 import ai.privado.utility.Utilities.{isValidDEDRule, isValidRule}
 import io.circe.Json
 
-trait RuleProcessor {
+trait RuleProcessor extends DynamicRuleMerger {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -312,10 +312,7 @@ trait RuleProcessor {
      */
     val exclusions = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
     val sources    = externalConfigAndRules.sources ++ internalConfigAndRules.sources
-    val sinks = DynamicRuleMerger.mergeDynamicRuleSinkForDependencyDiscovery(
-      externalConfigAndRules.sinks,
-      internalConfigAndRules.sinks
-    )
+    val sinks = mergeDynamicRuleSinkForDependencyDiscovery(externalConfigAndRules.sinks, internalConfigAndRules.sinks)
     val collections  = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies     = externalConfigAndRules.policies ++ internalConfigAndRules.policies
     val threats      = externalConfigAndRules.threats ++ internalConfigAndRules.threats
