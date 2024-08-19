@@ -30,7 +30,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Member, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import io.shiftleft.semanticcpg.language.*
 
 object SourceTaggerUtility {

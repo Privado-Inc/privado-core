@@ -1,6 +1,6 @@
 package ai.privado.traversal
 
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import ai.privado.model.InternalTag
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*

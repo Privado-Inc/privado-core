@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import ai.privado.languageEngine.java.tagger.sink.api.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.*

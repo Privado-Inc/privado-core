@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.python.config
 
 import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoDBConfigBaseTagger
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory

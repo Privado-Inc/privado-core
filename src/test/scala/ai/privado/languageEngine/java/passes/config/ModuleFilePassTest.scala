@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.language.module.{NodeStarters, StepsForDependency, StepsForModule}
+import ai.privado.semantic.module.{NodeStarters, StepsForDependency, StepsForModule}
 import ai.privado.languageEngine.java.passes.module.DependenciesNodePass
 import ai.privado.model._
 import better.files.File

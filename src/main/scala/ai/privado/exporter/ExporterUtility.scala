@@ -68,7 +68,7 @@ import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import ai.privado.tagger.sink.SinkArgumentUtility
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps

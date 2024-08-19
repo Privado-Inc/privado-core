@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal, Member}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import overflowdb.BatchedUpdate
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.semanticcpg.language.*

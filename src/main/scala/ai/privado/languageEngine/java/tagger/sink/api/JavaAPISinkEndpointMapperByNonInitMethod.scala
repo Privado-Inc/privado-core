@@ -5,7 +5,7 @@ import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import ai.privado.languageEngine.java.tagger.sink.api.Utility.tagAPICallByItsUrlMethod
 import ai.privado.tagger.utility.APITaggerUtility.{
   getLiteralCode,

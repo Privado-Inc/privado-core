@@ -2,7 +2,7 @@ package ai.privado.languageEngine.python.tagger.sink
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.{CatLevelOne, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.model.Constants

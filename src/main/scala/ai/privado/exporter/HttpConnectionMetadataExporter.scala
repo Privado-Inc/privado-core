@@ -25,7 +25,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.semantic.language.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import org.slf4j.LoggerFactory
 import ai.privado.model.{Constants, Language}

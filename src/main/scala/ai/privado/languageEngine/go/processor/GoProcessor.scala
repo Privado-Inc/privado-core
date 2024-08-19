@@ -10,7 +10,7 @@ import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*

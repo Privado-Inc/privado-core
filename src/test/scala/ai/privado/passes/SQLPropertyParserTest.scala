@@ -1,7 +1,7 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.NodeStarters
 import ai.privado.model.sql.SQLQueryType
 import better.files.File
 import io.joern.jssrc2cpg.Config

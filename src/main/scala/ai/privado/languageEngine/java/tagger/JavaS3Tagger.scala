@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.tagger
 
 import ai.privado.tagger.S3BaseTagger
 import ai.privado.cache.{DatabaseDetailsCache, S3DatabaseDetailsCache}
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.DatabaseDetails
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
 import org.slf4j.LoggerFactory

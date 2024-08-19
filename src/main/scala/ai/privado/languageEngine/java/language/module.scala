@@ -1,8 +1,9 @@
-package ai.privado.languageEngine.java.language
+package semantic
 
+import ai.privado.semantic
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{File, ModuleDependency}
-import overflowdb.traversal._
+import overflowdb.traversal.*
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 

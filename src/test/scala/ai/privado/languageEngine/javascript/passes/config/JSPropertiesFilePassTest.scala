@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language._
+import ai.privado.semantic._
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File
