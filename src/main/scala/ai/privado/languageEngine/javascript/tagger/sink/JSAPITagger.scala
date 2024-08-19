@@ -30,7 +30,7 @@ import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.sink.APITagger
 
 import scala.collection.mutable.ListBuffer
-import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 import io.shiftleft.semanticcpg.language.*

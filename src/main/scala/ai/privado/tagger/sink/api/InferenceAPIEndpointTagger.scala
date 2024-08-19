@@ -1,7 +1,7 @@
 package ai.privado.tagger.sink.api
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 import ai.privado.model.FilterProperty.*
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass

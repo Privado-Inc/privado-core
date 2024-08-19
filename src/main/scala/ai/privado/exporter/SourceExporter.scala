@@ -31,7 +31,7 @@ import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTagging
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.Traversal
 import io.joern.dataflowengineoss.language.Path

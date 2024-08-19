@@ -62,13 +62,13 @@ import ai.privado.model.exporter.CollectionEncoderDecoder.*
 import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
 import ai.privado.model.exporter.PropertyNodesEncoderDecoder.*
-import ai.privado.semantic.Language.{NodeStarterForSqlQueryNode, finder}
+import ai.privado.semantic.language.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, NodeTypes}
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{dump, getTruncatedText}
 import ai.privado.tagger.sink.SinkArgumentUtility
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.*
 import better.files.File
 import io.circe.Json
 import io.circe.syntax.EncoderOps

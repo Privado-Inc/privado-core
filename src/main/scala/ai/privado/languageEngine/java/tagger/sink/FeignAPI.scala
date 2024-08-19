@@ -27,7 +27,7 @@ import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.model.{Constants, RuleInfo}
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}

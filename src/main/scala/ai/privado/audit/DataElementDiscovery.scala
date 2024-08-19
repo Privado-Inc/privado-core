@@ -4,7 +4,7 @@ import ai.privado.cache.TaggerCache
 import ai.privado.dataflow.Dataflow
 import ai.privado.model.Language.Language
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language}
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*

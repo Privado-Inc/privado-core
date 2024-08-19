@@ -1,7 +1,7 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLParser

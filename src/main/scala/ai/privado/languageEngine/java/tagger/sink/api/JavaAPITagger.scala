@@ -24,7 +24,7 @@ package ai.privado.languageEngine.java.tagger.sink.api
 
 import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.languageEngine.java.tagger.Utility.{GRPCTaggerUtility, SOAPTaggerUtility}
 import ai.privado.languageEngine.java.tagger.sink.FeignAPI

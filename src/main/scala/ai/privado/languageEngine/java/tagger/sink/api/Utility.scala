@@ -10,7 +10,7 @@ import ai.privado.utility.Utilities.{getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Literal, Method}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
 
 import scala.util.{Failure, Success, Try}

@@ -2,7 +2,7 @@ package ai.privado.languageEngine.go.passes
 
 import ai.privado.languageEngine.go.GoTestBase
 import ai.privado.model.Constants
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}

@@ -3,7 +3,7 @@ package ai.privado.threatEngine
 import ai.privado.cache.{AppCache, RuleCache, TaggerCache}
 import ai.privado.model.{Constants, PolicyOrThreat}
 import ai.privado.model.exporter.ViolationProcessingModel
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.threatEngine.ThreatUtility.{getPIINameFromSourceId, hasDataElements}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{SqlColumnNode, StoredNode}

@@ -74,7 +74,7 @@ import scala.concurrent.*
 import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
+import ai.privado.semantic.language.*
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)

@@ -2,7 +2,7 @@ package ai.privado.languageEngine.php.tagger.sink
 
 import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.languageEngine.java.language.{NodeStarters, StepsForProperty}
+import ai.privado.semantic.language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.{Constants, InternalTag, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
