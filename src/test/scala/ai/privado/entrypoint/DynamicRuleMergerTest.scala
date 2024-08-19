@@ -4,8 +4,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}
 import ai.privado.testfixtures.JavaFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.semantic.language.Language.*
-import ai.privado.semantic.module.NodeStarters
+import ai.privado.semantic.language.*
 
 class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
 

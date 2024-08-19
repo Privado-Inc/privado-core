@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.python.passes.config
 
-import ai.privado.semantic.*
+import ai.privado.semantic.language.*
 import ai.privado.testfixtures.PythonFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 

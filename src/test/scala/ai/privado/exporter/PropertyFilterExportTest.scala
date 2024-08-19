@@ -11,7 +11,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.semantic.*
+import ai.privado.semantic.language.*
 
 import scala.collection.mutable
 

@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.semantic.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.semantic.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.model.Language
