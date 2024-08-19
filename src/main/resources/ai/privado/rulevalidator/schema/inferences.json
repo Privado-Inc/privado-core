@@ -55,7 +55,7 @@
               "code",
               "method_full_name"
             ],
-            "pattern": "^(code|method_full_name|method_full_name_with_literal|method_full_name_with_property_name)$"
+            "pattern": "^(code|method_full_name|method_full_name_with_literal|method_full_name_with_property_name|endpoint_domain_with_literal|endpoint_domain_with_property_name)$"
           },
           "domains": {
             "$id": "#root/inferences/items/domains",
