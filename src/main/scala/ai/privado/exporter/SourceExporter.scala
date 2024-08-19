@@ -63,10 +63,12 @@ class SourceExporter(
     val processingMap = mutable.HashMap[String, mutable.Set[AstNode]]()
     sourcesList.foreach(source => {
       def addToMap(sourceId: String): Unit = {
+        val sourceIterator = source.originalSourceOut.l
+        val sourceNode     = if (sourceIterator.nonEmpty) sourceIterator.head.asInstanceOf[AstNode] else source
         if (processingMap.contains(sourceId)) {
-          processingMap(sourceId) = processingMap(sourceId).addOne(source)
+          processingMap(sourceId) = processingMap(sourceId).addOne(sourceNode)
         } else {
-          processingMap.addOne(sourceId -> mutable.Set(source))
+          processingMap.addOne(sourceId -> mutable.Set(sourceNode))
         }
       }
       source.tag.nameExact(Constants.id).value.filter(!_.startsWith(Constants.privadoDerived)).foreach(addToMap)
