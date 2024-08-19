@@ -148,6 +148,12 @@ package object language {
     }
   }
 
+  implicit class NodeToOriginalSourceTraversal(val nodes: Iterator[AstNode]) extends AnyVal {
+    def originalSource: Iterator[AstNode] = {
+      nodes.flatMap(n => NodeToOriginalSource(n).originalSource)
+    }
+  }
+
   implicit class NodeToOriginalSource(val node: AstNode) extends AnyVal {
     def originalSource: Option[AstNode] = {
       val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
@@ -156,7 +162,6 @@ package object language {
       }
       None
     }
-
     def originalSource(sourceId: String): Option[AstNode] = {
       val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
       if (_originalSource.nonEmpty && _originalSource.hasNext) {

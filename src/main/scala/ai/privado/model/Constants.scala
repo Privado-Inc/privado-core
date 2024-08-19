@@ -159,6 +159,7 @@ object Constants {
   val namespaceDependency       = "namespaceDependency"
   val propertyFiles             = "propertyFiles"
   val importDependency          = "importDependency"
+  val originalSourceFiles       = "originalSourceFiles"
 
   // database details
   val dbName      = "dbName"

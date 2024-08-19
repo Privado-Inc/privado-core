@@ -58,6 +58,7 @@ import ai.privado.model.exporter.ViolationEncoderDecoder.*
 import ai.privado.model.exporter.CollectionEncoderDecoder.*
 import ai.privado.model.exporter.AndroidPermissionsEncoderDecoder.*
 import ai.privado.model.exporter.SinkEncoderDecoder.*
+import ai.privado.semantic.language.*
 import ai.privado.script.ExternalScalaScriptRunner
 import better.files.File
 import io.circe.Json
@@ -75,6 +76,7 @@ import scala.language.postfixOps
 import scala.util.{Failure, Success, Try}
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.semantic.language.*
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 object JSONExporter {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -217,6 +219,9 @@ object JSONExporter {
 
       output.addOne(Constants.propertyDependency -> propertyAndUsedAt.asJson)
       output.addOne(Constants.propertyFiles      -> cpg.property.file.name.dedup.l.asJson)
+      val originalSourceFileName =
+        Try(cpg.all.collectAll[AstNode].originalSource.file.name.dedup.l).getOrElse(List.empty)
+      output.addOne(Constants.originalSourceFiles -> originalSourceFileName.asJson)
 
       /** For Java the namespace is working as expected, for languages like JS, Python we are getting the namespace as
         * <`global`> for nearly all files
