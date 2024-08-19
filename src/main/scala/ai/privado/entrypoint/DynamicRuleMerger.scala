@@ -18,13 +18,11 @@ trait DynamicRuleMerger {
     try {
 
       val internalRuleMap = mutable.Map(
-        internalSinkRules.map(rule =>
-          ((rule.domains.headOption.getOrElse(List.empty), rule.name, rule.filterProperty), rule)
-        )*
+        internalSinkRules.map(rule => ((rule.domains.headOption.get, rule.name, rule.filterProperty), rule))*
       )
 
       externalSinkRules.foreach { externalRule =>
-        val externalDomain         = externalRule.domains.headOption.getOrElse(List.empty)
+        val externalDomain         = externalRule.domains.headOption.get
         val externalRuleName       = externalRule.name
         val externalFilterProperty = externalRule.filterProperty
 
@@ -38,7 +36,7 @@ trait DynamicRuleMerger {
           case Some(_, _, _, matchingRule: RuleInfo) =>
             val updatedRule = matchingRule.copy(patterns = matchingRule.patterns ++ externalRule.patterns)
             internalRuleMap.update(
-              (matchingRule.domains.headOption.getOrElse(List.empty), matchingRule.name, matchingRule.filterProperty),
+              (matchingRule.domains.headOption.get, matchingRule.name, matchingRule.filterProperty),
               updatedRule
             )
           case _ =>
