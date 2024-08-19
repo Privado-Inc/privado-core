@@ -1,11 +1,10 @@
-package ai.privado.entrypoint
+package ai.privado.inputprocessor
 
 import ai.privado.model.{ConfigAndRules, FilterProperty, RuleInfo}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.collection.mutable.Map
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 
 trait DynamicRuleMerger {
 

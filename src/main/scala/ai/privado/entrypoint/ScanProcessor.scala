@@ -24,6 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.statsRecorder
+import ai.privado.inputprocessor.RuleProcessor
 import ai.privado.languageEngine.c.processor.CProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
@@ -47,7 +48,7 @@ import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
 
 import scala.sys.exit
-import scala.util.{Try}
+import scala.util.Try
 
 object ScanProcessor extends CommandProcessor with RuleProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)

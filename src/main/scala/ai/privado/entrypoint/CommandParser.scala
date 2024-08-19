@@ -158,7 +158,7 @@ object CommandParser {
     Map(
       CommandConstants.SCAN     -> ScanProcessor,
       CommandConstants.UPLOAD   -> UploadProcessor,
-      CommandConstants.VALIDATE -> RuleValidator,
+      CommandConstants.VALIDATE -> RuleValidatorProcessor,
       CommandConstants.METADATA -> MetadataProcessor
     )
   def parse(args: Array[String], statsRecorder: StatsRecorder): Option[CommandProcessor] = {
