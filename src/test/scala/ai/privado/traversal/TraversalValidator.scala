@@ -19,7 +19,7 @@ trait TraversalValidator extends Matchers {
   }
 
   def derivedSourceTraversalValidator(originalSourceNode: AstNode): Assertion = {
-    originalSourceNode.derivedSource.get.tag
+    originalSourceNode.derivedSource.tag
       .name(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
       .nonEmpty shouldBe true
   }
