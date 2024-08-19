@@ -26,7 +26,7 @@ package ai.privado.tagger.source
 import ai.privado.cache.RuleCache
 import ai.privado.model.{InternalTag, RuleInfo}
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.semantic.Language._
+import ai.privado.semantic.language._
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.semanticcpg.language._

@@ -27,20 +27,19 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.metric.MetricHandler
 import ai.privado.tagger.sink.SinkArgumentUtility
 import ai.privado.model.CatLevelOne.CatLevelOne
-import ai.privado.model.Constants.outputDirectoryName
+import ai.privado.model.Constants.{originalSource, outputDirectoryName}
 import ai.privado.model.*
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 
 import scala.collection.mutable
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, NewFile, NewTag, Call}
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, NewFile, NewTag}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, DetachedNodeData}
@@ -608,5 +607,16 @@ object Utilities {
         )
       }
     })
+  }
+
+  def addOriginalSourceEdgeAndTag(
+    builder: BatchedUpdate.DiffGraphBuilder,
+    impactedObject: AstNode,
+    originalSourceNode: AstNode,
+    ruleCache: RuleCache
+  ): Unit = {
+    builder.addEdge(impactedObject, originalSourceNode, EdgeTypes.ORIGINAL_SOURCE)
+    builder.addEdge(originalSourceNode, impactedObject, EdgeTypes.DERIVED_SOURCE)
+    storeForTag(builder, originalSourceNode, ruleCache)(InternalTag.ORIGINAL_SOURCE_FOR_DERIVED_NODE.toString)
   }
 }

@@ -4,7 +4,7 @@ import ai.privado.cache.DataFlowCache
 import ai.privado.model.{CatLevelOne, Constants, DataFlowPathModel, InternalTag, NodeType}
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.languageEngine.default.*
 import io.shiftleft.semanticcpg.language.*
 

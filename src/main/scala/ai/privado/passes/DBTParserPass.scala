@@ -3,7 +3,7 @@ package ai.privado.passes
 import ai.privado.utility.Utilities
 import ai.privado.cache.{DatabaseDetailsCache, RuleCache}
 import io.joern.x2cpg.SourceFiles
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLParser

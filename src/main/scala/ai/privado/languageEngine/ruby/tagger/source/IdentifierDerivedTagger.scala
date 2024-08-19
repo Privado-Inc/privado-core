@@ -4,8 +4,8 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.sql.SQLQueryType
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.semantic.Language.*
-import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
+import ai.privado.semantic.language.*
+import ai.privado.utility.Utilities.{addOriginalSourceEdgeAndTag, addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.{SqlColumnNode, SqlTableNode, TypeDecl}
@@ -60,6 +60,8 @@ class IdentifierDerivedTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoPar
                   })
                   .l).dedup
                 .foreach { impactedObject =>
+                  // Add edge between derived source node and the original source
+                  addOriginalSourceEdgeAndTag(builder, impactedObject, sqlColumn, ruleCache)
 
                   storeForTag(builder, impactedObject, ruleCache)(
                     InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString,

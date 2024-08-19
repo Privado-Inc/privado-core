@@ -2,7 +2,7 @@ package ai.privado.audit
 
 import io.shiftleft.codepropertygraph.generated.Cpg
 
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import scala.collection.mutable.ListBuffer
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory

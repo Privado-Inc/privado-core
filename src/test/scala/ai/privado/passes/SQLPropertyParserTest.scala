@@ -1,7 +1,7 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.sql.SQLQueryType
 import better.files.File
 import io.joern.jssrc2cpg.Config
@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.semantic.Language._
 import ai.privado.utility.PropertyParserPass
 import ai.privado.model.Language
 import io.joern.console.cpgcreation.guessLanguage

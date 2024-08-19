@@ -36,7 +36,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.collection.AndroidCollectionTagger
 import ai.privado.tagger.source.AndroidXmlPermissionTagger
 

@@ -25,9 +25,10 @@ package ai.privado.languageEngine.java.tagger.source
 
 import ai.privado.model.*
 import ai.privado.testfixtures.JavaFrontendTestSuite
+import ai.privado.traversal.TraversalValidator
 import io.shiftleft.semanticcpg.language.*
 
-class JavaSourceTaggingTest extends JavaFrontendTestSuite {
+class JavaSourceTaggingTest extends JavaFrontendTestSuite with TraversalValidator {
 
   "Variable names matching with the source rules" should {
     val cpg = code("""
@@ -78,6 +79,13 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite {
       identifierNodes.size shouldBe 3
       identifierNodes.code.l shouldBe List("us", "us", "us")
       identifierNodes.lineNumber.l shouldBe List(4, 4, 5)
+    }
+
+    "build correct edges between derived and original sources" in {
+      val List(_, userIdentifier) = cpg.identifier.nameExact("us").lineNumber(4).l
+      val List(firstNameMember)   = cpg.member("firstName").l
+      originalSourceTraversalValidator(userIdentifier, "Data.Sensitive.FirstName")
+      derivedSourceTraversalValidator(firstNameMember)
     }
   }
 

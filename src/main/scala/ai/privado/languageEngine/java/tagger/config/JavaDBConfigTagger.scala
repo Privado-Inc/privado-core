@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.java.tagger.config
 
 import ai.privado.cache.DatabaseDetailsCache
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoDBConfigBaseTagger
 import ai.privado.utility.Utilities.addDatabaseDetailsMultiple
 import io.shiftleft.codepropertygraph.generated.Cpg

@@ -27,7 +27,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, NodeType, RuleInfo}
 
 import scala.collection.mutable.ListBuffer
-import ai.privado.languageEngine.java.language.{NodeStarters, NodeToProperty, StepsForProperty}
+import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}

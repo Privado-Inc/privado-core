@@ -2,7 +2,7 @@ package ai.privado.tagger.source
 
 import ai.privado.model.Constants
 import ai.privado.testfixtures.DefaultFrontendTestSuite
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
 
 class SqlQueryTaggerTests extends DefaultFrontendTestSuite {

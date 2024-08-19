@@ -5,8 +5,9 @@ import ai.privado.model.*
 import ai.privado.testfixtures.CSharpFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.rule.RuleInfoTestData
+import ai.privado.traversal.TraversalValidator
 
-class IdentifierTaggingTests extends CSharpFrontendTestSuite {
+class IdentifierTaggingTests extends CSharpFrontendTestSuite with TraversalValidator {
 
   val configAnndRules: ConfigAndRules =
     ConfigAndRules(sources = RuleInfoTestData.sourceRule)
@@ -65,6 +66,13 @@ class IdentifierTaggingTests extends CSharpFrontendTestSuite {
         .head shouldBe "Data.Sensitive.ContactData.PhoneNumber"
       barId.tag.where(_.nameExact(Constants.id)).size shouldBe 1
       barId.tag.where(_.nameExact(Constants.catLevelOne)).value.l shouldBe List(CatLevelOne.DERIVED_SOURCES.name)
+    }
+
+    "build correct edges between derived and original sources" in {
+      val List(identifierNode)    = cpg.identifier("b").l
+      val List(phoneNumberMember) = cpg.member("PhoneNumber").l
+      originalSourceTraversalValidator(identifierNode, "Data.Sensitive.ContactData.PhoneNumber")
+      derivedSourceTraversalValidator(phoneNumberMember)
     }
   }
 }

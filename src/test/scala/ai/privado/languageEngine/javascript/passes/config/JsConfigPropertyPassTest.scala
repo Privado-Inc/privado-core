@@ -7,7 +7,7 @@ import io.joern.x2cpg.X2Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.testfixtures.JavaScriptFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 
