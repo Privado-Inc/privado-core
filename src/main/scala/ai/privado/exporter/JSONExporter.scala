@@ -219,9 +219,26 @@ object JSONExporter {
 
       output.addOne(Constants.propertyDependency -> propertyAndUsedAt.asJson)
       output.addOne(Constants.propertyFiles      -> cpg.property.file.name.dedup.l.asJson)
-      val originalSourceFileName =
-        Try(cpg.all.collectAll[AstNode].originalSource.file.name.dedup.l).getOrElse(List.empty)
-      output.addOne(Constants.originalSourceFiles -> originalSourceFileName.asJson)
+
+      // All Original source nodes
+      val originalSources = Try(cpg.all.collectAll[AstNode].originalSource.dedup.l).getOrElse(List.empty)
+
+      // Original source file names
+      val originalSourceFileNames = originalSources.file.name.dedup.l
+
+      val originalSourceToDerivedSourceFileMapping = originalSources
+        .flatMap { source =>
+          val derivedSourceNodes = source.derivedSource.l
+          if (derivedSourceNodes.nonEmpty)
+            Some((source.file.name.headOption.getOrElse(""), derivedSourceNodes.file.name.dedup.l))
+          else
+            None
+        }
+        .groupBy(_._1)
+        .map(item => (item._1, item._2.flatMap(_._2).distinct))
+
+      output.addOne(Constants.originalSourceFiles      -> originalSourceFileNames.asJson)
+      output.addOne(Constants.originalSourceDependency -> originalSourceToDerivedSourceFileMapping.asJson)
 
       /** For Java the namespace is working as expected, for languages like JS, Python we are getting the namespace as
         * <`global`> for nearly all files
