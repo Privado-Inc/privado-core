@@ -13,7 +13,7 @@ import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
 import io.circe.Json

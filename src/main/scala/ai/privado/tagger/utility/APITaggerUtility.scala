@@ -25,8 +25,7 @@ package ai.privado.tagger.utility
 
 import ai.privado.cache.{FileLinkingMetadata, RuleCache}
 import ai.privado.dataflow.DuplicateFlowProcessor
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.languageEngine.java.language.NodeToProperty
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.model.{Constants, FilterProperty, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.{
@@ -42,7 +41,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identif
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.Cpg
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.model.*
 

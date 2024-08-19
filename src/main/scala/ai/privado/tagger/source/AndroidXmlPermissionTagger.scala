@@ -3,7 +3,7 @@ package ai.privado.tagger.source
 import ai.privado.cache.RuleCache
 import ai.privado.feeder.MiniatureRuleModel
 import ai.privado.model.{CatLevelOne, FilterProperty, InternalTag, Language, NodeType, RuleInfo}
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg

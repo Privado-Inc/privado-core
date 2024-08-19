@@ -5,7 +5,7 @@ import ai.privado.cache.RuleCache
 import scala.collection.mutable
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.NodeStarters
+import ai.privado.semantic.language.*
 import ai.privado.model.Constants
 
 import scala.collection.immutable.HashMap

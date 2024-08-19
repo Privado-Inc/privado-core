@@ -31,7 +31,7 @@ import ai.privado.model.exporter.{
   AndroidPermissionModel,
   DataFlowSubCategoryPathExcerptModel
 }
-import ai.privado.semantic.Language.NodeStarterForAndroidXmlPermissionNode
+import ai.privado.semantic.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory

@@ -4,7 +4,7 @@ import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{SqlColumnNode, SqlTableNode, StoredNode}
 import io.shiftleft.semanticcpg.language.Traversal
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
 import java.util.UUID
 

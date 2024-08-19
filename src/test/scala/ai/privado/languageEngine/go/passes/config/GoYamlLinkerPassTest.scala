@@ -25,7 +25,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 
 abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
   override val yamlFileContents: String = """

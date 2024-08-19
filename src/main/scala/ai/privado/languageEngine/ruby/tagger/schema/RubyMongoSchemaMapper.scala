@@ -19,7 +19,7 @@ import ai.privado.utility.ConfigParserUtility
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, File, NewDbNode, NewTag}
 import io.shiftleft.semanticcpg.language.*
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 
 import scala.collection.immutable.{HashMap, HashSet}
 import scala.collection.mutable

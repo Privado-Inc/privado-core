@@ -3,7 +3,7 @@ package ai.privado.tagger.collection
 import ai.privado.cache.RuleCache
 import ai.privado.model.*
 import ai.privado.passes.FileExtensions
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier}

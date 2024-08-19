@@ -25,7 +25,7 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.languageEngine.java.language.*
+import ai.privado.semantic.language.*
 import ai.privado.model.Language
 import ai.privado.utility.PropertyParserPass
 import better.files.File

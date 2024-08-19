@@ -23,7 +23,7 @@
 package ai.privado.languageEngine.go.passes
 
 import ai.privado.languageEngine.go.GoTestBase
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
 
 class SQLQueryParserTest extends GoTestBase {

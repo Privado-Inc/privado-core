@@ -5,7 +5,7 @@ import ai.privado.languageEngine.ruby.RubyTestBase.*
 import ai.privado.languageEngine.ruby.passes.SchemaParser
 import ai.privado.languageEngine.ruby.tagger.source.{IdentifierDerivedTagger, RubyLiteralTagger}
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, RuleInfo}
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.source.SqlQueryTagger
 import better.files.File
 import io.joern.rubysrc2cpg.deprecated.passes.RubyTypeHintCallLinker

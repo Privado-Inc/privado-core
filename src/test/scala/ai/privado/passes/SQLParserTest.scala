@@ -25,7 +25,7 @@ package ai.privado.passes
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.sql.SQLQueryType
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg
