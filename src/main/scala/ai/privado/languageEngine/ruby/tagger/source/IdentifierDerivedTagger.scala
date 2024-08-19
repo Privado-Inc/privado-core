@@ -4,7 +4,7 @@ import ai.privado.cache.RuleCache
 import ai.privado.model.sql.SQLQueryType
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.utility.Utilities.{addOriginalSourceEdgeAndTag, addRuleTags, storeForTag}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*

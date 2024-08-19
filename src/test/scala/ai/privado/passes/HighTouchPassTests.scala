@@ -3,7 +3,7 @@ package ai.privado.passes
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.model.{CatLevelOne, Constants, InternalTag}
 import ai.privado.rule.RuleInfoTestData
-import ai.privado.semantic.Language.NodeStarterForSqlQueryNode
+import ai.privado.semantic.language.Language.NodeStarterForSqlQueryNode
 import ai.privado.testfixtures.DefaultFrontendTestSuite
 import io.shiftleft.semanticcpg.language.*
 

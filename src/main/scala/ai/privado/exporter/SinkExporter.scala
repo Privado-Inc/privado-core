@@ -28,7 +28,7 @@ import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
 import ai.privado.languageEngine.default.NodeStarters
 import ai.privado.model.exporter.{DataFlowSubCategoryModel, SinkModel, SinkProcessingModel}
 import ai.privado.model.exporter.DataFlowEncoderDecoder.*
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.model.{CatLevelOne, Constants, DatabaseDetails, InternalTag, NodeType}
 import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.{Cpg, nodes}

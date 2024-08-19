@@ -23,22 +23,15 @@
 package ai.privado.semantic
 
 import ai.privado.dataflow.Dataflow
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  File,
-  SqlColumnNode,
-  SqlQueryNode,
-  SqlTableNode,
-  DbNode,
-  AndroidXmlLayoutNode,
-  AndroidXmlPermissionNode
-}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
-import overflowdb.traversal._
-import scala.util.Try
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import overflowdb.traversal.*
 
-object Language {
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.util.Try
+
+package object language {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 

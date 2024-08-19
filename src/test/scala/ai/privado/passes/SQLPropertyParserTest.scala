@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.semantic.Language._
+import ai.privado.semantic.language.Language._
 import ai.privado.utility.PropertyParserPass
 import ai.privado.model.Language
 import io.joern.console.cpgcreation.guessLanguage

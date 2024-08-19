@@ -31,7 +31,7 @@ import ai.privado.model.exporter.{
   DataFlowSubCategoryPathIntermediateModel
 }
 import ai.privado.model.DataFlowPathModel
-import ai.privado.semantic.Language.finder
+import ai.privado.semantic.language.finder
 import io.joern.dataflowengineoss.language.Path
 import io.shiftleft.semanticcpg.language._
 

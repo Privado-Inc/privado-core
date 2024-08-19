@@ -12,7 +12,7 @@ import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.model.Constants.*
 import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import better.files.File

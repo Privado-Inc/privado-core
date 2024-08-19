@@ -38,7 +38,7 @@ import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.Language.*
+import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.createCpgFolder
 import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
