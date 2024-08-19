@@ -1,6 +1,6 @@
 package ai.privado.entrypoint
 
-import ai.privado.model.{ConfigAndRules, FilterProperty, RuleInfo}
+import ai.privado.model.{ConfigAndRules, Constants, FilterProperty, RuleInfo}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -19,12 +19,12 @@ trait DynamicRuleMerger {
 
       val internalRuleMap = mutable.Map(
         internalSinkRules.map(rule =>
-          ((rule.domains.headOption.getOrElse(List.empty), rule.name, rule.filterProperty), rule)
+          ((rule.domains.headOption.getOrElse(Constants.Unknown), rule.name, rule.filterProperty), rule)
         )*
       )
 
       externalSinkRules.foreach { externalRule =>
-        val externalDomain         = externalRule.domains.headOption.getOrElse(List.empty)
+        val externalDomain         = externalRule.domains.headOption.getOrElse(Constants.Unknown)
         val externalRuleName       = externalRule.name
         val externalFilterProperty = externalRule.filterProperty
 
@@ -38,7 +38,11 @@ trait DynamicRuleMerger {
           case Some(_, _, _, matchingRule: RuleInfo) =>
             val updatedRule = matchingRule.copy(patterns = matchingRule.patterns ++ externalRule.patterns)
             internalRuleMap.update(
-              (matchingRule.domains.headOption.getOrElse(List.empty), matchingRule.name, matchingRule.filterProperty),
+              (
+                matchingRule.domains.headOption.getOrElse(Constants.Unknown),
+                matchingRule.name,
+                matchingRule.filterProperty
+              ),
               updatedRule
             )
           case _ =>
