@@ -179,16 +179,6 @@ package object language {
     }
   }
 
-  implicit class OriginalToDerivedSourceTraversal(val nodes: Iterator[AstNode]) extends AnyVal {
-
-    /** For a given input of nodes returns all the derived sources
-      *
-      * @return
-      */
-    def derivedSource: Iterator[AstNode] = Try {
-      nodes.flatMap(n => OriginalToDerivedSource(n).derivedSource)
-    }.getOrElse(Iterator.empty)
-  }
   implicit class OriginalToDerivedSource(val node: AstNode) extends AnyVal {
 
     /** For a given input of node returns all the derived sources
