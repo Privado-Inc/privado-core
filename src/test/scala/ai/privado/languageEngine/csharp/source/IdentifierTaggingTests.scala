@@ -71,8 +71,8 @@ class IdentifierTaggingTests extends CSharpFrontendTestSuite with TraversalValid
     "build correct edges between derived and original sources" in {
       val List(identifierNode)    = cpg.identifier("b").l
       val List(phoneNumberMember) = cpg.member("PhoneNumber").l
-      originalSourceTraversalValidator(identifierNode, "Data.Sensitive.ContactData.PhoneNumber")
-      derivedSourceTraversalValidator(phoneNumberMember)
+      originalSourceTraversalValidator(phoneNumberMember, identifierNode, "Data.Sensitive.ContactData.PhoneNumber")
+      derivedSourceTraversalValidator(phoneNumberMember, identifierNode)
     }
   }
 }

@@ -84,8 +84,8 @@ class JavaSourceTaggingTest extends JavaFrontendTestSuite with TraversalValidato
     "build correct edges between derived and original sources" in {
       val List(_, userIdentifier) = cpg.identifier.nameExact("us").lineNumber(4).l
       val List(firstNameMember)   = cpg.member("firstName").l
-      originalSourceTraversalValidator(userIdentifier, "Data.Sensitive.FirstName")
-      derivedSourceTraversalValidator(firstNameMember)
+      originalSourceTraversalValidator(firstNameMember, userIdentifier, "Data.Sensitive.FirstName")
+      derivedSourceTraversalValidator(firstNameMember, userIdentifier)
     }
   }
 

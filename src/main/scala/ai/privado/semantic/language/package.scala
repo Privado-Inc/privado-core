@@ -148,14 +148,25 @@ package object language {
     }
   }
 
+  implicit class NodeToOriginalSourceTraversal(val nodes: Iterator[AstNode]) extends AnyVal {
+
+    /** For a given input of nodes returns all the original sources
+      * @return
+      */
+    def originalSource: Iterator[AstNode] = Try {
+      nodes.flatMap(n => NodeToOriginalSource(n).originalSource)
+    }.getOrElse(Iterator.empty)
+  }
+
   implicit class NodeToOriginalSource(val node: AstNode) extends AnyVal {
-    def originalSource: Option[AstNode] = {
+
+    /** Returns all the original sources for the input node
+      * @return
+      */
+    def originalSource: Iterator[AstNode] = Try {
       val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
-      if (_originalSource.nonEmpty && _originalSource.hasNext) {
-        return Option(_originalSource.next().asInstanceOf[AstNode])
-      }
-      None
-    }
+      _originalSource.toList.collectAll[AstNode]
+    }.getOrElse(Iterator.empty)
 
     def originalSource(sourceId: String): Option[AstNode] = {
       val _originalSource = node.out(EdgeTypes.ORIGINAL_SOURCE)
@@ -169,13 +180,15 @@ package object language {
   }
 
   implicit class OriginalToDerivedSource(val node: AstNode) extends AnyVal {
-    def derivedSource: Option[AstNode] = {
+
+    /** For a given input of node returns all the derived sources
+      *
+      * @return
+      */
+    def derivedSource: Iterator[AstNode] = Try {
       val _derivedSource = node.out(EdgeTypes.DERIVED_SOURCE)
-      if (_derivedSource.nonEmpty && _derivedSource.hasNext) {
-        return Option(_derivedSource.next().asInstanceOf[AstNode])
-      }
-      None
-    }
+      _derivedSource.toList.collectAll[AstNode]
+    }.getOrElse(Iterator.empty)
   }
 
   implicit class NodeStartersForModule(cpg: Cpg) {
