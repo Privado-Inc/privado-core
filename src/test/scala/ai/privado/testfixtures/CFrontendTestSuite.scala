@@ -5,6 +5,7 @@ import ai.privado.cache.{
   AuditCache,
   DataFlowCache,
   DatabaseDetailsCache,
+  FileLinkingMetadata,
   PropertyFilterCache,
   RuleCache,
   S3DatabaseDetailsCache
@@ -24,7 +25,8 @@ class TestCpgWithC(val fileSuffix: String, val language: Language.Value) extends
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata
   ): BaseProcessor = {
     new CProcessor(
       ruleCache,
@@ -36,8 +38,9 @@ class TestCpgWithC(val fileSuffix: String, val language: Language.Value) extends
       appCache,
       StatsRecorder(),
       returnClosedCpg = false,
-      databaseDetailsCache,
-      propertyFilterCache
+      databaseDetailsCache = databaseDetailsCache,
+      propertyFilterCache = propertyFilterCache,
+      fileLinkingMetadata = fileLinkingMetadata
     )
   }
 }

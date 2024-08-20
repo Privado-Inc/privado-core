@@ -1,6 +1,14 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{AppCache, AuditCache, DataFlowCache, PropertyFilterCache, RuleCache, S3DatabaseDetailsCache}
+import ai.privado.cache.{
+  AppCache,
+  AuditCache,
+  DataFlowCache,
+  FileLinkingMetadata,
+  PropertyFilterCache,
+  RuleCache,
+  S3DatabaseDetailsCache
+}
 import ai.privado.entrypoint.PrivadoInput
 import io.circe.Json
 import io.shiftleft.codepropertygraph.Cpg
@@ -50,9 +58,19 @@ abstract class TestCpg extends Cpg() with TestCodeWriter with LanguageFrontend {
     this
   }
 
-  def getPrivadoJson() = {
+  def withFileLinkingMetadata(fileLinkingMetadata: FileLinkingMetadata): this.type = {
+    setFileLinkingMetadata(fileLinkingMetadata)
+    this
+  }
+
+  def getPrivadoJson(): Map[String, Json] = {
     graph
     _privadoJson.get
+  }
+
+  def getFileLinkingData: FileLinkingMetadata = {
+    graph
+    this.getFileLinkingMetadata
   }
 
   override def graph: Graph = {
