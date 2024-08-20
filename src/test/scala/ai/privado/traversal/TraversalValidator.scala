@@ -5,6 +5,7 @@ import ai.privado.model.InternalTag
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Assertion
+import org.scalatest.Assertions.assert
 import org.scalatest.matchers.should.Matchers
 
 trait TraversalValidator extends Matchers {
@@ -18,10 +19,11 @@ trait TraversalValidator extends Matchers {
       .nonEmpty shouldBe true
   }
 
-  def derivedSourceTraversalValidator(originalSourceNode: AstNode): Assertion = {
+  def derivedSourceTraversalValidator(originalSourceNode: AstNode, derivedSourceNode: AstNode): Assertion = {
     originalSourceNode.derivedSource.tag
       .name(InternalTag.OBJECT_OF_SENSITIVE_CLASS_BY_MEMBER_NAME.toString)
       .nonEmpty shouldBe true
+    originalSourceNode.derivedSource.contains(derivedSourceNode) shouldBe true
   }
 
 }

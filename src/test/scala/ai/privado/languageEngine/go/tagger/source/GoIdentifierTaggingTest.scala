@@ -95,7 +95,7 @@ class GoIdentifierTaggingTest extends GoTestBase with TraversalValidator {
       val List(userIdentifier)  = cpg.identifier("user").lineNumber(16).l
       val List(firstNameMember) = cpg.member("FirstName").l
       originalSourceTraversalValidator(userIdentifier, "Data.Sensitive.PersonalIdentification.FirstName")
-      derivedSourceTraversalValidator(firstNameMember)
+      derivedSourceTraversalValidator(firstNameMember, userIdentifier)
     }
   }
 }
