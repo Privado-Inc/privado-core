@@ -42,8 +42,6 @@ object CpgSchemaConstants {
 
   val MODULE_ARTIFACT_ID_NAME = "artifactId"
 
-  val MODULE_CONFIG_VERSION_NAME = "version"
-
   val MODULE_NODE_NAME = "MODULE"
 
   val MODULE_DEPENDENCY_NODE_NAME = "MODULE_DEPENDENCY"

@@ -138,20 +138,17 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addProperty(name = CpgSchemaConstants.MODULE_ARTIFACT_ID_NAME, valueType = ValueType.String)
     .mandatory(CpgSchemaConstants.MANDATORY_EMPTY_VALUE)
 
-  val configVersion = builder
-    .addProperty(name = CpgSchemaConstants.MODULE_CONFIG_VERSION_NAME, valueType = ValueType.String)
-
   val module = builder
     .addNodeType(CpgSchemaConstants.MODULE_NODE_NAME)
     .addProperty(groupId)
     .addProperty(artifactId)
-    .addProperty(configVersion)
+    .addProperty(version)
 
   val dependency = builder
     .addNodeType(CpgSchemaConstants.MODULE_DEPENDENCY_NODE_NAME)
     .addProperty(groupId)
     .addProperty(artifactId)
-    .addProperty(configVersion)
+    .addProperty(version)
 
   val dependencies = builder
     .addEdgeType(CpgSchemaConstants.MODULE_DEPENDENCY_EDGE_NAME)
