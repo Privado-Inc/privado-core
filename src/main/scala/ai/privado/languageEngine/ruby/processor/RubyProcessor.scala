@@ -25,22 +25,23 @@ package ai.privado.languageEngine.ruby.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery}
 import ai.privado.cache.*
+import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.exporter.monolith.MonolithExporter
+import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
-import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.semantic.Language.*
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName}
 import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
-import ai.privado.passes.{DBTParserPass, ExperimentalLambdaDataFlowSupportPass, JsonPropertyParserPass, SQLParser}
+import ai.privado.passes.*
 import ai.privado.semantic.language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
@@ -63,23 +64,20 @@ import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
+import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import ai.privado.dataflow.Dataflow
-import ai.privado.cache.*
-import ai.privado.languageEngine.base.processor.BaseProcessor
-import io.shiftleft.passes.CpgPassBase
 
 import java.util
 import java.util.Calendar
 import java.util.concurrent.{Callable, Executors}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.*
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationLong
 import scala.util.{Failure, Success, Try, Using}
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class RubyProcessor(
   ruleCache: RuleCache,

@@ -3,20 +3,20 @@ package ai.privado.languageEngine.go.processor
 import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
-import ai.privado.semantic.*
 import ai.privado.model.Constants.*
 import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
+import ai.privado.semantic.*
 import ai.privado.semantic.language.*
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays

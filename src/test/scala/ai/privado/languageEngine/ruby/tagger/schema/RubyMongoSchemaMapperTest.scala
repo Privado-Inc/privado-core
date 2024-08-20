@@ -2,20 +2,12 @@ package ai.privado.languageEngine.ruby.tagger.schema
 
 import ai.privado.cache.{DatabaseDetailsCache, PropertyFilterCache, RuleCache}
 import ai.privado.languageEngine.ruby.RubyTestBase.*
+import ai.privado.model.*
+import ai.privado.passes.PropertyParserPass
+import ai.privado.rule.RuleInfoTestData
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.model.{
-  ConfigAndRules,
-  DatabaseColumn,
-  DatabaseDetails,
-  DatabaseSchema,
-  DatabaseTable,
-  Language,
-  SourceCodeModel
-}
-import ai.privado.rule.RuleInfoTestData
-import ai.privado.utility.PropertyParserPass
 
 class RubyMongoSchemaMapperTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 

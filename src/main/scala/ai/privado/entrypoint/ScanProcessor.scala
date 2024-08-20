@@ -24,7 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.statsRecorder
-import ai.privado.inputprocessor.RuleProcessor
+import ai.privado.inputprocessor.{DependencyInfo, DependencyTaggingProcessor, RuleProcessor}
 import ai.privado.languageEngine.c.processor.CProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
@@ -38,7 +38,7 @@ import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.metadata.SystemInfo
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
-import ai.privado.model.Language.{Language, UNKNOWN}
+import ai.privado.model.Language.UNKNOWN
 import ai.privado.utility.StatsRecorder
 import better.files.File
 import io.circe.Json
@@ -47,10 +47,11 @@ import io.joern.x2cpg.SourceFiles
 import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
 
+import java.io.File as JFile
 import scala.sys.exit
 import scala.util.Try
 
-object ScanProcessor extends CommandProcessor with RuleProcessor {
+object ScanProcessor extends CommandProcessor with RuleProcessor with DependencyTaggingProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def process(appCache: AppCache): Either[String, Unit] = {
@@ -97,7 +98,13 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
       config.forceLanguage
     }
     MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
-
+    val dependencies: List[DependencyInfo] = config.externalConfigPath.headOption match {
+      case Some(externalConfigPath) =>
+        parseDependencyInfo(
+          List(externalConfigPath, "config", "dependencyInfo", "dependencyinfo.json").mkString(JFile.separator)
+        )
+      case None => List()
+    }
     languageDetected match {
       case Language.JAVA =>
         statsRecorder.justLogMessage("Detected language 'Java'")

@@ -38,7 +38,7 @@ import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays

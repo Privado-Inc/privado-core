@@ -5,7 +5,11 @@ import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class DependencyTaggingProcessorTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class DependencyTaggingProcessorTest
+    extends AnyWordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with DependencyTaggingProcessor {
 
   "Parsing test" should {
     "Working test" in {
@@ -28,7 +32,7 @@ class DependencyTaggingProcessorTest extends AnyWordSpec with Matchers with Befo
           |  }
           |]
           |""".stripMargin)
-        val dependencies: List[DependencyInfo] = DependencyTaggingProcessor().parse(tempFile.pathAsString)
+        val dependencies: List[DependencyInfo] = parseDependencyInfo(tempFile.pathAsString)
         dependencies shouldBe List(
           DependencyInfo(
             "com.privado.sample",
@@ -46,7 +50,7 @@ class DependencyTaggingProcessorTest extends AnyWordSpec with Matchers with Befo
     }
 
     "Graceful handling of error situation" in {
-      val dependencies: List[DependencyInfo] = DependencyTaggingProcessor().parse("path/nonexistingfile.json")
+      val dependencies: List[DependencyInfo] = parseDependencyInfo("path/nonexistingfile.json")
       dependencies shouldBe List()
     }
   }

@@ -147,7 +147,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
     .addProperty(artifactId)
     .addProperty(configVersion)
 
-  val dependency = builder
+  val moduleDependency = builder
     .addNodeType(CpgSchemaConstants.MODULE_DEPENDENCY_NODE_NAME)
     .addProperty(groupId)
     .addProperty(artifactId)
@@ -159,10 +159,10 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   val dependencyModuleEdge = builder
     .addEdgeType(CpgSchemaConstants.DEPENDENCY_MODULE_EDGE_NAME)
 
-  module.addOutEdge(edge = dependencies, inNode = dependency)
+  module.addOutEdge(edge = dependencies, inNode = moduleDependency)
   module.addOutEdge(edge = sourceFile, inNode = file)
-  dependency.addOutEdge(edge = sourceFile, inNode = file)
-  dependency.addOutEdge(edge = dependencyModuleEdge, inNode = module)
+  moduleDependency.addOutEdge(edge = sourceFile, inNode = file)
+  moduleDependency.addOutEdge(edge = dependencyModuleEdge, inNode = module)
 
   templateDOM.addOutEdge(edge = sourceFile, inNode = file)
 
@@ -228,6 +228,10 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   private val derivedSourceEdge  = builder.addEdgeType(CpgSchemaConstants.DERIVED_SOURCE_EDGE_NAME)
   astNode.addOutEdge(edge = originalSourceEdge, inNode = astNode)
   astNode.addOutEdge(edge = derivedSourceEdge, inNode = astNode)
+
+  // Extend Dependency Node
+  dependency.addOutEdge(edge = sourceFile, inNode = file)
+  dependency.extendz(astNode)
 }
 
 object CpgExtSchema {

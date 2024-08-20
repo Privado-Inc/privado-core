@@ -16,15 +16,19 @@ case class DependencyInfo(
   ruleTags: List[String],
   lineNumber: Int,
   filePath: String
-)
+) {
+  def getFullDependencyName(): String = {
+    if groupId.isEmpty then dependencyName else s"$groupId.$dependencyName"
+  }
+}
 
 object DependencyInfo {
   implicit val reader: Reader[DependencyInfo] = macroR[DependencyInfo]
 }
-class DependencyTaggingProcessor {
+trait DependencyTaggingProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def parse(filePath: String): List[DependencyInfo] = {
+  def parseDependencyInfo(filePath: String): List[DependencyInfo] = {
     // Manually provide a reader for List[DependencyInfo]
     Try(read[List[DependencyInfo]](new String(Files.readAllBytes(Paths.get(filePath))))) match {
       case Success(dependencies) => dependencies

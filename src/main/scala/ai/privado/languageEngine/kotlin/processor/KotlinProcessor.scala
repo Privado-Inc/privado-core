@@ -1,17 +1,7 @@
 package ai.privado.languageEngine.kotlin.processor
 
 import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  FileLinkingMetadata,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache,
-  TaggerCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
@@ -26,7 +16,7 @@ import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
 import ai.privado.semantic.language.*
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.circe.Json
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}

@@ -23,40 +23,23 @@
 
 package ai.privado.languageEngine.csharp.processor
 
-import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.*
 import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.ScanProcessor
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.semantic.Language.tagger
-import ai.privado.languageEngine.java.passes.config.JavaPropertyLinkerPass
-import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.Language.Language
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
-import ai.privado.passes.*
-import ai.privado.semantic.language.*
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder}
-import better.files.File
-import io.circe.Json
 import io.joern.csharpsrc2cpg.*
-import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
 
-import java.util.Calendar
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class CSharpProcessor(
   ruleCache: RuleCache,

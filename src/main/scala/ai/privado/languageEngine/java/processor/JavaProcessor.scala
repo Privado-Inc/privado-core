@@ -41,7 +41,7 @@ import ai.privado.passes.*
 import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import better.files.File
 import io.circe.Json
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}

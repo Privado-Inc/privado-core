@@ -1,14 +1,6 @@
 package ai.privado.languageEngine.ruby.monolith
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  RuleCache,
-  S3DatabaseDetailsCache,
-  TaggerCache
-}
+import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.monolith.MonolithExporter
@@ -17,17 +9,17 @@ import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.tagger.monolith.MonolithTagger
 import ai.privado.model.{Constants, Language}
+import ai.privado.passes.PropertyParserPass
 import ai.privado.rule.RuleInfoTestData
-import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.dataflowengineoss.language.Path
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
 

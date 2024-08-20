@@ -1,4 +1,4 @@
-package ai.privado.utility
+package ai.privado.passes
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
@@ -30,13 +30,14 @@ import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, Seque
 import scala.jdk.CollectionConverters.*
 import ai.privado.model.{Constants, Language}
 import ai.privado.tagger.PrivadoParallelCpgPass
+import ai.privado.utility.{ConfigParserUtility, Utilities}
 import org.yaml.snakeyaml.constructor.SafeConstructor
 import better.files.File.VisitOptions
 
 import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
 
-object FileExtensions {
+object PropertyFileExtensions {
   val PROPERTIES = ".properties"
   val YAML       = ".yaml"
   val YML        = ".yml"
@@ -54,7 +55,8 @@ class PropertyParserPass(
   language: Language.Value,
   propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
   privadoInput: PrivadoInput = PrivadoInput()
-) extends PrivadoParallelCpgPass[String](cpg) {
+) extends PrivadoParallelCpgPass[String](cpg)
+    with Utility {
   val PLACEHOLDER_TOKEN_START_END = "@@"
   val logger                      = LoggerFactory.getLogger(getClass)
 
@@ -64,11 +66,11 @@ class PropertyParserPass(
         configFiles(
           projectRoot,
           Set(
-            FileExtensions.PROPERTIES,
-            FileExtensions.YAML,
-            FileExtensions.YML,
-            FileExtensions.XML,
-            FileExtensions.CONF
+            PropertyFileExtensions.PROPERTIES,
+            PropertyFileExtensions.YAML,
+            PropertyFileExtensions.YML,
+            PropertyFileExtensions.XML,
+            PropertyFileExtensions.CONF
           )
         ).toArray
       }
@@ -76,30 +78,40 @@ class PropertyParserPass(
         if (privadoInput.enableIngressAndEgressUrls) {
           configFiles(
             projectRoot,
-            Set(FileExtensions.JSON, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+            Set(
+              PropertyFileExtensions.JSON,
+              PropertyFileExtensions.ENV,
+              PropertyFileExtensions.YAML,
+              PropertyFileExtensions.YML
+            )
           ).toArray
         } else {
-          configFiles(projectRoot, Set(FileExtensions.JSON, FileExtensions.ENV)).toArray
+          configFiles(projectRoot, Set(PropertyFileExtensions.JSON, PropertyFileExtensions.ENV)).toArray
         }
       case Language.PYTHON =>
         configFiles(
           projectRoot,
-          Set(FileExtensions.INI, FileExtensions.ENV, FileExtensions.YAML, FileExtensions.YML)
+          Set(
+            PropertyFileExtensions.INI,
+            PropertyFileExtensions.ENV,
+            PropertyFileExtensions.YAML,
+            PropertyFileExtensions.YML
+          )
         ).toArray
       case Language.RUBY =>
-        (configFiles(projectRoot, Set(FileExtensions.ENV)) ++ configFiles(
+        (configFiles(projectRoot, Set(PropertyFileExtensions.ENV)) ++ configFiles(
           projectRoot,
-          Set(FileExtensions.YML, FileExtensions.YAML)
+          Set(PropertyFileExtensions.YML, PropertyFileExtensions.YAML)
         ).filter(_.matches(".*(settings|config).*"))).toArray
       // Ruby has a lot of yaml files so creating property nodes for all of them, exposes a lot of property nodes,
       // which are incorrect, so we go by the approach of being selective and creating property nodes for only the impacted files
       case Language.GO =>
-        (configFiles(projectRoot, Set(FileExtensions.YAML, FileExtensions.YML))).toArray
+        (configFiles(projectRoot, Set(PropertyFileExtensions.YAML, PropertyFileExtensions.YML))).toArray
     }
   }
 
   override def runOnPart(builder: DiffGraphBuilder, file: String): Unit = {
-    val fileNode      = addFileNode(file, builder)
+    val fileNode      = addFileNode(file, builder, projectRoot)
     val propertyNodes = obtainKeyValuePairs(file, builder).map(pair => addPropertyNode(pair, builder))
     propertyNodes.foreach(builder.addEdge(_, fileNode, EdgeTypes.SOURCE_FILE))
   }
@@ -352,13 +364,6 @@ class PropertyParserPass(
     val propertyNode             = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
     builder.addNode(propertyNode)
     propertyNode
-  }
-
-  private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
-    val relativeFileName = Path.of(projectRoot).relativize(Path.of(name)).toString
-    val fileNode         = NewFile().name(relativeFileName)
-    builder.addNode(fileNode)
-    fileNode
   }
 
   private def configFiles(projectRoot: String, extensions: Set[String]): List[String] = {
