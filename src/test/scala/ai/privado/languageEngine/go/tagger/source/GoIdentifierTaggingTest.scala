@@ -94,7 +94,11 @@ class GoIdentifierTaggingTest extends GoTestBase with TraversalValidator {
     "build correct edges between derived and original sources" in {
       val List(userIdentifier)  = cpg.identifier("user").lineNumber(16).l
       val List(firstNameMember) = cpg.member("FirstName").l
-      originalSourceTraversalValidator(userIdentifier, "Data.Sensitive.PersonalIdentification.FirstName")
+      originalSourceTraversalValidator(
+        firstNameMember,
+        userIdentifier,
+        "Data.Sensitive.PersonalIdentification.FirstName"
+      )
       derivedSourceTraversalValidator(firstNameMember, userIdentifier)
     }
   }
