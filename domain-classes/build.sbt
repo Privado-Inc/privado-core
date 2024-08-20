@@ -1,9 +1,11 @@
 name := "joern-standalone-domain-classes"
 
-libraryDependencies += "io.shiftleft" %% "overflowdb-traversal" % Versions.overflowdb
+libraryDependencies ++= Seq(
+  "io.shiftleft" %% "codepropertygraph" % Versions.cpg,
+)
 
 ThisBuild / resolvers ++= Seq(
-  "Github Package Registry Overflowdb" at "https://maven.pkg.github.com/Privado-Inc/overflowdb",
+  "Github Package Registry Codepropertygraph" at "https://maven.pkg.github.com/Privado-Inc/codepropertygraph",
   Resolver.mavenLocal
 )
 

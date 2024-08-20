@@ -1,7 +1,7 @@
 object Versions {
   val cpg = parseVersion("cpgVersion")
   val joern = parseVersion("joernVersion")
-  val overflowdb = parseVersion("overflowdbVersion")
+  val flatgraph = parseVersion("flatgraphVersion")
   val requests = parseVersion("requests")
   val upickle = parseVersion("upickle")
   private def parseVersion(key: String): String = { 

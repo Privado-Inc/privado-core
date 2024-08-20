@@ -22,9 +22,9 @@
 
 import Constants.CpgSchemaConstants
 import io.shiftleft.codepropertygraph.schema._
-import overflowdb.schema.EdgeType.Cardinality
-import overflowdb.schema.Property.ValueType
-import overflowdb.schema.SchemaBuilder
+import flatgraph.schema.EdgeType.Cardinality
+import flatgraph.schema.Property.ValueType
+import flatgraph.schema.SchemaBuilder
 
 class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 

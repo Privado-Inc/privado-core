@@ -22,7 +22,7 @@ fi
 declare -A repos=(
   [cpg]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.shiftleft.codepropertygraph-schema_3/versions
   [joern]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.joern.console_3/versions
-  [overflowdb]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.shiftleft.overflowdb-core_3/versions
+  [flatgraph]=https://api.github.com/orgs/Privado-Inc/packages/maven/io.joern.flatgraph-core_3/versions
 )
 
 function latest_version {
@@ -82,7 +82,7 @@ function update {
 if [ "$DEPENDENCY" == "" ]; then
   update cpg
   update joern
-  update overflowdb
+  update flatgraph
 else
   DEPENDENCY="${DEPENDENCY#--only=}"
   update $DEPENDENCY
