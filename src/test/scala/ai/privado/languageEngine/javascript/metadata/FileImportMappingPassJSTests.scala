@@ -3,6 +3,8 @@ package ai.privado.languageEngine.javascript.metadata
 import ai.privado.cache.FileLinkingMetadata
 import ai.privado.testfixtures.JavaScriptBaseCpgFrontendTestSuite
 
+import scala.collection.immutable.Set
+
 class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
 
   "File import mapping in javascript" should {
@@ -190,6 +192,59 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
     }
 
     "resolve import files case 10" in {
+      val fileLinkingMetadata = FileLinkingMetadata()
+      val cpg = code(
+        """
+          |import { module } from 'common';
+          |
+          |""".stripMargin,
+        "src/util.js"
+      ).moreCode(
+        """
+          |export function functionName() {}
+          |
+          |""".stripMargin,
+        "src/common/modules/module.js"
+      ).withFileLinkingMetadata(fileLinkingMetadata)
+
+      cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set("src/common/modules/module.js")
+    }
+
+    "resolve import files case 11" in {
+      val fileLinkingMetadata = FileLinkingMetadata()
+      val cpg = code(
+        """
+          |import { module, helper } from 'common';
+          |
+          |""".stripMargin,
+        "src/util.js"
+      ).moreCode(
+        """
+          |export function functionName() {}
+          |
+          |""".stripMargin,
+        "src/common/modules/module.js"
+      ).moreCode(
+        """
+          |export function functionName() {}
+          |
+          |""".stripMargin,
+        "src/common/helpers/helper.js"
+      ).moreCode(
+        """
+            |export function functionName() {}
+            |
+            |""".stripMargin,
+        "src/common/deprecateds/Deprecated.js"
+      ).withFileLinkingMetadata(fileLinkingMetadata)
+
+      cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set(
+        "src/common/modules/module.js",
+        "src/common/helpers/helper.js"
+      )
+    }
+
+    "resolve import files case 12" in {
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """

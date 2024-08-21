@@ -42,7 +42,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val entity = if (matcher.find()) matcher.group(1) else rawEntity
 
     if (isRelativeImport) {
-      getResolvedPath(root, parentDirPath, importedModule) match
+      getResolvedPath(root, parentDirPath, importedModule, importedAs) match
         case Failure(_)            => // unable to resolve
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
     } else {
@@ -50,7 +50,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       val relativeDirCount = parentDirPath.stripPrefix(root).split(sep).size
       breakable {
         for (i <- 0 to relativeDirCount) {
-          val resolvedPath = getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule)
+          val resolvedPath =
+            getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule, importedAs)
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
             break
@@ -60,21 +61,31 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     }
   }
 
-  def getResolvedPath(root: String, parentDirPath: String, relativePath: String) = Try {
-    val file = File(parentDirPath, relativePath)
-    if (file.exists) file.pathAsString.stripPrefix(root)
-    else {
-      // If not found, try to find a file with the same name but with any extension
-      val baseName  = file.nameWithoutExtension
-      val parentDir = file.parent
-      val fileWithSameName = parentDir.list.find { f =>
-        f.isRegularFile && f.nameWithoutExtension == baseName
+  def getResolvedPath(root: String, parentDirPath: String, relativePath: String, importedAs: String): Try[String] =
+    Try {
+      val file = File(parentDirPath, relativePath)
+      if (file.exists) {
+        if (file.isDirectory) {
+          val fileWithSameName = file.listRecursively.find { f =>
+            f.isRegularFile && f.nameWithoutExtension == importedAs
+          }
+          if (fileWithSameName.isDefined)
+            fileWithSameName.get.pathAsString.stripPrefix(root)
+          else
+            throw FileNotFoundException()
+        } else file.pathAsString.stripPrefix(root)
+      } else {
+        // If not found, try to find a file with the same name but with any extension
+        val baseName  = file.nameWithoutExtension
+        val parentDir = file.parent
+        val fileWithSameName = parentDir.list.find { f =>
+          f.isRegularFile && f.nameWithoutExtension == baseName
+        }
+        if (fileWithSameName.isDefined)
+          fileWithSameName.get.pathAsString.stripPrefix(root)
+        else
+          throw FileNotFoundException()
       }
-      if (fileWithSameName.isDefined)
-        fileWithSameName.get.pathAsString.stripPrefix(root)
-      else
-        throw FileNotFoundException()
     }
-  }
 
 }
