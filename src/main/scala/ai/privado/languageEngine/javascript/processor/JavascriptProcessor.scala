@@ -124,8 +124,7 @@ class JavascriptProcessor(
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
-    if (!privadoInput.disableDataflowPass)
-      JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
     if (privadoInput.fileLinkingReport) {
       new FileImportMappingPassJS(cpg, fileLinkingMetadata).createAndApply()
     }
