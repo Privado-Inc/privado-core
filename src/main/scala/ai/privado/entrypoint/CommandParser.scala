@@ -48,6 +48,7 @@ case class PrivadoInput(
   enableAPIDisplay: Boolean = false,
   enableLambdaFlows: Boolean = false,
   disableDataflowPass: Boolean = false,
+  disablePostProcessingPass: Boolean = false,
   enableAPIByParameter: Boolean = false,
   ignoreExcludeRules: Boolean = false,
   ignoreSinkSkipRules: Boolean = false,
