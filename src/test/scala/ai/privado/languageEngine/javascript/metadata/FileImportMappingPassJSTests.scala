@@ -112,6 +112,7 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
     }
 
     "resolve import files case 6" ignore {
+      // TODO Failing as no import node created
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """
@@ -133,6 +134,7 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
     }
 
     "resolve import files case 7" ignore {
+      // TODO Failing as no import node created
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """
@@ -244,7 +246,27 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
       )
     }
 
-    "resolve import files case 12" in {
+    "resolve import files case 12" ignore {
+      // TODO Failing as no import node created
+      val fileLinkingMetadata = FileLinkingMetadata()
+      val cpg = code(
+        """
+          |const functionName = () => import(/* webpackChunkName: "module" */ 'common/module');
+          |
+          |""".stripMargin,
+        "src/util.js"
+      ).moreCode(
+        """
+          |export function functionName() {}
+          |
+          |""".stripMargin,
+        "src/common/module.js"
+      ).withFileLinkingMetadata(fileLinkingMetadata)
+
+      cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set("src/common/module.js")
+    }
+
+    "resolve import files case 13" in {
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """
