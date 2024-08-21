@@ -345,14 +345,14 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
           |  console.log('Function from aliased path');
           |}
           |""".stripMargin,
-        "src/common/module.ts"
+        "common/module.ts"
       ).moreCode(
         """
           |{
           |  "compilerOptions": {
           |    "baseUrl": "./",
           |    "paths": {
-          |      "@utils/module": ["src/common/module"]
+          |      "@utils/module": ["common/module"]
           |    }
           |  }
           |}
@@ -360,7 +360,7 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
         "tsconfig.json"
       ).withFileLinkingMetadata(fileLinkingMetadata)
 
-      cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("src/common/module.ts")
+      cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("common/module.ts")
     }
 
     "resolve import files case 4" in {

@@ -24,6 +24,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
 
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
+  private val tsConfigEntityMissCache = mutable.HashSet[String]()
+
   override protected def optionalResolveImport(
     fileName: String,
     importCall: Call,
@@ -48,16 +50,16 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     // false paths.
     val isRelativeImport = importedEntity.matches("^[.]+/?.*")
 
-    if (isRelativeImport) {
-      getResolvedPath(root, parentDirPath, importedModule, importedAs) match
+    if (isRelativeImport && importedModule.isDefined) {
+      getResolvedPath(root, parentDirPath, importedModule.get, importedAs) match
         case Failure(_)            => // unable to resolve
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
-    } else {
+    } else if (importedModule.isDefined) {
       val relativeDirCount = parentDirPath.stripPrefix(root).split(sep).length
       breakable {
         for (i <- 0 to relativeDirCount) {
           val resolvedPath =
-            getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule, importedAs)
+            getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
             break
@@ -99,8 +101,10 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       case entity if entity.startsWith("@") =>
         // if import starts with `@` this can mean import of local modules in some case
         if (tsConfigPathMapping.contains(entity)) {
-          tsConfigPathMapping(entity)
-        } else {
+          Some(tsConfigPathMapping(entity))
+        } else if (tsConfigEntityMissCache.contains(entity))
+          None
+        else {
           tsConfigPathMapping.keys.filter(_.endsWith("*")).find { k =>
             val keyRegex = k.replace("*", ".*").r
             val value    = keyRegex.matches(entity)
@@ -108,10 +112,13 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
           } match
             case Some(configKey) =>
               val configPathValue = tsConfigPathMapping(configKey).stripSuffix("*")
-              entity.replace(configKey.stripSuffix("*"), configPathValue)
-            case None => entity
+              Some(entity.replace(configKey.stripSuffix("*"), configPathValue))
+            case None =>
+              println(s"Not able to resolve : $entity, $importedEntity")
+              tsConfigEntityMissCache.add(entity)
+              None
         }
-      case entity => entity
+      case entity => Some(entity)
   }
 
   private def getJsonPathConfigFiles: List[String] = {
