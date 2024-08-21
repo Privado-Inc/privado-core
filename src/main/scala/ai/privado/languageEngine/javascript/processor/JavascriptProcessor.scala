@@ -129,7 +129,7 @@ class JavascriptProcessor(
     else
       JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
     if (privadoInput.fileLinkingReport) {
-      new FileImportMappingPassJS(cpg, fileLinkingMetadata).createAndApply()
+      new FileImportMappingPassJS(cpg, fileLinkingMetadata, appCache).createAndApply()
     }
   }
 

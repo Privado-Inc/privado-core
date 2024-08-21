@@ -331,8 +331,7 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
       cpg.getFileLinkingData.getFileImportMap("src/common/util.ts") shouldBe Set("src/common/module.ts")
     }
 
-    "resolve import files case 3" ignore {
-      // TODO Need to implement a mechanism which can read framwork specific configuration and resolve the import
+    "resolve import files case 3" in {
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """
@@ -346,7 +345,39 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
           |  console.log('Function from aliased path');
           |}
           |""".stripMargin,
-        "src/utils/module.ts"
+        "src/common/module.ts"
+      ).moreCode(
+        """
+          |{
+          |  "compilerOptions": {
+          |    "baseUrl": "./",
+          |    "paths": {
+          |      "@utils/module": ["src/common/module"]
+          |    }
+          |  }
+          |}
+          |""".stripMargin,
+        "tsconfig.json"
+      ).withFileLinkingMetadata(fileLinkingMetadata)
+
+      cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("src/common/module.ts")
+    }
+
+    "resolve import files case 4" in {
+      val fileLinkingMetadata = FileLinkingMetadata()
+      val cpg = code(
+        """
+          |import { functionName } from '@utils/module';
+          |
+          |""".stripMargin,
+        "src/main.ts"
+      ).moreCode(
+        """
+          |export function functionName() {
+          |  console.log('Function from aliased path');
+          |}
+          |""".stripMargin,
+        "src/common/module.ts"
       ).moreCode(
         """
           |{

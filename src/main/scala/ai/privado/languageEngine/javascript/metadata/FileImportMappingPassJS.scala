@@ -1,6 +1,7 @@
 package ai.privado.languageEngine.javascript.metadata
 
-import ai.privado.cache.FileLinkingMetadata
+import ai.privado.cache.{AppCache, FileLinkingMetadata}
+import ai.privado.passes.{JsonParser, Source}
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
@@ -8,14 +9,20 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import java.util.regex.{Matcher, Pattern}
 import java.io.{FileNotFoundException, File as JFile}
 import better.files.File
+import better.files.File.VisitOptions
+import io.joern.x2cpg.SourceFiles
 
+import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
 
-class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata)
-    extends XImportResolverPass(cpg: Cpg) {
+class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata, appCache: AppCache)
+    extends XImportResolverPass(cpg: Cpg)
+    with JsonParser {
 
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
+
+  private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -24,30 +31,29 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     importedAs: String,
     diffGraph: DiffGraphBuilder
   ): Unit = {
-    val pathSep        = ":"
-    val rawEntity      = importedEntity.stripPrefix("./")
-    val alias          = importedAs
-    val matcher        = pathPattern.matcher(rawEntity)
-    val sep            = Matcher.quoteReplacement(JFile.separator)
-    val root           = s"$codeRootDir${JFile.separator}"
-    val currentFile    = s"$root$fileName"
-    val extension      = File(currentFile).`extension`.getOrElse(".ts")
-    val parentDirPath  = File(currentFile).parent.pathAsString
-    val importedModule = importedEntity.split(pathSep).head
+    val pathSep       = ":"
+    val rawEntity     = importedEntity.stripPrefix("./")
+    val alias         = importedAs
+    val matcher       = pathPattern.matcher(rawEntity)
+    val sep           = Matcher.quoteReplacement(JFile.separator)
+    val root          = s"$codeRootDir${JFile.separator}"
+    val currentFile   = s"$root$fileName"
+    val extension     = File(currentFile).`extension`.getOrElse(".ts")
+    val parentDirPath = File(currentFile).parent.pathAsString
+    // initialize tsconfig.json map
+    initializeConfigMap()
+    val importedModule = getImportingModule(importedEntity, pathSep)
+
     // We want to know if the import is local since if an external name is used to match internal methods we may have
     // false paths.
     val isRelativeImport = importedEntity.matches("^[.]+/?.*")
-    // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
-    //  this tries to recover the string but does not perform string constant propagation
-    val entity = if (matcher.find()) matcher.group(1) else rawEntity
 
     if (isRelativeImport) {
       getResolvedPath(root, parentDirPath, importedModule, importedAs) match
         case Failure(_)            => // unable to resolve
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
     } else {
-
-      val relativeDirCount = parentDirPath.stripPrefix(root).split(sep).size
+      val relativeDirCount = parentDirPath.stripPrefix(root).split(sep).length
       breakable {
         for (i <- 0 to relativeDirCount) {
           val resolvedPath =
@@ -75,7 +81,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
             throw FileNotFoundException()
         } else file.pathAsString.stripPrefix(root)
       } else {
-        // If not found, try to find a file with the same name but with any extension
+        // If not found, try to find a file with the same name extension doesn't matter
         val baseName  = file.nameWithoutExtension
         val parentDir = file.parent
         val fileWithSameName = parentDir.list.find { f =>
@@ -88,4 +94,57 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       }
     }
 
+  private def getImportingModule(importedEntity: String, pathSep: String) = {
+    importedEntity.split(pathSep).head match
+      case entity if entity.startsWith("@") =>
+        // if import starts with `@` this can mean import of local modules in some case
+        if (tsConfigPathMapping.contains(entity)) {
+          tsConfigPathMapping(entity)
+        } else {
+          tsConfigPathMapping.keys.filter(_.endsWith("*")).find { k =>
+            val keyRegex = k.replace("*", ".*").r
+            val value    = keyRegex.matches(entity)
+            value
+          } match
+            case Some(configKey) =>
+              val configPathValue = tsConfigPathMapping(configKey).stripSuffix("*")
+              entity.replace(configKey.stripSuffix("*"), configPathValue)
+            case None => entity
+        }
+      case entity => entity
+  }
+
+  private def getJsonPathConfigFiles: List[String] = {
+    val repoPath = appCache.scanPath
+    val filePaths =
+      if (appCache.excludeFileRegex.isDefined)
+        SourceFiles
+          .determine(repoPath, Set(".json"), ignoredFilesRegex = Option(appCache.excludeFileRegex.get.r))(
+            VisitOptions.default
+          )
+      else
+        SourceFiles.determine(repoPath, Set(".json"))(VisitOptions.default)
+
+    val filteredFilePaths = filePaths.filter { fp =>
+      val f = File(fp)
+      f.nameWithoutExtension.contains("tsconfig") || f.nameWithoutExtension.contains("jsconfig")
+    }
+    filteredFilePaths
+  }
+
+  private def initializeConfigMap(): Unit = {
+    val configFilePaths = getJsonPathConfigFiles
+
+    configFilePaths.foreach { configFilePath =>
+      getJSONKeyValuePairs(configFilePath)
+        .filter(_._1.contains("compilerOptions.paths"))
+        .foreach { pathEntry =>
+          // do clean up of the paths key
+          // We would get keys like - compilerOptions.paths.@utils/*[0]
+          val pathKey   = pathEntry._1.split("compilerOptions.paths.").last.split("\\[").head
+          val pathValue = pathEntry._2
+        tsConfigPathMapping.addOne(pathKey, pathValue)
+        }
+    }
+  }
 }
