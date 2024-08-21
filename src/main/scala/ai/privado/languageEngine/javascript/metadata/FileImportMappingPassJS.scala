@@ -62,6 +62,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
             getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
+            println(s"resolving success for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
             break
           } else {
             println(s"resolving failed for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
