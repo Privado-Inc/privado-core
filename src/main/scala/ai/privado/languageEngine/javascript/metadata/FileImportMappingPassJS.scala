@@ -112,7 +112,9 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
           } match
             case Some(configKey) =>
               val configPathValue = tsConfigPathMapping(configKey).stripSuffix("*")
-              Some(entity.replace(configKey.stripSuffix("*"), configPathValue))
+              val resolvedModule  = entity.replace(configKey.stripSuffix("*"), configPathValue)
+              println(s"ResolvedModule : $resolvedModule, for $entity and $importedEntity")
+              Some(resolvedModule)
             case None =>
               println(s"Not able to resolve : $entity, $importedEntity")
               tsConfigEntityMissCache.add(entity)
