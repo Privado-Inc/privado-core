@@ -394,6 +394,38 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
 
       cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("src/common/module.ts")
     }
+
+    "resolve import files case 5" in {
+      val fileLinkingMetadata = FileLinkingMetadata()
+      val cpg = code(
+        """
+          |import * as module from '@utils/module';
+          |
+          |""".stripMargin,
+        "src/main.ts"
+      ).moreCode(
+        """
+          |export function functionName() {
+          |  console.log('Function from aliased path');
+          |}
+          |""".stripMargin,
+        "src/common/module.ts"
+      ).moreCode(
+        """
+          |{
+          |  "compilerOptions": {
+          |    "baseUrl": "./",
+          |    "paths": {
+          |      "@utils/*": ["src/common/*"]
+          |    }
+          |  }
+          |}
+          |""".stripMargin,
+        "tsconfig.json"
+      ).withFileLinkingMetadata(fileLinkingMetadata)
+
+      cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("src/common/module.ts")
+    }
   }
 
 }

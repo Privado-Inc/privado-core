@@ -63,6 +63,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
             break
+          } else {
+            println(s"resolving failed for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
           }
         }
       }
@@ -113,7 +115,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
             case Some(configKey) =>
               val configPathValue = tsConfigPathMapping(configKey).stripSuffix("*")
               val resolvedModule  = entity.replace(configKey.stripSuffix("*"), configPathValue)
-              println(s"ResolvedModule : $resolvedModule, for $entity and $importedEntity")
+              //println(s"ResolvedModule : $resolvedModule, for $entity and $importedEntity")
               Some(resolvedModule)
             case None =>
               println(s"Not able to resolve : $entity, $importedEntity")
