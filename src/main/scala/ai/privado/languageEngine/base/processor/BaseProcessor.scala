@@ -111,10 +111,13 @@ abstract class BaseProcessor(
   def applyOverridenPasses(cpg: Cpg): Unit = List()
 
   def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
-    logger.info("Applying data flow overlay")
-    val context = new LayerCreatorContext(cpg)
-    val options = new OssDataFlowOptions()
-    new OssDataFlow(options).run(context)
+    if (privadoInput.disableDataflowPass) logger.info("Skipping data flow overlay")
+    else {
+      logger.info("Applying data flow overlay")
+      val context = new LayerCreatorContext(cpg)
+      val options = new OssDataFlowOptions()
+      new OssDataFlow(options).run(context)
+    }
     if (privadoInput.enableLambdaFlows)
       new ExperimentalLambdaDataFlowSupportPass(cpg).createAndApply()
     logger.info("=====================")
