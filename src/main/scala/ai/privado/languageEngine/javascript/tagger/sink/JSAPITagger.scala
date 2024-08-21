@@ -32,7 +32,7 @@ import ai.privado.tagger.sink.APITagger
 import scala.collection.mutable.ListBuffer
 import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
@@ -47,7 +47,6 @@ import ai.privado.utility.Utilities.{
   storeForTag
 }
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import overflowdb.BatchedUpdate
 
 class JSAPITagger(
   cpg: Cpg,
@@ -189,7 +188,7 @@ class JSAPITagger(
   def getBaseUrlForFrontendApps(
     apis: List[CfgNode],
     apiInternalSources: List[AstNode],
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache
   )(implicit engineContext: EngineContext): List[String] = {

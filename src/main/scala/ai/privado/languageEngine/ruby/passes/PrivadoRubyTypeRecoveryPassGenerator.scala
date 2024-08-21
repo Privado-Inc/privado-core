@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.ruby.passes
 
 import ai.privado.model.Constants
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
@@ -11,7 +11,6 @@ import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.SBKey.getClass
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import org.slf4j.{Logger, LoggerFactory}
 

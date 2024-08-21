@@ -8,12 +8,11 @@ import ai.privado.model.sql.{SQLColumn, SQLQuery}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLParser
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
-import overflowdb.BatchedUpdate
 
 import java.io.File
 import scala.io.Source
@@ -458,7 +457,7 @@ class DBTParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache, databas
       .distinct
   }
 
-  private def addFileNode(file: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  private def addFileNode(file: String, builder: DiffGraphBuilder): NewFile = {
     val rootPath: Path     = Paths.get(projectRoot)
     val filePath: Path     = Paths.get(file)
     val relativePath: Path = rootPath.relativize(filePath)

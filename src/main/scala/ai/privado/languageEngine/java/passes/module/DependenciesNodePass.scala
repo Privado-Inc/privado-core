@@ -1,9 +1,8 @@
 package ai.privado.languageEngine.java.passes.module
 
 import ai.privado.languageEngine.java.cache.ModuleCache
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.passes.CpgPass
-import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 
@@ -15,11 +14,11 @@ class DependenciesNodePass(cpg: Cpg, moduleCache: ModuleCache) extends CpgPass(c
     moduleCache.processRootDependency
   }
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
     processDependencies(builder)
   }
 
-  private def processDependencies(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  private def processDependencies(builder: DiffGraphBuilder): Unit = {
 
     val moduleProcessorQueue = mutable.Queue[String]()
 
@@ -43,7 +42,7 @@ class DependenciesNodePass(cpg: Cpg, moduleCache: ModuleCache) extends CpgPass(c
     }
   }
 
-  private def addDependenciesToBuilder(builder: BatchedUpdate.DiffGraphBuilder, currentModule: String): Unit = {
+  private def addDependenciesToBuilder(builder: DiffGraphBuilder, currentModule: String): Unit = {
     val module = moduleCache.getModule(currentModule)
     moduleCache
       .getDependencyModuleList(currentModule)

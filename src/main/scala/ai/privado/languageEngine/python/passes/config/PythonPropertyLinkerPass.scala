@@ -1,9 +1,8 @@
 package ai.privado.languageEngine.python.passes.config
 
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{JavaProperty, Literal, Member}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import overflowdb.BatchedUpdate
 import ai.privado.semantic.language.*
 import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoParallelCpgPass
@@ -61,7 +60,7 @@ class PythonPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProp
 
   /** Create an edge between the literals in the environ.get calls and the property nodes.
     */
-  private def connectGetEnvironLiterals(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  private def connectGetEnvironLiterals(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
     matchEnvironGetCalls(propertyNode.name.strip()).foreach(lit => {
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)

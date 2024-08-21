@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
-import overflowdb.traversal.*
 
 import scala.collection.mutable.ListBuffer
 

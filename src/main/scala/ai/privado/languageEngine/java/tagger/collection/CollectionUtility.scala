@@ -3,12 +3,10 @@ package ai.privado.languageEngine.java.tagger.collection
 import ai.privado.cache.RuleCache
 import ai.privado.model.{Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities._
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Method}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import scala.util.{Failure, Success, Try}
 import scala.collection.mutable

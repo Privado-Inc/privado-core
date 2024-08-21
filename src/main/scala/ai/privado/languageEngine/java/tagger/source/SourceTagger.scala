@@ -33,12 +33,9 @@ import ai.privado.tagger.utility.SourceTaggerUtility.{
   getMembersWithAdditionalDEDTags
 }
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Identifier, Member, MethodParameterIn, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import org.apache.commons.lang3.builder.DiffBuilder
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util.UUID
 import scala.collection.concurrent.TrieMap
@@ -100,7 +97,7 @@ class FirstLevelDerivedSourceExternalClassTagger(
   taggerCache: TaggerCache
 ) extends PrivadoSimpleCpgPass(cpg) {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
 
     val derivedSourceModels = cpgNodeCache.cachedFieldAccess
       .where(_.argument.argumentIndex(1).isIdentifier)
@@ -358,7 +355,7 @@ case class CPGNodeCacheForSourceTagger(cpg: Cpg, ruleCache: RuleCache) {
     * @param typeDeclMemberName
     */
   def tagAllFieldAccessAndGetters(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     typeDeclVal: String,
     ruleInfo: RuleInfo,
     typeDeclMemberName: String,

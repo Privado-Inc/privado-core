@@ -35,7 +35,6 @@ import ai.privado.semantic.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

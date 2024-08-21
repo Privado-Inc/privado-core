@@ -26,11 +26,10 @@ package ai.privado.languageEngine.java.passes.read
 import ai.privado.cache.{DataFlowCache, TaggerCache}
 import ai.privado.model.{Constants, DataFlowPathModel, NodeType}
 import ai.privado.tagger.PrivadoSimpleCpgPass
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCache: DataFlowCache)
     extends PrivadoSimpleCpgPass(cpg) {
@@ -40,7 +39,7 @@ class DatabaseRepositoryReadPass(cpg: Cpg, taggerCache: TaggerCache, dataFlowCac
   implicit val resolver: ICallResolver = NoResolve
 
   val logger = LoggerFactory.getLogger(getClass)
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
     cpg.call
       .where(_.tag.nameExact(Constants.catLevelTwo).valueExact(Constants.storages))
       .where(_.tag.nameExact(Constants.id).value(".*Read.*"))

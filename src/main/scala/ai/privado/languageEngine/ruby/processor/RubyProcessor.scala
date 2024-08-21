@@ -62,11 +62,10 @@ import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ai.privado.dataflow.Dataflow
 import ai.privado.cache.*
 import ai.privado.languageEngine.base.processor.BaseProcessor

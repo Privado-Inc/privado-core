@@ -8,7 +8,6 @@ import ai.privado.cache.{AppCache, DataFlowCache, DatabaseDetailsCache, FileLink
 import ai.privado.languageEngine.go.tagger.collection.CollectionTagger
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
-import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
 import ai.privado.languageEngine.go.tagger.config.GoDBConfigTagger
@@ -29,7 +28,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
-  ): Traversal[Tag] = {
+  ): Iterator[Tag] = {
 
     logger.info("Starting tagging")
 

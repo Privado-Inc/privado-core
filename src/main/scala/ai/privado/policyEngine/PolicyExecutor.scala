@@ -41,7 +41,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Tag}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.util.matching.Regex

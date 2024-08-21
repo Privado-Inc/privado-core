@@ -2,11 +2,10 @@ package ai.privado.utility
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
-import overflowdb.BatchedUpdate
 import ai.privado.cache.{PropertyFilterCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.LoggerFactory
 import io.shiftleft.semanticcpg.language.*
@@ -346,7 +345,7 @@ class PropertyParserPass(
 
   private def addPropertyNode(
     keyValuePair: (String, String, Int),
-    builder: BatchedUpdate.DiffGraphBuilder
+    builder: DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value, lineNumber) = keyValuePair
     val propertyNode             = NewJavaProperty().name(key).value(value).lineNumber(lineNumber)
@@ -354,7 +353,7 @@ class PropertyParserPass(
     propertyNode
   }
 
-  private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  private def addFileNode(name: String, builder: DiffGraphBuilder): NewFile = {
     val relativeFileName = Path.of(projectRoot).relativize(Path.of(name)).toString
     val fileNode         = NewFile().name(relativeFileName)
     builder.addNode(fileNode)

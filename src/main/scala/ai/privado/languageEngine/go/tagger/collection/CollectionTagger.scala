@@ -5,7 +5,7 @@ import ai.privado.languageEngine.go.feeder.CollectionTaggerRule
 import ai.privado.languageEngine.java.tagger.collection.CollectionUtility
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, Language, NodeType, RuleInfo}
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.utility.Utilities.*

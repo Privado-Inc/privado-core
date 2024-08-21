@@ -10,7 +10,6 @@ import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
@@ -25,7 +24,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
-  ): Traversal[Tag] = {
+  ): Iterator[Tag] = {
     logger.info("Beginning tagging")
 
     new DEDTagger(cpg, rules).createAndApply()

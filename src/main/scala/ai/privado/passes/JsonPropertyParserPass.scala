@@ -7,9 +7,8 @@ import io.circe.{Json, JsonObject}
 import io.circe.parser.parse
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 import better.files.File
 
 import scala.collection.mutable
@@ -33,7 +32,7 @@ class JsonPropertyParserPass(cpg: Cpg, projectRoot: String) extends PrivadoParal
 
   private def addPropertyNode(
     keyValuePair: (String, String),
-    builder: BatchedUpdate.DiffGraphBuilder
+    builder: DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value) = keyValuePair
     val propertyNode = NewJavaProperty().name(key).value(value)

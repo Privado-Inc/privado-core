@@ -30,12 +30,11 @@ import scala.collection.mutable.ListBuffer
 import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.semantic.JavaSemanticGenerator
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.dataflowengineoss.DefaultSemantics
 import ai.privado.utility.Utilities.{addRuleTags, storeForTag}
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
-import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 

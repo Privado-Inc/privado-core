@@ -12,7 +12,6 @@ import ai.privado.cache.{
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.utility.StatsRecorder
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
-import overflowdb.traversal.Traversal
 
 abstract class PrivadoBaseTagger {
 
@@ -28,7 +27,7 @@ abstract class PrivadoBaseTagger {
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
-  ): Traversal[Tag] = ???
+  ): Iterator[Tag] = ???
 
   def runTagger(
     rules: RuleCache,
@@ -40,6 +39,6 @@ abstract class PrivadoBaseTagger {
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
-  ): Traversal[Tag] = ???
+  ): Iterator[Tag] = ???
 
 }

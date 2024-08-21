@@ -6,9 +6,8 @@ import ai.privado.entrypoint.PrivadoInput
 import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import scala.util.Try
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.Local
-import overflowdb.BatchedUpdate
 import io.shiftleft.semanticcpg.language.*
 
 /** This tagger focuses on getting the mapping for the connector to the `flinkSink` by doing dataflow operation
@@ -25,7 +24,7 @@ class FlinkUserDefinedConnectorToFlinkSinkViaDataflowTagger(
 ) extends PrivadoSimpleCpgPass(cpg)
     with TaggerHelper {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
 
     // Get to the referencing Identifiers and dataflows from locals in some case doesn't work
     val source = cpg.local

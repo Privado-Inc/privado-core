@@ -30,10 +30,9 @@ import ai.privado.utility.*
 import better.files.*
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.{NewAndroidXmlLayoutNode, NewAndroidXmlPermissionNode, NewFile}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import org.slf4j.{Logger, LoggerFactory}
 import org.xml.sax.Locator
-import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap, ListBuffer}
@@ -183,7 +182,7 @@ class AndroidXmlParserPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
       .filter(_.matches(allowedFiles))
   }
 
-  private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  private def addFileNode(name: String, builder: DiffGraphBuilder): NewFile = {
     val fileNode = NewFile().name(name)
     builder.addNode(fileNode)
     fileNode

@@ -35,7 +35,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.semantic.language.*
 
@@ -524,7 +523,7 @@ class CollectionExporter(cpg: Cpg, ruleCache: RuleCache, repoItemTagName: Option
 
   /** Returns rest Url for this methodNode which is already tagged under COLLECTION_METHOD_ENDPOINT
     * @param methodNode
-    *   \- Traversal[Method
+    *   \- Iterator[Method]
     * @return
     *   String
     */

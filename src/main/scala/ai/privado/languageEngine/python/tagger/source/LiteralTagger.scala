@@ -28,10 +28,8 @@ import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.*
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.generated.nodes.Literal
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.Node
 
 object LiteralTagger {
   def tag(cpg: Cpg, ruleCache: RuleCache): Unit = {

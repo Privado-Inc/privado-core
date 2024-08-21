@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Tag
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -24,7 +23,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
-  ): Traversal[Tag] = {
+  ): scala.collection.Iterator[Tag] = {
 
     logger.info("Starting tagger")
 

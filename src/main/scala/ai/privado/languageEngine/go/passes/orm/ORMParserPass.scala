@@ -28,11 +28,11 @@ import ai.privado.model.Constants.defaultLineNumber
 import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.SQLNodeBuilder
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
+import flatgraph.DNodeOrNode
 
 import scala.util.{Failure, Success, Try}
 
@@ -77,7 +77,7 @@ class ORMParserPass(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPa
   def buildAndAddSqlQueryNodes(
     builder: DiffGraphBuilder,
     typeDeclNode: TypeDecl,
-    fileNode: NodeOrDetachedNode
+    fileNode: DNodeOrNode
   ): Unit = {
     try {
       val sqlTable: SQLTable = SQLTable(

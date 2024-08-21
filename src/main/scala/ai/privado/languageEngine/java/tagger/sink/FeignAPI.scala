@@ -33,10 +33,9 @@ import ai.privado.utility.Utilities
 import ai.privado.utility.Utilities.{addRuleTags, getDomainFromString, storeForTag}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.util.Try
 
 import scala.collection.mutable

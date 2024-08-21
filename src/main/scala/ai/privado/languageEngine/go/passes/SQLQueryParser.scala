@@ -40,10 +40,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewSqlQueryNode,
   NewSqlTableNode
 }
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
+import flatgraph.DNodeOrNode
 
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
@@ -75,9 +75,9 @@ class SQLQueryParser(cpg: Cpg) extends PrivadoParallelCpgPass[AstNode](cpg) {
     }
   }
 
-  def buildAndAddSqlQueryNodes(builder: DiffGraphBuilder, node: AstNode, fileNode: NodeOrDetachedNode): Unit = Try {
+  def buildAndAddSqlQueryNodes(builder: DiffGraphBuilder, node: AstNode, fileNode: DNodeOrNode): Unit = Try {
 
-    val queryLineNumber = node.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber))
+    val queryLineNumber: Int = node.lineNumber.getOrElse(Integer.valueOf(defaultLineNumber))
     val query           = node.code.stripPrefix("`").stripSuffix("`").stripPrefix("\"").stripSuffix("\"")
     try {
       UtilitySQLParser.parseSqlQuery(query) match {

@@ -8,11 +8,9 @@ import ai.privado.tagger.utility.APITaggerUtility.{
 }
 import ai.privado.utility.Utilities.{getDomainFromString, storeForTag}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Literal, Method}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.semantic.language.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
-
+import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, DiffGraphBuilder}
 import scala.util.{Failure, Success, Try}
 
 object Utility {

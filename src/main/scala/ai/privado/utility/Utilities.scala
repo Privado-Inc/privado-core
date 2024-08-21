@@ -42,7 +42,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, N
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, DetachedNodeData}
+import overflowdb.DetachedNodeData
 
 import java.io.PrintWriter
 import scala.collection.mutable.ListBuffer
@@ -99,10 +99,10 @@ object Utilities {
 
   /** Utility to add a single tag to a object
     */
-  def storeForTag(builder: BatchedUpdate.DiffGraphBuilder, node: AstNode, ruleCache: RuleCache)(
+  def storeForTag(builder: DiffGraphBuilder, node: AstNode, ruleCache: RuleCache)(
     tagName: String,
     tagValue: String = ""
-  ): BatchedUpdate.DiffGraphBuilder = {
+  ): DiffGraphBuilder = {
     val fileName = getFileNameForNode(node)
     if (isFileProcessable(fileName, ruleCache)) {
       builder.addEdge(node, NewTag().name(tagName).value(tagValue), EdgeTypes.TAGGED_BY)
@@ -119,7 +119,7 @@ object Utilities {
   /** Utility to add database detail tags to sink
     */
   def addDatabaseDetailTags(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     node: CfgNode,
     databaseDetails: DatabaseDetails,
     ruleCache: RuleCache
@@ -135,7 +135,7 @@ object Utilities {
   /** Utility to add Tag based on a rule Object
     */
   def addRuleTags(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     node: AstNode,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
@@ -164,7 +164,7 @@ object Utilities {
   }
 
   def addRuleTagsForGA(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     node: AstNode,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
@@ -510,7 +510,7 @@ object Utilities {
     * @param builder
     * @return
     */
-  def addFileNode(fileName: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  def addFileNode(fileName: String, builder: DiffGraphBuilder): NewFile = {
     val fileNode = NewFile().name(fileName)
     builder.addNode(fileNode)
     fileNode
@@ -522,7 +522,7 @@ object Utilities {
     * @param node
     * @param fileNode
     */
-  def addNodeWithFileEdge(builder: BatchedUpdate.DiffGraphBuilder, node: DetachedNodeData, fileNode: NewFile): Unit = {
+  def addNodeWithFileEdge(builder: DiffGraphBuilder, node: DetachedNodeData, fileNode: NewFile): Unit = {
     builder.addNode(node)
     builder.addEdge(node, fileNode, EdgeTypes.SOURCE_FILE)
   }
@@ -610,7 +610,7 @@ object Utilities {
   }
 
   def addOriginalSourceEdgeAndTag(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     impactedObject: AstNode,
     originalSourceNode: AstNode,
     ruleCache: RuleCache

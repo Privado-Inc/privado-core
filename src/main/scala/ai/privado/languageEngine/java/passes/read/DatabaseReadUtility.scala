@@ -31,9 +31,8 @@ import ai.privado.model.sql.SQLQuery
 import ai.privado.utility.SQLParser
 import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.nodes.{AnnotationLiteral, AstNode, CfgNode, TypeDecl}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 
 object DatabaseReadUtility {
 

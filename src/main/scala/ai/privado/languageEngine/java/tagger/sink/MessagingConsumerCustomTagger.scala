@@ -26,13 +26,12 @@ package ai.privado.languageEngine.java.tagger.sink
 import ai.privado.cache.RuleCache
 import ai.privado.model.Constants
 import ai.privado.tagger.PrivadoSimpleCpgPass
-import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.BatchedUpdate
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language._
 import ai.privado.utility.Utilities.addRuleTags
 
 class MessagingConsumerCustomTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoSimpleCpgPass(cpg) {
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
 
     // JMS Rule Tagging
     ruleCache.getRuleInfo(Constants.jmsConsumerRuleId) match {

@@ -29,7 +29,6 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, Method}
 import io.shiftleft.semanticcpg.language._
 import ai.privado.model.Language.UNKNOWN
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
@@ -95,7 +94,7 @@ trait SemanticGenerator {
     * @param semantics
     * @return
     */
-  def getMaximumFlowSemantic(semantics: Traversal[Semantic]): Seq[String] = {
+  def getMaximumFlowSemantic(semantics: Iterator[Semantic]): Seq[String] = {
     semantics.l
       .groupBy(_.signature)
       .map(item => (item._1, item._2.flatMap(sem => sem.flow.split(" ")).toSet.sorted.mkString(" ")))

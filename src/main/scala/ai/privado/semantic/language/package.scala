@@ -27,7 +27,6 @@ import ai.privado.model.Constants
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.{DefaultNodeExtensionFinder, NodeExtensionFinder}
-import overflowdb.traversal.*
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -38,43 +37,43 @@ package object language {
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
   implicit class NodeStarterForSqlQueryNode(cpg: Cpg) {
-    def sqlQuery: Traversal[SqlQueryNode] =
+    def sqlQuery: Iterator[SqlQueryNode] =
       Try(cpg.graph.nodes(NodeTypes.SQL_QUERY_NODE).asScala.cast[SqlQueryNode]).toOption
         .getOrElse(Iterator.empty[SqlQueryNode])
 
-    def sqlTable: Traversal[SqlTableNode] =
+    def sqlTable: Iterator[SqlTableNode] =
       Try(cpg.graph.nodes(NodeTypes.SQL_TABLE_NODE).asScala.cast[SqlTableNode]).toOption
         .getOrElse(Iterator.empty[SqlTableNode])
 
-    def sqlColumn: Traversal[SqlColumnNode] =
+    def sqlColumn: Iterator[SqlColumnNode] =
       Try(cpg.graph.nodes(NodeTypes.SQL_COLUMN_NODE).asScala.cast[SqlColumnNode]).toOption
         .getOrElse(Iterator.empty[SqlColumnNode])
 
   }
 
   implicit class NodeStarterForDBNode(cpg: Cpg) {
-    def dbNode: Traversal[DbNode] =
+    def dbNode: Iterator[DbNode] =
       Try(cpg.graph.nodes(NodeTypes.DB_NODE).asScala.cast[DbNode]).getOrElse(Iterator.empty[DbNode])
   }
 
-  implicit class StepsForPropertyForDbNode(val trav: Traversal[DbNode]) extends AnyVal {
-    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+  implicit class StepsForPropertyForDbNode(val trav: Iterator[DbNode]) extends AnyVal {
+    def file: Iterator[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
 
   }
-  implicit class StepsForPropertyForSqlQueryNode(val trav: Traversal[SqlQueryNode]) extends AnyVal {
-    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
-    def sqlTable: Traversal[SqlTableNode] =
+  implicit class StepsForPropertyForSqlQueryNode(val trav: Iterator[SqlQueryNode]) extends AnyVal {
+    def file: Iterator[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+    def sqlTable: Iterator[SqlTableNode] =
       Try(trav.out(EdgeTypes.AST).cast[SqlTableNode]).toOption.getOrElse(Iterator.empty[SqlTableNode])
   }
 
-  implicit class StepsForPropertyForSqlTableNode(val trav: Traversal[SqlTableNode]) extends AnyVal {
-    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
-    def sqlColumn: Traversal[SqlColumnNode] =
+  implicit class StepsForPropertyForSqlTableNode(val trav: Iterator[SqlTableNode]) extends AnyVal {
+    def file: Iterator[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+    def sqlColumn: Iterator[SqlColumnNode] =
       Try(trav.out(EdgeTypes.AST).cast[SqlColumnNode]).toOption.getOrElse(Iterator.empty[SqlColumnNode])
   }
 
-  implicit class StepsForPropertyForSqlColumnNode(val trav: Traversal[SqlColumnNode]) extends AnyVal {
-    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+  implicit class StepsForPropertyForSqlColumnNode(val trav: Iterator[SqlColumnNode]) extends AnyVal {
+    def file: Iterator[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
 
   }
 
@@ -93,34 +92,34 @@ package object language {
   }
 
   implicit class NodeStarterForAndroidXmlLayoutNode(cpg: Cpg) {
-    def androidXmlLayoutNode: Traversal[AndroidXmlLayoutNode] =
+    def androidXmlLayoutNode: Iterator[AndroidXmlLayoutNode] =
       Try(cpg.graph.nodes(NodeTypes.ANDROID_XML_LAYOUT_NODE).asScala.cast[AndroidXmlLayoutNode]).toOption
         .getOrElse(Iterator.empty[AndroidXmlLayoutNode])
   }
 
   implicit class NodeStarterForAndroidXmlPermissionNode(cpg: Cpg) {
-    def androidXmlPermissionNode: Traversal[AndroidXmlPermissionNode] =
+    def androidXmlPermissionNode: Iterator[AndroidXmlPermissionNode] =
       Try(cpg.graph.nodes(NodeTypes.ANDROID_XML_PERMISSION_NODE).asScala.cast[AndroidXmlPermissionNode]).toOption
         .getOrElse(Iterator.empty[AndroidXmlPermissionNode])
   }
 
   implicit class NodeStarters(cpg: Cpg) {
-    def property: Traversal[JavaProperty] =
+    def property: Iterator[JavaProperty] =
       Try(cpg.graph.nodes(NodeTypes.JAVA_PROPERTY).asScala.cast[JavaProperty]).toOption
         .getOrElse(Iterator.empty[JavaProperty])
   }
 
-  implicit class StepsForProperty(val trav: Traversal[JavaProperty]) extends AnyVal {
+  implicit class StepsForProperty(val trav: Iterator[JavaProperty]) extends AnyVal {
 
-    def usedAt: Traversal[CfgNode] =
+    def usedAt: Iterator[CfgNode] =
       Try(trav.out(EdgeTypes.IS_USED_AT).cast[CfgNode]).toOption.getOrElse(Iterator.empty[CfgNode])
 
-    def file: Traversal[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
+    def file: Iterator[File] = Try(trav.out(EdgeTypes.SOURCE_FILE).cast[File]).toOption.getOrElse(Iterator.empty[File])
 
   }
 
-  implicit class NodeTravToProperty(val trav: Traversal[AstNode]) {
-    def originalProperty: Traversal[JavaProperty] =
+  implicit class NodeTravToProperty(val trav: Iterator[AstNode]) {
+    def originalProperty: Iterator[JavaProperty] =
       Try(trav.out(EdgeTypes.ORIGINAL_PROPERTY).cast[JavaProperty]).toOption.getOrElse(Iterator.empty[JavaProperty])
   }
 
@@ -180,23 +179,23 @@ package object language {
 
   implicit class NodeStartersForModule(cpg: Cpg) {
 
-    def module: Traversal[io.shiftleft.codepropertygraph.generated.nodes.Module] =
+    def module: Iterator[io.shiftleft.codepropertygraph.generated.nodes.Module] =
       cpg.graph.nodes(NodeTypes.MODULE).asScala.cast[io.shiftleft.codepropertygraph.generated.nodes.Module]
   }
 
-  implicit class StepsForModule(val trav: Traversal[io.shiftleft.codepropertygraph.generated.nodes.Module])
+  implicit class StepsForModule(val trav: Iterator[io.shiftleft.codepropertygraph.generated.nodes.Module])
       extends AnyVal {
 
-    def file: Traversal[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def file: Iterator[File] = trav.out(EdgeTypes.SOURCE_FILE).cast[File]
 
-    def dependencies: Traversal[ModuleDependency] = trav.out(EdgeTypes.DEPENDENCIES).cast[ModuleDependency]
+    def dependencies: Iterator[ModuleDependency] = trav.out(EdgeTypes.DEPENDENCIES).cast[ModuleDependency]
   }
 
   implicit class StepsForDependency(
-    val traversal: Traversal[io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency]
+    val traversal: Iterator[io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency]
   ) extends AnyVal {
 
-    def file: Traversal[File] = traversal.out(EdgeTypes.SOURCE_FILE).cast[File]
+    def file: Iterator[File] = traversal.out(EdgeTypes.SOURCE_FILE).cast[File]
 
   }
 

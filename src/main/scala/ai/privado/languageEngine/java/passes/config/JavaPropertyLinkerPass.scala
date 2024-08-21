@@ -26,10 +26,9 @@ package ai.privado.languageEngine.java.passes.config
 import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 /** This pass creates a graph layer for Java `.properties` files.
   */
@@ -51,7 +50,7 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
     connectAnnotatedParameters(property, builder)
   }
 
-  private def connectAnnotatedParameters(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  private def connectAnnotatedParameters(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
     val paramsAndValues = annotatedParameters() ++ namedAnnotatedParameters()
 
     paramsAndValues.iterator
@@ -135,7 +134,7 @@ class JavaPropertyLinkerPass(cpg: Cpg) extends PrivadoParallelCpgPass[JavaProper
 
   /** In this method, we attempt to identify users of properties and connect them to property nodes.
     */
-  private def connectGetPropertyLiterals(propertyNode: JavaProperty, builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  private def connectGetPropertyLiterals(propertyNode: JavaProperty, builder: DiffGraphBuilder): Unit = {
     matchingLiteralsInGetPropertyCalls(propertyNode.name).foreach { lit =>
       builder.addEdge(propertyNode, lit, EdgeTypes.IS_USED_AT)
       builder.addEdge(lit, propertyNode, EdgeTypes.ORIGINAL_PROPERTY)

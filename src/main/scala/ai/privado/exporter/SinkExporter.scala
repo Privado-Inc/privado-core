@@ -34,7 +34,6 @@ import ai.privado.utility.Utilities
 import io.shiftleft.codepropertygraph.generated.{Cpg, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.Traversal
 import org.slf4j.LoggerFactory
 import io.joern.dataflowengineoss.language.Path
 
@@ -122,7 +121,7 @@ class SinkExporter(
     * @param traversal
     * @return
     */
-  private def filterSink(traversal: Traversal[AstNode]) = {
+  private def filterSink(traversal: Iterator[AstNode]) = {
     traversal
       .where(_.tag.where(_.nameExact(Constants.catLevelOne).valueExact(CatLevelOne.SINKS.name)))
       .whereNot(_.tag.where(_.nameExact(Constants.catLevelTwo).valueExact(Constants.leakages)))

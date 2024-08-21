@@ -32,7 +32,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Expression, Identifier}
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

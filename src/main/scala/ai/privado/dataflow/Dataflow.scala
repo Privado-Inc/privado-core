@@ -42,7 +42,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 import ai.privado.tagger.utility.SourceTaggerUtility.getFilteredSourcesByTaggingDisabled
 
 import scala.collection.mutable.ListBuffer
@@ -224,7 +223,7 @@ object Dataflow {
   }
 
   def getSources(cpg: Cpg): List[AstNode] = {
-    def filterSources(traversal: Traversal[AstNode]) = {
+    def filterSources(traversal: Iterator[AstNode]) = {
       traversal.tag
         .nameExact(Constants.catLevelOne)
         .or(_.valueExact(CatLevelOne.SOURCES.name), _.valueExact(CatLevelOne.DERIVED_SOURCES.name))

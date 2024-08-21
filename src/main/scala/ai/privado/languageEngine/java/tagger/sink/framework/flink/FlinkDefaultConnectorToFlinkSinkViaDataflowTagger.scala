@@ -5,9 +5,8 @@ import ai.privado.dataflow.{Dataflow, DuplicateFlowProcessor}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import scala.util.Try
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate
 
 class FlinkDefaultConnectorToFlinkSinkViaDataflowTagger(
   cpg: Cpg,
@@ -17,7 +16,7 @@ class FlinkDefaultConnectorToFlinkSinkViaDataflowTagger(
 ) extends PrivadoSimpleCpgPass(cpg)
     with TaggerHelper {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
 
     val flinkDefaultConnectors = getFlinkDefaultConnectors(cpg, ruleCache)
 

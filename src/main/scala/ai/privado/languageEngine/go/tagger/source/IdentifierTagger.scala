@@ -27,9 +27,8 @@ import ai.privado.cache.{RuleCache, TaggerCache}
 import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.utility.Utilities.*
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate
 import ai.privado.languageEngine.java.tagger.source.Utility.*
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.tagger.utility.SourceTaggerUtility.getTypeDeclWithMemberNameHavingMemberName
@@ -88,7 +87,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   /** Tag identifier of all the typeDeclaration who have a member as memberName in argument Represent Step 2.1
     */
   private def tagObjectOfTypeDeclHavingMemberName(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     memberNameRegex: String,
     ruleInfo: RuleInfo
   ): Unit = {
@@ -151,7 +150,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   /** Tag identifier of all the typeDeclaration who have a member of type -> memberType in argument Represent Step 2.2
     */
   private def tagObjectOfTypeDeclHavingMemberType(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     memberType: String,
     ruleInfo: RuleInfo
   ): Unit = {
@@ -194,7 +193,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
     * @param typeDeclMemberName
     */
   private def tagAllFieldAccessAndGetters(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     typeDeclVal: String,
     ruleInfo: RuleInfo,
     typeDeclMemberName: String

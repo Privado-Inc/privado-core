@@ -26,17 +26,15 @@ package ai.privado.languageEngine.go.tagger.config
 import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoDBConfigBaseTagger
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
-import overflowdb.traversal.*
 
 class GoDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
     extends PrivadoDBConfigBaseTagger(cpg, databaseDetailsCache) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(builder: DiffGraphBuilder): Unit = {
     cpg.property.dedup.toArray
       .filter(prop => prop.name.nonEmpty && prop.value.nonEmpty)
       .foreach(dbUrl => {

@@ -38,9 +38,7 @@ import ai.privado.utility.Utilities.{
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Identifier, JavaProperty, Member}
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder}
 import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
 import ai.privado.model.*
@@ -64,7 +62,7 @@ object APITaggerUtility {
     cpg: Cpg,
     apiInternalSinkPattern: List[AstNode],
     unfilteredApis: List[CfgNode],
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     ruleInfo: RuleInfo,
     ruleCache: RuleCache,
     privadoInput: PrivadoInput,

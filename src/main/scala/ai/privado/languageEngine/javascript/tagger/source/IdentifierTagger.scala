@@ -28,10 +28,9 @@ import ai.privado.model.{CatLevelOne, Constants, InternalTag, RuleInfo}
 import ai.privado.tagger.utility.SourceTaggerUtility.getTypeDeclWithMemberNameHavingMemberName
 import ai.privado.tagger.PrivadoParallelCpgPass
 import ai.privado.utility.Utilities.{addOriginalSourceEdgeAndTag, addRuleTags, storeForTag}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{Member, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate
 
 import java.util.UUID
 import scala.collection.concurrent.TrieMap
@@ -181,7 +180,7 @@ class IdentifierTagger(cpg: Cpg, ruleCache: RuleCache, taggerCache: TaggerCache)
   /** Tag identifier of all the typeDeclaration who inherits from the type -> typeDeclName in argument Represent Step
     */
   private def tagObjectOfTypeDeclExtendingType(
-    builder: BatchedUpdate.DiffGraphBuilder,
+    builder: DiffGraphBuilder,
     typeDeclName: String,
     ruleInfo: RuleInfo
   ): Unit = {

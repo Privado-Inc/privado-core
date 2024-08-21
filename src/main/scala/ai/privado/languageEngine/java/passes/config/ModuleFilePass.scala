@@ -4,10 +4,9 @@ import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.java.cache.ModuleCache
 import ai.privado.utility.Utilities
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewModule, NewModuleDependency}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
-import overflowdb.BatchedUpdate
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.apache.maven.model.Model
 import org.apache.maven.model.io.xpp3.MavenXpp3Reader
 
@@ -19,7 +18,7 @@ import scala.util.Try
 import better.files.File.VisitOptions
 
 class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache, ruleCache: RuleCache)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     ModuleFiles(projectRoot, Set(".xml", ".gradle")).toArray
@@ -88,7 +87,7 @@ class ModuleFilePass(cpg: Cpg, projectRoot: String, moduleCache: ModuleCache, ru
     moduleFile.toList
   }
 
-  private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  private def addFileNode(name: String, builder: DiffGraphBuilder): NewFile = {
     val fileNode = NewFile().name(name)
     builder.addNode(fileNode)
     fileNode

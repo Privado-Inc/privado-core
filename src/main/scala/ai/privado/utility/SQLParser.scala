@@ -2,7 +2,7 @@ package ai.privado.utility
 
 import ai.privado.model.sql.{SQLColumn, SQLQuery, SQLQueryType, SQLTable}
 import ai.privado.utility.SQLParser.{logger, parseSqlQuery}
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 
 import java.io.StringReader
@@ -17,13 +17,11 @@ import net.sf.jsqlparser.statement.insert.Insert
 import net.sf.jsqlparser.statement.select.{PlainSelect, Select, SelectItem, SetOperationList, ParenthesedSelect}
 import net.sf.jsqlparser.statement.update.Update
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.NodeOrDetachedNode
+import flatgraph.DNodeOrNode
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 import scala.util.control.Breaks.{break, breakable}
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 object SqlCleaner {
   def clean(sql: String): String = {
@@ -204,7 +202,7 @@ object SQLNodeBuilder {
 
   def buildAndReturnIndividualQueryNode(
     builder: DiffGraphBuilder,
-    fileNode: NodeOrDetachedNode,
+    fileNode: DNodeOrNode,
     queryModel: SQLQuery,
     query: String,
     queryLineNumber: Int,
@@ -249,7 +247,7 @@ object SQLNodeBuilder {
   def parseQueryAndCreateNodes(
     builder: DiffGraphBuilder,
     query: String,
-    fileNode: NodeOrDetachedNode,
+    fileNode: DNodeOrNode,
     queryLineNumber: Int = -1,
     fileName: Option[String] = None
   ): Unit = {

@@ -17,7 +17,7 @@ import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.{LoaderOptions, Yaml}
 import org.yaml.snakeyaml.nodes.{MappingNode, Node, NodeTuple, ScalarNode, SequenceNode}
 import org.yaml.snakeyaml.constructor.SafeConstructor
-import overflowdb.NodeOrDetachedNode
+import flatgraph.DNodeOrNode
 
 import java.io.StringReader
 import scala.collection.mutable
@@ -191,7 +191,7 @@ class HighTouchPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends
   private def addHighTouchSinkNode(
     builder: DiffGraphBuilder,
     parserResult: List[YamlProperty],
-    fileNode: NodeOrDetachedNode
+    fileNode: DNodeOrNode
   ): Unit = {
     val destinationNode = parserResult.find(_.key.equals(HightouchKeys.DESTINATION)).getOrElse(YamlProperty("", "", -1))
     val correspondingModel =

@@ -2,11 +2,10 @@ package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.model.InternalTag
 import ai.privado.tagger.PrivadoParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, Operators, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.Edges
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate
 
 class JsConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cpg) {
 
@@ -64,7 +63,7 @@ class JsConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cpg) {
 
   private def addPropertyNode(
     keyValuePair: (String, String, Integer),
-    builder: BatchedUpdate.DiffGraphBuilder
+    builder: DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value, lineNumber) = keyValuePair
     val propertyNode             = NewJavaProperty().name(key.stripPrefix(".")).value(value).lineNumber(lineNumber)

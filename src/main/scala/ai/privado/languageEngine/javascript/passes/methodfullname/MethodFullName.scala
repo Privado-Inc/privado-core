@@ -28,7 +28,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 

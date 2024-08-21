@@ -33,7 +33,6 @@ import better.files.File
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Tag}
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
@@ -125,7 +124,7 @@ object ThreatUtility {
   }
 
   def getSourceNode(cpg: Cpg, sourceId: String): Option[(String, CfgNode)] = {
-    def filterBySource(tag: Traversal[Tag]): Traversal[Tag] =
+    def filterBySource(tag: Iterator[Tag]): Iterator[Tag] =
       tag.where(_.nameExact(Constants.id)).where(_.valueExact(sourceId))
 
     Try(cpg.tag.where(filterBySource).identifier.head) match {

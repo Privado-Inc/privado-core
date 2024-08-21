@@ -7,7 +7,6 @@ import ai.privado.utility.Utilities.addDatabaseDetailsMultiple
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
 import org.slf4j.LoggerFactory
-import overflowdb.traversal.*
 
 class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
     extends PrivadoDBConfigBaseTagger(cpg, databaseDetailsCache) {

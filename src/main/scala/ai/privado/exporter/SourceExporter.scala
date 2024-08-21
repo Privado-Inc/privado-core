@@ -33,7 +33,6 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Tag}
 import ai.privado.semantic.language.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.Traversal
 import io.joern.dataflowengineoss.language.Path
 
 import scala.collection.mutable
@@ -106,7 +105,7 @@ class SourceExporter(
   /** Fetch all the sources node
     */
   private def getSourcesList: List[AstNode] = {
-    def filterSource(traversal: Traversal[AstNode]) = {
+    def filterSource(traversal: Iterator[AstNode]) = {
 
       if (privadoInput.isMonolith) {
         traversal
