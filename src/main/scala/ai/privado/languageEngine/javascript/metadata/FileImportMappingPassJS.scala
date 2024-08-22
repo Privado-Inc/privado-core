@@ -25,6 +25,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
   private val tsConfigEntityMissCache = mutable.HashSet[String]()
+  private val resolvedPathCache       = mutable.HashMap[String, Option[String]]()
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -38,7 +39,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val alias         = importedAs
     val matcher       = pathPattern.matcher(rawEntity)
     val sep           = Matcher.quoteReplacement(JFile.separator)
-    val root          = s"${codeRootDir.replace(s"${sep}probe$sep", s"$sep")}${JFile.separator}"
+    val root          = s"${sanitiseProbeScanPath(codeRootDir, sep)}${JFile.separator}"
     val currentFile   = s"$root$fileName"
     val extension     = File(currentFile).`extension`.getOrElse(".ts")
     val parentDirPath = File(currentFile).parent.pathAsString
@@ -56,18 +57,35 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
     } else if (importedModule.isDefined) {
       val relativeDirCount = parentDirPath.stripPrefix(root).split(sep).length
+      var isPathFound      = false // flag for monitoring if importing module was resolved
       breakable {
+        if (resolvedPathCache.contains(importedModule.get)) {
+          // Pick up information from cache
+          resolvedPathCache(importedModule.get) match
+            case Some(resolvedPath) =>
+              fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
+              println(s"Picked success from resolvedPathCache for ${importedModule.get} as $resolvedPath")
+            case _ => println(s"Picked failure from resolvedPathCache for ${importedModule.get}")
+          break
+        }
+
         for (i <- 0 to relativeDirCount) {
           val resolvedPath =
             getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
+            // Importing module was resolved, update cache
+            resolvedPathCache.addOne(importedModule.get, resolvedPath.toOption)
+            isPathFound = true
             println(s"resolving success for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
             break
-          } else {
-            println(s"resolving failed for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
           }
         }
+      }
+      if (!isPathFound) {
+        // Importing module was not resolved, update cache
+        resolvedPathCache.addOne(importedModule.get, None)
+        println(s"resolving failed for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
       }
     }
   }
@@ -127,7 +145,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
   }
 
   private def getJsonPathConfigFiles(sep: String): List[String] = {
-    val repoPath = appCache.scanPath.replace(s"${sep}probe${sep}", s"${sep}")
+    val repoPath = sanitiseProbeScanPath(appCache.scanPath, sep)
     val filePaths =
       if (appCache.excludeFileRegex.isDefined)
         SourceFiles
@@ -159,4 +177,6 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
         }
     }
   }
+
+  private def sanitiseProbeScanPath(scanPath: String, sep: String) = scanPath.replace(s"${sep}probe$sep", s"$sep")
 }
