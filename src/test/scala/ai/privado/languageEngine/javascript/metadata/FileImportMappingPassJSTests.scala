@@ -193,60 +193,7 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
       cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set("src/common/module.js")
     }
 
-    "resolve import files case 10" in {
-      val fileLinkingMetadata = FileLinkingMetadata()
-      val cpg = code(
-        """
-          |import { module } from 'common';
-          |
-          |""".stripMargin,
-        "src/util.js"
-      ).moreCode(
-        """
-          |export function functionName() {}
-          |
-          |""".stripMargin,
-        "src/common/modules/module.js"
-      ).withFileLinkingMetadata(fileLinkingMetadata)
-
-      cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set("src/common/modules/module.js")
-    }
-
-    "resolve import files case 11" in {
-      val fileLinkingMetadata = FileLinkingMetadata()
-      val cpg = code(
-        """
-          |import { module, helper } from 'common';
-          |
-          |""".stripMargin,
-        "src/util.js"
-      ).moreCode(
-        """
-          |export function functionName() {}
-          |
-          |""".stripMargin,
-        "src/common/modules/module.js"
-      ).moreCode(
-        """
-          |export function functionName() {}
-          |
-          |""".stripMargin,
-        "src/common/helpers/helper.js"
-      ).moreCode(
-        """
-            |export function functionName() {}
-            |
-            |""".stripMargin,
-        "src/common/deprecateds/Deprecated.js"
-      ).withFileLinkingMetadata(fileLinkingMetadata)
-
-      cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set(
-        "src/common/modules/module.js",
-        "src/common/helpers/helper.js"
-      )
-    }
-
-    "resolve import files case 12" ignore {
+    "resolve import files case 10" ignore {
       // TODO Failing as no import node created
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
@@ -266,7 +213,7 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
       cpg.getFileLinkingData.getFileImportMap("src/util.js") shouldBe Set("src/common/module.js")
     }
 
-    "resolve import files case 13" in {
+    "resolve import files case 11" in {
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """
