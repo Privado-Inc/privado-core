@@ -1,7 +1,7 @@
 package ai.privado.languageEngine.javascript.metadata
 
 import ai.privado.cache.{AppCache, FileLinkingMetadata}
-import ai.privado.passes.{JsonParser, Source}
+import ai.privado.passes.JsonParser
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call
@@ -23,8 +23,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
 
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
-  val sep  = Matcher.quoteReplacement(JFile.separator)
-  val root = s"${sanitiseProbeScanPath(codeRootDir)}${JFile.separator}"
+  val sep: String = Matcher.quoteReplacement(JFile.separator)
+  val root        = s"${sanitiseProbeScanPath(codeRootDir)}${JFile.separator}"
 
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
@@ -45,7 +45,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val pathSep       = ":"
     val currentFile   = s"$root$fileName"
     val extension     = File(currentFile).`extension`.getOrElse(".ts")
-    val parentDirPath = File(currentFile).parent.pathAsString
+    val parentDirPath = File(currentFile).parent.pathAsString // Stores the path of the parent dir of current file
 
     val importedModule = getImportingModule(importedEntity, pathSep)
 
@@ -77,6 +77,17 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     }
   }
 
+  /** Function to get us a a probable relative file path, if exists for the importing module based on input parameters
+    * @param parentDirPath
+    *   \- parent dir path where we intend to do the lookup
+    * @param relativePath
+    *   \- importing module path
+    * @param importedAs
+    *   \- importedAs value of import
+    * @param currentFileExtension
+    *   \- current extension of the file being processed
+    * @return
+    */
   def getResolvedPath(
     parentDirPath: String,
     relativePath: String,
@@ -106,6 +117,13 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       }
     }
 
+  /** From ImportedEntity after applying some lookup gives the importing Module
+    * @param importedEntity
+    *   \- The value present as part of import or require statement
+    * @param pathSep
+    *   \- The path sep used to concat the importing modules elements
+    * @return
+    */
   private def getImportingModule(importedEntity: String, pathSep: String) = {
     importedEntity.split(pathSep).head match
       case entity if entity.startsWith("@") =>
@@ -132,7 +150,10 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       case entity => Some(entity)
   }
 
-  private def getJsonPathConfigFiles(): List[String] = {
+  /** Returns all the file paths where tsconfig.json or jsconfig.json are defined
+    * @return
+    */
+  private def getJsonPathConfigFiles: List[String] = {
     val repoPath = sanitiseProbeScanPath(appCache.scanPath)
     val filePaths =
       if (appCache.excludeFileRegex.isDefined)
@@ -150,9 +171,11 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     filteredFilePaths
   }
 
+  /** Initializes the configuration map by reading the configurations files
+    */
   private def initializeConfigMap(): Unit = {
     val compilerPathConstant = "compilerOptions.paths"
-    val configFilePaths      = getJsonPathConfigFiles()
+    val configFilePaths      = getJsonPathConfigFiles
 
     configFilePaths.foreach { configFilePath =>
       getJSONKeyValuePairs(configFilePath)
@@ -162,10 +185,16 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
           // We would get keys like - compilerOptions.paths.@utils/*[0]
           val pathKey   = pathEntry._1.split(s"${compilerPathConstant}.").last.split("\\[").head
           val pathValue = pathEntry._2
-        tsConfigPathMapping.addOne(pathKey, pathValue)
+          tsConfigPathMapping.addOne(pathKey, pathValue)
         }
     }
   }
 
-  private def sanitiseProbeScanPath(scanPath: String) = scanPath.replace(s"${sep}probe$sep", s"$sep")
+  /** Function to sanitise the scanPath and remove `/probe` as we copy files in /probe folder, this helps in lookup for
+    * resolvedPaths
+    * @param scanPath
+    *   \- repo path used for scanning
+    * @return
+    */
+  private def sanitiseProbeScanPath(scanPath: String) = scanPath.replace(s"${sep}probe", "")
 }
