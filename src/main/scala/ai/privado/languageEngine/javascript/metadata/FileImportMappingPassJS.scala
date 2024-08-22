@@ -12,7 +12,8 @@ import better.files.File
 import better.files.File.VisitOptions
 import io.joern.x2cpg.SourceFiles
 
-import java.util.concurrent.{ConcurrentHashMap}
+import java.util.concurrent.ConcurrentHashMap
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
@@ -29,7 +30,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
   private val tsConfigEntityMissCache = ConcurrentHashMap.newKeySet[String]()
-  private val resolvedPathCache       = ConcurrentHashMap[String, Option[String]]()
+  private val resolvedPathCache       = TrieMap[String, Option[String]]()
 
   override def init(): Unit = {
     // initialize tsconfig.json map
@@ -67,7 +68,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       breakable {
         if (resolvedPathCache.contains(importedModule.get)) {
           // Pick up information from cache
-          resolvedPathCache.get(importedModule.get) match
+          resolvedPathCache(importedModule.get) match
             case Some(resolvedPath) =>
               fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
               println(s"Picked success from resolvedPathCache for ${importedModule.get} as $resolvedPath")
