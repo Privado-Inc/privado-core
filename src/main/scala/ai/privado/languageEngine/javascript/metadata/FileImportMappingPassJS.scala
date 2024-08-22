@@ -54,7 +54,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val isRelativeImport = importedEntity.matches("^[.]+/?.*")
 
     if (isRelativeImport && importedModule.isDefined) {
-      getResolvedPath(parentDirPath, importedModule.get, importedAs) match
+      getResolvedPath(parentDirPath, importedModule.get, importedAs, extension) match
         case Failure(_)            => // unable to resolve
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
     } else if (importedModule.isDefined) {
@@ -62,7 +62,12 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       breakable {
         for (i <- 0 to relativeDirCount) {
           val resolvedPath =
-            getResolvedPath(parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
+            getResolvedPath(
+              parentDirPath.split(sep).dropRight(i).mkString(sep),
+              importedModule.get,
+              importedAs,
+              extension
+            )
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
             break
@@ -72,30 +77,32 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     }
   }
 
-  def getResolvedPath(parentDirPath: String, relativePath: String, importedAs: String): Try[String] =
+  def getResolvedPath(
+    parentDirPath: String,
+    relativePath: String,
+    importedAs: String,
+    currentFileExtension: String
+  ): Try[String] =
     Try {
       val file = File(parentDirPath, relativePath)
-      if (file.exists) {
-        if (file.isDirectory) {
-          val fileWithSameName = file.listRecursively.find { f =>
-            f.isRegularFile && f.nameWithoutExtension == importedAs
-          }
-          if (fileWithSameName.isDefined)
-            fileWithSameName.get.pathAsString.stripPrefix(root)
-          else
-            throw FileNotFoundException()
-        } else file.pathAsString.stripPrefix(root)
+      if (file.exists && file.isRegularFile) {
+        file.pathAsString.stripPrefix(root)
       } else {
-        // If not found, try to find a file with the same name extension doesn't matter
+        // If not found, try to find a file with the same name extension
         val baseName  = file.nameWithoutExtension
         val parentDir = file.parent
-        val fileWithSameName = parentDir.list.find { f =>
+        val fileWithSameNames = parentDir.list.filter { f =>
           f.isRegularFile && f.nameWithoutExtension == baseName
-        }
-        if (fileWithSameName.isDefined)
-          fileWithSameName.get.pathAsString.stripPrefix(root)
-        else
-          throw FileNotFoundException()
+        }.toList
+
+        // If multiple files match with sameName, prefer the one having same extension
+        fileWithSameNames.size match
+          case size if size == 0 => throw FileNotFoundException()
+          case size if size == 1 => fileWithSameNames.head.pathAsString.stripPrefix(root)
+          case _ =>
+            fileWithSameNames.find(f => f.`extension`.exists(_.equals(currentFileExtension))) match
+              case Some(fileWithSameNameAndExtension) => fileWithSameNameAndExtension.pathAsString.stripPrefix(root)
+              case None                               => fileWithSameNames.head.pathAsString.stripPrefix(root)
       }
     }
 
@@ -144,15 +151,16 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
   }
 
   private def initializeConfigMap(): Unit = {
-    val configFilePaths = getJsonPathConfigFiles()
+    val compilerPathConstant = "compilerOptions.paths"
+    val configFilePaths      = getJsonPathConfigFiles()
 
     configFilePaths.foreach { configFilePath =>
       getJSONKeyValuePairs(configFilePath)
-        .filter(_._1.contains("compilerOptions.paths"))
+        .filter(_._1.contains(compilerPathConstant))
         .foreach { pathEntry =>
           // do clean up of the paths key
           // We would get keys like - compilerOptions.paths.@utils/*[0]
-          val pathKey   = pathEntry._1.split("compilerOptions.paths.").last.split("\\[").head
+          val pathKey   = pathEntry._1.split(s"${compilerPathConstant}.").last.split("\\[").head
           val pathValue = pathEntry._2
         tsConfigPathMapping.addOne(pathKey, pathValue)
         }
