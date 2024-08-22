@@ -1,25 +1,17 @@
 package ai.privado.entrypoint
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  FileLinkingMetadata,
-  PropertyFilterCache,
-  S3DatabaseDetailsCache
-}
+import ai.privado.cache.*
+import ai.privado.entrypoint.MetadataProcessor.statsRecorder
+import ai.privado.inputprocessor.RuleProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptBaseCPGProcessor
 import ai.privado.languageEngine.python.processor.PythonBaseCPGProcessor
 import ai.privado.metadata.SystemInfo
 import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants
-import ai.privado.model.Language.UNKNOWN
 import ai.privado.model.*
+import ai.privado.model.Language.UNKNOWN
 import better.files.File
 import io.circe.Json
 import io.joern.console.cpgcreation.guessLanguage
-import ai.privado.entrypoint.MetadataProcessor.statsRecorder
 
 import scala.util.{Failure, Success, Try}
 

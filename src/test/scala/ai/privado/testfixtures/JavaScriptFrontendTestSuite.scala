@@ -2,9 +2,10 @@ package ai.privado.testfixtures
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.javascript.processor.JavascriptProcessor
-import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.model.*
 import ai.privado.utility.StatsRecorder
 
 class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value) extends TestCpg {
@@ -16,7 +17,8 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new JavascriptProcessor(
       ruleCache,
@@ -29,7 +31,8 @@ class TestCpgWithJavaScript(val fileSuffix: String, val language: Language.Value
       StatsRecorder(),
       returnClosedCpg = false,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      dependencies = dependencies
     )
   }
 }

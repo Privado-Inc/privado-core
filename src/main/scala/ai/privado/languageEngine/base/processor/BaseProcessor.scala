@@ -5,22 +5,20 @@ import ai.privado.cache.*
 import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
+import ai.privado.languageEngine.java.passes.config.ModuleFilePass
 import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.model.{CpgWithOutputMap, Language}
-import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
-import ai.privado.semantic.language.*
-import ai.privado.tagger.PrivadoParallelCpgPass
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
+import ai.privado.passes.{DependencyNodePass, ExperimentalLambdaDataFlowSupportPass}
+import ai.privado.tagger.sink.DependencyNodeTagger
+import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import io.circe.Json
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.javasrc2cpg.Config
-import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ModuleDependency
 import io.shiftleft.passes.CpgPassBase
@@ -28,10 +26,10 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.util.Calendar
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
+
 abstract class BaseProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
@@ -45,7 +43,8 @@ abstract class BaseProcessor(
   returnClosedCpg: Boolean,
   databaseDetailsCache: DatabaseDetailsCache,
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo] = List()
 ) {
 
   val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -102,7 +101,7 @@ abstract class BaseProcessor(
     * @param cpg
     * @return
     */
-  def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List()
+  def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List(DependencyNodePass(cpg, dependencies, sourceRepoLocation))
 
   /** Method to apply Dataflow pass
     * @param cpg
@@ -154,7 +153,9 @@ abstract class BaseProcessor(
     result
   }
 
-  def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = ???
+  def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    DependencyNodeTagger(cpg, dependencies, ruleCache).createAndApply()
+  }
 
   protected def applyFinalExport(
     cpg: Cpg,

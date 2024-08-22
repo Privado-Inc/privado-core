@@ -12,6 +12,7 @@ import ai.privado.cache.{
   TaggerCache
 }
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName}
 import ai.privado.model.CpgWithOutputMap
@@ -49,7 +50,8 @@ class JavascriptBaseCPGProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      List()
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)

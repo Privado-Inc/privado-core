@@ -1,15 +1,8 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.processor.PhpProcessor
 import ai.privado.model.*
@@ -24,7 +17,8 @@ class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) exten
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new PhpProcessor(
       ruleCache,
@@ -37,7 +31,8 @@ class TestCpgWithPhp(val fileSuffix: String, val language: Language.Value) exten
       StatsRecorder(),
       returnClosedCpg = false,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      dependencies = dependencies
     )
   }
 }

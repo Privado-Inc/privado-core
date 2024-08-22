@@ -4,28 +4,19 @@ import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.languageEngine.go.tagger.sink.GoAPITagger
 import ai.privado.languageEngine.go.tagger.source.IdentifierTagger
-import ai.privado.model.{
-  CatLevelOne,
-  ConfigAndRules,
-  Constants,
-  FilterProperty,
-  Language,
-  NodeType,
-  RuleInfo,
-  SystemConfig
-}
-import ai.privado.utility.PropertyParserPass
+import ai.privado.model.*
+import ai.privado.passes.PropertyParserPass
+import ai.privado.semantic.language.*
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language.*
-import ai.privado.semantic.language.*
 
 abstract class GoYamlLinkerPassTest extends GoYamlFileLinkerPassTestBase {
   override val yamlFileContents: String = """
