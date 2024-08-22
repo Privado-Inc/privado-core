@@ -23,10 +23,18 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
 
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
+  val sep  = Matcher.quoteReplacement(JFile.separator)
+  val root = s"${sanitiseProbeScanPath(codeRootDir)}${JFile.separator}"
+
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
   private val tsConfigEntityMissCache = ConcurrentHashMap.newKeySet[String]()
   private val resolvedPathCache       = ConcurrentHashMap[String, Option[String]]()
+
+  override def init(): Unit = {
+    // initialize tsconfig.json map
+    initializeConfigMap()
+  }
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -39,13 +47,10 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val rawEntity     = importedEntity.stripPrefix("./")
     val alias         = importedAs
     val matcher       = pathPattern.matcher(rawEntity)
-    val sep           = Matcher.quoteReplacement(JFile.separator)
-    val root          = s"${sanitiseProbeScanPath(codeRootDir, sep)}${JFile.separator}"
     val currentFile   = s"$root$fileName"
     val extension     = File(currentFile).`extension`.getOrElse(".ts")
     val parentDirPath = File(currentFile).parent.pathAsString
-    // initialize tsconfig.json map
-    initializeConfigMap(sep)
+
     val importedModule = getImportingModule(importedEntity, pathSep)
 
     // We want to know if the import is local since if an external name is used to match internal methods we may have
@@ -53,7 +58,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val isRelativeImport = importedEntity.matches("^[.]+/?.*")
 
     if (isRelativeImport && importedModule.isDefined) {
-      getResolvedPath(root, parentDirPath, importedModule.get, importedAs) match
+      getResolvedPath(parentDirPath, importedModule.get, importedAs) match
         case Failure(_)            => // unable to resolve
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
     } else if (importedModule.isDefined) {
@@ -72,7 +77,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
 
         for (i <- 0 to relativeDirCount) {
           val resolvedPath =
-            getResolvedPath(root, parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
+            getResolvedPath(parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
             // Importing module was resolved, update cache
@@ -91,7 +96,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     }
   }
 
-  def getResolvedPath(root: String, parentDirPath: String, relativePath: String, importedAs: String): Try[String] =
+  def getResolvedPath(parentDirPath: String, relativePath: String, importedAs: String): Try[String] =
     Try {
       val file = File(parentDirPath, relativePath)
       if (file.exists) {
@@ -145,8 +150,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       case entity => Some(entity)
   }
 
-  private def getJsonPathConfigFiles(sep: String): List[String] = {
-    val repoPath = sanitiseProbeScanPath(appCache.scanPath, sep)
+  private def getJsonPathConfigFiles(): List[String] = {
+    val repoPath = sanitiseProbeScanPath(appCache.scanPath)
     val filePaths =
       if (appCache.excludeFileRegex.isDefined)
         SourceFiles
@@ -163,8 +168,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     filteredFilePaths
   }
 
-  private def initializeConfigMap(sep: String): Unit = {
-    val configFilePaths = getJsonPathConfigFiles(sep)
+  private def initializeConfigMap(): Unit = {
+    val configFilePaths = getJsonPathConfigFiles()
 
     configFilePaths.foreach { configFilePath =>
       getJSONKeyValuePairs(configFilePath)
@@ -179,5 +184,5 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     }
   }
 
-  private def sanitiseProbeScanPath(scanPath: String, sep: String) = scanPath.replace(s"${sep}probe$sep", s"$sep")
+  private def sanitiseProbeScanPath(scanPath: String) = scanPath.replace(s"${sep}probe$sep", s"$sep")
 }
