@@ -7,6 +7,16 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewDependency, NewFile}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 
 import scala.collection.mutable
+
+/** This pass is using single threaded CPG pass mechanism.
+  *   a. The contents to be processed are not going to be very huge as the list contains only the identified 3p
+  *      dependencies only. b. We need to create a file node. Which can be repeated across the multiple nodes. If we use
+  *      parallel mechanism. It will be difficult to handle that use case.
+  *
+  * @param cpg
+  * @param dependencies
+  * @param projectRoot
+  */
 class DependencyNodePass(cpg: Cpg, dependencies: List[DependencyInfo], projectRoot: String)
     extends PrivadoSimpleCpgPass(cpg)
     with Utility {

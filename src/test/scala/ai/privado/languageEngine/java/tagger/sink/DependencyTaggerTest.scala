@@ -139,7 +139,8 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
     ).withDependencies(twilioDep).withRuleCache(ruleCache)
 
     "3p dependency should get added in processing section" in {
-      val outjson                                                = cpg.getPrivadoJson()
+      val outjson = cpg.getPrivadoJson()
+      getSinks(outjson).size shouldBe 2
       val sinkProcessing                                         = getSinkProcessings(outjson)
       val sinkProceMap: mutable.Map[String, SinkProcessingModel] = mutable.Map[String, SinkProcessingModel]()
       sinkProcessing.size shouldBe 2
@@ -382,7 +383,8 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
       .withRuleCache(ruleCache)
 
     "3p dependency should get added in processing section" in {
-      val outjson                                                = cpg.getPrivadoJson()
+      val outjson = cpg.getPrivadoJson()
+      getSinks(outjson).size shouldBe 3
       val sinkProcessing                                         = getSinkProcessings(outjson)
       val sinkProceMap: mutable.Map[String, SinkProcessingModel] = mutable.Map[String, SinkProcessingModel]()
       sinkProcessing.size shouldBe 3
