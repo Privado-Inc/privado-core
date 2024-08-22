@@ -1,6 +1,6 @@
 package ai.privado.languageEngine.javascript.metadata
 
-import ai.privado.cache.{AppCache, FileLinkingMetadata}
+import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache}
 import ai.privado.passes.JsonParser
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.generated.Cpg
@@ -17,8 +17,12 @@ import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
 
-class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata, appCache: AppCache)
-    extends XImportResolverPass(cpg: Cpg)
+class FileImportMappingPassJS(
+  cpg: Cpg,
+  fileLinkingMetadata: FileLinkingMetadata,
+  appCache: AppCache,
+  ruleCache: RuleCache
+) extends XImportResolverPass(cpg: Cpg)
     with JsonParser {
 
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
@@ -155,14 +159,10 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     */
   private def getJsonPathConfigFiles: List[String] = {
     val repoPath = sanitiseProbeScanPath(appCache.scanPath)
-    val filePaths =
-      if (appCache.excludeFileRegex.isDefined)
-        SourceFiles
-          .determine(repoPath, Set(".json"), ignoredFilesRegex = Option(appCache.excludeFileRegex.get.r))(
-            VisitOptions.default
-          )
-      else
-        SourceFiles.determine(repoPath, Set(".json"))(VisitOptions.default)
+    val filePaths = SourceFiles
+      .determine(repoPath, Set(".json"), ignoredFilesRegex = Option(ruleCache.getExclusionRegex.r))(
+        VisitOptions.default
+      )
 
     val filteredFilePaths = filePaths.filter { fp =>
       val f = File(fp)
