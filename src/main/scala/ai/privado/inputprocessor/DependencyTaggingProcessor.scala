@@ -10,6 +10,7 @@ case class DependencyInfo(
   groupId: String,
   dependencyName: String,
   version: String,
+  code: String,
   ruleId: String,
   ruleName: String,
   ruleDomains: List[String],

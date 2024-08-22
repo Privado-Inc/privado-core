@@ -231,6 +231,7 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
 
   // Extend Dependency Node
   dependency.addOutEdge(edge = sourceFile, inNode = file)
+  dependency.addOutEdge(edge = taggedBy, inNode = tag)
   dependency.extendz(astNode)
 }
 

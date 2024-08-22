@@ -23,27 +23,20 @@
 
 package ai.privado.languageEngine.ruby.processor
 
-import ai.privado.audit.{AuditReportEntryPoint, DEDSourceDiscovery}
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.ScanProcessor.config
-import ai.privado.entrypoint.{PrivadoInput, ScanProcessor}
-import ai.privado.exporter.monolith.MonolithExporter
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.ruby.passes.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.languageEngine.ruby.passes.download.DownloadDependenciesPass
 import ai.privado.languageEngine.ruby.semantic.Language.*
-import ai.privado.metric.MetricHandler
-import ai.privado.model.Constants.{cpgOutputFileName, outputAuditFileName, outputDirectoryName, outputFileName}
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName}
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.language.*
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import better.files.File
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
@@ -59,20 +52,16 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.{Cfg, CfgCreator}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import io.joern.x2cpg.passes.controlflow.codepencegraph.CdgPass
 import io.joern.x2cpg.passes.frontend.*
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.joern.x2cpg.{SourceFiles, ValidationMode, X2Cpg, X2CpgConfig}
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages, Operators}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
-import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.util
-import java.util.Calendar
-import java.util.concurrent.{Callable, Executors}
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.*
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -91,7 +80,8 @@ class RubyProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -105,7 +95,8 @@ class RubyProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
@@ -122,7 +113,7 @@ class RubyProcessor(
     // Using our own pass by overriding languageEngine's pass
     // new RubyImportResolverPass(cpg, packageTableInfo).createAndApply()
     val globalSymbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-    passesList ++ List(new GlobalImportPass(cpg, globalSymbolTable)) ++
+    super.applyPrivadoPasses(cpg) ++ passesList ++ List(new GlobalImportPass(cpg, globalSymbolTable)) ++
       new PrivadoRubyTypeRecoveryPassGenerator(cpg, globalSymbolTable).generate() ++
       List(
         new RubyTypeHintCallLinker(cpg),
@@ -131,10 +122,10 @@ class RubyProcessor(
         new SQLParser(cpg, sourceRepoLocation, ruleCache),
         new DBTParserPass(cpg, sourceRepoLocation, ruleCache, databaseDetailsCache)
       )
-    passesList
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,

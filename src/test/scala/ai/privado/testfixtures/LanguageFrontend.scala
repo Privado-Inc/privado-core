@@ -2,6 +2,7 @@ package ai.privado.testfixtures
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.model.Language
 import ai.privado.rule.RuleInfoTestData
@@ -21,6 +22,7 @@ trait LanguageFrontend {
   private var appCache: Option[AppCache]                             = None
   private var propertyFilterCache: Option[PropertyFilterCache]       = None
   private var databaseDetailsCache: Option[DatabaseDetailsCache]     = None
+  private var dependencies: Option[List[DependencyInfo]]             = None
 
   def setPrivadoInput(privadoInput: PrivadoInput): Unit = {
     if (this.privadoInput.isDefined) {
@@ -78,6 +80,13 @@ trait LanguageFrontend {
     this.databaseDetailsCache = Some(databaseDetailsCache)
   }
 
+  def setDependencies(dependencies: List[DependencyInfo]): Unit = {
+    if (this.dependencies.isDefined) {
+      throw new RuntimeException("Dependencies may only be set once per test")
+    }
+    this.dependencies = Some(dependencies)
+  }
+
   protected def getProcessor(sourceCodePath: java.io.File): BaseProcessor = {
     val privadoInput =
       this.privadoInput.getOrElse(PrivadoInput()).copy(sourceLocation = Set(sourceCodePath.getAbsolutePath))
@@ -93,7 +102,8 @@ trait LanguageFrontend {
       this.s3DatabaseDetailsCache.getOrElse(S3DatabaseDetailsCache()),
       appCache,
       this.propertyFilterCache.getOrElse(PropertyFilterCache()),
-      this.databaseDetailsCache.getOrElse(DatabaseDetailsCache())
+      this.databaseDetailsCache.getOrElse(DatabaseDetailsCache()),
+      this.dependencies.getOrElse(List())
     )
   }
 
@@ -105,6 +115,7 @@ trait LanguageFrontend {
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor
 }

@@ -126,7 +126,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
             statsRecorder = statsRecorder,
             databaseDetailsCache = databaseDetailsCache,
             propertyFilterCache = propertyFilterCache,
-            fileLinkingMetadata = fileLinkingMetadata
+            fileLinkingMetadata = fileLinkingMetadata,
+            dependencies = dependencies
           ).processCpg()
         else
           KotlinProcessor(
@@ -140,7 +141,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
             statsRecorder = statsRecorder,
             databaseDetailsCache = databaseDetailsCache,
             propertyFilterCache = propertyFilterCache,
-            fileLinkingMetadata = fileLinkingMetadata
+            fileLinkingMetadata = fileLinkingMetadata,
+            dependencies = dependencies
           ).processCpg()
       case Language.JAVASCRIPT =>
         statsRecorder.justLogMessage("Detected language 'JavaScript'")
@@ -155,7 +157,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.PYTHON =>
         statsRecorder.justLogMessage("Detected language 'Python'")
@@ -170,7 +173,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           propertyFilterCache = propertyFilterCache,
           databaseDetailsCache = databaseDetailsCache,
           statsRecorder = statsRecorder,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.RUBY =>
         statsRecorder.justLogMessage("Detected language 'Ruby'")
@@ -184,7 +188,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           appCache,
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.GO =>
         statsRecorder.justLogMessage("Detected language 'Go'")
@@ -199,7 +204,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.KOTLIN =>
         statsRecorder.justLogMessage("Detected language 'Kotlin'")
@@ -214,7 +220,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.CSHARP =>
         statsRecorder.justLogMessage("Detected language 'C#'")
@@ -229,7 +236,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.PHP =>
         statsRecorder.justLogMessage("Detected language 'PHP'")
@@ -244,7 +252,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         )
           .processCpg()
       case Language.C =>

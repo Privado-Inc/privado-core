@@ -23,37 +23,24 @@
 
 package ai.privado.languageEngine.javascript.processor
 
-import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.javascript.metadata.FileImportMappingPassJS
 import ai.privado.languageEngine.javascript.passes.config.{JSPropertyLinkerPass, JsConfigPropertyPass}
 import ai.privado.languageEngine.javascript.semantic.Language.*
-import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName}
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.language.*
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
-import better.files.File
 import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
-import io.shiftleft.codepropertygraph.generated.{Cpg, Operators}
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-
-import java.nio.file.Paths
-import java.util.Calendar
-import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.{Failure, Success, Try}
 
 class JavascriptProcessor(
   ruleCache: RuleCache,
@@ -67,7 +54,8 @@ class JavascriptProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -81,15 +69,16 @@ class JavascriptProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    val passesList = List(new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput))
-
-    passesList ++ List({
+    super.applyPrivadoPasses(cpg) ++ List(
+      new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput)
+    ) ++ List({
       if (privadoInput.assetDiscovery)
         new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
         new JsConfigPropertyPass(cpg)
@@ -110,7 +99,8 @@ class JavascriptProcessor(
     )
   }
 
-  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,
@@ -121,7 +111,7 @@ class JavascriptProcessor(
       statsRecorder,
       fileLinkingMetadata
     )
-
+  }
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)
     JsSrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())

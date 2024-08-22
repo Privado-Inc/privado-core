@@ -21,6 +21,7 @@ class DependencyTaggingProcessorTest
           |    "groupId": "com.privado.sample",
           |    "dependencyName": "Scanner",
           |    "version": "1.0",
+          |    "code" : "<artifactid>Scanner</artifactid>",
           |    "ruleId": "ThirdParties.SDK.Scanner",
           |    "ruleName": "Privado Scanner",
           |    "ruleDomains": [
@@ -38,6 +39,7 @@ class DependencyTaggingProcessorTest
             "com.privado.sample",
             "Scanner",
             "1.0",
+            "<artifactid>Scanner</artifactid>",
             "ThirdParties.SDK.Scanner",
             "Privado Scanner",
             List("scanner.privado.ai"),

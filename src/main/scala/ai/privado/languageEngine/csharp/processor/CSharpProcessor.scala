@@ -26,6 +26,7 @@ package ai.privado.languageEngine.csharp.processor
 import ai.privado.cache.*
 import ai.privado.entrypoint.*
 import ai.privado.entrypoint.ScanProcessor.config
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.csharp.semantic.Language.tagger
 import ai.privado.model.Constants.*
@@ -53,7 +54,8 @@ class CSharpProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -67,15 +69,17 @@ class CSharpProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    List[CpgPassBase]()
+    super.applyPrivadoPasses(cpg)
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,

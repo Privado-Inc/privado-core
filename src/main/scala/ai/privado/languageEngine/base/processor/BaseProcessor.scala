@@ -13,7 +13,8 @@ import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
 import ai.privado.model.Language.Language
 import ai.privado.model.{CpgWithOutputMap, Language}
-import ai.privado.passes.ExperimentalLambdaDataFlowSupportPass
+import ai.privado.passes.{DependencyNodePass, ExperimentalLambdaDataFlowSupportPass}
+import ai.privado.tagger.sink.DependencyNodeTagger
 import ai.privado.utility.{StatsRecorder, UnresolvedReportUtility}
 import io.circe.Json
 import io.joern.dataflowengineoss.language.Path
@@ -100,7 +101,7 @@ abstract class BaseProcessor(
     * @param cpg
     * @return
     */
-  def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List()
+  def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List(DependencyNodePass(cpg, dependencies, sourceRepoLocation))
 
   /** Method to apply Dataflow pass
     * @param cpg
@@ -149,8 +150,9 @@ abstract class BaseProcessor(
     result
   }
 
-  def applyDependencyInfo(cpg: Cpg): Unit                        = {}
-  def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = ???
+  def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    DependencyNodeTagger(cpg, dependencies, ruleCache).createAndApply()
+  }
 
   protected def applyFinalExport(
     cpg: Cpg,

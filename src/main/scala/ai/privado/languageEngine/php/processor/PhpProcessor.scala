@@ -24,19 +24,16 @@
 package ai.privado.languageEngine.php.processor
 
 import ai.privado.cache.*
-import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.php.semantic.Language.tagger
 import ai.privado.model.Constants.*
 import ai.privado.model.{CpgWithOutputMap, Language}
-import ai.privado.model.Language.Language
-import ai.privado.model.{CpgWithOutputMap, Language}
 import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import io.circe.Json
 import io.joern.php2cpg.{Config, Php2Cpg}
-import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, newEmptyCpg}
+import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
 import org.slf4j.{Logger, LoggerFactory}
@@ -44,7 +41,6 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.io.File
 import java.nio.file.Paths
 import java.util.Calendar
-import scala.util.Try
 
 class PhpProcessor(
   ruleCache: RuleCache,
@@ -58,7 +54,8 @@ class PhpProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -72,14 +69,16 @@ class PhpProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = List[CpgPassBase]()
+  override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = super.applyPrivadoPasses(cpg)
 
-  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,
@@ -90,6 +89,7 @@ class PhpProcessor(
       statsRecorder,
       fileLinkingMetadata
     )
+  }
 
   override def applyDataflowAndPostProcessingPasses(cpg: Cpg): Unit = {
     super.applyDataflowAndPostProcessingPasses(cpg)

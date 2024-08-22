@@ -1,15 +1,8 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.model.Language
@@ -25,7 +18,8 @@ class TestCpgWithRuby(val fileSuffix: String, val language: Language.Value) exte
     s3DatabaseDetailsCache: S3DatabaseDetailsCache,
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
-    databaseDetailsCache: DatabaseDetailsCache
+    databaseDetailsCache: DatabaseDetailsCache,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new RubyProcessor(
       ruleCache,
@@ -38,7 +32,8 @@ class TestCpgWithRuby(val fileSuffix: String, val language: Language.Value) exte
       StatsRecorder(),
       returnClosedCpg = false,
       databaseDetailsCache,
-      propertyFilterCache
+      propertyFilterCache,
+      dependencies = dependencies
     )
   }
 }
