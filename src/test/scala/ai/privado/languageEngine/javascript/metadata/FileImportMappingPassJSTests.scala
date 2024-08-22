@@ -427,12 +427,13 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
       cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("src/common/module.ts")
     }
 
-    "resolve import files case 6" ignore {
+    "resolve import files case 6" in {
       // TODO Need to work on getting the export information from default CPG
       val fileLinkingMetadata = FileLinkingMetadata()
       val cpg = code(
         """
           |import { functionName1 } from '@utils/module';
+          |import { functionName2 } from '@utils/module';
           |
           |""".stripMargin,
         "src/main.ts"

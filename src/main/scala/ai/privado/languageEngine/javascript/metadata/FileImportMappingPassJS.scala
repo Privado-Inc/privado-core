@@ -83,7 +83,6 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
             // Importing module was resolved, update cache
             resolvedPathCache.put(importedModule.get, resolvedPath.toOption)
             isPathFound = true
-            println(s"resolving success for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
             break
           }
         }
@@ -91,7 +90,6 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       if (!isPathFound) {
         // Importing module was not resolved, update cache
         resolvedPathCache.put(importedModule.get, None)
-        println(s"resolving failed for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
       }
     }
   }
