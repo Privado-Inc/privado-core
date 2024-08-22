@@ -13,7 +13,6 @@ import better.files.File.VisitOptions
 import io.joern.x2cpg.SourceFiles
 
 import java.util.concurrent.ConcurrentHashMap
-import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
@@ -30,7 +29,6 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
   private val tsConfigEntityMissCache = ConcurrentHashMap.newKeySet[String]()
-  private val resolvedPathCache       = TrieMap[String, Option[String]]()
 
   override def init(): Unit = {
     // initialize tsconfig.json map
@@ -45,9 +43,6 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     diffGraph: DiffGraphBuilder
   ): Unit = {
     val pathSep       = ":"
-    val rawEntity     = importedEntity.stripPrefix("./")
-    val alias         = importedAs
-    val matcher       = pathPattern.matcher(rawEntity)
     val currentFile   = s"$root$fileName"
     val extension     = File(currentFile).`extension`.getOrElse(".ts")
     val parentDirPath = File(currentFile).parent.pathAsString
@@ -64,33 +59,15 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
         case Success(resolvedPath) => fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
     } else if (importedModule.isDefined) {
       val relativeDirCount = parentDirPath.stripPrefix(root).split(sep).length
-      var isPathFound      = false // flag for monitoring if importing module was resolved
       breakable {
-        if (resolvedPathCache.contains(importedModule.get)) {
-          // Pick up information from cache
-          resolvedPathCache(importedModule.get) match
-            case Some(resolvedPath) =>
-              fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
-              println(s"Picked success from resolvedPathCache for ${importedModule.get} as $resolvedPath")
-            case _ => println(s"Picked failure from resolvedPathCache for ${importedModule.get}")
-          break
-        }
-
         for (i <- 0 to relativeDirCount) {
           val resolvedPath =
             getResolvedPath(parentDirPath.split(sep).dropRight(i).mkString(sep), importedModule.get, importedAs)
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
-            // Importing module was resolved, update cache
-            resolvedPathCache.put(importedModule.get, resolvedPath.toOption)
-            isPathFound = true
             break
           }
         }
-      }
-      if (!isPathFound) {
-        // Importing module was not resolved, update cache
-        resolvedPathCache.put(importedModule.get, None)
       }
     }
   }
@@ -142,7 +119,6 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
               // println(s"ResolvedModule : $resolvedModule, for $entity and $importedEntity")
               Some(resolvedModule)
             case None =>
-              println(s"Not able to resolve : $entity, $importedEntity")
               tsConfigEntityMissCache.add(entity)
               None
         }
