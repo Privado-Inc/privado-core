@@ -2,11 +2,12 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, FileLinkingMetadata, RuleCache, TaggerCache}
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.semantic.language.*
 import ai.privado.languageEngine.java.tagger.sink.api.JavaAPITagger
 import ai.privado.languageEngine.java.tagger.source.*
 import ai.privado.model.*
-import ai.privado.utility.{PropertyParserPass, StatsRecorder}
+import ai.privado.passes.PropertyParserPass
+import ai.privado.semantic.language.*
+import ai.privado.utility.StatsRecorder
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}

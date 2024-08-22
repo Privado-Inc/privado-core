@@ -1,19 +1,11 @@
 package ai.privado.testfixtures
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  FileLinkingMetadata,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.processor.GoProcessor
-import ai.privado.model.{CatLevelOne, Constants, FilterProperty, Language, NodeType, RuleInfo}
+import ai.privado.model.*
 import ai.privado.utility.StatsRecorder
 
 class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extends TestCpg {
@@ -27,7 +19,8 @@ class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extend
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    fileLinkingMetadata: FileLinkingMetadata
+    fileLinkingMetadata: FileLinkingMetadata,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new GoProcessor(
       ruleCache,
@@ -41,7 +34,8 @@ class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extend
       returnClosedCpg = false,
       databaseDetailsCache = databaseDetailsCache,
       propertyFilterCache = propertyFilterCache,
-      fileLinkingMetadata = fileLinkingMetadata
+      fileLinkingMetadata = fileLinkingMetadata,
+      dependencies = dependencies
     )
   }
 }

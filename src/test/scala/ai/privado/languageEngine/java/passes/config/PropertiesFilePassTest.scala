@@ -25,21 +25,20 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.exporter.HttpConnectionMetadataExporter
+import ai.privado.model.{Constants, Language}
+import ai.privado.passes.PropertyParserPass
 import ai.privado.semantic.language.*
-import ai.privado.model.Language
-import ai.privado.utility.PropertyParserPass
+import ai.privado.testfixtures.JavaFrontendTestSuite
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, JavaProperty, Literal, Method, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.exporter.HttpConnectionMetadataExporter
-import ai.privado.testfixtures.JavaFrontendTestSuite
-import ai.privado.model.Constants
 
 class AnnotationTests extends JavaFrontendTestSuite {
   "ConfigFilePass" should {

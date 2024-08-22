@@ -1,16 +1,6 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  FileLinkingMetadata,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache,
-  TaggerCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.{cpgOutputFileName, outputDirectoryName}
@@ -49,7 +39,8 @@ class PythonBaseCPGProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      List()
     ) {
 
   override val logger: Logger = LoggerFactory.getLogger(this.getClass)

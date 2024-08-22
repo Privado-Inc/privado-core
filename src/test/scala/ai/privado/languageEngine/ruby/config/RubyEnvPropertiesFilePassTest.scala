@@ -1,12 +1,12 @@
 package ai.privado.languageEngine.ruby.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.semantic.language.*
-import ai.privado.semantic.*
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.model.Language
+import ai.privado.passes.PropertyParserPass
+import ai.privado.semantic.*
+import ai.privado.semantic.language.*
 import ai.privado.testfixtures.RubyFrontendTestSuite
-import ai.privado.utility.PropertyParserPass
 import better.files.File
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays

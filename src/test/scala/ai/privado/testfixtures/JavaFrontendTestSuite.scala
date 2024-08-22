@@ -2,10 +2,11 @@ package ai.privado.testfixtures
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.java.processor.JavaProcessor
-import ai.privado.utility.StatsRecorder
 import ai.privado.model.Language
+import ai.privado.utility.StatsRecorder
 
 class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) extends TestCpg {
   protected def getLanguageProcessor(
@@ -17,7 +18,8 @@ class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) exte
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    fileLinkingMetadata: FileLinkingMetadata
+    fileLinkingMetadata: FileLinkingMetadata,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new JavaProcessor(
       ruleCache,
@@ -31,7 +33,8 @@ class TestCpgWithJava(val fileSuffix: String, val language: Language.Value) exte
       returnClosedCpg = false,
       databaseDetailsCache = databaseDetailsCache,
       propertyFilterCache = propertyFilterCache,
-      fileLinkingMetadata = fileLinkingMetadata
+      fileLinkingMetadata = fileLinkingMetadata,
+      dependencies = dependencies
     )
   }
 }

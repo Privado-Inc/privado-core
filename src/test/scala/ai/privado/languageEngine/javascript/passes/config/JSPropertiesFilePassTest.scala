@@ -1,16 +1,16 @@
 package ai.privado.languageEngine.javascript.passes.config
 
 import ai.privado.cache.RuleCache
-import ai.privado.semantic.language.*
 import ai.privado.model.Language
-import ai.privado.utility.PropertyParserPass
+import ai.privado.passes.PropertyParserPass
+import ai.privado.semantic.language.*
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.jssrc2cpg.passes.ImportsPass
+import io.joern.jssrc2cpg.{Config, JsSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers

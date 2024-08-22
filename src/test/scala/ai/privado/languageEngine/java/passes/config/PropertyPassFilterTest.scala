@@ -2,16 +2,16 @@ package ai.privado.languageEngine.java.passes.config
 
 import ai.privado.cache.{AppCache, RuleCache}
 import ai.privado.model.{ConfigAndRules, Language, SystemConfig}
-import ai.privado.utility.PropertyParserPass
+import ai.privado.passes.PropertyParserPass
+import ai.privado.semantic.language.*
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import io.shiftleft.semanticcpg.language.*
-import ai.privado.semantic.language.*
 
 import scala.collection.mutable
 

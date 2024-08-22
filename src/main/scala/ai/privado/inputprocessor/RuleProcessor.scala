@@ -1,19 +1,20 @@
-package ai.privado.entrypoint
+package ai.privado.inputprocessor
 
 import ai.privado.cache.{AppCache, RuleCache}
+import ai.privado.entrypoint.PrivadoInput
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
 import ai.privado.model.Language.Language
 import ai.privado.rulevalidator.YamlFileValidator
 import ai.privado.utility.StatsRecorder
+import ai.privado.utility.Utilities.{isValidDEDRule, isValidRule}
 import better.files.File
+import io.circe.Json
+import io.circe.yaml.parser
 import org.slf4j.LoggerFactory
 
 import scala.collection.parallel.CollectionConverters.ImmutableIterableIsParallelizable
 import scala.sys.exit
-import io.circe.yaml.parser
-import ai.privado.utility.Utilities.{isValidDEDRule, isValidRule}
-import io.circe.Json
 
 trait RuleProcessor extends DynamicRuleMerger {
 

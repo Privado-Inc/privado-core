@@ -1,4 +1,4 @@
-package ai.privado.entrypoint
+package ai.privado.inputprocessor
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{CatLevelOne, ConfigAndRules, Constants, FilterProperty, Language, NodeType, RuleInfo}

@@ -24,6 +24,7 @@ package ai.privado.entrypoint
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.ScanProcessor.statsRecorder
+import ai.privado.inputprocessor.{DependencyInfo, DependencyTaggingProcessor, RuleProcessor}
 import ai.privado.languageEngine.c.processor.CProcessor
 import ai.privado.languageEngine.csharp.processor.CSharpProcessor
 import ai.privado.languageEngine.default.processor.DefaultProcessor
@@ -37,7 +38,7 @@ import ai.privado.languageEngine.ruby.processor.RubyProcessor
 import ai.privado.metadata.SystemInfo
 import ai.privado.metric.MetricHandler
 import ai.privado.model.*
-import ai.privado.model.Language.{Language, UNKNOWN}
+import ai.privado.model.Language.UNKNOWN
 import ai.privado.utility.StatsRecorder
 import better.files.File
 import io.circe.Json
@@ -47,9 +48,9 @@ import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
 
 import scala.sys.exit
-import scala.util.{Try}
+import scala.util.Try
 
-object ScanProcessor extends CommandProcessor with RuleProcessor {
+object ScanProcessor extends CommandProcessor with RuleProcessor with DependencyTaggingProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def process(appCache: AppCache): Either[String, Unit] = {
@@ -96,7 +97,11 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
       config.forceLanguage
     }
     MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
-
+    val dependencies: List[DependencyInfo] = config.externalConfigPath.headOption match {
+      case Some(externalConfigPath) =>
+        parseDependencyInfo(generateDependencyInfoJsonPath(externalConfigPath))
+      case None => List()
+    }
     languageDetected match {
       case Language.JAVA =>
         statsRecorder.justLogMessage("Detected language 'Java'")
@@ -118,7 +123,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
             statsRecorder = statsRecorder,
             databaseDetailsCache = databaseDetailsCache,
             propertyFilterCache = propertyFilterCache,
-            fileLinkingMetadata = fileLinkingMetadata
+            fileLinkingMetadata = fileLinkingMetadata,
+            dependencies = dependencies
           ).processCpg()
         else
           KotlinProcessor(
@@ -132,7 +138,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
             statsRecorder = statsRecorder,
             databaseDetailsCache = databaseDetailsCache,
             propertyFilterCache = propertyFilterCache,
-            fileLinkingMetadata = fileLinkingMetadata
+            fileLinkingMetadata = fileLinkingMetadata,
+            dependencies = dependencies
           ).processCpg()
       case Language.JAVASCRIPT =>
         statsRecorder.justLogMessage("Detected language 'JavaScript'")
@@ -147,7 +154,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.PYTHON =>
         statsRecorder.justLogMessage("Detected language 'Python'")
@@ -162,7 +170,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           propertyFilterCache = propertyFilterCache,
           databaseDetailsCache = databaseDetailsCache,
           statsRecorder = statsRecorder,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.RUBY =>
         statsRecorder.justLogMessage("Detected language 'Ruby'")
@@ -176,7 +185,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           appCache,
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.GO =>
         statsRecorder.justLogMessage("Detected language 'Go'")
@@ -191,7 +201,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           propertyFilterCache = propertyFilterCache,
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.KOTLIN =>
         statsRecorder.justLogMessage("Detected language 'Kotlin'")
@@ -206,7 +217,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.CSHARP =>
         statsRecorder.justLogMessage("Detected language 'C#'")
@@ -221,7 +233,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         ).processCpg()
       case Language.PHP =>
         statsRecorder.justLogMessage("Detected language 'PHP'")
@@ -236,7 +249,8 @@ object ScanProcessor extends CommandProcessor with RuleProcessor {
           statsRecorder = statsRecorder,
           databaseDetailsCache = databaseDetailsCache,
           propertyFilterCache = propertyFilterCache,
-          fileLinkingMetadata = fileLinkingMetadata
+          fileLinkingMetadata = fileLinkingMetadata,
+          dependencies = dependencies
         )
           .processCpg()
       case Language.C =>

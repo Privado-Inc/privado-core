@@ -2,6 +2,7 @@ package ai.privado.testfixtures
 
 import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.model.Language
 import ai.privado.rule.RuleInfoTestData
@@ -22,6 +23,7 @@ trait LanguageFrontend {
   private var propertyFilterCache: Option[PropertyFilterCache]       = None
   private var databaseDetailsCache: Option[DatabaseDetailsCache]     = None
   private var fileLinkingMetadata: Option[FileLinkingMetadata]       = None
+  private var dependencies: Option[List[DependencyInfo]]             = None
 
   def setPrivadoInput(privadoInput: PrivadoInput): Unit = {
     if (this.privadoInput.isDefined) {
@@ -88,6 +90,13 @@ trait LanguageFrontend {
 
   def getFileLinkingMetadata: FileLinkingMetadata = this.fileLinkingMetadata.getOrElse(FileLinkingMetadata())
 
+  def setDependencies(dependencies: List[DependencyInfo]): Unit = {
+    if (this.dependencies.isDefined) {
+      throw new RuntimeException("Dependencies may only be set once per test")
+    }
+    this.dependencies = Some(dependencies)
+  }
+
   protected def getProcessor(sourceCodePath: java.io.File): BaseProcessor = {
     val privadoInput =
       this.privadoInput.getOrElse(PrivadoInput()).copy(sourceLocation = Set(sourceCodePath.getAbsolutePath))
@@ -104,7 +113,8 @@ trait LanguageFrontend {
       appCache,
       this.propertyFilterCache.getOrElse(PropertyFilterCache()),
       this.databaseDetailsCache.getOrElse(DatabaseDetailsCache()),
-      this.fileLinkingMetadata.getOrElse(FileLinkingMetadata())
+      this.fileLinkingMetadata.getOrElse(FileLinkingMetadata()),
+      this.dependencies.getOrElse(List())
     )
   }
 
@@ -117,6 +127,7 @@ trait LanguageFrontend {
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
-    fileLinkingMetadata: FileLinkingMetadata
+    fileLinkingMetadata: FileLinkingMetadata,
+    dependencies: List[DependencyInfo]
   ): BaseProcessor
 }

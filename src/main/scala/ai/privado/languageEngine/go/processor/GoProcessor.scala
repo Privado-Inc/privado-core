@@ -1,29 +1,25 @@
 package ai.privado.languageEngine.go.processor
 
-import ai.privado.audit.AuditReportEntryPoint
 import ai.privado.cache.*
-import ai.privado.dataflow.Dataflow
-import ai.privado.entrypoint.ScanProcessor.config
 import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.go.passes.SQLQueryParser
 import ai.privado.languageEngine.go.passes.config.GoYamlLinkerPass
 import ai.privado.languageEngine.go.passes.orm.ORMParserPass
 import ai.privado.languageEngine.go.semantic.Language.tagger
-import ai.privado.semantic.*
 import ai.privado.model.Constants.*
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.language.*
+import ai.privado.semantic.*
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 class GoProcessor(
@@ -38,7 +34,8 @@ class GoProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -52,12 +49,13 @@ class GoProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    List(
+    super.applyPrivadoPasses(cpg) ++ List(
       {
         if (privadoInput.assetDiscovery)
           new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
@@ -72,6 +70,7 @@ class GoProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,
