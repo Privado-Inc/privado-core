@@ -50,7 +50,7 @@ class TestCpgWithJavaScriptBase(val fileSuffix: String, val language: Language.V
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
     fileLinkingMetadata: FileLinkingMetadata,
-    dependencyInfo: DependencyInfo
+    dependencyInfo: List[DependencyInfo]
   ): BaseProcessor = {
     new JavascriptBaseCPGProcessor(
       ruleCache,
