@@ -254,6 +254,8 @@ object ConfigRuleType extends Enumeration {
 }
 
 object FilterProperty extends Enumeration {
+  // TODO When we update the Filter Property also update the validation regex at
+  // src/main/resources/ai/privado/rulevalidator/schema/inferences.json
   type FilterProperty = Value
   val METHOD_FULL_NAME: model.FilterProperty.Value = Value("method_full_name")
   val CODE: model.FilterProperty.Value             = Value("code")

@@ -40,7 +40,7 @@ class JavascriptBaseCPGProcessor(
   fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
 ) extends JavascriptProcessor(
       ruleCache,
-      privadoInput,
+      privadoInput.copy(disableDataflowPass = true, disablePostProcessingPass = true),
       sourceRepoLocation,
       dataFlowCache,
       auditCache,

@@ -78,8 +78,8 @@ class IdentifierTaggingTest extends PhpFrontendTestSuite with TraversalValidator
     "build correct edges between derived and original sources" in {
       val List(userIdentifier)  = cpg.identifier("user").lineNumber(20).l
       val List(firstNameMember) = cpg.member("firstName").l
-      originalSourceTraversalValidator(userIdentifier, "Data.Sensitive.FirstName")
-      derivedSourceTraversalValidator(firstNameMember)
+      originalSourceTraversalValidator(firstNameMember, userIdentifier, "Data.Sensitive.FirstName")
+      derivedSourceTraversalValidator(firstNameMember, userIdentifier)
     }
 
   }
