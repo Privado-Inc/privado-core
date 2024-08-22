@@ -164,6 +164,12 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   moduleDependency.addOutEdge(edge = sourceFile, inNode = file)
   moduleDependency.addOutEdge(edge = dependencyModuleEdge, inNode = module)
 
+  // Extend Dependency Node
+  dependency.addOutEdge(edge = sourceFile, inNode = file)
+  dependency.addOutEdge(edge = taggedBy, inNode = tag)
+  dependency.extendz(astNode)
+
+  // Extend teamplateDOM node
   templateDOM.addOutEdge(edge = sourceFile, inNode = file)
 
   // Nodes and edges for Android res/layout/*.xml files and
@@ -229,10 +235,6 @@ class CpgExtSchema(builder: SchemaBuilder, cpgSchema: CpgSchema) {
   astNode.addOutEdge(edge = originalSourceEdge, inNode = astNode)
   astNode.addOutEdge(edge = derivedSourceEdge, inNode = astNode)
 
-  // Extend Dependency Node
-  dependency.addOutEdge(edge = sourceFile, inNode = file)
-  dependency.addOutEdge(edge = taggedBy, inNode = tag)
-  dependency.extendz(astNode)
 }
 
 object CpgExtSchema {

@@ -47,7 +47,6 @@ import io.joern.x2cpg.SourceFiles
 import org.slf4j.LoggerFactory
 import privado_core.BuildInfo
 
-import java.io.File as JFile
 import scala.sys.exit
 import scala.util.Try
 
@@ -100,9 +99,7 @@ object ScanProcessor extends CommandProcessor with RuleProcessor with Dependency
     MetricHandler.metricsData("language") = Json.fromString(languageDetected.toString)
     val dependencies: List[DependencyInfo] = config.externalConfigPath.headOption match {
       case Some(externalConfigPath) =>
-        parseDependencyInfo(
-          List(externalConfigPath, "config", "dependencyInfo", "dependencyinfo.json").mkString(JFile.separator)
-        )
+        parseDependencyInfo(generateDependencyInfoJsonPath(externalConfigPath))
       case None => List()
     }
     languageDetected match {

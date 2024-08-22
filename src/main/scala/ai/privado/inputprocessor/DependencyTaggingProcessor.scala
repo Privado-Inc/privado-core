@@ -3,9 +3,9 @@ package ai.privado.inputprocessor
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
+import java.io.File as JFile
 import java.nio.file.{Files, Paths}
 import scala.util.{Failure, Success, Try}
-
 case class DependencyInfo(
   groupId: String,
   dependencyName: String,
@@ -29,6 +29,8 @@ object DependencyInfo {
 trait DependencyTaggingProcessor {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  def generateDependencyInfoJsonPath(externalConfigPath: String): String =
+    List(externalConfigPath, "config", "dependencyInfo", "dependencyinfo.json").mkString(JFile.separator)
   def parseDependencyInfo(filePath: String): List[DependencyInfo] = {
     // Manually provide a reader for List[DependencyInfo]
     Try(read[List[DependencyInfo]](new String(Files.readAllBytes(Paths.get(filePath))))) match {
