@@ -12,6 +12,7 @@ import better.files.File
 import better.files.File.VisitOptions
 import io.joern.x2cpg.SourceFiles
 
+import java.util.concurrent.{ConcurrentHashMap}
 import scala.collection.mutable
 import scala.util.control.Breaks.{break, breakable}
 import scala.util.{Failure, Success, Try}
@@ -24,8 +25,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
 
   private val tsConfigPathMapping = mutable.HashMap[String, String]()
 
-  private val tsConfigEntityMissCache = mutable.HashSet[String]()
-  private val resolvedPathCache       = mutable.HashMap[String, Option[String]]()
+  private val tsConfigEntityMissCache = ConcurrentHashMap.newKeySet[String]()
+  private val resolvedPathCache       = ConcurrentHashMap[String, Option[String]]()
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -61,7 +62,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       breakable {
         if (resolvedPathCache.contains(importedModule.get)) {
           // Pick up information from cache
-          resolvedPathCache(importedModule.get) match
+          resolvedPathCache.get(importedModule.get) match
             case Some(resolvedPath) =>
               fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath)
               println(s"Picked success from resolvedPathCache for ${importedModule.get} as $resolvedPath")
@@ -75,7 +76,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
           if (resolvedPath.isSuccess) {
             fileLinkingMetadata.addToFileImportMap(fileName, resolvedPath.get)
             // Importing module was resolved, update cache
-            resolvedPathCache.addOne(importedModule.get, resolvedPath.toOption)
+            resolvedPathCache.put(importedModule.get, resolvedPath.toOption)
             isPathFound = true
             println(s"resolving success for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
             break
@@ -84,7 +85,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       }
       if (!isPathFound) {
         // Importing module was not resolved, update cache
-        resolvedPathCache.addOne(importedModule.get, None)
+        resolvedPathCache.put(importedModule.get, None)
         println(s"resolving failed for ${importedModule.get}, $importedAs at parentDirPath : ${parentDirPath}")
       }
     }
