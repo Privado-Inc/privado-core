@@ -426,6 +426,52 @@ class FileImportMappingPassJSTests extends JavaScriptBaseCpgFrontendTestSuite {
 
       cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("src/common/module.ts")
     }
+
+    "resolve import files case 6" ignore {
+      // TODO Need to work on getting the export information from default CPG
+      val fileLinkingMetadata = FileLinkingMetadata()
+      val cpg = code(
+        """
+          |import { functionName1 } from '@utils/module';
+          |
+          |""".stripMargin,
+        "src/main.ts"
+      ).moreCode(
+        """
+          |export function functionName1() {
+          |  console.log('Function from aliased path');
+          |}
+          |""".stripMargin,
+        "common/module/module1.ts"
+      ).moreCode(
+        """
+            |export function functionName2() {
+            |  console.log('Function from aliased path');
+            |}
+            |""".stripMargin,
+        "common/module/module2.ts"
+      ).moreCode(
+        """
+          |export * from './module1';
+          |export * from './module2'
+          |""".stripMargin,
+        "common/module/index.ts"
+      ).moreCode(
+        """
+          |{
+          |  "compilerOptions": {
+          |    "baseUrl": "./",
+          |    "paths": {
+          |      "@utils/module": ["common/module"]
+          |    }
+          |  }
+          |}
+          |""".stripMargin,
+        "tsconfig.json"
+      ).withFileLinkingMetadata(fileLinkingMetadata)
+
+      cpg.getFileLinkingData.getFileImportMap("src/main.ts") shouldBe Set("common/module/module1.ts")
+    }
   }
 
 }

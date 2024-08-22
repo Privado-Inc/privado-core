@@ -38,12 +38,12 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     val alias         = importedAs
     val matcher       = pathPattern.matcher(rawEntity)
     val sep           = Matcher.quoteReplacement(JFile.separator)
-    val root          = s"$codeRootDir${JFile.separator}"
+    val root          = s"${codeRootDir.replace(s"${sep}probe$sep", s"$sep")}${JFile.separator}"
     val currentFile   = s"$root$fileName"
     val extension     = File(currentFile).`extension`.getOrElse(".ts")
     val parentDirPath = File(currentFile).parent.pathAsString
     // initialize tsconfig.json map
-    initializeConfigMap()
+    initializeConfigMap(sep)
     val importedModule = getImportingModule(importedEntity, pathSep)
 
     // We want to know if the import is local since if an external name is used to match internal methods we may have
@@ -116,7 +116,7 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
             case Some(configKey) =>
               val configPathValue = tsConfigPathMapping(configKey).stripSuffix("*")
               val resolvedModule  = entity.replace(configKey.stripSuffix("*"), configPathValue)
-              //println(s"ResolvedModule : $resolvedModule, for $entity and $importedEntity")
+              // println(s"ResolvedModule : $resolvedModule, for $entity and $importedEntity")
               Some(resolvedModule)
             case None =>
               println(s"Not able to resolve : $entity, $importedEntity")
@@ -126,8 +126,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
       case entity => Some(entity)
   }
 
-  private def getJsonPathConfigFiles: List[String] = {
-    val repoPath = appCache.scanPath
+  private def getJsonPathConfigFiles(sep: String): List[String] = {
+    val repoPath = appCache.scanPath.replace(s"${sep}probe${sep}", s"${sep}")
     val filePaths =
       if (appCache.excludeFileRegex.isDefined)
         SourceFiles
@@ -144,8 +144,8 @@ class FileImportMappingPassJS(cpg: Cpg, fileLinkingMetadata: FileLinkingMetadata
     filteredFilePaths
   }
 
-  private def initializeConfigMap(): Unit = {
-    val configFilePaths = getJsonPathConfigFiles
+  private def initializeConfigMap(sep: String): Unit = {
+    val configFilePaths = getJsonPathConfigFiles(sep)
 
     configFilePaths.foreach { configFilePath =>
       getJSONKeyValuePairs(configFilePath)
