@@ -19,6 +19,7 @@ class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) ex
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata,
     dependencies: List[DependencyInfo]
   ): BaseProcessor = new PythonProcessor(
     ruleCache,
@@ -30,8 +31,9 @@ class TestCpgWithPython(val fileSuffix: String, val language: Language.Value) ex
     appCache,
     StatsRecorder(),
     returnClosedCpg = false,
-    databaseDetailsCache,
-    propertyFilterCache,
+    databaseDetailsCache = databaseDetailsCache,
+    propertyFilterCache = propertyFilterCache,
+    fileLinkingMetadata = fileLinkingMetadata,
     dependencies = dependencies
   )
 

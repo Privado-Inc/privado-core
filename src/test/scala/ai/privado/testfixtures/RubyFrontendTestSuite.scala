@@ -19,6 +19,7 @@ class TestCpgWithRuby(val fileSuffix: String, val language: Language.Value) exte
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata,
     dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new RubyProcessor(
@@ -31,8 +32,9 @@ class TestCpgWithRuby(val fileSuffix: String, val language: Language.Value) exte
       appCache,
       StatsRecorder(),
       returnClosedCpg = false,
-      databaseDetailsCache,
-      propertyFilterCache,
+      databaseDetailsCache = databaseDetailsCache,
+      propertyFilterCache = propertyFilterCache,
+      fileLinkingMetadata = fileLinkingMetadata,
       dependencies = dependencies
     )
   }

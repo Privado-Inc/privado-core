@@ -22,6 +22,7 @@ trait LanguageFrontend {
   private var appCache: Option[AppCache]                             = None
   private var propertyFilterCache: Option[PropertyFilterCache]       = None
   private var databaseDetailsCache: Option[DatabaseDetailsCache]     = None
+  private var fileLinkingMetadata: Option[FileLinkingMetadata]       = None
   private var dependencies: Option[List[DependencyInfo]]             = None
 
   def setPrivadoInput(privadoInput: PrivadoInput): Unit = {
@@ -80,6 +81,15 @@ trait LanguageFrontend {
     this.databaseDetailsCache = Some(databaseDetailsCache)
   }
 
+  def setFileLinkingMetadata(fileLinkingMetadata: FileLinkingMetadata): Unit = {
+    if (this.fileLinkingMetadata.isDefined) {
+      throw new RuntimeException("FileLinkingMetadata may only be set once per test")
+    }
+    this.fileLinkingMetadata = Some(fileLinkingMetadata)
+  }
+
+  def getFileLinkingMetadata: FileLinkingMetadata = this.fileLinkingMetadata.getOrElse(FileLinkingMetadata())
+
   def setDependencies(dependencies: List[DependencyInfo]): Unit = {
     if (this.dependencies.isDefined) {
       throw new RuntimeException("Dependencies may only be set once per test")
@@ -103,6 +113,7 @@ trait LanguageFrontend {
       appCache,
       this.propertyFilterCache.getOrElse(PropertyFilterCache()),
       this.databaseDetailsCache.getOrElse(DatabaseDetailsCache()),
+      this.fileLinkingMetadata.getOrElse(FileLinkingMetadata()),
       this.dependencies.getOrElse(List())
     )
   }
@@ -116,6 +127,7 @@ trait LanguageFrontend {
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata,
     dependencies: List[DependencyInfo]
   ): BaseProcessor
 }
