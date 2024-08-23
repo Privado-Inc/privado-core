@@ -2,7 +2,7 @@ package ai.privado.exporter
 
 import ai.privado.cache.RuleCache
 import ai.privado.model.{ConfigAndRules, Language, SystemConfig}
-import ai.privado.utility.PropertyParserPass
+import ai.privado.passes.PropertyParserPass
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays

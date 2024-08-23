@@ -1,20 +1,19 @@
 package ai.privado.languageEngine.python.processor
 
-import ai.privado.entrypoint.PrivadoInput
 import ai.privado.cache.*
+import ai.privado.entrypoint.PrivadoInput
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
 import ai.privado.languageEngine.python.config.PythonConfigPropertyPass
 import ai.privado.languageEngine.python.metadata.FileLinkingMetadataPassPython
 import ai.privado.languageEngine.python.passes.PrivadoPythonTypeHintCallLinker
 import ai.privado.languageEngine.python.passes.config.PythonPropertyLinkerPass
 import ai.privado.languageEngine.python.semantic.Language.*
-import ai.privado.languageEngine.python.tagger.PythonS3Tagger
 import ai.privado.model.Constants.*
 import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.language.*
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder}
 import better.files.File
 import io.joern.pysrc2cpg.*
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays
@@ -23,7 +22,6 @@ import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -40,7 +38,8 @@ class PythonProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = new PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -54,13 +53,14 @@ class PythonProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
 
   override val logger = LoggerFactory.getLogger(getClass)
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    List(
+    super.applyPrivadoPasses(cpg) ++ List(
       new HTMLParserPass(cpg, sourceRepoLocation, ruleCache, privadoInputConfig = privadoInput), {
         if (privadoInput.assetDiscovery) {
           new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
@@ -77,6 +77,7 @@ class PythonProcessor(
   }
 
   override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,

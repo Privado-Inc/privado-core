@@ -1,50 +1,22 @@
 package ai.privado.languageEngine.kotlin.processor
 
-import ai.privado.audit.{AuditReportEntryPoint, DependencyReport}
-import ai.privado.cache.{
-  AppCache,
-  AuditCache,
-  DataFlowCache,
-  DatabaseDetailsCache,
-  FileLinkingMetadata,
-  PropertyFilterCache,
-  RuleCache,
-  S3DatabaseDetailsCache,
-  TaggerCache
-}
+import ai.privado.cache.*
 import ai.privado.entrypoint.PrivadoInput
-import ai.privado.exporter.{ExcelExporter, JSONExporter}
+import ai.privado.inputprocessor.DependencyInfo
 import ai.privado.languageEngine.base.processor.BaseProcessor
-import ai.privado.languageEngine.java.cache.ModuleCache
-import ai.privado.languageEngine.java.passes.config.{JavaPropertyLinkerPass, ModuleFilePass}
-import ai.privado.languageEngine.java.passes.module.{DependenciesCategoryPass, DependenciesNodePass}
+import ai.privado.languageEngine.java.passes.config.JavaPropertyLinkerPass
 import ai.privado.languageEngine.kotlin.semantic.Language.*
-import ai.privado.metric.MetricHandler
 import ai.privado.model.Constants.*
-import ai.privado.model.Language.Language
-import ai.privado.model.{CatLevelOne, Constants, CpgWithOutputMap, Language}
+import ai.privado.model.{Constants, CpgWithOutputMap, Language}
 import ai.privado.passes.*
-import ai.privado.semantic.language.*
+import ai.privado.utility.StatsRecorder
 import ai.privado.utility.Utilities.createCpgFolder
-import ai.privado.utility.{PropertyParserPass, StatsRecorder, UnresolvedReportUtility}
-import better.files.File
-import io.circe.Json
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.passes.base.AstLinkerPass
-import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.slf4j.LoggerFactory
-
-import java.nio.file.Paths
-import java.util.Calendar
-import scala.collection.mutable.ListBuffer
-import scala.util.{Failure, Success, Try}
 class KotlinProcessor(
   ruleCache: RuleCache,
   privadoInput: PrivadoInput,
@@ -57,7 +29,8 @@ class KotlinProcessor(
   returnClosedCpg: Boolean = true,
   databaseDetailsCache: DatabaseDetailsCache = new DatabaseDetailsCache(),
   propertyFilterCache: PropertyFilterCache = PropertyFilterCache(),
-  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata()
+  fileLinkingMetadata: FileLinkingMetadata = new FileLinkingMetadata(),
+  dependencies: List[DependencyInfo]
 ) extends BaseProcessor(
       ruleCache,
       privadoInput,
@@ -71,13 +44,14 @@ class KotlinProcessor(
       returnClosedCpg,
       databaseDetailsCache,
       propertyFilterCache,
-      fileLinkingMetadata
+      fileLinkingMetadata,
+      dependencies
     ) {
   override val logger   = LoggerFactory.getLogger(getClass)
   private var cpgconfig = Config()
 
   override def applyPrivadoPasses(cpg: Cpg): List[CpgPassBase] = {
-    List({
+    super.applyPrivadoPasses(cpg) ++ List({
       if (privadoInput.assetDiscovery)
         new JsonPropertyParserPass(cpg, s"$sourceRepoLocation/${Constants.generatedConfigFolderName}")
       else
@@ -99,7 +73,8 @@ class KotlinProcessor(
     statsRecorder.endLastStage()
   }
 
-  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit =
+  override def runPrivadoTagger(cpg: Cpg, taggerCache: TaggerCache): Unit = {
+    super.runPrivadoTagger(cpg, taggerCache)
     cpg.runTagger(
       ruleCache,
       taggerCache,
@@ -110,6 +85,7 @@ class KotlinProcessor(
       statsRecorder,
       fileLinkingMetadata
     )
+  }
 
   override def processCpg(): Either[String, CpgWithOutputMap] = {
 

@@ -1,19 +1,19 @@
 package ai.privado.passes
 
 import ai.privado.cache.RuleCache
-import ai.privado.semantic.language.*
+import ai.privado.model.Language
 import ai.privado.model.sql.SQLQueryType
+import ai.privado.passes.PropertyParserPass
+import ai.privado.semantic.language.*
 import better.files.File
+import io.joern.console.cpgcreation.guessLanguage
 import io.joern.jssrc2cpg.Config
 import io.joern.x2cpg.X2Cpg
 import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import ai.privado.utility.PropertyParserPass
-import ai.privado.model.Language
-import io.joern.console.cpgcreation.guessLanguage
-import io.shiftleft.semanticcpg.language._
 
 class SQLPropertyParserTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   "SQL Property parser" should {

@@ -6,7 +6,7 @@ import ai.privado.rulevalidator.YamlFileValidator
 import better.files.File
 import org.slf4j.LoggerFactory
 
-object RuleValidator extends CommandProcessor {
+object RuleValidatorProcessor extends CommandProcessor {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 

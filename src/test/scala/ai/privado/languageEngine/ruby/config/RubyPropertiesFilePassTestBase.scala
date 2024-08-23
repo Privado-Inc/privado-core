@@ -3,7 +3,7 @@ package ai.privado.languageEngine.ruby.config
 import ai.privado.cache.RuleCache
 import ai.privado.languageEngine.ruby.passes.config.RubyPropertyLinkerPass
 import ai.privado.model.Language
-import ai.privado.utility.PropertyParserPass
+import ai.privado.passes.PropertyParserPass
 import better.files.File
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg.applyDefaultOverlays

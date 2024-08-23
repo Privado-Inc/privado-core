@@ -145,7 +145,7 @@ class SinkExporter(
           .where(filterSink)
           .l ++ cpg.argument.isFieldIdentifier.where(filterSink).l ++ cpg.method.where(filterSink).l ++ cpg.dbNode
           .where(filterSink)
-          .l ++ cpg.highTouchSink.where(filterSink).l
+          .l ++ cpg.highTouchSink.where(filterSink).l ++ cpg.dependency.where(filterSink).l
     ExporterUtility.filterNodeBasedOnRepoItemTagName(sinks, repoItemTagName)
   }
 
