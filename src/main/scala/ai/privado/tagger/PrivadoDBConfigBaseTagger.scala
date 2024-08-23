@@ -4,7 +4,7 @@ import ai.privado.cache.DatabaseDetailsCache
 import ai.privado.tagger.PrivadoSimpleCpgPass
 import ai.privado.utility.Utilities.addDatabaseDetailsMultiple
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
+import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import org.slf4j.LoggerFactory
 
 abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
@@ -12,7 +12,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def parsePropForDynamoDB(dbUrl: JavaProperty): Unit = {
+  def parsePropForDynamoDB(dbUrl: NewJavaProperty): Unit = {
     // Example dynamodb url :- https://dynamodb.<region>.amazonaws.com/<table-name>
     val rules = List(("Write", "Storages.AmazonDynamoDB.Write"), ("Read", "Storages.AmazonDynamoDB.Write"))
 
@@ -27,7 +27,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
     }
   }
 
-  def parsePropForPostgreSQL(dbUrl: JavaProperty): Unit = {
+  def parsePropForPostgreSQL(dbUrl: NewJavaProperty): Unit = {
     // Example postgre URL: - postgresql://myuser:mypassword@10.0.0.1:5432/mydatabase
     val rules = List(("Write", "Storages.Postgres.ReadAndWrite"), ("Read", "Storages.Postgres.Read"))
 
@@ -43,7 +43,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
     }
   }
 
-  def parsePropForMongoDB(dbUrl: JavaProperty): Unit = {
+  def parsePropForMongoDB(dbUrl: NewJavaProperty): Unit = {
     // Example mongo url :- mongodb://<username>:<password>@<host>:<port>/<database>?<options>
     val rules = List(("Write", "Storages.MongoDB.Write"), ("Read", "Storages.MongoDB.Read"))
 
@@ -64,7 +64,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
     }
   }
 
-  def parsePropForJdbcAndJpaOracle(dbUrl: JavaProperty, rules: List[(String, String)]): Unit = {
+  def parsePropForJdbcAndJpaOracle(dbUrl: NewJavaProperty, rules: List[(String, String)]): Unit = {
 
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1).toString
@@ -83,7 +83,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
 
   }
 
-  def parsePropForJdbcAndJpaH2(dbUrl: JavaProperty, rules: List[(String, String)]): Unit = {
+  def parsePropForJdbcAndJpaH2(dbUrl: NewJavaProperty, rules: List[(String, String)]): Unit = {
 
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1)
@@ -109,7 +109,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
 
   }
 
-  def parsePropForJDBCAndJPA(dbUrl: JavaProperty, rules: List[(String, String)]): Unit = {
+  def parsePropForJDBCAndJPA(dbUrl: NewJavaProperty, rules: List[(String, String)]): Unit = {
     val tokens     = dbUrl.value.split(":")
     val dbVendor   = tokens(1)
     val dbLocation = dbUrl.value.split("/")(2)
@@ -119,7 +119,7 @@ abstract class PrivadoDBConfigBaseTagger(cpg: Cpg, databaseDetailsCache: Databas
 
   }
 
-  def parsePropForNeo4jNativeDriver(dbUrl: JavaProperty): Unit = {
+  def parsePropForNeo4jNativeDriver(dbUrl: NewJavaProperty): Unit = {
     val rules = List(
       ("Write/Read", "Storages.Neo4jGraphDatabase"),
       ("Read", "Storages.Neo4jGraphDatabase.Read"),

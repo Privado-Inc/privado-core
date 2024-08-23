@@ -33,11 +33,10 @@ import ai.privado.utility.SQLParser.createSQLTableItem
 import better.files.*
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.semanticcpg.language.*
 import org.jruby.ast.{ArrayNode, BlockNode, CallNode, FCallNode, IArgumentNode, IterNode, Node, StrNode}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -189,7 +188,7 @@ class SchemaParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends 
     }
   }
 
-  private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  private def addFileNode(name: String, builder: DiffGraphBuilder): NewFile = {
     val fileNode = NewFile().name(name)
     builder.addNode(fileNode)
     fileNode

@@ -18,11 +18,11 @@ class SQLPropertyPass(cpg: Cpg, projectRoot: String, ruleCache: RuleCache)
     cpg.property.iterator.filter(prop => prop.name.matches("(?i)query")).toArray
   }
 
-  override def runOnPart(builder: DiffGraphBuilder, property: JavaProperty): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, property: NewJavaProperty): Unit = {
     addSqlNodes(builder, property)
   }
 
-  private def addSqlNodes(builder: SQLPropertyPass.this.DiffGraphBuilder, property: JavaProperty): Unit = {
+  private def addSqlNodes(builder: SQLPropertyPass.this.DiffGraphBuilder, property: NewJavaProperty): Unit = {
 
     val query        = property.value
     val lineNumber   = property.lineNumber.getOrElse(-1).asInstanceOf[Int]

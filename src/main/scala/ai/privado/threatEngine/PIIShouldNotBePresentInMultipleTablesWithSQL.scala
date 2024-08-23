@@ -69,7 +69,7 @@ object PIIShouldNotBePresentInMultipleTablesWithSQL {
   }
 
   def getSources(cpg: Cpg): List[(String, List[SqlColumnNode])] = {
-    def filterSources(traversal: Traversal[StoredNode]) = {
+    def filterSources(traversal: Iterator[StoredNode]) = {
       traversal.tag
         .nameExact(Constants.catLevelOne)
         .valueExact(Constants.sources)

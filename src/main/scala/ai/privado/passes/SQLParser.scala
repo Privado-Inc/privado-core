@@ -30,10 +30,9 @@ import ai.privado.utility.{Utilities, SQLParser as UtilitySQLParser}
 import ai.privado.utility.SQLNodeBuilder
 import better.files.*
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, DiffGraphBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewSqlColumnNode, NewSqlQueryNode, NewSqlTableNode}
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 import better.files.File.VisitOptions
 import org.jruby.ast.FileNode
 
@@ -114,7 +113,7 @@ class SQLParser(cpg: Cpg, projectRoot: String, ruleCache: RuleCache) extends Pri
       .filter(Utilities.isFileProcessable(_, ruleCache))
   }
 
-  private def addFileNode(name: String, builder: BatchedUpdate.DiffGraphBuilder): NewFile = {
+  private def addFileNode(name: String, builder: DiffGraphBuilder): NewFile = {
     val fileNode = NewFile().name(name)
     builder.addNode(fileNode)
     fileNode

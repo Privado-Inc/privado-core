@@ -62,7 +62,7 @@ class DEDTagger(cpg: Cpg, ruleCache: RuleCache) extends PrivadoParallelCpgPass[D
 
     def getMatchesNodes(v: DEDVariable): List[AstNode] = {
       // Helper function to filter nodes by name and optional lineNumber
-      def matchesNameAndLineNumber(name: String, lineNumber: Option[Integer]): Boolean = {
+      def matchesNameAndLineNumber(name: String, lineNumber: Option[Int]): Boolean = {
         name == v.name && (v.lineNumber.isEmpty || lineNumber == v.lineNumber)
       }
 

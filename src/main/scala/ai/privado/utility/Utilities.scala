@@ -34,7 +34,7 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder, EdgeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
+import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 
 import scala.collection.mutable
 import io.joern.x2cpg.SourceFiles
@@ -42,7 +42,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode, N
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import overflowdb.DetachedNodeData
+import flatgraph.{DNode, DNodeOrNode}
 
 import java.io.PrintWriter
 import scala.collection.mutable.ListBuffer
@@ -522,7 +522,7 @@ object Utilities {
     * @param node
     * @param fileNode
     */
-  def addNodeWithFileEdge(builder: DiffGraphBuilder, node: DetachedNodeData, fileNode: NewFile): Unit = {
+  def addNodeWithFileEdge(builder: DiffGraphBuilder, node: DNode, fileNode: NewFile): Unit = {
     builder.addNode(node)
     builder.addEdge(node, fileNode, EdgeTypes.SOURCE_FILE)
   }
@@ -575,7 +575,7 @@ object Utilities {
 
   def addDatabaseDetailsMultiple(
     rules: List[(String, String)],
-    dbUrl: JavaProperty,
+    dbUrl: NewJavaProperty,
     dbName: String,
     dbLocation: String,
     dbVendor: String,

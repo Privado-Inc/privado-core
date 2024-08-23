@@ -5,7 +5,7 @@ import ai.privado.semantic.language.*
 import ai.privado.tagger.PrivadoDBConfigBaseTagger
 import ai.privado.utility.Utilities.addDatabaseDetailsMultiple
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.JavaProperty
+import io.shiftleft.codepropertygraph.generated.nodes.NewJavaProperty
 import org.slf4j.LoggerFactory
 
 class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
@@ -71,7 +71,7 @@ class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
       })
   }
 
-  override def parsePropForMongoDB(dbUrl: JavaProperty): Unit = {
+  override def parsePropForMongoDB(dbUrl: NewJavaProperty): Unit = {
     val rules =
       List(("Write", "Storages.MongoDB.SpringFramework.Write"), ("Read", "Storages.MongoDB.SpringFramework.Read"))
 
@@ -82,7 +82,7 @@ class JavaDBConfigTagger(cpg: Cpg, databaseDetailsCache: DatabaseDetailsCache)
     addDatabaseDetailsMultiple(rules, dbUrl, dbName, dbLocation, dbVendor, databaseDetailsCache)
   }
 
-  private def parsePropForNeo4jSpringBootDriver(dbUrl: JavaProperty): Unit = {
+  private def parsePropForNeo4jSpringBootDriver(dbUrl: NewJavaProperty): Unit = {
 
     val rules = List(
       ("Write/Read", "Storages.Neo4jGraphDatabase"),
