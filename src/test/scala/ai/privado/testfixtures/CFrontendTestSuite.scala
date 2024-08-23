@@ -18,6 +18,7 @@ class TestCpgWithC(val fileSuffix: String, val language: Language.Value) extends
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata,
     dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new CProcessor(
@@ -30,8 +31,9 @@ class TestCpgWithC(val fileSuffix: String, val language: Language.Value) extends
       appCache,
       StatsRecorder(),
       returnClosedCpg = false,
-      databaseDetailsCache,
-      propertyFilterCache
+      databaseDetailsCache = databaseDetailsCache,
+      propertyFilterCache = propertyFilterCache,
+      fileLinkingMetadata = fileLinkingMetadata
     )
   }
 }
