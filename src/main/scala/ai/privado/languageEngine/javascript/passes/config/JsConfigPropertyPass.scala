@@ -21,7 +21,7 @@ class JsConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cpg) {
     builder: DiffGraphBuilder,
     assignmentCall: Call,
     parentKey: String = ""
-  ): List[(String, String, Integer)] = {
+  ): List[(String, String, Int)] = {
     assignmentCall.astChildren.toList match {
       case (c: Call) :: (b: Block) :: _ if c.name.equals(Operators.fieldAccess) =>
         b.astChildren.isCall
@@ -62,7 +62,7 @@ class JsConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cpg) {
   }
 
   private def addPropertyNode(
-    keyValuePair: (String, String, Integer),
+    keyValuePair: (String, String, Int),
     builder: DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value, lineNumber) = keyValuePair

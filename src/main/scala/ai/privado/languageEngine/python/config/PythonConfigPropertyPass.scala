@@ -21,7 +21,7 @@ class PythonConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cp
     builder: DiffGraphBuilder,
     assignmentCall: Call,
     parentKey: String = ""
-  ): List[(String, String, Integer)] = {
+  ): List[(String, String, Int)] = {
     assignmentCall.astChildren.toList match {
       case (c: Call) :: (b: Block) :: _ if c.name.equals(Operators.indexAccess) =>
         b.astChildren.isCall
@@ -37,7 +37,7 @@ class PythonConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cp
           .toList
       case (c: Call) :: (a: AstNode) :: _ if c.name.equals(Operators.indexAccess) =>
         val partialKey   = getKeyNameFromIndexAccessCode(c)
-        val keyValuePair = (s"$parentKey.$partialKey", cleanCode(a.code), a.lineNumber.get)
+        val keyValuePair = (s"$parentKey.$partialKey", cleanCode(a.code), a.lineNumber.get.toInt)
         val propertyNode = addPropertyNode(keyValuePair, builder)
 
         // Add a tag to discrimate between property nodes from config and source code files
@@ -58,7 +58,7 @@ class PythonConfigPropertyPass(cpg: Cpg) extends PrivadoParallelCpgPass[Call](cp
   }
 
   private def addPropertyNode(
-    keyValuePair: (String, String, Integer),
+    keyValuePair: (String, String, Int),
     builder: DiffGraphBuilder
   ): NewJavaProperty = {
     val (key, value, lineNumber) = keyValuePair

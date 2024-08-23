@@ -58,7 +58,7 @@ private class RubyTypeRecovery(
   iteration: Int
 ) extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def compilationUnits: Traversal[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,

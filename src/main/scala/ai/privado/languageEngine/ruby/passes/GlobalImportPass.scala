@@ -27,7 +27,6 @@ import ai.privado.tagger.PrivadoSimpleCpgPass
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.passes.frontend.{CallAlias, LocalKey, LocalVar, SymbolTable, XImportsPass}
 import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.semanticcpg.language.importresolver.{ResolvedMethod, ResolvedTypeDecl}

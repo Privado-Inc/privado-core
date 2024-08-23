@@ -247,7 +247,7 @@ class RubyProcessor(
 
   class RubyCfgCreationPass(cpg: Cpg) extends CfgCreationPass(cpg) {
     override def runOnPart(diffGraph: DiffGraphBuilder, method: Method): Unit = {
-      val localDiff = new DiffGraphBuilder
+      val localDiff = Cpg.newDiffGraphBuilder
       new RubyCfgCreator(method, localDiff).run()
       diffGraph.absorb(localDiff)
     }

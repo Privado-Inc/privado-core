@@ -36,7 +36,7 @@ class PrivadoTagger(cpg: Cpg) extends PrivadoBaseTagger {
     databaseDetailsCache: DatabaseDetailsCache,
     statsRecorder: StatsRecorder,
     fileLinkingMetadata: FileLinkingMetadata
-  ): Traversal[Tag] = {
+  ): Iterator[Tag] = {
 
     logger.info("Starting tagging")
 

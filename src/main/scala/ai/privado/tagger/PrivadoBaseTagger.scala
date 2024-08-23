@@ -15,8 +15,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.Tag
 
 abstract class PrivadoBaseTagger {
 
-  def runTagger(rules: RuleCache): Traversal[Tag]                           = ???
-  def runTagger(rules: RuleCache, taggerCache: TaggerCache): Traversal[Tag] = ???
+  def runTagger(rules: RuleCache): Iterator[Tag]                           = ???
+  def runTagger(rules: RuleCache, taggerCache: TaggerCache): Iterator[Tag] = ???
 
   def runTagger(
     rules: RuleCache,
