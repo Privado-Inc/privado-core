@@ -152,7 +152,6 @@ class RuleCache {
   }
 
   def checkIfMergedDynamicRuleExist(externalRuleId: String): Boolean = {
-    println("checking here --- " + externalRuleId + " result -- " + dynamicMergerRuleMap.contains(externalRuleId))
     dynamicMergerRuleMap.contains(externalRuleId)
   }
 
