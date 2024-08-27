@@ -51,6 +51,11 @@ abstract class TestCpg extends Cpg() with TestCodeWriter with LanguageFrontend {
     this
   }
 
+  def withFileLinkingMetadata(fileLinkingMetadata: FileLinkingMetadata): this.type = {
+    setFileLinkingMetadata(fileLinkingMetadata)
+    this
+  }
+
   def withDependencies(dependencies: List[DependencyInfo]): this.type = {
     setDependencies(dependencies)
     this
@@ -59,6 +64,11 @@ abstract class TestCpg extends Cpg() with TestCodeWriter with LanguageFrontend {
   def getPrivadoJson() = {
     graph
     _privadoJson.get
+  }
+
+  def getFileLinkingData: FileLinkingMetadata = {
+    graph
+    this.getFileLinkingMetadata
   }
 
   override def graph: Graph = {

@@ -18,6 +18,7 @@ class TestCpgWithDefaultLanguage(val fileSuffix: String, val language: Language.
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata,
     dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new DefaultProcessor(
@@ -30,8 +31,9 @@ class TestCpgWithDefaultLanguage(val fileSuffix: String, val language: Language.
       appCache,
       StatsRecorder(),
       returnClosedCpg = false,
-      databaseDetailsCache,
-      propertyFilterCache
+      databaseDetailsCache = databaseDetailsCache,
+      propertyFilterCache = propertyFilterCache,
+      fileLinkingMetadata = fileLinkingMetadata
     )
   }
 }

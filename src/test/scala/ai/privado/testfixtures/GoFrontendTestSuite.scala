@@ -19,6 +19,7 @@ class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extend
     appCache: AppCache,
     propertyFilterCache: PropertyFilterCache,
     databaseDetailsCache: DatabaseDetailsCache,
+    fileLinkingMetadata: FileLinkingMetadata,
     dependencies: List[DependencyInfo]
   ): BaseProcessor = {
     new GoProcessor(
@@ -31,8 +32,9 @@ class TestCpgWithGo(val fileSuffix: String, val language: Language.Value) extend
       appCache,
       StatsRecorder(),
       returnClosedCpg = false,
-      databaseDetailsCache,
-      propertyFilterCache,
+      databaseDetailsCache = databaseDetailsCache,
+      propertyFilterCache = propertyFilterCache,
+      fileLinkingMetadata = fileLinkingMetadata,
       dependencies = dependencies
     )
   }
