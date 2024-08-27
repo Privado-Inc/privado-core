@@ -2,7 +2,7 @@ package ai.privado.languageEngine.java.tagger.sink
 
 import ai.privado.cache.RuleCache
 import ai.privado.exporter.SinkExporterValidator
-import ai.privado.inputprocessor.DependencyInfo
+import ai.privado.inputprocessor.{DependencyInfo, DynamicRuleMerger}
 import ai.privado.model
 import ai.privado.model.*
 import ai.privado.model.exporter.{DataFlowSubCategoryPathExcerptModel, SinkProcessingModel}
@@ -11,7 +11,7 @@ import ai.privado.testfixtures.JavaFrontendTestSuite
 import java.io.File
 import scala.collection.mutable
 
-class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValidator {
+class DependencyTaggerTest extends JavaFrontendTestSuite with DynamicRuleMerger with SinkExporterValidator {
 
   "Java pom.xml simple use case" should {
     val dynamicRule = List(
@@ -24,7 +24,7 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
         List(".*(com.twilio.sdk).*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -41,7 +41,7 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
         List(".*(com.google.apis).*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -197,7 +197,7 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
         List("(?i).*com.google.android.gms.*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -214,7 +214,7 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
         List("(?i).*com.google.firebase.*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -231,7 +231,7 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
         List("(?i).*com.google.firebase.*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -314,7 +314,7 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
         |    repositories {
         |        google()
         |        jcenter()
-        |        
+        |
         |    }
         |}
         |
@@ -454,6 +454,160 @@ class DependencyTaggerTest extends JavaFrontendTestSuite with SinkExporterValida
           )
         )
       )
+    }
+  }
+
+  "Dynamic Merging rule with sinks" should {
+    val dynamicRule = List(
+      RuleInfo(
+        "ThirdParties.SDK.Google",
+        "Google",
+        "Third Parties",
+        FilterProperty.METHOD_FULL_NAME,
+        Array("developers.google.com"),
+        List("(?i).*com.google.android.gms.*"),
+        false,
+        "",
+        Map("Discovery_Generated" -> "true"),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.SINKS,
+        "",
+        Language.JAVA,
+        Array()
+      )
+    )
+
+    val internalRule = List(
+      RuleInfo(
+        "ThirdParties.SDK.Google.Play",
+        "Google",
+        "Third Parties",
+        FilterProperty.METHOD_FULL_NAME,
+        Array("developers.google.com"),
+        List("(?i).*anything.*"),
+        false,
+        "",
+        Map(),
+        NodeType.REGULAR,
+        "",
+        CatLevelOne.SINKS,
+        "",
+        Language.JAVA,
+        Array()
+      )
+    )
+
+    val dependencies = List(
+      DependencyInfo(
+        "com.google.android.gms",
+        "play-services-auth",
+        "17.0.0",
+        "    implementation 'com.google.android.gms:play-services-auth:17.0.0'\n",
+        "ThirdParties.SDK.Google",
+        "Google",
+        List("developers.google.com"),
+        List(),
+        27,
+        "app/build.gradle"
+      )
+    )
+
+    val ruleCache     = new RuleCache()
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, internalRule, ruleCache)
+    val configAndRule = ConfigAndRules(sinks = finalSinkRule)
+    ruleCache.setRule(configAndRule)
+
+    val cpg = code(
+      """
+        |buildscript {
+        |    repositories {
+        |        google()
+        |        jcenter()
+        |
+        |    }
+        |    dependencies {
+        |        classpath 'com.android.tools.build:gradle:3.5.3'
+        |        classpath 'com.google.gms:google-services:4.2.0'
+        |
+        |        // NOTE: Do not place your application dependencies here; they belong
+        |        // in the individual module build.gradle files
+        |    }
+        |}
+        |
+        |allprojects {
+        |    repositories {
+        |        google()
+        |        jcenter()
+        |
+        |    }
+        |}
+        |
+        |task clean(type: Delete) {
+        |    delete rootProject.buildDir
+        |}
+        |""".stripMargin,
+      "build.gradle"
+    ).moreCode(
+      """
+          |apply plugin: 'com.android.application'
+          |apply plugin: 'com.google.gms.google-services'
+          |
+          |android {
+          |    compileSdkVersion 29
+          |    buildToolsVersion "29.0.1"
+          |    defaultConfig {
+          |        applicationId "com.example.edu"
+          |        minSdkVersion 22
+          |        targetSdkVersion 29
+          |        versionCode 1
+          |        versionName "1.0"
+          |        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+          |    }
+          |    buildTypes {
+          |        release {
+          |            minifyEnabled false
+          |            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+          |        }
+          |    }
+          |}
+          |
+          |dependencies {
+          |    implementation fileTree(dir: 'libs', include: ['*.jar'])
+          |    implementation 'com.google.firebase:firebase-auth:19.0.0'
+          |    implementation 'com.google.android.gms:play-services-auth:17.0.0'
+          |    implementation 'com.github.d-max:spots-dialog:1.1@aar'
+          |
+          |    testImplementation 'junit:junit:4.12'
+          |    androidTestImplementation 'androidx.test:runner:1.2.0'
+          |    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+          |}
+          |""".stripMargin,
+      List("app", "build.gradle").mkString(File.separator)
+    ).withDependencies(dependencies)
+      .withRuleCache(ruleCache)
+
+    "3p discovery should get added in processing section" in {
+      val outputJson = cpg.getPrivadoJson()
+      getSinks(outputJson).size shouldBe 1
+
+      val sinksProcessing = getSinkProcessings(outputJson)
+
+      sinksProcessing.headOption.get shouldBe
+        SinkProcessingModel(
+          sinkId = "ThirdParties.SDK.Google.Play",
+          occurrences = List(
+            DataFlowSubCategoryPathExcerptModel(
+              sample = "    implementation 'com.google.android.gms:play-services-auth:17.0.0'\n",
+              lineNumber = 27,
+              columnNumber = -1,
+              fileName = "app/build.gradle",
+              excerpt =
+                "}\n\ndependencies {\n    implementation fileTree(dir: 'libs', include: ['*.jar'])\n    implementation 'com.google.firebase:firebase-auth:19.0.0'\n    implementation 'com.google.android.gms:play-services-auth:17.0.0' /* <===  */ \n    implementation 'com.github.d-max:spots-dialog:1.1@aar'\n\n    testImplementation 'junit:junit:4.12'\n    androidTestImplementation 'androidx.test:runner:1.2.0'\n    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'",
+              arguments = None
+            )
+          )
+        )
     }
   }
 }

@@ -313,7 +313,8 @@ trait RuleProcessor extends DynamicRuleMerger {
      */
     val exclusions = externalConfigAndRules.exclusions ++ internalConfigAndRules.exclusions
     val sources    = externalConfigAndRules.sources ++ internalConfigAndRules.sources
-    val sinks = mergeDynamicRuleSinkForDependencyDiscovery(externalConfigAndRules.sinks, internalConfigAndRules.sinks)
+    val sinks =
+      mergeDynamicRuleSinkForDependencyDiscovery(externalConfigAndRules.sinks, internalConfigAndRules.sinks, ruleCache)
     val collections  = externalConfigAndRules.collections ++ internalConfigAndRules.collections
     val policies     = externalConfigAndRules.policies ++ internalConfigAndRules.policies
     val threats      = externalConfigAndRules.threats ++ internalConfigAndRules.threats

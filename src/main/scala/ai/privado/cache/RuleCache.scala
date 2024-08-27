@@ -32,11 +32,12 @@ import scala.collection.mutable
 class RuleCache {
   private var rule: ConfigAndRules =
     ConfigAndRules(List(), List(), List(), List(), List(), List(), List(), List(), List(), List())
-  private val ruleInfoMap       = mutable.HashMap[String, RuleInfo]()
-  private val policyOrThreatMap = mutable.HashMap[String, PolicyOrThreat]()
-  val internalRules             = mutable.HashMap[String, Int]()
-  val internalPolicies          = mutable.Set[String]()
-  private val storageRuleInfo   = mutable.ListBuffer[RuleInfo]()
+  private val ruleInfoMap          = mutable.HashMap[String, RuleInfo]()
+  private val policyOrThreatMap    = mutable.HashMap[String, PolicyOrThreat]()
+  val internalRules                = mutable.HashMap[String, Int]()
+  val internalPolicies             = mutable.Set[String]()
+  private val storageRuleInfo      = mutable.ListBuffer[RuleInfo]()
+  private val dynamicMergerRuleMap = mutable.HashMap[String, String]()
 
   // TODO, rename setRule to withRule as it return the ruleCache object and setters are Unit functions
   def setRule(rule: ConfigAndRules): RuleCache = {
@@ -144,5 +145,17 @@ class RuleCache {
         case _ => ""
       }
     }
+  }
+
+  def addIntoMergedDynamicRuleMapper(externalRuleId: String, internalRuleId: String): Unit = {
+    dynamicMergerRuleMap(externalRuleId) = internalRuleId
+  }
+
+  def checkIfMergedDynamicRuleExist(externalRuleId: String): Boolean = {
+    dynamicMergerRuleMap.contains(externalRuleId)
+  }
+
+  def getDynamicMappedInternalRule(externalRule: String): String = {
+    dynamicMergerRuleMap.getOrElse(externalRule, "")
   }
 }

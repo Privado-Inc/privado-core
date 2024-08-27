@@ -20,7 +20,11 @@ class DependencyNodeTagger(cpg: Cpg, dependencies: List[DependencyInfo], ruleCac
         .where(_.file.nameExact(dependency.filePath))
         .headOption match {
         case Some(dep) =>
-          ruleCache.getRuleInfo(dependency.ruleId) match {
+          val dependencyRuleId =
+            if (ruleCache.checkIfMergedDynamicRuleExist(dependency.ruleId))
+              ruleCache.getDynamicMappedInternalRule(dependency.ruleId)
+            else dependency.ruleId
+          ruleCache.getRuleInfo(dependencyRuleId) match {
             case Some(rule) => Utilities.addRuleTags(builder, dep, rule, ruleCache)
             case None =>
               logger.error(
