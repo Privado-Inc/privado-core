@@ -40,7 +40,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
         List(".*(software.amazon.awssdk.services.s3).*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -50,9 +50,10 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
       )
     )
 
-    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
+    val ruleCache     = RuleCache()
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule, ruleCache)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
-    val ruleCache     = RuleCache().setRule(configAndRule)
+    ruleCache.setRule(configAndRule)
 
     val cpg = code("""
         |import software.amazon.awssdk.services.s3.S3Client;
@@ -93,7 +94,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
         List(".*(software.amazon.awssdk.services.s3).*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -103,9 +104,10 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
       )
     )
 
-    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
+    val ruleCache     = new RuleCache()
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule, ruleCache)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
-    val ruleCache     = RuleCache().setRule(configAndRule)
+    ruleCache.setRule(configAndRule)
 
     val cpg = code("""
         |import software.amazon.awssdk.services.s3.S3Client;
@@ -147,7 +149,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
         List(".*(software.amazon.awssdk.services.s3).*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -157,9 +159,10 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
       )
     )
 
-    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule)
+    val ruleCache     = new RuleCache()
+    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicRule, existingRule, ruleCache)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
-    val ruleCache     = RuleCache().setRule(configAndRule)
+    ruleCache.setRule(configAndRule)
 
     val cpg = code("""
         |import software.amazon.awssdk.services.s3.S3Client;
@@ -217,7 +220,7 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
         List(".*(software.amazon.awssdk.services.s3).*"),
         false,
         "",
-        Map(),
+        Map("Discovery_Generated" -> "true"),
         NodeType.REGULAR,
         "",
         CatLevelOne.SINKS,
@@ -227,9 +230,11 @@ class DynamicRuleMergerTest extends JavaFrontendTestSuite, DynamicRuleMerger {
       )
     )
 
-    val finalSinkRule = mergeDynamicRuleSinkForDependencyDiscovery(dynamicFilterPropertyRule, existingCodeRule)
+    val ruleCache = new RuleCache()
+    val finalSinkRule =
+      mergeDynamicRuleSinkForDependencyDiscovery(dynamicFilterPropertyRule, existingCodeRule, ruleCache)
     val configAndRule = ConfigAndRules(sinks = finalSinkRule)
-    val ruleCache     = RuleCache().setRule(configAndRule)
+    ruleCache.setRule(configAndRule)
 
     val cpg = code("""
         |import software.amazon.awssdk.services.s3.S3Client;
