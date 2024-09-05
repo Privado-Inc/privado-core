@@ -21,9 +21,7 @@ trait DynamicRuleMerger {
       val externalOtherRule = new ListBuffer[RuleInfo]
 
       val internalRuleMap = mutable.Map(
-        internalSinkRules
-          .filter(rule => rule.domains.nonEmpty && rule.name.nonEmpty)
-          .map(rule => ((rule.domains.headOption.get, rule.name, rule.filterProperty), rule)): _*
+        internalSinkRules.map(rule => ((rule.domains.headOption.get, rule.name, rule.filterProperty), rule))*
       )
 
       externalSinkRules.foreach { externalRule =>
