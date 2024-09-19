@@ -67,7 +67,7 @@ jobs:
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: php-charp-support
+          ref: private-fork
 
       # langauge specific repository file
       - name: Run the script for ${{ env.HEAD_REF }} and ${{ env.BASE_REF }}
