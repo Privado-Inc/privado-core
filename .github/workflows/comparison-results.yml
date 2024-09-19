@@ -41,7 +41,7 @@ jobs:
     needs: start_workflow
     strategy:
       matrix:
-        language: ['java-1', 'java-2' ,'python', 'js', 'ruby-1', 'ruby-2', 'go', 'kotlin']
+        language: ['java-1', 'java-2' ,'python', 'js', 'ruby-1', 'ruby-2', 'go', 'kotlin', 'php', 'csharp']
     continue-on-error: true
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +67,7 @@ jobs:
         with:
           repository: Privado-Inc/standalone-monitoring-stability
           path: ./temp/standalone-monitoring-stability
-          ref: private-fork
+          ref: php-charp-support
 
       # langauge specific repository file
       - name: Run the script for ${{ env.HEAD_REF }} and ${{ env.BASE_REF }}
