@@ -251,3 +251,5 @@ project/plugins/project/
 
 /domain-classes/src
 /domain-classes/target
+
+trufflehog_filtered_output.text
