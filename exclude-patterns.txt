@@ -5,3 +5,4 @@
 ^/privado-core/trufflehog_filtered_output.text
 ^/privado-core/src/test/
 ^/privado-core/.git/
+^/privado-core/src/main/scala/ai/privado/tagger/PrivadoDBConfigBaseTagger.scala
