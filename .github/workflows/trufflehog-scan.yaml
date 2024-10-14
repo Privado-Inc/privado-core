@@ -3,7 +3,7 @@ name: TruffleHog Scan
 on:
   push:
     branches:
-      - trufflehog
+      - trufflehog-new
       - main
       - dev
   pull_request:
