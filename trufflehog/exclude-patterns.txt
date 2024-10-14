@@ -1,0 +1,7 @@
+^/privado-core/trufflehog_output.text
+^/privado-core/trufflehog/exclude-patterns.txt
+^/privado-core/.git
+^/privado-core/trufflehog/truffleHogAllowRules.json
+^/privado-core/trufflehog_filtered_output.text
+^/privado-core/src/test/
+^/privado-core/src/main/scala/ai/privado/tagger/PrivadoDBConfigBaseTagger.scala
