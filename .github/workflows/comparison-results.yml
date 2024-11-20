@@ -47,7 +47,7 @@ jobs:
         language: ['java-1', 'java-2' ,'python', 'js', 'ruby-1', 'ruby-2', 'go', 'kotlin', 'php', 'csharp']
     timeout-minutes: 30
     continue-on-error: true
-    runs-on: comparison-result-worker
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Install JDK-18
