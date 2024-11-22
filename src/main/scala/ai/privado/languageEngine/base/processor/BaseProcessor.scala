@@ -278,22 +278,23 @@ abstract class BaseProcessor(
   }
 
   protected def unresolvedReportExport(cpg: Cpg): Either[String, Unit] = {
-
     // Exporting the Unresolved report
-    JSONExporter.UnresolvedFlowFileExport(
-      outputUnresolvedFilename,
-      sourceRepoLocation,
-      dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
-    ) match {
-      case Left(err) =>
-        MetricHandler.otherErrorsOrWarnings.addOne(err)
-        Left(err)
-      case Right(_) =>
-        statsRecorder.justLogMessage(
-          s"Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
-        )
-        Right(())
-    }
+    if (privadoInput.generateAuditReport) {
+      JSONExporter.UnresolvedFlowFileExport(
+        outputUnresolvedFilename,
+        sourceRepoLocation,
+        dataFlowCache.getJsonFormatDataFlow(auditCache.unfilteredFlow)
+      ) match {
+        case Left(err) =>
+          MetricHandler.otherErrorsOrWarnings.addOne(err)
+          Left(err)
+        case Right(_) =>
+          statsRecorder.justLogMessage(
+            s"Successfully exported Unresolved flow output to '${appCache.localScanPath}/$outputDirectoryName' folder..."
+          )
+          Right(())
+      }
+    } else Right(())
   }
 
   protected def intermediateReportExport(cpg: Cpg): Either[String, Unit] = {
